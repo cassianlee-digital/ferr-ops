@@ -1,0 +1,63 @@
+/* 统一 REST 调用封装（替代原型里的 window.storage/localStorage）。
+   - 自动带 cookie 会话；遇 401 跳登录页。
+   - window.ME 保存当前用户；window.can(...) 做前端权限提示（后端才是权威）。*/
+(function () {
+  async function _fetch(method, path, body) {
+    const opt = { method, headers: {}, credentials: 'same-origin' };
+    if (body !== undefined) {
+      opt.headers['Content-Type'] = 'application/json';
+      opt.body = JSON.stringify(body);
+    }
+    const res = await fetch(path, opt);
+    if (res.status === 401) {
+      if (!location.pathname.endsWith('login.html')) location.href = '/login.html';
+      throw new Error('unauthorized');
+    }
+    if (!res.ok) {
+      let e = null;
+      try { e = await res.json(); } catch {}
+      const err = new Error((e && e.error) || 'HTTP ' + res.status);
+      err.status = res.status; err.body = e;
+      throw err;
+    }
+    const ct = res.headers.get('content-type') || '';
+    return ct.includes('application/json') ? res.json() : res.text();
+  }
+
+  const API = {
+    get: (p) => _fetch('GET', p),
+    post: (p, b) => _fetch('POST', p, b),
+    put: (p, b) => _fetch('PUT', p, b),
+    patch: (p, b) => _fetch('PATCH', p, b),
+    del: (p) => _fetch('DELETE', p),
+    async me() { return (await _fetch('GET', '/api/me')).user; },
+    async logout() { try { await _fetch('POST', '/api/logout'); } catch {} location.href = '/login.html'; },
+  };
+  window.API = API;
+
+  window.ME = null;
+  // 必须登录才能进；返回用户对象或跳登录页
+  window.ensureAuth = async function () {
+    try {
+      window.ME = await API.me();
+      return window.ME;
+    } catch {
+      location.href = '/login.html';
+      throw new Error('redirecting to login');
+    }
+  };
+
+  /* 前端能力判断（仅用于隐藏/禁用控件，越权请求由后端拒绝）
+     cap: 'seo' | 'sem' | 'inquiry' | 'kpiTarget' */
+  window.can = function (cap) {
+    const r = window.ME && window.ME.role;
+    if (!r) return false;
+    switch (cap) {
+      case 'seo': return r === 'seo';
+      case 'sem': return r === 'sem';
+      case 'inquiry': return r === 'sales' || r === 'seo' || r === 'sem';
+      case 'kpiTarget': return r === 'boss';
+      default: return false;
+    }
+  };
+})();

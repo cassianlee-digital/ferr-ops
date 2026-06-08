@@ -851,6 +851,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 <div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#191c24;color:#fff;padding:11px 18px;border-radius:10px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:transform .3s;z-index:100;max-width:90%"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/api.js"></script>
 <script>
 /* ---------- helpers ---------- */
 /* ================= STORAGE LAYER (universal) =================
@@ -1324,6 +1325,8 @@ function charts(){
 }
 
 window.addEventListener('load',async()=>{
+  await ensureAuth();          // 未登录会跳 /login.html
+  applyRoleUi();               // 按角色显示用户/登出、隐藏越权控件
   await loadMetrics();          // 持久化的目标/实际覆盖默认
   await loadWeeks();            // 持久化的周数据
   mini();
@@ -1334,6 +1337,25 @@ window.addEventListener('load',async()=>{
   await hydrate();             // 询盘/否词/广告/排名快照
   refreshInqStats();
 });
+
+/* 顶栏显示当前用户 + 登出；按角色做前端控件提示（后端才是权威校验）*/
+const ROLE_LABEL={seo:'李 · SEO',sem:'陈 · SEM',sales:'销售',boss:'老板'};
+function applyRoleUi(){
+  const right=document.querySelector('.topbar-right'); const me=window.ME||{};
+  if(right){
+    const chip=document.createElement('span'); chip.className='kpi-pill'; chip.style.cursor='default';
+    chip.innerHTML='<span class="kpi-label">'+(ROLE_LABEL[me.role]||me.name||'用户')+'</span>';
+    const out=document.createElement('button'); out.className='theme-btn'; out.title='登出';
+    out.innerHTML='<i class="ti ti-logout"></i>'; out.onclick=()=>API.logout();
+    right.appendChild(chip); right.appendChild(out);
+  }
+  // 老板/销售只读 KPI 目标：非 boss 时设置页目标值不可编辑
+  if(!can('kpiTarget')){
+    document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{
+      el.removeAttribute('contenteditable'); el.style.opacity='.7';
+    });
+  }
+}
 </script>
 </body>
 </html>
