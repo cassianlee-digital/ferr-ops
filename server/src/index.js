@@ -21,6 +21,19 @@ async function main() {
   const app = Fastify({
     logger: { level: config.env === 'production' ? 'info' : 'debug' },
     bodyLimit: 1_000_000,
+    trustProxy: true, // 位于 Caddy 反代之后
+  });
+
+  // 统一错误处理：校验错误回 400，其余回 500，且不泄漏堆栈
+  app.setErrorHandler((err, request, reply) => {
+    if (err.validation || err.statusCode === 400) {
+      return reply.code(400).send({ error: 'bad_request', detail: err.message });
+    }
+    if (err.statusCode && err.statusCode < 500) {
+      return reply.code(err.statusCode).send({ error: err.message || 'error' });
+    }
+    request.log.error({ err: err.message }, 'unhandled error');
+    return reply.code(500).send({ error: 'server_error' });
   });
 
   // cookie + jwt（会话令牌存 httpOnly cookie，浏览器 JS 读不到）
