@@ -1152,7 +1152,8 @@ async function hydrate(){
     const tb=document.getElementById('tb-ad'); if(tb)tb.innerHTML='';
     (items||[]).slice().reverse().forEach(r=>{prepend('tb-ad',adRowHtml(r)); tb.firstChild.dataset.id=r.id;});
   }catch(e){}
-  const ranks=(await Store.get(RANKSNAP_KEY))||[]; if(ranks.length>=2)renderRankTrend(ranks);
+  // 排名快照趋势：从后端读取
+  try{ const {snapshots}=await API.get('/api/rank-snapshots'); if(snapshots&&snapshots.length>=2)renderRankTrend(snapshots); }catch(e){}
 }
 
 /* ⓪ 闭环步骤条渲染 */
@@ -1314,14 +1315,17 @@ function adoptAi(){
 /* 机会词排名 · 每周快照 + 趋势回显（P3）*/
 async function snapshotRanks(){
   const trs=[...document.querySelectorAll('#mp-seo-opp tbody tr')];
-  const snap={date:today(),items:trs.map(r=>({kw:r.cells[0].textContent.trim(),rank:parseInt(r.cells[2].textContent)||null}))};
-  const arr=(await Store.get(RANKSNAP_KEY))||[]; arr.push(snap); await Store.set(RANKSNAP_KEY,arr);
-  renderRankTrend(arr); toast('已记录本周排名快照（'+snap.items.length+' 词）· 共 '+arr.length+' 周，可看趋势');
+  const items=trs.map(r=>({keyword:r.cells[0].textContent.trim(),rank:parseInt(r.cells[2].textContent)||null}));
+  try{
+    const {weeks,snapshots}=await API.post('/api/rank-snapshots',{items});
+    renderRankTrend(snapshots);
+    toast('已记录本周排名快照（'+items.length+' 词）· 共 '+weeks+' 周，可看趋势');
+  }catch(e){ toast(e.status===403?'无权操作（仅李/SEO 可记录快照）':'保存失败：'+e.message); }
 }
 function renderRankTrend(arr){
   if(!arr||arr.length<2)return; const first=arr[0],last=arr[arr.length-1];
   [...document.querySelectorAll('#mp-seo-opp tbody tr')].forEach(r=>{
-    const kw=r.cells[0].textContent.trim(); const a=first.items.find(x=>x.kw===kw),b=last.items.find(x=>x.kw===kw);
+    const kw=r.cells[0].textContent.trim(); const a=first.items.find(x=>x.keyword===kw),b=last.items.find(x=>x.keyword===kw);
     if(!a||!b||a.rank==null||b.rank==null)return; const d=a.rank-b.rank;
     let tag=r.querySelector('.rk-trend'); if(!tag){tag=document.createElement('span');tag.className='rk-trend';tag.style.marginLeft='6px';tag.style.fontSize='11px';tag.style.fontWeight='800';r.cells[2].appendChild(tag);}
     tag.textContent=d>0?('▲'+d):d<0?('▼'+(-d)):'—'; tag.style.color=d>0?'var(--green)':d<0?'var(--primary)':'var(--text3)';
@@ -1419,6 +1423,8 @@ function applyRoleUi(){
   if(!can('sem')){
     document.querySelectorAll('[onclick="addNeg()"],[onclick="addAd()"]').forEach(b=>b.style.display='none');
   }
+  // 排名快照：限李(SEO)
+  if(!can('seo')) document.querySelectorAll('[onclick="snapshotRanks()"]').forEach(b=>b.style.display='none');
 }
 </script>
 </body>

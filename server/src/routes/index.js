@@ -5,6 +5,7 @@ import { semWeeksRoutes } from './semWeeks.js';
 import { kpiRoutes } from './kpi.js';
 import { negKeywordsRoutes } from './negKeywords.js';
 import { adCreativesRoutes } from './adCreatives.js';
+import { rankSnapshotsRoutes } from './rankSnapshots.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -13,4 +14,5 @@ export async function registerRoutes(app) {
   await app.register(kpiRoutes);
   await app.register(negKeywordsRoutes);
   await app.register(adCreativesRoutes);
+  await app.register(rankSnapshotsRoutes);
 }
