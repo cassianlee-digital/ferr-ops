@@ -10,6 +10,7 @@ import { keywordsRoutes } from './keywords.js';
 import { fixesRoutes } from './fixes.js';
 import { loopItemsRoutes } from './loopItems.js';
 import { aiRoutes } from './ai.js';
+import { syncRoutes } from './sync.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -23,4 +24,5 @@ export async function registerRoutes(app) {
   await app.register(fixesRoutes);
   await app.register(loopItemsRoutes);
   await app.register(aiRoutes);
+  await app.register(syncRoutes);
 }
