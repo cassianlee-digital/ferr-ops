@@ -1018,14 +1018,30 @@ function addPlan(s,text){const id=s.dept==='SEM'?'tb-plan-sem':'tb-plan-seo';con
 function addTaskCards(s,items){const col=document.getElementById(s.dept==='SEM'?'newtask-sem':'newtask-seo'); if(!col)return; const add=col.querySelector('.add-task');
   items.forEach(t=>{const c=document.createElement('div');c.className='tcard';c.innerHTML=`<div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>${t}</div><div class="tmeta"><span class="badge ${s.c}">${s.dept}</span><span class="tdue">下月</span></div>`;col.insertBefore(c,add);});}
 
+/* —— 整改/闭环 入库（FR-6/10）。上面的 add* 仅负责渲染；下面负责持久化 —— */
+function sFromDept(dept){return dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};}
+function persistFix(s,text){API.post('/api/fixes',{title:clip(text,24),dept:s.dept,detail:text,owner:s.owner,due_date:plusDays(7),status:'计划下周',source:'AI诊断'}).catch(()=>{});}
+function persistLoop(kind,s,content,status){API.post('/api/loop-items',{kind,dept:s.dept,content,owner:s.owner,status:status||''}).catch(()=>{});}
+async function loadClosedLoop(){
+  try{ const {items}=await API.get('/api/fixes'); (items||[]).slice().reverse().forEach(f=>addFix(sFromDept(f.dept),f.detail||f.title)); }catch(e){}
+  try{ const {items}=await API.get('/api/loop-items');
+    (items||[]).slice().reverse().forEach(it=>{ const s=sFromDept(it.dept);
+      if(it.kind==='deposit')addDeposit(s,it.content,it.status==='采纳'?'采纳':'沉淀');
+      else if(it.kind==='test')addTest(s,it.content);
+      else if(it.kind==='plan')addPlan(s,it.content);
+      else if(it.kind==='task')addTaskCards(s,[it.content]);
+    });
+  }catch(e){}
+}
+
 /* AI 三连: 沉淀→沉淀表 / 采纳→整改清单+沉淀表 / 测试→测试登记 */
 function aiAct(btn,kind){
   const grp=btn.closest('.ai-actions'); grp.querySelectorAll('.aibtn').forEach(b=>b.classList.add('done'));
   btn.textContent='✓ 已'+kind;
   const text=grabText(btn); const s=scopeDept(btn,text);
-  if(kind==='沉淀'){ addDeposit(s,text,'沉淀'); toastGo('已沉淀到沉淀表','deposit'); }
-  else if(kind==='采纳'){ addFix(s,text); addDeposit(s,text,'采纳'); toastGo('已采纳 → 整改清单 + 沉淀表','fix'); }
-  else if(kind==='测试'){ addTest(s,text); toastGo('已加入测试登记（'+s.dept+'）','test'); }
+  if(kind==='沉淀'){ addDeposit(s,text,'沉淀'); persistLoop('deposit',s,text,'沉淀'); toastGo('已沉淀到沉淀表 · 已入库','deposit'); }
+  else if(kind==='采纳'){ addFix(s,text); addDeposit(s,text,'采纳'); persistFix(s,text); persistLoop('deposit',s,text,'采纳'); toastGo('已采纳 → 整改清单 + 沉淀表 · 已入库','fix'); }
+  else if(kind==='测试'){ addTest(s,text); persistLoop('test',s,text,'观察中'); toastGo('已加入测试登记（'+s.dept+'）· 已入库','test'); }
 }
 /* inject 沉淀/采纳/测试 onto every AI suggestion item */
 function injectAiActions(){ document.querySelectorAll('.ai-item').forEach(it=>{ if(it.querySelector('.ai-actions'))return; const wrap=document.createElement('span'); wrap.className='ai-actions'; wrap.innerHTML='<button class="aibtn dep" onclick="aiAct(this,\'沉淀\')">沉淀</button><button class="aibtn adopt" onclick="aiAct(this,\'采纳\')">采纳</button><button class="aibtn test" onclick="aiAct(this,\'测试\')">测试</button>'; it.appendChild(wrap); }); }
@@ -1036,9 +1052,9 @@ function loopBack(btn,dept){
   const cell=btn.closest('.next3'); const raw=cell.innerText.replace(/↻[^\n]*$/,'');
   const items=raw.split(/[｜|]/).map(x=>x.replace(/^\s*\d+[\.\、:：]?\s*/,'').trim()).filter(Boolean);
   const s=dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};
-  items.forEach(t=>addPlan(s,t)); addTaskCards(s,items);
+  items.forEach(t=>{addPlan(s,t); persistLoop('plan',s,t,'待开始');}); addTaskCards(s,items); items.forEach(t=>persistLoop('task',s,t,'待办'));
   btn.textContent='✓ 已排入'; btn.classList.add('done'); btn.disabled=true;
-  toastGo(items.length+' 条已排入下月计划 + 任务看板','plan');
+  toastGo(items.length+' 条已排入下月计划 + 任务看板 · 已入库','plan');
 }
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
@@ -1318,8 +1334,9 @@ function adoptAi(){
   if(!_lastAi.text){toast('暂无可采纳的 AI 内容');return;}
   const s=_lastAi.dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};
   const first=_lastAi.text.split('\n').map(x=>x.trim().replace(/^[•\-\*\d\.、:：\s]+/,'')).filter(Boolean)[0]||_lastAi.text;
-  addFix(s,clip(first.replace(/\*\*/g,''),140)); addDeposit(s,clip(first.replace(/\*\*/g,''),40),'采纳');
-  closeModal('aiMask'); toastGo('已采纳 → 整改清单（'+s.dept+'）','fix');
+  const fixText=clip(first.replace(/\*\*/g,''),140), depText=clip(first.replace(/\*\*/g,''),40);
+  addFix(s,fixText); addDeposit(s,depText,'采纳'); persistFix(s,fixText); persistLoop('deposit',s,depText,'采纳');
+  closeModal('aiMask'); toastGo('已采纳 → 整改清单（'+s.dept+'）· 已入库','fix');
 }
 
 /* 机会词排名 · 每周快照 + 趋势回显（P3）*/
@@ -1472,6 +1489,7 @@ window.addEventListener('load',async()=>{
   renderSparklines();
   await hydrate();             // 询盘/否词/广告/排名快照
   await loadKeywords();        // 关键词库 4 类
+  await loadClosedLoop();      // 整改清单 + 闭环条目
   refreshInqStats();
 });
 

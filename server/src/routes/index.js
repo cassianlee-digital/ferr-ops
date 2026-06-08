@@ -7,6 +7,8 @@ import { negKeywordsRoutes } from './negKeywords.js';
 import { adCreativesRoutes } from './adCreatives.js';
 import { rankSnapshotsRoutes } from './rankSnapshots.js';
 import { keywordsRoutes } from './keywords.js';
+import { fixesRoutes } from './fixes.js';
+import { loopItemsRoutes } from './loopItems.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -17,4 +19,6 @@ export async function registerRoutes(app) {
   await app.register(adCreativesRoutes);
   await app.register(rankSnapshotsRoutes);
   await app.register(keywordsRoutes);
+  await app.register(fixesRoutes);
+  await app.register(loopItemsRoutes);
 }
