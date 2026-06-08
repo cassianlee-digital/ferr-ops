@@ -52,6 +52,25 @@ export function seed() {
     console.log(`[seed] 已创建账号 ${u.username} (${u.role})`);
   }
 
+  // 示例询盘（仅当表为空时写入，方便首次启动看到效果；可在后台删除）
+  const inqCount = db.prepare('SELECT COUNT(*) AS c FROM inquiries').get().c;
+  if (inqCount === 0) {
+    const insInq = db.prepare(
+      `INSERT INTO inquiries (date, country, region, channel, source, product, grade, note)
+       VALUES (?,?,?,?,?,?,?,?)`
+    );
+    const DEMO = [
+      ['2026-06-04', '🇩🇪 德国', '欧洲', 'SEO自然', 'ductile iron casting / 球铁页', '铸造', 'A', ''],
+      ['2026-06-04', '🇺🇸 美国', '北美', 'SEM付费', 'casting to drawing / 按图询价', '铸造', 'A', ''],
+      ['2026-06-03', '🇪🇸 西班牙', '欧洲', 'SEO自然', 'industrial valves / 阀门页', '阀门', 'B', ''],
+      ['2026-06-03', '🇮🇳 印度', '其他', 'SEO自然', 'cheap casting / 铸件页', '铸造', 'C', '无效·比价'],
+      ['2026-06-02', '🇮🇹 意大利', '欧洲', 'SEM付费', 'investment casting / 熔模页', '铸造', 'A', ''],
+      ['2026-06-01', '🇨🇦 加拿大', '北美', 'SEM付费', 'machining parts / 机加工页', '机加工', 'B', ''],
+    ];
+    DEMO.forEach((r) => insInq.run(...r));
+    console.log(`[seed] 已写入 ${DEMO.length} 条示例询盘`);
+  }
+
   const kpiCount = db.prepare('SELECT COUNT(*) AS c FROM kpi_targets').get().c;
   if (kpiCount === 0) {
     const insKpi = db.prepare(

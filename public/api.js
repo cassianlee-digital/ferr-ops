@@ -55,7 +55,7 @@
     switch (cap) {
       case 'seo': return r === 'seo';
       case 'sem': return r === 'sem';
-      case 'inquiry': return r === 'sales' || r === 'seo' || r === 'sem';
+      case 'inquiry': return r === 'sales';
       case 'kpiTarget': return r === 'boss';
       default: return false;
     }

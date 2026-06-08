@@ -1053,27 +1053,26 @@ function openInquiry(){
 }
 async function submitInquiry(){
   const g=id=>document.getElementById(id).value.trim();
-  const rec={date:document.getElementById('f-date').value||today(),country:g('f-country')||'🏳️ 未填',
-    region:g('f-region'),channel:g('f-channel'),source:g('f-source')||'待补',product:g('f-product'),
-    grade:g('f-grade'),note:g('f-note'),ts:Date.now()};
-  window._inqCache.unshift(rec);
-  await Store.set(INQ_KEY,window._inqCache);
-  renderInqRow(rec,true); refreshInqStats(); closeModal('inqMask');
-  toast('已保存 1 条询盘（'+rec.grade+'级）· 已写入存储，刷新不丢');
+  const rec={date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10),
+    country:g('f-country')||'🏳️ 未填',region:g('f-region'),channel:g('f-channel'),
+    source:g('f-source')||'待补',product:g('f-product'),grade:g('f-grade'),note:g('f-note')};
+  try{
+    const {item,stats}=await API.post('/api/inquiries',rec);
+    window._inqCache.unshift(item);
+    renderInqRow(item,true); refreshInqStats(stats); closeModal('inqMask');
+    toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
+  }catch(e){ toast(e.status===403?'无权录入（仅销售可录询盘）':'保存失败：'+e.message); }
 }
 function renderInqRow(r,flash){
   const confirmCell=r.grade==='C'?'<span class="dim" style="font-size:11px">无效</span>':'<i class="ti ti-circle-check" style="color:var(--green)"></i>';
   const html=`<td>${r.date.slice(5)}</td><td>${r.country}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${r.region}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${r.channel}<i class="ti ti-chevron-down"></i></span></td><td>${r.source}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${r.product}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${r.grade}</span></td><td class="ctr">${confirmCell}</td>`;
   if(flash)prepend('tb-inq',html); else { const tb=document.getElementById('tb-inq'); const tr=document.createElement('tr'); tr.innerHTML=html; tb.insertBefore(tr,tb.firstChild); }
 }
-function refreshInqStats(){
-  const base={total:55,A:7,B:5,C:43};
-  const add=window._inqCache;
-  const A=base.A+add.filter(x=>x.grade==='A').length, B=base.B+add.filter(x=>x.grade==='B').length, C=base.C+add.filter(x=>x.grade==='C').length;
-  const total=base.total+add.length, valid=A+B, rate=Math.round(valid/total*100);
+function refreshInqStats(stats){
+  stats=stats||window._inqStats; if(!stats)return; window._inqStats=stats;
   const set=(sel,v)=>{const el=document.querySelector(sel);if(el)el.textContent=v;};
-  set('#inq-valid',valid); set('#inq-aratio',Math.round(A/Math.max(valid,1)*100)+'%');
-  set('#inq-rate',rate+'%'); set('#inq-total',total);
+  set('#inq-valid',stats.valid); set('#inq-aratio',stats.aRatio+'%');
+  set('#inq-rate',stats.rate+'%'); set('#inq-total',stats.total);
 }
 
 /* ================= 否词库 / 广告创意库 录入 ================= */
@@ -1126,9 +1125,14 @@ function renderSparklines(){
 
 /* ================= 载入持久化数据 ================= */
 async function hydrate(){
-  window._inqCache=(await Store.get(INQ_KEY))||[];
-  window._inqCache.slice().reverse().forEach(r=>renderInqRow(r,false)); // 时间正序插入→最新在顶
-  refreshInqStats();
+  // 询盘：从后端读取（多人共享、服务重启不丢）
+  try{
+    const {items,stats}=await API.get('/api/inquiries');
+    window._inqCache=items||[];
+    const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; // 清掉静态示例行
+    window._inqCache.slice().reverse().forEach(r=>renderInqRow(r,false)); // 时间正序插入→最新在顶
+    refreshInqStats(stats);
+  }catch(e){ if(e&&e.message!=='unauthorized')console.warn('加载询盘失败',e); }
   const negs=(await Store.get(NEG_KEY))||[];
   negs.slice().reverse().forEach(rec=>prepend('tb-neg',`<td class="editable" contenteditable>${rec.w}</td><td class="ctr"><span class="tagselect b-blue" data-kind="negmatch">${rec.match}<i class="ti ti-chevron-down"></i></span></td><td class="num">${rec.date}</td><td class="dim" style="font-size:11px">${rec.reason}</td><td class="ctr"><span class="badge b-gray">${rec.src}</span></td><td class="ctr"><span class="tagselect b-green" data-kind="negstatus">${rec.status}<i class="ti ti-chevron-down"></i></span></td>`));
   const ads=(await Store.get(AD_KEY))||[];
@@ -1354,6 +1358,10 @@ function applyRoleUi(){
     document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{
       el.removeAttribute('contenteditable'); el.style.opacity='.7';
     });
+  }
+  // 仅销售可录询盘：隐藏录入按钮（后端同样强制校验）
+  if(!can('inquiry')){
+    document.querySelectorAll('[onclick="openInquiry()"]').forEach(b=>b.style.display='none');
   }
 }
 </script>
