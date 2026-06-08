@@ -760,7 +760,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ 设置 ============ -->
       <div class="panel" id="panel-settings">
-        <div class="page-head"><div><div class="page-title">设置</div><div class="page-sub">考核目标值集中在此 · 改完即时回写，表盘/进度条/评分自动重算并存储</div></div></div>
+        <div class="page-head"><div><div class="page-title">设置</div><div class="page-sub">考核目标值集中在此 · 改完即时回写，表盘/进度条/评分自动重算并存储</div></div><button class="btn-ghost" onclick="openPwd()"><i class="ti ti-key"></i> 修改密码</button></div>
         <div class="grid3">
           <div class="card"><div class="card-head"><span class="card-title">总指标（共担）</span></div><table class="dt"><thead><tr><th>指标</th><th class="num">权重</th><th class="ctr">目标(可改)</th></tr></thead><tbody>
             <tr><td>询盘总量</td><td class="num">25</td><td class="ctr"><span class="editable" contenteditable data-kpi="TOTAL:0">60</span> 封</td></tr>
@@ -839,6 +839,19 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="sheet-tip"><i class="ti ti-info-circle"></i> CPC、CTR、每次转化费用由花费/点击/转化自动算，无需手填</div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('semWkMask')">取消</button><button class="btn-primary" onclick="submitSemWeek()"><i class="ti ti-device-floppy"></i> 保存并更新看板</button></div>
+  </div>
+</div>
+
+<!-- 修改密码弹框 -->
+<div class="modal-mask" id="pwdMask">
+  <div class="modal" style="width:420px">
+    <div class="modal-head"><i class="ti ti-key" style="color:var(--primary)"></i> 修改密码<span class="x" onclick="closeModal('pwdMask')"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld"><label>当前密码</label><input id="pwd-old" type="password" autocomplete="current-password"></div>
+      <div class="fld"><label>新密码（至少 6 位）</label><input id="pwd-new" type="password" autocomplete="new-password"></div>
+      <div class="fld"><label>确认新密码</label><input id="pwd-new2" type="password" autocomplete="new-password"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('pwdMask')">取消</button><button class="btn-primary" onclick="submitPwd()"><i class="ti ti-device-floppy"></i> 保存</button></div>
   </div>
 </div>
 
@@ -1297,6 +1310,21 @@ function bindSettings(){
     el.addEventListener('blur',commit);
     el.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();el.blur();} });
   });
+}
+
+/* 修改密码（后端 /api/change-password 强制校验旧密码）*/
+function openPwd(){ ['pwd-old','pwd-new','pwd-new2'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';}); openModal('pwdMask'); }
+async function submitPwd(){
+  const oldPassword=document.getElementById('pwd-old').value;
+  const newPassword=document.getElementById('pwd-new').value;
+  const confirm2=document.getElementById('pwd-new2').value;
+  if(!oldPassword||!newPassword){ toast('请填写当前密码与新密码'); return; }
+  if(newPassword.length<6){ toast('新密码至少 6 位'); return; }
+  if(newPassword!==confirm2){ toast('两次输入的新密码不一致'); return; }
+  try{
+    await API.post('/api/change-password',{oldPassword,newPassword});
+    closeModal('pwdMask'); toast('密码已修改，下次登录用新密码');
+  }catch(e){ toast(e.status===401?'当前密码不正确':'修改失败：'+e.message); }
 }
 
 /* AI 弹框结果 → 一键采纳进 ④整改清单（复用 addFix）*/
