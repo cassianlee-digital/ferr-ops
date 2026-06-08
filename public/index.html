@@ -1196,9 +1196,13 @@ recomputeScores();
 const METRICS_KEY='ferr:metrics', SEOWK_KEY='ferr:seo:weeks', SEMWK_KEY='ferr:sem:weeks', RANKSNAP_KEY='ferr:ranks';
 window._seoWeeks=[]; window._semWeeks=[];
 
-async function persistMetrics(){ await Store.set(METRICS_KEY,{TOTAL:TOTAL.map(k=>({t:k.t,a:k.a})),SEO:SEO.map(k=>({t:k.t,a:k.a})),SEM:SEM.map(k=>({t:k.t,a:k.a}))}); }
-async function loadMetrics(){ const m=await Store.get(METRICS_KEY); if(!m)return;
-  [['TOTAL',TOTAL],['SEO',SEO],['SEM',SEM]].forEach(([k,arr])=>{(m[k]||[]).forEach((s,i)=>{ if(arr[i]){ if(typeof s.t==='number')arr[i].t=s.t; if(typeof s.a==='number')arr[i].a=s.a; }});}); }
+/* KPI 以后端为权威：把服务端 rows 写回前端 TOTAL/SEO/SEM 数组（含目标/实际/id）*/
+function applyKpiServer(rows){
+  const byGrp={total:TOTAL,seo:SEO,sem:SEM};
+  (rows||[]).forEach(r=>{ const arr=byGrp[r.grp]; if(!arr)return; const k=arr.find(x=>x.n===r.name);
+    if(k){ if(typeof r.target==='number')k.t=r.target; if(typeof r.actual==='number')k.a=r.actual; k.id=r.id; } });
+}
+async function loadMetrics(){ try{ const {rows}=await API.get('/api/kpi-targets'); applyKpiServer(rows); }catch(e){} }
 
 /* 后端周报字段 → 前端原有字段名映射，保持下游逻辑不变 */
 function mapSeoWeek(w){return {date:(w.week_date||'').slice(5),clicks:w.clicks,impr:w.impressions,pos:w.avg_position,top10:w.top10_ratio,coverage:w.coverage,indexed:w.indexed_pages,bounce:w.bounce_rate,dwell:w.dwell_seconds};}
@@ -1259,10 +1263,16 @@ async function submitSemWeek(){
 /* 设置页：目标值 contenteditable → 回写 KPI 数组 + 重算 */
 function bindSettings(){
   document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{
-    const commit=()=>{ const p=el.dataset.kpi.split(':'),arr=({TOTAL,SEO,SEM})[p[0]],idx=+p[1];
+    const commit=async()=>{ if(!can('kpiTarget'))return; // 仅老板可改目标(后端也强制)
+      const p=el.dataset.kpi.split(':'),arr=({TOTAL,SEO,SEM})[p[0]],idx=+p[1];
       const v=parseFloat(String(el.textContent).replace(/[^\d.]/g,'')); if(isNaN(v)||!arr||!arr[idx])return;
-      if(v===arr[idx].t)return; arr[idx].t=v; persistMetrics(); renderKPI();
-      toast('已更新「'+arr[idx].n+'」目标 → '+v+' · 表盘/进度条已重算'); };
+      if(v===arr[idx].t)return;
+      try{
+        const {rows}=await API.put('/api/kpi-targets',{updates:[{id:arr[idx].id,target:v}]});
+        applyKpiServer(rows); renderKPI();
+        toast('已更新「'+arr[idx].n+'」目标 → '+v+' · 已入库, 评分已重算');
+      }catch(e){ toast(e.status===403?'仅老板可改 KPI 目标':'更新失败：'+e.message); }
+    };
     el.addEventListener('blur',commit);
     el.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();el.blur();} });
   });
