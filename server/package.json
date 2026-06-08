@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/index.js",
     "migrate": "node src/db/migrate.js",
-    "seed": "node src/db/seed.js"
+    "seed": "node src/db/seed.js",
+    "backup": "node src/db/backup.js"
   },
   "dependencies": {
     "@fastify/cookie": "^9.3.1",

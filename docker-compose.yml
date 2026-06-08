@@ -1,0 +1,35 @@
+# 本地与 VPS 同一套 compose。SQLite 与备份通过挂载卷持久化。
+services:
+  app:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data       # SQLite 数据库（持久化）
+      - ./backup:/app/backup   # 备份输出目录
+    restart: unless-stopped
+    expose:
+      - "3000"                  # 仅对内网（Caddy）暴露，不直接对公网
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+      - ACME_EMAIL=${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data        # 证书等持久化
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
