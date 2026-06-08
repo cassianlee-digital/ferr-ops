@@ -1077,21 +1077,28 @@ function refreshInqStats(stats){
 
 /* ================= 否词库 / 广告创意库 录入 ================= */
 const NEG_KEY='ferr:negs', AD_KEY='ferr:ads';
+const NEGMATCH_BADGE={'精确':'b-green','词组':'b-blue','广泛':'b-amber'};
+const NEGSTATUS_BADGE={'生效':'b-green','观察':'b-amber','已移除':'b-gray'};
+const ADSTATUS_BADGE={'采用中':'b-green','测试中':'b-amber','已弃用':'b-gray'};
+function negRowHtml(r){return `<td class="editable" contenteditable>${r.word}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type]||'b-blue'}" data-kind="negmatch">${r.match_type||'词组'}<i class="ti ti-chevron-down"></i></span></td><td class="num">${r.added_date||''}</td><td class="dim" style="font-size:11px">${r.reason||''}</td><td class="ctr"><span class="badge b-gray">${r.source_campaign||'全账户'}</span></td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status]||'b-green'}" data-kind="negstatus">${r.status||'生效'}<i class="ti ti-chevron-down"></i></span></td>`;}
+function adRowHtml(r){return `<td class="editable" contenteditable>${r.title}</td><td class="editable dim" contenteditable style="font-size:11px">${r.description||''}</td><td class="num">${r.ctr||'—'}</td><td class="dim" style="font-size:11px">${r.ab_conclusion||''}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status]||'b-amber'}" data-kind="adstatus">${r.status||'测试中'}<i class="ti ti-chevron-down"></i></span></td>`;}
 async function addNeg(){
-  const w=prompt('输入否词：'); if(!w)return;
+  const word=prompt('输入否词：'); if(!word)return;
   const reason=prompt('为什么加这个否词？')||'';
-  const rec={w,match:'词组',date:today(),reason,src:'全账户',status:'生效'};
-  const arr=(await Store.get(NEG_KEY))||[]; arr.unshift(rec); await Store.set(NEG_KEY,arr);
-  prepend('tb-neg',`<td class="editable" contenteditable>${rec.w}</td><td class="ctr"><span class="tagselect b-blue" data-kind="negmatch">词组<i class="ti ti-chevron-down"></i></span></td><td class="num">${rec.date}</td><td class="dim" style="font-size:11px">${rec.reason}</td><td class="ctr"><span class="badge b-gray">全账户</span></td><td class="ctr"><span class="tagselect b-green" data-kind="negstatus">生效<i class="ti ti-chevron-down"></i></span></td>`);
-  toast('已加否词「'+rec.w+'」· 已入库');
+  try{
+    const {item}=await API.post('/api/neg-keywords',{word,reason});
+    prepend('tb-neg',negRowHtml(item)); document.getElementById('tb-neg').firstChild.dataset.id=item.id;
+    toast('已加否词「'+item.word+'」· 已入库，多人共享');
+  }catch(e){ toast(e.status===403?'无权操作（仅陈/SEM 可改否词库）':'保存失败：'+e.message); }
 }
 async function addAd(){
-  const t=prompt('广告标题：'); if(!t)return;
-  const d=prompt('广告描述：')||'';
-  const rec={t,d,ctr:'—',ab:'待测试',status:'测试中'};
-  const arr=(await Store.get(AD_KEY))||[]; arr.unshift(rec); await Store.set(AD_KEY,arr);
-  prepend('tb-ad',`<td class="editable" contenteditable>${rec.t}</td><td class="editable dim" contenteditable style="font-size:11px">${rec.d}</td><td class="num">—</td><td class="dim" style="font-size:11px">待测试</td><td class="ctr"><span class="tagselect b-amber" data-kind="adstatus">测试中<i class="ti ti-chevron-down"></i></span></td>`);
-  toast('已加广告创意 · 已入库');
+  const title=prompt('广告标题：'); if(!title)return;
+  const description=prompt('广告描述：')||'';
+  try{
+    const {item}=await API.post('/api/ad-creatives',{title,description});
+    prepend('tb-ad',adRowHtml(item)); document.getElementById('tb-ad').firstChild.dataset.id=item.id;
+    toast('已加广告创意 · 已入库，多人共享');
+  }catch(e){ toast(e.status===403?'无权操作（仅陈/SEM 可改创意库）':'保存失败：'+e.message); }
 }
 
 /* ================= SEM 层级展开/收起 ================= */
@@ -1133,10 +1140,18 @@ async function hydrate(){
     window._inqCache.slice().reverse().forEach(r=>renderInqRow(r,false)); // 时间正序插入→最新在顶
     refreshInqStats(stats);
   }catch(e){ if(e&&e.message!=='unauthorized')console.warn('加载询盘失败',e); }
-  const negs=(await Store.get(NEG_KEY))||[];
-  negs.slice().reverse().forEach(rec=>prepend('tb-neg',`<td class="editable" contenteditable>${rec.w}</td><td class="ctr"><span class="tagselect b-blue" data-kind="negmatch">${rec.match}<i class="ti ti-chevron-down"></i></span></td><td class="num">${rec.date}</td><td class="dim" style="font-size:11px">${rec.reason}</td><td class="ctr"><span class="badge b-gray">${rec.src}</span></td><td class="ctr"><span class="tagselect b-green" data-kind="negstatus">${rec.status}<i class="ti ti-chevron-down"></i></span></td>`));
-  const ads=(await Store.get(AD_KEY))||[];
-  ads.slice().reverse().forEach(rec=>prepend('tb-ad',`<td class="editable" contenteditable>${rec.t}</td><td class="editable dim" contenteditable style="font-size:11px">${rec.d}</td><td class="num">${rec.ctr}</td><td class="dim" style="font-size:11px">${rec.ab}</td><td class="ctr"><span class="tagselect b-amber" data-kind="adstatus">${rec.status}<i class="ti ti-chevron-down"></i></span></td>`));
+  // 否词库：从后端读取
+  try{
+    const {items}=await API.get('/api/neg-keywords');
+    const tb=document.getElementById('tb-neg'); if(tb)tb.innerHTML='';
+    (items||[]).slice().reverse().forEach(r=>{prepend('tb-neg',negRowHtml(r)); tb.firstChild.dataset.id=r.id;});
+  }catch(e){}
+  // 广告创意库：从后端读取
+  try{
+    const {items}=await API.get('/api/ad-creatives');
+    const tb=document.getElementById('tb-ad'); if(tb)tb.innerHTML='';
+    (items||[]).slice().reverse().forEach(r=>{prepend('tb-ad',adRowHtml(r)); tb.firstChild.dataset.id=r.id;});
+  }catch(e){}
   const ranks=(await Store.get(RANKSNAP_KEY))||[]; if(ranks.length>=2)renderRankTrend(ranks);
 }
 
@@ -1176,9 +1191,17 @@ document.addEventListener('click',e=>{
     menu.style.display='flex'; menu.style.left=Math.min(r.left,window.innerWidth-160)+'px'; menu.style.top=(r.bottom+4)+'px';
     return;
   }
-  if(e.target.closest('#selMenu')){ const o=e.target.closest('.opt'); if(o&&curSel){ curSel.className='tagselect '+o.dataset.c; curSel.innerHTML=o.dataset.v+'<i class="ti ti-chevron-down"></i>'; } menu.style.display='none'; return; }
+  if(e.target.closest('#selMenu')){ const o=e.target.closest('.opt'); if(o&&curSel){ curSel.className='tagselect '+o.dataset.c; curSel.innerHTML=o.dataset.v+'<i class="ti ti-chevron-down"></i>'; persistTagChange(curSel,o.dataset.v); } menu.style.display='none'; return; }
   menu.style.display='none';
 });
+/* 否词/广告创意 的匹配方式/状态变更 → PATCH 入库（其余表的标签变更后续步骤再接）*/
+async function persistTagChange(el,value){
+  const kind=el.dataset.kind; const tr=el.closest('tr'); const id=tr&&tr.dataset.id; if(!id)return;
+  const map={negmatch:['/api/neg-keywords','match_type'],negstatus:['/api/neg-keywords','status'],
+    admatch:['/api/ad-creatives','status'],adstatus:['/api/ad-creatives','status']};
+  const m=map[kind]; if(!m)return;
+  try{ await API.patch(m[0]+'/'+id,{[m[1]]:value}); }catch(err){ toast(err.status===403?'无权修改（仅陈/SEM）':'保存失败'); }
+}
 
 /* ================= KPI ENGINE ================= */
 const TOTAL=[{n:'询盘总量',w:25,t:60,a:55,m:'r',u:'封'},{n:'A级询盘数',w:35,t:10,a:7,m:'r',u:'封'},{n:'有效询盘成本',w:25,t:2000,a:2400,m:'i',u:'¥'},{n:'闭环执行度',w:15,t:5,a:4,m:'r',u:'项'}];
@@ -1392,6 +1415,10 @@ function applyRoleUi(){
   // 周报录入：SEO 限李，SEM 限陈
   if(!can('seo')) document.querySelectorAll('[onclick="openSeoWeek()"]').forEach(b=>b.style.display='none');
   if(!can('sem')) document.querySelectorAll('[onclick="openSemWeek()"]').forEach(b=>b.style.display='none');
+  // 否词/广告创意：限陈(SEM)
+  if(!can('sem')){
+    document.querySelectorAll('[onclick="addNeg()"],[onclick="addAd()"]').forEach(b=>b.style.display='none');
+  }
 }
 </script>
 </body>

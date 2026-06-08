@@ -71,6 +71,34 @@ export function seed() {
     console.log(`[seed] 已写入 ${DEMO.length} 条示例询盘`);
   }
 
+  // 示例否词（表空时）
+  if (db.prepare('SELECT COUNT(*) AS c FROM neg_keywords').get().c === 0) {
+    const ins = db.prepare(
+      `INSERT INTO neg_keywords (word, match_type, added_date, reason, source_campaign, status)
+       VALUES (?,?,?,?,?,?)`
+    );
+    [
+      ['cheap', '词组', '06-02', '比价流量、无效询盘多', '全账户', '生效'],
+      ['diy', '词组', '06-02', '个人/教学流量，非 B2B', '全账户', '生效'],
+      ['jobs', '精确', '05-28', '求职流量', '全账户', '生效'],
+      ['indonesia', '词组', '06-06', '东南亚来词零有效询盘', '机加工通用', '观察'],
+    ].forEach((r) => ins.run(...r));
+    console.log('[seed] 已写入示例否词');
+  }
+
+  // 示例广告创意（表空时）
+  if (db.prepare('SELECT COUNT(*) AS c FROM ad_creatives').get().c === 0) {
+    const ins = db.prepare(
+      `INSERT INTO ad_creatives (title, description, ctr, ab_conclusion, status) VALUES (?,?,?,?,?)`
+    );
+    [
+      ['ISO/CE 认证铸造厂 · 按图定制', '资质齐全，球墨铸铁/铸钢按图打样，48h 报价', '+38%', '资质版 > 价格版，全量采用', '采用中'],
+      ['Send Your Drawing, Get a Quote', 'STEP/PDF/手绘均可，按图询价，小批量灵活', '3.1%', '大白话版对美国农机客户更好', '测试中'],
+      ['Lowest Price Casting', '价格导向文案', '1.2%', '引来比价/无效询盘，已淘汰', '已弃用'],
+    ].forEach((r) => ins.run(...r));
+    console.log('[seed] 已写入示例广告创意');
+  }
+
   const kpiCount = db.prepare('SELECT COUNT(*) AS c FROM kpi_targets').get().c;
   if (kpiCount === 0) {
     const insKpi = db.prepare(
