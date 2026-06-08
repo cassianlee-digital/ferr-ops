@@ -874,40 +874,11 @@ const Store={
   }
 };
 
-/* ================= REAL CLAUDE API =================
-   作为 claude.ai Artifact 运行时可直接调用，无需 API key。
-   下载自托管会因跨域失败 → 友好降级提示。*/
+/* ================= AI 代理 =================
+   走后端 /api/ai：密钥只在后端 .env，上下文由后端基于数据库实时组装。*/
 async function callClaude(userPrompt){
-  const ctx=collectContext();
-  const sys='你是费尔瑞 FERR(外贸来图定制铸造/机加工厂)的运营分析助手。回答要简短、可执行、按优先级，用中文，能落到具体动作。下面是当前后台的真实数据上下文：\n'+ctx;
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
-      system:sys,messages:[{role:'user',content:userPrompt}]})
-  });
-  if(!res.ok)throw new Error('HTTP '+res.status);
-  const data=await res.json();
-  return (data.content||[]).map(b=>b.type==='text'?b.text:'').join('\n').trim();
-}
-/* 把当前页面真实数据打包成上下文 */
-function collectContext(){
-  const fc=k=>fmt(k,k.t)+'(实际'+fmt(k,k.a)+')';
-  const inqs=(window._inqCache||[]);
-  const A=inqs.filter(x=>x.grade==='A').length,B=inqs.filter(x=>x.grade==='B').length,C=inqs.filter(x=>x.grade==='C').length;
-  const sw=(window._seoWeeks||[]).slice(-1)[0], mw=(window._semWeeks||[]).slice(-1)[0];
-  const lines=[
-    '【公司KPI目标(实际)】'+TOTAL.map(k=>k.n+' 目标'+fc(k)).join('；'),
-    '【SEO·李】'+SEO.map(k=>k.n+' 目标'+fc(k)).join('；'),
-    '【SEM·陈】'+SEM.map(k=>k.n+' 目标'+fc(k)).join('；'),
-    '【询盘本月】总量 '+(55+inqs.length)+'，新录入 '+inqs.length+' 条(A'+A+'/B'+B+'/C'+C+')'
-  ];
-  if(sw)lines.push('【本周SEO实录】点击'+sw.clicks+' 展现'+sw.impr+' 均排名'+(sw.pos??'-')+' 跳出'+(sw.bounce??'-')+'% Top10占比'+(sw.top10??'-')+'% 覆盖'+(sw.coverage??'-')+' 新增收录'+(sw.indexed??'-'));
-  if(mw)lines.push('【本周SEM实录】花费¥'+mw.cost+' 点击'+mw.clicks+' 转化'+mw.conv+' ROAS'+(mw.roas??'-')+'x CPC¥'+(mw.cpc??'-')+' CTR'+(mw.ctr??'-')+'% 每转化¥'+(mw.cpconv??'-'));
-  lines.push('【SEO机会词(GSC排名)】investment casting(14)、investment casting parts(16)、steel casting supplier(12)、ductile iron supplier(13)；机加工类 machining parts 近6周从13跌到18(疑被蚕食)');
-  lines.push('【SEO蚕食】investment casting 被3页竞争(14/22/31)；machining parts 被3页(18/24/27)；ductile iron casting 2页重叠(6/19)');
-  lines.push('【SEM层级】FERR-球铁-德国 ¥7200/4询盘/¥1800；FERR-按图-美国 ¥6400/3/¥2133；机加工通用 ¥9000/1询盘/¥9000(需拆词)；东南亚来词 ¥6200/0询盘(应暂停)');
-  lines.push('【市场】目标客户=欧美来图定制工厂/中间商；欧洲毛利高最在意资质，东南亚/巴西薄难成交；现仅SMETA验厂、缺欧洲认证是短板；客户索要频率 catalog>材质证书>检测报告>案例>工厂视频。');
-  return lines.join('\n');
+  const {text}=await API.post('/api/ai',{prompt:userPrompt});
+  return text;
 }
 /* 极简 markdown → html */
 function mdToHtml(t){
@@ -917,7 +888,7 @@ function mdToHtml(t){
     .replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>')
     .replace(/^/,'<p>').replace(/$/,'</p>');
 }
-const apiUnavailableMsg='<div class="api-warn"><i class="ti ti-plug-connected-x"></i> 没连上 Claude API。本后台需作为 <b>claude.ai Artifact</b> 运行才能直接调用；本地打开 HTML 会因跨域失败。可改用下方按钮把提示词发到对话里。</div>';
+const apiUnavailableMsg='<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI 暂时不可用：请确认后端 <b>.env</b> 已正确配置 <b>ANTHROPIC_API_KEY</b>，或稍后重试。</div>';
 
 /* 弹框版：用于行内「分析意图」「AI生成」等无内嵌位置的按钮 */
 function aiAsk(prompt,title){
