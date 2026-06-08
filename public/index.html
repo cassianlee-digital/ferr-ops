@@ -1427,9 +1427,10 @@ function seoSeriesFromWeeks(){
 }
 function buildSeoData(s){return {labels:s.labels,datasets:[{label:'点击',data:s.clicks,borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},{label:'展现÷20',data:s.impr,borderColor:'#9aa1ae',borderDash:[4,3],tension:.4,pointRadius:0,borderWidth:1.5}]};}
 function updateSeoChart(range){
-  if(!seoChart)return; const s=seoFull; let n=s.labels.length;
-  const map={'昨天':1,'上周':Math.min(7,n),'上半月':Math.min(7,n),'近1月':n,'近3月':n,'近半年':n,'近1年':n,'自定义':n};
-  if(range&&map[range])n=map[range];
+  if(!seoChart)return; const s=seoFull; const total=s.labels.length;
+  // 数据按周记录：把时间区间换算成「最近 N 周」并按可用数据裁剪
+  const weeks={'昨天':1,'上周':1,'上半月':2,'近1月':4,'近3月':13,'近半年':26,'近1年':52,'自定义':total};
+  let n=range&&weeks[range]?Math.min(weeks[range],total):total; n=Math.max(n,1);
   const sl=a=>a.slice(-n);
   seoChart.data.labels=sl(s.labels); seoChart.data.datasets[0].data=sl(s.clicks); seoChart.data.datasets[1].data=sl(s.impr); seoChart.update();
 }
