@@ -1,0 +1,25 @@
+# deps
+node_modules/
+server/node_modules/
+
+# secrets — NEVER commit
+.env
+*.env
+!.env.example
+
+# sqlite data + backups (persisted via mounted volume)
+data/
+backup/
+*.sqlite
+*.sqlite-*
+*.db
+
+# logs / os
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
