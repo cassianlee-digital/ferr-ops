@@ -1200,7 +1200,16 @@ async function persistMetrics(){ await Store.set(METRICS_KEY,{TOTAL:TOTAL.map(k=
 async function loadMetrics(){ const m=await Store.get(METRICS_KEY); if(!m)return;
   [['TOTAL',TOTAL],['SEO',SEO],['SEM',SEM]].forEach(([k,arr])=>{(m[k]||[]).forEach((s,i)=>{ if(arr[i]){ if(typeof s.t==='number')arr[i].t=s.t; if(typeof s.a==='number')arr[i].a=s.a; }});}); }
 
-async function loadWeeks(){ window._seoWeeks=(await Store.get(SEOWK_KEY))||[]; window._semWeeks=(await Store.get(SEMWK_KEY))||[]; applySeoActuals(); applySemActuals(); }
+/* 后端周报字段 → 前端原有字段名映射，保持下游逻辑不变 */
+function mapSeoWeek(w){return {date:(w.week_date||'').slice(5),clicks:w.clicks,impr:w.impressions,pos:w.avg_position,top10:w.top10_ratio,coverage:w.coverage,indexed:w.indexed_pages,bounce:w.bounce_rate,dwell:w.dwell_seconds};}
+function mapSemWeek(w){return {date:(w.week_date||'').slice(5),cost:w.cost,impr:w.impressions,clicks:w.clicks,conv:w.conversions,roas:w.roas,qs:w.quality_score,cpc:w.cpc,ctr:w.ctr,cpconv:w.cost_per_conv};}
+async function loadWeeks(){
+  try{
+    const seo=await API.get('/api/seo-weeks'); window._seoWeeks=(seo.items||[]).map(mapSeoWeek);
+    const sem=await API.get('/api/sem-weeks'); window._semWeeks=(sem.items||[]).map(mapSemWeek);
+  }catch(e){ window._seoWeeks=[]; window._semWeeks=[]; }
+  applySeoActuals(); applySemActuals();
+}
 /* 周数据 → 回写 KPI 实际值（自然流量环比按周环比自动算）*/
 function applySeoActuals(){ const w=window._seoWeeks; if(!w.length)return; const last=w[w.length-1],prev=w.length>1?w[w.length-2]:null;
   if(prev&&prev.clicks)SEO[0].a=Math.round((last.clicks/prev.clicks-1)*1000)/10;
@@ -1216,28 +1225,35 @@ const _setTxt=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;
 function openSeoWeek(){ const d=document.getElementById('sw-date'); if(d)d.value=new Date().toISOString().slice(0,10);
   ['sw-clicks','sw-impr','sw-pos','sw-top10','sw-cov','sw-idx','sw-bounce','sw-dwell'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';}); openModal('seoWkMask'); }
 async function submitSeoWeek(){
-  const rec={date:(document.getElementById('sw-date').value||today()).slice(5),
-    clicks:_fnum('sw-clicks')||0,impr:_fnum('sw-impr')||0,pos:_fnum('sw-pos'),
-    top10:_fnum('sw-top10'),coverage:_fnum('sw-cov'),indexed:_fnum('sw-idx'),bounce:_fnum('sw-bounce'),dwell:_fnum('sw-dwell'),ts:Date.now()};
-  window._seoWeeks.push(rec); await Store.set(SEOWK_KEY,window._seoWeeks); applySeoActuals();
-  _setTxt('sb-clicks',rec.clicks.toLocaleString()); _setTxt('sb-impr',rec.impr.toLocaleString());
-  if(rec.pos!=null)_setTxt('sb-pos',rec.pos); if(rec.coverage!=null)_setTxt('sb-cov',rec.coverage.toLocaleString());
-  seoFull=seoSeriesFromWeeks(); if(seoChart){seoChart.data=buildSeoData(seoFull);seoChart.update();}
-  renderKPI(); closeModal('seoWkMask');
-  const wow=window._seoWeeks.length>1?('，自然流量环比 '+(SEO[0].a>=0?'+':'')+SEO[0].a+'%'):'';
-  toast('已录入本周 GSC 数据 · 图表+KPI 已更新'+wow);
+  const body={week_date:document.getElementById('sw-date').value||new Date().toISOString().slice(0,10),
+    clicks:_fnum('sw-clicks')||0,impressions:_fnum('sw-impr')||0,avg_position:_fnum('sw-pos'),
+    top10_ratio:_fnum('sw-top10'),coverage:_fnum('sw-cov'),indexed_pages:_fnum('sw-idx'),
+    bounce_rate:_fnum('sw-bounce'),dwell_seconds:_fnum('sw-dwell')};
+  try{
+    const {item}=await API.post('/api/seo-weeks',body);
+    const rec=mapSeoWeek(item); window._seoWeeks.push(rec); applySeoActuals();
+    _setTxt('sb-clicks',(rec.clicks||0).toLocaleString()); _setTxt('sb-impr',(rec.impr||0).toLocaleString());
+    if(rec.pos!=null)_setTxt('sb-pos',rec.pos); if(rec.coverage!=null)_setTxt('sb-cov',rec.coverage.toLocaleString());
+    seoFull=seoSeriesFromWeeks(); if(seoChart){seoChart.data=buildSeoData(seoFull);seoChart.update();}
+    renderKPI(); closeModal('seoWkMask');
+    const wow=window._seoWeeks.length>1?('，自然流量环比 '+(SEO[0].a>=0?'+':'')+SEO[0].a+'%'):'';
+    toast('已录入本周 GSC 数据 · 已入库, 图表+KPI 已更新'+wow);
+  }catch(e){ toast(e.status===403?'无权录入（仅李/SEO 可录）':'保存失败：'+e.message); }
 }
 function openSemWeek(){ const d=document.getElementById('mw-date'); if(d)d.value=new Date().toISOString().slice(0,10);
   ['mw-cost','mw-impr','mw-clicks','mw-conv','mw-roas','mw-qs'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';}); openModal('semWkMask'); }
 async function submitSemWeek(){
-  const cost=_fnum('mw-cost')||0,impr=_fnum('mw-impr')||0,clicks=_fnum('mw-clicks')||0,conv=_fnum('mw-conv')||0,roas=_fnum('mw-roas'),qs=_fnum('mw-qs');
-  const cpc=clicks?Math.round(cost/clicks*100)/100:null, ctr=impr?Math.round(clicks/impr*1000)/10:null, cpconv=conv?Math.round(cost/conv):null;
-  const rec={date:(document.getElementById('mw-date').value||today()).slice(5),cost,impr,clicks,conv,roas,qs,cpc,ctr,cpconv,ts:Date.now()};
-  window._semWeeks.push(rec); await Store.set(SEMWK_KEY,window._semWeeks); applySemActuals();
-  _setTxt('sm-cost',cost>=1000?('¥'+(cost/1000).toFixed(1)+'k'):('¥'+cost)); _setTxt('sm-impr',impr.toLocaleString());
-  _setTxt('sm-clicks',clicks.toLocaleString()); _setTxt('sm-conv',conv); if(roas!=null)_setTxt('sm-roas',roas+'x');
-  renderKPI(); closeModal('semWkMask');
-  toast('已导入本周 Ads 数据 · CPC ¥'+(cpc??'-')+' / CTR '+(ctr??'-')+'% / 每询盘 ¥'+(cpconv??'-')+' 自动算，KPI 已更新');
+  const body={week_date:document.getElementById('mw-date').value||new Date().toISOString().slice(0,10),
+    cost:_fnum('mw-cost')||0,impressions:_fnum('mw-impr')||0,clicks:_fnum('mw-clicks')||0,
+    conversions:_fnum('mw-conv')||0,roas:_fnum('mw-roas'),quality_score:_fnum('mw-qs')};
+  try{
+    const {item}=await API.post('/api/sem-weeks',body); // CPC/CTR/每次转化费用由后端计算
+    const rec=mapSemWeek(item); window._semWeeks.push(rec); applySemActuals();
+    _setTxt('sm-cost',rec.cost>=1000?('¥'+(rec.cost/1000).toFixed(1)+'k'):('¥'+rec.cost)); _setTxt('sm-impr',(rec.impr||0).toLocaleString());
+    _setTxt('sm-clicks',(rec.clicks||0).toLocaleString()); _setTxt('sm-conv',rec.conv); if(rec.roas!=null)_setTxt('sm-roas',rec.roas+'x');
+    renderKPI(); closeModal('semWkMask');
+    toast('已导入本周 Ads 数据 · CPC ¥'+(rec.cpc??'-')+' / CTR '+(rec.ctr??'-')+'% / 每询盘 ¥'+(rec.cpconv??'-')+'（后端计算）, KPI 已更新');
+  }catch(e){ toast(e.status===403?'无权录入（仅陈/SEM 可录）':'保存失败：'+e.message); }
 }
 
 /* 设置页：目标值 contenteditable → 回写 KPI 数组 + 重算 */
@@ -1363,6 +1379,9 @@ function applyRoleUi(){
   if(!can('inquiry')){
     document.querySelectorAll('[onclick="openInquiry()"]').forEach(b=>b.style.display='none');
   }
+  // 周报录入：SEO 限李，SEM 限陈
+  if(!can('seo')) document.querySelectorAll('[onclick="openSeoWeek()"]').forEach(b=>b.style.display='none');
+  if(!can('sem')) document.querySelectorAll('[onclick="openSemWeek()"]').forEach(b=>b.style.display='none');
 }
 </script>
 </body>

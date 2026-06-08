@@ -1,6 +1,7 @@
 // 询盘 API（FR-1）。写入限销售；所有登录用户可读。
 import * as repo from '../db/repositories/inquiries.js';
 import { requireAuth, roles } from '../auth/middleware.js';
+import { recomputeActuals } from '../services/kpi.js';
 
 const GRADES = ['A', 'B', 'C'];
 
@@ -27,17 +28,20 @@ export async function inquiriesRoutes(app) {
   app.post('/api/inquiries', { preHandler: roles('sales') }, async (request, reply) => {
     const rec = clean(request.body || {});
     const item = repo.create(rec, request.user.id);
+    recomputeActuals(); // 询盘总量/A级数 回写 KPI 实际值
     reply.code(201);
     return { item, stats: repo.stats() };
   });
 
   app.patch('/api/inquiries/:id', { preHandler: roles('sales') }, async (request) => {
     const item = repo.update(Number(request.params.id), request.body || {});
+    recomputeActuals();
     return { item, stats: repo.stats() };
   });
 
   app.delete('/api/inquiries/:id', { preHandler: roles('sales') }, async (request) => {
     repo.remove(Number(request.params.id));
+    recomputeActuals();
     return { ok: true, stats: repo.stats() };
   });
 }
