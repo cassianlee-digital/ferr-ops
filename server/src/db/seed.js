@@ -99,6 +99,25 @@ export function seed() {
     console.log('[seed] 已写入示例广告创意');
   }
 
+  // 示例关键词库（表空时）
+  if (db.prepare('SELECT COUNT(*) AS c FROM keywords').get().c === 0) {
+    const ins = db.prepare('INSERT INTO keywords (type, keyword, attrs, category) VALUES (?,?,?,?)');
+    const KW = [
+      ['seo', 'Metal Fabrication', { gradeText: 'A', gradeCls: 'b-red', volume: '10.5k', gscRank: 21, deltaText: '▲3', deltaCol: 'var(--green)', trend: 'up', spark: '28,26,25,24,23,21', comp: '中 (30-60)', optstatus: '未优化' }, '管件'],
+      ['seo', 'investment casting', { gradeText: 'B', gradeCls: 'b-amber', volume: '9k', gscRank: 11, deltaText: '▲3', deltaCol: 'var(--green)', trend: 'up', spark: '18,16,15,14,13,11', comp: '低 (10-30)', optstatus: '优化中' }, '管件'],
+      ['seo', 'ductile iron casting', { gradeText: 'A', gradeCls: 'b-green', volume: '6.4k', gscRank: 6, deltaText: '—', deltaCol: 'var(--text3)', trend: 'flat', spark: '7,6,6,7,6,6', comp: '低 (10-30)', optstatus: '已优化' }, '铸锻件'],
+      ['seo', 'machining parts', { gradeText: 'B', gradeCls: 'b-blue', volume: '4.2k', gscRank: 18, deltaText: '▼4', deltaCol: 'var(--primary)', trend: 'down', spark: '13,14,15,16,17,18', comp: '中 (30-60)', optstatus: '优化中' }, '铸锻件'],
+      ['sem', 'die casting parts manufacturers', { catText: '工厂', match: '词组匹配', landing: 'die-casting-services/', priority: '高' }, '铝铸-SEM'],
+      ['sem', 'industrial valves supplier', { catText: '仪表阀门', match: '词组匹配', landing: 'valves/', priority: '高' }, '仪表阀门-SEM'],
+      ['high', 'ductile iron casting', { ktype: '工艺', channel: 'SEO+SEM', inquiry: 3, gradeText: '核心', gradeCls: 'b-green' }, null],
+      ['high', 'casting to drawing', { ktype: '意图', channel: 'SEO+SEM', inquiry: 2, gradeText: '核心', gradeCls: 'b-green' }, null],
+      ['customer', '"nodular cast iron"', { sourceCustomer: '🇩🇪 德国 模块系统厂', mapped: 'ductile iron casting 同义' }, null],
+      ['customer', '"parts as per drawing"', { sourceCustomer: '🇺🇸 美国 农机商', mapped: 'casting to drawing' }, null],
+    ];
+    KW.forEach(([type, kw, attrs, cat]) => ins.run(type, kw, JSON.stringify(attrs), cat));
+    console.log('[seed] 已写入示例关键词库');
+  }
+
   const kpiCount = db.prepare('SELECT COUNT(*) AS c FROM kpi_targets').get().c;
   if (kpiCount === 0) {
     const insKpi = db.prepare(
