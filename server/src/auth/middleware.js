@@ -35,7 +35,7 @@ export const onlyBoss = { preHandler: roles('boss') };         // 老板（KPI �
 export const cookieOpts = {
   httpOnly: true,
   sameSite: 'lax',
-  secure: config.env === 'production',
+  secure: config.cookieSecure, // 纯 IP/HTTP 部署设 COOKIE_SECURE=false
   path: '/',
   maxAge: config.sessionHours * 3600,
 };

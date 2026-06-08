@@ -31,6 +31,13 @@ export const config = {
   jwtSecret: required('JWT_SECRET', 'dev-insecure-secret-change-me'),
   sessionHours: Number(process.env.SESSION_HOURS || 72),
 
+  // 会话 cookie 是否要求 HTTPS。纯 IP/HTTP 部署需设为 false，否则浏览器不回传 cookie、登录失效。
+  // 默认：显式 COOKIE_SECURE 优先，否则生产环境为 true。
+  cookieSecure:
+    process.env.COOKIE_SECURE !== undefined
+      ? process.env.COOKIE_SECURE === 'true'
+      : (process.env.NODE_ENV || 'development') === 'production',
+
   seedPasswords: {
     li: process.env.SEED_LI_PASSWORD || '',
     chen: process.env.SEED_CHEN_PASSWORD || '',
