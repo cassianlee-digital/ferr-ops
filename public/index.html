@@ -1090,25 +1090,24 @@ const NEG_KEY='ferr:negs', AD_KEY='ferr:ads';
 const NEGMATCH_BADGE={'精确':'b-green','词组':'b-blue','广泛':'b-amber'};
 const NEGSTATUS_BADGE={'生效':'b-green','观察':'b-amber','已移除':'b-gray'};
 const ADSTATUS_BADGE={'采用中':'b-green','测试中':'b-amber','已弃用':'b-gray'};
-function negRowHtml(r){return `<td class="editable" contenteditable>${r.word}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type]||'b-blue'}" data-kind="negmatch">${r.match_type||'词组'}<i class="ti ti-chevron-down"></i></span></td><td class="num">${r.added_date||''}</td><td class="dim" style="font-size:11px">${r.reason||''}</td><td class="ctr"><span class="badge b-gray">${r.source_campaign||'全账户'}</span></td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status]||'b-green'}" data-kind="negstatus">${r.status||'生效'}<i class="ti ti-chevron-down"></i></span></td>`;}
-function adRowHtml(r){return `<td class="editable" contenteditable>${r.title}</td><td class="editable dim" contenteditable style="font-size:11px">${r.description||''}</td><td class="num">${r.ctr||'—'}</td><td class="dim" style="font-size:11px">${r.ab_conclusion||''}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status]||'b-amber'}" data-kind="adstatus">${r.status||'测试中'}<i class="ti ti-chevron-down"></i></span></td>`;}
+function negRowHtml(r){return `<td class="editable" contenteditable data-field="word">${r.word}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type]||'b-blue'}" data-kind="negmatch">${r.match_type||'词组'}<i class="ti ti-chevron-down"></i></span></td><td class="num">${r.added_date||''}</td><td class="editable" contenteditable data-field="reason" style="font-size:11px">${r.reason||''}</td><td class="ctr"><span class="badge b-gray">${r.source_campaign||'全账户'}</span></td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status]||'b-green'}" data-kind="negstatus">${r.status||'生效'}<i class="ti ti-chevron-down"></i></span></td>`;}
+function adRowHtml(r){return `<td class="editable" contenteditable data-field="title">${r.title}</td><td class="editable dim" contenteditable data-field="description" style="font-size:11px">${r.description||''}</td><td class="num">${r.ctr||'—'}</td><td class="editable dim" contenteditable data-field="ab_conclusion" style="font-size:11px">${r.ab_conclusion||''}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status]||'b-amber'}" data-kind="adstatus">${r.status||'测试中'}<i class="ti ti-chevron-down"></i></span></td>`;}
+// 去弹窗化：直接新增可编辑空行（POST 默认值后原地编辑）
 async function addNeg(){
-  const word=prompt('输入否词：'); if(!word)return;
-  const reason=prompt('为什么加这个否词？')||'';
   try{
-    const {item}=await API.post('/api/neg-keywords',{word,reason});
-    prepend('tb-neg',negRowHtml(item)); document.getElementById('tb-neg').firstChild.dataset.id=item.id;
-    toast('已加否词「'+item.word+'」· 已入库，多人共享');
-  }catch(e){ toast(e.status===403?'无权操作（仅陈/SEM 可改否词库）':'保存失败：'+e.message); }
+    const {item}=await API.post('/api/neg-keywords',{word:'新否词',reason:''});
+    prepend('tb-neg',negRowHtml(item)); const tr=document.getElementById('tb-neg').firstChild; tr.dataset.id=item.id; tr.dataset.ep='/api/neg-keywords';
+    const c=tr.querySelector('[data-field="word"]'); if(c){c.focus();placeCaretEnd(c);}
+    toast('已加一行 · 直接在表格里改');
+  }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
 }
 async function addAd(){
-  const title=prompt('广告标题：'); if(!title)return;
-  const description=prompt('广告描述：')||'';
   try{
-    const {item}=await API.post('/api/ad-creatives',{title,description});
-    prepend('tb-ad',adRowHtml(item)); document.getElementById('tb-ad').firstChild.dataset.id=item.id;
-    toast('已加广告创意 · 已入库，多人共享');
-  }catch(e){ toast(e.status===403?'无权操作（仅陈/SEM 可改创意库）':'保存失败：'+e.message); }
+    const {item}=await API.post('/api/ad-creatives',{title:'新创意',description:''});
+    prepend('tb-ad',adRowHtml(item)); const tr=document.getElementById('tb-ad').firstChild; tr.dataset.id=item.id; tr.dataset.ep='/api/ad-creatives';
+    const c=tr.querySelector('[data-field="title"]'); if(c){c.focus();placeCaretEnd(c);}
+    toast('已加一行 · 直接在表格里改');
+  }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
 }
 
 /* ================= SEM 层级展开/收起 ================= */
@@ -1154,13 +1153,13 @@ async function hydrate(){
   try{
     const {items}=await API.get('/api/neg-keywords');
     const tb=document.getElementById('tb-neg'); if(tb)tb.innerHTML='';
-    (items||[]).slice().reverse().forEach(r=>{prepend('tb-neg',negRowHtml(r)); tb.firstChild.dataset.id=r.id;});
+    (items||[]).slice().reverse().forEach(r=>{prepend('tb-neg',negRowHtml(r)); tb.firstChild.dataset.id=r.id; tb.firstChild.dataset.ep='/api/neg-keywords';});
   }catch(e){}
   // 广告创意库：从后端读取
   try{
     const {items}=await API.get('/api/ad-creatives');
     const tb=document.getElementById('tb-ad'); if(tb)tb.innerHTML='';
-    (items||[]).slice().reverse().forEach(r=>{prepend('tb-ad',adRowHtml(r)); tb.firstChild.dataset.id=r.id;});
+    (items||[]).slice().reverse().forEach(r=>{prepend('tb-ad',adRowHtml(r)); tb.firstChild.dataset.id=r.id; tb.firstChild.dataset.ep='/api/ad-creatives';});
   }catch(e){}
   // 排名快照趋势：从后端读取
   try{ const {snapshots}=await API.get('/api/rank-snapshots'); if(snapshots&&snapshots.length>=2)renderRankTrend(snapshots); }catch(e){}
@@ -1409,6 +1408,33 @@ async function refreshBrain(btn){
   if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-brain"></i> 同步 / 更新 AI 记忆';}
 }
 
+/* ===== V7 Excel 化基建：通用单元格保存 + 键盘导航 ===== */
+function placeCaretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
+/* 通用：带 data-field 的可编辑单元格，失焦即保存到该行 data-ep/:id（否词/广告等） */
+document.addEventListener('focusout',e=>{
+  const cell=e.target.closest&&e.target.closest('td[contenteditable][data-field]'); if(!cell)return;
+  const tr=cell.closest('tr'); if(!tr)return; const id=tr.dataset.id, ep=tr.dataset.ep; if(!id||!ep)return;
+  const body={}; body[cell.dataset.field]=cell.innerText.trim();
+  API.patch(ep+'/'+id,body).catch(err=>toast(err.status===403?'无权修改':'保存失败'));
+});
+/* 通用键盘导航：Tab/Shift+Tab 横向；↑↓ 纵向（多行单元格如市场答案不拦截，保留原生换行/移动）*/
+document.addEventListener('keydown',e=>{
+  const cell=e.target.closest&&e.target.closest('td[contenteditable]'); if(!cell)return;
+  const table=cell.closest('table'); if(!table)return;
+  const multiline=cell.classList.contains('mkt-ans');
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const cells=[...table.querySelectorAll('td[contenteditable]')]; const i=cells.indexOf(cell);
+    const next=cells[i+(e.shiftKey?-1:1)]; if(next){ cell.blur(); next.focus(); placeCaretEnd(next); }
+    return;
+  }
+  if(multiline) return; // 多行单元格保留原生 ↑↓/Enter
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    const ci=cell.cellIndex; let row=cell.parentElement[e.key==='ArrowDown'?'nextElementSibling':'previousElementSibling'];
+    while(row){ const c=row.cells&&row.cells[ci]; if(c&&c.isContentEditable){ e.preventDefault(); cell.blur(); c.focus(); placeCaretEnd(c); return; } row=row[e.key==='ArrowDown'?'nextElementSibling':'previousElementSibling']; }
+  }
+});
+
 /* AI 弹框结果 → 一键采纳进 ④整改清单（复用 addFix）*/
 let _lastAi={text:'',dept:'SEO'};
 function adoptAi(){
@@ -1487,12 +1513,11 @@ async function loadKeywords(){
   }catch(e){}
 }
 async function addKeyword(type){
-  const kw=prompt('输入关键词：'); if(!kw)return;
   try{
-    const {item}=await API.post('/api/keywords',{type,keyword:kw,attrs:{}});
-    const tb=document.getElementById(KW_TB[type]); if(tb){ tb.appendChild(kwRow(type,item)); renderSparklines(); }
-    toast('已加关键词 · 已入库，多人共享');
-  }catch(e){ toast(e.status===403?'无权操作（该词库非你负责）':'保存失败：'+e.message); }
+    const {item}=await API.post('/api/keywords',{type,keyword:'新关键词',attrs:{}});
+    const tb=document.getElementById(KW_TB[type]); if(tb){ const tr=kwRow(type,item); tb.appendChild(tr); renderSparklines(); const c=tr.querySelector('.kw-name'); if(c){c.focus();placeCaretEnd(c);} }
+    toast('已加一行 · 直接在表格里改');
+  }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
 }
 async function kwDelete(tr){
   if(!tr||!tr.dataset.id)return; if(!confirm('删除该关键词？'))return;
