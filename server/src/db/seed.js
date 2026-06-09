@@ -2,9 +2,14 @@
 // V7：移除 sales、新增 manager；不再写入任何演示业务数据（清空 mock）。
 // 直接运行：node src/db/seed.js
 import bcrypt from 'bcryptjs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { db } from './connection.js';
 import { migrate } from './migrate.js';
 import { config } from '../config.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const USERS = [
   { username: 'li', name: '李', role: 'seo', pw: config.seedPasswords.li },
@@ -56,6 +61,20 @@ export function seed() {
     );
     KPI.forEach((row, i) => insKpi.run(row[0], row[1], row[2], row[3], row[4], row[5], i));
     console.log(`[seed] 已写入 ${KPI.length} 条 KPI 目标（实际值=0）`);
+  }
+
+  // 市场调研问卷（来自《FERR-市场分析.xlsx》，真实资料、非 mock；表空时写入）
+  if (db.prepare('SELECT COUNT(*) AS c FROM market_research').get().c === 0) {
+    try {
+      const rows = JSON.parse(readFileSync(resolve(__dirname, 'marketSeed.json'), 'utf8'));
+      const ins = db.prepare(
+        'INSERT INTO market_research (section, question, answers, sort_order) VALUES (?,?,?,?)'
+      );
+      rows.forEach((r) => ins.run(r.section, r.question, JSON.stringify(r.answers || {}), r.sort_order ?? 0));
+      console.log(`[seed] 已写入 ${rows.length} 条市场调研问卷`);
+    } catch (e) {
+      console.warn('[seed] 市场调研种子写入失败：', e.message);
+    }
   }
 
   // 市场记忆体单行占位

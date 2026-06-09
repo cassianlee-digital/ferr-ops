@@ -641,42 +641,18 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ 市场分析 ============ -->
       <div class="panel" id="panel-market">
-        <div class="page-head"><div><div class="page-title">市场分析</div><div class="page-sub">客户/市场调研基线 · AI 的所有建议以此为依据</div></div><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:var(--text3)">上次更新 2026-06-01</span><button class="btn-primary"><i class="ti ti-refresh"></i> 更新市场数据</button></div></div>
-        <div class="banner banner-red"><i class="ti ti-anchor" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">AI 依据机制：本页是 AI 给建议的「事实地基」</div><div class="banner-s">系统会把本页最新摘要作为上下文喂给 AI，不每次联网重抓；只有点「更新市场数据」才刷新，避免浪费 token</div></div></div>
-        <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title">🎯 目标客户画像</span></div><div class="mkt-list">
-            <b>是谁：</b>自有品牌公司(有官网/社媒，年采购≥$30万) · 设备/机械生产商 · 工程承包商 · 中间商(服务贸易公司)<br>
-            <b>对接/拍板：</b>对接采购/设计/技术，拍板老板或采购经理<br>
-            <b>特征：</b>100% 来图定制 · 近 100% 要样品 · 约 5% 验厂(看检测设备+品控流程)<br>
-            <b>想被记住为：</b>"大批量零件灵活定制专家"
-          </div></div>
-          <div class="card"><div class="card-head"><span class="card-title">🗺️ 市场毛利地图</span></div><table class="dt"><thead><tr><th>地区</th><th class="ctr">毛利/好做</th><th>最在意</th></tr></thead><tbody>
-            <tr><td>欧洲</td><td class="ctr"><span class="badge b-green">高·好做</span></td><td class="dim" style="font-size:11px">认证·环保·质量·文档</td></tr>
-            <tr><td>北美</td><td class="ctr"><span class="badge b-blue">较好</span></td><td class="dim" style="font-size:11px">认证·质量·MOQ灵活·响应</td></tr>
-            <tr><td>俄罗斯</td><td class="ctr"><span class="badge b-amber">中</span></td><td class="dim" style="font-size:11px">认证·质量·价格·交期(供水/烘焙设备)</td></tr>
-            <tr><td>东南亚/巴西</td><td class="ctr"><span class="badge b-red">薄·难成交</span></td><td class="dim" style="font-size:11px">价格(多为中间商，拿不到目标价)</td></tr>
-          </tbody></table></div>
+        <div class="page-head"><div><div class="page-title">市场分析</div><div class="page-sub">客户/市场调研基线（按受访者整理）· AI 的所有建议以此为「事实地基」</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="brainStatus" class="badge b-gray">记忆状态加载中…</span>
+            <button class="btn-primary" onclick="refreshBrain(this)"><i class="ti ti-brain"></i> 同步 / 更新 AI 记忆</button>
+          </div>
         </div>
-        <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title">🧭 决策旅程 & 流失原因</span></div><div class="mkt-list">
-            <b>旅程：</b>询价 → 报价(含模具费) → 谈模具费 → 寄样 → 样品反复整改 → 测试达标 → 大货。<b>周期 2-3 个月+</b>，关键节点：价格 OK + 样品品质 OK。<br>
-            <b>流失主因：</b>价格无竞争力(尤其 &gt;1 吨大件从未报价成功) · 缺欧洲所需资质 · 客户量太少无法报价 · 最终客户未拍板
-          </div></div>
-          <div class="card"><div class="card-head"><span class="card-title">⚠️ 资质与差异化短板</span></div><div class="mkt-list">
-            <b>现有资质：</b>仅 SMETA 验厂报告 → 欧洲常要的认证难提供，是关键短板<br>
-            <b>当前差异化：</b>主要靠价格(不稳定，大件吃亏)<br>
-            <b>客户索要材料频率：</b><br>
-            <span class="chip" style="border-color:var(--primary);color:var(--primary)">catalog</span><span class="chip">material certificate</span><span class="chip">test report</span><span class="chip">case study</span><span class="chip">factory video</span>
-          </div></div>
-        </div>
-        <div class="card"><div class="card-head"><span class="card-title">🗣️ 客户语言库 · 高价值长尾（内容/SEM 用）</span><span class="card-sub">来自业务真实邮件</span></div>
-          <table class="dt"><thead><tr><th>维度</th><th>客户真实用词</th><th class="ctr">洞察</th></tr></thead><tbody>
-            <tr><td>技术词</td><td>castings · ductile iron casting · investment casting · forged steel fittings · meter box</td><td class="ctr"><span class="badge b-amber">要资质·较难</span></td></tr>
-            <tr><td>大白话</td><td>"this metal part" · "a clamp like this picture" · "see drawing" · "according to drawing" · "attached is the drawing"</td><td class="ctr"><span class="badge b-green">成单更快</span></td></tr>
-            <tr><td>材质牌号</td><td>A536 · GGG40 · ASTM A395 · Q235 · A356 · ADC12</td><td class="ctr"><span class="badge b-blue">高价值长尾</span></td></tr>
-            <tr><td>图纸格式</td><td>STEP · PDF · 手绘</td><td class="ctr"><span class="badge b-gray">FAQ 素材</span></td></tr>
-            <tr><td>常见材质</td><td>球铁/铸铁(镀锌) · 碳钢 · 铝 · 不锈钢</td><td class="ctr"><span class="badge b-gray">能力页覆盖</span></td></tr>
-          </tbody></table>
+        <div class="banner banner-red"><i class="ti ti-anchor" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">AI 记忆体机制（省 token）</div><div class="banner-s">下表是 AI 的常驻背景知识。系统用 MD5 检测资料是否变动：未变 / 未跨月则<strong>绝不重复分析</strong>，直接复用已有记忆；只有改了资料或点上方「同步/更新 AI 记忆」才会重新学习一次。</div></div></div>
+        <div class="card" id="brainSummaryCard" style="margin-bottom:14px;display:none"><div class="card-head"><span class="card-title">🧠 AI 市场记忆摘要（注入所有分析的常驻背景）</span><span class="card-sub" id="brainUpdatedAt"></span></div><div class="ai-render" id="brainSummary" style="font-size:12.5px;line-height:1.7;color:var(--text2)"></div></div>
+        <div class="card"><div class="card-head"><span class="card-title">🗣️ 市场调研问卷（孟雪 / 王璐平 / 燕敏）</span><span class="card-sub">双击单元格可编辑，失焦自动保存；改完点上方「更新 AI 记忆」让 AI 重新学习</span></div>
+          <table class="dt"><thead><tr><th style="width:80px">分类</th><th style="width:240px">问题</th><th>孟雪</th><th>王璐平</th><th>燕敏</th></tr></thead>
+          <tbody id="tb-market"></tbody></table>
+          <div id="market-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无市场调研数据</div>
         </div>
       </div>
 
@@ -1353,6 +1329,60 @@ async function saveIntegration(p){
   catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
 }
 
+/* ===== V7 市场分析（表格化）+ AI 记忆体联动 ===== */
+window._marketById={};
+function mktEsc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function renderMarket(items){
+  const tb=document.getElementById('tb-market'); if(!tb)return; tb.innerHTML=''; window._marketById={};
+  let lastSec=null;
+  items.forEach(it=>{
+    let ans={}; try{ans=JSON.parse(it.answers||'{}');}catch{} it._ans=ans; window._marketById[it.id]=it;
+    if(it.section!==lastSec){ lastSec=it.section; const hr=document.createElement('tr');
+      hr.innerHTML=`<td colspan="5" style="background:var(--bg3);font-weight:800;color:var(--primary)">${mktEsc(it.section)}</td>`; tb.appendChild(hr); }
+    const tr=document.createElement('tr'); tr.dataset.id=it.id;
+    tr.innerHTML=`<td class="dim" style="font-size:11px">${mktEsc(it.section)}</td>`
+      +`<td class="mkt-q editable" contenteditable style="font-size:11.5px">${mktEsc(it.question)}</td>`
+      +['孟雪','王璐平','燕敏'].map(r=>`<td class="mkt-ans editable" contenteditable data-resp="${r}" style="font-size:11.5px;white-space:pre-wrap">${mktEsc(ans[r]||'')}</td>`).join('');
+    tb.appendChild(tr);
+  });
+  const empty=document.getElementById('market-empty'); if(empty)empty.style.display=items.length?'none':'block';
+}
+async function loadMarket(){ try{ const {items}=await API.get('/api/market/research'); renderMarket(items||[]); }catch(e){} }
+/* 市场表格单元格失焦保存 */
+document.addEventListener('focusout',e=>{
+  const cell=e.target.closest&&e.target.closest('#tb-market [contenteditable]'); if(!cell)return;
+  const tr=cell.closest('tr'); const id=tr&&tr.dataset.id; if(!id)return; const it=window._marketById[id]; if(!it)return;
+  const body={};
+  if(cell.classList.contains('mkt-q')) body.question=cell.innerText.trim();
+  else if(cell.classList.contains('mkt-ans')){ it._ans=it._ans||{}; it._ans[cell.dataset.resp]=cell.innerText; body.answers=JSON.stringify(it._ans); }
+  else return;
+  API.patch('/api/market/research/'+id,body).catch(err=>toast(err.status===403?'无权修改':'保存失败'));
+});
+async function loadBrain(){
+  try{
+    const {state,summary}=await API.get('/api/market/brain');
+    const chip=document.getElementById('brainStatus');
+    if(chip){
+      if(!state.hasSummary){chip.className='badge b-gray';chip.textContent='AI 记忆：未学习';}
+      else if(state.needsUpdate){chip.className='badge b-amber';chip.textContent=state.reason==='new_month'?'AI 记忆：已跨月，建议更新':'AI 记忆：资料有变，建议更新';}
+      else {chip.className='badge b-green';chip.textContent='AI 记忆：已是最新';}
+    }
+    const card=document.getElementById('brainSummaryCard');
+    if(card){ if(summary){ card.style.display='block'; document.getElementById('brainSummary').innerHTML=mdToHtml(summary); document.getElementById('brainUpdatedAt').textContent=state.updatedAt?('更新于 '+state.updatedAt):''; } else card.style.display='none'; }
+  }catch(e){}
+}
+async function refreshBrain(btn){
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader"></i> 学习中…';}
+  try{
+    const r=await API.post('/api/market/brain/refresh',{});
+    if(r&&r.updated) toast('AI 已重新学习市场资料，记忆已更新');
+    else if(r&&r.reason==='no_source') toast('暂无市场资料可学习');
+    else toast('记忆已更新');
+    await loadBrain();
+  }catch(e){ toast(e.status===503?'请先配置 ANTHROPIC_API_KEY 再更新记忆':'更新失败：'+((e.body&&e.body.error)||e.message)); }
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-brain"></i> 同步 / 更新 AI 记忆';}
+}
+
 /* AI 弹框结果 → 一键采纳进 ④整改清单（复用 addFix）*/
 let _lastAi={text:'',dept:'SEO'};
 function adoptAi(){
@@ -1517,6 +1547,8 @@ window.addEventListener('load',async()=>{
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目
   await loadIntegrations();    // 设置页 API 接入状态
+  await loadMarket();          // 市场分析问卷表
+  await loadBrain();           // AI 记忆体状态 + 摘要
   refreshInqStats();
 });
 
