@@ -388,8 +388,10 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
           <div class="metric-card"><div class="metric-num" id="inq-rate" style="color:var(--amber)">22%</div><div class="metric-lbl">有效询盘率</div><div class="metric-delta delta-neg">▼目标25%</div></div>
           <div class="metric-card"><div class="metric-num" id="inq-total">55</div><div class="metric-lbl">询盘总量</div><div class="metric-delta delta-pos">▲8%</div></div>
         </div>
-        <div class="sheet-toolbar"><button class="btn-ghost"><i class="ti ti-columns-3"></i> 加列</button><button class="btn-ghost"><i class="ti ti-plus"></i> 加行</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换</span></div>
-        <div class="card"><table class="dt">
+        <div style="display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start">
+          <div>
+          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；右侧地球仪按表格数据实时高亮各国并画青岛飞线</span></div>
+          <div class="card"><table class="dt">
           <thead><tr><th>日期</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">销售确认</th></tr></thead>
           <tbody id="tb-inq">
             <tr><td>06-04</td><td>🇩🇪 德国</td><td class="ctr"><span class="badge b-blue">欧洲</span></td><td class="ctr"><span class="tagselect b-blue" data-kind="channel">SEO自然<i class="ti ti-chevron-down"></i></span></td><td>ductile iron casting / 球铁页</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
@@ -399,7 +401,10 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
             <tr><td>06-02</td><td>🇮🇹 意大利</td><td class="ctr"><span class="badge b-blue">欧洲</span></td><td class="ctr"><span class="tagselect b-purple" data-kind="channel">SEM付费<i class="ti ti-chevron-down"></i></span></td><td>investment casting / 熔模页</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
             <tr><td>06-01</td><td>🇨🇦 加拿大</td><td class="ctr"><span class="badge b-purple">北美</span></td><td class="ctr"><span class="tagselect b-purple" data-kind="channel">SEM付费<i class="ti ti-chevron-down"></i></span></td><td>machining parts / 机加工页</td><td class="ctr"><span class="tagselect b-blue" data-kind="product">机加工<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-blue">B</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
           </tbody>
-        </table><div style="text-align:center;padding-top:12px;font-size:11px;color:var(--text3)">显示 6 / 55 条 · A级 7 · B级 5 · C级 43</div></div>
+        </table></div>
+          </div>
+          <div class="card" style="position:sticky;top:64px"><div class="card-head"><span class="card-title">🌍 全球询盘分布</span><span class="card-sub">青岛 → 各国飞线</span></div><div id="inqGlobe" style="height:380px;width:100%"></div><div id="inqGlobe-empty" style="display:none;text-align:center;color:var(--text3);font-size:12px;padding:10px">暂无询盘数据 · 录入后自动高亮</div></div>
+        </div>
       </div>
 
       <!-- ============ ① 月度计划 ============ -->
@@ -856,6 +861,8 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 <div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#191c24;color:#fff;padding:11px 18px;border-radius:10px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:transform .3s;z-index:100;max-width:90%"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
 <script src="/api.js"></script>
 <script>
 /* ---------- helpers ---------- */
@@ -945,7 +952,8 @@ function toastGo(m,tab){ const t=document.getElementById('toast'); t.innerHTML=m
 function toggleTheme(){ document.body.classList.toggle('dark'); const dk=document.body.classList.contains('dark'); document.getElementById('themeBtn').innerHTML='<i class="ti ti-'+(dk?'sun':'moon')+'"></i>'; }
 
 /* ---------- nav ---------- */
-function go(tab){ const p=document.getElementById('panel-'+tab); if(!p)return; document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); p.classList.add('active'); const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} }
+function go(tab){ const p=document.getElementById('panel-'+tab); if(!p)return; document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); p.classList.add('active'); const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){}
+  if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80); }
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>go(n.dataset.tab)));
 document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} }));
 /* 刷新后恢复上次所在页签 + 子页签（修复刷新回总览的 Bug）*/
@@ -1069,6 +1077,33 @@ async function addContent(){
   }catch(e){ toast(e.status===403?'无权操作':'保存失败'); }
 }
 function contentDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!confirm('删除该资产？'))return; API.del('/api/content-assets/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-content'); if(tb&&!tb.children.length)document.getElementById('content-empty').style.display='block';}).catch(e=>toast('删除失败')); }
+/* ===== 询盘 3D 地球仪（青岛飞线，读表格实时数据）===== */
+const QINGDAO=[120.38,36.07];
+const COUNTRY_GEO={'德国':[10.45,51.17],'美国':[-98.5,39.8],'西班牙':[-3.7,40.4],'印度':[78.96,20.59],'意大利':[12.57,41.87],'加拿大':[-106.3,56.13],'荷兰':[5.29,52.13],'墨西哥':[-102.55,23.63],'新西兰':[174.0,-40.9],'哥伦比亚':[-74.3,4.6],'克罗地亚':[15.2,45.1],'俄罗斯':[105.0,61.5],'瑞典':[18.6,60.1],'巴西':[-51.9,-14.2],'英国':[-1.5,52.4],'法国':[2.2,46.2],'澳大利亚':[133.8,-25.3],'日本':[138.25,36.2],'韩国':[127.8,36.5],'土耳其':[35.2,39.0],'越南':[108.3,14.1],'印度尼西亚':[113.9,-0.8],'印尼':[113.9,-0.8],'波兰':[19.1,51.9],'比利时':[4.5,50.5],'瑞士':[8.2,46.8],'奥地利':[14.6,47.5],'葡萄牙':[-8.2,39.4],'希腊':[21.8,39.1],'阿联酋':[54.0,24.0],'沙特':[45.0,24.0],'埃及':[30.8,26.8],'南非':[24.0,-29.0],'阿根廷':[-64.0,-34.0],'智利':[-71.5,-35.7],'泰国':[101.0,15.0],'马来西亚':[101.97,4.2],'乌克兰':[31.2,49.0],'捷克':[15.5,49.8],'丹麦':[9.5,56.3],'挪威':[8.5,60.5],'芬兰':[26.0,64.0],'爱尔兰':[-8.2,53.4]};
+function countryName(raw){ return String(raw||'').replace(/[\uD800-\uDFFF]/g,'').replace(/[^一-龥A-Za-z]/g,'').trim(); }
+function modeOf(arr){ const m={}; let best='—',bc=0; (arr||[]).forEach(v=>{ if(!v)return; m[v]=(m[v]||0)+1; if(m[v]>bc){bc=m[v];best=v;} }); return best; }
+function aggInqByCountry(){ const map={}; (window._inqCache||[]).forEach(r=>{ const n=countryName(r.country); if(!n||!COUNTRY_GEO[n])return; const g=map[n]||(map[n]={total:0,A:0,B:0,C:0,products:[],channels:[]}); g.total++; g[r.grade]=(g[r.grade]||0)+1; g.products.push(r.product); g.channels.push(r.channel); }); return map; }
+let inqGlobeChart=null;
+function renderGlobe(){
+  const el=document.getElementById('inqGlobe'); if(!el||typeof echarts==='undefined')return;
+  const map=aggInqByCountry(); const names=Object.keys(map);
+  const empty=document.getElementById('inqGlobe-empty'); if(empty)empty.style.display=names.length?'none':'block';
+  const points=names.map(n=>{ const g=map[n]; const valid=(g.A||0)+(g.B||0); return {name:n,value:[COUNTRY_GEO[n][0],COUNTRY_GEO[n][1],g.total],stats:{total:g.total,aRatio:valid?Math.round((g.A||0)/valid*100):0,product:modeOf(g.products),channel:modeOf(g.channels)}}; });
+  const lines=names.map(n=>({coords:[QINGDAO,COUNTRY_GEO[n]]}));
+  try{
+    if(!inqGlobeChart) inqGlobeChart=echarts.init(el);
+    inqGlobeChart.setOption({
+      backgroundColor:'transparent',
+      tooltip:{formatter:p=>{const s=p.data&&p.data.stats; if(!s)return p.name; return `<b>${p.name}</b><br/>询盘总量 ${s.total}<br/>A级占比 ${s.aRatio}%<br/>主询产品 ${s.product}<br/>主要渠道 ${s.channel}`;}},
+      globe:{baseColor:'#13233a',shading:'color',atmosphere:{show:true},light:{ambient:{intensity:.6},main:{intensity:.6}},viewControl:{autoRotate:true,autoRotateAfterStill:3,distance:210}},
+      series:[
+        {type:'lines3D',coordinateSystem:'globe',effect:{show:true,trailWidth:2,trailLength:.25,trailOpacity:1,trailColor:'#ff6f68'},lineStyle:{width:1,color:'#F6423A',opacity:.4},data:lines},
+        {type:'scatter3D',coordinateSystem:'globe',symbolSize:10,itemStyle:{color:'#F6423A'},label:{show:false},data:points}
+      ]
+    });
+    inqGlobeChart.resize();
+  }catch(e){ if(empty){empty.style.display='block';empty.textContent='地球仪组件加载失败（需联网加载 echarts-gl）';} }
+}
 /* GA4 专业看板（第一期：骨架 + 空状态；第二期接 GA4 Data API 填充）*/
 async function loadGa4(){
   let r={connected:false}; try{ r=await API.get('/api/ga4/overview'); }catch(e){}
@@ -1128,6 +1163,7 @@ async function submitInquiry(){
     const {item,stats}=await API.post('/api/inquiries',rec);
     window._inqCache.unshift(item);
     renderInqRow(item,true); refreshInqStats(stats); closeModal('inqMask');
+    if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
   }catch(e){ toast(e.status===403?'无权录入（仅销售可录询盘）':'保存失败：'+e.message); }
 }
