@@ -28,4 +28,9 @@ export async function loopItemsRoutes(app) {
   app.patch('/api/loop-items/:id', seoOrSem, async (request) => ({
     item: repo.update(Number(request.params.id), request.body || {}),
   }));
+
+  app.delete('/api/loop-items/:id', seoOrSem, async (request) => {
+    repo.remove(Number(request.params.id));
+    return { ok: true };
+  });
 }

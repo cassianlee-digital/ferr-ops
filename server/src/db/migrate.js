@@ -8,6 +8,7 @@ const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
   'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
+  'content_assets',
 ];
 
 const SCHEMA = `
@@ -164,6 +165,20 @@ CREATE TABLE IF NOT EXISTS market_research (
   question   TEXT,
   answers    TEXT,         -- JSON：各受访者回答
   sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- V7：内容资产
+CREATE TABLE IF NOT EXISTS content_assets (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT,
+  problem    TEXT,
+  type       TEXT,
+  priority   TEXT,
+  owner      TEXT,
+  status     TEXT,
+  add_date   TEXT,
+  note       TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表）

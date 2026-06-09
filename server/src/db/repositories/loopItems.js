@@ -29,3 +29,7 @@ export function update(id, fields) {
 export function get(id) {
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(id);
 }
+
+export function remove(id) {
+  db.prepare('DELETE FROM loop_items WHERE id = ?').run(id);
+}
