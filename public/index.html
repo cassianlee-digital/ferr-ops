@@ -17,7 +17,9 @@
   --blue:#2f72e8;--blue-soft:rgba(47,114,232,.12);
   --purple:#7b54e0;--purple-soft:rgba(123,84,224,.12);
   --teal:#0b9d8f;--teal-soft:rgba(11,157,143,.12);
-  --sh:0 1px 3px rgba(20,23,40,.05),0 1px 2px rgba(20,23,40,.03);
+  --sh:0 2px 6px rgba(20,23,40,.06),0 8px 24px rgba(20,23,40,.05);
+  --sh-lift:0 6px 16px rgba(20,23,40,.10),0 16px 40px rgba(20,23,40,.08);
+  --glass:rgba(255,255,255,.72);
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
 }
 body.dark{
@@ -30,7 +32,9 @@ body.dark{
   --blue:#4f8bff;--blue-soft:rgba(79,139,255,.16);
   --purple:#9a78f0;--purple-soft:rgba(154,120,240,.16);
   --teal:#1db3a3;--teal-soft:rgba(29,179,163,.16);
-  --sh:0 1px 3px rgba(0,0,0,.4);
+  --sh:0 2px 6px rgba(0,0,0,.35),0 10px 28px rgba(0,0,0,.4);
+  --sh-lift:0 8px 22px rgba(0,0,0,.5),0 18px 44px rgba(0,0,0,.45);
+  --glass:rgba(23,26,33,.72);
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:13px;transition:background .2s,color .2s}
 .wrap{display:flex;min-height:100vh}
@@ -48,7 +52,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .nav-item .dot{width:6px;height:6px;border-radius:50%;margin-left:auto}
 .dot-green{background:var(--green)}.dot-amber{background:var(--amber)}.dot-red{background:var(--primary)}.dot-gray{background:var(--text3)}
 .main{flex:1;min-width:0;overflow-y:auto}
-.topbar{padding:11px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg2);z-index:6}
+.topbar{padding:11px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;background:var(--glass);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);z-index:6}
 .kpi-pill{display:flex;align-items:center;gap:6px;padding:6px 13px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;font-size:11.5px;box-shadow:var(--sh)}
 .kpi-label{color:var(--text2)}.kpi-val{font-weight:800}.kpi-delta{font-size:10.5px;font-weight:800}
 .delta-neg{color:var(--primary)}.delta-pos{color:var(--green)}
@@ -65,7 +69,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .trange:hover{border-color:var(--primary);color:var(--primary)}
 .trange.active{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
 
-.content{padding:20px 22px;max-width:1320px}
+.content{padding:22px 28px;max-width:none;width:100%}
 .panel{display:none;animation:fade .25s}.panel.active{display:block}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
@@ -74,7 +78,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
 .grid32{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--sh);transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:var(--sh-lift)}
 .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;gap:8px}
 .card-title{font-size:13px;font-weight:800}
 .card-sub{font-size:11px;color:var(--text3)}
@@ -937,14 +942,35 @@ function toastGo(m,tab){ const t=document.getElementById('toast'); t.innerHTML=m
 function toggleTheme(){ document.body.classList.toggle('dark'); const dk=document.body.classList.contains('dark'); document.getElementById('themeBtn').innerHTML='<i class="ti ti-'+(dk?'sun':'moon')+'"></i>'; }
 
 /* ---------- nav ---------- */
-function go(tab){ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); document.getElementById('panel-'+tab).classList.add('active'); const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); }
+function go(tab){ const p=document.getElementById('panel-'+tab); if(!p)return; document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); p.classList.add('active'); const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} }
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>go(n.dataset.tab)));
-document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); }));
+document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} }));
+/* 刷新后恢复上次所在页签 + 子页签（修复刷新回总览的 Bug）*/
+function restoreRoute(){
+  let tab='dashboard'; try{ tab=localStorage.getItem('ferr:tab')||'dashboard'; }catch(e){}
+  if(!document.getElementById('panel-'+tab))tab='dashboard';
+  go(tab);
+  let sub=null; try{ sub=localStorage.getItem('ferr:sub:'+tab); }catch(e){}
+  if(sub){ const panel=document.getElementById('panel-'+tab); const st=panel&&panel.querySelector('.subtab[data-sub="'+sub+'"]'); if(st)st.click(); }
+}
 document.querySelectorAll('.cat-tabs').forEach(b=>b.addEventListener('click',e=>{ const t=e.target.closest('.cat-tab'); if(t&&!t.classList.contains('add')){ b.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); }}));
 
 /* ---------- per-page inline time filter ---------- */
 const RANGES=['昨天','上周','上半月','近1月','近3月','近半年','近1年','自定义'];
-document.querySelectorAll('[data-time]').forEach(bar=>{ bar.innerHTML='<span class="tlabel"><i class="ti ti-calendar-stats"></i> 时间</span>'+RANGES.map((r,i)=>`<button class="trange${i===3?' active':''}">${r}</button>`).join(''); bar.addEventListener('click',e=>{ if(e.target.classList.contains('trange')){ bar.querySelectorAll('.trange').forEach(x=>x.classList.remove('active')); e.target.classList.add('active'); const rg=e.target.textContent; if(bar.closest('#panel-data')){ updateSeoChart(rg); toast('已切换时间范围：'+rg+'（趋势图已按区间显示）'); } }}); });
+window._timeRange='近1月';
+document.querySelectorAll('[data-time]').forEach(bar=>{
+  bar.innerHTML='<span class="tlabel"><i class="ti ti-calendar-stats"></i> 时间</span>'+RANGES.map((r,i)=>`<button type="button" class="trange${i===3?' active':''}">${r}</button>`).join('');
+  bar.addEventListener('click',e=>{
+    const btn=e.target.closest('.trange'); if(!btn)return;
+    // 所有时间条联动同一选区
+    document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent===btn.textContent));
+    const rg=btn.textContent.trim(); window._timeRange=rg;
+    // 广播：任何图表/表格可监听 timerange 自行按区间重算
+    document.dispatchEvent(new CustomEvent('timerange',{detail:{range:rg}}));
+    if(seoChart) updateSeoChart(rg);
+    toast('时间范围：'+rg);
+  });
+});
 
 /* ================= CLOSED-LOOP ENGINE ================= */
 const _2=n=>String(n).padStart(2,'0');
@@ -1550,6 +1576,7 @@ window.addEventListener('load',async()=>{
   await loadMarket();          // 市场分析问卷表
   await loadBrain();           // AI 记忆体状态 + 摘要
   refreshInqStats();
+  restoreRoute();              // 刷新后回到上次页签（修复回总览 Bug）
 });
 
 /* 顶栏显示当前用户 + 登出；按角色做前端控件提示（后端才是权威校验）*/
