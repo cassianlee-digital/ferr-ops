@@ -271,20 +271,20 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
     <div class="nav-section"><div class="nav-label">考核</div>
       <div class="nav-item" data-tab="kpi"><i class="ti ti-award"></i> KPI 考核<span class="dot dot-amber"></span></div>
       <div class="nav-item" data-tab="inquiry"><i class="ti ti-mail-star"></i> 询盘评级<span class="dot dot-green"></span></div></div>
+    <div class="nav-section"><div class="nav-label">任务 / 数据源</div>
+      <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div>
+      <div class="nav-item" data-tab="tasks"><i class="ti ti-checklist"></i> 任务看板<span class="dot dot-red"></span></div>
+      <div class="nav-item" data-tab="ga4"><i class="ti ti-users"></i> GA4 流量<span class="dot dot-green"></span></div></div>
     <div class="nav-section"><div class="nav-label">运营闭环</div>
-      <div class="nav-item" data-tab="plan"><i class="ti ti-clipboard-list"></i> ① 月度计划</div>
-      <div class="nav-item" data-tab="test"><i class="ti ti-flask"></i> ② 测试登记</div>
-      <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> ③ 数据看板</div>
-      <div class="nav-item" data-tab="fix"><i class="ti ti-tool"></i> ④ 整改清单</div>
-      <div class="nav-item" data-tab="review"><i class="ti ti-report"></i> ⑤ 复盘周报</div></div>
+      <div class="nav-item" data-tab="plan"><i class="ti ti-clipboard-list"></i> 月度计划</div>
+      <div class="nav-item" data-tab="test"><i class="ti ti-flask"></i> 测试登记</div>
+      <div class="nav-item" data-tab="fix"><i class="ti ti-tool"></i> 整改清单</div>
+      <div class="nav-item" data-tab="review"><i class="ti ti-report"></i> 复盘周报</div></div>
     <div class="nav-section"><div class="nav-label">资产库</div>
       <div class="nav-item" data-tab="keywords"><i class="ti ti-key"></i> 关键词库</div>
       <div class="nav-item" data-tab="content"><i class="ti ti-file-stack"></i> 内容资产</div>
       <div class="nav-item" data-tab="market"><i class="ti ti-map-search"></i> 市场分析</div>
       <div class="nav-item" data-tab="deposit"><i class="ti ti-database-heart"></i> 沉淀表</div></div>
-    <div class="nav-section"><div class="nav-label">任务 / 数据源</div>
-      <div class="nav-item" data-tab="tasks"><i class="ti ti-checklist"></i> 任务看板<span class="dot dot-red"></span></div>
-      <div class="nav-item" data-tab="ga4"><i class="ti ti-users"></i> GA4 流量<span class="dot dot-green"></span></div></div>
     <div class="nav-section"><div class="nav-label">系统</div>
       <div class="nav-item" data-tab="settings"><i class="ti ti-settings"></i> 设置<span class="dot dot-gray"></span></div></div>
   </div>
@@ -387,8 +387,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ ① 月度计划 ============ -->
       <div class="panel" id="panel-plan">
-        <div class="page-head"><div><div class="page-title">① 月度计划</div><div class="page-sub">SEO / SEM 各自记录 · 表格可编辑</div></div></div>
-        <div class="loopbar" data-step="1"></div>
+        <div class="page-head"><div><div class="page-title">月度计划</div><div class="page-sub">SEO / SEM 各自记录 · 表格可编辑</div></div></div>
         <div class="subtabs"><div class="subtab active" data-sub="plan-seo">SEO · 李</div><div class="subtab" data-sub="plan-sem">SEM · 陈</div></div>
         <div class="subpanel active" id="sub-plan-seo">
           <div class="card" style="margin-bottom:14px"><table class="dt">
@@ -414,8 +413,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ ② 测试登记 ============ -->
       <div class="panel" id="panel-test">
-        <div class="page-head"><div><div class="page-title">② 测试登记</div><div class="page-sub">SEO / SEM 各自登记 · 一次只改一个变量</div></div></div>
-        <div class="loopbar" data-step="2"></div>
+        <div class="page-head"><div><div class="page-title">测试登记</div><div class="page-sub">SEO / SEM 各自登记 · 一次只改一个变量</div></div></div>
         <div class="subtabs"><div class="subtab active" data-sub="test-seo">SEO · 李</div><div class="subtab" data-sub="test-sem">SEM · 陈</div></div>
         <div class="subpanel active" id="sub-test-seo">
           <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th class="num">起止</th><th class="ctr">结论</th></tr></thead><tbody id="tb-test-seo">
@@ -438,8 +436,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ ③ 数据看板 ============ -->
       <div class="panel" id="panel-data">
-        <div class="page-head"><div><div class="page-title">③ 数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div><button class="btn-ghost"><i class="ti ti-refresh"></i> 同步</button></div>
-        <div class="loopbar" data-step="3"></div>
+        <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
         <div class="timebar-inline" data-time></div>
         <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div></div>
 
@@ -537,8 +534,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ ④ 整改清单 ============ -->
       <div class="panel" id="panel-fix">
-        <div class="page-head"><div><div class="page-title">④ 整改清单</div><div class="page-sub">每条须有依据数据 · 数据看板「采纳」会自动汇入这里</div></div><button class="btn-ai" onclick="ai('按SOP整改动作库生成本周候选整改清单并排优先级')"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div>
-        <div class="loopbar" data-step="4"></div>
+        <div class="page-head"><div><div class="page-title">整改清单</div><div class="page-sub">每条须有依据数据 · 数据看板「采纳」会自动汇入这里</div></div><button class="btn-ai" onclick="ai('按SOP整改动作库生成本周候选整改清单并排优先级')"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div>
         <div class="timebar-inline" data-time></div>
         <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>问题 / 机会</th><th class="ctr">所属</th><th>依据数据</th><th>整改动作</th><th class="ctr">负责人</th><th class="num">截止</th><th class="ctr">结果</th></tr></thead><tbody id="tb-fix">
           <tr><td>东南亚来词带来大量小单</td><td class="ctr"><span class="tagselect b-purple" data-kind="dept">SEM<i class="ti ti-chevron-down"></i></span></td><td class="dim" style="font-size:11px">该地区有效询盘率&lt;5%</td><td>加地区负向+收紧定向</td><td class="ctr"><span class="tagselect b-purple" data-kind="owner">陈<i class="ti ti-chevron-down"></i></span></td><td class="num">06-07</td><td class="ctr"><span class="tagselect b-green" data-kind="result">已改<i class="ti ti-chevron-down"></i></span></td></tr>
@@ -552,8 +548,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ ⑤ 复盘周报 ============ -->
       <div class="panel" id="panel-review">
-        <div class="page-head"><div><div class="page-title">⑤ 复盘周报</div><div class="page-sub">以周为单位 · 两个模块同页展示、各自标渠道</div></div><div style="display:flex;gap:8px"><button class="btn-ghost"><i class="ti ti-chevron-left"></i> 第 22 周</button><button class="btn-primary"><i class="ti ti-device-floppy"></i> 保存</button></div></div>
-        <div class="loopbar" data-step="5"></div>
+        <div class="page-head"><div><div class="page-title">复盘周报</div><div class="page-sub">以周为单位 · 两个模块同页展示、各自标渠道</div></div><div style="display:flex;gap:8px"><button class="btn-ghost"><i class="ti ti-chevron-left"></i> 第 22 周</button><button class="btn-primary"><i class="ti ti-device-floppy"></i> 保存</button></div></div>
         <!-- SEO 模块 -->
         <div class="card" style="margin-bottom:14px;border-left:3px solid var(--blue)"><div class="card-head"><span class="card-title" style="color:var(--blue)"><i class="ti ti-world-search"></i> SEO · 李</span><span class="badge b-blue">渠道：SEO 自然</span></div>
           <div class="review-grid">
