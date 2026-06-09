@@ -722,18 +722,24 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ GA4 ============ -->
       <div class="panel" id="panel-ga4">
-        <div class="page-head"><div><div class="page-title">GA4 流量</div><div class="page-sub">AI 以周为单位给优化建议 · 缓存不重复跑</div></div></div>
+        <div class="page-head"><div><div class="page-title">GA4 流量</div><div class="page-sub">专业 GA4 看板 · 接入 GA4 API 后自动填充</div></div><span id="ga4-status" class="badge b-gray">未接入</span></div>
         <div class="timebar-inline" data-time></div>
-        <div class="ai-box green"><div class="ai-header"><span class="ai-title" style="color:var(--green)"><i class="ti ti-sparkles"></i> AI 周报 · 6月5日</span><div class="report-meta" style="margin-left:auto"><span class="cache-tag">已缓存 · 本周 1/1</span><span>下次刷新 2 天后</span><button class="btn-ghost" onclick="ai('重新生成本周GA4周报')">重新生成</button></div></div>
-          <div style="font-size:12.5px;line-height:1.7;color:var(--text2);margin-bottom:6px">本周会话 9,420(↑6%)、落地页转化率 0.58%。漏斗最大流失在"浏览能力页→提交询盘"。</div>
-          <div class="ai-item"><i class="ti ti-click" style="color:var(--green)"></i><div class="body"><strong>建议：</strong>能力页底部加"按图询价"浮动 CTA + Catalog 下载钩子。</div></div>
+        <div id="ga4-hint" class="banner banner-red" style="display:none"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">暂无数据，请前往「设置 · API 接入」填入 GA4 授权</div><div class="banner-s">第一期为看板骨架与空状态；第二期接 GA4 Data API 后，下列模块自动填充实时数据。</div></div></div>
+        <div class="metric-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="metric-card"><div class="metric-num" id="ga4-users" style="font-size:22px">—</div><div class="metric-lbl">活跃用户</div></div>
+          <div class="metric-card"><div class="metric-num" id="ga4-sessions" style="font-size:22px">—</div><div class="metric-lbl">会话</div></div>
+          <div class="metric-card"><div class="metric-num" id="ga4-views" style="font-size:22px">—</div><div class="metric-lbl">浏览量</div></div>
+          <div class="metric-card"><div class="metric-num" id="ga4-bounce" style="font-size:22px">—</div><div class="metric-lbl">跳出率</div></div>
+          <div class="metric-card"><div class="metric-num" id="ga4-dur" style="font-size:22px">—</div><div class="metric-lbl">平均会话时长</div></div>
         </div>
-        <div class="card"><div class="card-head"><span class="card-title">询盘转化漏斗</span></div><div style="padding:6px 0">
-          <div class="funnel-step"><div style="flex:1"><div class="lbl">落地页访问</div><div class="funnel-bar" style="background:var(--blue);width:100%">9,420</div></div><div class="funnel-pct">100%</div></div>
-          <div class="funnel-step"><div style="flex:1"><div class="lbl">浏览能力 / 产品页</div><div class="funnel-bar" style="background:var(--purple);width:64%">6,030</div></div><div class="funnel-pct">64%</div></div>
-          <div class="funnel-step"><div style="flex:1"><div class="lbl">提交询盘表单</div><div class="funnel-bar" style="background:var(--amber);width:24%">55</div></div><div class="funnel-pct">询盘</div></div>
-          <div class="funnel-step"><div style="flex:1"><div class="lbl">销售确认有效询盘</div><div class="funnel-bar" style="background:var(--green);width:16%">12</div></div><div class="funnel-pct" style="color:var(--green)">有效</div></div>
-        </div></div>
+        <div class="grid2">
+          <div class="card"><div class="card-head"><span class="card-title">流量来源 / 媒介</span></div><table class="dt"><thead><tr><th>来源/媒介</th><th class="num">会话</th><th class="num">用户</th></tr></thead><tbody id="ga4-sources"></tbody></table><div class="ga4-empty" style="text-align:center;padding:18px;color:var(--text3);font-size:12px">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">国家 / 地区分布</span></div><table class="dt"><thead><tr><th>国家</th><th class="num">会话</th><th class="num">用户</th></tr></thead><tbody id="ga4-countries"></tbody></table><div class="ga4-empty" style="text-align:center;padding:18px;color:var(--text3);font-size:12px">暂无数据</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-head"><span class="card-title">设备占比</span></div><div class="chart-wrap" style="height:150px"><canvas id="ga4Devices"></canvas></div><div class="ga4-empty" style="text-align:center;padding:18px;color:var(--text3);font-size:12px">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">热门入口页面</span></div><table class="dt"><thead><tr><th>入口页面</th><th class="num">会话</th><th class="num">转化</th></tr></thead><tbody id="ga4-landing"></tbody></table><div class="ga4-empty" style="text-align:center;padding:18px;color:var(--text3);font-size:12px">暂无数据</div></div>
+        </div>
       </div>
 
       <!-- ============ 设置 ============ -->
@@ -1063,6 +1069,19 @@ async function addContent(){
   }catch(e){ toast(e.status===403?'无权操作':'保存失败'); }
 }
 function contentDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!confirm('删除该资产？'))return; API.del('/api/content-assets/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-content'); if(tb&&!tb.children.length)document.getElementById('content-empty').style.display='block';}).catch(e=>toast('删除失败')); }
+/* GA4 专业看板（第一期：骨架 + 空状态；第二期接 GA4 Data API 填充）*/
+async function loadGa4(){
+  let r={connected:false}; try{ r=await API.get('/api/ga4/overview'); }catch(e){}
+  const st=document.getElementById('ga4-status'); if(st){ st.className='badge '+(r.connected?'b-green':'b-gray'); st.textContent=r.connected?'已接入':'未接入'; }
+  const hint=document.getElementById('ga4-hint'); if(hint)hint.style.display=r.connected?'none':'flex';
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=(v==null?'—':v);};
+  const m=r.metrics;
+  if(m){ set('ga4-users',m.activeUsers); set('ga4-sessions',m.sessions); set('ga4-views',m.pageViews); set('ga4-bounce',m.bounceRate!=null?m.bounceRate+'%':'—'); set('ga4-dur',m.avgDuration); }
+  const fill=(tbId,rows,cols)=>{ const tb=document.getElementById(tbId); if(!tb)return; if(rows&&rows.length){ tb.innerHTML=rows.map(x=>'<tr>'+cols.map(c=>`<td class="${c.cls||''}">${x[c.k]??''}</td>`).join('')+'</tr>').join(''); const card=tb.closest('.card'); const e=card&&card.querySelector('.ga4-empty'); if(e)e.style.display='none'; } };
+  fill('ga4-sources',r.sources,[{k:'source'},{k:'sessions',cls:'num'},{k:'users',cls:'num'}]);
+  fill('ga4-countries',r.countries,[{k:'country'},{k:'sessions',cls:'num'},{k:'users',cls:'num'}]);
+  fill('ga4-landing',r.landingPages,[{k:'page'},{k:'sessions',cls:'num'},{k:'conversions',cls:'num'}]);
+}
 
 /* AI 三连: 沉淀→沉淀表 / 采纳→整改清单+沉淀表 / 测试→测试登记 */
 function aiAct(btn,kind){
@@ -1733,6 +1752,7 @@ window.addEventListener('load',async()=>{
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目 + 沉淀表
   await loadContent();         // 内容资产
+  await loadGa4();             // GA4 看板（骨架/空状态）
   await loadIntegrations();    // 设置页 API 接入状态
   await loadMarket();          // 市场分析问卷表
   await loadBrain();           // AI 记忆体状态 + 摘要
