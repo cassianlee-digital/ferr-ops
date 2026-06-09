@@ -7,7 +7,7 @@ const SCHEMA_VERSION = '7';
 const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
-  'integrations', 'market_brain', 'market_research',
+  'integrations', 'market_brain', 'market_research', 'monthly_snapshots',
 ];
 
 const SCHEMA = `
@@ -164,6 +164,15 @@ CREATE TABLE IF NOT EXISTS market_research (
   question   TEXT,
   answers    TEXT,         -- JSON：各受访者回答
   sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- V7：月度快照（用于总览环比对比）
+CREATE TABLE IF NOT EXISTS monthly_snapshots (
+  month         TEXT PRIMARY KEY,   -- YYYY-MM
+  company_score REAL,
+  a_ratio       REAL,
+  valid_rate    REAL,
+  updated_at    TEXT
 );
 `;
 
