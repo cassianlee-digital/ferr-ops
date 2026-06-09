@@ -14,6 +14,9 @@ backup/
 *.sqlite-*
 *.db
 
+# deploy bundles (may contain .env)
+*.tar.gz
+
 # logs / os
 *.log
 npm-debug.log*
