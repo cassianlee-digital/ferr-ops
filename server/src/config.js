@@ -41,9 +41,12 @@ export const config = {
   seedPasswords: {
     li: process.env.SEED_LI_PASSWORD || '',
     chen: process.env.SEED_CHEN_PASSWORD || '',
-    sales: process.env.SEED_SALES_PASSWORD || '',
+    manager: process.env.SEED_MANAGER_PASSWORD || '',
     boss: process.env.SEED_BOSS_PASSWORD || '',
   },
+
+  // 设置页密钥 AES 加密用的主密钥（默认从 JWT_SECRET 派生，无需额外配置）
+  settingsSecret: process.env.SETTINGS_SECRET || process.env.JWT_SECRET || 'dev-settings-key',
 
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',

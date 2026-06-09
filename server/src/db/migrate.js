@@ -1,6 +1,14 @@
-// 建表迁移。幂等（IF NOT EXISTS），可重复执行。
+// 建表迁移。带 schema 版本：升级到 V7 时一次性清库重建（符合「清空所有数据，从0录入」）。
 // 直接运行：node src/db/migrate.js
 import { db } from './connection.js';
+
+const SCHEMA_VERSION = '7';
+
+const ALL_TABLES = [
+  'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
+  'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
+  'integrations', 'market_brain', 'market_research',
+];
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -8,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   username      TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   name          TEXT NOT NULL,
-  role          TEXT NOT NULL CHECK (role IN ('seo','sem','sales','boss')),
+  role          TEXT NOT NULL CHECK (role IN ('seo','sem','manager','boss')),
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -51,9 +59,9 @@ CREATE TABLE IF NOT EXISTS sem_weeks (
   conversions   INTEGER,
   roas          REAL,
   quality_score REAL,
-  cpc           REAL,   -- 后端算后存
-  ctr           REAL,   -- 后端算后存
-  cost_per_conv REAL,   -- 后端算后存
+  cpc           REAL,
+  ctr           REAL,
+  cost_per_conv REAL,
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_sem_weeks_date ON sem_weeks(week_date);
@@ -96,7 +104,7 @@ CREATE TABLE IF NOT EXISTS kpi_targets (
   weight     REAL NOT NULL,
   target     REAL NOT NULL,
   actual     REAL NOT NULL,
-  mode       TEXT NOT NULL CHECK (mode IN ('r','i')),  -- r 正向越大越好 / i 反向越小越好
+  mode       TEXT NOT NULL CHECK (mode IN ('r','i')),
   unit       TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
@@ -105,7 +113,7 @@ CREATE TABLE IF NOT EXISTS keywords (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   type      TEXT NOT NULL CHECK (type IN ('seo','sem','high','customer')),
   keyword   TEXT NOT NULL,
-  attrs     TEXT,        -- JSON: 等级/竞争/排名/落地页等
+  attrs     TEXT,
   category  TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -114,12 +122,12 @@ CREATE INDEX IF NOT EXISTS idx_keywords_type ON keywords(type);
 CREATE TABLE IF NOT EXISTS fixes (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   title      TEXT NOT NULL,
-  dept       TEXT,        -- SEO / SEM
+  dept       TEXT,
   detail     TEXT,
   owner      TEXT,
   due_date   TEXT,
   status     TEXT,
-  source     TEXT,        -- 手动 / AI诊断 / 复盘
+  source     TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -132,14 +140,56 @@ CREATE TABLE IF NOT EXISTS loop_items (
   status     TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- V7：第三方集成密钥（AES 加密存储）
+CREATE TABLE IF NOT EXISTS integrations (
+  provider   TEXT PRIMARY KEY CHECK (provider IN ('gsc','ga4','ads')),
+  secret_enc TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- V7：市场 AI 记忆体（单行，id=1）
+CREATE TABLE IF NOT EXISTS market_brain (
+  id                 INTEGER PRIMARY KEY CHECK (id = 1),
+  last_analyzed_hash TEXT,
+  cached_summary     TEXT,
+  analyzed_month     TEXT,
+  updated_at         TEXT
+);
+
+-- V7：市场分析问卷数据（按 xlsx 表格化；P2 填充）
+CREATE TABLE IF NOT EXISTS market_research (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  section    TEXT,
+  question   TEXT,
+  answers    TEXT,         -- JSON：各受访者回答
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
 `;
 
 export function migrate() {
+  db.exec(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);`);
+  const row = db.prepare(`SELECT value FROM meta WHERE key='schema_version'`).get();
+  const current = row?.value;
+
+  if (current !== SCHEMA_VERSION) {
+    // 升级到 V7：一次性清库重建（符合「清空所有数据」决策）。仅在版本不匹配时执行一次。
+    db.pragma('foreign_keys = OFF');
+    const drop = db.transaction(() => {
+      for (const t of ALL_TABLES) db.exec(`DROP TABLE IF EXISTS ${t};`);
+    });
+    drop();
+    db.pragma('foreign_keys = ON');
+  }
+
   db.exec(SCHEMA);
+  db.prepare(
+    `INSERT INTO meta (key,value) VALUES ('schema_version',?)
+     ON CONFLICT(key) DO UPDATE SET value=excluded.value`
+  ).run(SCHEMA_VERSION);
 }
 
-// 作为脚本直接运行时执行
 if (import.meta.url === `file://${process.argv[1]}`) {
   migrate();
-  console.log('[migrate] schema 已就绪');
+  console.log('[migrate] schema V' + SCHEMA_VERSION + ' 已就绪');
 }

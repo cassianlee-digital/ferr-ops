@@ -3,16 +3,27 @@
 import { requireAuth } from '../auth/middleware.js';
 import { buildContext } from '../services/aiContext.js';
 import { callAnthropic } from '../services/anthropic.js';
+import { getSummary as getBrain } from '../services/marketBrain.js';
 
 const SYS_PREFIX =
   '你是费尔瑞 FERR(外贸来图定制铸造/机加工厂)的运营分析助手。' +
-  '回答要简短、可执行、按优先级，用中文，能落到具体动作。下面是当前后台的真实数据上下文：\n';
+  '回答要简短、可执行、按优先级，用中文，能落到具体动作。';
+
+// 把市场记忆体（MARKET_BRAIN_SUMMARY）强制注入所有日常 AI 调用的 system，
+// AI「睁眼自带」行业背景，无需每次重复打包市场资料（节约 token）。
+function buildSystem() {
+  const brain = getBrain();
+  const brainBlock = brain
+    ? `\n\n[市场记忆 · 常驻背景知识]\n${brain}`
+    : '';
+  return SYS_PREFIX + brainBlock + '\n\n[当前后台真实数据上下文]\n' + buildContext();
+}
 
 export async function aiRoutes(app) {
   app.post('/api/ai', { preHandler: requireAuth }, async (request, reply) => {
     const prompt = String(request.body?.prompt || '').slice(0, 4000);
     if (!prompt) return reply.code(400).send({ error: 'prompt_required' });
-    const system = SYS_PREFIX + buildContext();
+    const system = buildSystem();
     try {
       const text = await callAnthropic(system, prompt);
       return { text };

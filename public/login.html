@@ -27,12 +27,12 @@ button:disabled{opacity:.6;cursor:default}
 <form class="card" id="loginForm">
   <div class="logo"><div class="logo-icon">F</div><div class="logo-text">费尔瑞 FERR<small>运营指挥中心 · 登录</small></div></div>
   <label>账号</label>
-  <input id="username" autocomplete="username" placeholder="li / chen / sales / boss" autofocus>
+  <input id="username" autocomplete="username" placeholder="li / chen / manager / boss" autofocus>
   <label>密码</label>
   <input id="password" type="password" autocomplete="current-password" placeholder="••••••••">
   <button type="submit" id="btn">登录</button>
   <div class="err" id="err"></div>
-  <div class="hint">李=SEO · 陈=SEM · 销售=仅录询盘 · 老板=只读(可改KPI目标)</div>
+  <div class="hint">李=SEO · 陈=SEM · 主管=Manager · 老板=Boss。Boss/主管全权；李/陈除KPI目标外全权。</div>
 </form>
 <script>
 const form = document.getElementById('loginForm');

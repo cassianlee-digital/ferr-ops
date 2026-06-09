@@ -25,12 +25,17 @@ export function roles(...allowed) {
 // 登录态可读（任何已登录角色都能读）
 export const readAuth = { preHandler: requireAuth };
 
-// 写权限矩阵的便捷封装
-export const onlySeo = { preHandler: roles('seo') };           // 李
-export const onlySem = { preHandler: roles('sem') };           // 陈
-export const seoOrSem = { preHandler: roles('seo', 'sem') };   // 李或陈
-export const onlySales = { preHandler: roles('sales') };       // 销售
-export const onlyBoss = { preHandler: roles('boss') };         // 老板（KPI 目标）
+// V7 权限矩阵（角色：seo 李 / sem 陈 / manager / boss；已移除 sales）
+//  - 业务编辑（询盘/周报/否词/创意/排名/关键词/整改/闭环/市场/资产…）：四个角色都可
+//  - KPI 目标修改：仅 manager / boss
+export const editor = { preHandler: roles('seo', 'sem', 'manager', 'boss') }; // 任意登录角色可编辑业务数据
+export const onlyManagerBoss = { preHandler: roles('manager', 'boss') };      // KPI 目标 / 系统设置
+
+// 兼容旧引用（统一指向 editor / onlyManagerBoss），避免散落改动遗漏
+export const onlySeo = editor;
+export const onlySem = editor;
+export const seoOrSem = editor;
+export const onlyBoss = onlyManagerBoss;
 
 export const cookieOpts = {
   httpOnly: true,

@@ -9,14 +9,16 @@
 - 反代/HTTPS：Caddy（自动证书）
 - 容器化：Docker + docker-compose
 
-## 角色
+## 角色（V7）
 
 | 账号 | 角色 | 权限 |
 |---|---|---|
-| li | seo | SEO 相关模块可编辑，其余只读 |
-| chen | sem | SEM 相关模块可编辑，其余只读 |
-| sales | sales | 仅可录入询盘，其余只读 |
-| boss | boss | 只读；唯一可编辑 KPI 考核目标 |
+| li | seo | 除「KPI 目标修改」外全部可编辑（含录询盘、无差别编辑所有关键词库） |
+| chen | sem | 除「KPI 目标修改」外全部可编辑 |
+| manager | manager | 全部可读可写（含 KPI 目标） |
+| boss | boss | 全部可读可写（含 KPI 目标） |
+
+> V7 已移除 sales 角色、新增 manager。**升级到 V7 时数据库会一次性清库重建**（按需求「清空所有 mock 数据，从 0 录入」）。务必在 `.env` 配好 `SEED_MANAGER_PASSWORD`，否则 manager 账号不会创建。
 
 ---
 
@@ -38,7 +40,7 @@ cp .env.example .env
 | 变量 | 说明 |
 |---|---|
 | `JWT_SECRET` | 随机长串，生成：`openssl rand -hex 32` |
-| `SEED_LI_PASSWORD` 等 4 个 | 四个账号的初始口令 |
+| `SEED_LI_PASSWORD` / `SEED_CHEN_PASSWORD` / `SEED_MANAGER_PASSWORD` / `SEED_BOSS_PASSWORD` | 四个账号初始口令 |
 | `ANTHROPIC_API_KEY` | Anthropic 密钥 |
 | `ANTHROPIC_MODEL` | 可选，默认 `claude-sonnet-4-6` |
 | `DOMAIN` | 本地填 `localhost`；正式填你的域名 |

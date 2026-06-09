@@ -775,10 +775,15 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
             <tr><td>CPC</td><td class="num">15</td><td class="ctr">¥<span class="editable" contenteditable data-kpi="SEM:0">4.0</span></td></tr><tr><td>CTR</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEM:1">3.5</span>%</td></tr><tr><td>质量分</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEM:2">7.5</span></td></tr><tr><td>ROAS</td><td class="num">20</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEM:3">3.5</span>x</td></tr><tr><td>转化次数</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEM:4">60</span></td></tr><tr><td>每次转化费用</td><td class="num">20</td><td class="ctr">¥<span class="editable" contenteditable data-kpi="SEM:5">300</span></td></tr>
           </tbody></table></div>
         </div>
-        <div class="card"><div class="card-head"><span class="card-title">等级阈值 / 角色 / 连接器</span></div><div style="font-size:12.5px;line-height:2.1;color:var(--text2)">
+        <div class="card"><div class="card-head"><span class="card-title">等级阈值 / 角色</span></div><div style="font-size:12.5px;line-height:2.1;color:var(--text2)">
           <div>等级阈值：<span style="color:var(--green);font-weight:700">优秀 ≥90</span> · <span style="color:var(--blue);font-weight:700">合格 75-89</span> · <span style="color:var(--amber);font-weight:700">警告 60-74</span> · <span style="color:var(--primary);font-weight:700">整改 &lt;60</span></div>
-          <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">角色：李(SEO·编辑) · 陈(SEM·编辑) · 销售(仅录询盘) · 老板(只读)</div>
-          <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">连接器：<span class="badge b-green">● GSC</span> <span class="badge b-green">● GA4</span> <span class="badge b-amber">● Ads 待授权</span></div>
+          <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">角色：李(SEO) · 陈(SEM) · 主管(Manager) · 老板(Boss)。Boss/主管全权；李/陈 除 KPI 目标外全权。</div>
+        </div></div>
+
+        <!-- V7: 第三方 API 接入（密钥 AES 加密入库，仅显示配置状态）-->
+        <div class="card" style="margin-top:14px"><div class="card-head"><span class="card-title">API 接入 · 数据源授权</span><span class="card-sub">密钥加密存储，不回显；保存后状态变「已配置」</span></div>
+          <div id="integ-rows" style="display:flex;flex-direction:column;gap:10px;font-size:12.5px"></div>
+          <div class="sheet-tip" style="margin-top:10px"><i class="ti ti-info-circle"></i> 第一期仅保存密钥并预留同步路由；自动抓取（GSC/GA4/Ads）在第二期实现。SEM 抓取将以「真实手动出价策略」为准。</div>
         </div></div>
       </div>
 
@@ -1327,6 +1332,27 @@ async function submitPwd(){
   }catch(e){ toast(e.status===401?'当前密码不正确':'修改失败：'+e.message); }
 }
 
+/* V7 设置页 · 第三方 API 密钥（加密入库，不回显）*/
+const INTEG_LABEL={gsc:'Google Search Console',ga4:'Google Analytics 4 (GA4)',ads:'Google Ads'};
+async function loadIntegrations(){
+  const box=document.getElementById('integ-rows'); if(!box)return;
+  let status={}; try{ const r=await API.get('/api/settings/integrations'); status=r.integrations||{}; }catch(e){}
+  box.innerHTML=Object.keys(INTEG_LABEL).map(p=>{
+    const s=status[p]||{}; const badge=s.configured?'<span class="badge b-green">已配置</span>':'<span class="badge b-gray">未配置</span>';
+    return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="width:210px;font-weight:600">${INTEG_LABEL[p]} ${badge}</div>
+      <input id="integ-${p}" type="password" placeholder="粘贴密钥/授权码" style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:8px 10px;color:var(--text1);font-size:12.5px;font-family:var(--font)">
+      <button class="btn-ghost" onclick="saveIntegration('${p}')"><i class="ti ti-device-floppy"></i> 保存</button>
+    </div>`;
+  }).join('');
+}
+async function saveIntegration(p){
+  const el=document.getElementById('integ-'+p); const secret=el?el.value:'';
+  if(!secret){ toast('请先填写密钥'); return; }
+  try{ await API.put('/api/settings/integrations',{provider:p,secret}); el.value=''; toast(INTEG_LABEL[p]+' 已保存（加密入库）'); loadIntegrations(); }
+  catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
+}
+
 /* AI 弹框结果 → 一键采纳进 ④整改清单（复用 addFix）*/
 let _lastAi={text:'',dept:'SEO'};
 function adoptAi(){
@@ -1490,11 +1516,12 @@ window.addEventListener('load',async()=>{
   await hydrate();             // 询盘/否词/广告/排名快照
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目
+  await loadIntegrations();    // 设置页 API 接入状态
   refreshInqStats();
 });
 
 /* 顶栏显示当前用户 + 登出；按角色做前端控件提示（后端才是权威校验）*/
-const ROLE_LABEL={seo:'李 · SEO',sem:'陈 · SEM',sales:'销售',boss:'老板'};
+const ROLE_LABEL={seo:'李 · SEO',sem:'陈 · SEM',manager:'主管',boss:'老板'};
 function applyRoleUi(){
   const right=document.querySelector('.topbar-right'); const me=window.ME||{};
   if(right){

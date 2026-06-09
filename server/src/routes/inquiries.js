@@ -1,6 +1,6 @@
 // 询盘 API（FR-1）。写入限销售；所有登录用户可读。
 import * as repo from '../db/repositories/inquiries.js';
-import { requireAuth, roles } from '../auth/middleware.js';
+import { requireAuth, editor } from '../auth/middleware.js';
 import { recomputeActuals } from '../services/kpi.js';
 
 const GRADES = ['A', 'B', 'C'];
@@ -25,7 +25,7 @@ export async function inquiriesRoutes(app) {
     stats: repo.stats(),
   }));
 
-  app.post('/api/inquiries', { preHandler: roles('sales') }, async (request, reply) => {
+  app.post('/api/inquiries', editor, async (request, reply) => {
     const rec = clean(request.body || {});
     const item = repo.create(rec, request.user.id);
     recomputeActuals(); // 询盘总量/A级数 回写 KPI 实际值
@@ -33,13 +33,13 @@ export async function inquiriesRoutes(app) {
     return { item, stats: repo.stats() };
   });
 
-  app.patch('/api/inquiries/:id', { preHandler: roles('sales') }, async (request) => {
+  app.patch('/api/inquiries/:id', editor, async (request) => {
     const item = repo.update(Number(request.params.id), request.body || {});
     recomputeActuals();
     return { item, stats: repo.stats() };
   });
 
-  app.delete('/api/inquiries/:id', { preHandler: roles('sales') }, async (request) => {
+  app.delete('/api/inquiries/:id', editor, async (request) => {
     repo.remove(Number(request.params.id));
     recomputeActuals();
     return { ok: true, stats: repo.stats() };

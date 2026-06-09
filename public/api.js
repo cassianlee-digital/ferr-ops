@@ -49,15 +49,11 @@
 
   /* 前端能力判断（仅用于隐藏/禁用控件，越权请求由后端拒绝）
      cap: 'seo' | 'sem' | 'inquiry' | 'kpiTarget' */
+  // V7 权限：seo/sem/manager/boss 都能编辑业务数据；KPI 目标仅 manager/boss。
   window.can = function (cap) {
     const r = window.ME && window.ME.role;
     if (!r) return false;
-    switch (cap) {
-      case 'seo': return r === 'seo';
-      case 'sem': return r === 'sem';
-      case 'inquiry': return r === 'sales';
-      case 'kpiTarget': return r === 'boss';
-      default: return false;
-    }
+    if (cap === 'kpiTarget') return r === 'manager' || r === 'boss';
+    return ['seo', 'sem', 'manager', 'boss'].includes(r);
   };
 })();
