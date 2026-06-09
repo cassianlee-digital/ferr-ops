@@ -14,6 +14,7 @@ import { syncRoutes } from './sync.js';
 import { settingsRoutes } from './settings.js';
 import { marketRoutes } from './market.js';
 import { overviewRoutes } from './overview.js';
+import { weeklyReportsRoutes } from './weeklyReports.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -31,4 +32,5 @@ export async function registerRoutes(app) {
   await app.register(settingsRoutes);
   await app.register(marketRoutes);
   await app.register(overviewRoutes);
+  await app.register(weeklyReportsRoutes);
 }

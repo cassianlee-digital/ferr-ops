@@ -259,6 +259,24 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 .ai-loading .spin{width:13px;height:13px;border:2px solid var(--border2);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .ai-render p{margin-bottom:7px}.ai-render strong{color:var(--text1)}
+/* 复盘周报 手风琴 + 并排 */
+.acc-week{border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;background:var(--bg2);box-shadow:var(--sh)}
+.acc-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;font-weight:800;font-size:13px}
+.acc-bar:hover{background:var(--bg3)}
+.acc-bar .hicon{transition:transform .15s}
+.acc-week.collapsed .acc-bar .hicon{transform:rotate(-90deg)}
+.acc-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 16px;border-top:1px solid var(--border)}
+.acc-week.collapsed .acc-body{display:none}
+.rv-col{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--bg2)}
+.rv-col.seo{border-left:3px solid var(--blue)}.rv-col.sem{border-left:3px solid var(--purple)}
+.rv-sec{margin-bottom:12px}
+.rv-sec h5{font-size:11px;color:var(--text3);font-weight:800;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.rv-item{display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)}
+.rv-item .txt{flex:1;font-size:12px;outline:none;line-height:1.5}
+.rv-item .txt:focus{background:var(--primary-soft);border-radius:4px}
+.rv-del{color:var(--text3);cursor:pointer;font-size:13px}.rv-del:hover{color:var(--primary)}
+.rv-add{font-size:11px;color:var(--primary);cursor:pointer;font-weight:600;margin-top:5px;display:inline-flex;align-items:center;gap:3px}
+@media(max-width:900px){.acc-body{grid-template-columns:1fr}}
 .api-warn{font-size:11px;color:var(--amber);background:var(--amber-soft);padding:8px 10px;border-radius:8px;margin-top:8px}
 </style>
 </head>
@@ -562,27 +580,8 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ ⑤ 复盘周报 ============ -->
       <div class="panel" id="panel-review">
-        <div class="page-head"><div><div class="page-title">复盘周报</div><div class="page-sub">以周为单位 · 两个模块同页展示、各自标渠道</div></div><div style="display:flex;gap:8px"><button class="btn-ghost"><i class="ti ti-chevron-left"></i> 第 22 周</button><button class="btn-primary"><i class="ti ti-device-floppy"></i> 保存</button></div></div>
-        <!-- SEO 模块 -->
-        <div class="card" style="margin-bottom:14px;border-left:3px solid var(--blue)"><div class="card-head"><span class="card-title" style="color:var(--blue)"><i class="ti ti-world-search"></i> SEO · 李</span><span class="badge b-blue">渠道：SEO 自然</span></div>
-          <div class="review-grid">
-            <div class="rk">目标 vs 达成</div><div>自然询盘目标 6 / 实际 5；Top10 占比 30%(↓)</div>
-            <div class="rk">关键数据</div><div>自然点击 3,612(↑8%)、收录 186(↑8)</div>
-            <div class="rk">做对了什么</div><div class="rowflex"><span>机加工页改 title，CTR +0.6pp</span><span class="ai-actions"><button class="aibtn dep" onclick="aiAct(this,'沉淀')">沉淀</button></span></div>
-            <div class="rk">做错了 / 教训</div><div class="rowflex"><span>资质页拖到月中才上线，错过早期询盘</span><span class="ai-actions"><button class="aibtn dep" onclick="aiAct(this,'沉淀')">沉淀</button></span></div>
-            <div class="rk next3">★ 下周必做 3 条</div><div class="next3"><b>1.</b> Catalog 落地页上线 ｜ <b>2.</b> investment casting 冲 Top10 ｜ <b>3.</b> 阀门页补材质证书<br><button class="aibtn adopt" style="margin-top:9px" onclick="loopBack(this,'SEO')">↻ 排入下月计划 + 任务看板</button></div>
-          </div>
-        </div>
-        <!-- SEM 模块 -->
-        <div class="card" style="border-left:3px solid var(--purple)"><div class="card-head"><span class="card-title" style="color:var(--purple)"><i class="ti ti-ad-2"></i> SEM · 陈</span><span class="badge b-purple">渠道：SEM 付费</span></div>
-          <div class="review-grid">
-            <div class="rk">目标 vs 达成</div><div>付费有效询盘目标 9 / 实际 7；ROAS 3.2x</div>
-            <div class="rk">关键数据</div><div>花费 ¥28.8k、单有效询盘成本 ¥2,400(↑20%)</div>
-            <div class="rk">做对了什么</div><div class="rowflex"><span>球铁页切资质版广告语，CTR +38%</span><span class="ai-actions"><button class="aibtn dep" onclick="aiAct(this,'沉淀')">沉淀</button></span></div>
-            <div class="rk">做错了 / 教训</div><div class="rowflex"><span>否词库更新太晚，前两周放进太多比价词</span><span class="ai-actions"><button class="aibtn dep" onclick="aiAct(this,'沉淀')">沉淀</button></span></div>
-            <div class="rk next3">★ 下周必做 3 条</div><div class="next3"><b>1.</b> 暂停东南亚广告组 ｜ <b>2.</b> 切目标 ROAS 出价 ｜ <b>3.</b> 月初更新否词库<br><button class="aibtn adopt" style="margin-top:9px" onclick="loopBack(this,'SEM')">↻ 排入下月计划 + 任务看板</button></div>
-          </div>
-        </div>
+        <div class="page-head"><div><div class="page-title">复盘周报</div><div class="page-sub">每周 · 李/陈 左右并排 · 本月当前周展开，历史周折叠（点折叠条展开）</div></div></div>
+        <div id="review-acc"></div>
       </div>
 
       <!-- ============ 关键词库 ============ -->
@@ -1437,6 +1436,54 @@ async function refreshBrain(btn){
   if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-brain"></i> 同步 / 更新 AI 记忆';}
 }
 
+/* ===== V7 复盘周报：手风琴 + 李/陈并排 + 四段可编辑 + 测试/采纳联动 ===== */
+function curWeekKey(){ const d=new Date(); const w=Math.ceil(d.getDate()/7); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+w; }
+function weekLabel(key){ const p=(key||'').split('-'); return p.length>=3?(p[0]+'年'+p[1]+'月第'+p[2]+'周'):key; }
+const RV_SECTIONS=[['summary','① 本周工作总结',[]],['problems','② 遇到的问题',['测试','采纳']],['analysis','③ 分析',['采纳']],['next_plan','④ 下周工作计划',[]]];
+function rvItemHtml(text,acts){
+  const btns=(acts||[]).map(a=>`<button class="aibtn ${a==='采纳'?'adopt':'test'}" onclick="rvAct(this,'${a}')">${a}</button>`).join('');
+  return `<div class="rv-item"><span class="txt" contenteditable>${(text||'').replace(/</g,'&lt;')}</span>${btns}<span class="rv-del" onclick="rvDel(this)" title="删除"><i class="ti ti-x"></i></span></div>`;
+}
+function rvColHtml(dept,rec,week,prevPlan){
+  const name=dept==='SEM'?'SEM · 陈':'SEO · 李';
+  let h=`<div class="rv-col ${dept==='SEM'?'sem':'seo'}"><div style="font-weight:800;margin-bottom:10px;color:${dept==='SEM'?'var(--purple)':'var(--blue)'}">${name}</div>`;
+  RV_SECTIONS.forEach(([field,title,acts])=>{
+    const items=(rec&&rec[field])||[];
+    h+=`<div class="rv-sec" data-field="${field}" data-dept="${dept}" data-week="${week}"><h5>${title}</h5>`;
+    if(field==='summary'&&!items.length&&prevPlan&&prevPlan.length){ h+=`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">上周计划：${prevPlan.map(x=>x.replace(/</g,'&lt;')).join('；')}</div>`; }
+    h+=`<div class="rv-list">${items.map(t=>rvItemHtml(t,acts)).join('')}</div>`;
+    h+=`<span class="rv-add" onclick="rvAdd(this)"><i class="ti ti-plus"></i> 添加</span></div>`;
+  });
+  return h+'</div>';
+}
+async function renderReview(){
+  const cur=curWeekKey(); let items=[];
+  try{ const r=await API.get('/api/weekly-reports?current='+encodeURIComponent(cur)); items=r.items||[]; }catch(e){}
+  const byWeek={}; items.forEach(it=>{ (byWeek[it.week_key]=byWeek[it.week_key]||{})[it.dept]=it; });
+  if(!byWeek[cur])byWeek[cur]={};
+  const keys=Object.keys(byWeek).sort((a,b)=>a<b?1:-1); // 倒序，最新在上
+  // 上周 next_plan 作为本周 summary 的参考
+  const prevOf=(week,dept)=>{ const idx=keys.indexOf(week); for(let i=idx+1;i<keys.length;i++){ const r=byWeek[keys[i]][dept]; if(r&&r.next_plan&&r.next_plan.length)return r.next_plan; } return null; };
+  const acc=document.getElementById('review-acc'); if(!acc)return;
+  acc.innerHTML=keys.map(week=>{
+    const collapsed= week!==cur; // 仅当前周展开
+    return `<div class="acc-week${collapsed?' collapsed':''}"><div class="acc-bar" onclick="this.parentElement.classList.toggle('collapsed')"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${week===cur?'<span class="badge b-green" style="margin-left:6px">本周</span>':''}</div><div class="acc-body">${rvColHtml('SEO',byWeek[week].SEO,week,prevOf(week,'SEO'))}${rvColHtml('SEM',byWeek[week].SEM,week,prevOf(week,'SEM'))}</div></div>`;
+  }).join('');
+}
+function rvSectionSave(sec){
+  if(!sec)return; const field=sec.dataset.field, dept=sec.dataset.dept, week=sec.dataset.week;
+  const items=[...sec.querySelectorAll('.rv-list .txt')].map(t=>t.innerText.trim()).filter(Boolean);
+  API.put('/api/weekly-reports',{week_key:week,dept,field,items}).catch(err=>toast(err.status===403?'无权修改':'保存失败'));
+}
+function rvAdd(el){ const sec=el.closest('.rv-sec'); const list=sec.querySelector('.rv-list'); const acts=(RV_SECTIONS.find(s=>s[0]===sec.dataset.field)||[])[2]||[]; const tmp=document.createElement('div'); tmp.innerHTML=rvItemHtml('',acts); const node=tmp.firstChild; list.appendChild(node); const t=node.querySelector('.txt'); if(t)t.focus(); }
+function rvDel(el){ const sec=el.closest('.rv-sec'); el.closest('.rv-item').remove(); rvSectionSave(sec); }
+function rvAct(el,kind){ const item=el.closest('.rv-item'); const text=item.querySelector('.txt').innerText.trim(); if(!text){toast('请先填写内容');return;} const sec=el.closest('.rv-sec'); const s=sFromDept(sec.dataset.dept);
+  if(kind==='测试'){ addTest(s,text); persistLoop('test',s,text,'观察中'); toastGo('已加入测试登记','test'); }
+  else { addDeposit(s,text,'采纳'); persistLoop('deposit',s,text,'采纳'); toastGo('已采纳 → 沉淀表','deposit'); }
+}
+/* 复盘周报单元格失焦保存 */
+document.addEventListener('focusout',e=>{ const t=e.target.closest&&e.target.closest('#review-acc .rv-list .txt'); if(!t)return; rvSectionSave(t.closest('.rv-sec')); });
+
 /* ===== V7 Excel 化基建：通用单元格保存 + 键盘导航 ===== */
 function placeCaretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
 /* 通用：带 data-field 的可编辑单元格，失焦即保存到该行 data-ep/:id（否词/广告等） */
@@ -1656,6 +1703,7 @@ window.addEventListener('load',async()=>{
   await loadIntegrations();    // 设置页 API 接入状态
   await loadMarket();          // 市场分析问卷表
   await loadBrain();           // AI 记忆体状态 + 摘要
+  await renderReview();        // 复盘周报（手风琴+并排）
   refreshInqStats();
   restoreRoute();              // 刷新后回到上次页签（修复回总览 Bug）
 });

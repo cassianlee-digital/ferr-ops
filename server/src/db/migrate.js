@@ -7,7 +7,7 @@ const SCHEMA_VERSION = '7';
 const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
-  'integrations', 'market_brain', 'market_research', 'monthly_snapshots',
+  'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
 ];
 
 const SCHEMA = `
@@ -164,6 +164,19 @@ CREATE TABLE IF NOT EXISTS market_research (
   question   TEXT,
   answers    TEXT,         -- JSON：各受访者回答
   sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表）
+CREATE TABLE IF NOT EXISTS weekly_reports (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  week_key  TEXT NOT NULL,           -- 例：2026-6-2 (年-月-第几周)
+  dept      TEXT NOT NULL,           -- SEO / SEM
+  summary   TEXT,                    -- ① 本周工作总结 (JSON 数组)
+  problems  TEXT,                    -- ② 遇到的问题
+  analysis  TEXT,                    -- ③ 分析
+  next_plan TEXT,                    -- ④ 下周工作计划
+  updated_at TEXT,
+  UNIQUE(week_key, dept)
 );
 
 -- V7：月度快照（用于总览环比对比）
