@@ -1,6 +1,6 @@
 // 第三方集成密钥数据访问层（密钥 AES 加密存储，永不明文返回前端）。
 import { db } from '../connection.js';
-import { encrypt, decrypt } from '../services/crypto.js';
+import { encrypt, decrypt } from '../../services/crypto.js';
 
 export const PROVIDERS = ['gsc', 'ga4', 'ads'];
 
