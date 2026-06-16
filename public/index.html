@@ -85,6 +85,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .card-sub{font-size:11px;color:var(--text3)}
 .card-link{font-size:11px;color:var(--primary);cursor:pointer;font-weight:600}
 .chart-wrap{position:relative;width:100%}
+.chart-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text3);font-size:12px;text-align:center;padding:6px}
+.chart-empty .ce-sub{font-size:10.5px;opacity:.7}
 
 table.dt{width:100%;border-collapse:collapse;font-size:12px}
 table.dt th{color:var(--text3);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--border);font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;text-align:left}
@@ -373,8 +375,8 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
           <div class="card"><div class="card-head"><span class="card-title" style="color:var(--purple)">SEM 明细 · 陈</span></div><div id="semRows"></div></div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title">询盘质量分布</span></div><div style="display:flex;align-items:center;gap:18px;height:130px"><div class="chart-wrap" style="height:120px;width:120px;flex-shrink:0"><canvas id="inqDonut"></canvas></div><div style="flex:1;font-size:11.5px"><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● A 级 有效·优质</span><b>7</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● B 级 有效·合格</span><b>5</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● C 级 无效</span><b>43</b></div><div style="border-top:1px solid var(--border);padding-top:9px;display:flex;justify-content:space-between"><span class="dim">有效询盘率</span><b style="color:var(--amber)">22%</b></div></div></div></div>
-          <div class="card"><div class="card-head"><span class="card-title">有效询盘渠道来源</span></div><div style="display:flex;align-items:center;gap:18px;height:130px"><div class="chart-wrap" style="height:120px;width:120px;flex-shrink:0"><canvas id="chanDonut"></canvas></div><div style="flex:1;font-size:11.5px"><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● SEO 自然</span><b>42%</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● SEM 付费</span><b>33%</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● 直接</span><b>17%</b></div><div style="display:flex;justify-content:space-between"><span>● 其他</span><b>8%</b></div></div></div></div>
+          <div class="card"><div class="card-head"><span class="card-title">询盘质量分布</span></div><div style="display:flex;align-items:center;gap:18px;height:130px"><div class="chart-wrap" style="height:120px;width:120px;flex-shrink:0"><canvas id="inqDonut"></canvas></div><div style="flex:1;font-size:11.5px"><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● A 级 有效·优质</span><b id="lgInqA">—</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● B 级 有效·合格</span><b id="lgInqB">—</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● C 级 无效</span><b id="lgInqC">—</b></div><div style="border-top:1px solid var(--border);padding-top:9px;display:flex;justify-content:space-between"><span class="dim">有效询盘率</span><b id="lgInqRate" style="color:var(--amber)">—</b></div></div></div></div>
+          <div class="card"><div class="card-head"><span class="card-title">有效询盘渠道来源</span></div><div style="display:flex;align-items:center;gap:18px;height:130px"><div class="chart-wrap" style="height:120px;width:120px;flex-shrink:0"><canvas id="chanDonut"></canvas></div><div style="flex:1;font-size:11.5px"><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● SEO 自然</span><b id="lgChSeo">—</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● SEM 付费</span><b id="lgChSem">—</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● 直接</span><b id="lgChDirect">—</b></div><div style="display:flex;justify-content:space-between"><span>● 其他</span><b id="lgChOther">—</b></div></div></div></div>
         </div>
       </div>
 
@@ -1740,15 +1742,41 @@ function renderKPI(){
   gauge('g1','g1s',company);gauge('g2','g2s',company);badge('g1b',company);badge('g2b',company);
 }
 
+/* ===== 1a: DEMO_MODE —— 真实模式(false)禁止任何硬编码示例数据；仅 true 时展示下方 fixture ===== */
+window.DEMO_MODE = window.DEMO_MODE || false;
+const DEMO = {
+  inqTrend: { a:[2,1,2,1,2,1,2,1], total:[6,5,7,8,6,7,8,8] },
+  seoMini:  [95,98,92,100,104,99,108,112],
+  semMini:  [2.8,2.9,3.0,2.95,3.1,3.0,3.15,3.2],
+  inqDonut: { a:7, b:5, c:43, rate:'22%' },
+  chanDonut:{ seo:42, sem:33, direct:17, other:8 },
+  seoSeries:{ labels:Array.from({length:14},(_,i)=>5+'/'+(4+i*2)),
+              clicks:[95,98,92,100,104,99,108,112,109,115,118,114,120,124],
+              impr:[120,128,124,132,140,134,145,150,148,155,160,156,165,170] },
+};
+// 在图表容器内显示「暂无真实数据」空状态(纯静态文案,无外部数据)
+function chartEmpty(id){
+  const cv=document.getElementById(id); if(!cv) return;
+  const wrap=cv.closest('.chart-wrap')||cv.parentElement; if(!wrap) return;
+  cv.style.display='none';
+  if(wrap.querySelector('.chart-empty')) return;
+  const box=document.createElement('div'); box.className='chart-empty';
+  const a=document.createElement('div'); a.textContent='暂无真实数据';
+  const b=document.createElement('div'); b.className='ce-sub'; b.textContent='请录入数据或完成同步';
+  box.appendChild(a); box.appendChild(b); wrap.appendChild(box);
+}
+function setDonutLegend(map){ Object.keys(map).forEach(id=>{ const e=document.getElementById(id); if(e)e.textContent=map[id]; }); }
+function fillDonutLegendDemo(){ setDonutLegend({lgInqA:DEMO.inqDonut.a,lgInqB:DEMO.inqDonut.b,lgInqC:DEMO.inqDonut.c,lgInqRate:DEMO.inqDonut.rate,lgChSeo:DEMO.chanDonut.seo+'%',lgChSem:DEMO.chanDonut.sem+'%',lgChDirect:DEMO.chanDonut.direct+'%',lgChOther:DEMO.chanDonut.other+'%'}); }
+function blankDonutLegend(){ setDonutLegend({lgInqA:'—',lgInqB:'—',lgInqC:'—',lgInqRate:'—',lgChSeo:'—',lgChSem:'—',lgChDirect:'—',lgChOther:'—'}); }
+
 let seoChart=null, seoFull=null;
 function seoSeriesFromWeeks(){
-  // 用录入的周数据生成趋势；无数据则用内置示例
+  // 优先用录入的真实周数据；真实模式下无数据返回 null(显示空状态),仅 DEMO_MODE 用示例
   if(window._seoWeeks&&window._seoWeeks.length){
     const w=window._seoWeeks;
     return {labels:w.map(x=>x.date), clicks:w.map(x=>x.clicks), impr:w.map(x=>Math.round(x.impr/20))};
   }
-  const days=Array.from({length:14},(_,i)=>5+'/'+(4+i*2));
-  return {labels:days, clicks:[95,98,92,100,104,99,108,112,109,115,118,114,120,124], impr:[120,128,124,132,140,134,145,150,148,155,160,156,165,170]};
+  return window.DEMO_MODE ? DEMO.seoSeries : null;
 }
 function buildSeoData(s){return {labels:s.labels,datasets:[{label:'点击',data:s.clicks,borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},{label:'展现÷20',data:s.impr,borderColor:'#9aa1ae',borderDash:[4,3],tension:.4,pointRadius:0,borderWidth:1.5}]};}
 function updateSeoChart(range){
@@ -1763,15 +1791,27 @@ function updateSeoChart(range){
 function charts(){
   Chart.defaults.color='#9aa1ae';Chart.defaults.borderColor='rgba(128,128,128,.12)';Chart.defaults.font.size=10;
   const wk=['W1','W2','W3','W4','W5','W6','W7','W8'];
-  new Chart(inqTrend,{type:'line',data:{labels:wk,datasets:[{data:[2,1,2,1,2,1,2,1],borderColor:'#15a85a',backgroundColor:'rgba(21,168,90,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},{data:[6,5,7,8,6,7,8,8],borderColor:'#9aa1ae',backgroundColor:'rgba(154,161,174,.06)',fill:true,tension:.4,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
   const sp={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
-  new Chart(seoMini,{type:'line',data:{labels:wk,datasets:[{data:[95,98,92,100,104,99,108,112],borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:sp});
-  new Chart(semMini,{type:'line',data:{labels:wk,datasets:[{data:[2.8,2.9,3.0,2.95,3.1,3.0,3.15,3.2],borderColor:'#7b54e0',backgroundColor:'rgba(123,84,224,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:sp});
-  new Chart(inqDonut,{type:'doughnut',data:{labels:['A','B','C'],datasets:[{data:[7,5,43],backgroundColor:['#15a85a','#2f72e8','#dfe2e8'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
-  new Chart(chanDonut,{type:'doughnut',data:{labels:['SEO','SEM','直接','其他'],datasets:[{data:[42,33,17,8],backgroundColor:['#2f72e8','#7b54e0','#0b9d8f','#ef9514'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
+  if(window.DEMO_MODE){
+    // 仅 DEMO_MODE：用集中 fixture 画示例图(便于演示/截图，绝不在真实模式触发)
+    new Chart(inqTrend,{type:'line',data:{labels:wk,datasets:[{data:DEMO.inqTrend.a,borderColor:'#15a85a',backgroundColor:'rgba(21,168,90,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},{data:DEMO.inqTrend.total,borderColor:'#9aa1ae',backgroundColor:'rgba(154,161,174,.06)',fill:true,tension:.4,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+    new Chart(seoMini,{type:'line',data:{labels:wk,datasets:[{data:DEMO.seoMini,borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:sp});
+    new Chart(semMini,{type:'line',data:{labels:wk,datasets:[{data:DEMO.semMini,borderColor:'#7b54e0',backgroundColor:'rgba(123,84,224,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:sp});
+    new Chart(inqDonut,{type:'doughnut',data:{labels:['A','B','C'],datasets:[{data:[DEMO.inqDonut.a,DEMO.inqDonut.b,DEMO.inqDonut.c],backgroundColor:['#15a85a','#2f72e8','#dfe2e8'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
+    new Chart(chanDonut,{type:'doughnut',data:{labels:['SEO','SEM','直接','其他'],datasets:[{data:[DEMO.chanDonut.seo,DEMO.chanDonut.sem,DEMO.chanDonut.direct,DEMO.chanDonut.other],backgroundColor:['#2f72e8','#7b54e0','#0b9d8f','#ef9514'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
+    fillDonutLegendDemo();
+  }else{
+    // 真实模式：不画任何假数据。这些图的真实数据来源在后续 Phase 接入(TODO: inqTrend/seoMini/semMini/两个 donut 接 /api 真实聚合)
+    ['inqTrend','seoMini','semMini','inqDonut','chanDonut'].forEach(chartEmpty);
+    blankDonutLegend();
+  }
+  // SEO 看板：有真实周数据则画(DEMO_MODE 下用 fixture)，否则空状态
   seoFull=seoSeriesFromWeeks();
   const so={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:7}}}};
-  if(document.getElementById('seoBoard'))seoChart=new Chart(seoBoard,{type:'line',data:buildSeoData(seoFull),options:so});
+  if(document.getElementById('seoBoard')){
+    if(seoFull&&seoFull.labels&&seoFull.labels.length) seoChart=new Chart(seoBoard,{type:'line',data:buildSeoData(seoFull),options:so});
+    else chartEmpty('seoBoard');
+  }
 }
 
 window.addEventListener('load',async()=>{
