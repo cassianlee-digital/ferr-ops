@@ -892,12 +892,26 @@ async function callClaude(userPrompt){
   return text;
 }
 /* 极简 markdown → html */
+/* ===== 1b-a: 统一安全工具 ===== */
+// 全站唯一转义入口：& < > " ' ；null/undefined → ''
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// 单值文本写入，杜绝 HTML 解析
+function renderText(el,s){ if(el) el.textContent=(s==null?'':String(s)); }
+// AI/Markdown → 安全 HTML：先整体 esc(原始 HTML 一律变文本，无法成标签)，再仅生成白名单标签 p/br/strong/ul/li
 function mdToHtml(t){
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-    .replace(/^[\s]*[-*]\s+(.*)$/gm,'• $1')
-    .replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>')
-    .replace(/^/,'<p>').replace(/$/,'</p>');
+  const src=esc(t).split(/\n/);
+  let html='', para=[], inList=false;
+  const flushP=()=>{ if(para.length){ html+='<p>'+para.join('<br>')+'</p>'; para=[]; } };
+  const flushL=()=>{ if(inList){ html+='</ul>'; inList=false; } };
+  for(let line of src){
+    line=line.replace(/\*\*([^*]+?)\*\*/g,'<strong>$1</strong>'); // 仅白名单：加粗
+    const m=line.match(/^\s*[-*]\s+(.*)$/);
+    if(m){ flushP(); if(!inList){ html+='<ul>'; inList=true; } html+='<li>'+m[1]+'</li>'; }
+    else if(line.trim()===''){ flushP(); flushL(); }
+    else { flushL(); para.push(line); }
+  }
+  flushP(); flushL();
+  return html;
 }
 const apiUnavailableMsg='<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI 暂时不可用：请确认后端 <b>.env</b> 已正确配置 <b>ANTHROPIC_API_KEY</b>，或稍后重试。</div>';
 
@@ -1016,11 +1030,11 @@ function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
 function addFix(s,text){
   prepend('tb-fix',`<td>${clip(text,24)}</td><td class="ctr"><span class="tagselect ${s.c}" data-kind="dept">${s.dept}<i class="ti ti-chevron-down"></i></span></td><td class="dim" style="font-size:11px">AI 诊断</td><td>${text}</td><td class="ctr"><span class="tagselect ${s.c}" data-kind="owner">${s.owner}<i class="ti ti-chevron-down"></i></span></td><td class="num">${plusDays(7)}</td><td class="ctr"><span class="tagselect b-blue" data-kind="result">计划下周<i class="ti ti-chevron-down"></i></span></td>`);}
 function addTest(s,text){const id=s.dept==='SEM'?'tb-test-sem':'tb-test-seo';
-  prepend(id,`<td>${clip(text,14)}</td><td class="dim" style="font-size:11px">${text}</td><td>待定</td><td class="num">${today()}~</td><td class="ctr"><span class="badge b-amber">观察中</span></td>`);}
+  prepend(id,`<td>${esc(clip(text,14))}</td><td class="dim" style="font-size:11px">${esc(text)}</td><td>待定</td><td class="num">${esc(today())}~</td><td class="ctr"><span class="badge b-amber">观察中</span></td>`);}
 function addPlan(s,text){const id=s.dept==='SEM'?'tb-plan-sem':'tb-plan-seo';const five=s.dept==='SEM'?'¥—':plusDays(20);
-  prepend(id,`<td>${text}</td><td class="dim" style="font-size:11px">来自上周复盘</td><td>见复盘</td><td class="num">${five}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">待开始<i class="ti ti-chevron-down"></i></span></td>`);}
+  prepend(id,`<td>${esc(text)}</td><td class="dim" style="font-size:11px">来自上周复盘</td><td>见复盘</td><td class="num">${esc(five)}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">待开始<i class="ti ti-chevron-down"></i></span></td>`);}
 function addTaskCards(s,items){const col=document.getElementById(s.dept==='SEM'?'newtask-sem':'newtask-seo'); if(!col)return; const add=col.querySelector('.add-task');
-  items.forEach(t=>{const c=document.createElement('div');c.className='tcard';c.innerHTML=`<div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>${t}</div><div class="tmeta"><span class="badge ${s.c}">${s.dept}</span><span class="tdue">下月</span></div>`;col.insertBefore(c,add);});}
+  items.forEach(t=>{const c=document.createElement('div');c.className='tcard';c.innerHTML=`<div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>${esc(t)}</div><div class="tmeta"><span class="badge ${s.c}">${esc(s.dept)}</span><span class="tdue">下月</span></div>`;col.insertBefore(c,add);});}
 
 /* —— 整改/闭环 入库（FR-6/10）。上面的 add* 仅负责渲染；下面负责持久化 —— */
 function sFromDept(dept){return dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};}
@@ -1043,7 +1057,7 @@ async function loadClosedLoop(){
 function depRowHtml(it){
   const date=(it.created_at||'').slice(5,10)||today();
   const badge=it.status==='采纳'?'<span class="badge b-green">采纳</span>':'<span class="badge b-teal">沉淀</span>';
-  return `<td class="num">${date}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${(it.content||'').replace(/</g,'&lt;')}</td><td class="ctr"><button class="btn-mini" style="color:var(--primary)" onclick="depDel(this)"><i class="ti ti-trash"></i></button></td>`;
+  return `<td class="num">${esc(date)}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="ctr"><button class="btn-mini" style="color:var(--primary)" onclick="depDel(this)"><i class="ti ti-trash"></i></button></td>`;
 }
 async function addDepositRow(){
   try{ const {item}=await API.post('/api/loop-items',{kind:'deposit',content:'',status:'沉淀'});
@@ -1057,14 +1071,14 @@ const CA_PRIO={'最高':'b-red','高':'b-amber','中':'b-blue','持续':'b-gray'
 const CA_OWNER={'李':'b-blue','陈':'b-purple','主管':'b-teal'};
 const CA_STATUS={'待开始':'b-gray','进行中':'b-amber','已完成':'b-green'};
 function contentRowHtml(r){
-  return `<td class="editable" contenteditable data-field="name">${(r.name||'').replace(/</g,'&lt;')}</td>`
-    +`<td class="editable dim" contenteditable data-field="problem" style="font-size:11px">${(r.problem||'').replace(/</g,'&lt;')}</td>`
-    +`<td class="editable" contenteditable data-field="type" style="font-size:11px">${(r.type||'').replace(/</g,'&lt;')}</td>`
-    +`<td class="ctr"><span class="tagselect ${CA_PRIO[r.priority]||'b-blue'}" data-kind="priority">${r.priority||'中'}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr"><span class="tagselect ${CA_OWNER[r.owner]||'b-blue'}" data-kind="owner">${r.owner||'李'}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr"><span class="tagselect ${CA_STATUS[r.status]||'b-gray'}" data-kind="status">${r.status||'待开始'}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="num">${r.add_date||''}</td>`
-    +`<td class="editable dim" contenteditable data-field="note" style="font-size:11px">${(r.note||'').replace(/</g,'&lt;')}</td>`
+  return `<td class="editable" contenteditable data-field="name">${esc(r.name)}</td>`
+    +`<td class="editable dim" contenteditable data-field="problem" style="font-size:11px">${esc(r.problem)}</td>`
+    +`<td class="editable" contenteditable data-field="type" style="font-size:11px">${esc(r.type)}</td>`
+    +`<td class="ctr"><span class="tagselect ${CA_PRIO[r.priority]||'b-blue'}" data-kind="priority">${esc(r.priority||'中')}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr"><span class="tagselect ${CA_OWNER[r.owner]||'b-blue'}" data-kind="owner">${esc(r.owner||'李')}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr"><span class="tagselect ${CA_STATUS[r.status]||'b-gray'}" data-kind="status">${esc(r.status||'待开始')}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="num">${esc(r.add_date||'')}</td>`
+    +`<td class="editable dim" contenteditable data-field="note" style="font-size:11px">${esc(r.note)}</td>`
     +`<td class="ctr"><button class="btn-mini" style="color:var(--primary)" onclick="contentDel(this)"><i class="ti ti-trash"></i></button></td>`;
 }
 async function loadContent(){
@@ -1114,7 +1128,7 @@ async function loadGa4(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=(v==null?'—':v);};
   const m=r.metrics;
   if(m){ set('ga4-users',m.activeUsers); set('ga4-sessions',m.sessions); set('ga4-views',m.pageViews); set('ga4-bounce',m.bounceRate!=null?m.bounceRate+'%':'—'); set('ga4-dur',m.avgDuration); }
-  const fill=(tbId,rows,cols)=>{ const tb=document.getElementById(tbId); if(!tb)return; if(rows&&rows.length){ tb.innerHTML=rows.map(x=>'<tr>'+cols.map(c=>`<td class="${c.cls||''}">${x[c.k]??''}</td>`).join('')+'</tr>').join(''); const card=tb.closest('.card'); const e=card&&card.querySelector('.ga4-empty'); if(e)e.style.display='none'; } };
+  const fill=(tbId,rows,cols)=>{ const tb=document.getElementById(tbId); if(!tb)return; if(rows&&rows.length){ tb.innerHTML=rows.map(x=>'<tr>'+cols.map(c=>`<td class="${c.cls||''}">${esc(x[c.k]??'')}</td>`).join('')+'</tr>').join(''); const card=tb.closest('.card'); const e=card&&card.querySelector('.ga4-empty'); if(e)e.style.display='none'; } };
   fill('ga4-sources',r.sources,[{k:'source'},{k:'sessions',cls:'num'},{k:'users',cls:'num'}]);
   fill('ga4-countries',r.countries,[{k:'country'},{k:'sessions',cls:'num'},{k:'users',cls:'num'}]);
   fill('ga4-landing',r.landingPages,[{k:'page'},{k:'sessions',cls:'num'},{k:'conversions',cls:'num'}]);
@@ -1171,7 +1185,7 @@ async function submitInquiry(){
 }
 function renderInqRow(r,flash){
   const confirmCell=r.grade==='C'?'<span class="dim" style="font-size:11px">无效</span>':'<i class="ti ti-circle-check" style="color:var(--green)"></i>';
-  const html=`<td>${r.date.slice(5)}</td><td>${r.country}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${r.region}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${r.channel}<i class="ti ti-chevron-down"></i></span></td><td>${r.source}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${r.product}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${r.grade}</span></td><td class="ctr">${confirmCell}</td>`;
+  const html=`<td>${esc(r.date.slice(5))}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${esc(r.grade)}</span></td><td class="ctr">${confirmCell}</td>`;
   if(flash)prepend('tb-inq',html); else { const tb=document.getElementById('tb-inq'); const tr=document.createElement('tr'); tr.innerHTML=html; tb.insertBefore(tr,tb.firstChild); }
 }
 function refreshInqStats(stats){
@@ -1473,7 +1487,7 @@ async function saveIntegration(p){
 
 /* ===== V7 市场分析（表格化）+ AI 记忆体联动 ===== */
 window._marketById={};
-function mktEsc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function mktEsc(s){return esc(s);} // 合并到统一 esc()，保留别名避免改动调用点
 function renderMarket(items){
   const tb=document.getElementById('tb-market'); if(!tb)return; tb.innerHTML=''; window._marketById={};
   let lastSec=null;
@@ -1531,7 +1545,7 @@ function weekLabel(key){ const p=(key||'').split('-'); return p.length>=3?(p[0]+
 const RV_SECTIONS=[['summary','① 本周工作总结',[]],['problems','② 遇到的问题',['测试','采纳']],['analysis','③ 分析',['采纳']],['next_plan','④ 下周工作计划',[]]];
 function rvItemHtml(text,acts){
   const btns=(acts||[]).map(a=>`<button class="aibtn ${a==='采纳'?'adopt':'test'}" onclick="rvAct(this,'${a}')">${a}</button>`).join('');
-  return `<div class="rv-item"><span class="txt" contenteditable>${(text||'').replace(/</g,'&lt;')}</span>${btns}<span class="rv-del" onclick="rvDel(this)" title="删除"><i class="ti ti-x"></i></span></div>`;
+  return `<div class="rv-item"><span class="txt" contenteditable>${esc(text)}</span>${btns}<span class="rv-del" onclick="rvDel(this)" title="删除"><i class="ti ti-x"></i></span></div>`;
 }
 function rvColHtml(dept,rec,week,prevPlan){
   const name=dept==='SEM'?'SEM · 陈':'SEO · 李';
@@ -1539,7 +1553,7 @@ function rvColHtml(dept,rec,week,prevPlan){
   RV_SECTIONS.forEach(([field,title,acts])=>{
     const items=(rec&&rec[field])||[];
     h+=`<div class="rv-sec" data-field="${field}" data-dept="${dept}" data-week="${week}"><h5>${title}</h5>`;
-    if(field==='summary'&&!items.length&&prevPlan&&prevPlan.length){ h+=`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">上周计划：${prevPlan.map(x=>x.replace(/</g,'&lt;')).join('；')}</div>`; }
+    if(field==='summary'&&!items.length&&prevPlan&&prevPlan.length){ h+=`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">上周计划：${prevPlan.map(x=>esc(x)).join('；')}</div>`; }
     h+=`<div class="rv-list">${items.map(t=>rvItemHtml(t,acts)).join('')}</div>`;
     h+=`<span class="rv-add" onclick="rvAdd(this)"><i class="ti ti-plus"></i> 添加</span></div>`;
   });
@@ -1639,31 +1653,31 @@ function kwRow(type,r){
   const aiBtn='<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> 分析意图</button>';
   const del='<button class="btn-mini kw-del" title="删除" style="color:var(--primary);border-color:var(--border2)"><i class="ti ti-trash"></i></button>';
   if(type==='seo'){
-    tr.innerHTML=`<td class="editable kw-name" contenteditable>${r.keyword}</td>`
-      +`<td class="ctr"><span class="badge ${a.gradeCls||'b-gray'}">${a.gradeText||'-'}</span></td>`
-      +`<td class="num">${a.volume||''}</td>`
-      +`<td class="ctr"><span class="rankpill" data-trend="${a.trend||'flat'}">${a.gscRank??'-'} <b style="color:${a.deltaCol||'var(--text3)'}">${a.deltaText||'—'}</b></span></td>`
-      +`<td class="ctr" data-spark="${a.spark||''}"></td>`
-      +`<td class="ctr"><span class="tagselect ${clsOf('comp',a.comp)}" data-kind="comp">${a.comp||'中 (30-60)'}<i class="ti ti-chevron-down"></i></span></td>`
-      +`<td class="ctr"><span class="tagselect ${clsOf('optstatus',a.optstatus)}" data-kind="optstatus">${a.optstatus||'优化中'}<i class="ti ti-chevron-down"></i></span></td>`
+    tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+      +`<td class="ctr"><span class="badge ${esc(a.gradeCls||'b-gray')}">${esc(a.gradeText||'-')}</span></td>`
+      +`<td class="num">${esc(a.volume||'')}</td>`
+      +`<td class="ctr"><span class="rankpill" data-trend="${esc(a.trend||'flat')}">${esc(a.gscRank??'-')} <b style="color:${esc(a.deltaCol||'var(--text3)')}">${esc(a.deltaText||'—')}</b></span></td>`
+      +`<td class="ctr" data-spark="${esc(a.spark||'')}"></td>`
+      +`<td class="ctr"><span class="tagselect ${clsOf('comp',a.comp)}" data-kind="comp">${esc(a.comp||'中 (30-60)')}<i class="ti ti-chevron-down"></i></span></td>`
+      +`<td class="ctr"><span class="tagselect ${clsOf('optstatus',a.optstatus)}" data-kind="optstatus">${esc(a.optstatus||'优化中')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else if(type==='sem'){
-    tr.innerHTML=`<td class="ctr"><span class="badge b-gray">${a.catText||'分类'}</span></td>`
-      +`<td class="editable kw-name" contenteditable>${r.keyword}</td>`
-      +`<td class="ctr"><span class="tagselect ${clsOf('match',a.match)}" data-kind="match">${a.match||'词组匹配'}<i class="ti ti-chevron-down"></i></span></td>`
-      +`<td class="dim" style="font-size:11px">${a.landing||''}</td>`
-      +`<td class="ctr"><span class="tagselect ${clsOf('priority',a.priority)}" data-kind="priority">${a.priority||'高'}<i class="ti ti-chevron-down"></i></span></td>`
+    tr.innerHTML=`<td class="ctr"><span class="badge b-gray">${esc(a.catText||'分类')}</span></td>`
+      +`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+      +`<td class="ctr"><span class="tagselect ${clsOf('match',a.match)}" data-kind="match">${esc(a.match||'词组匹配')}<i class="ti ti-chevron-down"></i></span></td>`
+      +`<td class="dim" style="font-size:11px">${esc(a.landing||'')}</td>`
+      +`<td class="ctr"><span class="tagselect ${clsOf('priority',a.priority)}" data-kind="priority">${esc(a.priority||'高')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else if(type==='high'){
-    tr.innerHTML=`<td class="editable kw-name" contenteditable>${r.keyword}</td>`
-      +`<td class="ctr">${a.ktype||''}</td>`+`<td class="ctr">${a.channel||''}</td>`
-      +`<td class="num">${a.inquiry??''}</td>`
-      +`<td class="ctr"><span class="badge ${a.gradeCls||'b-green'}">${a.gradeText||'核心'}</span></td>`
+    tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+      +`<td class="ctr">${esc(a.ktype||'')}</td>`+`<td class="ctr">${esc(a.channel||'')}</td>`
+      +`<td class="num">${esc(a.inquiry??'')}</td>`
+      +`<td class="ctr"><span class="badge ${esc(a.gradeCls||'b-green')}">${esc(a.gradeText||'核心')}</span></td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else{
-    tr.innerHTML=`<td class="editable kw-name" contenteditable>${r.keyword}</td>`
-      +`<td class="ctr">${a.sourceCustomer||''}</td>`
-      +`<td class="dim" style="font-size:11px">${a.mapped||''}</td>`
+    tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+      +`<td class="ctr">${esc(a.sourceCustomer||'')}</td>`
+      +`<td class="dim" style="font-size:11px">${esc(a.mapped||'')}</td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }
   return tr;
@@ -1843,7 +1857,7 @@ function applyRoleUi(){
   const right=document.querySelector('.topbar-right'); const me=window.ME||{};
   if(right){
     const chip=document.createElement('span'); chip.className='kpi-pill'; chip.style.cursor='default';
-    chip.innerHTML='<span class="kpi-label">'+(ROLE_LABEL[me.role]||me.name||'用户')+'</span>';
+    chip.innerHTML='<span class="kpi-label">'+(ROLE_LABEL[me.role]||esc(me.name)||'用户')+'</span>';
     const out=document.createElement('button'); out.className='theme-btn'; out.title='登出';
     out.innerHTML='<i class="ti ti-logout"></i>'; out.onclick=()=>API.logout();
     right.appendChild(chip); right.appendChild(out);
