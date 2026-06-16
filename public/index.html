@@ -962,7 +962,7 @@ let tt;
 function showToast(){ const t=document.getElementById('toast'); t.style.transform='translateX(-50%) translateY(0)'; clearTimeout(tt); tt=setTimeout(hideToast,3400); }
 function hideToast(){ document.getElementById('toast').style.transform='translateX(-50%) translateY(80px)'; }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; showToast(); }
-function toastGo(m,tab){ const t=document.getElementById('toast'); t.innerHTML=m+(tab?' &nbsp;<b style="color:#ff8a82;cursor:pointer">查看 →</b>':''); if(tab){ t.querySelector('b').onclick=()=>{ go(tab); hideToast(); }; } showToast(); }
+function toastGo(m,tab){ const t=document.getElementById('toast'); t.textContent=(m==null?'':String(m)); if(tab){ t.appendChild(document.createTextNode('  ')); const b=document.createElement('b'); b.textContent='查看 →'; b.style.color='#ff8a82'; b.style.cursor='pointer'; b.onclick=()=>{ go(tab); hideToast(); }; t.appendChild(b); } showToast(); }
 
 /* ---------- theme toggle ---------- */
 function toggleTheme(){ document.body.classList.toggle('dark'); const dk=document.body.classList.contains('dark'); document.getElementById('themeBtn').innerHTML='<i class="ti ti-'+(dk?'sun':'moon')+'"></i>'; }
@@ -1717,7 +1717,7 @@ function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-so
 function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
 function badge(id,score){const b=document.getElementById(id);if(!b)return;const g=grade(score);b.style.background=g.bg;b.style.color=g.c;b.innerHTML='<i class="ti '+g.i+'"></i> '+g.t;}
 function fmt(k,v){return k.u==='¥'?'¥'+v.toLocaleString():k.u==='%'?v+'%':k.u===''?v:v+k.u;}
-function rows(arr,box){const el=document.getElementById(box);if(!el)return;el.innerHTML=arr.map(k=>{const r=ratio(k),col=r>=.9?'var(--green)':r>=.7?'var(--blue)':r>=.5?'var(--amber)':'var(--primary)';return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11.5px"><div style="flex:1"><div style="font-weight:600">${k.n}</div><div style="color:var(--text3);font-size:10px">目标 ${fmt(k,k.t)} · 实际 ${fmt(k,k.a)}</div></div><div style="width:64px"><div class="progress-bar"><div class="progress-fill" style="width:${r*100}%;background:${col}"></div></div></div><div style="width:30px;text-align:right;font-weight:800;color:${col}">${Math.round(r*100)}</div></div>`;}).join('');}
+function rows(arr,box){const el=document.getElementById(box);if(!el)return;el.innerHTML=arr.map(k=>{const r=ratio(k),col=r>=.9?'var(--green)':r>=.7?'var(--blue)':r>=.5?'var(--amber)':'var(--primary)';return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11.5px"><div style="flex:1"><div style="font-weight:600">${esc(k.n)}</div><div style="color:var(--text3);font-size:10px">目标 ${fmt(k,k.t)} · 实际 ${fmt(k,k.a)}</div></div><div style="width:64px"><div class="progress-bar"><div class="progress-fill" style="width:${r*100}%;background:${col}"></div></div></div><div style="width:30px;text-align:right;font-weight:800;color:${col}">${Math.round(r*100)}</div></div>`;}).join('');}
 function mini(ov){
   ov=ov||{current:{}}; const c=ov.current||{}; const d=ov.delta||{};
   const momTxt=(v)=> v==null?'':(v>0?'▲'+v:(v<0?'▼'+Math.abs(v):'—'));
