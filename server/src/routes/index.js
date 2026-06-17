@@ -17,6 +17,7 @@ import { overviewRoutes } from './overview.js';
 import { weeklyReportsRoutes } from './weeklyReports.js';
 import { contentAssetsRoutes } from './contentAssets.js';
 import { ga4Routes } from './ga4.js';
+import { dataSourcesRoutes } from './dataSources.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -37,4 +38,5 @@ export async function registerRoutes(app) {
   await app.register(weeklyReportsRoutes);
   await app.register(contentAssetsRoutes);
   await app.register(ga4Routes);
+  await app.register(dataSourcesRoutes);
 }
