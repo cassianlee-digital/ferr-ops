@@ -1448,7 +1448,9 @@ function validateEditableValue(raw, type, opts){
     if(opts.min!=null && v<opts.min) return {ok:false, msg:'KPI 目标值不能为负数'};
     return {ok:true, value:v};
   }
-  return {ok:true, value:String(raw==null?'':raw).trim()};
+  const s=String(raw==null?'':raw).trim();
+  if(opts.nonempty && s==='') return {ok:false, msg:opts.emptyMsg||'内容不能为空'};
+  return {ok:true, value:s};
 }
 function setSavingState(el, state){
   if(!el) return;
@@ -1745,9 +1747,21 @@ document.addEventListener('click',e=>{
   const ai=e.target.closest('.kw-ai'); if(ai){ const tr=ai.closest('tr'); const n=tr.querySelector('.kw-name'); const kw=(n?n.textContent:tr.cells[0].textContent).trim(); aiAsk('分析关键词「'+kw+'」的搜索意图与落地建议','「'+kw+'」意图'); return; }
   const del=e.target.closest('.kw-del'); if(del){ kwDelete(del.closest('tr')); return; }
 });
-document.addEventListener('focusout',e=>{
+// 关键词名编辑:focusin 缓存旧值 → Enter 触发 blur → 校验/保存中/成功/失败回滚
+document.addEventListener('focusin',e=>{ const cell=e.target.closest&&e.target.closest('.kw-name'); if(cell)cell.dataset.kwOld=cell.textContent; });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const cell=e.target.closest&&e.target.closest('.kw-name'); if(cell){ e.preventDefault(); cell.blur(); } } });
+document.addEventListener('focusout',async e=>{
   const cell=e.target.closest&&e.target.closest('.kw-name'); if(!cell)return; const tr=cell.closest('tr'); if(!tr||!tr.dataset.id)return;
-  API.patch('/api/keywords/'+tr.dataset.id,{keyword:cell.textContent.trim()}).catch(err=>toast(err.status===403?'无权修改（该词库非你负责）':'保存失败'));
+  const oldVal=cell.dataset.kwOld!=null?cell.dataset.kwOld:cell.textContent;
+  const vr=validateEditableValue(cell.textContent,'text',{nonempty:true,emptyMsg:'关键词不能为空'});
+  if(!vr.ok){ rollbackEditable(cell,oldVal); showSaveError(cell,vr.msg); return; }   // 空值 → 回滚 + 提示
+  const v=vr.value;
+  if(v===String(oldVal).trim()){ cell.textContent=v; setSavingState(cell,null); return; } // 无变化:不请求
+  setSavingState(cell,'saving');
+  try{
+    await API.patch('/api/keywords/'+tr.dataset.id,{keyword:v});
+    cell.textContent=v; cell.dataset.kwOld=v; setSavingState(cell,'ok'); toast('已更新关键词 · 已入库');
+  }catch(err){ rollbackEditable(cell,oldVal); showSaveError(cell,err.status===403?'无权限修改':'保存失败，已恢复旧值'); }
 });
 
 function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-soft)',i:'ti-trophy'};if(s>=75)return{t:'合格',c:'var(--blue)',bg:'var(--blue-soft)',i:'ti-circle-check'};if(s>=60)return{t:'警告',c:'var(--amber)',bg:'var(--amber-soft)',i:'ti-alert-triangle'};return{t:'整改',c:'var(--primary)',bg:'var(--primary-soft)',i:'ti-flame'};}
