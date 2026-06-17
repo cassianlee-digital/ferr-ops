@@ -19,11 +19,26 @@ function clean(body) {
   };
 }
 
+// 解析并校验可选时间范围。返回 { range } | { error }。两者皆缺 → range=undefined(全量，兼容旧调用)。
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function parseRange(query) {
+  const s = query?.start_date;
+  const e = query?.end_date;
+  const hasS = s != null && s !== '';
+  const hasE = e != null && e !== '';
+  if (!hasS && !hasE) return { range: undefined };
+  if (!hasS || !hasE) return { error: 'start_date and end_date must be provided together' };
+  if (!DATE_RE.test(s) || !DATE_RE.test(e)) return { error: 'start_date and end_date must be in YYYY-MM-DD format' };
+  if (s > e) return { error: 'start_date must be before or equal to end_date' };
+  return { range: { start_date: s, end_date: e } };
+}
+
 export async function inquiriesRoutes(app) {
-  app.get('/api/inquiries', { preHandler: requireAuth }, async () => ({
-    items: repo.list(),
-    stats: repo.stats(),
-  }));
+  app.get('/api/inquiries', { preHandler: requireAuth }, async (request, reply) => {
+    const { range, error } = parseRange(request.query || {});
+    if (error) return reply.code(400).send({ error });
+    return { items: repo.list(range), stats: repo.stats(range) };
+  });
 
   app.post('/api/inquiries', editor, async (request, reply) => {
     const rec = clean(request.body || {});

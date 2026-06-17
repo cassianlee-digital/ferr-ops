@@ -993,6 +993,27 @@ document.querySelectorAll('.cat-tabs').forEach(b=>b.addEventListener('click',e=>
 /* ---------- per-page inline time filter ---------- */
 const RANGES=['昨天','上周','上半月','近1月','近3月','近半年','近1年','自定义'];
 window._timeRange='近1月';
+/* ===== 1e-a: 统一时间范围 → start_date/end_date/period_label(本地日期，避免 UTC 偏移) ===== */
+function formatLocalDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function resolveRange(label){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const back=n=>{ const d=new Date(today); d.setDate(d.getDate()-n); return d; };
+  const r=(s,e)=>({start_date:formatLocalDate(s),end_date:formatLocalDate(e),period_label:label});
+  switch(label){
+    case '昨天':   { const y=back(1); return r(y,y); }
+    case '上周':   { const day=(today.getDay()+6)%7; const thisMon=back(day); const lastMon=new Date(thisMon); lastMon.setDate(thisMon.getDate()-7); const lastSun=new Date(lastMon); lastSun.setDate(lastMon.getDate()+6); return r(lastMon,lastSun); }
+    case '上半月': { const first=new Date(today.getFullYear(),today.getMonth(),1); const mid=new Date(today.getFullYear(),today.getMonth(),15); return r(first,mid); }
+    case '近1月':  return r(back(29),today);
+    case '近3月':  return r(back(89),today);
+    case '近半年': return r(back(179),today);
+    case '近1年':  return r(back(364),today);
+    case '自定义': return null; // TODO(1e 后续): 自定义日期选择器未实现，本期不生效，不伪装
+    default:       return r(back(29),today);
+  }
+}
+let _range=resolveRange('近1月');
+function getCurrentRange(){ return _range; }
+function withRange(path,range){ range=range||_range; if(!range||!range.start_date||!range.end_date) return path; const sep=path.includes('?')?'&':'?'; return path+sep+'start_date='+encodeURIComponent(range.start_date)+'&end_date='+encodeURIComponent(range.end_date); }
 document.querySelectorAll('[data-time]').forEach(bar=>{
   bar.innerHTML='<span class="tlabel"><i class="ti ti-calendar-stats"></i> 时间</span>'+RANGES.map((r,i)=>`<button type="button" class="trange${i===3?' active':''}">${r}</button>`).join('');
   bar.addEventListener('click',e=>{
@@ -1000,10 +1021,14 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     // 所有时间条联动同一选区
     document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent===btn.textContent));
     const rg=btn.textContent.trim(); window._timeRange=rg;
+    const nr=resolveRange(rg);
+    if(!nr){ toast('自定义时间选择器尚未实现（TODO），未改变筛选'); return; } // 不伪装生效
+    _range=nr;
     // 广播：任何图表/表格可监听 timerange 自行按区间重算
-    document.dispatchEvent(new CustomEvent('timerange',{detail:{range:rg}}));
-    if(seoChart) updateSeoChart(rg);
-    toast('时间范围：'+rg);
+    document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
+    if(seoChart) updateSeoChart(rg); // SEO 图表客户端切片(既有行为，后端区间留 1e-b)
+    loadInquiries();                 // 1e-a：仅询盘真实按区间重拉
+    toast('时间范围：'+_range.period_label);
   });
 });
 
@@ -1258,15 +1283,20 @@ function renderSparklines(){
 }
 
 /* ================= 载入持久化数据 ================= */
-async function hydrate(){
-  // 询盘：从后端读取（多人共享、服务重启不丢）
+// 询盘加载（带当前时间区间）。供首屏 hydrate 与时间切换共用。
+async function loadInquiries(){
   try{
-    const {items,stats}=await API.get('/api/inquiries');
+    const {items,stats}=await API.get(withRange('/api/inquiries'));
     window._inqCache=items||[];
-    const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; // 清掉静态示例行
+    const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; // 清掉旧行/静态示例行
     window._inqCache.slice().reverse().forEach(r=>renderInqRow(r,false)); // 时间正序插入→最新在顶
     refreshInqStats(stats);
+    if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
   }catch(e){ if(e&&e.message!=='unauthorized')console.warn('加载询盘失败',e); }
+}
+async function hydrate(){
+  // 询盘：从后端读取（多人共享、服务重启不丢）；带当前时间区间
+  await loadInquiries();
   // 否词库：从后端读取
   try{
     const {items}=await API.get('/api/neg-keywords');
