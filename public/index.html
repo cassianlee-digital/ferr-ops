@@ -176,6 +176,9 @@ table.dt tbody tr:hover{background:var(--bg3)}
 .sheet-tip{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
 .editable{outline:none}
 .editable:focus{background:var(--primary-soft);border-radius:4px;box-shadow:0 0 0 2px rgba(246,66,58,.2)}
+.editable.kpi-saving{background:var(--amber-soft);border-radius:4px;box-shadow:0 0 0 2px var(--amber-soft)}
+.editable.kpi-ok{background:var(--green-soft);border-radius:4px;transition:background .3s}
+.editable.kpi-error{background:var(--primary-soft);border-radius:4px;box-shadow:0 0 0 2px rgba(246,66,58,.4)}
 .cat-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .cat-tab{padding:5px 12px;border-radius:7px;background:var(--bg3);border:1px solid var(--border);font-size:11.5px;color:var(--text2);cursor:pointer}
 .cat-tab.active{background:var(--primary-soft);border-color:rgba(246,66,58,.3);color:var(--primary);font-weight:600}
@@ -1432,17 +1435,51 @@ async function submitSemWeek(){
 }
 
 /* 设置页：目标值 contenteditable → 回写 KPI 数组 + 重算 */
+/* ===== 1c-a: 可编辑保存通用小工具(本轮仅服务 KPI 设置)===== */
+// 校验：number 拒绝 空/非数字/负数/多小数点;允许 0 与小数。返回 {ok,value,msg}
+function validateEditableValue(raw, type, opts){
+  opts=opts||{};
+  if(type==='number'){
+    const s=String(raw==null?'':raw).trim();
+    if(s==='') return {ok:false, msg:'KPI 目标值不能为空'};
+    if(!/^\d+(\.\d+)?$/.test(s)) return {ok:false, msg:'请输入有效数字'}; // 拒 abc / -5 / 1.2.3
+    const v=Number(s);
+    if(isNaN(v)) return {ok:false, msg:'请输入有效数字'};
+    if(opts.min!=null && v<opts.min) return {ok:false, msg:'KPI 目标值不能为负数'};
+    return {ok:true, value:v};
+  }
+  return {ok:true, value:String(raw==null?'':raw).trim()};
+}
+function setSavingState(el, state){
+  if(!el) return;
+  el.classList.remove('kpi-saving','kpi-ok','kpi-error');
+  if(state==='saving') el.classList.add('kpi-saving');
+  else if(state==='ok'){ el.classList.add('kpi-ok'); setTimeout(()=>el.classList.remove('kpi-ok'),1200); }
+  else if(state==='error'){ el.classList.add('kpi-error'); setTimeout(()=>el.classList.remove('kpi-error'),2000); }
+}
+function rollbackEditable(el, oldValue){ if(el) el.textContent=(oldValue==null?'':String(oldValue)); }
+function showSaveError(el, msg){ setSavingState(el,'error'); toast(msg); }
+
+/* 设置页：目标值 contenteditable → 校验 + 保存中/成功/失败回滚 + 回写 KPI 数组 + 重算 */
 function bindSettings(){
   document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{
+    el.addEventListener('focusin',()=>{ el.dataset.kpiOld=el.textContent; }); // 缓存旧值
     const commit=async()=>{ if(!can('kpiTarget'))return; // 仅老板可改目标(后端也强制)
       const p=el.dataset.kpi.split(':'),arr=({TOTAL,SEO,SEM})[p[0]],idx=+p[1];
-      const v=parseFloat(String(el.textContent).replace(/[^\d.]/g,'')); if(isNaN(v)||!arr||!arr[idx])return;
-      if(v===arr[idx].t)return;
+      if(!arr||!arr[idx])return;
+      const oldVal=el.dataset.kpiOld!=null?el.dataset.kpiOld:String(arr[idx].t);
+      const vr=validateEditableValue(el.textContent,'number',{min:0});
+      if(!vr.ok){ rollbackEditable(el,oldVal); showSaveError(el,vr.msg); return; } // 非法 → 回滚 + 提示
+      const v=vr.value;
+      if(v===arr[idx].t){ el.textContent=String(v); setSavingState(el,null); return; } // 无变化:规范化显示,不请求
+      setSavingState(el,'saving');
       try{
         const {rows}=await API.put('/api/kpi-targets',{updates:[{id:arr[idx].id,target:v}]});
-        applyKpiServer(rows); renderKPI();
-        toast('已更新「'+arr[idx].n+'」目标 → '+v+' · 已入库, 评分已重算');
-      }catch(e){ toast(e.status===403?'仅老板可改 KPI 目标':'更新失败：'+e.message); }
+        applyKpiServer(rows); renderKPI();                 // arr[idx].t 已更新为服务端确认值
+        el.textContent=String(arr[idx].t); el.dataset.kpiOld=String(arr[idx].t); // 用服务端值回写 DOM
+        setSavingState(el,'ok');
+        toast('已更新「'+arr[idx].n+'」目标 → '+arr[idx].t+' · 已入库, 评分已重算');
+      }catch(e){ rollbackEditable(el,oldVal); showSaveError(el,e.status===403?'仅老板可改 KPI 目标':'保存失败，已恢复旧值'); }
     };
     el.addEventListener('blur',commit);
     el.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();el.blur();} });
