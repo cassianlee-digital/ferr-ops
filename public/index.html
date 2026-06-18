@@ -1026,8 +1026,8 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     _range=nr;
     // 广播：任何图表/表格可监听 timerange 自行按区间重算
     document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
-    if(seoChart) updateSeoChart(rg); // SEO 图表客户端切片(既有行为，后端区间留 1e-b)
-    loadInquiries();                 // 1e-a：仅询盘真实按区间重拉
+    loadInquiries();                 // 1e-a：询盘真实按区间重拉
+    loadSeoChartRange();             // 1e-b：SEO 折线图真实按区间重拉(不动 KPI/看板的全量 _seoWeeks)
     toast('时间范围：'+_range.period_label);
   });
 });
@@ -1384,6 +1384,7 @@ recomputeScores();
    ============================================================ */
 const METRICS_KEY='ferr:metrics', SEOWK_KEY='ferr:seo:weeks', SEMWK_KEY='ferr:sem:weeks', RANKSNAP_KEY='ferr:ranks';
 window._seoWeeks=[]; window._semWeeks=[];
+window._seoWeeksView=undefined; // 区间视图，仅 SEO 折线图使用；KPI 仍使用全量 _seoWeeks。
 
 /* KPI 以后端为权威：把服务端 rows 写回前端 TOTAL/SEO/SEM 数组（含目标/实际/id）*/
 function applyKpiServer(rows){
@@ -1923,9 +1924,9 @@ function blankDonutLegend(){ setDonutLegend({lgInqA:'—',lgInqB:'—',lgInqC:'�
 
 let seoChart=null, seoFull=null;
 function seoSeriesFromWeeks(){
-  // 优先用录入的真实周数据；真实模式下无数据返回 null(显示空状态),仅 DEMO_MODE 用示例
-  if(window._seoWeeks&&window._seoWeeks.length){
-    const w=window._seoWeeks;
+  // 优先用当前区间视图；真实模式下无数据返回 null(显示空状态),仅 DEMO_MODE 用示例
+  const w=(window._seoWeeksView!==undefined)?window._seoWeeksView:window._seoWeeks;
+  if(w&&w.length){
     return {labels:w.map(x=>x.date), clicks:w.map(x=>x.clicks), impr:w.map(x=>Math.round(x.impr/20))};
   }
   return window.DEMO_MODE ? DEMO.seoSeries : null;
@@ -1938,6 +1939,24 @@ function updateSeoChart(range){
   let n=range&&weeks[range]?Math.min(weeks[range],total):total; n=Math.max(n,1);
   const sl=a=>a.slice(-n);
   seoChart.data.labels=sl(s.labels); seoChart.data.datasets[0].data=sl(s.clicks); seoChart.data.datasets[1].data=sl(s.impr); seoChart.update();
+}
+
+function rebuildSeoChart(){
+  const cv=document.getElementById('seoBoard'); if(!cv)return;
+  const wrap=cv.closest('.chart-wrap')||cv.parentElement;
+  if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); }
+  cv.style.display='';
+  if(seoChart){ try{seoChart.destroy();}catch(e){} seoChart=null; }
+  seoFull=seoSeriesFromWeeks();
+  const so={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:7}}}};
+  if(seoFull&&seoFull.labels&&seoFull.labels.length) seoChart=new Chart(cv,{type:'line',data:buildSeoData(seoFull),options:so});
+  else chartEmpty('seoBoard');
+}
+
+async function loadSeoChartRange(){
+  try{ const seo=await API.get(withRange('/api/seo-weeks')); window._seoWeeksView=(seo.items||[]).map(mapSeoWeek); }
+  catch(e){ window._seoWeeksView=[]; toast('SEO trend failed: '+(e.message||'unknown error')); }
+  rebuildSeoChart();
 }
 
 function charts(){

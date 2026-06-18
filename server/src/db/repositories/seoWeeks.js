@@ -1,7 +1,12 @@
-// SEO 周报数据访问层。
+// SEO weekly reports repository.
 import { db } from '../connection.js';
 
-export function list() {
+export function list(range) {
+  if (range && range.start_date && range.end_date) {
+    return db
+      .prepare('SELECT * FROM seo_weeks WHERE week_date BETWEEN @start_date AND @end_date ORDER BY week_date ASC, id ASC')
+      .all({ start_date: range.start_date, end_date: range.end_date });
+  }
   return db.prepare('SELECT * FROM seo_weeks ORDER BY week_date ASC, id ASC').all();
 }
 

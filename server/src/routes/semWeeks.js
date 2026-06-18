@@ -1,26 +1,31 @@
-// SEM 周报 API（FR-3）。写入限陈(sem)。CPC/CTR/每次转化费用由后端算。
+// SEM weekly report API. SEM role can write; signed-in users can read.
 import * as repo from '../db/repositories/semWeeks.js';
 import { requireAuth, onlySem } from '../auth/middleware.js';
 import { deriveSem } from '../services/derive.js';
 import { recomputeActuals, computeScores } from '../services/kpi.js';
+import { parseDateRange } from '../lib/parseDateRange.js';
 
 const num = (v) => (v == null || v === '' || isNaN(Number(v)) ? null : Number(v));
 
 export async function semWeeksRoutes(app) {
-  app.get('/api/sem-weeks', { preHandler: requireAuth }, async () => ({ items: repo.list() }));
+  app.get('/api/sem-weeks', { preHandler: requireAuth }, async (request, reply) => {
+    const { range, error } = parseDateRange(request.query || {});
+    if (error) return reply.code(400).send({ error });
+    return { items: repo.list(range) };
+  });
 
   app.post('/api/sem-weeks', onlySem, async (request, reply) => {
-    const b = request.body || {};
+    const body = request.body || {};
     const base = {
-      week_date: String(b.week_date || new Date().toISOString().slice(0, 10)),
-      cost: num(b.cost) ?? 0,
-      impressions: num(b.impressions) ?? 0,
-      clicks: num(b.clicks) ?? 0,
-      conversions: num(b.conversions) ?? 0,
-      roas: num(b.roas),
-      quality_score: num(b.quality_score),
+      week_date: String(body.week_date || new Date().toISOString().slice(0, 10)),
+      cost: num(body.cost) ?? 0,
+      impressions: num(body.impressions) ?? 0,
+      clicks: num(body.clicks) ?? 0,
+      conversions: num(body.conversions) ?? 0,
+      roas: num(body.roas),
+      quality_score: num(body.quality_score),
     };
-    const derived = deriveSem(base); // cpc / ctr / cost_per_conv
+    const derived = deriveSem(base);
     const item = repo.create({ ...base, ...derived });
     recomputeActuals();
     reply.code(201);
