@@ -1298,7 +1298,7 @@ async function loadInquiries(){
     window._inqCache.slice().reverse().forEach(r=>renderInqRow(r,false)); // 时间正序插入→最新在顶
     refreshInqStats(stats);
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
-  }catch(e){ if(e&&e.message!=='unauthorized')console.warn('加载询盘失败',e); }
+  }catch(e){ if(e&&e.message!=='unauthorized'){ window._inqCache=[]; const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; toast('询盘加载失败：'+(e.message||'未知错误')); } }
 }
 async function hydrate(){
   // 询盘：从后端读取（多人共享、服务重启不丢）；带当前时间区间
@@ -1308,13 +1308,13 @@ async function hydrate(){
     const {items}=await API.get('/api/neg-keywords');
     const tb=document.getElementById('tb-neg'); if(tb)tb.innerHTML='';
     (items||[]).slice().reverse().forEach(r=>{prepend('tb-neg',negRowHtml(r)); tb.firstChild.dataset.id=r.id; tb.firstChild.dataset.ep='/api/neg-keywords';});
-  }catch(e){}
+  }catch(e){ if(e&&e.message!=='unauthorized'){ const tb=document.getElementById('tb-neg'); if(tb)tb.innerHTML=''; toast('否词加载失败：'+(e.message||'未知错误')); } }
   // 广告创意库：从后端读取
   try{
     const {items}=await API.get('/api/ad-creatives');
     const tb=document.getElementById('tb-ad'); if(tb)tb.innerHTML='';
     (items||[]).slice().reverse().forEach(r=>{prepend('tb-ad',adRowHtml(r)); tb.firstChild.dataset.id=r.id; tb.firstChild.dataset.ep='/api/ad-creatives';});
-  }catch(e){}
+  }catch(e){ if(e&&e.message!=='unauthorized'){ const tb=document.getElementById('tb-ad'); if(tb)tb.innerHTML=''; toast('广告创意加载失败：'+(e.message||'未知错误')); } }
   // 排名快照趋势：从后端读取
   try{ const {snapshots}=await API.get('/api/rank-snapshots'); if(snapshots&&snapshots.length>=2)renderRankTrend(snapshots); }catch(e){}
 }
@@ -1407,7 +1407,7 @@ async function loadWeeks(){
   try{
     const seo=await API.get('/api/seo-weeks'); window._seoWeeks=(seo.items||[]).map(mapSeoWeek);
     const sem=await API.get('/api/sem-weeks'); window._semWeeks=(sem.items||[]).map(mapSemWeek);
-  }catch(e){ window._seoWeeks=[]; window._semWeeks=[]; }
+  }catch(e){ window._seoWeeks=[]; window._semWeeks=[]; if(e&&e.message!=='unauthorized')toast('周报加载失败：'+(e.message||'未知错误')); }
   applySeoActuals(); applySemActuals(); renderBoardCards();
 }
 /* 数据看板顶部指标卡：从最新一周回填，无数据显示 — */
@@ -1822,7 +1822,7 @@ async function loadKeywords(){
     (items||[]).forEach(r=>{ if(byType[r.type])byType[r.type].push(r); });
     Object.keys(KW_TB).forEach(t=>{ const tb=document.getElementById(KW_TB[t]); if(!tb)return; tb.innerHTML=''; byType[t].forEach(r=>tb.appendChild(kwRow(t,r))); });
     renderSparklines();
-  }catch(e){}
+  }catch(e){ if(e&&e.message!=='unauthorized'){ Object.keys(KW_TB).forEach(t=>{const tb=document.getElementById(KW_TB[t]); if(tb)tb.innerHTML='';}); toast('关键词加载失败：'+(e.message||'未知错误')); } }
 }
 async function addKeyword(type){
   try{
