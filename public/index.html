@@ -365,6 +365,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <!-- ============ KPI ============ -->
       <div class="panel" id="panel-kpi">
         <div class="page-head"><div><div class="page-title">KPI 考核</div><div class="page-sub">公司总分 + 李 + 陈 · 目标值与权重在「设置」可改</div></div><button class="btn-ghost"><i class="ti ti-calendar"></i> 2026-06 ▾</button></div>
+        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> KPI 评分按月度目标与全量实际值计算，不受顶部时间范围影响。</div>
         <div class="grid3">
           <div class="card" style="text-align:center"><div class="card-head" style="justify-content:center"><span class="card-title">公司总分</span></div>
             <div class="gauge" style="margin:0 auto"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g2" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g2s">0</div><div class="gauge-max">/ 100</div></div></div>
@@ -387,6 +388,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="panel" id="panel-inquiry">
         <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><button class="btn-primary" onclick="openInquiry()"><i class="ti ti-plus"></i> 录入询盘</button></div>
         <div class="timebar-inline" data-time></div>
+        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock"></i> 当前时间范围会筛选下方询盘列表与询盘统计。</div>
         <div class="metric-row">
           <div class="metric-card"><div class="metric-num" id="inq-valid" style="color:var(--green)">12</div><div class="metric-lbl">有效询盘 (A+B)</div><div class="metric-delta delta-neg">▼目标15</div></div>
           <div class="metric-card"><div class="metric-num" id="inq-aratio" style="color:var(--primary)">58%</div><div class="metric-lbl">A 级占比</div><div class="metric-delta">A级÷有效</div></div>
@@ -455,6 +457,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="panel" id="panel-data">
         <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
         <div class="timebar-inline" data-time></div>
+        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock"></i> 当前时间范围仅影响询盘与 SEO 折线图；SEO/SEM 顶部卡片与 SEM 看板仍按全量周报显示。</div>
         <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div></div>
 
         <!-- ===== SEO 看板 ===== -->
@@ -526,6 +529,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
               <div class="ai-item"><i class="ti ti-coin" style="color:var(--amber)"></i><div class="body"><strong>本周做：</strong>出价改目标 ROAS，预计成本回落至 ¥2,000。</div></div></div>
           </div>
           <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
+          <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> SEM 后端已支持区间接口，但本看板暂未消费时间范围，仍显示全量/最近周数据。</div>
           <div class="metric-row" style="grid-template-columns:repeat(3,1fr)"><div class="metric-card"><div class="metric-num" id="sm-conv" style="font-size:22px">—</div><div class="metric-lbl">转化次数</div></div><div class="metric-card"><div class="metric-num" id="sm-cpconv" style="font-size:22px">—</div><div class="metric-lbl">每询盘成本</div></div><div class="metric-card"><div class="metric-num" id="sm-cost" style="font-size:22px">—</div><div class="metric-lbl">总花费</div></div></div>
           <div class="sheet-toolbar" style="margin-bottom:12px"><span class="sheet-tip"><i class="ti ti-filter"></i> 层级筛选</span><select id="sem-hlevel" class="trange" style="cursor:pointer"><option value="all">全部层级</option><option value="camp">广告系列</option><option value="grp">广告组</option><option value="kw">关键词</option></select></div>
           <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">层级视图 · 系列 → 广告组 → 关键词</span><span class="card-sub">点系列展开，知道在哪一层操作</span></div>
@@ -573,6 +577,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="panel" id="panel-fix">
         <div class="page-head"><div><div class="page-title">整改清单</div><div class="page-sub">每条须有依据数据 · 数据看板「采纳」会自动汇入这里</div></div><button class="btn-ai" onclick="ai('按SOP整改动作库生成本周候选整改清单并排优先级')"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div>
         <div class="timebar-inline" data-time></div>
+        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock-off"></i> 整改清单暂不按时间范围过滤，显示全部。</div>
         <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>问题 / 机会</th><th class="ctr">所属</th><th>依据数据</th><th>整改动作</th><th class="ctr">负责人</th><th class="num">截止</th><th class="ctr">结果</th></tr></thead><tbody id="tb-fix"></tbody></table></div>
         <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 补充板块 · 整改调整建议</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'针对SEO和SEM数据，给我整改/调整建议')">重新生成 ↗</button></div>
           <div class="ai-item"><i class="ti ti-tool"></i><div class="body"><strong>SEO：</strong>合并 2 个意图重复的铸件页，解决关键词蚕食。</div></div>
@@ -734,6 +739,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="panel" id="panel-ga4">
         <div class="page-head"><div><div class="page-title">GA4 流量</div><div class="page-sub">专业 GA4 看板 · 接入 GA4 API 后自动填充</div></div><span id="ga4-status" class="badge b-gray">未接入</span></div>
         <div class="timebar-inline" data-time></div>
+        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock-off"></i> GA4 尚未接入，时间范围暂不生效。</div>
         <div id="ga4-hint" class="banner banner-red" style="display:none"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">暂无数据，请前往「设置 · API 接入」填入 GA4 授权</div><div class="banner-s">第一期为看板骨架与空状态；第二期接 GA4 Data API 后，下列模块自动填充实时数据。</div></div></div>
         <div class="metric-row" style="grid-template-columns:repeat(5,1fr)">
           <div class="metric-card"><div class="metric-num" id="ga4-users" style="font-size:22px">—</div><div class="metric-lbl">活跃用户</div></div>
