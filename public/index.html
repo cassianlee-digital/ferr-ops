@@ -104,8 +104,9 @@ table.dt tbody tr:hover{background:var(--bg3)}
 .fix-table th:nth-child(6){width:76px}
 .fix-table th:nth-child(7){width:92px}
 .fix-table td:nth-child(2),.fix-table td:nth-child(5),.fix-table td:nth-child(6),.fix-table td:nth-child(7){white-space:nowrap}
-.kw-name{white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
-#tb-kw-seo td:nth-child(1),#tb-kw-sem td:nth-child(2),#tb-kw-high td:nth-child(1),#tb-kw-cust td:nth-child(1),#tb-kw-cust td:nth-child(3),#tb-neg td:nth-child(1),#tb-neg td:nth-child(4),#tb-ad td:nth-child(1),#tb-ad td:nth-child(2),#tb-ad td:nth-child(4){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 表格录入：可编辑单元格像谷歌表格——自动换行、保留换行、完整显示，行高随内容增长 */
+table.dt td.editable{white-space:pre-wrap;overflow:visible;overflow-wrap:anywhere;word-break:break-word;text-overflow:clip}
+.kw-name{white-space:pre-wrap!important;overflow:visible!important;text-overflow:clip!important}
 #tb-kw-seo td,#tb-kw-sem td,#tb-kw-high td,#tb-kw-cust td,#tb-neg td,#tb-ad td{height:42px}
 .num{text-align:right;font-variant-numeric:tabular-nums}th.num{text-align:right}
 .ctr{text-align:center}th.ctr{text-align:center}
