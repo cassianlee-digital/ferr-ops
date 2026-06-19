@@ -1725,12 +1725,17 @@ document.addEventListener('focusout',e=>{ const t=e.target.closest&&e.target.clo
 
 /* ===== V7 Excel 化基建：通用单元格保存 + 键盘导航 ===== */
 function placeCaretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
-/* 通用：带 data-field 的可编辑单元格，失焦即保存到该行 data-ep/:id（否词/广告等） */
-document.addEventListener('focusout',e=>{
+/* 通用：带 data-field 的可编辑单元格，失焦即保存到该行 data-ep/:id（否词/广告等）。
+   focusin 缓存旧值；无变化不请求；保存失败回滚旧值并提示，杜绝「屏上已改、库里没改」的假成功。 */
+document.addEventListener('focusin',e=>{ const cell=e.target.closest&&e.target.closest('td[contenteditable][data-field]'); if(cell)cell._old=cell.innerText; });
+document.addEventListener('focusout',async e=>{
   const cell=e.target.closest&&e.target.closest('td[contenteditable][data-field]'); if(!cell)return;
   const tr=cell.closest('tr'); if(!tr)return; const id=tr.dataset.id, ep=tr.dataset.ep; if(!id||!ep)return;
-  const body={}; body[cell.dataset.field]=cell.innerText.trim();
-  API.patch(ep+'/'+id,body).catch(err=>toast(err.status===403?'无权修改':'保存失败'));
+  const val=cell.innerText.trim(); const oldVal=cell._old!=null?cell._old:cell.innerText;
+  if(val===String(oldVal).trim())return; // 无变化:不请求
+  const body={}; body[cell.dataset.field]=val;
+  try{ await API.patch(ep+'/'+id,body); cell._old=val; }
+  catch(err){ rollbackEditable(cell,oldVal); toast(err.status===403?'无权修改，已恢复旧值':'保存失败，已恢复旧值'); }
 });
 /* 通用键盘导航：Tab/Shift+Tab 横向；↑↓ 纵向（多行单元格如市场答案不拦截，保留原生换行/移动）*/
 document.addEventListener('keydown',e=>{
