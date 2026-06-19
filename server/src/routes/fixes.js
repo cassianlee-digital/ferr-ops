@@ -14,6 +14,7 @@ export async function fixesRoutes(app) {
       title: s(b.title, 200),
       dept: s(b.dept, 10),
       detail: s(b.detail, 500),
+      evidence: s(b.evidence, 500),
       owner: s(b.owner, 20),
       due_date: s(b.due_date, 20),
       status: s(b.status, 20) || '计划下周',

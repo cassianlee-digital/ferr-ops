@@ -8,15 +8,15 @@ export function list() {
 export function create(rec) {
   const info = db
     .prepare(
-      `INSERT INTO fixes (title, dept, detail, owner, due_date, status, source)
-       VALUES (@title,@dept,@detail,@owner,@due_date,@status,@source)`
+      `INSERT INTO fixes (title, dept, detail, evidence, owner, due_date, status, source)
+       VALUES (@title,@dept,@detail,@evidence,@owner,@due_date,@status,@source)`
     )
     .run(rec);
   return db.prepare('SELECT * FROM fixes WHERE id = ?').get(info.lastInsertRowid);
 }
 
 export function update(id, fields) {
-  const allowed = ['title', 'dept', 'detail', 'owner', 'due_date', 'status', 'source'];
+  const allowed = ['title', 'dept', 'detail', 'evidence', 'owner', 'due_date', 'status', 'source'];
   const keys = Object.keys(fields).filter((k) => allowed.includes(k));
   if (!keys.length) return get(id);
   db.prepare(`UPDATE fixes SET ${keys.map((k) => `${k}=@${k}`).join(', ')} WHERE id=@id`)

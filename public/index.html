@@ -192,7 +192,10 @@ table.dt tbody tr:hover{background:var(--bg3)}
 #selMenu .opt:hover{background:var(--bg3)}
 
 /* kanban v3 */
-.tboard{display:grid;grid-template-columns:1fr 290px;gap:14px}
+.tboard{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.cols2{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.cols2>.col{flex:1 1 0;min-width:280px}
+.col-cap{font-size:12px;font-weight:700;margin:0 0 8px;display:flex;align-items:center;gap:6px}
 .pstack{display:flex;flex-direction:column;gap:14px}
 .pblock{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--sh)}
 .pblock-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
@@ -416,43 +419,49 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ ① 月度计划 ============ -->
       <div class="panel" id="panel-plan">
-        <div class="page-head"><div><div class="page-title">月度计划</div><div class="page-sub">SEO / SEM 各自记录 · 表格可编辑</div></div></div>
-        <div class="subtabs"><div class="subtab active" data-sub="plan-seo">SEO · 李</div><div class="subtab" data-sub="plan-sem">SEM · 陈</div></div>
-        <div class="subpanel active" id="sub-plan-seo">
-          <div class="sheet-toolbar"><button class="btn-primary" onclick="addPlanRow('SEO')"><i class="ti ti-plus"></i> 新增 SEO 计划</button></div>
-          <div class="card" style="margin-bottom:14px"><table class="dt">
-            <thead><tr><th>动作</th><th>假设</th><th>成功指标</th><th class="num">截止</th><th class="ctr">状态</th></tr></thead><tbody id="tb-plan-seo"></tbody></table></div>
-          <div class="ai-box blue"><div class="ai-header"><div class="ai-dot" style="background:var(--blue)"></div><span class="ai-title" style="color:var(--blue)">AI 补充板块 · 月初市场情报（SEO）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'结合最近市场/贸易/SEO/GEO官方数据与我们的市场分析，本月除自定计划外SEO还该重点做什么；并对照内容资产指出还缺什么要赶紧做')">重新抓取 ↗</button></div>
-            <div class="ai-item"><i class="ti ti-trending-up"></i><div class="body"><strong>市场信号：</strong>欧洲铸件采购Q3回暖，"ductile iron casting + 牌号(A536/GGG40)"长尾搜索上升，建议本月新建 2 个材质牌号落地页。</div></div>
-            <div class="ai-item"><i class="ti ti-file-alert"></i><div class="body"><strong>内容资产缺口：</strong>市场分析显示客户索要频率 catalog＞material certificate＞test report，而我们 Catalog 仍未上线——本月最该补。</div></div>
+        <div class="page-head"><div><div class="page-title">月度计划</div><div class="page-sub">SEM · 陈（左） / SEO · 李（右）并列 · 表格可编辑、失焦即存</div></div></div>
+        <div class="cols2">
+          <div class="col">
+            <div class="col-cap"><span class="badge b-purple">陈</span> SEM 月度计划</div>
+            <div class="sheet-toolbar"><button class="btn-primary" onclick="addPlanRow('SEM')"><i class="ti ti-plus"></i> 新增 SEM 计划</button></div>
+            <div class="card" style="margin-bottom:14px"><table class="dt">
+              <thead><tr><th>动作</th><th>假设</th><th>成功指标</th><th class="num">预算</th><th class="ctr">状态</th></tr></thead><tbody id="tb-plan-sem"></tbody></table></div>
+            <div class="ai-box purple"><div class="ai-header"><div class="ai-dot" style="background:var(--purple)"></div><span class="ai-title" style="color:var(--purple)">AI 补充板块 · 月初市场情报（SEM）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'结合市场分析与SEM官方数据，本月除自定计划外SEM还该重点做什么')">重新抓取 ↗</button></div>
+              <div class="ai-item"><i class="ti ti-bulb"></i><div class="body"><strong>建议：</strong>市场分析指"大白话客户(see drawing)成单更快"，建议新建按大白话词的广告组（"metal part as per drawing"），降低对资质门槛的依赖。</div></div>
+            </div>
           </div>
-        </div>
-        <div class="subpanel" id="sub-plan-sem">
-          <div class="sheet-toolbar"><button class="btn-primary" onclick="addPlanRow('SEM')"><i class="ti ti-plus"></i> 新增 SEM 计划</button></div>
-          <div class="card" style="margin-bottom:14px"><table class="dt">
-            <thead><tr><th>动作</th><th>假设</th><th>成功指标</th><th class="num">预算</th><th class="ctr">状态</th></tr></thead><tbody id="tb-plan-sem"></tbody></table></div>
-          <div class="ai-box purple"><div class="ai-header"><div class="ai-dot" style="background:var(--purple)"></div><span class="ai-title" style="color:var(--purple)">AI 补充板块 · 月初市场情报（SEM）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'结合市场分析与SEM官方数据，本月除自定计划外SEM还该重点做什么')">重新抓取 ↗</button></div>
-            <div class="ai-item"><i class="ti ti-bulb"></i><div class="body"><strong>建议：</strong>市场分析指"大白话客户(see drawing)成单更快"，建议新建按大白话词的广告组（"metal part as per drawing"），降低对资质门槛的依赖。</div></div>
+          <div class="col">
+            <div class="col-cap"><span class="badge b-blue">李</span> SEO 月度计划</div>
+            <div class="sheet-toolbar"><button class="btn-primary" onclick="addPlanRow('SEO')"><i class="ti ti-plus"></i> 新增 SEO 计划</button></div>
+            <div class="card" style="margin-bottom:14px"><table class="dt">
+              <thead><tr><th>动作</th><th>假设</th><th>成功指标</th><th class="num">截止</th><th class="ctr">状态</th></tr></thead><tbody id="tb-plan-seo"></tbody></table></div>
+            <div class="ai-box blue"><div class="ai-header"><div class="ai-dot" style="background:var(--blue)"></div><span class="ai-title" style="color:var(--blue)">AI 补充板块 · 月初市场情报（SEO）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'结合最近市场/贸易/SEO/GEO官方数据与我们的市场分析，本月除自定计划外SEO还该重点做什么；并对照内容资产指出还缺什么要赶紧做')">重新抓取 ↗</button></div>
+              <div class="ai-item"><i class="ti ti-trending-up"></i><div class="body"><strong>市场信号：</strong>欧洲铸件采购Q3回暖，"ductile iron casting + 牌号(A536/GGG40)"长尾搜索上升，建议本月新建 2 个材质牌号落地页。</div></div>
+              <div class="ai-item"><i class="ti ti-file-alert"></i><div class="body"><strong>内容资产缺口：</strong>市场分析显示客户索要频率 catalog＞material certificate＞test report，而我们 Catalog 仍未上线——本月最该补。</div></div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- ============ ② 测试登记 ============ -->
       <div class="panel" id="panel-test">
-        <div class="page-head"><div><div class="page-title">测试登记</div><div class="page-sub">SEO / SEM 各自登记 · 一次只改一个变量</div></div></div>
-        <div class="subtabs"><div class="subtab active" data-sub="test-seo">SEO · 李</div><div class="subtab" data-sub="test-sem">SEM · 陈</div></div>
-        <div class="subpanel active" id="sub-test-seo">
-          <div class="sheet-toolbar"><button class="btn-primary" onclick="addTestRow('SEO')"><i class="ti ti-plus"></i> 新增 SEO 测试</button></div>
-          <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th class="num">起止</th><th class="ctr">结论</th></tr></thead><tbody id="tb-test-seo"></tbody></table></div>
-          <div class="ai-box blue"><div class="ai-header"><div class="ai-dot" style="background:var(--blue)"></div><span class="ai-title" style="color:var(--blue)">AI 补充板块 · SEO 测试建议</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'针对SEO数据，给我几条值得做的测试假设')">重新生成 ↗</button></div>
-            <div class="ai-item"><i class="ti ti-flask-2"></i><div class="body"><strong>建议测试：</strong>球铁页 H1 加入材质牌号(A536) vs 不加，验证牌号词是否带来更精准询盘。</div></div>
+        <div class="page-head"><div><div class="page-title">测试登记</div><div class="page-sub">SEM · 陈（左） / SEO · 李（右）并列 · 一次只改一个变量 · 失焦即存</div></div></div>
+        <div class="cols2">
+          <div class="col">
+            <div class="col-cap"><span class="badge b-purple">陈</span> SEM 测试</div>
+            <div class="sheet-toolbar"><button class="btn-primary" onclick="addTestRow('SEM')"><i class="ti ti-plus"></i> 新增 SEM 测试</button></div>
+            <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th class="num">起止</th><th>结论</th></tr></thead><tbody id="tb-test-sem"></tbody></table></div>
+            <div class="ai-box purple"><div class="ai-header"><div class="ai-dot" style="background:var(--purple)"></div><span class="ai-title" style="color:var(--purple)">AI 补充板块 · SEM 测试建议</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'针对SEM数据，给我几条值得做的测试假设')">重新生成 ↗</button></div>
+              <div class="ai-item"><i class="ti ti-flask-2"></i><div class="body"><strong>建议测试：</strong>德国组用"目标ROAS" vs "最大化转化"出价，对比单有效询盘成本。</div></div>
+            </div>
           </div>
-        </div>
-        <div class="subpanel" id="sub-test-sem">
-          <div class="sheet-toolbar"><button class="btn-primary" onclick="addTestRow('SEM')"><i class="ti ti-plus"></i> 新增 SEM 测试</button></div>
-          <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th class="num">起止</th><th class="ctr">结论</th></tr></thead><tbody id="tb-test-sem"></tbody></table></div>
-          <div class="ai-box purple"><div class="ai-header"><div class="ai-dot" style="background:var(--purple)"></div><span class="ai-title" style="color:var(--purple)">AI 补充板块 · SEM 测试建议</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'针对SEM数据，给我几条值得做的测试假设')">重新生成 ↗</button></div>
-            <div class="ai-item"><i class="ti ti-flask-2"></i><div class="body"><strong>建议测试：</strong>德国组用"目标ROAS" vs "最大化转化"出价，对比单有效询盘成本。</div></div>
+          <div class="col">
+            <div class="col-cap"><span class="badge b-blue">李</span> SEO 测试</div>
+            <div class="sheet-toolbar"><button class="btn-primary" onclick="addTestRow('SEO')"><i class="ti ti-plus"></i> 新增 SEO 测试</button></div>
+            <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th class="num">起止</th><th>结论</th></tr></thead><tbody id="tb-test-seo"></tbody></table></div>
+            <div class="ai-box blue"><div class="ai-header"><div class="ai-dot" style="background:var(--blue)"></div><span class="ai-title" style="color:var(--blue)">AI 补充板块 · SEO 测试建议</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'针对SEO数据，给我几条值得做的测试假设')">重新生成 ↗</button></div>
+              <div class="ai-item"><i class="ti ti-flask-2"></i><div class="body"><strong>建议测试：</strong>球铁页 H1 加入材质牌号(A536) vs 不加，验证牌号词是否带来更精准询盘。</div></div>
+            </div>
           </div>
         </div>
       </div>
@@ -572,7 +581,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 
       <!-- ============ ④ 整改清单 ============ -->
       <div class="panel" id="panel-fix">
-        <div class="page-head"><div><div class="page-title">整改清单</div><div class="page-sub">每条须有依据数据 · 数据看板「采纳」会自动汇入这里</div></div><button class="btn-ai" onclick="ai('按SOP整改动作库生成本周候选整改清单并排优先级')"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div>
+        <div class="page-head"><div><div class="page-title">整改清单</div><div class="page-sub">每条须有依据数据 · 可手动新增，也可从数据看板「采纳」自动汇入 · 表格可编辑、失焦即存</div></div><div style="display:flex;gap:8px"><button class="btn-primary" onclick="addFixRow()"><i class="ti ti-plus"></i> 新增整改</button><button class="btn-ai" onclick="ai('按SOP整改动作库生成本周候选整改清单并排优先级')"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div></div>
         <div class="timebar-inline" data-time></div>
         <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock-off"></i> 整改清单暂不按时间范围过滤，显示全部。</div>
         <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>问题 / 机会</th><th class="ctr">所属</th><th>依据数据</th><th>整改动作</th><th class="ctr">负责人</th><th class="num">截止</th><th class="ctr">结果</th></tr></thead><tbody id="tb-fix"></tbody></table></div>
@@ -696,9 +705,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
                   <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>导出广告组成本效率周报</div><div class="tmeta"><span class="badge b-purple">SEM</span><span class="tdue">周五</span></div></div>
                 </div>
                 <div id="newtask-sem"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
-                  <div class="tcard"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>出价策略切目标 ROAS</div><div class="tmeta"><span class="badge b-purple">SEM</span><span class="tdue">06-09</span></div></div>
-                  <div class="tcard"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>拍摄球铁件产品图(社媒)</div><div class="tmeta"><span class="badge b-amber">设计</span><span class="tdue">06-13</span></div></div>
-                  <button class="add-task"><i class="ti ti-plus"></i> 新增</button>
+                  <button class="add-task" onclick="addPersonalTask('SEM')"><i class="ti ti-plus"></i> 新增</button>
                 </div>
               </div>
             </div>
@@ -713,21 +720,17 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
                   <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>核对收录与索引覆盖</div><div class="tmeta"><span class="badge b-blue">SEO</span><span class="tdue">月初</span></div></div>
                 </div>
                 <div id="newtask-seo"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
-                  <div class="tcard urgent"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span><span>资质认证页上线 <span class="badge b-red">逾期</span></span></div><div class="tmeta"><span class="badge b-blue">SEO</span><span class="tdue"><i class="ti ti-clock"></i> 06-12 18:00</span></div></div>
-                  <div class="tcard"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>investment casting 补内容</div><div class="tmeta"><span class="badge b-blue">SEO</span><span class="tdue">06-18</span></div></div>
-                  <button class="add-task"><i class="ti ti-plus"></i> 新增</button>
+                  <button class="add-task" onclick="addPersonalTask('SEO')"><i class="ti ti-plus"></i> 新增</button>
                 </div>
               </div>
             </div>
           </div>
           <!-- 公司任务右列 -->
-          <div class="cocol"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span></div>
-            <div class="freq-cap"><i class="ti ti-building"></i> 公司派发（强提示）</div>
-            <div class="tcard urgent"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>Bafaw 西语站资质内容补齐</div><div class="tmeta"><span class="badge b-red">公司</span><span class="tdue"><i class="ti ti-clock"></i> 06-30</span></div></div>
-            <div class="tcard"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>季度预算与市场优先级评审</div><div class="tmeta"><span class="badge b-red">公司</span><span class="tdue">06-28</span></div></div>
-            <div class="freq-cap"><i class="ti ti-calendar-month"></i> 每月必做</div>
+          <div class="cocol" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span></div>
+            <div class="freq-cap"><i class="ti ti-calendar-month"></i> 每月必做（SOP）</div>
             <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>月度复盘会 + 更新 SOP</div><div class="tmeta"><span class="badge b-red">公司</span><span class="tdue">月末</span></div></div>
-            <button class="add-task"><i class="ti ti-plus"></i> 派发任务</button>
+            <div class="freq-cap"><i class="ti ti-building"></i> 公司派发（强提示）</div>
+            <button class="add-task" onclick="addCompanyTask()"><i class="ti ti-plus"></i> 派发任务</button>
           </div>
         </div>
       </div>
@@ -805,7 +808,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="fld"><label>国家</label><input id="f-country" placeholder="🇩🇪 德国"></div>
       </div>
       <div class="fld-row">
-        <div class="fld"><label>大区</label><select id="f-region"><option>欧洲</option><option>北美</option><option>俄罗斯</option><option>东南亚/巴西</option><option>其他</option></select></div>
+        <div class="fld"><label>大区</label><select id="f-region"><option>西欧</option><option>南欧</option><option>北欧</option><option>中东欧</option><option>东欧/俄罗斯</option><option>北美</option><option>拉美</option><option>中东</option><option>北非</option><option>撒哈拉以南非洲</option><option>南亚</option><option>东南亚</option><option>东亚</option><option>中亚</option><option>大洋洲</option><option>其他</option></select></div>
         <div class="fld"><label>渠道</label><select id="f-channel"><option>SEO自然</option><option>SEM付费</option><option>直接</option><option>其他</option></select></div>
       </div>
       <div class="fld"><label>来源词 / 落地页</label><input id="f-source" placeholder="ductile iron casting / 球铁页"></div>
@@ -1063,15 +1066,57 @@ const clip=(s,n)=>s.length>n?s.slice(0,n)+'…':s;
 
 function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
   prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${s.dept}诊断</span></td><td>${esc(text)}</td><td class="ctr"><span class="badge ${ac}">${act}</span></td>`);}
-function addFix(s,text){
-  prepend('tb-fix',`<td>${esc(clip(text,24))}</td><td class="ctr"><span class="tagselect ${s.c}" data-kind="dept">${s.dept}<i class="ti ti-chevron-down"></i></span></td><td class="dim" style="font-size:11px">AI 诊断</td><td>${esc(text)}</td><td class="ctr"><span class="tagselect ${s.c}" data-kind="owner">${s.owner}<i class="ti ti-chevron-down"></i></span></td><td class="num">${plusDays(7)}</td><td class="ctr"><span class="tagselect b-blue" data-kind="result">计划下周<i class="ti ti-chevron-down"></i></span></td>`);}
+/* 整改行：问题/所属/依据/动作/负责人/截止/结果，全部可编辑或可选；绑定 id 后失焦即存 */
+function fixRowHtml(f){
+  const dept=f.dept==='SEM'?'SEM':'SEO'; const c=dept==='SEM'?'b-purple':'b-blue';
+  const owner=f.owner||(dept==='SEM'?'陈':'李'); const oc=owner==='陈'?'b-purple':'b-blue';
+  const RES=['已改','进行中','计划下周','放弃']; const status=RES.includes(f.status)?f.status:'计划下周';
+  return `<td class="editable" contenteditable data-field="title">${esc(f.title||'')}</td>`
+    +`<td class="ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="editable dim" contenteditable data-field="evidence" style="font-size:11px">${esc(f.evidence||'')}</td>`
+    +`<td class="editable" contenteditable data-field="detail">${esc(f.detail||'')}</td>`
+    +`<td class="ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="editable num" contenteditable data-field="due_date">${esc(f.due_date||'')}</td>`
+    +`<td class="ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`;
+}
+function bindFixRow(tr,f){ if(tr&&f&&f.id){ tr.dataset.id=f.id; tr.dataset.ep='/api/fixes'; } return tr; }
+function addFixFromObj(f){ return bindFixRow(prepend('tb-fix',fixRowHtml(f)),f); }
 function bindLoopRow(tr,it){ if(tr&&it&&it.id){ tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; } return tr; }
-function addTest(s,text,it){const id=s.dept==='SEM'?'tb-test-sem':'tb-test-seo';
-  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(text)}</td><td class="dim" style="font-size:11px">${esc(text)}</td><td>待定</td><td class="num">${esc(today())}~</td><td class="ctr"><span class="badge b-amber">观察中</span></td>`),it);}
-function addPlan(s,text,it){const id=s.dept==='SEM'?'tb-plan-sem':'tb-plan-seo';const five=s.dept==='SEM'?'¥—':plusDays(20);
-  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(text)}</td><td class="dim" style="font-size:11px">手动计划</td><td>待填写</td><td class="num">${esc(five)}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">待开始<i class="ti ti-chevron-down"></i></span></td>`),it);}
-function addTaskCards(s,items){const col=document.getElementById(s.dept==='SEM'?'newtask-sem':'newtask-seo'); if(!col)return; const add=col.querySelector('.add-task');
-  items.forEach(t=>{const c=document.createElement('div');c.className='tcard';c.innerHTML=`<div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>${esc(t)}</div><div class="tmeta"><span class="badge ${s.c}">${esc(s.dept)}</span><span class="tdue">下月</span></div>`;col.insertBefore(c,add);});}
+function addTest(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-test-sem':'tb-test-seo';
+  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable||'')}</td><td class="editable num" contenteditable data-field="period">${esc(it.period||'')}</td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion||'')}</td>`),it);}
+function addPlan(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-plan-sem':'tb-plan-seo';
+  const status=it.status||'待开始';
+  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric||'')}</td><td class="editable num" contenteditable data-field="due_or_budget">${esc(it.due_or_budget||'')}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`),it);}
+/* 任务卡：个人(SEO/SEM) → 每日新增列；公司 → 公司任务列。绑定 id 后可删除、刷新仍在 */
+function coScope(){return {dept:'公司',owner:'',c:'b-red'};}
+function taskColFor(dept){return document.getElementById(dept==='公司'?'cocol-tasks':(dept==='SEM'?'newtask-sem':'newtask-seo'));}
+function addTaskCard(s,content,it){
+  const col=taskColFor(s.dept); if(!col)return null; const add=col.querySelector('.add-task');
+  const card=document.createElement('div'); card.className='tcard'; if(it&&it.id)card.dataset.id=it.id;
+  const del=(it&&it.id)?`<button class="btn-mini" style="color:var(--primary);margin-left:auto" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
+  card.innerHTML=`<div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>${esc(content||'')}</div><div class="tmeta"><span class="badge ${s.c}">${esc(s.dept)}</span>${del}</div>`;
+  if(add)col.insertBefore(card,add); else col.appendChild(card); return card;
+}
+function addTaskCards(s,items){ (items||[]).forEach(t=>addTaskCard(s,t)); } // 兼容复盘回流 loopBack
+async function addPersonalTask(dept){
+  const s=sFromDept(dept); const text=(prompt('新增'+dept+'任务：')||'').trim(); if(!text)return;
+  try{ const {item}=await persistLoop('task',s,text,'待办'); addTaskCard(s,item.content,item); toast('已新增'+dept+'任务 · 已入库'); }
+  catch(e){ toast(persistFailMsg(e)); }
+}
+async function addCompanyTask(){
+  const s=coScope(); const text=(prompt('派发公司任务：')||'').trim(); if(!text)return;
+  try{ const {item}=await persistLoop('task',s,text,'待办'); addTaskCard(s,item.content,item); toast('已派发公司任务 · 已入库'); }
+  catch(e){ toast(persistFailMsg(e)); }
+}
+function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!confirm('删除该任务？'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>card.remove()).catch(()=>toast('删除失败')); }
+async function addFixRow(){
+  const s=sFromDept('SEO');
+  try{
+    const {item}=await API.post('/api/fixes',{title:'新整改项',dept:s.dept,detail:'',evidence:'',owner:s.owner,due_date:plusDays(7),status:'计划下周',source:'手动'});
+    const tr=addFixFromObj(item); const c=tr&&tr.querySelector('[data-field="title"]'); if(c){c.focus();placeCaretEnd(c);}
+    toast('已新增整改项 · 已入库');
+  }catch(e){ toast(persistFailMsg(e)); }
+}
 
 /* —— 整改/闭环 入库（FR-6/10）。上面的 add* 仅负责渲染；下面负责持久化 —— */
 function sFromDept(dept){return dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};}
@@ -1079,14 +1124,14 @@ function persistFix(s,text){return API.post('/api/fixes',{title:clip(text,24),de
 function persistLoop(kind,s,content,status){return API.post('/api/loop-items',{kind,dept:s.dept,content,owner:s.owner,status:status||''});}
 function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库';}
 async function loadClosedLoop(){
-  try{ const {items}=await API.get('/api/fixes'); (items||[]).slice().reverse().forEach(f=>addFix(sFromDept(f.dept),f.detail||f.title)); }catch(e){}
+  try{ const {items}=await API.get('/api/fixes'); (items||[]).slice().reverse().forEach(f=>addFixFromObj(f)); }catch(e){}
   const depTb=document.getElementById('tb-dep'); if(depTb)depTb.innerHTML='';
   try{ const {items}=await API.get('/api/loop-items');
     (items||[]).slice().reverse().forEach(it=>{ const s=sFromDept(it.dept);
       if(it.kind==='deposit'){ const tr=document.createElement('tr'); tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(it); depTb&&depTb.appendChild(tr); }
       else if(it.kind==='test')addTest(s,it.content,it);
       else if(it.kind==='plan')addPlan(s,it.content,it);
-      else if(it.kind==='task')addTaskCards(s,[it.content]);
+      else if(it.kind==='task'){ const ts=it.dept==='公司'?coScope():s; addTaskCard(ts,it.content,it); }
     });
   }catch(e){}
   const de=document.getElementById('dep-empty'); if(de)de.style.display=(depTb&&depTb.children.length)?'none':'block';
@@ -1197,8 +1242,8 @@ async function aiAct(btn,kind){
   btn.disabled=true;
   try{
     if(kind==='沉淀'){ await persistLoop('deposit',s,text,'沉淀'); addDeposit(s,text,'沉淀'); toastGo('已沉淀到沉淀表 · 已入库','deposit'); }
-    else if(kind==='采纳'){ await Promise.all([persistFix(s,text),persistLoop('deposit',s,text,'采纳')]); addFix(s,text); addDeposit(s,text,'采纳'); toastGo('已采纳 → 整改清单 + 沉淀表 · 已入库','fix'); }
-    else if(kind==='测试'){ await persistLoop('test',s,text,'观察中'); addTest(s,text); toastGo('已加入测试登记（'+s.dept+'）· 已入库','test'); }
+    else if(kind==='采纳'){ const [fx]=await Promise.all([persistFix(s,text),persistLoop('deposit',s,text,'采纳')]); addFixFromObj(fx.item); addDeposit(s,text,'采纳'); toastGo('已采纳 → 整改清单 + 沉淀表 · 已入库','fix'); }
+    else if(kind==='测试'){ const r=await persistLoop('test',s,text,'观察中'); addTest(s,r.item.content,r.item); toastGo('已加入测试登记（'+s.dept+'）· 已入库','test'); }
     grp.querySelectorAll('.aibtn').forEach(b=>b.classList.add('done')); btn.textContent='✓ 已'+kind;
   }catch(e){ btn.disabled=false; toast(persistFailMsg(e)); }
 }
@@ -1222,7 +1267,7 @@ async function loopBack(btn,dept){
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
 const INQ_KEY='ferr:inquiries';
-const REGION_BADGE={'欧洲':'b-blue','北美':'b-purple','俄罗斯':'b-amber','东南亚/巴西':'b-red','其他':'b-gray'};
+const REGION_BADGE={'欧洲':'b-blue','西欧':'b-blue','南欧':'b-blue','北欧':'b-blue','中东欧':'b-teal','东欧/俄罗斯':'b-amber','俄罗斯':'b-amber','北美':'b-purple','拉美':'b-red','中东':'b-amber','北非':'b-amber','撒哈拉以南非洲':'b-gray','南亚':'b-teal','东南亚':'b-red','东南亚/巴西':'b-red','东亚':'b-green','中亚':'b-gray','大洋洲':'b-teal','其他':'b-gray'};
 const CH_BADGE={'SEO自然':'b-blue','SEM付费':'b-purple','直接':'b-teal','其他':'b-gray'};
 const PROD_BADGE={'铸造':'b-amber','锻造':'b-red','机加工':'b-blue','阀门':'b-purple','管件':'b-teal'};
 const GRADE_BADGE={A:'b-green',B:'b-blue',C:'b-gray'};
@@ -1394,7 +1439,7 @@ async function persistTagChange(el,value){
   // 任意带 data-ep 的行：标签 kind → 字段名 通用映射
   const ep=tr.dataset.ep; if(!ep)return;
   const fieldMap={negmatch:'match_type',negstatus:'status',adstatus:'status',match:'match_type',
-    priority:'priority',owner:'owner',status:'status',result:'result',dept:'dept'};
+    priority:'priority',owner:'owner',status:'status',result:'status',dept:'dept'};
   const field=fieldMap[kind]; if(!field)return;
   try{ await API.patch(ep+'/'+id,{[field]:value}); }catch(err){ toast(err.status===403?'无权修改':'保存失败'); }
 }
@@ -1787,8 +1832,8 @@ async function adoptAi(){
   const fixText=clip(first.replace(/\*\*/g,''),140), depText=clip(first.replace(/\*\*/g,''),40);
   const btn=document.getElementById('aiAdoptBtn'); if(btn)btn.disabled=true;
   try{
-    await Promise.all([persistFix(s,fixText),persistLoop('deposit',s,depText,'采纳')]);
-    addFix(s,fixText); addDeposit(s,depText,'采纳');
+    const [fx]=await Promise.all([persistFix(s,fixText),persistLoop('deposit',s,depText,'采纳')]);
+    addFixFromObj(fx.item); addDeposit(s,depText,'采纳');
     closeModal('aiMask'); toastGo('已采纳 → 整改清单（'+s.dept+'）· 已入库','fix');
   }catch(e){ toast(persistFailMsg(e)); }
   finally{ if(btn)btn.disabled=false; }

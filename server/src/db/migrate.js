@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS fixes (
   title      TEXT NOT NULL,
   dept       TEXT,
   detail     TEXT,
+  evidence   TEXT,
   owner      TEXT,
   due_date   TEXT,
   status     TEXT,
@@ -139,6 +140,12 @@ CREATE TABLE IF NOT EXISTS loop_items (
   content    TEXT,
   owner      TEXT,
   status     TEXT,
+  hypothesis    TEXT,   -- 计划/测试：假设
+  metric        TEXT,   -- 计划：成功指标
+  due_or_budget TEXT,   -- 计划：截止或预算
+  variable      TEXT,   -- 测试：变量
+  period        TEXT,   -- 测试：起止
+  conclusion    TEXT,   -- 测试：结论
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -220,10 +227,26 @@ export function migrate() {
   }
 
   db.exec(SCHEMA);
+
+  // 幂等加列：对已存在的旧库补充新增字段（不升版本、不清库，避免数据丢失）。
+  ensureColumns('loop_items', [
+    ['hypothesis', 'TEXT'], ['metric', 'TEXT'], ['due_or_budget', 'TEXT'],
+    ['variable', 'TEXT'], ['period', 'TEXT'], ['conclusion', 'TEXT'],
+  ]);
+  ensureColumns('fixes', [['evidence', 'TEXT']]);
+
   db.prepare(
     `INSERT INTO meta (key,value) VALUES ('schema_version',?)
      ON CONFLICT(key) DO UPDATE SET value=excluded.value`
   ).run(SCHEMA_VERSION);
+}
+
+// 仅在列缺失时 ALTER TABLE ADD COLUMN（SQLite 无 IF NOT EXISTS，靠 PRAGMA 自查）。
+function ensureColumns(table, cols) {
+  const existing = new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name));
+  for (const [name, type] of cols) {
+    if (!existing.has(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${type};`);
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
