@@ -619,7 +619,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="subtabs"><div class="subtab active" data-sub="kw-seo">SEO 关键词库</div><div class="subtab" data-sub="kw-sem">SEM 关键词库</div><div class="subtab" data-sub="kw-high">高价值词库</div><div class="subtab" data-sub="kw-cust">客户信息词库</div><div class="subtab" data-sub="kw-neg">否词库</div><div class="subtab" data-sub="kw-ad">广告创意库</div></div>
         <div class="subpanel active" id="sub-kw-seo">
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addKeyword('seo')"><i class="ti ti-plus"></i> 加词</button><span class="sheet-tip"><i class="ti ti-world-search"></i> GSC 位置与近 6 周走势接 GSC 后自动刷新；竞争程度/优化状态点标签切换即入库</span></div>
-          <div class="card"><table class="dt"><thead><tr><th>关键词</th><th class="ctr">等级</th><th class="num">月搜索量</th><th class="ctr">GSC 位置</th><th class="ctr">近 6 周</th><th class="ctr">竞争程度</th><th class="ctr">优化状态</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-seo">
+          <div class="card"><table class="dt"><thead><tr><th>关键词</th><th>等级</th><th>月搜索量</th><th>GSC 位置</th><th>落地页</th><th>近 6 周</th><th class="ctr">竞争程度</th><th class="ctr">优化状态</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-seo">
             <tr><td class="editable" contenteditable>Metal Fabrication</td><td class="ctr"><span class="badge b-red">A</span></td><td class="num">10.5k</td><td class="ctr"><span class="rankpill" data-trend="up">21 <b style="color:var(--green)">▲3</b></span></td><td class="ctr" data-spark="28,26,25,24,23,21"></td><td class="ctr"><span class="tagselect b-amber" data-kind="comp">中 (30-60)<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect b-red" data-kind="optstatus">未优化<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析关键词「Metal Fabrication」搜索意图，给出该用什么落地页、怎么落地。当前GSC排名21。','Metal Fabrication 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
             <tr><td class="editable" contenteditable>investment casting</td><td class="ctr"><span class="badge b-amber">B</span></td><td class="num">9k</td><td class="ctr"><span class="rankpill" data-trend="up">11 <b style="color:var(--green)">▲3</b></span></td><td class="ctr" data-spark="18,16,15,14,13,11"></td><td class="ctr"><span class="tagselect b-green" data-kind="comp">低 (10-30)<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect b-amber" data-kind="optstatus">优化中<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析关键词「investment casting」搜索意图与落地方式。GSC排名近6周从14升到11，接近首页。给出冲Top10动作。','investment casting 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
             <tr><td class="editable" contenteditable>ductile iron casting</td><td class="ctr"><span class="badge b-green">A</span></td><td class="num">6.4k</td><td class="ctr"><span class="rankpill" data-trend="flat">6 <b style="color:var(--text3)">—</b></span></td><td class="ctr" data-spark="7,6,6,7,6,6"></td><td class="ctr"><span class="tagselect b-green" data-kind="comp">低 (10-30)<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect b-green" data-kind="optstatus">已优化<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('「ductile iron casting」GSC稳居第6，给出守住并扩展长尾的建议。','ductile iron casting 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
@@ -629,7 +629,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         </div>
         <div class="subpanel" id="sub-kw-sem">
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addKeyword('sem')"><i class="ti ti-plus"></i> 加词</button></div>
-          <div class="card"><table class="dt"><thead><tr><th class="ctr">分类</th><th>关键词</th><th class="ctr">匹配方式</th><th>落地页</th><th class="ctr">优先级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-sem">
+          <div class="card"><table class="dt"><thead><tr><th>分类</th><th>关键词</th><th class="ctr">匹配方式</th><th>落地页</th><th class="ctr">优先级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-sem">
             <tr><td class="ctr"><span class="badge b-gray">工厂</span></td><td class="editable" contenteditable>die casting parts manufacturers</td><td class="ctr"><span class="tagselect b-blue" data-kind="match">词组匹配<i class="ti ti-chevron-down"></i></span></td><td class="dim" style="font-size:11px">die-casting-services/</td><td class="ctr"><span class="tagselect b-amber" data-kind="priority">高<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析SEM关键词「die casting parts manufacturers」搜索意图与落地建议','die casting 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
             <tr><td class="ctr"><span class="badge b-gray">仪表阀门</span></td><td class="editable" contenteditable>industrial valves supplier</td><td class="ctr"><span class="tagselect b-blue" data-kind="match">词组匹配<i class="ti ti-chevron-down"></i></span></td><td class="dim" style="font-size:11px">valves/</td><td class="ctr"><span class="tagselect b-amber" data-kind="priority">高<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析SEM关键词「industrial valves supplier」搜索意图与落地建议','industrial valves 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
           </tbody></table>
@@ -637,7 +637,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         </div>
         <div class="subpanel" id="sub-kw-high">
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addKeyword('high')"><i class="ti ti-plus"></i> 加词</button></div>
-          <div class="card"><table class="dt"><thead><tr><th>关键词</th><th class="ctr">类型</th><th class="ctr">渠道</th><th class="num">有效询盘</th><th class="ctr">分级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-high">
+          <div class="card"><table class="dt"><thead><tr><th>关键词</th><th>类型</th><th>渠道</th><th>有效询盘</th><th>分级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-high">
             <tr><td>ductile iron casting</td><td class="ctr">工艺</td><td class="ctr">SEO+SEM</td><td class="num">3</td><td class="ctr"><span class="badge b-green">核心</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析「ductile iron casting」搜索意图与落地建议','ductile iron casting 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
             <tr><td>casting to drawing</td><td class="ctr">意图</td><td class="ctr">SEO+SEM</td><td class="num">2</td><td class="ctr"><span class="badge b-green">核心</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析「casting to drawing」搜索意图与落地建议','casting to drawing 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
           </tbody></table></div>
@@ -645,7 +645,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="subpanel" id="sub-kw-cust">
           <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> 记录业务/客户口中说出的真实用词</div>
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addKeyword('customer')"><i class="ti ti-plus"></i> 加词</button></div>
-          <div class="card"><table class="dt"><thead><tr><th>客户原话 / 用词</th><th class="ctr">来源客户</th><th>对应我们的词</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust">
+          <div class="card"><table class="dt"><thead><tr><th>客户原话 / 用词</th><th>来源客户</th><th>对应我们的词</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust">
             <tr><td class="editable" contenteditable>"nodular cast iron"</td><td class="ctr">🇩🇪 德国 模块系统厂</td><td class="dim" style="font-size:11px">ductile iron casting 同义</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('客户用词「nodular cast iron」的搜索意图，与我们哪个词对应、怎么落地','nodular cast iron 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
             <tr><td class="editable" contenteditable>"parts as per drawing"</td><td class="ctr">🇺🇸 美国 农机商</td><td class="dim" style="font-size:11px">casting to drawing</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('客户用词「parts as per drawing」的搜索意图与落地','parts as per drawing 意图')"><i class="ti ti-bulb"></i> 分析意图</button></td></tr>
           </tbody></table></div>
@@ -653,7 +653,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="subpanel" id="sub-kw-neg">
           <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-ban" style="color:var(--primary)"></i> SEM 质量控制核心：记录每个否词「什么时候加、为什么加」，写新广告/排查浪费时一查就有</div>
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addNeg()"><i class="ti ti-plus"></i> 加否词</button><button class="btn-ai" onclick="aiAsk('基于费尔瑞的SEM情况（东南亚来词零有效询盘、机加工通用组浪费高、目标客户为欧美来图定制工厂、避免比价/个人/教学类流量），建议本月应新增哪些否词，按词组/精确分类列出并说明原因。','AI 建议否词')"><i class="ti ti-sparkles"></i> AI 建议否词</button></div>
-          <div class="card"><table class="dt"><thead><tr><th>否词</th><th class="ctr">匹配类型</th><th class="num">加入日期</th><th>原因</th><th class="ctr">来源系列</th><th class="ctr">状态</th></tr></thead><tbody id="tb-neg">
+          <div class="card"><table class="dt"><thead><tr><th>否词</th><th class="ctr">匹配类型</th><th>加入日期</th><th>原因</th><th>来源系列</th><th class="ctr">状态</th></tr></thead><tbody id="tb-neg">
             <tr><td class="editable" contenteditable>cheap</td><td class="ctr"><span class="tagselect b-blue" data-kind="negmatch">词组<i class="ti ti-chevron-down"></i></span></td><td class="num">06-02</td><td class="dim" style="font-size:11px">比价流量、无效询盘多</td><td class="ctr"><span class="badge b-gray">全账户</span></td><td class="ctr"><span class="tagselect b-green" data-kind="negstatus">生效<i class="ti ti-chevron-down"></i></span></td></tr>
             <tr><td class="editable" contenteditable>diy</td><td class="ctr"><span class="tagselect b-blue" data-kind="negmatch">词组<i class="ti ti-chevron-down"></i></span></td><td class="num">06-02</td><td class="dim" style="font-size:11px">个人/教学流量，非 B2B</td><td class="ctr"><span class="badge b-gray">全账户</span></td><td class="ctr"><span class="tagselect b-green" data-kind="negstatus">生效<i class="ti ti-chevron-down"></i></span></td></tr>
             <tr><td class="editable" contenteditable>jobs</td><td class="ctr"><span class="tagselect b-green" data-kind="negmatch">精确<i class="ti ti-chevron-down"></i></span></td><td class="num">05-28</td><td class="dim" style="font-size:11px">求职流量</td><td class="ctr"><span class="badge b-gray">全账户</span></td><td class="ctr"><span class="tagselect b-green" data-kind="negstatus">生效<i class="ti ti-chevron-down"></i></span></td></tr>
@@ -663,7 +663,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="subpanel" id="sub-kw-ad">
           <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-bulb"></i> 有效文案沉淀在这里可复用——下次写广告先来抄赢过的（如球铁页资质版 CTR+38%）</div>
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addAd()"><i class="ti ti-plus"></i> 加创意</button><button class="btn-ai" onclick="aiAsk('为费尔瑞写3组Google Ads响应式搜索广告创意（针对欧美来图定制铸件买家，主打资质/按图定制/快速打样），每组含标题与描述，并说明卖点逻辑。','AI 生成广告创意')"><i class="ti ti-sparkles"></i> AI 生成创意</button></div>
-          <div class="card"><table class="dt"><thead><tr><th>标题</th><th>描述</th><th class="num">CTR</th><th>A/B 结论</th><th class="ctr">状态</th></tr></thead><tbody id="tb-ad">
+          <div class="card"><table class="dt"><thead><tr><th>标题</th><th>描述</th><th>CTR</th><th>A/B 结论</th><th class="ctr">状态</th></tr></thead><tbody id="tb-ad">
             <tr><td class="editable" contenteditable>ISO/CE 认证铸造厂 · 按图定制</td><td class="editable dim" contenteditable style="font-size:11px">资质齐全，球墨铸铁/铸钢按图打样，48h 报价</td><td class="num" style="color:var(--green)">+38%</td><td class="dim" style="font-size:11px">资质版 &gt; 价格版，全量采用</td><td class="ctr"><span class="tagselect b-green" data-kind="adstatus">采用中<i class="ti ti-chevron-down"></i></span></td></tr>
             <tr><td class="editable" contenteditable>Send Your Drawing, Get a Quote</td><td class="editable dim" contenteditable style="font-size:11px">STEP/PDF/手绘均可，按图询价，小批量灵活</td><td class="num">3.1%</td><td class="dim" style="font-size:11px">大白话版对美国农机客户更好</td><td class="ctr"><span class="tagselect b-amber" data-kind="adstatus">测试中<i class="ti ti-chevron-down"></i></span></td></tr>
             <tr><td class="editable" contenteditable>Lowest Price Casting</td><td class="editable dim" contenteditable style="font-size:11px">价格导向文案</td><td class="num" style="color:var(--primary)">1.2%</td><td class="dim" style="font-size:11px">引来比价/无效询盘，已淘汰</td><td class="ctr"><span class="tagselect b-gray" data-kind="adstatus">已弃用<i class="ti ti-chevron-down"></i></span></td></tr>
@@ -1010,7 +1010,19 @@ function restoreRoute(){
   let sub=null; try{ sub=localStorage.getItem('ferr:sub:'+tab); }catch(e){}
   if(sub){ const panel=document.getElementById('panel-'+tab); const st=panel&&panel.querySelector('.subtab[data-sub="'+sub+'"]'); if(st)st.click(); }
 }
-document.querySelectorAll('.cat-tabs').forEach(b=>b.addEventListener('click',e=>{ const t=e.target.closest('.cat-tab'); if(t&&!t.classList.contains('add')){ b.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); }}));
+document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click',e=>{
+  const t=e.target.closest('.cat-tab'); if(!t)return;
+  const sub=box.closest('.subpanel'); const type=sub&&sub.id==='sub-kw-sem'?'sem':'seo';
+  if(t.classList.contains('add')){ // 新建分类
+    const name=(prompt('新建分类名称：')||'').trim(); if(!name)return;
+    if(![...box.querySelectorAll('.cat-tab')].some(x=>x.textContent.trim()===name)){ const span=document.createElement('span'); span.className='cat-tab'; span.textContent=name; box.insertBefore(span,t); }
+    box.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active'));
+    const target=[...box.querySelectorAll('.cat-tab')].find(x=>x.textContent.trim()===name); if(target)target.classList.add('active');
+    filterKwByCat(type,name); return;
+  }
+  box.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  filterKwByCat(type, t.classList.contains('cat-all')?null:t.textContent.trim());
+}));
 
 /* ---------- per-page inline time filter ---------- */
 const RANGES=['昨天','上周','上半月','近1月','近3月','近半年','近1年','自定义'];
@@ -1324,8 +1336,8 @@ const NEG_KEY='ferr:negs', AD_KEY='ferr:ads';
 const NEGMATCH_BADGE={'精确':'b-green','词组':'b-blue','广泛':'b-amber'};
 const NEGSTATUS_BADGE={'生效':'b-green','观察':'b-amber','已移除':'b-gray'};
 const ADSTATUS_BADGE={'采用中':'b-green','测试中':'b-amber','已弃用':'b-gray'};
-function negRowHtml(r){return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type]||'b-blue'}" data-kind="negmatch">${esc(r.match_type||'词组')}<i class="ti ti-chevron-down"></i></span></td><td class="num">${esc(r.added_date||'')}</td><td class="editable" contenteditable data-field="reason" style="font-size:11px">${esc(r.reason||'')}</td><td class="ctr"><span class="badge b-gray">${esc(r.source_campaign||'全账户')}</span></td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status]||'b-green'}" data-kind="negstatus">${esc(r.status||'生效')}<i class="ti ti-chevron-down"></i></span></td>`;}
-function adRowHtml(r){return `<td class="editable" contenteditable data-field="title">${esc(r.title)}</td><td class="editable dim" contenteditable data-field="description" style="font-size:11px">${esc(r.description||'')}</td><td class="num">${esc(r.ctr||'—')}</td><td class="editable dim" contenteditable data-field="ab_conclusion" style="font-size:11px">${esc(r.ab_conclusion||'')}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status]||'b-amber'}" data-kind="adstatus">${esc(r.status||'测试中')}<i class="ti ti-chevron-down"></i></span></td>`;}
+function negRowHtml(r){return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type]||'b-blue'}" data-kind="negmatch">${esc(r.match_type||'词组')}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc(r.added_date||'')}</td><td class="editable" contenteditable data-field="reason" style="font-size:11px">${esc(r.reason||'')}</td><td class="editable" contenteditable data-field="source_campaign">${esc(r.source_campaign||'')}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status]||'b-green'}" data-kind="negstatus">${esc(r.status||'生效')}<i class="ti ti-chevron-down"></i></span></td>`;}
+function adRowHtml(r){return `<td class="editable" contenteditable data-field="title">${esc(r.title)}</td><td class="editable dim" contenteditable data-field="description" style="font-size:11px">${esc(r.description||'')}</td><td class="editable" contenteditable data-field="ctr">${esc(r.ctr||'')}</td><td class="editable dim" contenteditable data-field="ab_conclusion" style="font-size:11px">${esc(r.ab_conclusion||'')}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status]||'b-amber'}" data-kind="adstatus">${esc(r.status||'测试中')}<i class="ti ti-chevron-down"></i></span></td>`;}
 // 去弹窗化：直接新增可编辑空行（POST 默认值后原地编辑）
 async function addNeg(){
   try{
@@ -1879,52 +1891,73 @@ function renderRankTrend(arr){
 const KW_TB={seo:'tb-kw-seo',sem:'tb-kw-sem',high:'tb-kw-high',customer:'tb-kw-cust'};
 function clsOf(kind,val){const o=(OPT[kind]||[]).find(x=>x[0]===val);return o?o[1]:'b-gray';}
 function kwRow(type,r){
-  const a=r.attrs||{}; const tr=document.createElement('tr'); tr.dataset.id=r.id; tr.dataset.kwType=type;
+  const a=r.attrs||{}; const tr=document.createElement('tr'); tr.dataset.id=r.id; tr.dataset.kwType=type; tr.dataset.cat=r.category||'';
   const aiBtn='<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> 分析意图</button>';
   const del='<button class="btn-mini kw-del" title="删除" style="color:var(--primary);border-color:var(--border2)"><i class="ti ti-trash"></i></button>';
+  const ev=v=>v==null?'':v;
+  const ed=(attr,val)=>`<td class="editable" contenteditable data-attr="${attr}">${esc(ev(val))}</td>`; // 可编辑→写入 attrs
   if(type==='seo'){
     tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
-      +`<td class="ctr"><span class="badge ${esc(a.gradeCls||'b-gray')}">${esc(a.gradeText||'-')}</span></td>`
-      +`<td class="num">${esc(a.volume||'')}</td>`
-      +`<td class="ctr"><span class="rankpill" data-trend="${esc(a.trend||'flat')}">${esc(a.gscRank??'-')} <b style="color:${esc(a.deltaCol||'var(--text3)')}">${esc(a.deltaText||'—')}</b></span></td>`
-      +`<td class="ctr" data-spark="${esc(a.spark||'')}"></td>`
+      +ed('gradeText',a.gradeText)+ed('volume',a.volume)+ed('gscRank',a.gscRank)+ed('landing',a.landing)+ed('spark',a.spark)
       +`<td class="ctr"><span class="tagselect ${clsOf('comp',a.comp)}" data-kind="comp">${esc(a.comp||'中 (30-60)')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr"><span class="tagselect ${clsOf('optstatus',a.optstatus)}" data-kind="optstatus">${esc(a.optstatus||'优化中')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else if(type==='sem'){
-    tr.innerHTML=`<td class="ctr"><span class="badge b-gray">${esc(a.catText||'分类')}</span></td>`
+    tr.innerHTML=`<td class="editable" contenteditable data-cat="1">${esc(r.category||'')}</td>`
       +`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
       +`<td class="ctr"><span class="tagselect ${clsOf('match',a.match)}" data-kind="match">${esc(a.match||'词组匹配')}<i class="ti ti-chevron-down"></i></span></td>`
-      +`<td class="dim" style="font-size:11px">${esc(a.landing||'')}</td>`
+      +ed('landing',a.landing)
       +`<td class="ctr"><span class="tagselect ${clsOf('priority',a.priority)}" data-kind="priority">${esc(a.priority||'高')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else if(type==='high'){
     tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
-      +`<td class="ctr">${esc(a.ktype||'')}</td>`+`<td class="ctr">${esc(a.channel||'')}</td>`
-      +`<td class="num">${esc(a.inquiry??'')}</td>`
-      +`<td class="ctr"><span class="badge ${esc(a.gradeCls||'b-green')}">${esc(a.gradeText||'核心')}</span></td>`
+      +ed('ktype',a.ktype)+ed('channel',a.channel)+ed('inquiry',a.inquiry)+ed('gradeText',a.gradeText)
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else{
     tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
-      +`<td class="ctr">${esc(a.sourceCustomer||'')}</td>`
-      +`<td class="dim" style="font-size:11px">${esc(a.mapped||'')}</td>`
+      +ed('sourceCustomer',a.sourceCustomer)+ed('mapped',a.mapped)
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }
   return tr;
 }
+/* 关键词单元格保存：data-attr → 写入 attrs；data-cat → 写入 category。失焦即存、失败回滚 */
+document.addEventListener('focusin',e=>{ const c=e.target.closest&&e.target.closest('#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]'); if(c)c._old=c.innerText; });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const c=e.target.closest&&e.target.closest('#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]'); if(c){ e.preventDefault(); c.blur(); } } });
+document.addEventListener('focusout',async e=>{
+  const c=e.target.closest&&e.target.closest('#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]'); if(!c)return;
+  const tr=c.closest('tr'); if(!tr||!tr.dataset.id)return;
+  const val=c.innerText.trim(); const oldVal=c._old!=null?c._old:c.innerText;
+  if(val===String(oldVal).trim())return;
+  const isCat=c.dataset.cat!=null; const body=isCat?{category:val}:{attrs:{[c.dataset.attr]:val}};
+  try{ await API.patch('/api/keywords/'+tr.dataset.id,body); c._old=val; if(isCat){ tr.dataset.cat=val; renderCatTabs(tr.dataset.kwType); } }
+  catch(err){ rollbackEditable(c,oldVal); toast(err.status===403?'无权修改，已恢复旧值':'保存失败，已恢复旧值'); }
+});
+/* 分类标签：渲染（按现有 category 去重）/ 筛选 / 新建 */
+function renderCatTabs(type){
+  if(type!=='seo'&&type!=='sem')return;
+  const sub=document.getElementById(type==='seo'?'sub-kw-seo':'sub-kw-sem'); const box=sub&&sub.querySelector('.cat-tabs'); const tb=document.getElementById(KW_TB[type]); if(!box||!tb)return;
+  const active=(box.querySelector('.cat-tab.active')||{}).textContent; // 记住当前选中
+  const cats=[...new Set([...tb.querySelectorAll('tr')].map(tr=>tr.dataset.cat).filter(Boolean))];
+  box.innerHTML='<span class="cat-tab cat-all">全部</span>'+cats.map(c=>`<span class="cat-tab">${esc(c)}</span>`).join('')+'<span class="cat-tab add"><i class="ti ti-plus"></i> 新建分类</span>';
+  const keep=[...box.querySelectorAll('.cat-tab')].find(x=>x.textContent.trim()===(active||'').trim())||box.querySelector('.cat-all');
+  keep.classList.add('active'); filterKwByCat(type, keep.classList.contains('cat-all')?null:keep.textContent.trim());
+}
+function filterKwByCat(type,cat){ const tb=document.getElementById(KW_TB[type]); if(!tb)return; [...tb.querySelectorAll('tr')].forEach(tr=>{ tr.style.display=(!cat||tr.dataset.cat===cat)?'':'none'; }); }
+function activeCat(type){ const sub=document.getElementById(type==='seo'?'sub-kw-seo':type==='sem'?'sub-kw-sem':null); const t=sub&&sub.querySelector('.cat-tab.active'); if(!t||t.classList.contains('cat-all')||t.classList.contains('add'))return null; return t.textContent.trim(); }
 async function loadKeywords(){
   try{
     const {items}=await API.get('/api/keywords');
     const byType={seo:[],sem:[],high:[],customer:[]};
     (items||[]).forEach(r=>{ if(byType[r.type])byType[r.type].push(r); });
     Object.keys(KW_TB).forEach(t=>{ const tb=document.getElementById(KW_TB[t]); if(!tb)return; tb.innerHTML=''; byType[t].forEach(r=>tb.appendChild(kwRow(t,r))); });
-    renderSparklines();
+    renderSparklines(); renderCatTabs('seo'); renderCatTabs('sem');
   }catch(e){ if(e&&e.message!=='unauthorized'){ Object.keys(KW_TB).forEach(t=>{const tb=document.getElementById(KW_TB[t]); if(tb)tb.innerHTML='';}); toast('关键词加载失败：'+(e.message||'未知错误')); } }
 }
 async function addKeyword(type){
   try{
-    const {item}=await API.post('/api/keywords',{type,keyword:'新关键词',attrs:{}});
-    const tb=document.getElementById(KW_TB[type]); if(tb){ const tr=kwRow(type,item); tb.appendChild(tr); renderSparklines(); const c=tr.querySelector('.kw-name'); if(c){c.focus();placeCaretEnd(c);} }
+    const category=activeCat(type); // 当前选中的分类（若有）→ 新词归入该分类
+    const {item}=await API.post('/api/keywords',{type,keyword:'新关键词',attrs:{},category});
+    const tb=document.getElementById(KW_TB[type]); if(tb){ const tr=kwRow(type,item); tb.appendChild(tr); renderSparklines(); renderCatTabs(type); const c=tr.querySelector('.kw-name'); if(c){c.focus();placeCaretEnd(c);} }
     toast('已加一行 · 直接在表格里改');
   }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
 }
