@@ -1221,7 +1221,7 @@ async function submitInquiry(){
     renderInqRow(item,true); refreshInqStats(stats); closeModal('inqMask');
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
-  }catch(e){ toast(e.status===403?'无权录入（仅销售可录询盘）':'保存失败：'+e.message); }
+  }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
 }
 function renderInqRow(r,flash){
   const confirmCell=r.grade==='C'?'<span class="dim" style="font-size:11px">无效</span>':'<i class="ti ti-circle-check" style="color:var(--green)"></i>';
@@ -2045,7 +2045,7 @@ function applyRoleUi(){
       el.removeAttribute('contenteditable'); el.style.opacity='.7';
     });
   }
-  // 仅销售可录询盘：隐藏录入按钮（后端同样强制校验）
+  // V7：四个运营角色（李/陈/主管/老板）均可录询盘；非登录运营才隐藏录入按钮（后端同样强制校验）
   if(!can('inquiry')){
     document.querySelectorAll('[onclick="openInquiry()"]').forEach(b=>b.style.display='none');
   }
