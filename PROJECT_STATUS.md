@@ -25,10 +25,19 @@ MVP 上线稳定版。
 - Phase 1e-a: `/api/inquiries` 支持 `start_date` / `end_date`，前端时间范围影响询盘。
 - Phase 1e-b: `/api/seo-weeks`、`/api/sem-weeks` 支持日期区间；前端仅 SEO 折线图消费区间数据。
 - Phase 1e-c: 前端增加时间范围作用边界提示，明确 KPI、SEM 看板、GA4、整改等暂不受时间范围影响。
+- 核心数据 loader 失败提示：API 加载失败不再静默残留旧数据，给 toast + 清表。
+- 关键词库修复：删除残留静态示例行，列对齐、单元格可真实录入入库。
+- 闭环审计通过：核心数据录入 6 模块 + AI 建议采纳到整改/任务，均「新增→刷新仍在、失败有提示、无假成功」。
+- 已生成 `DEPLOY_CHECKLIST.md`（启动/.env/首次部署/备份/手测/已知 TODO）。
+
+## MVP Validation
+
+- 已按 `DEPLOY_CHECKLIST.md` 完成上线前手测，结果：**登录、询盘、SEO 周报、SEM 周报、关键词、否词、广告创意、AI 建议采纳到整改/任务 —— 均无阻断问题**。
+- 结论：**MVP 可进入部署 / 试用阶段。**
 
 Latest pushed commit:
 
-- `9611775 chore: clarify time range scope`
+- `a55e623 docs: add deploy checklist`
 
 ## Known Local Difference
 
@@ -38,27 +47,23 @@ Latest pushed commit:
 
 ## Next Task
 
-MVP 核心数据录入闭环稳定性审计与修复。
+部署 / 试用收口：上线后只处理**阻断 MVP 使用的 bug**。
 
-Scope:
+Rules:
 
-- 询盘
-- SEO 周报
-- SEM 周报
-- 关键词库
-- 否词库
-- 广告创意库
+- 只修上线阻断问题（登录/录入/保存/刷新丢失/数据串模块/假成功这类）。
+- 不做 GSC / GA4 / Google Ads OAuth。
+- 不做 UI 美化。
+- 不做前端模块化。
+- 非阻断问题只记 TODO，不现场修。
 
-Acceptance:
+## Known TODO（非阻断，后续迭代）
 
-- 能新增
-- 能显示
-- 刷新后仍在
-- 数据进入正确模块
-- 保存失败有提示
-- 不出现假成功
-- 不动无关模块
-- 不做 UI 美化或重构
+- 自动数据源：GSC / GA4 / Google Ads 同步未接入（周报靠人工录入；状态卡如实显示未配置/同步未实现）。
+- 部分静态看板真实化：仪表盘 mini 图/donut、GA4 看板等空状态或骨架，待接真实聚合。
+- `loadClosedLoop` 加载失败仍静默 catch{}，待补失败提示（与核心 loader 同类）。
+- 前端模块化：`public/index.html` 仍是单文件，后续拆分降低维护成本。
+- SEO「近 6 周」列现为可编辑文本（非 sparkline）；询盘写入角色为 editor（非仅销售）。
 
 ## New Machine Startup Prompt
 
