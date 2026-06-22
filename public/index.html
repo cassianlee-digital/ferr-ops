@@ -418,7 +418,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
           <div>
           <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；右侧地球仪按表格数据实时高亮各国并画青岛飞线</span></div>
           <div class="card"><table class="dt">
-          <thead><tr><th>日期</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">销售确认</th></tr></thead>
+          <thead><tr><th>日期</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">销售确认</th><th>备注</th></tr></thead>
           <tbody id="tb-inq">
             <tr><td>06-04</td><td>🇩🇪 德国</td><td class="ctr"><span class="badge b-blue">欧洲</span></td><td class="ctr"><span class="tagselect b-blue" data-kind="channel">SEO自然<i class="ti ti-chevron-down"></i></span></td><td>ductile iron casting / 球铁页</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
             <tr><td>06-04</td><td>🇺🇸 美国</td><td class="ctr"><span class="badge b-purple">北美</span></td><td class="ctr"><span class="tagselect b-purple" data-kind="channel">SEM付费<i class="ti ti-chevron-down"></i></span></td><td>casting to drawing / 按图询价</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
@@ -981,7 +981,9 @@ function toast(m){ const t=document.getElementById('toast'); t.textContent=m; sh
 function toastGo(m,tab){ const t=document.getElementById('toast'); t.textContent=(m==null?'':String(m)); if(tab){ t.appendChild(document.createTextNode('  ')); const b=document.createElement('b'); b.textContent='查看 →'; b.style.color='#ff8a82'; b.style.cursor='pointer'; b.onclick=()=>{ go(tab); hideToast(); }; t.appendChild(b); } showToast(); }
 
 /* ---------- theme toggle ---------- */
-function toggleTheme(){ document.body.classList.toggle('dark'); const dk=document.body.classList.contains('dark'); document.getElementById('themeBtn').innerHTML='<i class="ti ti-'+(dk?'sun':'moon')+'"></i>'; }
+function toggleTheme(){ document.body.classList.toggle('dark'); const dk=document.body.classList.contains('dark'); document.getElementById('themeBtn').innerHTML='<i class="ti ti-'+(dk?'sun':'moon')+'"></i>'; try{localStorage.setItem('ferr:theme',dk?'dark':'light');}catch(e){} }
+// 解析期立即恢复主题，避免刷新后丢深色/闪烁
+(function(){ try{ if(localStorage.getItem('ferr:theme')==='dark'){ document.body.classList.add('dark'); const b=document.getElementById('themeBtn'); if(b)b.innerHTML='<i class="ti ti-sun"></i>'; } }catch(e){} })();
 
 /* ---------- nav ---------- */
 function go(tab){ const p=document.getElementById('panel-'+tab); if(!p)return; document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); p.classList.add('active'); const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){}
@@ -1307,7 +1309,7 @@ async function submitInquiry(){
 }
 function renderInqRow(r,flash){
   const confirmCell=r.grade==='C'?'<span class="dim" style="font-size:11px">无效</span>':'<i class="ti ti-circle-check" style="color:var(--green)"></i>';
-  const html=`<td>${esc(r.date.slice(5))}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${esc(r.grade)}</span></td><td class="ctr">${confirmCell}</td>`;
+  const html=`<td>${esc(r.date.slice(5))}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${esc(r.grade)}</span></td><td class="ctr">${confirmCell}</td><td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`;
   if(flash)prepend('tb-inq',html); else { const tb=document.getElementById('tb-inq'); const tr=document.createElement('tr'); tr.innerHTML=html; tb.insertBefore(tr,tb.firstChild); }
 }
 function refreshInqStats(stats){
@@ -1481,7 +1483,9 @@ function applyKpiServer(rows){
   (rows||[]).forEach(r=>{ const arr=byGrp[r.grp]; if(!arr)return; const k=arr.find(x=>x.n===r.name);
     if(k){ if(typeof r.target==='number')k.t=r.target; if(typeof r.actual==='number')k.a=r.actual; k.id=r.id; } });
 }
-async function loadMetrics(){ try{ const {rows}=await API.get('/api/kpi-targets'); applyKpiServer(rows); }catch(e){} }
+// 把后端 KPI 目标值回填到设置页可编辑 span（否则刷新后 span 仍显示静态默认值，看着像没保存）
+function syncKpiInputs(){ document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{ const p=el.dataset.kpi.split(':'),arr=({TOTAL,SEO,SEM})[p[0]],idx=+p[1]; if(arr&&arr[idx]&&arr[idx].t!=null){ el.textContent=String(arr[idx].t); el.dataset.kpiOld=String(arr[idx].t); } }); }
+async function loadMetrics(){ try{ const {rows}=await API.get('/api/kpi-targets'); applyKpiServer(rows); syncKpiInputs(); }catch(e){} }
 
 /* 后端周报字段 → 前端原有字段名映射，保持下游逻辑不变 */
 function mapSeoWeek(w){return {date:(w.week_date||'').slice(5),clicks:w.clicks,impr:w.impressions,pos:w.avg_position,top10:w.top10_ratio,coverage:w.coverage,indexed:w.indexed_pages,bounce:w.bounce_rate,dwell:w.dwell_seconds};}
@@ -1591,7 +1595,7 @@ function showSaveError(el, msg){ setSavingState(el,'error'); toast(msg); }
 function bindSettings(){
   document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{
     el.addEventListener('focusin',()=>{ el.dataset.kpiOld=el.textContent; }); // 缓存旧值
-    const commit=async()=>{ if(!can('kpiTarget'))return; // 仅老板可改目标(后端也强制)
+    const commit=async()=>{ if(!can('kpiTarget')){ rollbackEditable(el, el.dataset.kpiOld!=null?el.dataset.kpiOld:el.textContent); toast('仅老板/主管可改 KPI 目标'); return; } // 不静默：给明确提示并回滚
       const p=el.dataset.kpi.split(':'),arr=({TOTAL,SEO,SEM})[p[0]],idx=+p[1];
       if(!arr||!arr[idx])return;
       const oldVal=el.dataset.kpiOld!=null?el.dataset.kpiOld:String(arr[idx].t);
@@ -2110,6 +2114,7 @@ function charts(){
 window.addEventListener('load',async()=>{
   await ensureAuth();          // 未登录会跳 /login.html
   applyRoleUi();               // 按角色显示用户/登出、隐藏越权控件
+  restoreRoute();              // 尽早回到上次页签，避免先闪总览再跳回
   await loadMetrics();          // 持久化的目标/实际覆盖默认
   await loadWeeks();            // 持久化的周数据
   renderKPI();                  // rows + gauges + scores + badges 一次到位
@@ -2128,7 +2133,6 @@ window.addEventListener('load',async()=>{
   await loadBrain();           // AI 记忆体状态 + 摘要
   await renderReview();        // 复盘周报（手风琴+并排）
   refreshInqStats();
-  restoreRoute();              // 刷新后回到上次页签（修复回总览 Bug）
 });
 
 /* 顶栏显示当前用户 + 登出；按角色做前端控件提示（后端才是权威校验）*/
