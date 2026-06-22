@@ -19,7 +19,7 @@ export function create(rec) {
 
 export function update(id, fields) {
   const allowed = ['dept', 'content', 'owner', 'status',
-    'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion'];
+    'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis'];
   const keys = Object.keys(fields).filter((k) => allowed.includes(k));
   if (!keys.length) return get(id);
   db.prepare(`UPDATE loop_items SET ${keys.map((k) => `${k}=@${k}`).join(', ')} WHERE id=@id`)

@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS loop_items (
   variable      TEXT,   -- 测试：变量
   period        TEXT,   -- 测试：起止
   conclusion    TEXT,   -- 测试：结论
+  analysis      TEXT,   -- 沉淀：对该动作的分析
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -232,6 +233,7 @@ export function migrate() {
   ensureColumns('loop_items', [
     ['hypothesis', 'TEXT'], ['metric', 'TEXT'], ['due_or_budget', 'TEXT'],
     ['variable', 'TEXT'], ['period', 'TEXT'], ['conclusion', 'TEXT'],
+    ['analysis', 'TEXT'],
   ]);
   ensureColumns('fixes', [['evidence', 'TEXT']]);
 

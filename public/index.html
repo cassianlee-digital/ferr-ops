@@ -628,22 +628,22 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="subtabs"><div class="subtab active" data-sub="kw-seo">SEO 关键词库</div><div class="subtab" data-sub="kw-sem">SEM 关键词库</div><div class="subtab" data-sub="kw-high">高价值词库</div><div class="subtab" data-sub="kw-cust">客户信息词库</div><div class="subtab" data-sub="kw-neg">否词库</div><div class="subtab" data-sub="kw-ad">广告创意库</div></div>
         <div class="subpanel active" id="sub-kw-seo">
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addKeyword('seo')"><i class="ti ti-plus"></i> 加词</button><span class="sheet-tip"><i class="ti ti-world-search"></i> GSC 位置与近 6 周走势接 GSC 后自动刷新；竞争程度/优化状态点标签切换即入库</span></div>
-          <div class="card"><table class="dt"><thead><tr><th>关键词</th><th>等级</th><th>月搜索量</th><th>GSC 位置</th><th>落地页</th><th>近 6 周</th><th class="ctr">竞争程度</th><th class="ctr">优化状态</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-seo"></tbody></table>
+          <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>关键词</th><th class="ctr">搜索意图</th><th>等级</th><th>月搜索量</th><th>GSC 位置</th><th>落地页</th><th>近 6 周</th><th class="ctr">竞争程度</th><th class="ctr">优化状态</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-seo"></tbody></table>
           <div class="cat-tabs"><span class="cat-tab active">管件</span><span class="cat-tab">阀门</span><span class="cat-tab">铸锻件</span><span class="cat-tab add"><i class="ti ti-plus"></i> 新建分类</span></div></div>
         </div>
         <div class="subpanel" id="sub-kw-sem">
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addKeyword('sem')"><i class="ti ti-plus"></i> 加词</button></div>
-          <div class="card"><table class="dt"><thead><tr><th>分类</th><th>关键词</th><th class="ctr">匹配方式</th><th>落地页</th><th class="ctr">优先级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-sem"></tbody></table>
+          <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>分类</th><th>关键词</th><th class="ctr">搜索意图</th><th class="ctr">匹配方式</th><th>落地页</th><th class="ctr">优先级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-sem"></tbody></table>
           <div class="cat-tabs"><span class="cat-tab active">铝铸-SEM</span><span class="cat-tab">铸钢-SEM</span><span class="cat-tab">仪表阀门-SEM</span><span class="cat-tab">YANDEX-俄</span><span class="cat-tab add"><i class="ti ti-plus"></i> 新建分类</span></div></div>
         </div>
         <div class="subpanel" id="sub-kw-high">
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addKeyword('high')"><i class="ti ti-plus"></i> 加词</button></div>
-          <div class="card"><table class="dt"><thead><tr><th>关键词</th><th>类型</th><th>渠道</th><th>有效询盘</th><th>分级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-high"></tbody></table></div>
+          <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>关键词</th><th>类型</th><th>渠道</th><th>有效询盘</th><th>分级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-high"></tbody></table></div>
         </div>
         <div class="subpanel" id="sub-kw-cust">
           <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> 记录业务/客户口中说出的真实用词</div>
           <div class="sheet-toolbar"><button class="btn-primary" onclick="addKeyword('customer')"><i class="ti ti-plus"></i> 加词</button></div>
-          <div class="card"><table class="dt"><thead><tr><th>客户原话 / 用词</th><th>来源客户</th><th>对应我们的词</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust"></tbody></table></div>
+          <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>客户原话 / 用词</th><th>来源客户</th><th>对应我们的词</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust"></tbody></table></div>
         </div>
         <div class="subpanel" id="sub-kw-neg">
           <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-ban" style="color:var(--primary)"></i> SEM 质量控制核心：记录每个否词「什么时候加、为什么加」，写新广告/排查浪费时一查就有</div>
@@ -694,7 +694,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <!-- ============ 沉淀表 ============ -->
       <div class="panel" id="panel-deposit">
         <div class="page-head"><div><div class="page-title">沉淀表</div><div class="page-sub">点过「沉淀」「采纳」的数据/线索自动归档到这里，也可手动增删改</div></div><button class="btn-primary" onclick="addDepositRow()"><i class="ti ti-plus"></i> 加一行</button></div>
-        <div class="card"><table class="dt"><thead><tr><th class="num" style="width:90px">日期</th><th class="ctr" style="width:90px">来源</th><th>沉淀内容</th><th class="ctr" style="width:60px"></th></tr></thead><tbody id="tb-dep"></tbody></table>
+        <div class="card"><table class="dt"><thead><tr><th class="num" style="width:90px">日期</th><th class="ctr" style="width:90px">来源</th><th>沉淀内容</th><th>分析</th><th class="ctr" style="width:60px"></th></tr></thead><tbody id="tb-dep"></tbody></table>
           <div id="dep-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无沉淀内容</div>
         </div>
       </div>
@@ -1091,7 +1091,7 @@ function scopeDept(btn,txt){
 const clip=(s,n)=>s.length>n?s.slice(0,n)+'…':s;
 
 function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
-  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${s.dept}诊断</span></td><td>${esc(text)}</td><td class="ctr"><span class="badge ${ac}">${act}</span></td>`);}
+  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${s.dept}诊断</span></td><td>${esc(text)}</td><td class="dim" style="font-size:11px"></td><td class="ctr"><span class="badge ${ac}">${act}</span></td>`);}
 /* 整改行：问题/所属/依据/动作/负责人/截止/结果，全部可编辑或可选；绑定 id 后失焦即存 */
 function fixRowHtml(f){
   const dept=f.dept==='SEM'?'SEM':'SEO'; const c=dept==='SEM'?'b-purple':'b-blue';
@@ -1166,7 +1166,7 @@ async function loadClosedLoop(){
 function depRowHtml(it){
   const date=(it.created_at||'').slice(5,10)||today();
   const badge=it.status==='采纳'?'<span class="badge b-green">采纳</span>':'<span class="badge b-teal">沉淀</span>';
-  return `<td class="num">${esc(date)}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="ctr"><button class="btn-mini" style="color:var(--primary)" onclick="depDel(this)"><i class="ti ti-trash"></i></button></td>`;
+  return `<td class="num">${esc(date)}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim" contenteditable data-field="analysis" style="font-size:11px">${esc(it.analysis||'')}</td><td class="ctr"><button class="btn-mini" style="color:var(--primary)" onclick="depDel(this)"><i class="ti ti-trash"></i></button></td>`;
 }
 async function addDepositRow(){
   try{ const {item}=await API.post('/api/loop-items',{kind:'deposit',content:'',status:'沉淀'});
@@ -1434,6 +1434,7 @@ const OPT={
  match:[['完全匹配','b-green'],['词组匹配','b-blue'],['广泛匹配','b-amber']],
  comp:[['低 (10-30)','b-green'],['中 (30-60)','b-amber'],['高 (60-90)','b-red']],
  kwtype:[['商业调查型','b-purple'],['信息型','b-blue'],['交易型','b-green']],
+ intent:[['信息型','b-blue'],['商业调研型','b-purple'],['交易型','b-green'],['导航型','b-teal'],['规格/标准型','b-amber'],['灵感/案例型','b-red']],
  optstatus:[['未优化','b-red'],['优化中','b-amber'],['已优化','b-green']],
  priority:[['最高','b-red'],['高','b-amber'],['中','b-blue'],['持续','b-gray']],
  campaign:[['FERR-球铁-德国','b-purple'],['FERR-按图-美国','b-purple'],['Bafaw-阀门-西语','b-teal']],
@@ -1458,7 +1459,7 @@ async function persistTagChange(el,value){
   const kind=el.dataset.kind; const tr=el.closest('tr'); const id=tr&&tr.dataset.id; if(!id)return;
   // 关键词库行：写入 attrs
   if(tr.dataset.kwType){
-    const attrKey={comp:'comp',optstatus:'optstatus',match:'match',priority:'priority'}[kind]; if(!attrKey)return;
+    const attrKey={comp:'comp',optstatus:'optstatus',match:'match',priority:'priority',intent:'searchIntent'}[kind]; if(!attrKey)return;
     try{ await API.patch('/api/keywords/'+id,{attrs:{[attrKey]:value}}); }catch(err){ toast(err.status===403?'无权修改':'保存失败'); }
     return;
   }
@@ -1904,25 +1905,28 @@ function kwRow(type,r){
   const del='<button class="btn-mini kw-del" title="删除" style="color:var(--primary);border-color:var(--border2)"><i class="ti ti-trash"></i></button>';
   const ev=v=>v==null?'':v;
   const ed=(attr,val)=>`<td class="editable" contenteditable data-attr="${attr}">${esc(ev(val))}</td>`; // 可编辑→写入 attrs
+  const ct=`<td class="dim" style="font-size:11px;white-space:nowrap">${esc((r.created_at||'').slice(0,10))}</td>`; // 添加时间(只读，取 created_at)
   if(type==='seo'){
-    tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+    tr.innerHTML=ct+`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+      +`<td class="ctr"><span class="tagselect ${clsOf('intent',a.searchIntent)}" data-kind="intent">${esc(a.searchIntent||'选意图')}<i class="ti ti-chevron-down"></i></span></td>`
       +ed('gradeText',a.gradeText)+ed('volume',a.volume)+ed('gscRank',a.gscRank)+ed('landing',a.landing)+ed('spark',a.spark)
       +`<td class="ctr"><span class="tagselect ${clsOf('comp',a.comp)}" data-kind="comp">${esc(a.comp||'中 (30-60)')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr"><span class="tagselect ${clsOf('optstatus',a.optstatus)}" data-kind="optstatus">${esc(a.optstatus||'优化中')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else if(type==='sem'){
-    tr.innerHTML=`<td class="editable" contenteditable data-cat="1">${esc(r.category||'')}</td>`
+    tr.innerHTML=ct+`<td class="editable" contenteditable data-cat="1">${esc(r.category||'')}</td>`
       +`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+      +`<td class="ctr"><span class="tagselect ${clsOf('intent',a.searchIntent)}" data-kind="intent">${esc(a.searchIntent||'选意图')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr"><span class="tagselect ${clsOf('match',a.match)}" data-kind="match">${esc(a.match||'词组匹配')}<i class="ti ti-chevron-down"></i></span></td>`
       +ed('landing',a.landing)
       +`<td class="ctr"><span class="tagselect ${clsOf('priority',a.priority)}" data-kind="priority">${esc(a.priority||'高')}<i class="ti ti-chevron-down"></i></span></td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else if(type==='high'){
-    tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+    tr.innerHTML=ct+`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
       +ed('ktype',a.ktype)+ed('channel',a.channel)+ed('inquiry',a.inquiry)+ed('gradeText',a.gradeText)
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else{
-    tr.innerHTML=`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
+    tr.innerHTML=ct+`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
       +ed('sourceCustomer',a.sourceCustomer)+ed('mapped',a.mapped)
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }
