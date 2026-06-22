@@ -96,6 +96,15 @@ table.dt td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-alig
 table.dt td.ctr,table.dt td.num{vertical-align:top!important}
 table.dt tr:last-child td{border-bottom:none}
 table.dt tbody tr:hover{background:var(--bg3)}
+/* A组：列浅色分割线，更像表格 */
+table.dt th,table.dt td{border-right:1px solid var(--border)}
+table.dt th:last-child,table.dt td:last-child{border-right:none}
+/* A组：关键词库表头与「加词」工具条固定，词多也不用上划 */
+#panel-keywords .sheet-toolbar{position:sticky;top:0;z-index:3;background:var(--bg2);padding:6px 0}
+#panel-keywords table.dt thead th{position:sticky;top:42px;z-index:2;background:var(--bg2)}
+/* A组：单元格日期选择器 + 删除就地确认态 */
+input.cell-date{font-family:var(--font);font-size:11.5px;padding:3px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text1)}
+.kw-del.confirming{color:#fff!important;background:var(--primary)!important;border-color:var(--primary)!important}
 .fix-table th:nth-child(1){width:11%}
 .fix-table th:nth-child(2){width:72px}
 .fix-table th:nth-child(3){width:36%}
@@ -1017,6 +1026,7 @@ const RANGES=['昨天','上周','上半月','近1月','近3月','近半年','近
 window._timeRange='近1月';
 /* ===== 1e-a: 统一时间范围 → start_date/end_date/period_label(本地日期，避免 UTC 偏移) ===== */
 function formatLocalDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function ymd(v){ v=String(v==null?'':v).trim(); return /^\d{4}-\d{2}-\d{2}$/.test(v)?v:''; } // 仅接受 YYYY-MM-DD，供 <input type=date> 回填
 function resolveRange(label){
   const today=new Date(); today.setHours(0,0,0,0);
   const back=n=>{ const d=new Date(today); d.setDate(d.getDate()-n); return d; };
@@ -1092,14 +1102,14 @@ function fixRowHtml(f){
     +`<td class="editable dim" contenteditable data-field="evidence" style="font-size:11px">${esc(f.evidence||'')}</td>`
     +`<td class="editable" contenteditable data-field="detail">${esc(f.detail||'')}</td>`
     +`<td class="ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="editable" contenteditable data-field="due_date">${esc(f.due_date||'')}</td>`
+    +`<td><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td>`
     +`<td class="ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`;
 }
 function bindFixRow(tr,f){ if(tr&&f&&f.id){ tr.dataset.id=f.id; tr.dataset.ep='/api/fixes'; } return tr; }
 function addFixFromObj(f){ return bindFixRow(prepend('tb-fix',fixRowHtml(f)),f); }
 function bindLoopRow(tr,it){ if(tr&&it&&it.id){ tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; } return tr; }
 function addTest(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-test-sem':'tb-test-seo';
-  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable||'')}</td><td class="editable" contenteditable data-field="period">${esc(it.period||'')}</td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion||'')}</td>`),it);}
+  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable||'')}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period||'').split('~')[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period||'').split('~')[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion||'')}</td>`),it);}
 function addPlan(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-plan-sem':'tb-plan-seo';
   const status=it.status||'待开始';
   return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric||'')}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget||'')}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`),it);}
@@ -1136,7 +1146,7 @@ async function addFixRow(){
 
 /* —— 整改/闭环 入库（FR-6/10）。上面的 add* 仅负责渲染；下面负责持久化 —— */
 function sFromDept(dept){return dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};}
-function persistFix(s,text){return API.post('/api/fixes',{title:clip(text,24),dept:s.dept,detail:text,owner:s.owner,due_date:plusDays(7),status:'计划下周',source:'AI诊断'});}
+function persistFix(s,text){return API.post('/api/fixes',{title:clip(text,24),dept:s.dept,detail:text,owner:s.owner,due_date:formatLocalDate(new Date(Date.now()+7*864e5)),status:'计划下周',source:'AI诊断'});}
 function persistLoop(kind,s,content,status){return API.post('/api/loop-items',{kind,dept:s.dept,content,owner:s.owner,status:status||''});}
 function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库';}
 async function loadClosedLoop(){
@@ -1814,6 +1824,14 @@ function placeCaretEnd(el){ try{ const r=document.createRange(); r.selectNodeCon
 /* 通用：带 data-field 的可编辑单元格，失焦即保存到该行 data-ep/:id（否词/广告等）。
    focusin 缓存旧值；无变化不请求；保存失败回滚旧值并提示，杜绝「屏上已改、库里没改」的假成功。 */
 document.addEventListener('focusin',e=>{ const cell=e.target.closest&&e.target.closest('td[contenteditable][data-field]'); if(cell)cell._old=cell.innerText; });
+// A组：单元格日期选择器(整改截止/测试起止) change 即存到 该行 data-ep/:id；范围型同格两个 input 合成 start~end
+document.addEventListener('change',e=>{
+  const inp=e.target.closest&&e.target.closest('input.cell-date[data-field]'); if(!inp)return;
+  const tr=inp.closest('tr'); const ep=tr&&tr.dataset.ep,id=tr&&tr.dataset.id; if(!ep||!id)return;
+  const pair=[...inp.closest('td').querySelectorAll('input.cell-date')];
+  const val=pair.length===2?((pair[0].value||'')+'~'+(pair[1].value||'')):inp.value;
+  API.patch(ep+'/'+id,{[inp.dataset.field]:val}).then(()=>toast('已保存 · 已入库')).catch(err=>toast(err.status===403?'无权修改':'保存失败，未入库'));
+});
 document.addEventListener('focusout',async e=>{
   const cell=e.target.closest&&e.target.closest('td[contenteditable][data-field]'); if(!cell)return;
   const tr=cell.closest('tr'); if(!tr)return; const id=tr.dataset.id, ep=tr.dataset.ep; if(!id||!ep)return;
@@ -1951,15 +1969,22 @@ async function addKeyword(type){
     toast('已加一行 · 直接在表格里改');
   }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
 }
-async function kwDelete(tr){
-  if(!tr||!tr.dataset.id)return; if(!confirm('删除该关键词？'))return;
+async function kwDelete(tr,btn){
+  if(!tr||!tr.dataset.id)return;
+  if(btn&&btn.dataset.confirm!=='1'){ // 第一次点：就地变「确认删除」，3 秒内再点才真删（不再用顶部弹框）
+    btn.dataset.confirm='1'; if(!btn.dataset.old)btn.dataset.old=btn.innerHTML;
+    btn.innerHTML='<i class="ti ti-alert-triangle"></i> 确认删除'; btn.classList.add('confirming');
+    clearTimeout(btn._t); btn._t=setTimeout(()=>{ btn.dataset.confirm=''; btn.innerHTML=btn.dataset.old; btn.classList.remove('confirming'); },3000);
+    return;
+  }
+  if(btn)clearTimeout(btn._t);
   try{ await API.del('/api/keywords/'+tr.dataset.id); tr.remove(); toast('已删除 · 已入库'); }
-  catch(e){ toast(e.status===403?'无权删除（该词库非你负责）':'删除失败'); }
+  catch(e){ if(btn){ btn.dataset.confirm=''; btn.innerHTML=btn.dataset.old; btn.classList.remove('confirming'); } toast(e.status===403?'无权删除（该词库非你负责）':'删除失败'); }
 }
 /* 关键词行：AI 按钮 / 删除 / 词文本编辑 委托处理 */
 document.addEventListener('click',e=>{
   const ai=e.target.closest('.kw-ai'); if(ai){ const tr=ai.closest('tr'); const n=tr.querySelector('.kw-name'); const kw=(n?n.textContent:tr.cells[0].textContent).trim(); aiAsk('分析关键词「'+kw+'」的搜索意图与落地建议','「'+kw+'」意图'); return; }
-  const del=e.target.closest('.kw-del'); if(del){ kwDelete(del.closest('tr')); return; }
+  const del=e.target.closest('.kw-del'); if(del){ kwDelete(del.closest('tr'),del); return; }
 });
 // 关键词名编辑:focusin 缓存旧值 → Enter 触发 blur → 校验/保存中/成功/失败回滚
 document.addEventListener('focusin',e=>{ const cell=e.target.closest&&e.target.closest('.kw-name'); if(cell)cell.dataset.kwOld=cell.textContent; });
