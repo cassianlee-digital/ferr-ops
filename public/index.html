@@ -1247,7 +1247,7 @@ function coScope(){return {dept:'公司',owner:'',c:'b-red'};}
 function taskColFor(dept){return document.getElementById(dept==='公司'?'cocol-tasks':(dept==='SEM'?'newtask-sem':'newtask-seo'));}
 function addTaskCard(s,content,it){
   const col=taskColFor(s.dept); if(!col)return null; const add=col.querySelector('.add-task');
-  const done=!!(it&&it.status==='done'); // BUG-23：按入库 status 还原完成态，刷新后仍勾选
+  const done=!!(it&&(it.state==='done'||it.status==='done')); // 归档③：优先 state，兼容旧 status='done' 行
   const card=document.createElement('div'); card.className='tcard'+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
   const del=(it&&it.id)?`<button class="btn-mini" style="color:var(--primary);margin-left:auto" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
   const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
@@ -1306,7 +1306,18 @@ async function loadClosedLoop(){
       if(it.kind==='deposit'){ const tr=document.createElement('tr'); tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(it); depTb&&depTb.appendChild(tr); window._aiDone[it.status==='采纳'?'采纳':'沉淀'].add(aiFp(it.dept,it.content)); }
       else if(it.kind==='test'){ addTest(s,it.content,it); window._aiDone.测试.add(aiFp(it.dept,it.content)); }
       else if(it.kind==='plan')addPlan(s,it.content,it);
-      else if(it.kind==='task'){ const ts=it.dept==='公司'?coScope():s; addTaskCard(ts,it.content,it); }
+      else if(it.kind==='task'){
+        const ts=it.dept==='公司'?coScope():s;
+        // 归档③：完成 + task_date 已过 → 静默惰性归档，不再渲染（次日自动消失，进归档页）
+        const today=formatLocalDate(new Date());
+        const isDone=it.state==='done'||it.status==='done';
+        if(isDone && it.task_date && it.task_date<today){
+          const ak=it.dept==='公司'?'company':(it.dept==='SEM'?'sem':'seo');
+          API.post('/api/loop-items/'+it.id+'/archive',{archive_kind:ak}).catch(()=>{}); // 静默 + 幂等
+        } else {
+          addTaskCard(ts,it.content,it);
+        }
+      }
     });
   }catch(e){}
   const de=document.getElementById('dep-empty'); if(de)de.style.display=(depTb&&depTb.children.length)?'none':'block';
@@ -1610,7 +1621,8 @@ function chk(el){
   else  {el.innerHTML='';                            c.classList.remove('done');}
   const id=c&&c.dataset.id;
   if(id){
-    API.patch('/api/loop-items/'+id,{status:on?'done':'待办'})
+    // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看
+    API.patch('/api/loop-items/'+id,{state:on?'done':'todo',status:on?'done':'待办'})
       .then(()=>toast(on?'任务完成 · 已入库':'撤销完成 · 已入库'))
       .catch(e=>{ // 回滚
         el.classList.toggle('on'); if(on){el.innerHTML='';c.classList.remove('done');} else {el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
