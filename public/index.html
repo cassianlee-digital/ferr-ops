@@ -212,6 +212,10 @@ table.dt td.editable{white-space:pre-wrap;overflow:visible;overflow-wrap:anywher
 .kw-pg.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);font-weight:700}
 .kw-pg:disabled{opacity:.4;cursor:default}
 .kw-pg-info{font-size:11.5px;color:var(--text3);margin-left:6px}
+/* C组：询盘按月折叠分隔行 */
+.inq-msep td{background:var(--bg3);font-weight:700;font-size:12px;padding:8px 10px;cursor:pointer;user-select:none}
+.inq-msep .hicon{transition:transform .15s;color:var(--text3)}
+.inq-msep.collapsed .hicon{transform:rotate(-90deg)}
 
 /* closed-loop stepper */
 .loopbar{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:16px}
@@ -1086,7 +1090,7 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 }));
 
 /* ---------- per-page inline time filter ---------- */
-const RANGES=['近7天','近30天','近90天']; // C-2a：三框预设(最近 7/30/90 天)
+const RANGES=['近7天','近30天','近90天','近一年']; // C-2a 三框预设 + C组「可查看近一年」
 window._timeRange='近30天';
 window._gran='week'; // C-2a：当前粒度(day/week/month)，默认按周
 const GRAN_LABEL={day:'按天',week:'按周',month:'按月'};
@@ -1101,6 +1105,7 @@ function resolveRange(label){
     case '近7天':  return r(back(6),today);
     case '近30天': return r(back(29),today);
     case '近90天': return r(back(89),today);
+    case '近一年': return r(back(364),today);
     case '昨天':   { const y=back(1); return r(y,y); }
     case '上周':   { const day=(today.getDay()+6)%7; const thisMon=back(day); const lastMon=new Date(thisMon); lastMon.setDate(thisMon.getDate()-7); const lastSun=new Date(lastMon); lastSun.setDate(lastMon.getDate()+6); return r(lastMon,lastSun); }
     case '上半月': { const first=new Date(today.getFullYear(),today.getMonth(),1); const mid=new Date(today.getFullYear(),today.getMonth(),15); return r(first,mid); }
@@ -1421,15 +1426,37 @@ async function submitInquiry(){
   try{
     const {item,stats}=await API.post('/api/inquiries',rec);
     window._inqCache.unshift(item);
-    renderInqRow(item,true); refreshInqStats(stats); closeModal('inqMask');
+    renderInqList(); renderInqTrend(); refreshInqStats(stats); closeModal('inqMask');
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
   }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
 }
-function renderInqRow(r,flash){
+function inqRowHtml(r){
   const confirmCell=r.grade==='C'?'<span class="dim" style="font-size:11px">无效</span>':'<i class="ti ti-circle-check" style="color:var(--green)"></i>';
-  const html=`<td>${esc(r.date.slice(5))}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${esc(r.grade)}</span></td><td class="ctr">${confirmCell}</td><td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`;
-  if(flash)prepend('tb-inq',html); else { const tb=document.getElementById('tb-inq'); const tr=document.createElement('tr'); tr.innerHTML=html; tb.insertBefore(tr,tb.firstChild); }
+  return `<td>${esc(r.date.slice(5))}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${esc(r.grade)}</span></td><td class="ctr">${confirmCell}</td><td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`;
+}
+function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
+/* C组：询盘按月分组渲染——当月展开，上月及更早默认折叠（点月份条展开/收起）*/
+function renderInqList(){
+  const tb=document.getElementById('tb-inq'); if(!tb)return; tb.innerHTML='';
+  const rows=(window._inqCache||[]).filter(r=>r&&r.date).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0); // 日期倒序
+  if(!rows.length)return;
+  const curM=formatLocalDate(new Date()).slice(0,7);
+  const groups=[]; const idx={};
+  rows.forEach(r=>{ const ym=r.date.slice(0,7); if(idx[ym]==null){ idx[ym]=groups.length; groups.push({ym,items:[]}); } groups[idx[ym]].items.push(r); });
+  groups.forEach(g=>{
+    const collapsed=g.ym!==curM;
+    const sep=document.createElement('tr'); sep.className='inq-msep'+(collapsed?' collapsed':''); sep.dataset.month=g.ym;
+    sep.innerHTML=`<td colspan="9" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span>${g.ym===curM?'<span class="badge b-green" style="margin-left:6px">本月</span>':''}</td>`;
+    tb.appendChild(sep);
+    g.items.forEach(r=>{ const tr=document.createElement('tr'); tr.className='inq-mrow'; tr.dataset.month=g.ym; if(collapsed)tr.style.display='none'; tr.innerHTML=inqRowHtml(r); tb.appendChild(tr); });
+  });
+}
+function toggleInqMonth(td){
+  const sep=td.closest('tr'); if(!sep)return; sep.classList.toggle('collapsed');
+  const hidden=sep.classList.contains('collapsed');
+  let n=sep.nextElementSibling;
+  while(n&&!n.classList.contains('inq-msep')){ if(n.classList.contains('inq-mrow'))n.style.display=hidden?'none':''; n=n.nextElementSibling; }
 }
 function refreshInqStats(stats){
   stats=stats||window._inqStats; if(!stats)return; window._inqStats=stats;
@@ -1498,8 +1525,7 @@ async function loadInquiries(){
   try{
     const {items,stats}=await API.get(withRange('/api/inquiries'));
     window._inqCache=items||[];
-    const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; // 清掉旧行/静态示例行
-    window._inqCache.slice().reverse().forEach(r=>renderInqRow(r,false)); // 时间正序插入→最新在顶
+    renderInqList(); // C组：按月分组渲染（清掉旧行/静态示例行，当月展开、上月折叠）
     refreshInqStats(stats);
     renderInqTrend(); // C-2b：询盘按区间重拉后，趋势图按当前粒度真实重绘
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
