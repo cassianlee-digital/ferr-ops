@@ -761,14 +761,10 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="tboard">
           <div class="pstack">
             <!-- 陈 在上 -->
-            <div class="pblock"><div class="pblock-head"><span class="badge b-purple">陈</span><span class="pn">SEM 任务</span><span class="kcount">SOP 3 · 新增 2</span></div>
+            <div class="pblock"><div class="pblock-head"><span class="badge b-purple">陈</span><span class="pn">SEM 任务</span><span class="kcount" id="kcount-sem">SOP 0 · 新增 0</span></div>
               <div class="sopnew">
-                <div><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
-                  <div class="freq-cap"><i class="ti ti-repeat"></i> 每日必做</div>
-                  <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>查看 Google Ads 花费与转化</div><div class="tmeta"><span class="badge b-purple">SEM</span><span class="tdue"><i class="ti ti-clock"></i> 09:30</span></div></div>
-                  <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>看搜索词报告 + 加否词</div><div class="tmeta"><span class="badge b-purple">SEM</span><span class="tdue"><i class="ti ti-clock"></i> 10:00</span></div></div>
-                  <div class="freq-cap"><i class="ti ti-calendar-week"></i> 每周必做</div>
-                  <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>导出广告组成本效率周报</div><div class="tmeta"><span class="badge b-purple">SEM</span><span class="tdue">周五</span></div></div>
+                <div id="sop-sem"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
+                  <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
                 </div>
                 <div id="newtask-sem"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
                   <button class="add-task" onclick="openTaskModal('SEM')"><i class="ti ti-plus"></i> 新增</button>
@@ -776,14 +772,10 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
               </div>
             </div>
             <!-- 李 在下 -->
-            <div class="pblock"><div class="pblock-head"><span class="badge b-blue">李</span><span class="pn">SEO 任务</span><span class="kcount">SOP 3 · 新增 2</span></div>
+            <div class="pblock"><div class="pblock-head"><span class="badge b-blue">李</span><span class="pn">SEO 任务</span><span class="kcount" id="kcount-seo">SOP 0 · 新增 0</span></div>
               <div class="sopnew">
-                <div><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
-                  <div class="freq-cap"><i class="ti ti-repeat"></i> 每日必做</div>
-                  <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>查看 GSC 后台数据</div><div class="tmeta"><span class="badge b-blue">SEO</span><span class="tdue"><i class="ti ti-clock"></i> 09:30</span></div></div>
-                  <div class="tcard must done"><div class="ttitle"><span class="tcheck on" onclick="chk(this)"><i class="ti ti-check"></i></span>检查排名监控告警</div><div class="tmeta"><span class="badge b-blue">SEO</span><span class="tdue">已完成</span></div></div>
-                  <div class="freq-cap"><i class="ti ti-calendar-month"></i> 每月必做</div>
-                  <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>核对收录与索引覆盖</div><div class="tmeta"><span class="badge b-blue">SEO</span><span class="tdue">月初</span></div></div>
+                <div id="sop-seo"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
+                  <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
                 </div>
                 <div id="newtask-seo"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
                   <button class="add-task" onclick="openTaskModal('SEO')"><i class="ti ti-plus"></i> 新增</button>
@@ -793,8 +785,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
           </div>
           <!-- 公司任务右列 -->
           <div class="cocol" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span></div>
-            <div class="freq-cap"><i class="ti ti-calendar-month"></i> 每月必做（SOP）</div>
-            <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>月度复盘会 + 更新 SOP</div><div class="tmeta"><span class="badge b-red">公司</span><span class="tdue">月末</span></div></div>
+            <div id="sop-company"></div>
             <div class="freq-cap"><i class="ti ti-building"></i> 公司派发（强提示）</div>
             <button class="add-task" onclick="openTaskModal('公司')"><i class="ti ti-plus"></i> 派发任务</button>
           </div>
@@ -834,6 +825,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
           <div class="subtab" data-sub="set-threshold"><i class="ti ti-adjustments"></i> 等级阈值</div>
           <div class="subtab" data-sub="set-ds"><i class="ti ti-plug"></i> 数据源状态</div>
           <div class="subtab" data-sub="set-api"><i class="ti ti-key"></i> API 接入</div>
+          <div class="subtab" data-sub="set-sop"><i class="ti ti-pin"></i> SOP 设置</div>
           <div class="set-logout" onclick="API.logout()"><i class="ti ti-logout"></i> 登出</div>
         </div>
         <div class="set-body">
@@ -878,7 +870,15 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="card" style="margin-top:14px"><div class="card-head"><span class="card-title">API 接入 · 数据源授权</span><span class="card-sub">密钥加密存储，不回显；保存后状态变「已配置」</span></div>
           <div id="integ-rows" style="display:flex;flex-direction:column;gap:10px;font-size:12.5px"></div>
           <div class="sheet-tip" style="margin-top:10px"><i class="ti ti-info-circle"></i> 第一期仅保存密钥并预留同步路由；自动抓取（GSC/GA4/Ads）在第二期实现。SEM 抓取将以「真实手动出价策略」为准。</div>
-        </div></div></div></div></div>
+        </div></div>
+        <div class="subpanel" id="sub-set-sop">
+          <div class="card"><div class="card-head"><span class="card-title">SOP 设置</span><span class="card-sub">每日 / 每周 / 每月固定任务 · 设置后自动出现在任务看板对应板块 · 仅经理 / 老板可改</span>
+            <button class="btn-primary" id="sop-add-btn" style="margin-left:auto" onclick="openSopModal()"><i class="ti ti-plus"></i> 新增 SOP</button>
+          </div>
+            <table class="dt"><thead><tr><th style="width:80px">部门</th><th style="width:90px">频率</th><th>标题</th><th>内容</th><th style="width:100px">时间提示</th><th style="width:80px" class="ctr">操作</th></tr></thead><tbody id="tb-sop"></tbody></table>
+            <div id="sop-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-pin-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 SOP，点上方「新增 SOP」开始</div>
+          </div>
+        </div></div></div>
       </div>
 
     </div>
@@ -967,6 +967,23 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="fld"><label>备注（可选）</label><textarea id="task-note" placeholder="补充说明…"></textarea></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('taskMask')">取消</button><button class="btn-primary" onclick="submitTask()"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- SOP 新增/编辑弹框 (Step B) -->
+<div class="modal-mask" id="sopMask">
+  <div class="modal" style="width:460px">
+    <div class="modal-head"><i class="ti ti-pin" style="color:var(--primary)"></i> <span id="sop-mod-title">新增 SOP</span><span class="x" onclick="closeModal('sopMask')"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld-row">
+        <div class="fld"><label>部门</label><select id="sop-dept"><option>SEM</option><option>SEO</option><option>公司</option></select></div>
+        <div class="fld"><label>频率</label><select id="sop-freq"><option value="daily">每日</option><option value="weekly">每周</option><option value="monthly">每月</option></select></div>
+      </div>
+      <div class="fld"><label>标题</label><input id="sop-title" placeholder="如：查看 Google Ads 花费与转化"></div>
+      <div class="fld"><label>内容（可选）</label><textarea id="sop-content" placeholder="补充说明、检查项…"></textarea></div>
+      <div class="fld"><label>时间提示（可选）</label><input id="sop-time" placeholder="如：09:30 / 周五 / 月初"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('sopMask')">取消</button><button class="btn-primary" onclick="submitSop()"><i class="ti ti-device-floppy"></i> 保存</button></div>
   </div>
 </div>
 
@@ -1613,23 +1630,163 @@ function renderLoopbars(){ document.querySelectorAll('.loopbar').forEach(bar=>{ 
 renderLoopbars();
 
 /* ---------- task check ---------- */
-/* BUG-23：动态任务卡(有 id) 勾选→PATCH 入库，刷新后还原；SOP 硬编码卡(无 id) 仍仅前端切态，待 SOP 引擎接入 */
+/* BUG-23 / SOP-B：动态任务卡(loop_items id) PATCH state；SOP 卡(sopId+freq) POST/DELETE sop completions */
 function chk(el){
   el.classList.toggle('on'); const c=el.closest('.tcard');
   const on=el.classList.contains('on');
   if(on){el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
   else  {el.innerHTML='';                            c.classList.remove('done');}
   const id=c&&c.dataset.id;
+  const sopId=c&&c.dataset.sopId;
+  const rollback=()=>{ el.classList.toggle('on'); if(on){el.innerHTML='';c.classList.remove('done');} else {el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');} };
   if(id){
     // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看
     API.patch('/api/loop-items/'+id,{state:on?'done':'todo',status:on?'done':'待办'})
       .then(()=>toast(on?'任务完成 · 已入库':'撤销完成 · 已入库'))
-      .catch(e=>{ // 回滚
-        el.classList.toggle('on'); if(on){el.innerHTML='';c.classList.remove('done');} else {el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
-        toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复');
-      });
-  } else { toast(on?'已完成（SOP 卡待接入持久化）':''); }
+      .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
+  } else if(sopId){
+    // SOP-B：完成→POST /api/sop/completions；撤销→DELETE。period_key 按当前频率算
+    const freq=c.dataset.sopFreq||'daily';
+    const pk=sopPeriodKey(freq);
+    const req=on
+      ? API.post('/api/sop/completions',{sop_id:Number(sopId),period_key:pk})
+      : API.del('/api/sop/completions/'+sopId+'?period_key='+encodeURIComponent(pk));
+    req.then(()=>{ toast(on?'SOP 完成 · 已入库':'撤销完成 · 已入库'); updateSopCounts(); })
+       .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
+  } else {
+    toast(on?'已完成':'');
+  }
 }
+
+/* ===== SOP 引擎 Step B：周期 key / 加载 / 渲染 / 设置页 CRUD ===== */
+// period_key 按本地时间算，daily=YYYY-MM-DD / weekly=YYYY-Www / monthly=YYYY-MM
+function sopPeriodKey(freq){
+  const d=new Date(); d.setHours(0,0,0,0);
+  if(freq==='monthly'){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'); return y+'-'+m; }
+  if(freq==='weekly'){
+    // ISO 周：周四确定年份；周一为本周起点
+    const tmp=new Date(d); tmp.setDate(tmp.getDate()+4-(tmp.getDay()||7));
+    const yearStart=new Date(tmp.getFullYear(),0,1);
+    const week=Math.ceil((((tmp-yearStart)/86400000)+1)/7);
+    return tmp.getFullYear()+'-W'+String(week).padStart(2,'0');
+  }
+  return formatLocalDate(d);
+}
+window._sops=[]; window._sopDone={daily:new Set(),weekly:new Set(),monthly:new Set()};
+const DEPT_BADGE={SEM:'b-purple',SEO:'b-blue','公司':'b-red'};
+const FREQ_LABEL={daily:'每日必做',weekly:'每周必做',monthly:'每月必做'};
+const FREQ_ICON={daily:'ti-repeat',weekly:'ti-calendar-week',monthly:'ti-calendar-month'};
+async function loadSops(){
+  try{ const {items}=await API.get('/api/sop'); window._sops=items||[]; }
+  catch(e){ window._sops=[]; if(e&&e.message!=='unauthorized')toast('SOP 加载失败：'+(e.message||'')); }
+  try{
+    const q='daily='+encodeURIComponent(sopPeriodKey('daily'))
+      +'&weekly='+encodeURIComponent(sopPeriodKey('weekly'))
+      +'&monthly='+encodeURIComponent(sopPeriodKey('monthly'));
+    const {items}=await API.get('/api/sop/completions?'+q);
+    window._sopDone={daily:new Set(),weekly:new Set(),monthly:new Set()};
+    const keyToFreq={[sopPeriodKey('daily')]:'daily',[sopPeriodKey('weekly')]:'weekly',[sopPeriodKey('monthly')]:'monthly'};
+    (items||[]).forEach(c=>{ const f=keyToFreq[c.period_key]; if(f)window._sopDone[f].add(c.sop_id); });
+  }catch(e){}
+  renderSopCards();
+  renderSopSettingsTable();
+  updateSopCounts();
+}
+function renderSopCards(){
+  ['SEM','SEO','公司'].forEach(dept=>{
+    const anchor=document.getElementById(dept==='公司'?'sop-company':('sop-'+dept.toLowerCase()));
+    if(!anchor)return;
+    const list=window._sops.filter(s=>s.dept===dept);
+    if(dept==='公司'){ anchor.innerHTML=''; }
+    else { anchor.innerHTML='<div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>'; }
+    if(!list.length){
+      anchor.insertAdjacentHTML('beforeend','<div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>');
+      return;
+    }
+    ['daily','weekly','monthly'].forEach(freq=>{
+      const subset=list.filter(s=>s.freq===freq);
+      if(!subset.length)return;
+      anchor.insertAdjacentHTML('beforeend',`<div class="freq-cap"><i class="ti ${FREQ_ICON[freq]}"></i> ${FREQ_LABEL[freq]}</div>`);
+      subset.forEach(s=>anchor.appendChild(sopCardEl(s)));
+    });
+  });
+}
+function sopCardEl(s){
+  const done=window._sopDone[s.freq]&&window._sopDone[s.freq].has(s.id);
+  const card=document.createElement('div');
+  card.className='tcard must'+(done?' done':'');
+  card.dataset.sopId=s.id; card.dataset.sopFreq=s.freq;
+  const badge=DEPT_BADGE[s.dept]||'b-gray';
+  const due=s.time_hint?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:(done?'<span class="tdue">已完成</span>':'');
+  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(s.title)}</div><div class="tmeta"><span class="badge ${badge}">${esc(s.dept)}</span>${due}</div>`;
+  return card;
+}
+function updateSopCounts(){
+  ['SEM','SEO'].forEach(dept=>{
+    const el=document.getElementById('kcount-'+dept.toLowerCase()); if(!el)return;
+    const sopN=window._sops.filter(s=>s.dept===dept).length;
+    const addCol=document.getElementById('newtask-'+dept.toLowerCase());
+    const addN=addCol?addCol.querySelectorAll('.tcard').length:0;
+    el.textContent='SOP '+sopN+' · 新增 '+addN;
+  });
+}
+
+/* SOP 设置页：列表 + 弹框 + CRUD（仅 manager/boss 可写，其他只读） */
+function isSopWritable(){ const r=(window.ME||{}).role; return r==='manager'||r==='boss'; }
+function renderSopSettingsTable(){
+  const tb=document.getElementById('tb-sop'); if(!tb)return;
+  const addBtn=document.getElementById('sop-add-btn');
+  const writable=isSopWritable();
+  if(addBtn)addBtn.style.display=writable?'':'none';
+  tb.innerHTML='';
+  const list=window._sops;
+  if(!list.length){ const e=document.getElementById('sop-empty'); if(e)e.style.display='block'; return; }
+  const e=document.getElementById('sop-empty'); if(e)e.style.display='none';
+  list.forEach(s=>{
+    const tr=document.createElement('tr'); tr.dataset.sopId=s.id;
+    const ops=writable
+      ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del" style="color:var(--primary)"><i class="ti ti-trash"></i></button>`
+      : '<span class="dim" style="font-size:11px">只读</span>';
+    tr.innerHTML=`<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq]||s.freq)}</td><td>${esc(s.title)}</td><td class="dim" style="font-size:11px">${esc(s.content||'')}</td><td>${esc(s.time_hint||'')}</td><td class="ctr">${ops}</td>`;
+    tb.appendChild(tr);
+  });
+}
+let _sopEditing=null;
+function openSopModal(sop){
+  if(!isSopWritable()){ toast('仅经理 / 老板可编辑 SOP'); return; }
+  _sopEditing=sop||null;
+  document.getElementById('sop-mod-title').textContent=sop?'编辑 SOP':'新增 SOP';
+  document.getElementById('sop-dept').value=sop?sop.dept:'SEM';
+  document.getElementById('sop-freq').value=sop?sop.freq:'daily';
+  document.getElementById('sop-title').value=sop?sop.title:'';
+  document.getElementById('sop-content').value=sop?(sop.content||''):'';
+  document.getElementById('sop-time').value=sop?(sop.time_hint||''):'';
+  openModal('sopMask'); setTimeout(()=>document.getElementById('sop-title').focus(),50);
+}
+async function submitSop(){
+  const dept=document.getElementById('sop-dept').value;
+  const freq=document.getElementById('sop-freq').value;
+  const title=document.getElementById('sop-title').value.trim();
+  const content=document.getElementById('sop-content').value.trim();
+  const time_hint=document.getElementById('sop-time').value.trim();
+  if(!title){ toast('请填写标题'); return; }
+  try{
+    if(_sopEditing){ await API.patch('/api/sop/'+_sopEditing.id,{dept,freq,title,content,time_hint}); toast('已更新 SOP'); }
+    else { await API.post('/api/sop',{dept,freq,title,content,time_hint}); toast('已新增 SOP'); }
+    closeModal('sopMask'); await loadSops();
+  }catch(e){ toast(e&&e.status===403?'无权操作（仅经理/老板）':'保存失败：'+(e.message||'')); }
+}
+document.addEventListener('click',async e=>{
+  const edit=e.target.closest('.sop-edit'); const del=e.target.closest('.sop-del');
+  if(!edit&&!del)return;
+  const tr=(edit||del).closest('tr'); const id=tr&&tr.dataset.sopId; if(!id)return;
+  if(edit){ const s=window._sops.find(x=>String(x.id)===String(id)); if(s)openSopModal(s); return; }
+  if(del){
+    if(!confirm('停用此 SOP？历史完成记录会保留。'))return;
+    try{ await API.del('/api/sop/'+id); toast('已停用'); await loadSops(); }
+    catch(err){ toast(err&&err.status===403?'无权操作（仅经理/老板）':'操作失败'); }
+  }
+});
 
 /* ---------- colored tag-select ---------- */
 const OPT={
@@ -2532,6 +2689,7 @@ window.addEventListener('load',async()=>{
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目 + 沉淀表
   await loadArchive();         // 归档②：资产库归档页（三 subtab）
+  await loadSops();            // SOP-B：动态 SOP 卡 + 设置页 SOP 列表
   await loadContent();         // 内容资产
   await loadGa4();             // GA4 看板（骨架/空状态）
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
