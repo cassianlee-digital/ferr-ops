@@ -1539,7 +1539,8 @@ async function loadInquiries(){
     window._inqCache=items||[];
     renderInqList(); // C组：按月分组渲染（清掉旧行/静态示例行，当月展开、上月折叠）
     refreshInqStats(stats);
-    renderInqTrend(); // C-2b：询盘按区间重拉后，趋势图按当前粒度真实重绘
+    renderInqTrend();   // C-2b：询盘按区间重拉后，趋势图按当前粒度真实重绘
+    renderInqDonuts();  // BUG-6：KPI 页两个 donut 同步真实重绘
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
   }catch(e){ if(e&&e.message!=='unauthorized'){ window._inqCache=[]; const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; toast('询盘加载失败：'+(e.message||'未知错误')); } }
 }
@@ -2261,6 +2262,34 @@ function chartEmpty(id){
 function setDonutLegend(map){ Object.keys(map).forEach(id=>{ const e=document.getElementById(id); if(e)e.textContent=map[id]; }); }
 function fillDonutLegendDemo(){ setDonutLegend({lgInqA:DEMO.inqDonut.a,lgInqB:DEMO.inqDonut.b,lgInqC:DEMO.inqDonut.c,lgInqRate:DEMO.inqDonut.rate,lgChSeo:DEMO.chanDonut.seo+'%',lgChSem:DEMO.chanDonut.sem+'%',lgChDirect:DEMO.chanDonut.direct+'%',lgChOther:DEMO.chanDonut.other+'%'}); }
 function blankDonutLegend(){ setDonutLegend({lgInqA:'—',lgInqB:'—',lgInqC:'—',lgInqRate:'—',lgChSeo:'—',lgChSem:'—',lgChDirect:'—',lgChOther:'—'}); }
+/* BUG-6：KPI 页两个 donut 用真实询盘聚合（_inqCache 按当前 range 已过滤），无数据→诚实空状态 */
+let _inqDonutChart=null,_chanDonutChart=null;
+function renderInqDonuts(){
+  if(window.DEMO_MODE)return; // DEMO_MODE 仍走 charts() 示例
+  const rows=window._inqCache||[];
+  const cv1=document.getElementById('inqDonut'), cv2=document.getElementById('chanDonut');
+  if(_inqDonutChart){ try{_inqDonutChart.destroy();}catch(e){} _inqDonutChart=null; }
+  if(_chanDonutChart){ try{_chanDonutChart.destroy();}catch(e){} _chanDonutChart=null; }
+  if(!rows.length){ if(cv1)chartEmpty('inqDonut'); if(cv2)chartEmpty('chanDonut'); blankDonutLegend(); return; }
+  // 质量分布
+  const q={A:0,B:0,C:0}; rows.forEach(r=>{ if(q[r.grade]!=null)q[r.grade]++; });
+  const total=q.A+q.B+q.C; const eff=q.A+q.B; const rate=total?Math.round(eff*100/total)+'%':'—';
+  if(cv1){
+    const w=cv1.closest('.chart-wrap')||cv1.parentElement; if(w){ const ce=w.querySelector('.chart-empty'); if(ce)ce.remove(); } cv1.style.display='';
+    _inqDonutChart=new Chart(cv1,{type:'doughnut',data:{labels:['A','B','C'],datasets:[{data:[q.A,q.B,q.C],backgroundColor:['#15a85a','#2f72e8','#dfe2e8'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
+  }
+  // 有效询盘按渠道占比
+  const ch={SEO:0,SEM:0,direct:0,other:0}; rows.forEach(r=>{ if(r.grade!=='A'&&r.grade!=='B')return;
+    const c=String(r.channel||'').trim(); if(/SEO自然|SEO/i.test(c))ch.SEO++; else if(/SEM付费|SEM/i.test(c))ch.SEM++; else if(/直接/.test(c))ch.direct++; else ch.other++;
+  });
+  const chTotal=ch.SEO+ch.SEM+ch.direct+ch.other;
+  const pct=v=>chTotal?Math.round(v*100/chTotal)+'%':'—';
+  if(cv2){
+    const w=cv2.closest('.chart-wrap')||cv2.parentElement; if(w){ const ce=w.querySelector('.chart-empty'); if(ce)ce.remove(); } cv2.style.display='';
+    _chanDonutChart=new Chart(cv2,{type:'doughnut',data:{labels:['SEO','SEM','直接','其他'],datasets:[{data:[ch.SEO,ch.SEM,ch.direct,ch.other],backgroundColor:['#2f72e8','#7b54e0','#0b9d8f','#ef9514'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
+  }
+  setDonutLegend({lgInqA:q.A,lgInqB:q.B,lgInqC:q.C,lgInqRate:rate,lgChSeo:pct(ch.SEO),lgChSem:pct(ch.SEM),lgChDirect:pct(ch.direct),lgChOther:pct(ch.other)});
+}
 
 let seoChart=null, seoFull=null;
 function seoSeriesFromWeeks(){
@@ -2341,10 +2370,10 @@ function charts(){
     new Chart(chanDonut,{type:'doughnut',data:{labels:['SEO','SEM','直接','其他'],datasets:[{data:[DEMO.chanDonut.seo,DEMO.chanDonut.sem,DEMO.chanDonut.direct,DEMO.chanDonut.other],backgroundColor:['#2f72e8','#7b54e0','#0b9d8f','#ef9514'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
     fillDonutLegendDemo();
   }else{
-    // 真实模式：询盘趋势接真实聚合(C-2b)；其余图真实来源在后续 Phase 接入(TODO: seoMini/semMini/两个 donut 接 /api 真实聚合)
-    ['seoMini','semMini','inqDonut','chanDonut'].forEach(chartEmpty);
-    renderInqTrend();
-    blankDonutLegend();
+    // 真实模式：询盘趋势(C-2b)、KPI 两个 donut(BUG-6) 由 loadInquiries 真实重绘；seoMini/semMini 仍待后续接入
+    ['seoMini','semMini'].forEach(chartEmpty);
+    // 首屏先占位(诚实空状态)，待 hydrate→loadInquiries 末尾真实重绘，避免 _inqCache 未就绪闪烁
+    chartEmpty('inqTrend'); chartEmpty('inqDonut'); chartEmpty('chanDonut'); blankDonutLegend();
   }
   // SEO 看板：有真实周数据则画(DEMO_MODE 下用 fixture)，否则空状态
   seoFull=seoSeriesFromWeeks();
