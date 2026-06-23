@@ -386,7 +386,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
             <div class="score-hero"><div class="gauge"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g1" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g1s">0</div><div class="gauge-max">/ 100</div></div></div>
             <div style="flex:1"><div class="grade-badge" id="g1b"></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px" id="miniScores"></div></div></div>
           </div>
-          <div class="card"><div class="card-head"><span class="card-title">有效询盘趋势</span><span class="card-sub">近 8 周</span></div>
+          <div class="card"><div class="card-head"><span class="card-title">有效询盘趋势</span><span class="card-sub" id="inqTrendSub">近 8 周</span></div>
             <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>有效询盘</div><div class="legend-item"><div class="legend-dot" style="background:var(--text3)"></div>询盘总量</div></div>
             <div class="chart-wrap" style="height:155px"><canvas id="inqTrend"></canvas></div></div>
         </div>
@@ -440,7 +440,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <!-- ============ 询盘评级 ============ -->
       <div class="panel" id="panel-inquiry">
         <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><button class="btn-primary" onclick="openInquiry()"><i class="ti ti-plus"></i> 录入询盘</button></div>
-        <div class="timebar-inline" data-time></div>
+        <div class="timebar-inline" data-time data-gran="day,week,month"></div>
         <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock"></i> 当前时间范围会筛选下方询盘列表与询盘统计。</div>
         <div class="metric-row">
           <div class="metric-card"><div class="metric-num" id="inq-valid" style="color:var(--green)">12</div><div class="metric-lbl">有效询盘 (A+B)</div><div class="metric-delta delta-neg">▼目标15</div></div>
@@ -1151,6 +1151,7 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     document.querySelectorAll('[data-time] .tgran').forEach(s=>{ if([...s.options].some(o=>o.value===sel.value)) s.value=sel.value; }); // 多条粒度联动
     document.dispatchEvent(new CustomEvent('granularity',{detail:{gran:window._gran}}));
     rebuildSeoChart();               // C-2a：粒度只重画 SEO 折线(数据已在区间视图)，周/月切换
+    renderInqTrend();                // C-2b：粒度切换时询盘趋势按天/周/月重绘
     toast('粒度：'+(GRAN_LABEL[window._gran]||window._gran));
   });
 });
@@ -1500,6 +1501,7 @@ async function loadInquiries(){
     const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; // 清掉旧行/静态示例行
     window._inqCache.slice().reverse().forEach(r=>renderInqRow(r,false)); // 时间正序插入→最新在顶
     refreshInqStats(stats);
+    renderInqTrend(); // C-2b：询盘按区间重拉后，趋势图按当前粒度真实重绘
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
   }catch(e){ if(e&&e.message!=='unauthorized'){ window._inqCache=[]; const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; toast('询盘加载失败：'+(e.message||'未知错误')); } }
 }
@@ -2249,6 +2251,30 @@ async function loadSeoChartRange(){
   rebuildSeoChart();
 }
 
+/* C-2b：有效询盘趋势——真实数据按粒度(天/周/月)聚合。询盘按天入库，三种粒度都诚实可做 */
+let inqChart=null;
+function _weekStart(dateStr){ const d=new Date(dateStr+'T00:00:00'); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return formatLocalDate(d); } // 周一为周起点
+function inqSeriesByGran(rows,gran){
+  const keyOf=r=>{ const d=(r.date||'').slice(0,10); if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return null; if(gran==='month')return d.slice(0,7); if(gran==='week')return _weekStart(d); return d; };
+  const m=new Map(); // key -> {eff,total}
+  (rows||[]).forEach(r=>{ const k=keyOf(r); if(!k)return; if(!m.has(k))m.set(k,{eff:0,total:0}); const o=m.get(k); o.total++; if(r.grade==='A'||r.grade==='B')o.eff++; });
+  const keys=[...m.keys()].sort();
+  const lab=k=> gran==='month'?k:k.slice(5); // 月:YYYY-MM；天/周:MM-DD
+  return {labels:keys.map(lab), eff:keys.map(k=>m.get(k).eff), total:keys.map(k=>m.get(k).total)};
+}
+function renderInqTrend(){
+  const cv=document.getElementById('inqTrend'); if(!cv||window.DEMO_MODE)return; // DEMO_MODE 仍走 charts() 示例
+  const rows=window._inqCache||[];
+  const sub=document.getElementById('inqTrendSub'); if(sub)sub.textContent=(GRAN_LABEL[window._gran]||window._gran)+(_range?' · '+_range.period_label:'');
+  if(inqChart){ try{inqChart.destroy();}catch(e){} inqChart=null; }
+  if(!rows.length){ chartEmpty('inqTrend'); return; }
+  const wrap=cv.closest('.chart-wrap')||cv.parentElement; if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
+  const s=inqSeriesByGran(rows,window._gran);
+  inqChart=new Chart(cv,{type:'line',data:{labels:s.labels,datasets:[
+    {label:'有效询盘',data:s.eff,borderColor:'#15a85a',backgroundColor:'rgba(21,168,90,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},
+    {label:'询盘总量',data:s.total,borderColor:'#9aa1ae',backgroundColor:'rgba(154,161,174,.06)',fill:true,tension:.4,pointRadius:0,borderWidth:1.5}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+}
 function charts(){
   Chart.defaults.color='#9aa1ae';Chart.defaults.borderColor='rgba(128,128,128,.12)';Chart.defaults.font.size=10;
   const wk=['W1','W2','W3','W4','W5','W6','W7','W8'];
@@ -2262,8 +2288,9 @@ function charts(){
     new Chart(chanDonut,{type:'doughnut',data:{labels:['SEO','SEM','直接','其他'],datasets:[{data:[DEMO.chanDonut.seo,DEMO.chanDonut.sem,DEMO.chanDonut.direct,DEMO.chanDonut.other],backgroundColor:['#2f72e8','#7b54e0','#0b9d8f','#ef9514'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
     fillDonutLegendDemo();
   }else{
-    // 真实模式：不画任何假数据。这些图的真实数据来源在后续 Phase 接入(TODO: inqTrend/seoMini/semMini/两个 donut 接 /api 真实聚合)
-    ['inqTrend','seoMini','semMini','inqDonut','chanDonut'].forEach(chartEmpty);
+    // 真实模式：询盘趋势接真实聚合(C-2b)；其余图真实来源在后续 Phase 接入(TODO: seoMini/semMini/两个 donut 接 /api 真实聚合)
+    ['seoMini','semMini','inqDonut','chanDonut'].forEach(chartEmpty);
+    renderInqTrend();
     blankDonutLegend();
   }
   // SEO 看板：有真实周数据则画(DEMO_MODE 下用 fixture)，否则空状态
