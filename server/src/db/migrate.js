@@ -130,8 +130,14 @@ CREATE TABLE IF NOT EXISTS fixes (
   due_date   TEXT,
   status     TEXT,
   source     TEXT,
+  -- 归档地基（第①步）：与 loop_items 共用同一套语义
+  state         TEXT,
+  archived_at   TEXT,
+  deleted_at    TEXT,
+  archive_kind  TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX IF NOT EXISTS idx_fixes_state ON fixes(state);
 
 CREATE TABLE IF NOT EXISTS loop_items (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -150,8 +156,14 @@ CREATE TABLE IF NOT EXISTS loop_items (
   task_date     TEXT,   -- 任务：日期（可选）
   task_hour     TEXT,   -- 任务：今日完成时间（小时 00-23）
   note          TEXT,   -- 任务：备注
+  -- 归档地基（第①步）：state 显式状态机 + 软删 + 归档时间 + 归档分桶
+  state         TEXT,   -- todo / done / adopted / deposited / archived / deleted  (NULL=兼容旧行视为 todo)
+  archived_at   TEXT,   -- 归档时间（ISO）；进入归档页就用这个，不是 created_at
+  deleted_at    TEXT,   -- 软删时间（ISO）；NULL=未删
+  archive_kind  TEXT,   -- sem / seo / company；归档页分桶
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind);
 
 -- V7：第三方集成密钥（AES 加密存储）
 CREATE TABLE IF NOT EXISTS integrations (
@@ -238,8 +250,16 @@ export function migrate() {
     ['variable', 'TEXT'], ['period', 'TEXT'], ['conclusion', 'TEXT'],
     ['analysis', 'TEXT'],
     ['task_date', 'TEXT'], ['task_hour', 'TEXT'], ['note', 'TEXT'],
+    // 归档地基（第①步）：旧库幂等加列
+    ['state', 'TEXT'], ['archived_at', 'TEXT'], ['deleted_at', 'TEXT'], ['archive_kind', 'TEXT'],
   ]);
-  ensureColumns('fixes', [['evidence', 'TEXT']]);
+  ensureColumns('fixes', [
+    ['evidence', 'TEXT'],
+    ['state', 'TEXT'], ['archived_at', 'TEXT'], ['deleted_at', 'TEXT'], ['archive_kind', 'TEXT'],
+  ]);
+  // 索引：旧库 db.exec(SCHEMA) 已建表，索引语句 IF NOT EXISTS 幂等，重复 exec 无害
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind)'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_fixes_state ON fixes(state)'); } catch (e) {}
 
   db.prepare(
     `INSERT INTO meta (key,value) VALUES ('schema_version',?)
