@@ -1265,17 +1265,20 @@ function persistFix(s,text){return API.post('/api/fixes',{title:clip(text,24),de
 function persistLoop(kind,s,content,status){return API.post('/api/loop-items',{kind,dept:s.dept,content,owner:s.owner,status:status||''});}
 function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库';}
 async function loadClosedLoop(){
-  try{ const {items}=await API.get('/api/fixes'); (items||[]).slice().reverse().forEach(f=>addFixFromObj(f)); }catch(e){}
+  // BUG-28：重建已采纳/沉淀/测试指纹集（每次加载先清空，避免残留）
+  window._aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
+  try{ const {items}=await API.get('/api/fixes'); (items||[]).slice().reverse().forEach(f=>{ addFixFromObj(f); window._aiDone.采纳.add(aiFp(f.dept,f.detail||f.title)); }); }catch(e){}
   const depTb=document.getElementById('tb-dep'); if(depTb)depTb.innerHTML='';
   try{ const {items}=await API.get('/api/loop-items');
     (items||[]).slice().reverse().forEach(it=>{ const s=sFromDept(it.dept);
-      if(it.kind==='deposit'){ const tr=document.createElement('tr'); tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(it); depTb&&depTb.appendChild(tr); }
-      else if(it.kind==='test')addTest(s,it.content,it);
+      if(it.kind==='deposit'){ const tr=document.createElement('tr'); tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(it); depTb&&depTb.appendChild(tr); window._aiDone[it.status==='采纳'?'采纳':'沉淀'].add(aiFp(it.dept,it.content)); }
+      else if(it.kind==='test'){ addTest(s,it.content,it); window._aiDone.测试.add(aiFp(it.dept,it.content)); }
       else if(it.kind==='plan')addPlan(s,it.content,it);
       else if(it.kind==='task'){ const ts=it.dept==='公司'?coScope():s; addTaskCard(ts,it.content,it); }
     });
   }catch(e){}
   const de=document.getElementById('dep-empty'); if(de)de.style.display=(depTb&&depTb.children.length)?'none':'block';
+  applyAiDoneStates(); // 给已渲染的 AI 项标灰
 }
 /* 沉淀表行（可改内容 + 删除）*/
 function depRowHtml(it){
@@ -1376,7 +1379,15 @@ async function loadGa4(){
   fill('ga4-landing',r.landingPages,[{k:'page'},{k:'sessions',cls:'num'},{k:'conversions',cls:'num'}]);
 }
 
-/* AI 三连: 沉淀→沉淀表 / 采纳→整改清单+沉淀表 / 测试→测试登记 */
+/* AI 三连: 沉淀→沉淀表 / 采纳→整改清单+沉淀表 / 测试→测试登记
+   BUG-28：刷新后保持「已点」灰态——按 dept|文本前200 指纹反查 fixes+loop_items 缓存(纯前端、无后端改) */
+window._aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
+function aiFp(dept,text){ return (dept||'')+'|'+String(text||'').trim().slice(0,200); }
+function aiMarkDone(grp,kind){ grp.querySelectorAll('.aibtn').forEach(b=>b.classList.add('done')); const btn=[...grp.querySelectorAll('.aibtn')].find(b=>b.dataset.kind===kind); if(btn)btn.textContent='✓ 已'+kind; }
+function applyAiDoneStates(root){ (root||document).querySelectorAll('.ai-actions').forEach(grp=>{
+  const it=grp.closest('.ai-item'); if(!it)return; const text=grabText(grp.firstChild||grp); const s=scopeDept(grp,text); const fp=aiFp(s.dept,text);
+  ['沉淀','采纳','测试'].forEach(k=>{ if(window._aiDone[k].has(fp))aiMarkDone(grp,k); });
+}); }
 async function aiAct(btn,kind){
   const grp=btn.closest('.ai-actions');
   const text=grabText(btn); const s=scopeDept(btn,text);
@@ -1385,11 +1396,11 @@ async function aiAct(btn,kind){
     if(kind==='沉淀'){ await persistLoop('deposit',s,text,'沉淀'); addDeposit(s,text,'沉淀'); toastGo('已沉淀到沉淀表 · 已入库','deposit'); }
     else if(kind==='采纳'){ const [fx]=await Promise.all([persistFix(s,text),persistLoop('deposit',s,text,'采纳')]); addFixFromObj(fx.item); addDeposit(s,text,'采纳'); toastGo('已采纳 → 整改清单 + 沉淀表 · 已入库','fix'); }
     else if(kind==='测试'){ const r=await persistLoop('test',s,text,'观察中'); addTest(s,r.item.content,r.item); toastGo('已加入测试登记（'+s.dept+'）· 已入库','test'); }
-    grp.querySelectorAll('.aibtn').forEach(b=>b.classList.add('done')); btn.textContent='✓ 已'+kind;
+    window._aiDone[kind].add(aiFp(s.dept,text)); aiMarkDone(grp,kind);
   }catch(e){ btn.disabled=false; toast(persistFailMsg(e)); }
 }
-/* inject 沉淀/采纳/测试 onto every AI suggestion item */
-function injectAiActions(){ document.querySelectorAll('.ai-item').forEach(it=>{ if(it.querySelector('.ai-actions'))return; const wrap=document.createElement('span'); wrap.className='ai-actions'; wrap.innerHTML='<button class="aibtn dep" onclick="aiAct(this,\'沉淀\')">沉淀</button><button class="aibtn adopt" onclick="aiAct(this,\'采纳\')">采纳</button><button class="aibtn test" onclick="aiAct(this,\'测试\')">测试</button>'; it.appendChild(wrap); }); }
+/* inject 沉淀/采纳/测试 onto every AI suggestion item；带 data-kind 便于反查标灰 */
+function injectAiActions(){ document.querySelectorAll('.ai-item').forEach(it=>{ if(it.querySelector('.ai-actions'))return; const wrap=document.createElement('span'); wrap.className='ai-actions'; wrap.innerHTML='<button class="aibtn dep" data-kind="沉淀" onclick="aiAct(this,\'沉淀\')">沉淀</button><button class="aibtn adopt" data-kind="采纳" onclick="aiAct(this,\'采纳\')">采纳</button><button class="aibtn test" data-kind="测试" onclick="aiAct(this,\'测试\')">测试</button>'; it.appendChild(wrap); }); applyAiDoneStates(); }
 injectAiActions();
 
 /* ⑤复盘「下周必做」回流 → ①月度计划 + 任务看板，闭环回到起点 */
