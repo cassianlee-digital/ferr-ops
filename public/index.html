@@ -201,6 +201,13 @@ table.dt td.editable{white-space:pre-wrap;overflow:visible;overflow-wrap:anywher
 .prof-field label{display:block;font-size:11.5px;color:var(--text3);margin-bottom:5px}
 .prof-field .val{font-size:13px;color:var(--text1);font-weight:600}
 @media(max-width:760px){.set-layout{flex-direction:column}.set-nav{width:100%;min-width:0;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--border);padding-right:0;padding-bottom:8px}.set-nav .set-logout{margin-top:0;border-top:none;padding-top:9px}}
+/* C-1 关键词分页器 */
+.kw-pager{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:10px}
+.kw-pg{min-width:28px;height:28px;padding:0 8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);border-radius:7px;font-size:12px;cursor:pointer}
+.kw-pg:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+.kw-pg.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);font-weight:700}
+.kw-pg:disabled{opacity:.4;cursor:default}
+.kw-pg-info{font-size:11.5px;color:var(--text3);margin-left:6px}
 
 /* closed-loop stepper */
 .loopbar{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:16px}
@@ -1968,6 +1975,7 @@ function renderRankTrend(arr){
 }
 /* ================= 关键词库（4 类 · 增删改入库 · FR-9）================= */
 const KW_TB={seo:'tb-kw-seo',sem:'tb-kw-sem',high:'tb-kw-high',customer:'tb-kw-cust'};
+const KW_PAGE_SIZE=20; const _kwPage={seo:0,sem:0,high:0,customer:0}; // C-1：每表每页 20 条
 function clsOf(kind,val){const o=(OPT[kind]||[]).find(x=>x[0]===val);return o?o[1]:'b-gray';}
 function kwRow(type,r){
   const a=r.attrs||{}; const tr=document.createElement('tr'); tr.dataset.id=r.id; tr.dataset.kwType=type; tr.dataset.cat=r.category||'';
@@ -2024,7 +2032,28 @@ function renderCatTabs(type){
   const keep=[...box.querySelectorAll('.cat-tab')].find(x=>x.textContent.trim()===(active||'').trim())||box.querySelector('.cat-all');
   keep.classList.add('active'); filterKwByCat(type, keep.classList.contains('cat-all')?null:keep.textContent.trim());
 }
-function filterKwByCat(type,cat){ const tb=document.getElementById(KW_TB[type]); if(!tb)return; [...tb.querySelectorAll('tr')].forEach(tr=>{ tr.style.display=(!cat||tr.dataset.cat===cat)?'':'none'; }); }
+function filterKwByCat(type,cat){ _kwPage[type]=0; applyKwPaging(type); } // C-1：切分类回到第1页，可见性统一交给 applyKwPaging
+/* C-1：统一计算可见行 = 命中当前分类(seo/sem) ∩ 当前页(每页20)；其余隐藏 */
+function applyKwPaging(type){
+  const tb=document.getElementById(KW_TB[type]); if(!tb)return;
+  const cat=(type==='seo'||type==='sem')?activeCat(type):null;
+  const all=[...tb.querySelectorAll('tr')];
+  const rows=all.filter(tr=>!cat||tr.dataset.cat===cat);
+  const size=KW_PAGE_SIZE, total=rows.length, pages=Math.max(1,Math.ceil(total/size));
+  let p=_kwPage[type]||0; if(p>pages-1)p=pages-1; if(p<0)p=0; _kwPage[type]=p;
+  all.forEach(tr=>tr.style.display='none');
+  rows.slice(p*size,(p+1)*size).forEach(tr=>tr.style.display='');
+  renderKwPager(type,p,pages,total);
+}
+function renderKwPager(type,p,pages,total){
+  const tb=document.getElementById(KW_TB[type]); if(!tb)return;
+  const card=tb.closest('.card')||(tb.closest('table')||{}).parentNode; if(!card)return;
+  let pg=card.querySelector('.kw-pager'); if(!pg){ pg=document.createElement('div'); pg.className='kw-pager'; card.appendChild(pg); }
+  if(pages<=1){ pg.innerHTML=total?`<span class="kw-pg-info">共 ${total} 条</span>`:''; return; }
+  let btns=''; for(let i=0;i<pages;i++){ btns+=`<button class="kw-pg${i===p?' active':''}" data-kwpg="${type}" data-pg="${i}">${i+1}</button>`; }
+  pg.innerHTML=`<button class="kw-pg" data-kwpg="${type}" data-pg="${p-1}"${p===0?' disabled':''}>‹</button>${btns}<button class="kw-pg" data-kwpg="${type}" data-pg="${p+1}"${p===pages-1?' disabled':''}>›</button><span class="kw-pg-info">共 ${total} 条 · 第 ${p+1}/${pages} 页</span>`;
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-kwpg]'); if(!b||b.disabled)return; const type=b.dataset.kwpg; const pg=parseInt(b.dataset.pg,10); if(isNaN(pg))return; _kwPage[type]=pg; applyKwPaging(type); });
 function activeCat(type){ const sub=document.getElementById(type==='seo'?'sub-kw-seo':type==='sem'?'sub-kw-sem':null); const t=sub&&sub.querySelector('.cat-tab.active'); if(!t||t.classList.contains('cat-all')||t.classList.contains('add'))return null; return t.textContent.trim(); }
 async function loadKeywords(){
   try{
@@ -2032,14 +2061,14 @@ async function loadKeywords(){
     const byType={seo:[],sem:[],high:[],customer:[]};
     (items||[]).forEach(r=>{ if(byType[r.type])byType[r.type].push(r); });
     Object.keys(KW_TB).forEach(t=>{ const tb=document.getElementById(KW_TB[t]); if(!tb)return; tb.innerHTML=''; byType[t].forEach(r=>tb.appendChild(kwRow(t,r))); });
-    renderSparklines(); renderCatTabs('seo'); renderCatTabs('sem');
+    renderSparklines(); renderCatTabs('seo'); renderCatTabs('sem'); applyKwPaging('high'); applyKwPaging('customer');
   }catch(e){ if(e&&e.message!=='unauthorized'){ Object.keys(KW_TB).forEach(t=>{const tb=document.getElementById(KW_TB[t]); if(tb)tb.innerHTML='';}); toast('关键词加载失败：'+(e.message||'未知错误')); } }
 }
 async function addKeyword(type){
   try{
     const category=activeCat(type); // 当前选中的分类（若有）→ 新词归入该分类
     const {item}=await API.post('/api/keywords',{type,keyword:'新关键词',attrs:{},category});
-    const tb=document.getElementById(KW_TB[type]); if(tb){ const tr=kwRow(type,item); tb.appendChild(tr); renderSparklines(); renderCatTabs(type); const c=tr.querySelector('.kw-name'); if(c){c.focus();placeCaretEnd(c);} }
+    const tb=document.getElementById(KW_TB[type]); if(tb){ const tr=kwRow(type,item); tb.appendChild(tr); renderSparklines(); if(type==='seo'||type==='sem')renderCatTabs(type); _kwPage[type]=1e9; applyKwPaging(type); const c=tr.querySelector('.kw-name'); if(c){c.focus();placeCaretEnd(c);} }
     toast('已加一行 · 直接在表格里改');
   }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
 }
@@ -2052,7 +2081,7 @@ async function kwDelete(tr,btn){
     return;
   }
   if(btn)clearTimeout(btn._t);
-  try{ await API.del('/api/keywords/'+tr.dataset.id); tr.remove(); toast('已删除 · 已入库'); }
+  try{ const type=tr.dataset.kwType; await API.del('/api/keywords/'+tr.dataset.id); tr.remove(); if(type==='seo'||type==='sem')renderCatTabs(type); else applyKwPaging(type); toast('已删除 · 已入库'); }
   catch(e){ if(btn){ btn.dataset.confirm=''; btn.innerHTML=btn.dataset.old; btn.classList.remove('confirming'); } toast(e.status===403?'无权删除（该词库非你负责）':'删除失败'); }
 }
 /* 关键词行：AI 按钮 / 删除 / 词文本编辑 委托处理 */
