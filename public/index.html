@@ -1215,12 +1215,13 @@ function coScope(){return {dept:'公司',owner:'',c:'b-red'};}
 function taskColFor(dept){return document.getElementById(dept==='公司'?'cocol-tasks':(dept==='SEM'?'newtask-sem':'newtask-seo'));}
 function addTaskCard(s,content,it){
   const col=taskColFor(s.dept); if(!col)return null; const add=col.querySelector('.add-task');
-  const card=document.createElement('div'); card.className='tcard'; if(it&&it.id)card.dataset.id=it.id;
+  const done=!!(it&&it.status==='done'); // BUG-23：按入库 status 还原完成态，刷新后仍勾选
+  const card=document.createElement('div'); card.className='tcard'+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
   const del=(it&&it.id)?`<button class="btn-mini" style="color:var(--primary);margin-left:auto" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
   const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
   const due=(dt||hr)?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr?(dt?' ':'')+esc(hr)+':00':''}</span>`:'';
   const note=(it&&it.note)?`<div class="tnote" style="font-size:11px;color:var(--text3);margin-top:2px">${esc(it.note)}</div>`:'';
-  card.innerHTML=`<div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>${esc(content||'')}</div>${note}<div class="tmeta"><span class="badge ${s.c}">${esc(s.dept)}</span>${due}${del}</div>`;
+  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(content||'')}</div>${note}<div class="tmeta"><span class="badge ${s.c}">${esc(s.dept)}</span>${due}${del}</div>`;
   if(add)col.insertBefore(card,add); else col.appendChild(card); return card;
 }
 function addTaskCards(s,items){ (items||[]).forEach(t=>addTaskCard(s,t)); } // 兼容复盘回流 loopBack
@@ -1557,7 +1558,22 @@ function renderLoopbars(){ document.querySelectorAll('.loopbar').forEach(bar=>{ 
 renderLoopbars();
 
 /* ---------- task check ---------- */
-function chk(el){ el.classList.toggle('on'); const c=el.closest('.tcard'); if(el.classList.contains('on')){el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');toast('任务完成，已归档');} else {el.innerHTML='';c.classList.remove('done');} }
+/* BUG-23：动态任务卡(有 id) 勾选→PATCH 入库，刷新后还原；SOP 硬编码卡(无 id) 仍仅前端切态，待 SOP 引擎接入 */
+function chk(el){
+  el.classList.toggle('on'); const c=el.closest('.tcard');
+  const on=el.classList.contains('on');
+  if(on){el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
+  else  {el.innerHTML='';                            c.classList.remove('done');}
+  const id=c&&c.dataset.id;
+  if(id){
+    API.patch('/api/loop-items/'+id,{status:on?'done':'待办'})
+      .then(()=>toast(on?'任务完成 · 已入库':'撤销完成 · 已入库'))
+      .catch(e=>{ // 回滚
+        el.classList.toggle('on'); if(on){el.innerHTML='';c.classList.remove('done');} else {el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
+        toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复');
+      });
+  } else { toast(on?'已完成（SOP 卡待接入持久化）':''); }
+}
 
 /* ---------- colored tag-select ---------- */
 const OPT={
