@@ -68,6 +68,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .trange{padding:4px 11px;border-radius:15px;border:1px solid var(--border2);background:var(--bg2);font-size:11px;color:var(--text2);cursor:pointer}
 .trange:hover{border-color:var(--primary);color:var(--primary)}
 .trange.active{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+.tauto{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);font-size:11px;color:var(--text2)}
+.timebar-inline .tlabel-gap{margin-left:8px}
+.tgran{padding:4px 8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);font-size:11px;color:var(--text2);cursor:pointer}
+.tgran-note{font-size:10.5px;color:var(--text3)}
 
 .content{padding:22px 28px;max-width:none;width:100%}
 .panel{display:none;animation:fade .25s}.panel.active{display:block}
@@ -515,7 +519,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <!-- ============ ③ 数据看板 ============ -->
       <div class="panel" id="panel-data">
         <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
-        <div class="timebar-inline" data-time></div>
+        <div class="timebar-inline" data-time data-gran="week,month"></div>
         <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock"></i> 当前时间范围仅影响询盘与 SEO 折线图；SEO/SEM 顶部卡片与 SEM 看板仍按全量周报显示。</div>
         <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div></div>
 
@@ -1082,8 +1086,10 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 }));
 
 /* ---------- per-page inline time filter ---------- */
-const RANGES=['昨天','上周','上半月','近1月','近3月','近半年','近1年','自定义'];
-window._timeRange='近1月';
+const RANGES=['近7天','近30天','近90天']; // C-2a：三框预设(最近 7/30/90 天)
+window._timeRange='近30天';
+window._gran='week'; // C-2a：当前粒度(day/week/month)，默认按周
+const GRAN_LABEL={day:'按天',week:'按周',month:'按月'};
 /* ===== 1e-a: 统一时间范围 → start_date/end_date/period_label(本地日期，避免 UTC 偏移) ===== */
 function formatLocalDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
 function ymd(v){ v=String(v==null?'':v).trim(); return /^\d{4}-\d{2}-\d{2}$/.test(v)?v:''; } // 仅接受 YYYY-MM-DD，供 <input type=date> 回填
@@ -1092,6 +1098,9 @@ function resolveRange(label){
   const back=n=>{ const d=new Date(today); d.setDate(d.getDate()-n); return d; };
   const r=(s,e)=>({start_date:formatLocalDate(s),end_date:formatLocalDate(e),period_label:label});
   switch(label){
+    case '近7天':  return r(back(6),today);
+    case '近30天': return r(back(29),today);
+    case '近90天': return r(back(89),today);
     case '昨天':   { const y=back(1); return r(y,y); }
     case '上周':   { const day=(today.getDay()+6)%7; const thisMon=back(day); const lastMon=new Date(thisMon); lastMon.setDate(thisMon.getDate()-7); const lastSun=new Date(lastMon); lastSun.setDate(lastMon.getDate()+6); return r(lastMon,lastSun); }
     case '上半月': { const first=new Date(today.getFullYear(),today.getMonth(),1); const mid=new Date(today.getFullYear(),today.getMonth(),15); return r(first,mid); }
@@ -1103,24 +1112,46 @@ function resolveRange(label){
     default:       return r(back(29),today);
   }
 }
-let _range=resolveRange('近1月');
+let _range=resolveRange('近30天');
 function getCurrentRange(){ return _range; }
 function withRange(path,range){ range=range||_range; if(!range||!range.start_date||!range.end_date) return path; const sep=path.includes('?')?'&':'?'; return path+sep+'start_date='+encodeURIComponent(range.start_date)+'&end_date='+encodeURIComponent(range.end_date); }
+function rangeText(r){ return (r&&r.start_date)?(r.start_date+' ~ '+r.end_date):'—'; }
+/* C-2a 三框：框1 预设(7/30/90) + 框2 自动日期(只读) + 框3 粒度(按所在面板 data-gran 白名单动态给) */
+function renderTimebar(bar){
+  const grans=(bar.dataset.gran||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const onlyWeekly=grans.includes('week')&&!grans.includes('day'); // SEO/SEM：无日数据→标注「按周记录」
+  const granHtml=grans.length
+    ?'<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> 粒度</span>'
+      +'<select class="tgran">'+grans.map(g=>`<option value="${g}"${g===window._gran?' selected':''}>${GRAN_LABEL[g]||g}</option>`).join('')+'</select>'
+      +(onlyWeekly?'<span class="tgran-note">· 按周记录</span>':'')
+    :'';
+  bar.innerHTML='<span class="tlabel"><i class="ti ti-calendar-stats"></i> 时间</span>'
+    +RANGES.map(r=>`<button type="button" class="trange${r===window._timeRange?' active':''}">${r}</button>`).join('')
+    +`<span class="tauto" data-tauto><i class="ti ti-calendar"></i> ${rangeText(_range)}</span>`
+    +granHtml;
+}
 document.querySelectorAll('[data-time]').forEach(bar=>{
-  bar.innerHTML='<span class="tlabel"><i class="ti ti-calendar-stats"></i> 时间</span>'+RANGES.map((r,i)=>`<button type="button" class="trange${i===3?' active':''}">${r}</button>`).join('');
+  renderTimebar(bar);
   bar.addEventListener('click',e=>{
     const btn=e.target.closest('.trange'); if(!btn)return;
-    // 所有时间条联动同一选区
     document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent===btn.textContent));
     const rg=btn.textContent.trim(); window._timeRange=rg;
     const nr=resolveRange(rg);
-    if(!nr){ toast('自定义时间选择器尚未实现（TODO），未改变筛选'); return; } // 不伪装生效
+    if(!nr){ toast('该预设尚未实现，未改变筛选'); return; } // 不伪装生效
     _range=nr;
-    // 广播：任何图表/表格可监听 timerange 自行按区间重算
+    document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
     document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
     loadInquiries();                 // 1e-a：询盘真实按区间重拉
     loadSeoChartRange();             // 1e-b：SEO 折线图真实按区间重拉(不动 KPI/看板的全量 _seoWeeks)
     toast('时间范围：'+_range.period_label);
+  });
+  bar.addEventListener('change',e=>{
+    const sel=e.target.closest('.tgran'); if(!sel)return;
+    window._gran=sel.value;
+    document.querySelectorAll('[data-time] .tgran').forEach(s=>{ if([...s.options].some(o=>o.value===sel.value)) s.value=sel.value; }); // 多条粒度联动
+    document.dispatchEvent(new CustomEvent('granularity',{detail:{gran:window._gran}}));
+    rebuildSeoChart();               // C-2a：粒度只重画 SEO 折线(数据已在区间视图)，周/月切换
+    toast('粒度：'+(GRAN_LABEL[window._gran]||window._gran));
   });
 });
 
@@ -1576,7 +1607,7 @@ function syncKpiInputs(){ document.querySelectorAll('#panel-settings [data-kpi]'
 async function loadMetrics(){ try{ const {rows}=await API.get('/api/kpi-targets'); applyKpiServer(rows); syncKpiInputs(); }catch(e){} }
 
 /* 后端周报字段 → 前端原有字段名映射，保持下游逻辑不变 */
-function mapSeoWeek(w){return {date:(w.week_date||'').slice(5),clicks:w.clicks,impr:w.impressions,pos:w.avg_position,top10:w.top10_ratio,coverage:w.coverage,indexed:w.indexed_pages,bounce:w.bounce_rate,dwell:w.dwell_seconds};}
+function mapSeoWeek(w){return {date:(w.week_date||'').slice(5),ym:(w.week_date||'').slice(0,7),clicks:w.clicks,impr:w.impressions,pos:w.avg_position,top10:w.top10_ratio,coverage:w.coverage,indexed:w.indexed_pages,bounce:w.bounce_rate,dwell:w.dwell_seconds};}
 function mapSemWeek(w){return {date:(w.week_date||'').slice(5),cost:w.cost,impr:w.impressions,clicks:w.clicks,conv:w.conversions,roas:w.roas,qs:w.quality_score,cpc:w.cpc,ctr:w.ctr,cpconv:w.cost_per_conv};}
 async function loadWeeks(){
   try{
@@ -2179,8 +2210,13 @@ function blankDonutLegend(){ setDonutLegend({lgInqA:'—',lgInqB:'—',lgInqC:'�
 let seoChart=null, seoFull=null;
 function seoSeriesFromWeeks(){
   // 优先用当前区间视图；真实模式下无数据返回 null(显示空状态),仅 DEMO_MODE 用示例
-  const w=(window._seoWeeksView!==undefined)?window._seoWeeksView:window._seoWeeks;
+  let w=(window._seoWeeksView!==undefined)?window._seoWeeksView:window._seoWeeks;
   if(w&&w.length){
+    if(window._gran==='month'){ // C-2a：按月汇总(对真实周行求和)。SEO 无日数据，故只支持 周/月，不提供「天」。
+      const m=new Map();
+      w.forEach(x=>{ const k=x.ym||x.date; if(!m.has(k))m.set(k,{date:k,clicks:0,impr:0}); const o=m.get(k); o.clicks+=(+x.clicks||0); o.impr+=(+x.impr||0); });
+      w=[...m.values()];
+    }
     return {labels:w.map(x=>x.date), clicks:w.map(x=>x.clicks), impr:w.map(x=>Math.round(x.impr/20))};
   }
   return window.DEMO_MODE ? DEMO.seoSeries : null;
