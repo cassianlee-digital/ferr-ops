@@ -1424,9 +1424,9 @@ async function submitInquiry(){
     country:g('f-country')||'🏳️ 未填',region:g('f-region'),channel:g('f-channel'),
     source:g('f-source')||'待补',product:g('f-product'),grade:g('f-grade'),note:g('f-note')};
   try{
-    const {item,stats}=await API.post('/api/inquiries',rec);
-    window._inqCache.unshift(item);
-    renderInqList(); renderInqTrend(); refreshInqStats(stats); closeModal('inqMask');
+    const {item}=await API.post('/api/inquiries',rec);
+    closeModal('inqMask');
+    await loadInquiries(); // BUG-15：按当前时间区间重拉，统计/趋势/列表全部一致；不再用 POST 返回的全量 stats 污染显示
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
   }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
