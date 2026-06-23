@@ -1091,8 +1091,9 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 
 /* ---------- per-page inline time filter ---------- */
 const RANGES=['近7天','近30天','近90天','近一年']; // C-2a 三框预设 + C组「可查看近一年」
-window._timeRange='近30天';
-window._gran='week'; // C-2a：当前粒度(day/week/month)，默认按周
+/* BUG-31 B-1：时间范围+粒度持久化(避免刷新回默认)。读 localStorage，非法值回退默认 */
+try{ const t=localStorage.getItem('ferr:timeRange'); window._timeRange=RANGES.includes(t)?t:'近30天'; }catch(e){ window._timeRange='近30天'; }
+try{ const g=localStorage.getItem('ferr:gran'); window._gran=['day','week','month'].includes(g)?g:'week'; }catch(e){ window._gran='week'; }
 const GRAN_LABEL={day:'按天',week:'按周',month:'按月'};
 /* ===== 1e-a: 统一时间范围 → start_date/end_date/period_label(本地日期，避免 UTC 偏移) ===== */
 function formatLocalDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
@@ -1117,7 +1118,7 @@ function resolveRange(label){
     default:       return r(back(29),today);
   }
 }
-let _range=resolveRange('近30天');
+let _range=resolveRange(window._timeRange); // BUG-31 B-1：跟随持久化值初始化
 function getCurrentRange(){ return _range; }
 function withRange(path,range){ range=range||_range; if(!range||!range.start_date||!range.end_date) return path; const sep=path.includes('?')?'&':'?'; return path+sep+'start_date='+encodeURIComponent(range.start_date)+'&end_date='+encodeURIComponent(range.end_date); }
 function rangeText(r){ return (r&&r.start_date)?(r.start_date+' ~ '+r.end_date):'—'; }
@@ -1144,6 +1145,7 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     const nr=resolveRange(rg);
     if(!nr){ toast('该预设尚未实现，未改变筛选'); return; } // 不伪装生效
     _range=nr;
+    try{ localStorage.setItem('ferr:timeRange',rg); }catch(e){} // BUG-31 B-1
     document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
     document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
     loadInquiries();                 // 1e-a：询盘真实按区间重拉
@@ -1153,6 +1155,7 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
   bar.addEventListener('change',e=>{
     const sel=e.target.closest('.tgran'); if(!sel)return;
     window._gran=sel.value;
+    try{ localStorage.setItem('ferr:gran',sel.value); }catch(e){} // BUG-31 B-1
     document.querySelectorAll('[data-time] .tgran').forEach(s=>{ if([...s.options].some(o=>o.value===sel.value)) s.value=sel.value; }); // 多条粒度联动
     document.dispatchEvent(new CustomEvent('granularity',{detail:{gran:window._gran}}));
     rebuildSeoChart();               // C-2a：粒度只重画 SEO 折线(数据已在区间视图)，周/月切换
