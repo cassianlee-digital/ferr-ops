@@ -353,7 +353,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="nav-item" data-tab="inquiry"><i class="ti ti-mail-star"></i> 询盘评级<span class="dot dot-green"></span></div></div>
     <div class="nav-section"><div class="nav-label">任务 / 数据源</div>
       <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div>
-      <div class="nav-item" data-tab="tasks"><i class="ti ti-checklist"></i> 任务看板<span class="dot dot-red"></span></div>
+      <div class="nav-item" data-tab="tasks"><i class="ti ti-checklist"></i> 任务看板<span class="dot dot-red" id="nav-tasks-dot" style="display:none"></span></div>
       <div class="nav-item" data-tab="ga4"><i class="ti ti-users"></i> GA4 流量<span class="dot dot-green"></span></div></div>
     <div class="nav-section"><div class="nav-label">运营闭环</div>
       <div class="nav-item" data-tab="plan"><i class="ti ti-clipboard-list"></i> 月度计划</div>
@@ -757,7 +757,9 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <!-- ============ 任务看板 V3 ============ -->
       <div class="panel" id="panel-tasks">
         <div class="page-head"><div><div class="page-title">任务看板</div><div class="page-sub">陈(上) / 李(下) 各自：左=SOP固定(每日/每周/每月必做)、右=每日新增 · 公司任务在右</div></div><button class="btn-primary" onclick="ai('根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序')"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
-        <div class="banner banner-red"><i class="ti ti-bell-ringing" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">公司新派任务：6 月底前完成 Bafaw 西语站全站资质内容补齐</div><div class="banner-s">截止 06-30 · 李、陈打开后台即强提示</div></div></div>
+        <!-- Step C：未做 SOP 提示 banner（周期首日 08:00 后才显示）+ 公司新派 banner（urgent=1 未完成；硬编码 Bafaw banner 已移除）-->
+        <div id="sop-overdue-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-alert-triangle" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">未完成提示</div><div class="banner-s" id="sop-overdue-list"></div></div></div>
+        <div id="urgent-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-bell-ringing" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">公司新派任务</div><div class="banner-s" id="urgent-list"></div></div></div>
         <div class="tboard">
           <div class="pstack">
             <!-- 陈 在上 -->
@@ -965,6 +967,8 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       </div>
       <div class="fld"><label>任务内容</label><textarea id="task-content" placeholder="要做什么…"></textarea></div>
       <div class="fld"><label>备注（可选）</label><textarea id="task-note" placeholder="补充说明…"></textarea></div>
+      <!-- Step C：urgent 勾选，仅经理/老板派发公司任务时显示 -->
+      <div class="fld" id="task-urgent-fld" style="display:none"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:var(--primary)"><input type="checkbox" id="task-urgent" style="width:14px;height:14px"> ⚠️ 设为紧急（顶部强提示，所有人可见，完成后消失）</label></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('taskMask')">取消</button><button class="btn-primary" onclick="submitTask()"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
   </div>
@@ -1109,6 +1113,7 @@ function toggleTheme(){ document.body.classList.toggle('dark'); const dk=documen
 function go(tab){ const p=document.getElementById('panel-'+tab); if(!p)return; document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); p.classList.add('active'); const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){}
   if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
+  if(tab==='tasks'){try{loadUrgent();renderSopOverdueBanner();}catch(e){}} // Step C：进入任务看板时刷 banner（多人协作下即时反映）
 }
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>go(n.dataset.tab)));
 document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} }));
@@ -1283,6 +1288,10 @@ function openTaskModal(dept){
   const de=document.getElementById('task-date'); if(de)de.value=formatLocalDate(new Date());
   if(hs)hs.value=''; const tc=document.getElementById('task-content'); if(tc)tc.value='';
   const tn=document.getElementById('task-note'); if(tn)tn.value='';
+  // Step C：经理/老板派发公司任务时可勾「设为紧急」；其他场景隐藏
+  const role=(window.ME||{}).role; const canUrgent=(role==='manager'||role==='boss')&&dept==='公司';
+  const uf=document.getElementById('task-urgent-fld'); if(uf)uf.style.display=canUrgent?'':'none';
+  const uc=document.getElementById('task-urgent'); if(uc)uc.checked=false;
   openModal('taskMask'); if(tc)tc.focus();
 }
 async function submitTask(){
@@ -1292,10 +1301,14 @@ async function submitTask(){
   const task_date=document.getElementById('task-date').value||'';
   const task_hour=document.getElementById('task-hour').value||'';
   const note=(document.getElementById('task-note').value||'').trim();
+  const ucEl=document.getElementById('task-urgent'); const urgent=(ucEl&&ucEl.checked&&document.getElementById('task-urgent-fld').style.display!=='none')?1:undefined;
   try{
-    const {item}=await API.post('/api/loop-items',{kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,task_hour,note});
+    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,task_hour,note};
+    if(urgent)body.urgent=1;
+    const {item}=await API.post('/api/loop-items',body);
     addTaskCard(s,item.content,item); closeModal('taskMask');
-    toast((s.dept==='公司'?'已派发公司任务':'已新增'+s.dept+'任务')+' · 已入库');
+    toast((s.dept==='公司'?(urgent?'已派发紧急公司任务':'已派发公司任务'):'已新增'+s.dept+'任务')+' · 已入库');
+    if(urgent)loadUrgent(); // Step C：紧急任务即时刷 banner
   }catch(e){ toast(persistFailMsg(e)); }
 }
 function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!confirm('删除该任务？'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>card.remove()).catch(()=>toast('删除失败')); }
@@ -1642,7 +1655,7 @@ function chk(el){
   if(id){
     // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看
     API.patch('/api/loop-items/'+id,{state:on?'done':'todo',status:on?'done':'待办'})
-      .then(()=>toast(on?'任务完成 · 已入库':'撤销完成 · 已入库'))
+      .then(()=>{ toast(on?'任务完成 · 已入库':'撤销完成 · 已入库'); loadUrgent(); }) // Step C：完成 urgent 任务 → banner 自动消失
       .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
   } else if(sopId){
     // SOP-B：完成→POST /api/sop/completions；撤销→DELETE。period_key 按当前频率算
@@ -1651,7 +1664,12 @@ function chk(el){
     const req=on
       ? API.post('/api/sop/completions',{sop_id:Number(sopId),period_key:pk})
       : API.del('/api/sop/completions/'+sopId+'?period_key='+encodeURIComponent(pk));
-    req.then(()=>{ toast(on?'SOP 完成 · 已入库':'撤销完成 · 已入库'); updateSopCounts(); })
+    req.then(()=>{
+      toast(on?'SOP 完成 · 已入库':'撤销完成 · 已入库');
+      // 即时更新前端 _sopDone 缓存（无需重拉），再刷 banner + 红点
+      const set=window._sopDone&&window._sopDone[freq]; if(set){ if(on)set.add(Number(sopId)); else set.delete(Number(sopId)); }
+      updateSopCounts(); renderSopOverdueBanner(); refreshNavTaskDot();
+    })
        .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
   } else {
     toast(on?'已完成':'');
@@ -1691,6 +1709,8 @@ async function loadSops(){
   renderSopCards();
   renderSopSettingsTable();
   updateSopCounts();
+  renderSopOverdueBanner(); // Step C：SOP 未做提示
+  refreshNavTaskDot();      // Step C：侧栏红感叹号
 }
 function renderSopCards(){
   ['SEM','SEO','公司'].forEach(dept=>{
@@ -1787,6 +1807,72 @@ document.addEventListener('click',async e=>{
     catch(err){ toast(err&&err.status===403?'无权操作（仅经理/老板）':'操作失败'); }
   }
 });
+
+/* ===== Step C：未做 SOP 提示 banner + 公司新派 banner + 侧栏红点 ===== */
+/* 未做 SOP banner：只在周期首日 08:00 后展示一天（避免天天弹）。daily=每天 08:00 起；weekly=周一 08:00 起；monthly=1 号 08:00 起。 */
+function isOverduePeriodFirstDay(freq){
+  const now=new Date(); const h=now.getHours();
+  if(h<8)return false; // 早 8 点前不催
+  if(freq==='daily')return true; // 每天都是首日
+  if(freq==='weekly')return now.getDay()===1; // 周一
+  if(freq==='monthly')return now.getDate()===1; // 1 号
+  return false;
+}
+function buildSopOverdueList(){
+  const today=formatLocalDate(new Date()).replace(/-/g,'.').replace(/^\d{4}\./,''); // MM.DD
+  const lines=[];
+  ['daily','weekly','monthly'].forEach(freq=>{
+    if(!isOverduePeriodFirstDay(freq))return;
+    (window._sops||[]).forEach(s=>{
+      if(s.freq!==freq)return;
+      const done=window._sopDone[freq]&&window._sopDone[freq].has(s.id);
+      if(done)return;
+      lines.push(esc(s.dept)+'-'+today+'-'+esc(FREQ_LABEL[freq]||freq)+'：'+esc(s.title)+' 任务未做，请及时处理。');
+    });
+  });
+  return lines;
+}
+function renderSopOverdueBanner(){
+  const box=document.getElementById('sop-overdue-banner');
+  const list=document.getElementById('sop-overdue-list');
+  if(!box||!list)return;
+  const lines=buildSopOverdueList();
+  if(!lines.length){ box.style.display='none'; list.innerHTML=''; return; }
+  box.style.display='flex';
+  list.innerHTML=lines.map(l=>'<div>'+l+'</div>').join('');
+}
+
+/* 公司新派 urgent banner：拉 loop_items?urgent=1（active 视图自动排除 archived/deleted）+ 完成则消失 */
+window._urgentTasks=[];
+async function loadUrgent(){
+  try{
+    const {items}=await API.get('/api/loop-items?urgent=1');
+    // 仅显示未完成的（state!=='done' 且 status!=='done'）；done 的 banner 自然消失
+    window._urgentTasks=(items||[]).filter(it=>{ const st=it.state||''; const ss=it.status||''; return st!=='done' && ss!=='done'; });
+  }catch(e){ window._urgentTasks=[]; }
+  renderUrgentBanner();
+  refreshNavTaskDot();
+}
+function renderUrgentBanner(){
+  const box=document.getElementById('urgent-banner');
+  const list=document.getElementById('urgent-list');
+  if(!box||!list)return;
+  const arr=window._urgentTasks||[];
+  if(!arr.length){ box.style.display='none'; list.innerHTML=''; return; }
+  box.style.display='flex';
+  list.innerHTML=arr.map(it=>{
+    const due=it.task_date?'（截止 '+esc(it.task_date)+'）':'';
+    return '<div>'+esc(it.content||'')+due+'</div>';
+  }).join('');
+}
+
+/* 侧栏「任务看板」红感叹号：未做 SOP 列表非空 OR 有 urgent 未完成 → 显示 */
+function refreshNavTaskDot(){
+  const dot=document.getElementById('nav-tasks-dot'); if(!dot)return;
+  const overdue=buildSopOverdueList().length>0;
+  const urgent=(window._urgentTasks||[]).length>0;
+  dot.style.display=(overdue||urgent)?'':'none';
+}
 
 /* ---------- colored tag-select ---------- */
 const OPT={
@@ -2690,6 +2776,7 @@ window.addEventListener('load',async()=>{
   await loadClosedLoop();      // 整改清单 + 闭环条目 + 沉淀表
   await loadArchive();         // 归档②：资产库归档页（三 subtab）
   await loadSops();            // SOP-B：动态 SOP 卡 + 设置页 SOP 列表
+  await loadUrgent();          // SOP-C：公司新派 urgent banner + 侧栏红点
   await loadContent();         // 内容资产
   await loadGa4();             // GA4 看板（骨架/空状态）
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
