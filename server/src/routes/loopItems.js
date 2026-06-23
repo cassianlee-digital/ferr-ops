@@ -16,7 +16,9 @@ function resolveView(q) {
 export async function loopItemsRoutes(app) {
   app.get('/api/loop-items', { preHandler: requireAuth }, async (request) => {
     const kind = request.query?.kind;
-    return { items: repo.list(KINDS.includes(kind) ? kind : undefined, { view: resolveView(request.query) }) };
+    const onlyUrgent = request.query?.urgent === '1';
+    const all = repo.list(KINDS.includes(kind) ? kind : undefined, { view: resolveView(request.query) });
+    return { items: onlyUrgent ? all.filter((r) => r.urgent === 1) : all };
   });
 
   app.post('/api/loop-items', seoOrSem, async (request, reply) => {
@@ -31,6 +33,7 @@ export async function loopItemsRoutes(app) {
       task_date: s(b.task_date, 20),
       task_hour: s(b.task_hour, 10),
       note: s(b.note, 400),
+      urgent: b.urgent === 1 || b.urgent === '1' || b.urgent === true ? 1 : null,
     });
     reply.code(201);
     return { item };

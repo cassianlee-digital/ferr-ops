@@ -9,6 +9,7 @@ const ALL_TABLES = [
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
   'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets',
+  'sop_definitions', 'sop_completions',
 ];
 
 const SCHEMA = `
@@ -161,6 +162,7 @@ CREATE TABLE IF NOT EXISTS loop_items (
   archived_at   TEXT,   -- 归档时间（ISO）；进入归档页就用这个，不是 created_at
   deleted_at    TEXT,   -- 软删时间（ISO）；NULL=未删
   archive_kind  TEXT,   -- sem / seo / company；归档页分桶
+  urgent        INTEGER,-- SOP③：1=公司新派紧急任务（顶部 banner）/ NULL=普通
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 -- 注意：loop_items(state, kind) 索引在下方 ensureColumns 之后用 db.exec 创建（同上）
@@ -225,6 +227,29 @@ CREATE TABLE IF NOT EXISTS monthly_snapshots (
   valid_rate    REAL,
   updated_at    TEXT
 );
+
+-- SOP 引擎（Step A）：定义 + 完成记录
+CREATE TABLE IF NOT EXISTS sop_definitions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  dept       TEXT NOT NULL,                                -- SEM / SEO / 公司
+  freq       TEXT NOT NULL CHECK (freq IN ('daily','weekly','monthly')),
+  title      TEXT NOT NULL,
+  content    TEXT,
+  time_hint  TEXT,                                         -- 任务卡角落展示，如 '09:30' '周五' '月初'；不参与判定
+  active     INTEGER NOT NULL DEFAULT 1,                   -- 1=启用 0=停用（软删，保留完成历史）
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_sop_def_dept_freq_active ON sop_definitions(dept, freq, active);
+
+CREATE TABLE IF NOT EXISTS sop_completions (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  sop_id        INTEGER NOT NULL,
+  period_key    TEXT NOT NULL,                              -- daily=YYYY-MM-DD / weekly=YYYY-Www / monthly=YYYY-MM
+  completed_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  completed_by  TEXT,                                       -- username
+  UNIQUE(sop_id, period_key)
+);
+CREATE INDEX IF NOT EXISTS idx_sop_comp_period ON sop_completions(period_key);
 `;
 
 export function migrate() {
@@ -252,6 +277,8 @@ export function migrate() {
     ['task_date', 'TEXT'], ['task_hour', 'TEXT'], ['note', 'TEXT'],
     // 归档地基（第①步）：旧库幂等加列
     ['state', 'TEXT'], ['archived_at', 'TEXT'], ['deleted_at', 'TEXT'], ['archive_kind', 'TEXT'],
+    // SOP 引擎（Step A）：公司新派紧急任务标记
+    ['urgent', 'INTEGER'],
   ]);
   ensureColumns('fixes', [
     ['evidence', 'TEXT'],
