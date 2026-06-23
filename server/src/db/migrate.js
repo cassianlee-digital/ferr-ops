@@ -147,6 +147,9 @@ CREATE TABLE IF NOT EXISTS loop_items (
   period        TEXT,   -- 测试：起止
   conclusion    TEXT,   -- 测试：结论
   analysis      TEXT,   -- 沉淀：对该动作的分析
+  task_date     TEXT,   -- 任务：日期（可选）
+  task_hour     TEXT,   -- 任务：今日完成时间（小时 00-23）
+  note          TEXT,   -- 任务：备注
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -234,6 +237,7 @@ export function migrate() {
     ['hypothesis', 'TEXT'], ['metric', 'TEXT'], ['due_or_budget', 'TEXT'],
     ['variable', 'TEXT'], ['period', 'TEXT'], ['conclusion', 'TEXT'],
     ['analysis', 'TEXT'],
+    ['task_date', 'TEXT'], ['task_hour', 'TEXT'], ['note', 'TEXT'],
   ]);
   ensureColumns('fixes', [['evidence', 'TEXT']]);
 

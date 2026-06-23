@@ -10,8 +10,8 @@ export function list(kind) {
 export function create(rec) {
   const info = db
     .prepare(
-      `INSERT INTO loop_items (kind, dept, content, owner, status)
-       VALUES (@kind,@dept,@content,@owner,@status)`
+      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, task_hour, note)
+       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@task_hour,@note)`
     )
     .run(rec);
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(info.lastInsertRowid);
@@ -19,7 +19,8 @@ export function create(rec) {
 
 export function update(id, fields) {
   const allowed = ['dept', 'content', 'owner', 'status',
-    'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis'];
+    'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis',
+    'task_date', 'task_hour', 'note'];
   const keys = Object.keys(fields).filter((k) => allowed.includes(k));
   if (!keys.length) return get(id);
   db.prepare(`UPDATE loop_items SET ${keys.map((k) => `${k}=@${k}`).join(', ')} WHERE id=@id`)

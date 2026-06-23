@@ -716,7 +716,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
                   <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>导出广告组成本效率周报</div><div class="tmeta"><span class="badge b-purple">SEM</span><span class="tdue">周五</span></div></div>
                 </div>
                 <div id="newtask-sem"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
-                  <button class="add-task" onclick="addPersonalTask('SEM')"><i class="ti ti-plus"></i> 新增</button>
+                  <button class="add-task" onclick="openTaskModal('SEM')"><i class="ti ti-plus"></i> 新增</button>
                 </div>
               </div>
             </div>
@@ -731,7 +731,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
                   <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>核对收录与索引覆盖</div><div class="tmeta"><span class="badge b-blue">SEO</span><span class="tdue">月初</span></div></div>
                 </div>
                 <div id="newtask-seo"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
-                  <button class="add-task" onclick="addPersonalTask('SEO')"><i class="ti ti-plus"></i> 新增</button>
+                  <button class="add-task" onclick="openTaskModal('SEO')"><i class="ti ti-plus"></i> 新增</button>
                 </div>
               </div>
             </div>
@@ -741,7 +741,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
             <div class="freq-cap"><i class="ti ti-calendar-month"></i> 每月必做（SOP）</div>
             <div class="tcard must"><div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>月度复盘会 + 更新 SOP</div><div class="tmeta"><span class="badge b-red">公司</span><span class="tdue">月末</span></div></div>
             <div class="freq-cap"><i class="ti ti-building"></i> 公司派发（强提示）</div>
-            <button class="add-task" onclick="addCompanyTask()"><i class="ti ti-plus"></i> 派发任务</button>
+            <button class="add-task" onclick="openTaskModal('公司')"><i class="ti ti-plus"></i> 派发任务</button>
           </div>
         </div>
       </div>
@@ -873,6 +873,22 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="fld"><label>确认新密码</label><input id="pwd-new2" type="password" autocomplete="new-password"></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('pwdMask')">取消</button><button class="btn-primary" onclick="submitPwd()"><i class="ti ti-device-floppy"></i> 保存</button></div>
+  </div>
+</div>
+
+<!-- 新增任务弹框（B-4）-->
+<div class="modal-mask" id="taskMask">
+  <div class="modal" style="width:440px">
+    <div class="modal-head"><i class="ti ti-plus" style="color:var(--primary)"></i> 新增<span id="task-deptlabel"></span>任务<span class="x" onclick="closeModal('taskMask')"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld-row">
+        <div class="fld"><label>日期（可选）</label><input type="date" id="task-date"></div>
+        <div class="fld"><label>今日完成时间（可选）</label><select id="task-hour"><option value="">未定</option></select></div>
+      </div>
+      <div class="fld"><label>任务内容</label><textarea id="task-content" placeholder="要做什么…"></textarea></div>
+      <div class="fld"><label>备注（可选）</label><textarea id="task-note" placeholder="补充说明…"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('taskMask')">取消</button><button class="btn-primary" onclick="submitTask()"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
   </div>
 </div>
 
@@ -1120,19 +1136,36 @@ function addTaskCard(s,content,it){
   const col=taskColFor(s.dept); if(!col)return null; const add=col.querySelector('.add-task');
   const card=document.createElement('div'); card.className='tcard'; if(it&&it.id)card.dataset.id=it.id;
   const del=(it&&it.id)?`<button class="btn-mini" style="color:var(--primary);margin-left:auto" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
-  card.innerHTML=`<div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>${esc(content||'')}</div><div class="tmeta"><span class="badge ${s.c}">${esc(s.dept)}</span>${del}</div>`;
+  const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
+  const due=(dt||hr)?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr?(dt?' ':'')+esc(hr)+':00':''}</span>`:'';
+  const note=(it&&it.note)?`<div class="tnote" style="font-size:11px;color:var(--text3);margin-top:2px">${esc(it.note)}</div>`:'';
+  card.innerHTML=`<div class="ttitle"><span class="tcheck" onclick="chk(this)"></span>${esc(content||'')}</div>${note}<div class="tmeta"><span class="badge ${s.c}">${esc(s.dept)}</span>${due}${del}</div>`;
   if(add)col.insertBefore(card,add); else col.appendChild(card); return card;
 }
 function addTaskCards(s,items){ (items||[]).forEach(t=>addTaskCard(s,t)); } // 兼容复盘回流 loopBack
-async function addPersonalTask(dept){
-  const s=sFromDept(dept); const text=(prompt('新增'+dept+'任务：')||'').trim(); if(!text)return;
-  try{ const {item}=await persistLoop('task',s,text,'待办'); addTaskCard(s,item.content,item); toast('已新增'+dept+'任务 · 已入库'); }
-  catch(e){ toast(persistFailMsg(e)); }
+let _taskScope=null;
+function openTaskModal(dept){
+  _taskScope=dept==='公司'?coScope():sFromDept(dept);
+  const lbl=document.getElementById('task-deptlabel'); if(lbl)lbl.textContent=dept;
+  const hs=document.getElementById('task-hour');
+  if(hs&&hs.options.length<=1){ for(let h=0;h<24;h++){ const o=document.createElement('option'); const hh=String(h).padStart(2,'0'); o.value=hh; o.textContent=hh+':00'; hs.appendChild(o); } }
+  const de=document.getElementById('task-date'); if(de)de.value=formatLocalDate(new Date());
+  if(hs)hs.value=''; const tc=document.getElementById('task-content'); if(tc)tc.value='';
+  const tn=document.getElementById('task-note'); if(tn)tn.value='';
+  openModal('taskMask'); if(tc)tc.focus();
 }
-async function addCompanyTask(){
-  const s=coScope(); const text=(prompt('派发公司任务：')||'').trim(); if(!text)return;
-  try{ const {item}=await persistLoop('task',s,text,'待办'); addTaskCard(s,item.content,item); toast('已派发公司任务 · 已入库'); }
-  catch(e){ toast(persistFailMsg(e)); }
+async function submitTask(){
+  const s=_taskScope; if(!s)return;
+  const content=(document.getElementById('task-content').value||'').trim();
+  if(!content){ toast('请填写任务内容'); return; }
+  const task_date=document.getElementById('task-date').value||'';
+  const task_hour=document.getElementById('task-hour').value||'';
+  const note=(document.getElementById('task-note').value||'').trim();
+  try{
+    const {item}=await API.post('/api/loop-items',{kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,task_hour,note});
+    addTaskCard(s,item.content,item); closeModal('taskMask');
+    toast((s.dept==='公司'?'已派发公司任务':'已新增'+s.dept+'任务')+' · 已入库');
+  }catch(e){ toast(persistFailMsg(e)); }
 }
 function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!confirm('删除该任务？'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>card.remove()).catch(()=>toast('删除失败')); }
 async function addFixRow(){

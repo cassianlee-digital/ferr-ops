@@ -20,6 +20,9 @@ export async function loopItemsRoutes(app) {
       content: s(b.content, 400) || '',
       owner: s(b.owner, 20),
       status: s(b.status, 20) || '',
+      task_date: s(b.task_date, 20),
+      task_hour: s(b.task_hour, 10),
+      note: s(b.note, 400),
     });
     reply.code(201);
     return { item };
