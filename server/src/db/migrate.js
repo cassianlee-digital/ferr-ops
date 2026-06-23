@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS fixes (
   archive_kind  TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-CREATE INDEX IF NOT EXISTS idx_fixes_state ON fixes(state);
+-- 注意：fixes(state) 索引在下方 ensureColumns 之后用 db.exec 创建（旧库 state 列由 ensureColumns 补，不能在此 IF NOT EXISTS 阶段建索引）
 
 CREATE TABLE IF NOT EXISTS loop_items (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS loop_items (
   archive_kind  TEXT,   -- sem / seo / company；归档页分桶
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind);
+-- 注意：loop_items(state, kind) 索引在下方 ensureColumns 之后用 db.exec 创建（同上）
 
 -- V7：第三方集成密钥（AES 加密存储）
 CREATE TABLE IF NOT EXISTS integrations (
