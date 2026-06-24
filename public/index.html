@@ -109,6 +109,8 @@ table.dt th:last-child,table.dt td:last-child{border-right:none}
 /* A组：单元格日期选择器 + 删除就地确认态 */
 input.cell-date{font-family:var(--font);font-size:11.5px;padding:3px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text1)}
 .kw-del.confirming{color:#fff!important;background:var(--primary)!important;border-color:var(--primary)!important}
+/* 通用「就地两次点确认」红态：删除/归档/恢复/停用 统一，不再用顶部弹框 */
+.confirming{color:#fff!important;background:var(--primary)!important;border-color:var(--primary)!important;white-space:nowrap}
 .fix-table th:nth-child(1){width:11%}
 .fix-table th:nth-child(2){width:72px}
 .fix-table th:nth-child(3){width:36%}
@@ -1384,7 +1386,7 @@ async function submitTask(){
     if(urgent)loadUrgent(); // Step C：紧急任务即时刷 banner
   }catch(e){ toast(persistFailMsg(e)); }
 }
-function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!confirm('删除该任务？'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>card.remove()).catch(()=>toast('删除失败')); }
+function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>card.remove()).catch(()=>toast('删除失败')); }
 async function addFixRow(){
   const s=sFromDept('SEO');
   try{
@@ -1438,7 +1440,7 @@ async function addDepositRow(){
     document.getElementById('dep-empty').style.display='none'; const c=tr.querySelector('[data-field="content"]'); if(c){c.focus();}
   }catch(e){ toast(e.status===403?'无权操作':'保存失败'); }
 }
-function depDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!confirm('删除该条？'))return; API.del('/api/loop-items/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-dep'); if(tb&&!tb.children.length)document.getElementById('dep-empty').style.display='block';}).catch(e=>toast('删除失败')); }
+function depDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-dep'); if(tb&&!tb.children.length)document.getElementById('dep-empty').style.display='block';}).catch(e=>toast('删除失败')); }
 async function addPlanRow(dept){
   const s=sFromDept(dept);
   try{
@@ -1483,7 +1485,7 @@ async function addContent(){
     document.getElementById('content-empty').style.display='none'; const c=tr.querySelector('[data-field="name"]'); if(c){c.focus();placeCaretEnd(c);}
   }catch(e){ toast(e.status===403?'无权操作':'保存失败'); }
 }
-function contentDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!confirm('删除该资产？'))return; API.del('/api/content-assets/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-content'); if(tb&&!tb.children.length)document.getElementById('content-empty').style.display='block';}).catch(e=>toast('删除失败')); }
+function contentDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/content-assets/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-content'); if(tb&&!tb.children.length)document.getElementById('content-empty').style.display='block';}).catch(e=>toast('删除失败')); }
 /* ===== 询盘 3D 地球仪（青岛飞线，读表格实时数据）===== */
 const QINGDAO=[120.38,36.07];
 const COUNTRY_GEO={'德国':[10.45,51.17],'美国':[-98.5,39.8],'西班牙':[-3.7,40.4],'印度':[78.96,20.59],'意大利':[12.57,41.87],'加拿大':[-106.3,56.13],'荷兰':[5.29,52.13],'墨西哥':[-102.55,23.63],'新西兰':[174.0,-40.9],'哥伦比亚':[-74.3,4.6],'克罗地亚':[15.2,45.1],'俄罗斯':[105.0,61.5],'瑞典':[18.6,60.1],'巴西':[-51.9,-14.2],'英国':[-1.5,52.4],'法国':[2.2,46.2],'澳大利亚':[133.8,-25.3],'日本':[138.25,36.2],'韩国':[127.8,36.5],'土耳其':[35.2,39.0],'越南':[108.3,14.1],'印度尼西亚':[113.9,-0.8],'印尼':[113.9,-0.8],'波兰':[19.1,51.9],'比利时':[4.5,50.5],'瑞士':[8.2,46.8],'奥地利':[14.6,47.5],'葡萄牙':[-8.2,39.4],'希腊':[21.8,39.1],'阿联酋':[54.0,24.0],'沙特':[45.0,24.0],'埃及':[30.8,26.8],'南非':[24.0,-29.0],'阿根廷':[-64.0,-34.0],'智利':[-71.5,-35.7],'泰国':[101.0,15.0],'马来西亚':[101.97,4.2],'乌克兰':[31.2,49.0],'捷克':[15.5,49.8],'丹麦':[9.5,56.3],'挪威':[8.5,60.5],'芬兰':[26.0,64.0],'爱尔兰':[-8.2,53.4]};
@@ -1964,7 +1966,7 @@ document.addEventListener('click',async e=>{
   const tr=(edit||del).closest('tr'); const id=tr&&tr.dataset.sopId; if(!id)return;
   if(edit){ const s=window._sops.find(x=>String(x.id)===String(id)); if(s)openSopModal(s); return; }
   if(del){
-    if(!confirm('停用此 SOP？历史完成记录会保留。'))return;
+    if(!inlineConfirm(del,'确认停用'))return;
     try{ await API.del('/api/sop/'+id); toast('已停用'); await loadSops(); }
     catch(err){ toast(err&&err.status===403?'无权操作（仅经理/老板）':'操作失败'); }
   }
@@ -2122,7 +2124,7 @@ document.addEventListener('click',async e=>{
   // 整改/计划/测试都有 content/title 列；取行首单元格的文本作为内容
   const content=(tr.querySelector('[data-field="content"]')||tr.querySelector('[data-field="title"]')||tr.cells[0]).innerText.trim();
   if(arc){
-    if(!confirm('归档此项？归档后会从当前页移除，进入资产库「归档」页。'))return;
+    if(!inlineConfirm(arc,'确认归档'))return;
     arc.disabled=true;
     try{ await API.post(ep+'/'+id+'/archive',{archive_kind:ak}); tr.remove(); toast('已归档'); }
     catch(err){ arc.disabled=false; toast(err.status===403?'无权操作':'归档失败'); }
@@ -2175,11 +2177,11 @@ document.addEventListener('click',async e=>{
   const tr=(r||h).closest('tr'); if(!tr)return;
   const id=tr.dataset.id, ep=tr.dataset.ep; if(!id||!ep)return;
   if(r){
-    if(!confirm('恢复此项？将从归档页移除，回到原模块（state=todo）。'))return;
+    if(!inlineConfirm(r,'确认恢复'))return;
     try{ await API.post(ep+'/'+id+'/restore'); tr.remove(); toast('已恢复 · 请回原页查看'); }
     catch(err){ toast(err.status===403?'无权操作':'恢复失败'); }
   } else {
-    if(!confirm('⚠️ 彻底删除此项？不可恢复！'))return;
+    if(!inlineConfirm(h,'确认彻底删除'))return;
     try{ await API.del(ep+'/'+id+'?hard=1'); tr.remove(); toast('已彻底删除'); }
     catch(err){ toast(err.status===403?'无权操作':'删除失败'); }
   }
@@ -2726,6 +2728,22 @@ async function addKeyword(type){
     const tb=document.getElementById(KW_TB[type]); if(tb){ const tr=kwRow(type,item); tb.appendChild(tr); renderSparklines(); if(type==='seo'||type==='sem')renderCatTabs(type); _kwPage[type]=1e9; applyKwPaging(type); const c=tr.querySelector('.kw-name'); if(c){c.focus();placeCaretEnd(c);} }
     toast('已加一行 · 直接在表格里改');
   }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+e.message); }
+}
+/* 通用就地两次点确认：第一次点→按钮变红「⚠️ 确认X」，3 秒内再点返回 true 执行，超时自动还原。
+   用法：把 if(!confirm('…'))return; 换成 if(!inlineConfirm(btn,'确认删除'))return; */
+function inlineConfirm(btn,label){
+  if(!btn)return true;
+  if(btn.dataset.confirm==='1'){ // 第二次点：确认执行
+    clearTimeout(btn._t); btn.dataset.confirm='';
+    if(btn.dataset.old!=null)btn.innerHTML=btn.dataset.old;
+    btn.classList.remove('confirming');
+    return true;
+  }
+  btn.dataset.confirm='1'; if(btn.dataset.old==null)btn.dataset.old=btn.innerHTML;
+  btn.innerHTML='<i class="ti ti-alert-triangle"></i> '+(label||'确认');
+  btn.classList.add('confirming');
+  clearTimeout(btn._t); btn._t=setTimeout(()=>{ btn.dataset.confirm=''; if(btn.dataset.old!=null)btn.innerHTML=btn.dataset.old; btn.classList.remove('confirming'); },3000);
+  return false;
 }
 async function kwDelete(tr,btn){
   if(!tr||!tr.dataset.id)return;
