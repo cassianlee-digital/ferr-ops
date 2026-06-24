@@ -375,7 +375,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="kpi-pill"><span class="kpi-label">公司 KPI</span><span class="kpi-val" id="topScore">—</span><span class="kpi-delta" id="topGrade"></span></div>
       <div class="kpi-pill"><span class="kpi-label">有效询盘</span><span class="kpi-val" id="topValid">—</span></div>
       <div class="kpi-pill"><span class="kpi-label">A级占比</span><span class="kpi-val" id="topAratio">—</span><span class="kpi-delta" id="topAratioMoM"></span></div>
-      <div class="kpi-pill"><span class="kpi-label">有效询盘率</span><span class="kpi-val" id="topRate">—</span></div>
+      <div class="kpi-pill"><span class="kpi-label">有效询盘率</span><span class="kpi-val" id="topRate">—</span><span class="kpi-delta" id="topRateMoM"></span></div>
       <div class="topbar-right">
         <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="浅色/深色切换"><i class="ti ti-moon"></i></button>
       </div>
@@ -447,17 +447,13 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><button class="btn-primary" onclick="openInquiry()"><i class="ti ti-plus"></i> 录入询盘</button></div>
         <div class="timebar-inline" data-time data-gran="day,week,month"></div>
         <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock"></i> 当前时间范围会筛选下方询盘列表与询盘统计。</div>
-        <div class="metric-row">
-          <div class="metric-card"><div class="metric-num" id="inq-valid" style="color:var(--green)">12</div><div class="metric-lbl">有效询盘 (A+B)</div><div class="metric-delta delta-neg">▼目标15</div></div>
-          <div class="metric-card"><div class="metric-num" id="inq-aratio" style="color:var(--primary)">58%</div><div class="metric-lbl">A 级占比</div><div class="metric-delta">A级÷有效</div></div>
-          <div class="metric-card"><div class="metric-num" id="inq-rate" style="color:var(--amber)">22%</div><div class="metric-lbl">有效询盘率</div><div class="metric-delta delta-neg">▼目标25%</div></div>
-          <div class="metric-card"><div class="metric-num" id="inq-total">55</div><div class="metric-lbl">询盘总量</div><div class="metric-delta delta-pos">▲8%</div></div>
-        </div>
+<!-- 条目 13：删询盘评级页 metric-row 四个框（顶栏 KPI pill 已有 有效询盘/A级占比/有效询盘率） -->
         <div style="display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start">
           <div>
           <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；右侧地球仪按表格数据实时高亮各国并画青岛飞线</span></div>
           <div class="card"><table class="dt">
-          <thead><tr><th>日期</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">销售确认</th><th>备注</th></tr></thead>
+          <!-- 条目 11：删「销售确认」列；总列数 9 → 8（colspan 同步） -->
+          <thead><tr><th>日期</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th></tr></thead>
           <tbody id="tb-inq">
             <tr><td>06-04</td><td>🇩🇪 德国</td><td class="ctr"><span class="badge b-blue">欧洲</span></td><td class="ctr"><span class="tagselect b-blue" data-kind="channel">SEO自然<i class="ti ti-chevron-down"></i></span></td><td>ductile iron casting / 球铁页</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
             <tr><td>06-04</td><td>🇺🇸 美国</td><td class="ctr"><span class="badge b-purple">北美</span></td><td class="ctr"><span class="tagselect b-purple" data-kind="channel">SEM付费<i class="ti ti-chevron-down"></i></span></td><td>casting to drawing / 按图询价</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
@@ -1517,8 +1513,8 @@ async function submitInquiry(){
   }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
 }
 function inqRowHtml(r){
-  const confirmCell=r.grade==='C'?'<span class="dim" style="font-size:11px">无效</span>':'<i class="ti ti-circle-check" style="color:var(--green)"></i>';
-  return `<td>${esc(r.date.slice(5))}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${esc(r.grade)}</span></td><td class="ctr">${confirmCell}</td><td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`;
+  // 条目 11：销售确认列已删除（thead 同步），8 列
+  return `<td>${esc(r.date.slice(5))}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${esc(r.grade)}</span></td><td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`;
 }
 function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
 /* C组：询盘按月分组渲染——当月展开，上月及更早默认折叠（点月份条展开/收起）*/
@@ -1532,7 +1528,7 @@ function renderInqList(){
   groups.forEach(g=>{
     const collapsed=g.ym!==curM;
     const sep=document.createElement('tr'); sep.className='inq-msep'+(collapsed?' collapsed':''); sep.dataset.month=g.ym;
-    sep.innerHTML=`<td colspan="9" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span>${g.ym===curM?'<span class="badge b-green" style="margin-left:6px">本月</span>':''}</td>`;
+    sep.innerHTML=`<td colspan="8" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span>${g.ym===curM?'<span class="badge b-green" style="margin-left:6px">本月</span>':''}</td>`;
     tb.appendChild(sep);
     g.items.forEach(r=>{ const tr=document.createElement('tr'); tr.className='inq-mrow'; tr.dataset.month=g.ym; if(collapsed)tr.style.display='none'; tr.innerHTML=inqRowHtml(r); tb.appendChild(tr); });
   });
@@ -1543,11 +1539,10 @@ function toggleInqMonth(td){
   let n=sep.nextElementSibling;
   while(n&&!n.classList.contains('inq-msep')){ if(n.classList.contains('inq-mrow'))n.style.display=hidden?'none':''; n=n.nextElementSibling; }
 }
+// 条目 13：metric-row 四框已删（顶栏 KPI pill 已覆盖三个，询盘总量看月份折叠分隔行）。
+// 保留 stats 写入 _inqStats 缓存，供其他地方读取；不再回填已删除的 DOM。
 function refreshInqStats(stats){
-  stats=stats||window._inqStats; if(!stats)return; window._inqStats=stats;
-  const set=(sel,v)=>{const el=document.querySelector(sel);if(el)el.textContent=v;};
-  set('#inq-valid',stats.valid); set('#inq-aratio',stats.aRatio+'%');
-  set('#inq-rate',stats.rate+'%'); set('#inq-total',stats.total);
+  if(stats)window._inqStats=stats;
 }
 
 /* ================= 否词库 / 广告创意库 录入 ================= */
@@ -2594,6 +2589,7 @@ async function loadOverview(){
     const tg=document.getElementById('topGrade'); if(tg){ tg.textContent=c.grade||''; tg.className='kpi-delta '+(c.company>=75?'delta-pos':'delta-neg'); }
     const mom=(el,v)=>{ if(!el)return; if(v==null){el.textContent='';return;} el.textContent=(v>0?'▲'+v:(v<0?'▼'+Math.abs(v):'—'))+' vs上月'; el.className='kpi-delta '+(v>0?'delta-pos':(v<0?'delta-neg':'')); };
     mom(document.getElementById('topAratioMoM'), d.aRatio);
+    mom(document.getElementById('topRateMoM'), d.validRate); // 条目 14-B：有效询盘率环比箭头（接现有 overview.delta.validRate）
     // 公司表盘旁的环比
     const g1b=document.getElementById('g1b');
     if(g1b){ let chip=document.getElementById('g1mom'); if(!chip){chip=document.createElement('span');chip.id='g1mom';chip.style.marginLeft='8px';chip.style.fontSize='11px';chip.style.fontWeight='800';g1b.parentElement&&g1b.parentElement.appendChild(chip);}
