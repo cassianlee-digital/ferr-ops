@@ -33,6 +33,10 @@ CREATE TABLE IF NOT EXISTS inquiries (
   grade       TEXT CHECK (grade IN ('A','B','C')),
   note        TEXT,
   created_by  INTEGER REFERENCES users(id),
+  -- 6.23 修改文档 7/9/12：客户姓名 / 跟踪反馈 / 原始等级（用于上调标红判定）
+  customer_name      TEXT,
+  tracking_feedback  TEXT,
+  original_grade     TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_inquiries_date ON inquiries(date);
@@ -283,6 +287,10 @@ export function migrate() {
   ensureColumns('fixes', [
     ['evidence', 'TEXT'],
     ['state', 'TEXT'], ['archived_at', 'TEXT'], ['deleted_at', 'TEXT'], ['archive_kind', 'TEXT'],
+  ]);
+  // 6.23 修改文档 7/9/12：inquiries 加客户姓名 / 跟踪反馈 / 原始等级
+  ensureColumns('inquiries', [
+    ['customer_name', 'TEXT'], ['tracking_feedback', 'TEXT'], ['original_grade', 'TEXT'],
   ]);
   // 索引：旧库 db.exec(SCHEMA) 已建表，索引语句 IF NOT EXISTS 幂等，重复 exec 无害
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind)'); } catch (e) {}

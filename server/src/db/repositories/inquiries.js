@@ -14,17 +14,28 @@ export function list(range) {
 }
 
 export function create(rec, userId) {
+  // 6.23 文档 12/7/9：customer_name + tracking_feedback(录入时通常 null) + original_grade(=入库时的等级，用于上调标红)
   const info = db
     .prepare(
-      `INSERT INTO inquiries (date, country, region, channel, source, product, grade, note, created_by)
-       VALUES (@date, @country, @region, @channel, @source, @product, @grade, @note, @created_by)`
+      `INSERT INTO inquiries (date, country, region, channel, source, product, grade, note, created_by,
+                              customer_name, tracking_feedback, original_grade)
+       VALUES (@date, @country, @region, @channel, @source, @product, @grade, @note, @created_by,
+               @customer_name, @tracking_feedback, @original_grade)`
     )
-    .run({ ...rec, created_by: userId ?? null });
+    .run({
+      ...rec,
+      created_by: userId ?? null,
+      customer_name: rec.customer_name ?? null,
+      tracking_feedback: rec.tracking_feedback ?? null,
+      original_grade: rec.original_grade ?? rec.grade ?? null,
+    });
   return db.prepare('SELECT * FROM inquiries WHERE id = ?').get(info.lastInsertRowid);
 }
 
 export function update(id, fields) {
-  const allowed = ['date', 'country', 'region', 'channel', 'source', 'product', 'grade', 'note'];
+  // original_grade 显式不在 allowed：服务端硬阻止前端改写「最初等级」，确保上调标红判定可靠
+  const allowed = ['date', 'country', 'region', 'channel', 'source', 'product', 'grade', 'note',
+    'customer_name', 'tracking_feedback'];
   const keys = Object.keys(fields).filter((k) => allowed.includes(k));
   if (!keys.length) return get(id);
   const set = keys.map((k) => `${k} = @${k}`).join(', ');

@@ -16,6 +16,10 @@ function clean(body) {
     product: s(body.product),
     grade: GRADES.includes(body.grade) ? body.grade : 'C',
     note: s(body.note),
+    // 6.23 文档 12：客户姓名可在录入弹框填；文档 10：录入时不写 tracking_feedback，后期点开编辑
+    customer_name: s(body.customer_name),
+    // original_grade 强制 = grade，前端传也无视（语义保护）
+    original_grade: GRADES.includes(body.grade) ? body.grade : 'C',
   };
 }
 
