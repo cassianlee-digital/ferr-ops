@@ -256,7 +256,12 @@ table.dt td.editable:focus{background:transparent;border-radius:0;box-shadow:ins
 #selMenu .opt:hover{background:var(--bg3)}
 
 /* kanban v3 */
-.tboard{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+/* 任务看板：公司 / SEM / SEO 三栏 1:1:1 并排；窄屏(≤1100px)退回 公司整行 + SEM/SEO 两列 */
+.tboard{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+@media(max-width:1100px){
+  .tboard{grid-template-columns:1fr 1fr}
+  .tboard .pblock.co-block{grid-column:1 / -1} /* 公司块占整行 */
+}
 .cols2{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .cols2>.col{flex:1 1 0;min-width:280px}
 .col-cap{font-size:12px;font-weight:700;margin:0 0 8px;display:flex;align-items:center;gap:6px}
@@ -265,7 +270,7 @@ table.dt td.editable:focus{background:transparent;border-radius:0;box-shadow:ins
 .pblock-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .pblock-head .pn{font-size:13px;font-weight:800}
 .kcount{background:var(--bg4);border-radius:10px;padding:2px 9px;font-size:11px;color:var(--text2);margin-left:auto}
-.sopnew{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sopnew{display:flex;flex-direction:column;gap:12px} /* 三栏并排后栏宽变窄：SOP 区与新增区改上下排 */
 .colcap{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;display:flex;align-items:center;gap:5px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .freq-cap{font-size:9.5px;color:var(--text3);font-weight:700;margin:8px 0 5px;display:flex;align-items:center;gap:4px}
 .cocol{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--sh);height:100%}
@@ -782,35 +787,38 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
         <div id="sop-overdue-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-alert-triangle" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">未完成提示</div><div class="banner-s" id="sop-overdue-list"></div></div></div>
         <div id="urgent-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-bell-ringing" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">公司新派任务</div><div class="banner-s" id="urgent-list"></div></div></div>
         <div class="tboard">
-          <div class="pstack">
-            <!-- 陈 在上 -->
-            <div class="pblock"><div class="pblock-head"><span class="badge b-purple">陈</span><span class="pn">SEM 任务</span><span class="kcount" id="kcount-sem">SOP 0 · 新增 0</span></div>
-              <div class="sopnew">
-                <div id="sop-sem"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
-                  <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
-                </div>
-                <div id="newtask-sem"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
-                  <button class="add-task" onclick="openTaskModal('SEM')"><i class="ti ti-plus"></i> 新增</button>
-                </div>
+          <!-- 公司任务（前） -->
+          <div class="pblock co-block" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span><span class="kcount" id="kcount-company">SOP 0 · 派发 0</span></div>
+            <div class="sopnew">
+              <div id="sop-company"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
+                <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
               </div>
-            </div>
-            <!-- 李 在下 -->
-            <div class="pblock"><div class="pblock-head"><span class="badge b-blue">李</span><span class="pn">SEO 任务</span><span class="kcount" id="kcount-seo">SOP 0 · 新增 0</span></div>
-              <div class="sopnew">
-                <div id="sop-seo"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
-                  <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
-                </div>
-                <div id="newtask-seo"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
-                  <button class="add-task" onclick="openTaskModal('SEO')"><i class="ti ti-plus"></i> 新增</button>
-                </div>
+              <div id="newtask-company"><div class="colcap"><i class="ti ti-building"></i> 公司派发（强提示）</div>
+                <button class="add-task" onclick="openTaskModal('公司')"><i class="ti ti-plus"></i> 派发任务</button>
               </div>
             </div>
           </div>
-          <!-- 公司任务右列 -->
-          <div class="cocol" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span></div>
-            <div id="sop-company"></div>
-            <div class="freq-cap"><i class="ti ti-building"></i> 公司派发（强提示）</div>
-            <button class="add-task" onclick="openTaskModal('公司')"><i class="ti ti-plus"></i> 派发任务</button>
+          <!-- SEM 任务（中 · 陈） -->
+          <div class="pblock"><div class="pblock-head"><span class="badge b-purple">陈</span><span class="pn">SEM 任务</span><span class="kcount" id="kcount-sem">SOP 0 · 新增 0</span></div>
+            <div class="sopnew">
+              <div id="sop-sem"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
+                <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
+              </div>
+              <div id="newtask-sem"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
+                <button class="add-task" onclick="openTaskModal('SEM')"><i class="ti ti-plus"></i> 新增</button>
+              </div>
+            </div>
+          </div>
+          <!-- SEO 任务（后 · 李） -->
+          <div class="pblock"><div class="pblock-head"><span class="badge b-blue">李</span><span class="pn">SEO 任务</span><span class="kcount" id="kcount-seo">SOP 0 · 新增 0</span></div>
+            <div class="sopnew">
+              <div id="sop-seo"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
+                <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
+              </div>
+              <div id="newtask-seo"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
+                <button class="add-task" onclick="openTaskModal('SEO')"><i class="ti ti-plus"></i> 新增</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1330,7 +1338,8 @@ function addPlan(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-plan-sem':'
   return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric||'')}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget||'')}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive" title="归档" style="color:var(--primary)"><i class="ti ti-archive"></i></button></td>`),it);}
 /* 任务卡：个人(SEO/SEM) → 每日新增列；公司 → 公司任务列。绑定 id 后可删除、刷新仍在 */
 function coScope(){return {dept:'公司',owner:'',c:'b-red'};}
-function taskColFor(dept){return document.getElementById(dept==='公司'?'cocol-tasks':(dept==='SEM'?'newtask-sem':'newtask-seo'));}
+// 三栏 UI 后：公司派发任务卡插入 #newtask-company（其内有 .add-task 直接子节点，insertBefore 才合法）
+function taskColFor(dept){return document.getElementById(dept==='公司'?'newtask-company':(dept==='SEM'?'newtask-sem':'newtask-seo'));}
 function addTaskCard(s,content,it){
   const col=taskColFor(s.dept); if(!col)return null; const add=col.querySelector('.add-task');
   const done=!!(it&&(it.state==='done'||it.status==='done')); // 归档③：优先 state，兼容旧 status='done' 行
@@ -1869,8 +1878,8 @@ function renderSopCards(){
     const anchor=document.getElementById(dept==='公司'?'sop-company':('sop-'+dept.toLowerCase()));
     if(!anchor)return;
     const list=window._sops.filter(s=>s.dept===dept);
-    if(dept==='公司'){ anchor.innerHTML=''; }
-    else { anchor.innerHTML='<div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>'; }
+    // 三栏统一：公司块也带「SOP 固定任务」colcap
+    anchor.innerHTML='<div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>';
     if(!list.length){
       anchor.insertAdjacentHTML('beforeend','<div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>');
       return;
@@ -1894,12 +1903,13 @@ function sopCardEl(s){
   return card;
 }
 function updateSopCounts(){
-  ['SEM','SEO'].forEach(dept=>{
-    const el=document.getElementById('kcount-'+dept.toLowerCase()); if(!el)return;
+  // SEM/SEO：SOP N · 新增 M；公司：SOP N · 派发 M（容器 id 用 newtask-company / kcount-company）
+  [['SEM','sem','新增'],['SEO','seo','新增'],['公司','company','派发']].forEach(([dept,key,verb])=>{
+    const el=document.getElementById('kcount-'+key); if(!el)return;
     const sopN=window._sops.filter(s=>s.dept===dept).length;
-    const addCol=document.getElementById('newtask-'+dept.toLowerCase());
+    const addCol=document.getElementById('newtask-'+key);
     const addN=addCol?addCol.querySelectorAll('.tcard').length:0;
-    el.textContent='SOP '+sopN+' · 新增 '+addN;
+    el.textContent='SOP '+sopN+' · '+verb+' '+addN;
   });
 }
 
