@@ -1,19 +1,16 @@
-// 数据源状态(只读)。诚实反映各源真实状态：人工录入源给真实统计；
-// 同步源(GSC/GA4/Ads)同步未实现 → 只回配置布尔，绝不显示「已接入」；
-// AI 只回是否配置(configured_unverified)，永不返回任何 key/secret。
 import { requireAuth } from '../auth/middleware.js';
 import { config } from '../config.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
 import * as seoRepo from '../db/repositories/seoWeeks.js';
 import * as semRepo from '../db/repositories/semWeeks.js';
 import * as integrations from '../db/repositories/integrations.js';
+import * as googleRepo from '../db/repositories/googleSync.js';
+import { providerConfig } from '../sync/googleClient.js';
 
-// 人工录入源：真实统计 count + 最新日期；出错则 status='error'
 function manualSource(label, listFn, dateKey) {
   try {
     const rows = listFn() || [];
     const count = rows.length;
-    // list() 排序不一，统一取所有行里最大的日期作为 lastAt
     let lastAt = null;
     for (const r of rows) {
       const d = r[dateKey];
@@ -32,24 +29,28 @@ function manualSource(label, listFn, dateKey) {
   }
 }
 
-// 同步源：同步未实现(sync_runs / *_daily 表尚未建)。只回配置布尔，不伪装已接入。
-// 注意：「未实现同步」是当前阶段状态，不是错误 → error 恒为 null，用 note 说明。
-function syncSource(configured) {
+function syncSource(provider, legacyConfigured) {
+  const pc = providerConfig(provider);
+  const token = googleRepo.tokenStatus()[provider] || {};
+  const run = googleRepo.latestRuns()[provider] || null;
+  const authorized = !!token.authorized;
   return {
     type: 'sync',
-    status: configured ? 'configured_not_synced' : 'not_configured',
+    status: !pc.ready ? 'not_configured' : (authorized ? 'available' : (legacyConfigured ? 'configured_not_synced' : 'not_configured')),
     label: '自动同步',
-    configured: !!configured,
-    lastSyncAt: null, // TODO(Phase 2): 接入 sync_runs 后回填最近同步时间
-    error: null,
-    note: 'sync_not_implemented',
+    configured: pc.ready,
+    authorized,
+    missing: pc.missing,
+    lastSyncAt: run?.finished_at || run?.started_at || null,
+    count: run?.rows_written || 0,
+    error: run?.status === 'failed' ? run.error : null,
+    note: authorized ? 'google_sync_ready' : 'google_oauth_required',
     phase: 2,
   };
 }
 
 export async function dataSourcesRoutes(app) {
   app.get('/api/data-sources/status', { preHandler: requireAuth }, async () => {
-    // 同步源配置布尔（integrations.status() 只返回 configured/updated_at，不含明文密钥）
     let integ = {};
     try {
       integ = integrations.status() || {};
@@ -57,8 +58,6 @@ export async function dataSourcesRoutes(app) {
       integ = {};
     }
     const cfg = (p) => !!(integ[p] && integ[p].configured);
-
-    // AI：仅检测是否配置 key，不调用、不验证、绝不回 key
     const aiConfigured = !!config.anthropic.apiKey;
 
     return {
@@ -66,15 +65,15 @@ export async function dataSourcesRoutes(app) {
         inquiries: manualSource('人工录入', inqRepo.list, 'date'),
         seo_weeks: manualSource('人工周报', seoRepo.list, 'week_date'),
         sem_weeks: manualSource('人工周报', semRepo.list, 'week_date'),
-        gsc: syncSource(cfg('gsc')),
-        ga4: syncSource(cfg('ga4')),
-        ads: syncSource(cfg('ads')),
+        gsc: syncSource('gsc', cfg('gsc')),
+        ga4: syncSource('ga4', cfg('ga4')),
+        ads: syncSource('ads', cfg('ads')),
         ai: {
           type: 'provider',
           status: aiConfigured ? 'configured_unverified' : 'not_configured',
           provider: 'anthropic',
           configured: aiConfigured,
-          model: aiConfigured ? config.anthropic.model : null, // 模型名非密钥
+          model: aiConfigured ? config.anthropic.model : null,
           error: null,
         },
       },

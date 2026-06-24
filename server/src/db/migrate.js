@@ -10,6 +10,9 @@ const ALL_TABLES = [
   'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets',
   'sop_definitions', 'sop_completions',
+  'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
+  'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily',
+  'google_ads_campaign_daily', 'google_ads_keyword_daily',
 ];
 
 const SCHEMA = `
@@ -177,6 +180,128 @@ CREATE TABLE IF NOT EXISTS integrations (
   secret_enc TEXT,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS google_oauth_tokens (
+  provider         TEXT PRIMARY KEY CHECK (provider IN ('gsc','ga4','ads')),
+  access_token_enc TEXT,
+  refresh_token_enc TEXT,
+  scope            TEXT,
+  token_type       TEXT,
+  expiry_date_ms   INTEGER,
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS google_oauth_states (
+  state      TEXT PRIMARY KEY,
+  provider   TEXT NOT NULL CHECK (provider IN ('gsc','ga4','ads')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS google_sync_runs (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider     TEXT NOT NULL CHECK (provider IN ('gsc','ga4','ads')),
+  status       TEXT NOT NULL CHECK (status IN ('running','success','failed')),
+  started_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  finished_at  TEXT,
+  date_start   TEXT,
+  date_end     TEXT,
+  rows_written INTEGER NOT NULL DEFAULT 0,
+  error        TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_google_sync_runs_provider_started ON google_sync_runs(provider, started_at);
+
+CREATE TABLE IF NOT EXISTS gsc_daily (
+  date         TEXT NOT NULL,
+  site_url     TEXT NOT NULL,
+  clicks       INTEGER NOT NULL DEFAULT 0,
+  impressions  INTEGER NOT NULL DEFAULT 0,
+  ctr          REAL,
+  position     REAL,
+  sync_run_id  INTEGER REFERENCES google_sync_runs(id),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (date, site_url)
+);
+
+CREATE TABLE IF NOT EXISTS gsc_query_daily (
+  date         TEXT NOT NULL,
+  site_url     TEXT NOT NULL,
+  query        TEXT NOT NULL,
+  page         TEXT NOT NULL DEFAULT '',
+  clicks       INTEGER NOT NULL DEFAULT 0,
+  impressions  INTEGER NOT NULL DEFAULT 0,
+  ctr          REAL,
+  position     REAL,
+  sync_run_id  INTEGER REFERENCES google_sync_runs(id),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (date, site_url, query, page)
+);
+CREATE INDEX IF NOT EXISTS idx_gsc_query_daily_query ON gsc_query_daily(query, date);
+
+CREATE TABLE IF NOT EXISTS ga4_daily (
+  date                 TEXT NOT NULL,
+  property_id          TEXT NOT NULL,
+  active_users         INTEGER NOT NULL DEFAULT 0,
+  sessions             INTEGER NOT NULL DEFAULT 0,
+  page_views           INTEGER NOT NULL DEFAULT 0,
+  bounce_rate          REAL,
+  avg_session_duration REAL,
+  sync_run_id          INTEGER REFERENCES google_sync_runs(id),
+  updated_at           TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (date, property_id)
+);
+
+CREATE TABLE IF NOT EXISTS ga4_dimension_daily (
+  date            TEXT NOT NULL,
+  property_id     TEXT NOT NULL,
+  dimension_type  TEXT NOT NULL,
+  dimension_value TEXT NOT NULL,
+  active_users    INTEGER NOT NULL DEFAULT 0,
+  sessions        INTEGER NOT NULL DEFAULT 0,
+  page_views      INTEGER NOT NULL DEFAULT 0,
+  sync_run_id     INTEGER REFERENCES google_sync_runs(id),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (date, property_id, dimension_type, dimension_value)
+);
+CREATE INDEX IF NOT EXISTS idx_ga4_dimension_daily_type ON ga4_dimension_daily(dimension_type, date);
+
+CREATE TABLE IF NOT EXISTS google_ads_campaign_daily (
+  date                       TEXT NOT NULL,
+  customer_id                TEXT NOT NULL,
+  campaign_id                TEXT NOT NULL,
+  campaign_name              TEXT,
+  cost_micros                INTEGER NOT NULL DEFAULT 0,
+  impressions                INTEGER NOT NULL DEFAULT 0,
+  clicks                     INTEGER NOT NULL DEFAULT 0,
+  conversions                REAL NOT NULL DEFAULT 0,
+  ctr                        REAL,
+  average_cpc_micros         INTEGER,
+  cost_per_conversion_micros INTEGER,
+  sync_run_id                INTEGER REFERENCES google_sync_runs(id),
+  updated_at                 TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (date, customer_id, campaign_id)
+);
+
+CREATE TABLE IF NOT EXISTS google_ads_keyword_daily (
+  date                       TEXT NOT NULL,
+  customer_id                TEXT NOT NULL,
+  campaign_id                TEXT NOT NULL,
+  campaign_name              TEXT,
+  ad_group_id                TEXT NOT NULL,
+  criterion_id               TEXT NOT NULL,
+  keyword_text               TEXT,
+  match_type                 TEXT,
+  cost_micros                INTEGER NOT NULL DEFAULT 0,
+  impressions                INTEGER NOT NULL DEFAULT 0,
+  clicks                     INTEGER NOT NULL DEFAULT 0,
+  conversions                REAL NOT NULL DEFAULT 0,
+  ctr                        REAL,
+  average_cpc_micros         INTEGER,
+  cost_per_conversion_micros INTEGER,
+  sync_run_id                INTEGER REFERENCES google_sync_runs(id),
+  updated_at                 TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (date, customer_id, campaign_id, ad_group_id, criterion_id)
+);
+CREATE INDEX IF NOT EXISTS idx_google_ads_keyword_daily_text ON google_ads_keyword_daily(keyword_text, date);
 
 -- V7：市场 AI 记忆体（单行，id=1）
 CREATE TABLE IF NOT EXISTS market_brain (

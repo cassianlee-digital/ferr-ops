@@ -1,13 +1,32 @@
-// 第二期数据同步占位路由。统一返回 501 Not Implemented。
-// 第一期不实现自动同步（GSC / Ads / GA4），数据走手动录入。
-import { requireAuth } from '../auth/middleware.js';
+import { requireAuth, editor } from '../auth/middleware.js';
+import { syncGsc } from '../sync/gsc.js';
+import { syncGa4 } from '../sync/ga4.js';
+import { syncAds } from '../sync/ads.js';
+import * as googleRepo from '../db/repositories/googleSync.js';
 
-const notImplemented = (source) => async (_request, reply) =>
-  reply.code(501).send({ error: 'not_implemented', source, phase: 2 });
+const SYNCERS = { gsc: syncGsc, ga4: syncGa4, ads: syncAds };
+
+function safeError(e) {
+  return {
+    error: e.message || 'sync_failed',
+    missing: e.missing || undefined,
+  };
+}
 
 export async function syncRoutes(app) {
-  for (const src of ['gsc', 'ads', 'ga4']) {
-    app.get(`/api/sync/${src}`, { preHandler: requireAuth }, notImplemented(src));
-    app.post(`/api/sync/${src}`, { preHandler: requireAuth }, notImplemented(src));
+  for (const src of Object.keys(SYNCERS)) {
+    app.get(`/api/sync/${src}`, { preHandler: requireAuth }, async () => ({
+      provider: src,
+      latestRun: googleRepo.latestRuns()[src],
+    }));
+
+    app.post(`/api/sync/${src}`, editor, async (request, reply) => {
+      try {
+        return await SYNCERS[src]({ ...(request.query || {}), ...(request.body || {}) });
+      } catch (e) {
+        const status = e.message === 'bad_date_range' || e.message === 'google_config_missing' ? 400 : 502;
+        return reply.code(status).send({ provider: src, ...safeError(e) });
+      }
+    });
   }
 }

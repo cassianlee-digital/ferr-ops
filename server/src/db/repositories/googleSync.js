@@ -1,0 +1,299 @@
+import crypto from 'node:crypto';
+import { db } from '../connection.js';
+import { encrypt, decrypt } from '../../services/crypto.js';
+
+export const PROVIDERS = ['gsc', 'ga4', 'ads'];
+
+export function assertProvider(provider) {
+  if (!PROVIDERS.includes(provider)) throw new Error('bad_provider');
+}
+
+export function createState(provider) {
+  assertProvider(provider);
+  const state = crypto.randomBytes(24).toString('hex');
+  db.prepare('INSERT INTO google_oauth_states (state, provider) VALUES (?, ?)').run(state, provider);
+  return state;
+}
+
+export function consumeState(state) {
+  const row = db.prepare('SELECT state, provider FROM google_oauth_states WHERE state = ?').get(state);
+  if (!row) return null;
+  db.prepare('DELETE FROM google_oauth_states WHERE state = ?').run(state);
+  db.prepare("DELETE FROM google_oauth_states WHERE created_at < datetime('now', '-20 minutes')").run();
+  return row.provider;
+}
+
+export function saveToken(provider, token) {
+  assertProvider(provider);
+  const current = getToken(provider);
+  const refreshToken = token.refresh_token || current?.refresh_token || '';
+  db.prepare(
+    `INSERT INTO google_oauth_tokens
+     (provider, access_token_enc, refresh_token_enc, scope, token_type, expiry_date_ms, updated_at)
+     VALUES (@provider, @access_token_enc, @refresh_token_enc, @scope, @token_type, @expiry_date_ms, datetime('now'))
+     ON CONFLICT(provider) DO UPDATE SET
+       access_token_enc=excluded.access_token_enc,
+       refresh_token_enc=excluded.refresh_token_enc,
+       scope=excluded.scope,
+       token_type=excluded.token_type,
+       expiry_date_ms=excluded.expiry_date_ms,
+       updated_at=excluded.updated_at`
+  ).run({
+    provider,
+    access_token_enc: encrypt(token.access_token || ''),
+    refresh_token_enc: encrypt(refreshToken),
+    scope: token.scope || current?.scope || '',
+    token_type: token.token_type || current?.token_type || 'Bearer',
+    expiry_date_ms: token.expiry_date_ms || (token.expires_in ? Date.now() + Number(token.expires_in) * 1000 : null),
+  });
+}
+
+export function getToken(provider) {
+  assertProvider(provider);
+  const row = db.prepare('SELECT * FROM google_oauth_tokens WHERE provider = ?').get(provider);
+  if (!row) return null;
+  return {
+    provider: row.provider,
+    access_token: decrypt(row.access_token_enc),
+    refresh_token: decrypt(row.refresh_token_enc),
+    scope: row.scope,
+    token_type: row.token_type,
+    expiry_date_ms: row.expiry_date_ms,
+    updated_at: row.updated_at,
+  };
+}
+
+export function deleteToken(provider) {
+  assertProvider(provider);
+  db.prepare('DELETE FROM google_oauth_tokens WHERE provider = ?').run(provider);
+}
+
+export function tokenStatus() {
+  const rows = db.prepare('SELECT provider, refresh_token_enc, scope, expiry_date_ms, updated_at FROM google_oauth_tokens').all();
+  const out = {};
+  for (const p of PROVIDERS) out[p] = { authorized: false, scope: '', expiresAt: null, updatedAt: null };
+  for (const row of rows) {
+    out[row.provider] = {
+      authorized: !!row.refresh_token_enc,
+      scope: row.scope || '',
+      expiresAt: row.expiry_date_ms ? new Date(row.expiry_date_ms).toISOString() : null,
+      updatedAt: row.updated_at,
+    };
+  }
+  return out;
+}
+
+export function beginRun(provider, dateStart, dateEnd) {
+  assertProvider(provider);
+  const info = db
+    .prepare('INSERT INTO google_sync_runs (provider, status, date_start, date_end) VALUES (?, ?, ?, ?)')
+    .run(provider, 'running', dateStart || null, dateEnd || null);
+  return info.lastInsertRowid;
+}
+
+export function finishRun(id, rowsWritten) {
+  db.prepare(
+    `UPDATE google_sync_runs
+     SET status='success', finished_at=datetime('now'), rows_written=?, error=NULL
+     WHERE id=?`
+  ).run(rowsWritten || 0, id);
+}
+
+export function failRun(id, error) {
+  db.prepare(
+    `UPDATE google_sync_runs
+     SET status='failed', finished_at=datetime('now'), error=?
+     WHERE id=?`
+  ).run(String(error || 'sync_failed').slice(0, 1000), id);
+}
+
+export function latestRuns() {
+  const out = {};
+  for (const p of PROVIDERS) {
+    out[p] = db
+      .prepare('SELECT * FROM google_sync_runs WHERE provider = ? ORDER BY started_at DESC, id DESC LIMIT 1')
+      .get(p) || null;
+  }
+  return out;
+}
+
+export function upsertGscDaily(rows) {
+  const stmt = db.prepare(
+    `INSERT INTO gsc_daily
+     (date, site_url, clicks, impressions, ctr, position, sync_run_id, updated_at)
+     VALUES (@date, @site_url, @clicks, @impressions, @ctr, @position, @sync_run_id, datetime('now'))
+     ON CONFLICT(date, site_url) DO UPDATE SET
+       clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr,
+       position=excluded.position, sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
+  );
+  db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
+  return rows.length;
+}
+
+export function upsertGscQueries(rows) {
+  const stmt = db.prepare(
+    `INSERT INTO gsc_query_daily
+     (date, site_url, query, page, clicks, impressions, ctr, position, sync_run_id, updated_at)
+     VALUES (@date, @site_url, @query, @page, @clicks, @impressions, @ctr, @position, @sync_run_id, datetime('now'))
+     ON CONFLICT(date, site_url, query, page) DO UPDATE SET
+       clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr,
+       position=excluded.position, sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
+  );
+  db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
+  return rows.length;
+}
+
+export function gscSummary(range) {
+  const params = { start: range.start_date, end: range.end_date };
+  const totals = db
+    .prepare(
+      `SELECT COALESCE(SUM(clicks),0) clicks, COALESCE(SUM(impressions),0) impressions,
+              CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
+              CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE NULL END position
+       FROM gsc_daily WHERE date BETWEEN @start AND @end`
+    )
+    .get(params);
+  const byDate = db.prepare('SELECT * FROM gsc_daily WHERE date BETWEEN @start AND @end ORDER BY date ASC').all(params);
+  const topQueries = db
+    .prepare(
+      `SELECT query, page, SUM(clicks) clicks, SUM(impressions) impressions,
+              CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
+              CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE NULL END position
+       FROM gsc_query_daily
+       WHERE date BETWEEN @start AND @end
+       GROUP BY query, page
+       ORDER BY clicks DESC, impressions DESC
+       LIMIT 50`
+    )
+    .all(params);
+  return { totals, byDate, topQueries };
+}
+
+export function upsertGa4Daily(rows) {
+  const stmt = db.prepare(
+    `INSERT INTO ga4_daily
+     (date, property_id, active_users, sessions, page_views, bounce_rate, avg_session_duration, sync_run_id, updated_at)
+     VALUES (@date, @property_id, @active_users, @sessions, @page_views, @bounce_rate, @avg_session_duration, @sync_run_id, datetime('now'))
+     ON CONFLICT(date, property_id) DO UPDATE SET
+       active_users=excluded.active_users, sessions=excluded.sessions, page_views=excluded.page_views,
+       bounce_rate=excluded.bounce_rate, avg_session_duration=excluded.avg_session_duration,
+       sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
+  );
+  db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
+  return rows.length;
+}
+
+export function upsertGa4Dimensions(rows) {
+  const stmt = db.prepare(
+    `INSERT INTO ga4_dimension_daily
+     (date, property_id, dimension_type, dimension_value, active_users, sessions, page_views, sync_run_id, updated_at)
+     VALUES (@date, @property_id, @dimension_type, @dimension_value, @active_users, @sessions, @page_views, @sync_run_id, datetime('now'))
+     ON CONFLICT(date, property_id, dimension_type, dimension_value) DO UPDATE SET
+       active_users=excluded.active_users, sessions=excluded.sessions, page_views=excluded.page_views,
+       sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
+  );
+  db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
+  return rows.length;
+}
+
+export function ga4Overview(range) {
+  const params = { start: range.start_date, end: range.end_date };
+  const m = db
+    .prepare(
+      `SELECT COALESCE(SUM(active_users),0) activeUsers, COALESCE(SUM(sessions),0) sessions,
+              COALESCE(SUM(page_views),0) pageViews, AVG(bounce_rate) * 100 bounceRate,
+              AVG(avg_session_duration) avgDuration
+       FROM ga4_daily WHERE date BETWEEN @start AND @end`
+    )
+    .get(params);
+  const dim = (type) =>
+    db
+      .prepare(
+        `SELECT dimension_value value, SUM(sessions) sessions, SUM(active_users) users, SUM(page_views) pageViews
+         FROM ga4_dimension_daily
+         WHERE date BETWEEN @start AND @end AND dimension_type = @type
+         GROUP BY dimension_value
+         ORDER BY sessions DESC
+         LIMIT 50`
+      )
+      .all({ ...params, type });
+  return {
+    metrics: m && (m.activeUsers || m.sessions || m.pageViews) ? m : null,
+    sources: dim('source_medium').map((r) => ({ source: r.value, sessions: r.sessions, users: r.users })),
+    countries: dim('country').map((r) => ({ country: r.value, sessions: r.sessions, users: r.users })),
+    devices: dim('device').map((r) => ({ device: r.value, sessions: r.sessions, users: r.users })),
+    landingPages: dim('landing_page').map((r) => ({ page: r.value, sessions: r.sessions, conversions: null })),
+  };
+}
+
+export function upsertAdsCampaigns(rows) {
+  const stmt = db.prepare(
+    `INSERT INTO google_ads_campaign_daily
+     (date, customer_id, campaign_id, campaign_name, cost_micros, impressions, clicks, conversions,
+      ctr, average_cpc_micros, cost_per_conversion_micros, sync_run_id, updated_at)
+     VALUES (@date, @customer_id, @campaign_id, @campaign_name, @cost_micros, @impressions, @clicks, @conversions,
+      @ctr, @average_cpc_micros, @cost_per_conversion_micros, @sync_run_id, datetime('now'))
+     ON CONFLICT(date, customer_id, campaign_id) DO UPDATE SET
+      campaign_name=excluded.campaign_name, cost_micros=excluded.cost_micros, impressions=excluded.impressions,
+      clicks=excluded.clicks, conversions=excluded.conversions, ctr=excluded.ctr,
+      average_cpc_micros=excluded.average_cpc_micros, cost_per_conversion_micros=excluded.cost_per_conversion_micros,
+      sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
+  );
+  db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
+  return rows.length;
+}
+
+export function upsertAdsKeywords(rows) {
+  const stmt = db.prepare(
+    `INSERT INTO google_ads_keyword_daily
+     (date, customer_id, campaign_id, campaign_name, ad_group_id, criterion_id, keyword_text, match_type,
+      cost_micros, impressions, clicks, conversions, ctr, average_cpc_micros, cost_per_conversion_micros, sync_run_id, updated_at)
+     VALUES (@date, @customer_id, @campaign_id, @campaign_name, @ad_group_id, @criterion_id, @keyword_text, @match_type,
+      @cost_micros, @impressions, @clicks, @conversions, @ctr, @average_cpc_micros, @cost_per_conversion_micros, @sync_run_id, datetime('now'))
+     ON CONFLICT(date, customer_id, campaign_id, ad_group_id, criterion_id) DO UPDATE SET
+      campaign_name=excluded.campaign_name, keyword_text=excluded.keyword_text, match_type=excluded.match_type,
+      cost_micros=excluded.cost_micros, impressions=excluded.impressions, clicks=excluded.clicks,
+      conversions=excluded.conversions, ctr=excluded.ctr, average_cpc_micros=excluded.average_cpc_micros,
+      cost_per_conversion_micros=excluded.cost_per_conversion_micros, sync_run_id=excluded.sync_run_id,
+      updated_at=excluded.updated_at`
+  );
+  db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
+  return rows.length;
+}
+
+export function adsSummary(range) {
+  const params = { start: range.start_date, end: range.end_date };
+  const totals = db
+    .prepare(
+      `SELECT COALESCE(SUM(cost_micros),0) costMicros, COALESCE(SUM(impressions),0) impressions,
+              COALESCE(SUM(clicks),0) clicks, COALESCE(SUM(conversions),0) conversions,
+              CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
+              CASE WHEN SUM(clicks) > 0 THEN SUM(cost_micros) / SUM(clicks) ELSE NULL END averageCpcMicros,
+              CASE WHEN SUM(conversions) > 0 THEN SUM(cost_micros) / SUM(conversions) ELSE NULL END costPerConversionMicros
+       FROM google_ads_campaign_daily WHERE date BETWEEN @start AND @end`
+    )
+    .get(params);
+  const campaigns = db
+    .prepare(
+      `SELECT campaign_id campaignId, campaign_name campaignName, SUM(cost_micros) costMicros,
+              SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
+       FROM google_ads_campaign_daily
+       WHERE date BETWEEN @start AND @end
+       GROUP BY campaign_id, campaign_name
+       ORDER BY costMicros DESC
+       LIMIT 50`
+    )
+    .all(params);
+  const keywords = db
+    .prepare(
+      `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName, SUM(cost_micros) costMicros,
+              SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
+       FROM google_ads_keyword_daily
+       WHERE date BETWEEN @start AND @end
+       GROUP BY keyword_text, match_type, campaign_name
+       ORDER BY costMicros DESC
+       LIMIT 50`
+    )
+    .all(params);
+  return { totals, campaigns, keywords };
+}

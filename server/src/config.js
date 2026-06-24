@@ -53,4 +53,16 @@ export const config = {
     model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
     maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS || 1200),
   },
+
+  google: {
+    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
+    redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI || '',
+    gscSiteUrl: process.env.GSC_SITE_URL || '',
+    ga4PropertyId: process.env.GA4_PROPERTY_ID || '',
+    adsDeveloperToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN || '',
+    adsCustomerId: (process.env.GOOGLE_ADS_CUSTOMER_ID || '').replace(/-/g, ''),
+    adsLoginCustomerId: (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || '').replace(/-/g, ''),
+    adsApiVersion: process.env.GOOGLE_ADS_API_VERSION || 'v24.1',
+  },
 };

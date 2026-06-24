@@ -19,7 +19,7 @@ Required environment variables:
 Optional:
 
 - `GOOGLE_ADS_LOGIN_CUSTOMER_ID`
-- `GOOGLE_ADS_API_VERSION`, default `v19`
+- `GOOGLE_ADS_API_VERSION`, default `v24.1`
 
 Redirect URI example:
 
