@@ -32,6 +32,12 @@ export function create(rec, userId) {
   return db.prepare('SELECT * FROM inquiries WHERE id = ?').get(info.lastInsertRowid);
 }
 
+// 6.23 文档 9：首次改 grade 时把「修改前的旧等级」锁为 original_grade（仅对 NULL 旧数据生效；新数据 POST 时已设）。
+// 路由层在 PATCH grade 之前调用，使旧 C→A 这种历史上调也能被前端 isUpgraded 正确判定。
+export function lockOriginalGradeIfNull(id) {
+  db.prepare(`UPDATE inquiries SET original_grade = grade WHERE id = ? AND original_grade IS NULL`).run(id);
+}
+
 export function update(id, fields) {
   // original_grade 显式不在 allowed：服务端硬阻止前端改写「最初等级」，确保上调标红判定可靠
   const allowed = ['date', 'country', 'region', 'channel', 'source', 'product', 'grade', 'note',

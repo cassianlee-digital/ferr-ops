@@ -81,7 +81,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .page-sub{font-size:12px;color:var(--text3);margin-top:3px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
-.grid32{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px}
+.grid32{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px} /* 6.23 文档 3：KPI 1/3 + 询盘趋势 2/3 */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--sh);transition:box-shadow .2s,transform .2s}
 .card:hover{box-shadow:var(--sh-lift)}
 .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;gap:8px}
@@ -212,6 +212,7 @@ table.dt td.editable{white-space:pre-wrap;overflow:visible;overflow-wrap:anywher
 .kw-pg.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);font-weight:700}
 .kw-pg:disabled{opacity:.4;cursor:default}
 .kw-pg-info{font-size:11.5px;color:var(--text3);margin-left:6px}
+.kw-pg-size{margin-left:auto;font-size:11.5px;padding:3px 6px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);border-radius:6px;cursor:pointer}
 /* C组：询盘按月折叠分隔行 */
 .inq-msep td{background:var(--bg3);font-weight:700;font-size:12px;padding:8px 10px;cursor:pointer;user-select:none}
 .inq-msep .hicon{transition:transform .15s;color:var(--text3)}
@@ -219,8 +220,10 @@ table.dt td.editable{white-space:pre-wrap;overflow:visible;overflow-wrap:anywher
 /* 6.23 文档 9：上调过等级的询盘行（被低估·重点处理） */
 .inq-upgraded td:first-child{border-left:3px solid var(--primary)}
 .inq-upgraded{background:rgba(246,66,58,.03)}
-/* 6.23 文档 7：跟踪反馈单元格点开编辑（hover 提示可点） */
-.track-cell{display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:11.5px;padding:3px 8px;border-radius:6px;border:1px dashed var(--border2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 6.23 文档 7：跟踪反馈单元格点开编辑（hover 提示可点）。
+   注意：inline-block 才能让 text-overflow:ellipsis 正确生效（inline-flex 下会失败）。*/
+.track-cell{display:inline-block;cursor:pointer;font-size:11.5px;padding:3px 8px;border-radius:6px;border:1px dashed var(--border2);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;line-height:1.4}
+.track-cell i{margin-right:3px;vertical-align:-1px}
 .track-cell:hover{border-color:var(--primary);color:var(--primary)}
 .track-cell.track-empty{color:var(--text3);border-style:dashed}
 
@@ -402,6 +405,16 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
             <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>有效询盘</div><div class="legend-item"><div class="legend-dot" style="background:var(--text3)"></div>询盘总量</div></div>
             <div class="chart-wrap" style="height:155px"><canvas id="inqTrend"></canvas></div></div>
         </div>
+        <!-- 6.23 文档 4：GEO 监控（占位，后续接入） -->
+        <div class="card" style="margin-bottom:14px;text-align:center;padding:32px 16px;border:1px dashed var(--border2);background:transparent;box-shadow:none">
+          <div style="display:inline-flex;align-items:center;gap:10px;color:var(--text3);font-size:13px">
+            <i class="ti ti-world-search" style="font-size:22px;color:var(--text3)"></i>
+            <div style="text-align:left">
+              <div style="font-weight:700;color:var(--text2);font-size:13px">GEO 监控</div>
+              <div style="font-size:11.5px">占位中 · 后期接入地理位置/区域级 SEO/SEM 监控</div>
+            </div>
+          </div>
+        </div>
         <div class="grid2">
           <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search" style="color:var(--blue)"></i> SEO 总览</span><span class="badge b-blue">李</span></div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"><div><div class="metric-num" style="font-size:19px">3,612</div><div class="metric-lbl">自然点击</div><div class="metric-delta delta-pos">▲8%</div></div><div><div class="metric-num" style="font-size:19px">30%</div><div class="metric-lbl">Top10 占比</div><div class="metric-delta delta-neg">▼10pp</div></div><div><div class="metric-num" style="font-size:19px">186</div><div class="metric-lbl">收录页面</div><div class="metric-delta delta-pos">▲8</div></div></div>
@@ -435,8 +448,13 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
           <div class="card" style="text-align:center"><div class="card-head" style="justify-content:center"><span class="card-title">公司总分</span></div>
             <div class="gauge" style="margin:0 auto"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g2" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g2s">0</div><div class="gauge-max">/ 100</div></div></div>
             <div class="grade-badge" id="g2b" style="margin-top:4px"></div></div>
-          <div class="person-card"><div class="person-name">李</div><div class="person-score" id="liScore" style="color:var(--blue)">0</div><div class="grade-badge" id="liBadge" style="margin-top:10px"></div></div>
-          <div class="person-card"><div class="person-name">陈</div><div class="person-score" id="chenScore" style="color:var(--purple)">0</div><div class="grade-badge" id="chenBadge" style="margin-top:10px"></div></div>
+          <!-- 6.23 文档 5：李/陈 也用 gauge 进度图（与公司总分同款，仅颜色按各自部门 default 着色，gauge() 会按 score 等级覆盖） -->
+          <div class="card" style="text-align:center"><div class="card-head" style="justify-content:center"><span class="card-title" style="color:var(--blue)">李 · SEO</span></div>
+            <div class="gauge" style="margin:0 auto"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="liArc" cx="70" cy="70" r="58" fill="none" stroke="var(--blue)" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="liScore" style="color:var(--blue)">0</div><div class="gauge-max">/ 100</div></div></div>
+            <div class="grade-badge" id="liBadge" style="margin-top:4px"></div></div>
+          <div class="card" style="text-align:center"><div class="card-head" style="justify-content:center"><span class="card-title" style="color:var(--purple)">陈 · SEM</span></div>
+            <div class="gauge" style="margin:0 auto"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="chenArc" cx="70" cy="70" r="58" fill="none" stroke="var(--purple)" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="chenScore" style="color:var(--purple)">0</div><div class="gauge-max">/ 100</div></div></div>
+            <div class="grade-badge" id="chenBadge" style="margin-top:4px"></div></div>
         </div>
         <div class="grid3">
           <div class="card"><div class="card-head"><span class="card-title">总指标（共担）</span></div><div id="totalRows"></div></div>
@@ -917,6 +935,21 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
   </div>
 </div>
 
+<!-- 6.23 文档 26：自定义时间区间弹框 -->
+<div class="modal-mask" id="customRangeMask">
+  <div class="modal" style="width:380px">
+    <div class="modal-head"><i class="ti ti-calendar-event" style="color:var(--primary)"></i> 自定义时间范围<span class="x" onclick="closeModal('customRangeMask')"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld-row">
+        <div class="fld"><label>开始日期</label><input type="date" id="cr-start"></div>
+        <div class="fld"><label>结束日期</label><input type="date" id="cr-end"></div>
+      </div>
+      <div class="sheet-tip" style="margin-top:8px"><i class="ti ti-info-circle"></i> 区间最长 1 年；切换其他预设后，自定义区间仍保留，下次点「自定义」直接复用。</div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('customRangeMask')">取消</button><button class="btn-primary" onclick="submitCustomRange()"><i class="ti ti-device-floppy"></i> 应用</button></div>
+  </div>
+</div>
+
 <!-- 6.23 文档 7：跟踪反馈编辑弹框（录入时不展示，点表格才打开） -->
 <div class="modal-mask" id="trackMask">
   <div class="modal" style="width:480px">
@@ -1156,7 +1189,12 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 }));
 
 /* ---------- per-page inline time filter ---------- */
-const RANGES=['近7天','近30天','近90天','近一年']; // C-2a 三框预设 + C组「可查看近一年」
+const RANGES=['近7天','近30天','近90天','近一年','自定义']; // C-2a 三框预设 + C组「可查看近一年」 + 6.23 文档 26「自定义」
+// 6.23 文档 26：自定义区间持久化（YYYY-MM-DD 范围）
+window._customRange=null;
+try{ const cr=JSON.parse(localStorage.getItem('ferr:customRange')||'null');
+  if(cr&&/^\d{4}-\d{2}-\d{2}$/.test(cr.start_date)&&/^\d{4}-\d{2}-\d{2}$/.test(cr.end_date)&&cr.start_date<=cr.end_date) window._customRange=cr;
+}catch(e){}
 /* BUG-31 B-1：时间范围+粒度持久化(避免刷新回默认)。读 localStorage，非法值回退默认 */
 try{ const t=localStorage.getItem('ferr:timeRange'); window._timeRange=RANGES.includes(t)?t:'近30天'; }catch(e){ window._timeRange='近30天'; }
 try{ const g=localStorage.getItem('ferr:gran'); window._gran=['day','week','month'].includes(g)?g:'week'; }catch(e){ window._gran='week'; }
@@ -1180,7 +1218,11 @@ function resolveRange(label){
     case '近3月':  return r(back(89),today);
     case '近半年': return r(back(179),today);
     case '近1年':  return r(back(364),today);
-    case '自定义': return null; // TODO(1e 后续): 自定义日期选择器未实现，本期不生效，不伪装
+    case '自定义': {
+      const cr=window._customRange;
+      if(!cr)return null; // 还没选过 → 返回 null 让调用方弹框
+      return {start_date:cr.start_date,end_date:cr.end_date,period_label:'自定义 '+cr.start_date+'~'+cr.end_date};
+    }
     default:       return r(back(29),today);
   }
 }
@@ -1206,10 +1248,16 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
   renderTimebar(bar);
   bar.addEventListener('click',e=>{
     const btn=e.target.closest('.trange'); if(!btn)return;
+    const rg=btn.textContent.trim();
+    // 6.23 文档 26：点「自定义」打开日期弹框；保存后再应用。先把按钮态切回原 active（用户取消时不抖动）
+    if(rg==='自定义'&&!window._customRange){ openCustomRange(); return; }
     document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent===btn.textContent));
-    const rg=btn.textContent.trim(); window._timeRange=rg;
+    window._timeRange=rg;
     const nr=resolveRange(rg);
-    if(!nr){ toast('该预设尚未实现，未改变筛选'); return; } // 不伪装生效
+    if(!nr){
+      if(rg==='自定义'){ openCustomRange(); return; } // 兜底：自定义但没区间 → 弹框
+      toast('该预设尚未实现，未改变筛选'); return;
+    }
     _range=nr;
     try{ localStorage.setItem('ferr:timeRange',rg); }catch(e){} // BUG-31 B-1
     document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
@@ -1225,7 +1273,7 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     document.querySelectorAll('[data-time] .tgran').forEach(s=>{ if([...s.options].some(o=>o.value===sel.value)) s.value=sel.value; }); // 多条粒度联动
     document.dispatchEvent(new CustomEvent('granularity',{detail:{gran:window._gran}}));
     rebuildSeoChart();               // C-2a：粒度只重画 SEO 折线(数据已在区间视图)，周/月切换
-    renderInqTrend();                // C-2b：粒度切换时询盘趋势按天/周/月重绘
+    // 6.23 文档 2：总览询盘趋势固定「当月按日」，不再响应全局粒度切换
     toast('粒度：'+(GRAN_LABEL[window._gran]||window._gran));
   });
 });
@@ -1529,6 +1577,7 @@ async function submitInquiry(){
     const {item}=await API.post('/api/inquiries',rec);
     closeModal('inqMask');
     await loadInquiries(); // BUG-15：按当前时间区间重拉，统计/趋势/列表全部一致；不再用 POST 返回的全量 stats 污染显示
+    loadDashboardInq(); // 6.23 文档 2：总览趋势独立缓存，新增询盘后也同步重绘
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
   }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
@@ -1566,10 +1615,10 @@ document.addEventListener('click',e=>{
 function trackCellHtml(r){
   const has=(r.tracking_feedback||'').trim();
   if(has){
-    const short=has.length>30?has.slice(0,30)+'…':has;
-    return `<span class="track-cell" title="${esc(has)}"><i class="ti ti-message-2"></i> ${esc(short)}</span>`;
+    const short=has.length>15?has.slice(0,15)+'…':has; // CSS max-width 120px 兜底；这里也截一刀防极长串撑 DOM
+    return `<span class="track-cell" title="${esc(has)}"><i class="ti ti-message-2"></i>${esc(short)}</span>`;
   }
-  return `<span class="track-cell track-empty"><i class="ti ti-plus"></i> 反馈</span>`;
+  return `<span class="track-cell track-empty"><i class="ti ti-plus"></i>反馈</span>`;
 }
 function inqRowHtml(r){
   const up=isUpgraded(r);
@@ -1685,7 +1734,7 @@ async function loadInquiries(){
     window._inqCache=items||[];
     renderInqList(); // C组：按月分组渲染（清掉旧行/静态示例行，当月展开、上月折叠）
     refreshInqStats(stats);
-    renderInqTrend();   // C-2b：询盘按区间重拉后，趋势图按当前粒度真实重绘
+    // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
     renderInqDonuts();  // BUG-6：KPI 页两个 donut 同步真实重绘
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
   }catch(e){ if(e&&e.message!=='unauthorized'){ window._inqCache=[]; const tb=document.getElementById('tb-inq'); if(tb)tb.innerHTML=''; toast('询盘加载失败：'+(e.message||'未知错误')); } }
@@ -1747,6 +1796,36 @@ function chk(el){
   } else {
     toast(on?'已完成':'');
   }
+}
+
+/* 6.23 文档 26：自定义时间区间弹框 - 打开/提交 */
+function openCustomRange(){
+  const cr=window._customRange||{};
+  const today=formatLocalDate(new Date());
+  const back=n=>{ const d=new Date(); d.setDate(d.getDate()-n); return formatLocalDate(d); };
+  document.getElementById('cr-start').value=cr.start_date||back(29);
+  document.getElementById('cr-end').value=cr.end_date||today;
+  openModal('customRangeMask'); setTimeout(()=>document.getElementById('cr-start').focus(),50);
+}
+function submitCustomRange(){
+  const s=document.getElementById('cr-start').value;
+  const e=document.getElementById('cr-end').value;
+  if(!s||!e){ toast('请选择开始和结束日期'); return; }
+  if(s>e){ toast('开始日期不能晚于结束日期'); return; }
+  // 区间最长 1 年（与「近一年」一致），防止误操作
+  const days=Math.floor((new Date(e+'T00:00')-new Date(s+'T00:00'))/86400000);
+  if(days>365){ toast('区间最长 1 年'); return; }
+  window._customRange={start_date:s,end_date:e};
+  try{ localStorage.setItem('ferr:customRange',JSON.stringify(window._customRange)); }catch(err){}
+  window._timeRange='自定义';
+  try{ localStorage.setItem('ferr:timeRange','自定义'); }catch(err){}
+  _range=resolveRange('自定义');
+  // 同步 UI：所有时间条按钮态 + 自动日期框
+  document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent==='自定义'));
+  document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
+  document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
+  loadInquiries(); loadSeoChartRange();
+  closeModal('customRangeMask'); toast('已应用：'+_range.period_label);
 }
 
 /* ===== SOP 引擎 Step B：周期 key / 加载 / 渲染 / 设置页 CRUD ===== */
@@ -2523,7 +2602,11 @@ function renderRankTrend(arr){
 }
 /* ================= 关键词库（4 类 · 增删改入库 · FR-9）================= */
 const KW_TB={seo:'tb-kw-seo',sem:'tb-kw-sem',high:'tb-kw-high',customer:'tb-kw-cust'};
-const KW_PAGE_SIZE=20; const _kwPage={seo:0,sem:0,high:0,customer:0}; // C-1：每表每页 20 条
+// 6.23 文档 27：每页条数 per-type 可调（10/20/50/100/200/300）；持久化到 localStorage
+const KW_PAGE_OPTS=[10,20,50,100,200,300];
+const _kwPage={seo:0,sem:0,high:0,customer:0};
+const _kwSize={seo:20,sem:20,high:20,customer:20};
+try{ const saved=JSON.parse(localStorage.getItem('ferr:kwSize')||'null'); if(saved&&typeof saved==='object'){ ['seo','sem','high','customer'].forEach(t=>{ if(KW_PAGE_OPTS.includes(saved[t]))_kwSize[t]=saved[t]; }); } }catch(e){}
 function clsOf(kind,val){const o=(OPT[kind]||[]).find(x=>x[0]===val);return o?o[1]:'b-gray';}
 function kwRow(type,r){
   const a=r.attrs||{}; const tr=document.createElement('tr'); tr.dataset.id=r.id; tr.dataset.kwType=type; tr.dataset.cat=r.category||'';
@@ -2587,7 +2670,7 @@ function applyKwPaging(type){
   const cat=(type==='seo'||type==='sem')?activeCat(type):null;
   const all=[...tb.querySelectorAll('tr')];
   const rows=all.filter(tr=>!cat||tr.dataset.cat===cat);
-  const size=KW_PAGE_SIZE, total=rows.length, pages=Math.max(1,Math.ceil(total/size));
+  const size=_kwSize[type]||20, total=rows.length, pages=Math.max(1,Math.ceil(total/size));
   let p=_kwPage[type]||0; if(p>pages-1)p=pages-1; if(p<0)p=0; _kwPage[type]=p;
   all.forEach(tr=>tr.style.display='none');
   rows.slice(p*size,(p+1)*size).forEach(tr=>tr.style.display='');
@@ -2597,11 +2680,25 @@ function renderKwPager(type,p,pages,total){
   const tb=document.getElementById(KW_TB[type]); if(!tb)return;
   const card=tb.closest('.card')||(tb.closest('table')||{}).parentNode; if(!card)return;
   let pg=card.querySelector('.kw-pager'); if(!pg){ pg=document.createElement('div'); pg.className='kw-pager'; card.appendChild(pg); }
-  if(pages<=1){ pg.innerHTML=total?`<span class="kw-pg-info">共 ${total} 条</span>`:''; return; }
+  // 6.23 文档 27：每页条数下拉常驻显示（即便单页/空表也方便切换）
+  const sizeSel=`<select class="kw-pg-size" data-kwsize="${type}" title="每页条数">${KW_PAGE_OPTS.map(n=>`<option value="${n}"${n===_kwSize[type]?' selected':''}>${n}/页</option>`).join('')}</select>`;
+  if(pages<=1){
+    pg.innerHTML=(total?`<span class="kw-pg-info">共 ${total} 条</span>`:'<span class="kw-pg-info">暂无数据</span>')+sizeSel;
+    return;
+  }
   let btns=''; for(let i=0;i<pages;i++){ btns+=`<button class="kw-pg${i===p?' active':''}" data-kwpg="${type}" data-pg="${i}">${i+1}</button>`; }
-  pg.innerHTML=`<button class="kw-pg" data-kwpg="${type}" data-pg="${p-1}"${p===0?' disabled':''}>‹</button>${btns}<button class="kw-pg" data-kwpg="${type}" data-pg="${p+1}"${p===pages-1?' disabled':''}>›</button><span class="kw-pg-info">共 ${total} 条 · 第 ${p+1}/${pages} 页</span>`;
+  pg.innerHTML=`<button class="kw-pg" data-kwpg="${type}" data-pg="${p-1}"${p===0?' disabled':''}>‹</button>${btns}<button class="kw-pg" data-kwpg="${type}" data-pg="${p+1}"${p===pages-1?' disabled':''}>›</button><span class="kw-pg-info">共 ${total} 条 · 第 ${p+1}/${pages} 页</span>${sizeSel}`;
 }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-kwpg]'); if(!b||b.disabled)return; const type=b.dataset.kwpg; const pg=parseInt(b.dataset.pg,10); if(isNaN(pg))return; _kwPage[type]=pg; applyKwPaging(type); });
+// 6.23 文档 27：每页条数下拉切换 → 改 size、回第1页、持久化
+document.addEventListener('change',e=>{
+  const sel=e.target.closest('[data-kwsize]'); if(!sel)return;
+  const type=sel.dataset.kwsize; const n=parseInt(sel.value,10);
+  if(!KW_PAGE_OPTS.includes(n))return;
+  _kwSize[type]=n; _kwPage[type]=0;
+  try{ localStorage.setItem('ferr:kwSize',JSON.stringify(_kwSize)); }catch(e){}
+  applyKwPaging(type);
+});
 function activeCat(type){ const sub=document.getElementById(type==='seo'?'sub-kw-seo':type==='sem'?'sub-kw-sem':null); const t=sub&&sub.querySelector('.cat-tab.active'); if(!t||t.classList.contains('cat-all')||t.classList.contains('add'))return null; return t.textContent.trim(); }
 async function loadKeywords(){
   try{
@@ -2693,9 +2790,11 @@ function renderKPI(){
   recomputeScores();
   rows(TOTAL,'totalRows');rows(SEO,'seoRows');rows(SEM,'semRows');
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('liScore',liScore.toFixed(1)); set('chenScore',chenScore.toFixed(1)); set('topScore',company.toFixed(0));
+  // 6.23 文档 5：李/陈 也用 gauge 进度图；gauge() 内部会动画填充 #liScore/#chenScore 数字 + 按 score 等级覆盖 arc 颜色
+  set('topScore',company.toFixed(0));
   badge('liBadge',liScore);badge('chenBadge',chenScore);
   gauge('g1','g1s',company);gauge('g2','g2s',company);badge('g1b',company);badge('g2b',company);
+  gauge('liArc','liScore',liScore);gauge('chenArc','chenScore',chenScore);
 }
 
 /* ===== 1a: DEMO_MODE —— 真实模式(false)禁止任何硬编码示例数据；仅 true 时展示下方 fixture ===== */
@@ -2806,18 +2905,41 @@ function inqSeriesByGran(rows,gran){
   const lab=k=> gran==='month'?k:k.slice(5); // 月:YYYY-MM；天/周:MM-DD
   return {labels:keys.map(lab), eff:keys.map(k=>m.get(k).eff), total:keys.map(k=>m.get(k).total)};
 }
+/* 6.23 文档 2：总览询盘趋势 = 当月、按日，独立于全局 _range/_gran；启用悬停 tooltip 显示当日有效/总量。
+   独立缓存 window._inqMonthCache，由 loadDashboardInq() 拉取（始终拉当月 1 号 ~ 今天）。 */
+window._inqMonthCache=[];
+async function loadDashboardInq(){
+  const today=formatLocalDate(new Date());
+  const first=today.slice(0,7)+'-01';
+  try{
+    const {items}=await API.get(withRange('/api/inquiries',{start_date:first,end_date:today}));
+    window._inqMonthCache=items||[];
+  }catch(e){ window._inqMonthCache=[]; }
+  renderInqTrend();
+}
 function renderInqTrend(){
-  const cv=document.getElementById('inqTrend'); if(!cv||window.DEMO_MODE)return; // DEMO_MODE 仍走 charts() 示例
-  const rows=window._inqCache||[];
-  const sub=document.getElementById('inqTrendSub'); if(sub)sub.textContent=(GRAN_LABEL[window._gran]||window._gran)+(_range?' · '+_range.period_label:'');
+  const cv=document.getElementById('inqTrend'); if(!cv||window.DEMO_MODE)return;
+  const rows=window._inqMonthCache||[];
+  const sub=document.getElementById('inqTrendSub'); if(sub){
+    const today=formatLocalDate(new Date());
+    sub.textContent='当月 · 按日（'+today.slice(0,7)+'）';
+  }
   if(inqChart){ try{inqChart.destroy();}catch(e){} inqChart=null; }
   if(!rows.length){ chartEmpty('inqTrend'); return; }
   const wrap=cv.closest('.chart-wrap')||cv.parentElement; if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
-  const s=inqSeriesByGran(rows,window._gran);
+  const s=inqSeriesByGran(rows,'day');
   inqChart=new Chart(cv,{type:'line',data:{labels:s.labels,datasets:[
-    {label:'有效询盘',data:s.eff,borderColor:'#15a85a',backgroundColor:'rgba(21,168,90,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},
-    {label:'询盘总量',data:s.total,borderColor:'#9aa1ae',backgroundColor:'rgba(154,161,174,.06)',fill:true,tension:.4,pointRadius:0,borderWidth:1.5}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+    {label:'有效询盘',data:s.eff,borderColor:'#15a85a',backgroundColor:'rgba(21,168,90,.1)',fill:true,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2},
+    {label:'询盘总量',data:s.total,borderColor:'#9aa1ae',backgroundColor:'rgba(154,161,174,.06)',fill:true,tension:.4,pointRadius:2,pointHoverRadius:4,borderWidth:1.5}
+  ]},options:{
+    responsive:true,maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false}, // 鼠标对到 x 轴某天，两条线同时高亮
+    plugins:{
+      legend:{display:false},
+      tooltip:{enabled:true,callbacks:{title:items=>items[0]?items[0].label:'',label:ctx=>ctx.dataset.label+'：'+ctx.parsed.y}} // 6.23 文档 2：悬停显示当日
+    },
+    scales:{y:{beginAtZero:true,ticks:{precision:0}}}
+  }});
 }
 function charts(){
   Chart.defaults.color='#9aa1ae';Chart.defaults.borderColor='rgba(128,128,128,.12)';Chart.defaults.font.size=10;
@@ -2858,6 +2980,7 @@ window.addEventListener('load',async()=>{
   bindSettings();              // 设置页目标值回写
   renderSparklines();
   await hydrate();             // 询盘/否词/广告/排名快照
+  loadDashboardInq();          // 6.23 文档 2：总览询盘趋势独立拉当月，与全局时间范围解耦
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目 + 沉淀表
   await loadArchive();         // 归档②：资产库归档页（三 subtab）

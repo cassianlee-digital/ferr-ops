@@ -53,7 +53,12 @@ export async function inquiriesRoutes(app) {
   });
 
   app.patch('/api/inquiries/:id', editor, async (request) => {
-    const item = repo.update(Number(request.params.id), request.body || {});
+    const id = Number(request.params.id);
+    const body = request.body || {};
+    // 6.23 文档 9：若本次 PATCH 改 grade 且历史数据 original_grade=NULL，
+    // 先把「修改前的旧 grade」锁为 original_grade（必须在 update 之前调用，否则锁到的就是新 grade）
+    if (body.grade != null) repo.lockOriginalGradeIfNull(id);
+    const item = repo.update(id, body);
     recomputeActuals();
     return { item, stats: repo.stats() };
   });
