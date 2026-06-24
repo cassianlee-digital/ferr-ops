@@ -216,6 +216,13 @@ table.dt td.editable{white-space:pre-wrap;overflow:visible;overflow-wrap:anywher
 .inq-msep td{background:var(--bg3);font-weight:700;font-size:12px;padding:8px 10px;cursor:pointer;user-select:none}
 .inq-msep .hicon{transition:transform .15s;color:var(--text3)}
 .inq-msep.collapsed .hicon{transform:rotate(-90deg)}
+/* 6.23 文档 9：上调过等级的询盘行（被低估·重点处理） */
+.inq-upgraded td:first-child{border-left:3px solid var(--primary)}
+.inq-upgraded{background:rgba(246,66,58,.03)}
+/* 6.23 文档 7：跟踪反馈单元格点开编辑（hover 提示可点） */
+.track-cell{display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:11.5px;padding:3px 8px;border-radius:6px;border:1px dashed var(--border2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track-cell:hover{border-color:var(--primary);color:var(--primary)}
+.track-cell.track-empty{color:var(--text3);border-style:dashed}
 
 /* closed-loop stepper */
 .loopbar{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:16px}
@@ -452,8 +459,8 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
           <div>
           <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；右侧地球仪按表格数据实时高亮各国并画青岛飞线</span></div>
           <div class="card"><table class="dt">
-          <!-- 条目 11：删「销售确认」列；总列数 9 → 8（colspan 同步） -->
-          <thead><tr><th>日期</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th></tr></thead>
+          <!-- 6.23 文档 11/12/7：删销售确认列；加客户姓名（日期后）+ 跟踪反馈（备注后）；总列数 = 10（colspan 同步） -->
+          <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr" style="width:120px">跟踪反馈</th></tr></thead>
           <tbody id="tb-inq">
             <tr><td>06-04</td><td>🇩🇪 德国</td><td class="ctr"><span class="badge b-blue">欧洲</span></td><td class="ctr"><span class="tagselect b-blue" data-kind="channel">SEO自然<i class="ti ti-chevron-down"></i></span></td><td>ductile iron casting / 球铁页</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
             <tr><td>06-04</td><td>🇺🇸 美国</td><td class="ctr"><span class="badge b-purple">北美</span></td><td class="ctr"><span class="tagselect b-purple" data-kind="channel">SEM付费<i class="ti ti-chevron-down"></i></span></td><td>casting to drawing / 按图询价</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
@@ -892,8 +899,9 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
     <div class="modal-body">
       <div class="fld-row">
         <div class="fld"><label>日期</label><input type="date" id="f-date"></div>
-        <div class="fld"><label>国家</label><input id="f-country" placeholder="🇩🇪 德国"></div>
+        <div class="fld"><label>客户姓名（可选）</label><input id="f-customer" placeholder="Mr. Schmidt / 张三"></div>
       </div>
+      <div class="fld"><label>国家</label><input id="f-country" placeholder="🇩🇪 德国"></div>
       <div class="fld-row">
         <div class="fld"><label>大区</label><select id="f-region"><option>西欧</option><option>南欧</option><option>北欧</option><option>中东欧</option><option>东欧/俄罗斯</option><option>北美</option><option>拉美</option><option>中东</option><option>北非</option><option>撒哈拉以南非洲</option><option>南亚</option><option>东南亚</option><option>东亚</option><option>中亚</option><option>大洋洲</option><option>其他</option></select></div>
         <div class="fld"><label>渠道</label><select id="f-channel"><option>SEO自然</option><option>SEM付费</option><option>直接</option><option>其他</option></select></div>
@@ -906,6 +914,18 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
       <div class="fld"><label>备注（可选）</label><textarea id="f-note" placeholder="客户原话、需求要点…"></textarea></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('inqMask')">取消</button><button class="btn-primary" onclick="submitInquiry()"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- 6.23 文档 7：跟踪反馈编辑弹框（录入时不展示，点表格才打开） -->
+<div class="modal-mask" id="trackMask">
+  <div class="modal" style="width:480px">
+    <div class="modal-head"><i class="ti ti-message-2" style="color:var(--primary)"></i> 跟踪反馈 · <span id="track-cust">客户</span><span class="x" onclick="closeModal('trackMask')"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld"><label>跟踪记录（可分多次补充）</label><textarea id="track-text" rows="6" placeholder="客户的后续反馈、报价、关键节点…"></textarea></div>
+      <div class="sheet-tip" style="margin-top:8px"><i class="ti ti-info-circle"></i> 跟踪后若发现是好询盘，记得回表格把「等级」上调（C→A/B），系统会自动标红提示重点处理。</div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('trackMask')">取消</button><button class="btn-primary" onclick="submitTrack()"><i class="ti ti-device-floppy"></i> 保存</button></div>
   </div>
 </div>
 
@@ -1496,12 +1516,13 @@ window._inqCache=[];
 
 function openInquiry(){
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-  ['f-country','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
+  ['f-country','f-customer','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
   openModal('inqMask');
 }
 async function submitInquiry(){
   const g=id=>document.getElementById(id).value.trim();
   const rec={date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10),
+    customer_name:g('f-customer'), // 6.23 文档 12：客户姓名（可选）
     country:g('f-country')||'🏳️ 未填',region:g('f-region'),channel:g('f-channel'),
     source:g('f-source')||'待补',product:g('f-product'),grade:g('f-grade'),note:g('f-note')};
   try{
@@ -1512,9 +1533,57 @@ async function submitInquiry(){
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
   }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
 }
+// 6.23 文档 7/8/9/12：客户姓名(editable) + 等级 tagselect 可点改 + 上调标红(⚠️) + 跟踪反馈点开编辑。共 10 td。
+function isUpgraded(r){ const ord={A:3,B:2,C:1}; return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade]<ord[r.grade]; }
+/* 6.23 文档 7：跟踪反馈点开弹框 → PATCH → 同步缓存 + 重渲该 td */
+let _trackEditing=null;
+function openTrack(tr){
+  const id=tr&&tr.dataset.id; if(!id)return;
+  const it=(window._inqCache||[]).find(x=>String(x.id)===String(id)); if(!it)return;
+  _trackEditing=it;
+  document.getElementById('track-cust').textContent=it.customer_name||it.country||('#'+it.id);
+  document.getElementById('track-text').value=it.tracking_feedback||'';
+  openModal('trackMask'); setTimeout(()=>document.getElementById('track-text').focus(),50);
+}
+async function submitTrack(){
+  if(!_trackEditing)return;
+  const text=document.getElementById('track-text').value.trim();
+  try{
+    await API.patch('/api/inquiries/'+_trackEditing.id,{tracking_feedback:text});
+    _trackEditing.tracking_feedback=text;
+    // 重渲该行的跟踪反馈 td（最后一列）
+    const tr=document.querySelector('#tb-inq tr[data-id="'+_trackEditing.id+'"]');
+    if(tr&&tr.lastElementChild)tr.lastElementChild.innerHTML=trackCellHtml(_trackEditing);
+    closeModal('trackMask'); toast('已保存跟踪反馈');
+  }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+(e.message||'')); }
+}
+// 委托：点 .track-cell 打开弹框
+document.addEventListener('click',e=>{
+  const t=e.target.closest('#tb-inq .track-cell'); if(!t)return;
+  const tr=t.closest('tr'); if(tr)openTrack(tr);
+});
+
+function trackCellHtml(r){
+  const has=(r.tracking_feedback||'').trim();
+  if(has){
+    const short=has.length>30?has.slice(0,30)+'…':has;
+    return `<span class="track-cell" title="${esc(has)}"><i class="ti ti-message-2"></i> ${esc(short)}</span>`;
+  }
+  return `<span class="track-cell track-empty"><i class="ti ti-plus"></i> 反馈</span>`;
+}
 function inqRowHtml(r){
-  // 条目 11：销售确认列已删除（thead 同步），8 列
-  return `<td>${esc(r.date.slice(5))}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge ${GRADE_BADGE[r.grade]}">${esc(r.grade)}</span></td><td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`;
+  const up=isUpgraded(r);
+  const upMark=up?` <i class="ti ti-alert-triangle" title="等级已上调（原 ${esc(r.original_grade)} → 现 ${esc(r.grade)}） · 重点处理" style="color:var(--primary);margin-left:2px"></i>`:'';
+  return `<td>${esc(r.date.slice(5))}</td>`
+    +`<td class="editable" contenteditable data-field="customer_name">${esc(r.customer_name||'')}</td>`
+    +`<td>${esc(r.country)}</td>`
+    +`<td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td>`
+    +`<td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td>${esc(r.source)}</td>`
+    +`<td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
+    +`<td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`
+    +`<td class="ctr">${trackCellHtml(r)}</td>`;
 }
 function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
 /* C组：询盘按月分组渲染——当月展开，上月及更早默认折叠（点月份条展开/收起）*/
@@ -1528,9 +1597,18 @@ function renderInqList(){
   groups.forEach(g=>{
     const collapsed=g.ym!==curM;
     const sep=document.createElement('tr'); sep.className='inq-msep'+(collapsed?' collapsed':''); sep.dataset.month=g.ym;
-    sep.innerHTML=`<td colspan="8" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span>${g.ym===curM?'<span class="badge b-green" style="margin-left:6px">本月</span>':''}</td>`;
+    sep.innerHTML=`<td colspan="10" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span>${g.ym===curM?'<span class="badge b-green" style="margin-left:6px">本月</span>':''}</td>`;
     tb.appendChild(sep);
-    g.items.forEach(r=>{ const tr=document.createElement('tr'); tr.className='inq-mrow'; tr.dataset.month=g.ym; if(collapsed)tr.style.display='none'; tr.innerHTML=inqRowHtml(r); tb.appendChild(tr); });
+    g.items.forEach(r=>{
+      const tr=document.createElement('tr');
+      tr.className='inq-mrow'+(isUpgraded(r)?' inq-upgraded':''); // 6.23 文档 9：上调行加红色左边框
+      tr.dataset.month=g.ym;
+      // 6.23 文档 7/8/12：行级 dataset 让 PATCH 链路通（等级 tagselect / 客户姓名 editable / 跟踪反馈弹框）
+      if(r.id){ tr.dataset.id=r.id; tr.dataset.ep='/api/inquiries'; }
+      if(collapsed)tr.style.display='none';
+      tr.innerHTML=inqRowHtml(r);
+      tb.appendChild(tr);
+    });
   });
 }
 function toggleInqMonth(td){
@@ -1875,6 +1953,7 @@ const OPT={
  product:[['铸造','b-amber'],['锻造','b-red'],['机加工','b-blue'],['阀门','b-purple'],['管件','b-teal']],
  status:[['待开始','b-gray'],['进行中','b-amber'],['已完成','b-green']],
  result:[['已改','b-green'],['进行中','b-amber'],['计划下周','b-blue'],['放弃','b-gray']],
+ grade:[['A','b-green'],['B','b-blue'],['C','b-gray']], // 6.23 文档 8：询盘等级 tagselect 可点改
  owner:[['李','b-blue'],['陈','b-purple']],
  dept:[['SEO','b-blue'],['SEM','b-purple']],
  match:[['完全匹配','b-green'],['词组匹配','b-blue'],['广泛匹配','b-amber']],
@@ -1912,10 +1991,21 @@ async function persistTagChange(el,value){
   // 任意带 data-ep 的行：标签 kind → 字段名 通用映射
   const ep=tr.dataset.ep; if(!ep)return;
   const fieldMap={negmatch:'match_type',negstatus:'status',adstatus:'status',match:'match_type',
-    priority:'priority',owner:'owner',status:'status',result:'status',dept:'dept'};
+    priority:'priority',owner:'owner',status:'status',result:'status',dept:'dept',grade:'grade'}; // 6.23 文档 8
   const field=fieldMap[kind]; if(!field)return;
   try{
     await API.patch(ep+'/'+id,{[field]:value});
+    // 6.23 文档 9：询盘等级改完后，同步 _inqCache + 重渲染该行（上调标红 / ⚠️ 即时反映）
+    if(ep==='/api/inquiries'&&field==='grade'){
+      const it=(window._inqCache||[]).find(x=>String(x.id)===String(id));
+      if(it){
+        it.grade=value;
+        if(tr){
+          tr.innerHTML=inqRowHtml(it);
+          tr.classList.toggle('inq-upgraded',isUpgraded(it));
+        }
+      }
+    }
     // 归档②：月度计划 status='已完成' → 自动归档（条目16）
     if(ep==='/api/loop-items'&&kind==='status'&&value==='已完成'&&(tr.querySelector('[data-field="content"]')||{}).innerText){
       const dept=tr.querySelector('[data-kind="dept"]'); // plan 行未必有 dept tag，无则按表 id 推
