@@ -1,0 +1,138 @@
+/* 询盘录入（真实弹框 + 持久化）（拆分自 index.html · 阶段4-B）
+   经典 script + window 全局兼容。依赖（运行时解析，均在 index.html 内联或其他模块）：
+   openModal()/closeModal()、window.API、esc()、toast()、formatLocalDate()、inlineConfirm()（keywords.js）、
+   loadInquiries()/loadDashboardInq()、renderGlobe()（inquiry-globe.js）、loadArchive()（archive.js）。
+   window._inqCache 由本模块初始化、loadInquiries() 填充，被 inquiry-globe.js / 图表 读取。
+   openInquiry/submitInquiry/renderInqList/refreshInqStats 等被路由/HTML onclick/载入流程在运行时调用。 */
+
+/* ================= 询盘录入（真实弹框 + 持久化）================= */
+const INQ_KEY='ferr:inquiries';
+const REGION_BADGE={'欧洲':'b-blue','西欧':'b-blue','南欧':'b-blue','北欧':'b-blue','中东欧':'b-teal','东欧/俄罗斯':'b-amber','俄罗斯':'b-amber','北美':'b-purple','拉美':'b-red','中东':'b-amber','北非':'b-amber','撒哈拉以南非洲':'b-gray','南亚':'b-teal','东南亚':'b-red','东南亚/巴西':'b-red','东亚':'b-green','中亚':'b-gray','大洋洲':'b-teal','其他':'b-gray'};
+const CH_BADGE={'SEO自然':'b-blue','SEM付费':'b-purple','直接':'b-teal','其他':'b-gray'};
+const PROD_BADGE={'铸造':'b-amber','锻造':'b-red','机加工':'b-blue','阀门':'b-purple','管件':'b-teal'};
+const GRADE_BADGE={A:'b-green',B:'b-blue',C:'b-gray'};
+window._inqCache=[];
+
+function openInquiry(){
+  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  ['f-country','f-customer','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
+  openModal('inqMask');
+}
+async function submitInquiry(){
+  const g=id=>document.getElementById(id).value.trim();
+  const rec={date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10),
+    customer_name:g('f-customer'), // 6.23 文档 12：客户姓名（可选）
+    country:g('f-country')||'🏳️ 未填',region:g('f-region'),channel:g('f-channel'),
+    source:g('f-source')||'待补',product:g('f-product'),grade:g('f-grade'),note:g('f-note')};
+  try{
+    const {item}=await API.post('/api/inquiries',rec);
+    closeModal('inqMask');
+    await loadInquiries(); // BUG-15：按当前时间区间重拉，统计/趋势/列表全部一致；不再用 POST 返回的全量 stats 污染显示
+    loadDashboardInq(); // 6.23 文档 2：总览趋势独立缓存，新增询盘后也同步重绘
+    if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
+    toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
+  }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
+}
+// 6.23 文档 7/8/9/12：客户姓名(editable) + 等级 tagselect 可点改 + 上调标红(⚠️) + 跟踪反馈点开编辑。共 10 td。
+function isUpgraded(r){ const ord={A:3,B:2,C:1}; return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade]<ord[r.grade]; }
+/* 6.23 文档 7：跟踪反馈点开弹框 → PATCH → 同步缓存 + 重渲该 td */
+let _trackEditing=null;
+function openTrack(tr){
+  const id=tr&&tr.dataset.id; if(!id)return;
+  const it=(window._inqCache||[]).find(x=>String(x.id)===String(id)); if(!it)return;
+  _trackEditing=it;
+  document.getElementById('track-cust').textContent=it.customer_name||it.country||('#'+it.id);
+  document.getElementById('track-text').value=it.tracking_feedback||'';
+  openModal('trackMask'); setTimeout(()=>document.getElementById('track-text').focus(),50);
+}
+async function submitTrack(){
+  if(!_trackEditing)return;
+  const text=document.getElementById('track-text').value.trim();
+  try{
+    await API.patch('/api/inquiries/'+_trackEditing.id,{tracking_feedback:text});
+    _trackEditing.tracking_feedback=text;
+    // 重渲该行的跟踪反馈 td（最后一列）
+    const tr=document.querySelector('#tb-inq tr[data-id="'+_trackEditing.id+'"]');
+    if(tr&&tr.lastElementChild)tr.lastElementChild.innerHTML=trackCellHtml(_trackEditing);
+    closeModal('trackMask'); toast('已保存跟踪反馈');
+  }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+(e.message||'')); }
+}
+// 委托：点 .track-cell 打开弹框
+document.addEventListener('click',e=>{
+  const t=e.target.closest('#tb-inq .track-cell'); if(!t)return;
+  const tr=t.closest('tr'); if(tr)openTrack(tr);
+});
+
+function trackCellHtml(r){
+  const has=(r.tracking_feedback||'').trim();
+  if(has){
+    const short=has.length>15?has.slice(0,15)+'…':has; // CSS max-width 120px 兜底；这里也截一刀防极长串撑 DOM
+    return `<span class="track-cell" title="${esc(has)}"><i class="ti ti-message-2"></i>${esc(short)}</span>`;
+  }
+  return `<span class="track-cell track-empty"><i class="ti ti-plus"></i>反馈</span>`;
+}
+function inqRowHtml(r){
+  const up=isUpgraded(r);
+  const upMark=up?` <i class="ti ti-alert-triangle" title="等级已上调（原 ${esc(r.original_grade)} → 现 ${esc(r.grade)}） · 重点处理" style="color:var(--primary);margin-left:2px"></i>`:'';
+  return `<td>${esc(r.date.slice(5))}</td>`
+    +`<td class="editable" contenteditable data-field="customer_name">${esc(r.customer_name||'')}</td>`
+    +`<td>${esc(r.country)}</td>`
+    +`<td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td>`
+    +`<td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td>${esc(r.source)}</td>`
+    +`<td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
+    +`<td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`
+    +`<td class="ctr">${trackCellHtml(r)}</td>`
+    +`<td class="ctr"><button class="btn-mini inq-del" title="删除（归档到归档页）" style="color:var(--primary);border-color:var(--border2)"><i class="ti ti-trash"></i></button></td>`;
+}
+function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
+/* P3：询盘删除 → 就地确认 → 软删归档（进归档页「询盘」桶）→ 重拉列表/统计/总览/归档 */
+document.addEventListener('click',async e=>{
+  const btn=e.target.closest('#tb-inq .inq-del'); if(!btn)return;
+  const tr=btn.closest('tr'); const id=tr&&tr.dataset.id; if(!id)return;
+  if(!inlineConfirm(btn,'确认删除'))return;
+  try{
+    await API.del('/api/inquiries/'+id);
+    await loadInquiries();   // 列表/统计随之刷新（已归档项被排除）
+    loadDashboardInq();      // 总览当月趋势同步
+    if(window._curTab==='archive'){try{loadArchive();}catch(_){}}
+    toast('已删除 · 已归档到「归档」页');
+  }catch(err){ toast(err&&err.status===403?'无权操作':'删除失败'); }
+});
+/* C组：询盘按月分组渲染——当月展开，上月及更早默认折叠（点月份条展开/收起）*/
+function renderInqList(){
+  const tb=document.getElementById('tb-inq'); if(!tb)return; tb.innerHTML='';
+  const rows=(window._inqCache||[]).filter(r=>r&&r.date).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0); // 日期倒序
+  if(!rows.length)return;
+  const curM=formatLocalDate(new Date()).slice(0,7);
+  const groups=[]; const idx={};
+  rows.forEach(r=>{ const ym=r.date.slice(0,7); if(idx[ym]==null){ idx[ym]=groups.length; groups.push({ym,items:[]}); } groups[idx[ym]].items.push(r); });
+  groups.forEach(g=>{
+    const collapsed=g.ym!==curM;
+    const sep=document.createElement('tr'); sep.className='inq-msep'+(collapsed?' collapsed':''); sep.dataset.month=g.ym;
+    sep.innerHTML=`<td colspan="11" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span>${g.ym===curM?'<span class="badge b-green" style="margin-left:6px">本月</span>':''}</td>`;
+    tb.appendChild(sep);
+    g.items.forEach(r=>{
+      const tr=document.createElement('tr');
+      tr.className='inq-mrow'+(isUpgraded(r)?' inq-upgraded':''); // 6.23 文档 9：上调行加红色左边框
+      tr.dataset.month=g.ym;
+      // 6.23 文档 7/8/12：行级 dataset 让 PATCH 链路通（等级 tagselect / 客户姓名 editable / 跟踪反馈弹框）
+      if(r.id){ tr.dataset.id=r.id; tr.dataset.ep='/api/inquiries'; }
+      if(collapsed)tr.style.display='none';
+      tr.innerHTML=inqRowHtml(r);
+      tb.appendChild(tr);
+    });
+  });
+}
+function toggleInqMonth(td){
+  const sep=td.closest('tr'); if(!sep)return; sep.classList.toggle('collapsed');
+  const hidden=sep.classList.contains('collapsed');
+  let n=sep.nextElementSibling;
+  while(n&&!n.classList.contains('inq-msep')){ if(n.classList.contains('inq-mrow'))n.style.display=hidden?'none':''; n=n.nextElementSibling; }
+}
+// 条目 13：metric-row 四框已删（顶栏 KPI pill 已覆盖三个，询盘总量看月份折叠分隔行）。
+// 保留 stats 写入 _inqStats 缓存，供其他地方读取；不再回填已删除的 DOM。
+function refreshInqStats(stats){
+  if(stats)window._inqStats=stats;
+}
