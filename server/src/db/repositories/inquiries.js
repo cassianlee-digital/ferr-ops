@@ -2,15 +2,40 @@
 import { db } from '../connection.js';
 
 // range 可选：{ start_date, end_date }(YYYY-MM-DD)。提供则按 date 区间过滤(参数化)；不提供返回全量。
+// P3：默认排除已归档（state='archived'）；归档项只在归档页通过 listArchived() 取。
+const NOT_ARCHIVED = "(state IS NULL OR state <> 'archived')";
 export function list(range) {
   if (range && range.start_date && range.end_date) {
     return db
-      .prepare('SELECT * FROM inquiries WHERE date BETWEEN @start_date AND @end_date ORDER BY date DESC, id DESC')
+      .prepare(`SELECT * FROM inquiries WHERE ${NOT_ARCHIVED} AND date BETWEEN @start_date AND @end_date ORDER BY date DESC, id DESC`)
       .all({ start_date: range.start_date, end_date: range.end_date });
   }
   return db
-    .prepare('SELECT * FROM inquiries ORDER BY date DESC, id DESC')
+    .prepare(`SELECT * FROM inquiries WHERE ${NOT_ARCHIVED} ORDER BY date DESC, id DESC`)
     .all();
+}
+
+// P3：归档列表（归档页「询盘」桶用），按归档时间倒序
+export function listArchived() {
+  return db.prepare("SELECT * FROM inquiries WHERE state='archived' ORDER BY archived_at DESC, id DESC").all();
+}
+
+// P3：软删→归档（幂等）
+export function archive(id) {
+  const row = get(id);
+  if (!row) return null;
+  if (row.state === 'archived') return row;
+  db.prepare("UPDATE inquiries SET state='archived', archived_at=datetime('now') WHERE id=?").run(id);
+  return get(id);
+}
+
+// P3：从归档恢复
+export function restore(id) {
+  const row = get(id);
+  if (!row) return null;
+  if (row.state !== 'archived') return row;
+  db.prepare("UPDATE inquiries SET state=NULL, archived_at=NULL WHERE id=?").run(id);
+  return get(id);
 }
 
 export function create(rec, userId) {
@@ -67,7 +92,7 @@ export function stats(range) {
          SUM(CASE WHEN grade='A' THEN 1 ELSE 0 END) AS a,
          SUM(CASE WHEN grade='B' THEN 1 ELSE 0 END) AS b,
          SUM(CASE WHEN grade='C' THEN 1 ELSE 0 END) AS c
-       FROM inquiries${ranged ? ' WHERE date BETWEEN @start_date AND @end_date' : ''}`
+       FROM inquiries WHERE ${NOT_ARCHIVED}${ranged ? ' AND date BETWEEN @start_date AND @end_date' : ''}`
   );
   const row = ranged ? stmt.get({ start_date: range.start_date, end_date: range.end_date }) : stmt.get();
   const total = row.total || 0;

@@ -7,10 +7,11 @@ const SCHEMA_VERSION = '7';
 const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
-  'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
+  'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets',
   'sop_definitions', 'sop_completions',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
+  'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily',
   'google_ads_campaign_daily', 'google_ads_keyword_daily',
 ];
@@ -40,6 +41,9 @@ CREATE TABLE IF NOT EXISTS inquiries (
   customer_name      TEXT,
   tracking_feedback  TEXT,
   original_grade     TEXT,
+  -- 6.23 文档 P3：询盘软删→归档（state='archived' 时进归档页「询盘」桶，不计入列表/统计/KPI）
+  state        TEXT,
+  archived_at  TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_inquiries_date ON inquiries(date);
@@ -181,6 +185,24 @@ CREATE TABLE IF NOT EXISTS integrations (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS ai_analyses (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  scope_key     TEXT NOT NULL UNIQUE,
+  scope_type    TEXT,
+  title         TEXT,
+  prompt        TEXT NOT NULL,
+  context_json  TEXT,
+  result_text   TEXT,
+  messages_json TEXT,
+  state         TEXT NOT NULL DEFAULT 'analyzed',
+  action_state  TEXT,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  archived_at   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_ai_analyses_state ON ai_analyses(state);
+CREATE INDEX IF NOT EXISTS idx_ai_analyses_scope_type ON ai_analyses(scope_type);
+
 CREATE TABLE IF NOT EXISTS google_oauth_tokens (
   provider         TEXT PRIMARY KEY CHECK (provider IN ('gsc','ga4','ads')),
   access_token_enc TEXT,
@@ -200,6 +222,7 @@ CREATE TABLE IF NOT EXISTS google_oauth_states (
 CREATE TABLE IF NOT EXISTS google_sync_runs (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   provider     TEXT NOT NULL CHECK (provider IN ('gsc','ga4','ads')),
+  project_id   INTEGER REFERENCES google_projects(id),
   status       TEXT NOT NULL CHECK (status IN ('running','success','failed')),
   started_at   TEXT NOT NULL DEFAULT (datetime('now')),
   finished_at  TEXT,
@@ -209,6 +232,19 @@ CREATE TABLE IF NOT EXISTS google_sync_runs (
   error        TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_google_sync_runs_provider_started ON google_sync_runs(provider, started_at);
+
+CREATE TABLE IF NOT EXISTS google_projects (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  name            TEXT NOT NULL,
+  gsc_site_url    TEXT,
+  ga4_property_id TEXT,
+  ads_customer_id TEXT,
+  is_default      INTEGER NOT NULL DEFAULT 0,
+  active          INTEGER NOT NULL DEFAULT 1,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_google_projects_default ON google_projects(is_default, active);
 
 CREATE TABLE IF NOT EXISTS gsc_daily (
   date         TEXT NOT NULL,
@@ -416,6 +452,15 @@ export function migrate() {
   // 6.23 修改文档 7/9/12：inquiries 加客户姓名 / 跟踪反馈 / 原始等级
   ensureColumns('inquiries', [
     ['customer_name', 'TEXT'], ['tracking_feedback', 'TEXT'], ['original_grade', 'TEXT'],
+    ['state', 'TEXT'], ['archived_at', 'TEXT'], // P3：询盘软删→归档
+  ]);
+  ensureColumns('google_sync_runs', [
+    ['project_id', 'INTEGER'],
+  ]);
+  ensureColumns('google_projects', [
+    ['gsc_site_url', 'TEXT'], ['ga4_property_id', 'TEXT'], ['ads_customer_id', 'TEXT'],
+    ['is_default', 'INTEGER NOT NULL DEFAULT 0'], ['active', 'INTEGER NOT NULL DEFAULT 1'],
+    ['updated_at', 'TEXT'],
   ]);
   // 索引：旧库 db.exec(SCHEMA) 已建表，索引语句 IF NOT EXISTS 幂等，重复 exec 无害
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind)'); } catch (e) {}

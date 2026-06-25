@@ -39,6 +39,10 @@ function parseRange(query) {
 
 export async function inquiriesRoutes(app) {
   app.get('/api/inquiries', { preHandler: requireAuth }, async (request, reply) => {
+    // P3：?archived=1 → 归档页「询盘」桶（不带统计）
+    if (request.query?.archived === '1') {
+      return { items: repo.listArchived() };
+    }
     const { range, error } = parseRange(request.query || {});
     if (error) return reply.code(400).send({ error });
     return { items: repo.list(range), stats: repo.stats(range) };
@@ -63,9 +67,24 @@ export async function inquiriesRoutes(app) {
     return { item, stats: repo.stats() };
   });
 
+  // P3：DELETE 默认软删→归档（进归档页「询盘」桶）；?hard=1 才物理删除（boss 在归档页彻底清）
   app.delete('/api/inquiries/:id', editor, async (request) => {
-    repo.remove(Number(request.params.id));
+    const id = Number(request.params.id);
+    if (request.query?.hard === '1') {
+      repo.remove(id);
+      recomputeActuals();
+      return { ok: true, hard: true, stats: repo.stats() };
+    }
+    const item = repo.archive(id);
+    recomputeActuals(); // 归档后从统计/KPI 剔除
+    return { ok: true, item, stats: repo.stats() };
+  });
+
+  // P3：从归档恢复询盘
+  app.post('/api/inquiries/:id/restore', editor, async (request, reply) => {
+    const item = repo.restore(Number(request.params.id));
+    if (!item) return reply.code(404).send({ error: 'not_found' });
     recomputeActuals();
-    return { ok: true, stats: repo.stats() };
+    return { item };
   });
 }
