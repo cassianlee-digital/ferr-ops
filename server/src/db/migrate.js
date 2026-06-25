@@ -1,5 +1,6 @@
 // 建表迁移。带 schema 版本：升级到 V7 时一次性清库重建（符合「清空所有数据，从0录入」）。
 // 直接运行：node src/db/migrate.js
+import { pathToFileURL } from 'node:url';
 import { db } from './connection.js';
 
 const SCHEMA_VERSION = '7';
@@ -480,7 +481,9 @@ function ensureColumns(table, cols) {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// 跨平台入口判断：Windows 下 process.argv[1] 是反斜杠/含空格的路径，
+// 直接拼 `file://` 与 import.meta.url 永远不相等，故用 pathToFileURL 归一化。
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   migrate();
   console.log('[migrate] schema V' + SCHEMA_VERSION + ' 已就绪');
 }

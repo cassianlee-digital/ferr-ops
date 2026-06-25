@@ -3,7 +3,7 @@
 // 直接运行：node src/db/seed.js
 import bcrypt from 'bcryptjs';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { db } from './connection.js';
 import { migrate } from './migrate.js';
@@ -84,7 +84,8 @@ export function seed() {
   ).run();
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// 跨平台入口判断（见 migrate.js 同款说明）：用 pathToFileURL 归一化 Windows 路径。
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   seed();
   console.log('[seed] 完成');
 }
