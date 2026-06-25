@@ -12,12 +12,32 @@ export function providerConfig(provider) {
   if (!config.google.clientId) missing.push('GOOGLE_OAUTH_CLIENT_ID');
   if (!config.google.clientSecret) missing.push('GOOGLE_OAUTH_CLIENT_SECRET');
   if (!config.google.redirectUri) missing.push('GOOGLE_OAUTH_REDIRECT_URI');
-  if (provider === 'gsc' && !config.google.gscSiteUrl) missing.push('GSC_SITE_URL');
-  if (provider === 'ga4' && !config.google.ga4PropertyId) missing.push('GA4_PROPERTY_ID');
-  if (provider === 'ads') {
-    if (!config.google.adsDeveloperToken) missing.push('GOOGLE_ADS_DEVELOPER_TOKEN');
-    if (!config.google.adsCustomerId) missing.push('GOOGLE_ADS_CUSTOMER_ID');
-  }
+  if (provider === 'ads' && !config.google.adsDeveloperToken) missing.push('GOOGLE_ADS_DEVELOPER_TOKEN');
+  return { ready: missing.length === 0, missing };
+}
+
+export function resolveProject(input = {}) {
+  const requested = input.project_id || input.projectId;
+  const dbProject = requested ? repo.getProject(Number(requested)) : repo.getDefaultProject();
+  if (requested && !dbProject) throw new Error('google_project_not_found');
+  if (dbProject) return dbProject;
+  return {
+    id: null,
+    name: 'Env default',
+    gsc_site_url: config.google.gscSiteUrl,
+    ga4_property_id: config.google.ga4PropertyId,
+    ads_customer_id: config.google.adsCustomerId,
+    is_default: true,
+    active: true,
+  };
+}
+
+export function projectProviderConfig(provider, project) {
+  const base = providerConfig(provider);
+  const missing = [...base.missing];
+  if (provider === 'gsc' && !project?.gsc_site_url) missing.push('GSC_SITE_URL or project.gsc_site_url');
+  if (provider === 'ga4' && !project?.ga4_property_id) missing.push('GA4_PROPERTY_ID or project.ga4_property_id');
+  if (provider === 'ads' && !project?.ads_customer_id) missing.push('GOOGLE_ADS_CUSTOMER_ID or project.ads_customer_id');
   return { ready: missing.length === 0, missing };
 }
 

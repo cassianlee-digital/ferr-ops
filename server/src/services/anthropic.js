@@ -18,7 +18,7 @@ export async function callAnthropic(system, userPrompt) {
 // ---- OpenRouter（OpenAI 兼容）----
 async function callOpenRouter(system, userPrompt) {
   const apiKey = process.env.OPENROUTER_API_KEY || '';
-  const model = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat';
+  const model = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
   const maxTokens = Number(process.env.OPENROUTER_MAX_TOKENS || process.env.ANTHROPIC_MAX_TOKENS || 1200);
   if (!apiKey) {
     const e = new Error('OPENROUTER_API_KEY 未配置');

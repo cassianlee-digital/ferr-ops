@@ -1,6 +1,6 @@
 import { config } from '../config.js';
 import * as repo from '../db/repositories/googleSync.js';
-import { getAccessToken, normalizeRange, providerConfig } from './googleClient.js';
+import { getAccessToken, normalizeRange, projectProviderConfig, resolveProject } from './googleClient.js';
 
 function adsHeaders(accessToken) {
   const headers = {
@@ -12,9 +12,9 @@ function adsHeaders(accessToken) {
   return headers;
 }
 
-async function searchStream(query) {
+async function searchStream(customerId, query) {
   const accessToken = await getAccessToken('ads');
-  const url = `https://googleads.googleapis.com/${config.google.adsApiVersion}/customers/${config.google.adsCustomerId}/googleAds:searchStream`;
+  const url = `https://googleads.googleapis.com/${config.google.adsApiVersion}/customers/${customerId}/googleAds:searchStream`;
   const res = await fetch(url, {
     method: 'POST',
     headers: adsHeaders(accessToken),
@@ -33,10 +33,10 @@ async function searchStream(query) {
 const micros = (v) => (v == null || v === '' ? 0 : Math.round(Number(v)));
 const num = (v) => (v == null || v === '' ? 0 : Number(v));
 
-function campaignRow(r, runId) {
+function campaignRow(r, project, runId) {
   return {
     date: r.segments?.date,
-    customer_id: config.google.adsCustomerId,
+    customer_id: project.ads_customer_id,
     campaign_id: String(r.campaign?.id || ''),
     campaign_name: r.campaign?.name || '',
     cost_micros: micros(r.metrics?.costMicros),
@@ -50,8 +50,8 @@ function campaignRow(r, runId) {
   };
 }
 
-function keywordRow(r, runId) {
-  const base = campaignRow(r, runId);
+function keywordRow(r, project, runId) {
+  const base = campaignRow(r, project, runId);
   return {
     ...base,
     ad_group_id: String(r.adGroup?.id || ''),
@@ -62,14 +62,15 @@ function keywordRow(r, runId) {
 }
 
 export async function syncAds(input = {}) {
-  const pc = providerConfig('ads');
+  const project = resolveProject(input);
+  const pc = projectProviderConfig('ads', project);
   if (!pc.ready) {
     const err = new Error('google_config_missing');
     err.missing = pc.missing;
     throw err;
   }
   const range = normalizeRange(input);
-  const runId = repo.beginRun('ads', range.start_date, range.end_date);
+  const runId = repo.beginProjectRun('ads', project.id, range.start_date, range.end_date);
   try {
     const campaignQuery = `
       SELECT
@@ -87,7 +88,7 @@ export async function syncAds(input = {}) {
       WHERE segments.date BETWEEN '${range.start_date}' AND '${range.end_date}'
       ORDER BY segments.date ASC
     `;
-    const campaigns = (await searchStream(campaignQuery)).map((r) => campaignRow(r, runId)).filter((r) => r.date && r.campaign_id);
+    const campaigns = (await searchStream(project.ads_customer_id, campaignQuery)).map((r) => campaignRow(r, project, runId)).filter((r) => r.date && r.campaign_id);
 
     const keywordQuery = `
       SELECT
@@ -109,11 +110,11 @@ export async function syncAds(input = {}) {
       WHERE segments.date BETWEEN '${range.start_date}' AND '${range.end_date}'
       ORDER BY segments.date ASC
     `;
-    const keywords = (await searchStream(keywordQuery)).map((r) => keywordRow(r, runId)).filter((r) => r.date && r.criterion_id);
+    const keywords = (await searchStream(project.ads_customer_id, keywordQuery)).map((r) => keywordRow(r, project, runId)).filter((r) => r.date && r.criterion_id);
 
     const rowsWritten = repo.upsertAdsCampaigns(campaigns) + repo.upsertAdsKeywords(keywords);
     repo.finishRun(runId, rowsWritten);
-    return { provider: 'ads', runId, range, rowsWritten };
+    return { provider: 'ads', project, runId, range, rowsWritten };
   } catch (e) {
     repo.failRun(runId, e.message || e);
     throw e;

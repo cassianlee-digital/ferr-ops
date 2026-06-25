@@ -58,7 +58,13 @@ export async function dataSourcesRoutes(app) {
       integ = {};
     }
     const cfg = (p) => !!(integ[p] && integ[p].configured);
-    const aiConfigured = !!config.anthropic.apiKey;
+    const aiProvider = (process.env.AI_PROVIDER || 'openrouter').toLowerCase();
+    const aiConfigured = aiProvider === 'anthropic'
+      ? !!config.anthropic.apiKey
+      : !!process.env.OPENROUTER_API_KEY;
+    const aiModel = aiProvider === 'anthropic'
+      ? config.anthropic.model
+      : (process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash');
 
     return {
       sources: {
@@ -71,9 +77,9 @@ export async function dataSourcesRoutes(app) {
         ai: {
           type: 'provider',
           status: aiConfigured ? 'configured_unverified' : 'not_configured',
-          provider: 'anthropic',
+          provider: aiProvider,
           configured: aiConfigured,
-          model: aiConfigured ? config.anthropic.model : null,
+          model: aiConfigured ? aiModel : null,
           error: null,
         },
       },

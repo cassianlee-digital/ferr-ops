@@ -52,6 +52,15 @@ Response shape:
 }
 ```
 
+The response also includes:
+
+```json
+{
+  "projects": [],
+  "defaultProject": null
+}
+```
+
 Frontend behavior:
 
 - `configured=false`: show the missing setup items.
@@ -83,7 +92,7 @@ DELETE /api/google/auth/{provider}
 
 ## Manual Sync
 
-All sync endpoints accept optional `start_date` and `end_date` in `YYYY-MM-DD`.
+All sync endpoints accept optional `start_date`, `end_date`, and `project_id`.
 
 ```http
 POST /api/sync/gsc
@@ -95,6 +104,7 @@ Body example:
 
 ```json
 {
+  "project_id": 1,
   "start_date": "2026-06-01",
   "end_date": "2026-06-23"
 }
@@ -124,12 +134,37 @@ Failure:
 }
 ```
 
+## Google Projects
+
+Use projects to map one operational website/business unit to its GSC, GA4, and Ads identifiers.
+
+```http
+GET /api/google/projects
+POST /api/google/projects
+PATCH /api/google/projects/{id}
+DELETE /api/google/projects/{id}
+```
+
+Create body:
+
+```json
+{
+  "name": "FERR Casting",
+  "gsc_site_url": "sc-domain:ferrcasting.com",
+  "ga4_property_id": "435505484",
+  "ads_customer_id": "6644120786",
+  "is_default": true
+}
+```
+
+Frontend should show a project selector and pass `project_id` into sync and read APIs. If `project_id` is omitted, the backend uses the default active project. If no project exists, the backend falls back to the legacy `.env` values.
+
 ## Read APIs
 
 ```http
-GET /api/google/gsc/summary?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
-GET /api/google/ga4/overview?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
-GET /api/google/ads/summary?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+GET /api/google/gsc/summary?project_id=1&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+GET /api/google/ga4/overview?project_id=1&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+GET /api/google/ads/summary?project_id=1&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
 ```
 
 Legacy GA4 alias:

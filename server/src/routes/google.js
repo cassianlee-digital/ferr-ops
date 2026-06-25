@@ -2,7 +2,7 @@ import { requireAuth, onlyManagerBoss } from '../auth/middleware.js';
 import { config } from '../config.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
 import { adsSummary, ga4Overview, gscSummary } from '../db/repositories/googleSync.js';
-import { buildAuthUrl, exchangeCode, normalizeRange, providerConfig } from '../sync/googleClient.js';
+import { buildAuthUrl, exchangeCode, normalizeRange, providerConfig, resolveProject } from '../sync/googleClient.js';
 
 function statusFor(provider, tokens, runs) {
   const pc = providerConfig(provider);
@@ -23,6 +23,7 @@ export async function googleRoutes(app) {
   app.get('/api/google/status', { preHandler: requireAuth }, async () => {
     const tokens = googleRepo.tokenStatus();
     const runs = googleRepo.latestRuns();
+    const projects = googleRepo.listProjects();
     return {
       providers: {
         gsc: {
@@ -40,7 +41,33 @@ export async function googleRoutes(app) {
           apiVersion: config.google.adsApiVersion,
         },
       },
+      projects,
+      defaultProject: googleRepo.getDefaultProject(),
     };
+  });
+
+  app.get('/api/google/projects', { preHandler: requireAuth }, async () => ({
+    projects: googleRepo.listProjects(),
+    defaultProject: googleRepo.getDefaultProject(),
+  }));
+
+  app.post('/api/google/projects', onlyManagerBoss, async (request, reply) => {
+    const body = request.body || {};
+    if (!String(body.name || '').trim()) return reply.code(400).send({ error: 'project_name_required' });
+    const project = googleRepo.createProject(body);
+    reply.code(201);
+    return { project };
+  });
+
+  app.patch('/api/google/projects/:id', onlyManagerBoss, async (request, reply) => {
+    const project = googleRepo.updateProject(Number(request.params.id), request.body || {});
+    if (!project) return reply.code(404).send({ error: 'project_not_found' });
+    return { project };
+  });
+
+  app.delete('/api/google/projects/:id', onlyManagerBoss, async (request, reply) => {
+    googleRepo.deleteProject(Number(request.params.id));
+    return { ok: true };
   });
 
   app.get('/api/google/auth/start', onlyManagerBoss, async (request, reply) => {
@@ -79,7 +106,9 @@ export async function googleRoutes(app) {
 
   app.get('/api/google/gsc/summary', { preHandler: requireAuth }, async (request, reply) => {
     try {
-      return { connected: googleRepo.tokenStatus().gsc.authorized, ...gscSummary(normalizeRange(request.query || {})) };
+      const project = resolveProject(request.query || {});
+      const range = { ...normalizeRange(request.query || {}), gsc_site_url: project.gsc_site_url };
+      return { connected: googleRepo.tokenStatus().gsc.authorized, project, ...gscSummary(range) };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
     }
@@ -87,7 +116,9 @@ export async function googleRoutes(app) {
 
   app.get('/api/google/ga4/overview', { preHandler: requireAuth }, async (request, reply) => {
     try {
-      return { connected: googleRepo.tokenStatus().ga4.authorized, ...ga4Overview(normalizeRange(request.query || {})) };
+      const project = resolveProject(request.query || {});
+      const range = { ...normalizeRange(request.query || {}), ga4_property_id: project.ga4_property_id };
+      return { connected: googleRepo.tokenStatus().ga4.authorized, project, ...ga4Overview(range) };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
     }
@@ -95,7 +126,9 @@ export async function googleRoutes(app) {
 
   app.get('/api/google/ads/summary', { preHandler: requireAuth }, async (request, reply) => {
     try {
-      return { connected: googleRepo.tokenStatus().ads.authorized, ...adsSummary(normalizeRange(request.query || {})) };
+      const project = resolveProject(request.query || {});
+      const range = { ...normalizeRange(request.query || {}), ads_customer_id: project.ads_customer_id };
+      return { connected: googleRepo.tokenStatus().ads.authorized, project, ...adsSummary(range) };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
     }

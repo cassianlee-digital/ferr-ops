@@ -15,18 +15,23 @@ function safeError(e) {
 
 export async function syncRoutes(app) {
   for (const src of Object.keys(SYNCERS)) {
-    app.get(`/api/sync/${src}`, { preHandler: requireAuth }, async () => ({
+    app.get(`/api/sync/${src}`, { preHandler: requireAuth }, async (request) => ({
       provider: src,
-      latestRun: googleRepo.latestRuns()[src],
+      latestRun: googleRepo.latestProjectRuns(requestProjectId(request))[src],
     }));
 
     app.post(`/api/sync/${src}`, editor, async (request, reply) => {
       try {
         return await SYNCERS[src]({ ...(request.query || {}), ...(request.body || {}) });
       } catch (e) {
-        const status = e.message === 'bad_date_range' || e.message === 'google_config_missing' ? 400 : 502;
+        const status = ['bad_date_range', 'google_config_missing', 'google_project_not_found'].includes(e.message) ? 400 : 502;
         return reply.code(status).send({ provider: src, ...safeError(e) });
       }
     });
   }
+}
+
+function requestProjectId(request) {
+  const id = request?.query?.project_id || request?.query?.projectId;
+  return id ? Number(id) : null;
 }

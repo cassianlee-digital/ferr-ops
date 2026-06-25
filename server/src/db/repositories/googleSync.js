@@ -117,6 +117,110 @@ export function latestRuns() {
   return out;
 }
 
+function parseProject(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    gsc_site_url: row.gsc_site_url || '',
+    ga4_property_id: row.ga4_property_id || '',
+    ads_customer_id: row.ads_customer_id || '',
+    is_default: !!row.is_default,
+    active: !!row.active,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+export function listProjects() {
+  return db
+    .prepare('SELECT * FROM google_projects WHERE active = 1 ORDER BY is_default DESC, id ASC')
+    .all()
+    .map(parseProject);
+}
+
+export function getProject(id) {
+  return parseProject(db.prepare('SELECT * FROM google_projects WHERE id = ? AND active = 1').get(id));
+}
+
+export function getDefaultProject() {
+  return parseProject(
+    db.prepare('SELECT * FROM google_projects WHERE active = 1 ORDER BY is_default DESC, id ASC LIMIT 1').get()
+  );
+}
+
+export function createProject(input) {
+  const isDefault = input.is_default ? 1 : 0;
+  const tx = db.transaction(() => {
+    if (isDefault) db.prepare('UPDATE google_projects SET is_default = 0').run();
+    const info = db.prepare(
+      `INSERT INTO google_projects
+       (name, gsc_site_url, ga4_property_id, ads_customer_id, is_default, active, updated_at)
+       VALUES (@name, @gsc_site_url, @ga4_property_id, @ads_customer_id, @is_default, 1, datetime('now'))`
+    ).run({
+      name: String(input.name || '').trim(),
+      gsc_site_url: String(input.gsc_site_url || '').trim(),
+      ga4_property_id: String(input.ga4_property_id || '').trim(),
+      ads_customer_id: String(input.ads_customer_id || '').replace(/-/g, '').trim(),
+      is_default: isDefault,
+    });
+    if (!isDefault && db.prepare('SELECT COUNT(*) count FROM google_projects WHERE active = 1').get().count === 1) {
+      db.prepare('UPDATE google_projects SET is_default = 1 WHERE id = ?').run(info.lastInsertRowid);
+    }
+    return info.lastInsertRowid;
+  });
+  return getProject(tx());
+}
+
+export function updateProject(id, input) {
+  const cur = getProject(id);
+  if (!cur) return null;
+  const next = {
+    id,
+    name: input.name !== undefined ? String(input.name || '').trim() : cur.name,
+    gsc_site_url: input.gsc_site_url !== undefined ? String(input.gsc_site_url || '').trim() : cur.gsc_site_url,
+    ga4_property_id: input.ga4_property_id !== undefined ? String(input.ga4_property_id || '').trim() : cur.ga4_property_id,
+    ads_customer_id: input.ads_customer_id !== undefined ? String(input.ads_customer_id || '').replace(/-/g, '').trim() : cur.ads_customer_id,
+    is_default: input.is_default !== undefined ? (input.is_default ? 1 : 0) : (cur.is_default ? 1 : 0),
+  };
+  db.transaction(() => {
+    if (next.is_default) db.prepare('UPDATE google_projects SET is_default = 0').run();
+    db.prepare(
+      `UPDATE google_projects
+       SET name=@name, gsc_site_url=@gsc_site_url, ga4_property_id=@ga4_property_id,
+           ads_customer_id=@ads_customer_id, is_default=@is_default, updated_at=datetime('now')
+       WHERE id=@id`
+    ).run(next);
+  })();
+  return getProject(id);
+}
+
+export function deleteProject(id) {
+  db.prepare('UPDATE google_projects SET active = 0, is_default = 0, updated_at=datetime(\'now\') WHERE id = ?').run(id);
+}
+
+export function latestProjectRuns(projectId) {
+  const out = {};
+  for (const p of PROVIDERS) {
+    out[p] = db
+      .prepare(
+        `SELECT * FROM google_sync_runs
+         WHERE provider = @provider AND ((@projectId IS NULL AND project_id IS NULL) OR project_id = @projectId)
+         ORDER BY started_at DESC, id DESC LIMIT 1`
+      )
+      .get({ provider: p, projectId: projectId ?? null }) || null;
+  }
+  return out;
+}
+
+export function beginProjectRun(provider, projectId, dateStart, dateEnd) {
+  assertProvider(provider);
+  const info = db
+    .prepare('INSERT INTO google_sync_runs (provider, project_id, status, date_start, date_end) VALUES (?, ?, ?, ?, ?)')
+    .run(provider, projectId || null, 'running', dateStart || null, dateEnd || null);
+  return info.lastInsertRowid;
+}
+
 export function upsertGscDaily(rows) {
   const stmt = db.prepare(
     `INSERT INTO gsc_daily
@@ -144,23 +248,23 @@ export function upsertGscQueries(rows) {
 }
 
 export function gscSummary(range) {
-  const params = { start: range.start_date, end: range.end_date };
+  const params = { start: range.start_date, end: range.end_date, siteUrl: range.gsc_site_url || null };
   const totals = db
     .prepare(
       `SELECT COALESCE(SUM(clicks),0) clicks, COALESCE(SUM(impressions),0) impressions,
               CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
               CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE NULL END position
-       FROM gsc_daily WHERE date BETWEEN @start AND @end`
+       FROM gsc_daily WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)`
     )
     .get(params);
-  const byDate = db.prepare('SELECT * FROM gsc_daily WHERE date BETWEEN @start AND @end ORDER BY date ASC').all(params);
+  const byDate = db.prepare('SELECT * FROM gsc_daily WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl) ORDER BY date ASC').all(params);
   const topQueries = db
     .prepare(
       `SELECT query, page, SUM(clicks) clicks, SUM(impressions) impressions,
               CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
               CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE NULL END position
        FROM gsc_query_daily
-       WHERE date BETWEEN @start AND @end
+       WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)
        GROUP BY query, page
        ORDER BY clicks DESC, impressions DESC
        LIMIT 50`
@@ -197,13 +301,13 @@ export function upsertGa4Dimensions(rows) {
 }
 
 export function ga4Overview(range) {
-  const params = { start: range.start_date, end: range.end_date };
+  const params = { start: range.start_date, end: range.end_date, propertyId: range.ga4_property_id || null };
   const m = db
     .prepare(
       `SELECT COALESCE(SUM(active_users),0) activeUsers, COALESCE(SUM(sessions),0) sessions,
               COALESCE(SUM(page_views),0) pageViews, AVG(bounce_rate) * 100 bounceRate,
               AVG(avg_session_duration) avgDuration
-       FROM ga4_daily WHERE date BETWEEN @start AND @end`
+       FROM ga4_daily WHERE date BETWEEN @start AND @end AND (@propertyId IS NULL OR property_id = @propertyId)`
     )
     .get(params);
   const dim = (type) =>
@@ -211,7 +315,7 @@ export function ga4Overview(range) {
       .prepare(
         `SELECT dimension_value value, SUM(sessions) sessions, SUM(active_users) users, SUM(page_views) pageViews
          FROM ga4_dimension_daily
-         WHERE date BETWEEN @start AND @end AND dimension_type = @type
+         WHERE date BETWEEN @start AND @end AND dimension_type = @type AND (@propertyId IS NULL OR property_id = @propertyId)
          GROUP BY dimension_value
          ORDER BY sessions DESC
          LIMIT 50`
@@ -262,7 +366,7 @@ export function upsertAdsKeywords(rows) {
 }
 
 export function adsSummary(range) {
-  const params = { start: range.start_date, end: range.end_date };
+  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null };
   const totals = db
     .prepare(
       `SELECT COALESCE(SUM(cost_micros),0) costMicros, COALESCE(SUM(impressions),0) impressions,
@@ -270,7 +374,7 @@ export function adsSummary(range) {
               CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
               CASE WHEN SUM(clicks) > 0 THEN SUM(cost_micros) / SUM(clicks) ELSE NULL END averageCpcMicros,
               CASE WHEN SUM(conversions) > 0 THEN SUM(cost_micros) / SUM(conversions) ELSE NULL END costPerConversionMicros
-       FROM google_ads_campaign_daily WHERE date BETWEEN @start AND @end`
+       FROM google_ads_campaign_daily WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)`
     )
     .get(params);
   const campaigns = db
@@ -278,7 +382,7 @@ export function adsSummary(range) {
       `SELECT campaign_id campaignId, campaign_name campaignName, SUM(cost_micros) costMicros,
               SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_campaign_daily
-       WHERE date BETWEEN @start AND @end
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
        GROUP BY campaign_id, campaign_name
        ORDER BY costMicros DESC
        LIMIT 50`
@@ -289,7 +393,7 @@ export function adsSummary(range) {
       `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName, SUM(cost_micros) costMicros,
               SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_keyword_daily
-       WHERE date BETWEEN @start AND @end
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
        GROUP BY keyword_text, match_type, campaign_name
        ORDER BY costMicros DESC
        LIMIT 50`
