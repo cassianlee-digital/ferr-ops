@@ -2,6 +2,9 @@
 node_modules/
 server/node_modules/
 
+# 本地便携 Node 运行时(仅本机测试用，勿提交)
+.tooling/
+
 # secrets — NEVER commit
 .env
 *.env
