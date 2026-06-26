@@ -4,13 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>费尔瑞 FERR · 运营指挥中心 V3</title>
+<link rel="icon" type="image/png" href="/ferr-logo.png">
+<link rel="apple-touch-icon" href="/ferr-logo.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <div class="wrap">
   <div class="sidebar">
-    <div class="logo"><div class="logo-icon">F</div><div class="logo-text">费尔瑞 FERR<small>运营指挥中心 · V3</small></div></div>
+    <div class="logo"><div class="logo-icon"><img src="/ferr-logo.png" alt="费尔瑞"></div><div class="logo-text">费尔瑞 FERR<small>运营指挥中心 · V3</small></div></div>
     <div class="nav-section"><div class="nav-label">总览</div>
       <div class="nav-item active" data-tab="dashboard"><i class="ti ti-layout-dashboard"></i> 总览<span class="dot dot-green"></span></div></div>
     <div class="nav-section"><div class="nav-label">考核</div>
@@ -483,10 +485,10 @@
 
       <!-- ============ GA4 ============ -->
       <div class="panel" id="panel-ga4">
-        <div class="page-head"><div><div class="page-title">GA4 流量</div><div class="page-sub">专业 GA4 看板 · 接入 GA4 API 后自动填充</div></div><span id="ga4-status" class="badge b-gray">未接入</span></div>
+        <div class="page-head"><div><div class="page-title">GA4 流量</div><div class="page-sub">专业 GA4 看板 · 授权并同步后自动填充</div></div><span id="ga4-status" class="badge b-gray">未接入</span></div>
         <div class="timebar-inline" data-time></div>
-        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock-off"></i> GA4 尚未接入，时间范围暂不生效。</div>
-        <div id="ga4-hint" class="banner banner-red" style="display:none"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">暂无数据，请前往「设置 · API 接入」填入 GA4 授权</div><div class="banner-s">第一期为看板骨架与空状态；第二期接 GA4 Data API 后，下列模块自动填充实时数据。</div></div></div>
+        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock-off"></i> GA4 看板读取本地同步数据；授权后请在「设置 · API 接入」执行一次同步。</div>
+        <div id="ga4-hint" class="banner banner-red" style="display:none"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">暂无 GA4 数据，请前往「设置 · API 接入」授权并同步</div><div class="banner-s">后台不会展示示例流量；只有 Google 同步写入数据库后，下列模块才会填充真实数据。</div></div></div>
         <div class="metric-row" style="grid-template-columns:repeat(5,1fr)">
           <div class="metric-card"><div class="metric-num" id="ga4-users" style="font-size:22px">—</div><div class="metric-lbl">活跃用户</div></div>
           <div class="metric-card"><div class="metric-num" id="ga4-sessions" style="font-size:22px">—</div><div class="metric-lbl">会话</div></div>
@@ -550,15 +552,15 @@
         </div>
         <div class="subpanel" id="sub-set-ds">
         <!-- 1d-b: 数据源状态卡（只读，读 /api/data-sources/status 真实状态）-->
-        <div class="card" id="ds-status-card" style="margin-top:14px"><div class="card-head"><span class="card-title">数据源状态</span><span id="ds-demo-tag"></span><span class="card-sub">各数据源真实接入状态 · 人工录入 / 自动同步(Phase 2) / AI Provider</span></div>
+        <div class="card" id="ds-status-card" style="margin-top:14px"><div class="card-head"><span class="card-title">数据源状态</span><span id="ds-demo-tag"></span><span class="card-sub">各数据源真实接入状态 · 人工录入 / Google 同步 / AI Provider</span></div>
           <div id="ds-status-rows" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px"></div>
         </div>
         </div>
         <div class="subpanel" id="sub-set-api">
-        <!-- V7: 第三方 API 接入（密钥 AES 加密入库，仅显示配置状态）-->
-        <div class="card" style="margin-top:14px"><div class="card-head"><span class="card-title">API 接入 · 数据源授权</span><span class="card-sub">密钥加密存储，不回显；保存后状态变「已配置」</span></div>
+        <!-- V7: Google API 接入（后端环境变量 + OAuth 授权 + 手动同步）-->
+        <div class="card" style="margin-top:14px"><div class="card-head"><span class="card-title">API 接入 · Google 授权与同步</span><span class="card-sub">显示后端配置、OAuth 授权、最近同步结果；密钥不进入前端</span></div>
           <div id="integ-rows" style="display:flex;flex-direction:column;gap:10px;font-size:12.5px"></div>
-          <div class="sheet-tip" style="margin-top:10px"><i class="ti ti-info-circle"></i> 第一期仅保存密钥并预留同步路由；自动抓取（GSC/GA4/Ads）在第二期实现。SEM 抓取将以「真实手动出价策略」为准。</div>
+          <div class="sheet-tip" style="margin-top:10px"><i class="ti ti-info-circle"></i> Google OAuth Client、站点 / Property / Customer 等仍由服务器环境变量或项目配置提供；页面只负责发起授权和同步。</div>
         </div></div>
         <div class="subpanel" id="sub-set-sop">
           <div class="card"><div class="card-head"><span class="card-title">SOP 设置</span><span class="card-sub">每日 / 每周 / 每月固定任务 · 设置后自动出现在任务看板对应板块 · 仅经理 / 老板可改</span>

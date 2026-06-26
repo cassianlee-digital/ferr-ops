@@ -2,10 +2,10 @@ import { requireAuth, onlyManagerBoss } from '../auth/middleware.js';
 import { config } from '../config.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
 import { adsSummary, ga4Overview, gscSummary } from '../db/repositories/googleSync.js';
-import { buildAuthUrl, exchangeCode, normalizeRange, providerConfig, resolveProject } from '../sync/googleClient.js';
+import { buildAuthUrl, exchangeCode, normalizeRange, projectProviderConfig, resolveProject } from '../sync/googleClient.js';
 
-function statusFor(provider, tokens, runs) {
-  const pc = providerConfig(provider);
+function statusFor(provider, tokens, runs, project) {
+  const pc = projectProviderConfig(provider, project);
   const token = tokens[provider] || {};
   const run = runs[provider] || null;
   return {
@@ -24,25 +24,26 @@ export async function googleRoutes(app) {
     const tokens = googleRepo.tokenStatus();
     const runs = googleRepo.latestRuns();
     const projects = googleRepo.listProjects();
+    const defaultProject = resolveProject({});
     return {
       providers: {
         gsc: {
-          ...statusFor('gsc', tokens, runs),
+          ...statusFor('gsc', tokens, runs, defaultProject),
           siteUrlConfigured: !!config.google.gscSiteUrl,
         },
         ga4: {
-          ...statusFor('ga4', tokens, runs),
+          ...statusFor('ga4', tokens, runs, defaultProject),
           propertyConfigured: !!config.google.ga4PropertyId,
         },
         ads: {
-          ...statusFor('ads', tokens, runs),
+          ...statusFor('ads', tokens, runs, defaultProject),
           customerConfigured: !!config.google.adsCustomerId,
           loginCustomerConfigured: !!config.google.adsLoginCustomerId,
           apiVersion: config.google.adsApiVersion,
         },
       },
       projects,
-      defaultProject: googleRepo.getDefaultProject(),
+      defaultProject,
     };
   });
 

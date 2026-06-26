@@ -19,6 +19,23 @@ function grabText(btn){
   const cell=btn.closest('.review-grid>div'); if(cell) return cell.innerText.trim();
   return '';
 }
+
+/* UI hook override: keep the same data fields, add stable classes for the fix ledger layout. */
+function fixRowHtml(f){
+  const dept=f.dept==='SEM'?'SEM':'SEO';
+  const c=dept==='SEM'?'b-purple':'b-blue';
+  const owner=f.owner||sFromDept(dept).owner;
+  const oc=dept==='SEM'?'b-purple':'b-blue';
+  const status=f.status||'计划下周';
+  return `<td class="fix-title editable" contenteditable data-field="title">${esc(f.title||'')}</td>`
+    +`<td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="fix-evidence editable dim" contenteditable data-field="evidence" style="font-size:11px">${esc(f.evidence||'')}</td>`
+    +`<td class="fix-detail editable" contenteditable data-field="detail">${esc(f.detail||'')}</td>`
+    +`<td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td>`
+    +`<td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="fix-actions ctr"><button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button><button class="btn-mini row-archive" title="归档" style="color:var(--primary)"><i class="ti ti-archive"></i> 归档</button></td>`;
+}
 /* decide SEO(李) vs SEM(陈) from context */
 function scopeDept(btn,txt){
   const head=(txt||'').slice(0,8); let d=null;

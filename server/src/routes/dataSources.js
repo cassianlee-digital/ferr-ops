@@ -3,9 +3,8 @@ import { config } from '../config.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
 import * as seoRepo from '../db/repositories/seoWeeks.js';
 import * as semRepo from '../db/repositories/semWeeks.js';
-import * as integrations from '../db/repositories/integrations.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
-import { providerConfig } from '../sync/googleClient.js';
+import { projectProviderConfig, resolveProject } from '../sync/googleClient.js';
 
 function manualSource(label, listFn, dateKey) {
   try {
@@ -29,14 +28,15 @@ function manualSource(label, listFn, dateKey) {
   }
 }
 
-function syncSource(provider, legacyConfigured) {
-  const pc = providerConfig(provider);
+function syncSource(provider) {
+  const project = resolveProject({});
+  const pc = projectProviderConfig(provider, project);
   const token = googleRepo.tokenStatus()[provider] || {};
   const run = googleRepo.latestRuns()[provider] || null;
   const authorized = !!token.authorized;
   return {
     type: 'sync',
-    status: !pc.ready ? 'not_configured' : (authorized ? 'available' : (legacyConfigured ? 'configured_not_synced' : 'not_configured')),
+    status: !pc.ready ? 'not_configured' : (authorized ? 'available' : 'configured_not_synced'),
     label: '自动同步',
     configured: pc.ready,
     authorized,
@@ -51,13 +51,6 @@ function syncSource(provider, legacyConfigured) {
 
 export async function dataSourcesRoutes(app) {
   app.get('/api/data-sources/status', { preHandler: requireAuth }, async () => {
-    let integ = {};
-    try {
-      integ = integrations.status() || {};
-    } catch {
-      integ = {};
-    }
-    const cfg = (p) => !!(integ[p] && integ[p].configured);
     const aiProvider = (process.env.AI_PROVIDER || 'openrouter').toLowerCase();
     const aiConfigured = aiProvider === 'anthropic'
       ? !!config.anthropic.apiKey
@@ -71,9 +64,9 @@ export async function dataSourcesRoutes(app) {
         inquiries: manualSource('人工录入', inqRepo.list, 'date'),
         seo_weeks: manualSource('人工周报', seoRepo.list, 'week_date'),
         sem_weeks: manualSource('人工周报', semRepo.list, 'week_date'),
-        gsc: syncSource('gsc', cfg('gsc')),
-        ga4: syncSource('ga4', cfg('ga4')),
-        ads: syncSource('ads', cfg('ads')),
+        gsc: syncSource('gsc'),
+        ga4: syncSource('ga4'),
+        ads: syncSource('ads'),
         ai: {
           type: 'provider',
           status: aiConfigured ? 'configured_unverified' : 'not_configured',
