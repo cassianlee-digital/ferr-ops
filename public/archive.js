@@ -46,7 +46,7 @@ function archRowHtml(it,from){
   const isBoss=(window.ME||{}).role==='boss';
   const ops='<button class="btn-mini arch-restore" title="恢复到原页"><i class="ti ti-rotate"></i> 恢复</button>'
     +(isBoss?' <button class="btn-mini arch-hard" title="彻底删除（不可恢复）" style="color:var(--primary)"><i class="ti ti-trash"></i> 彻底删除</button>':'');
-  return `<td class="num">${esc(date||'—')}</td><td class="ctr">${fromBadge}</td><td>${content}</td><td class="ctr">${esc(dept)}</td><td class="ctr">${ops}</td>`;
+  return `<td class="archive-date num">${esc(date||'—')}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
 }
 // P3：询盘归档行（7 列，对齐 #sub-arc-inquiry 表头）；恢复/彻删复用 arch-restore/arch-hard 委托
 function archInqRowHtml(it){
@@ -55,7 +55,8 @@ function archInqRowHtml(it){
   const ops='<button class="btn-mini arch-restore" title="恢复到询盘列表"><i class="ti ti-rotate"></i> 恢复</button>'
     +(isBoss?' <button class="btn-mini arch-hard" title="彻底删除（不可恢复）" style="color:var(--primary)"><i class="ti ti-trash"></i> 彻底删除</button>':'');
   const cust=(it.customer_name?esc(it.customer_name)+' · ':'')+esc(it.country||'');
-  return `<td class="num">${esc(date||'—')}</td><td class="num">${esc((it.date||'').slice(5))}</td><td>${cust}</td><td class="dim" style="font-size:11px">${esc(it.source||'')}</td><td class="ctr"><span class="badge ${GRADE_BADGE[it.grade]||'b-gray'}">${esc(it.grade||'')}</span></td><td class="ctr dim" style="font-size:11px">${esc(it.channel||'')}</td><td class="ctr">${ops}</td>`;
+  const source=esc(it.source||'');
+  return `<td class="archive-date num">${esc(date||'—')}</td><td class="archive-short-date num">${esc((it.date||'').slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade]||'b-gray'}">${esc(it.grade||'')}</span></td><td class="archive-channel ctr dim">${esc(it.channel||'')}</td><td class="archive-actions ctr">${ops}</td>`;
 }
 async function loadArchive(){
   // 拉两类归档：fixes 与 loop_items

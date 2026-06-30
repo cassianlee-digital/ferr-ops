@@ -4,29 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>费尔瑞 FERR · 运营指挥中心 V3</title>
-<link rel="icon" type="image/png" href="/ferr-logo.png">
-<link rel="apple-touch-icon" href="/ferr-logo.png">
+<link rel="icon" type="image/png" href="/ferr-logo.png?v=20260630">
+<link rel="apple-touch-icon" href="/ferr-logo.png?v=20260630">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <div class="wrap">
   <div class="sidebar">
-    <div class="logo"><div class="logo-icon"><img src="/ferr-logo.png" alt="费尔瑞"></div><div class="logo-text">费尔瑞 FERR<small>运营指挥中心 · V3</small></div></div>
+    <div class="logo"><div class="logo-icon"><img src="/ferr-logo.png?v=20260630" alt="费尔瑞"></div><div class="logo-text">费尔瑞 FERR<small>运营指挥中心 · V3</small></div></div>
     <div class="nav-section"><div class="nav-label">总览</div>
       <div class="nav-item active" data-tab="dashboard"><i class="ti ti-layout-dashboard"></i> 总览<span class="dot dot-green"></span></div></div>
     <div class="nav-section"><div class="nav-label">考核</div>
       <div class="nav-item" data-tab="kpi"><i class="ti ti-award"></i> KPI 考核<span class="dot dot-amber"></span></div>
       <div class="nav-item" data-tab="inquiry"><i class="ti ti-mail-star"></i> 询盘评级<span class="dot dot-green"></span></div></div>
-    <div class="nav-section"><div class="nav-label">任务 / 数据源</div>
-      <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div>
-      <div class="nav-item" data-tab="tasks"><i class="ti ti-checklist"></i> 任务看板<span class="dot dot-red" id="nav-tasks-dot" style="display:none"></span></div>
-      <div class="nav-item" data-tab="ga4"><i class="ti ti-users"></i> GA4 流量<span class="dot dot-green"></span></div></div>
-    <div class="nav-section"><div class="nav-label">运营闭环</div>
-      <div class="nav-item" data-tab="plan"><i class="ti ti-clipboard-list"></i> 月度计划</div>
-      <div class="nav-item" data-tab="test"><i class="ti ti-flask"></i> 测试登记</div>
-      <div class="nav-item" data-tab="fix"><i class="ti ti-tool"></i> 整改清单</div>
-      <div class="nav-item" data-tab="review"><i class="ti ti-report"></i> 复盘周报</div></div>
+    <div class="nav-section"><div class="nav-label">数据中心</div>
+      <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div></div>
+    <div class="nav-section"><div class="nav-label">行动中心</div>
+      <div class="nav-item" data-tab="planning"><i class="ti ti-calendar-stats"></i> 计划 / 总结<span class="dot dot-red" id="nav-tasks-dot" style="display:none"></span></div>
+      <div class="nav-item" data-tab="action"><i class="ti ti-git-branch"></i> 测试 / 整改</div>
+    </div>
     <div class="nav-section"><div class="nav-label">资产库</div>
       <div class="nav-item" data-tab="keywords"><i class="ti ti-key"></i> 关键词库</div>
       <div class="nav-item" data-tab="content"><i class="ti ti-file-stack"></i> 内容资产</div>
@@ -49,6 +46,33 @@
     </div>
 
     <div class="content">
+      <div class="planning-shell" aria-label="计划总结切换">
+        <div class="planning-shell-head">
+          <div>
+            <div class="planning-shell-title">计划 / 总结</div>
+            <div class="planning-shell-sub">每日执行、当月计划、周报复盘、月报复盘集中管理</div>
+          </div>
+        </div>
+        <div class="planning-tabs" role="tablist" aria-label="计划总结分类">
+          <button class="planning-tab active" type="button" data-plan-tab="daily">日计划</button>
+          <button class="planning-tab" type="button" data-plan-tab="month">月计划</button>
+          <button class="planning-tab" type="button" data-plan-tab="week">周报</button>
+          <button class="planning-tab" type="button" data-plan-tab="month-summary">月报</button>
+        </div>
+      </div>
+
+      <div class="action-shell" aria-label="测试整改切换">
+        <div class="action-shell-head">
+          <div>
+            <div class="action-shell-title">测试 / 整改</div>
+            <div class="action-shell-sub">测试假设、执行结论、整改动作放在同一个闭环入口</div>
+          </div>
+        </div>
+        <div class="action-tabs" role="tablist" aria-label="测试整改分类">
+          <button class="action-tab active" type="button" data-action-tab="test">测试登记</button>
+          <button class="action-tab" type="button" data-action-tab="fix">整改清单</button>
+        </div>
+      </div>
 
       <!-- ============ 总览 ============ -->
       <div class="panel active" id="panel-dashboard">
@@ -153,7 +177,7 @@
 
       <!-- ============ ① 月度计划 ============ -->
       <div class="panel" id="panel-plan">
-        <div class="page-head"><div><div class="page-title">月度计划</div><div class="page-sub">SEM · 陈（左） / SEO · 李（右）并列 · 表格可编辑、失焦即存</div></div></div>
+        <div class="page-head"><div><div class="page-title">月计划</div><div class="page-sub">SEM · 陈（左） / SEO · 李（右）并列 · 表格可编辑、失焦即存</div></div></div>
         <div class="cols2">
           <div class="col">
             <div class="col-cap"><span class="badge b-purple">陈</span> SEM 月度计划</div>
@@ -205,7 +229,7 @@
         <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
         <div class="timebar-inline" data-time data-gran="week,month"></div>
         <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock"></i> 当前时间范围仅影响询盘与 SEO 折线图；SEO/SEM 顶部卡片与 SEM 看板仍按全量周报显示。</div>
-        <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div></div>
+        <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div></div>
 
         <!-- ===== SEO 看板 ===== -->
         <div class="subpanel active" id="sub-data-seo">
@@ -311,6 +335,7 @@
             </div>
           </div>
         </div>
+        <div class="subpanel" id="sub-data-ga4"></div>
       </div>
 
       <!-- ============ ④ 整改清单 ============ -->
@@ -327,8 +352,13 @@
 
       <!-- ============ ⑤ 复盘周报 ============ -->
       <div class="panel" id="panel-review">
-        <div class="page-head"><div><div class="page-title">复盘周报</div><div class="page-sub">每周 · 李/陈 左右并排 · 本月当前周展开，历史周折叠（点折叠条展开）</div></div></div>
+        <div class="page-head"><div><div class="page-title">周报</div><div class="page-sub">每周 · 李/陈 左右并排 · 本月当前周展开，历史周折叠（点折叠条展开）</div></div></div>
         <div id="review-acc"></div>
+      </div>
+
+      <div class="panel" id="panel-month-review">
+        <div class="page-head"><div><div class="page-title">月报</div><div class="page-sub">每月 · 李/陈 左右并排 · 本月展开，历史月折叠</div></div></div>
+        <div id="month-review-acc"></div>
       </div>
 
       <!-- ============ 关键词库 ============ -->
@@ -418,23 +448,23 @@
           <div class="subtab" data-sub="arc-inquiry"><i class="ti ti-mail-x"></i> 询盘</div>
         </div>
         <div class="subpanel active" id="sub-arc-sem">
-          <div class="card"><table class="dt"><thead><tr><th style="width:90px">归档时间</th><th style="width:80px" class="ctr">来源</th><th>内容</th><th style="width:90px" class="ctr">部门</th><th style="width:120px" class="ctr">操作</th></tr></thead><tbody id="tb-arc-sem"></tbody></table>
+          <div class="card"><table class="dt archive-table archive-main"><thead><tr><th>归档时间</th><th class="ctr">来源</th><th>内容</th><th class="ctr">部门</th><th class="ctr">操作</th></tr></thead><tbody id="tb-arc-sem"></tbody></table>
             <div id="arc-sem-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-archive-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 SEM 归档项</div>
           </div>
         </div>
         <div class="subpanel" id="sub-arc-seo">
-          <div class="card"><table class="dt"><thead><tr><th style="width:90px">归档时间</th><th style="width:80px" class="ctr">来源</th><th>内容</th><th style="width:90px" class="ctr">部门</th><th style="width:120px" class="ctr">操作</th></tr></thead><tbody id="tb-arc-seo"></tbody></table>
+          <div class="card"><table class="dt archive-table archive-main"><thead><tr><th>归档时间</th><th class="ctr">来源</th><th>内容</th><th class="ctr">部门</th><th class="ctr">操作</th></tr></thead><tbody id="tb-arc-seo"></tbody></table>
             <div id="arc-seo-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-archive-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 SEO 归档项</div>
           </div>
         </div>
         <div class="subpanel" id="sub-arc-company">
-          <div class="card"><table class="dt"><thead><tr><th style="width:90px">归档时间</th><th style="width:80px" class="ctr">来源</th><th>内容</th><th style="width:90px" class="ctr">部门</th><th style="width:120px" class="ctr">操作</th></tr></thead><tbody id="tb-arc-company"></tbody></table>
+          <div class="card"><table class="dt archive-table archive-main"><thead><tr><th>归档时间</th><th class="ctr">来源</th><th>内容</th><th class="ctr">部门</th><th class="ctr">操作</th></tr></thead><tbody id="tb-arc-company"></tbody></table>
             <div id="arc-company-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-archive-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无公司任务归档项</div>
           </div>
         </div>
         <!-- P3：询盘归档桶（删除的询盘进这里，可恢复 / boss 可彻底删） -->
         <div class="subpanel" id="sub-arc-inquiry">
-          <div class="card"><table class="dt"><thead><tr><th style="width:90px">归档时间</th><th style="width:70px">日期</th><th>客户 / 国家</th><th>来源词</th><th class="ctr" style="width:60px">等级</th><th class="ctr" style="width:90px">渠道</th><th class="ctr" style="width:120px">操作</th></tr></thead><tbody id="tb-arc-inquiry"></tbody></table>
+          <div class="card"><table class="dt archive-table archive-inquiry"><thead><tr><th>归档时间</th><th>日期</th><th>客户 / 国家</th><th>来源词</th><th class="ctr">等级</th><th class="ctr">渠道</th><th class="ctr">操作</th></tr></thead><tbody id="tb-arc-inquiry"></tbody></table>
             <div id="arc-inquiry-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-archive-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无询盘归档项</div>
           </div>
         </div>
@@ -442,7 +472,7 @@
 
       <!-- ============ 任务看板 V3 ============ -->
       <div class="panel" id="panel-tasks">
-        <div class="page-head"><div><div class="page-title">任务看板</div><div class="page-sub">陈(上) / 李(下) 各自：左=SOP固定(每日/每周/每月必做)、右=每日新增 · 公司任务在右</div></div><button class="btn-primary" onclick="ai('根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序')"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
+        <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">陈(上) / 李(下) 各自：左=SOP固定(每日/每周/每月必做)、右=每日新增 · 公司任务在右</div></div><button class="btn-primary" onclick="ai('根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序')"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
         <!-- Step C：未做 SOP 提示 banner（周期首日 08:00 后才显示）+ 公司新派 banner（urgent=1 未完成；硬编码 Bafaw banner 已移除）-->
         <div id="sop-overdue-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-alert-triangle" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">未完成提示</div><div class="banner-s" id="sop-overdue-list"></div></div></div>
         <div id="urgent-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-bell-ringing" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">公司新派任务</div><div class="banner-s" id="urgent-list"></div></div></div>
@@ -508,7 +538,7 @@
 
       <!-- ============ 设置 ============ -->
       <div class="panel" id="panel-settings">
-        <div class="page-head"><div><div class="page-title">设置</div><div class="page-sub">考核目标值集中在此 · 改完即时回写，表盘/进度条/评分自动重算并存储</div></div><button class="btn-ghost" onclick="openPwd()"><i class="ti ti-key"></i> 修改密码</button></div>
+        <div class="page-head"><div><div class="page-title">设置</div><div class="page-sub">账号、指标、数据源、API 接入和 SOP 集中配置 · 密钥不进入前端</div></div><button class="btn-ghost" onclick="openPwd()"><i class="ti ti-key"></i> 修改密码</button></div>
         <div class="set-layout">
         <div class="set-nav">
           <div class="subtab active" data-sub="set-profile"><i class="ti ti-user"></i> 个人资料</div>
@@ -575,6 +605,48 @@
     </div>
   </div>
 </div>
+
+<aside class="right-rail" aria-label="右侧工具栏">
+  <button class="rail-btn rail-agent" type="button" title="Hermes 智能体" onclick="openHermesPanel()">
+    <i class="ti ti-robot"></i>
+  </button>
+  <button class="rail-btn" type="button" title="设置" onclick="go('settings')">
+    <i class="ti ti-settings"></i>
+  </button>
+  <button class="rail-btn" type="button" title="帮助" onclick="toast('帮助中心暂未接入')">
+    <i class="ti ti-help"></i>
+  </button>
+</aside>
+
+<div class="hermes-backdrop" id="hermesBackdrop" onclick="closeHermesPanel()"></div>
+<section class="hermes-panel" id="hermesPanel" aria-label="Hermes 智能体面板">
+  <div class="hermes-head">
+    <div class="hermes-avatar"><i class="ti ti-robot"></i></div>
+    <div>
+      <div class="hermes-title">Hermes 智能体</div>
+      <div class="hermes-sub">运营管家入口 · 待接入独立服务</div>
+    </div>
+    <button class="hermes-close" type="button" onclick="closeHermesPanel()" title="关闭"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="hermes-body">
+    <div class="hermes-status">
+      <span class="hermes-dot"></span>
+      <span>当前状态：尚未连接智能体服务器</span>
+    </div>
+    <div class="hermes-card">
+      <div class="hermes-card-title">接入目标</div>
+      <p>后续这里会嵌入 Hermes Agent，用来做运营问答、任务提醒、复盘建议和数据解释。</p>
+    </div>
+    <div class="hermes-card">
+      <div class="hermes-card-title">当前版本</div>
+      <p>本轮只完成入口、面板和状态提示，不会访问外部服务器，也不会影响现有数据保存与 Google 授权。</p>
+    </div>
+  </div>
+  <div class="hermes-foot">
+    <button class="btn-ghost" type="button" onclick="go('settings');closeHermesPanel()">打开设置</button>
+    <button class="btn-primary" type="button" onclick="toast('Hermes 智能体服务器待配置')">检查接入状态</button>
+  </div>
+</section>
 
 <div id="selMenu"></div>
 
@@ -793,9 +865,22 @@ function mdToHtml(t){
    — aiAsk/aiBox/ai / runAiAnalysis / loadAiAnalyses / applyAiAnalysisStates / renderAiItem / sendAiChat / archiveAiAnalysis / depositAi（esc/mdToHtml/callClaude 仍内联）*/
 
 /* ================= MODALS ================= */
+function openHermesPanel(){
+  const panel=document.getElementById('hermesPanel');
+  const backdrop=document.getElementById('hermesBackdrop');
+  if(panel)panel.classList.add('show');
+  if(backdrop)backdrop.classList.add('show');
+}
+function closeHermesPanel(){
+  const panel=document.getElementById('hermesPanel');
+  const backdrop=document.getElementById('hermesBackdrop');
+  if(panel)panel.classList.remove('show');
+  if(backdrop)backdrop.classList.remove('show');
+}
 function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.modal-mask').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m)m.classList.remove('show'); }));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeHermesPanel(); });
 let tt;
 function showToast(){ const t=document.getElementById('toast'); t.style.transform='translateX(-50%) translateY(0)'; clearTimeout(tt); tt=setTimeout(hideToast,3400); }
 function hideToast(){ document.getElementById('toast').style.transform='translateX(-50%) translateY(80px)'; }
@@ -808,17 +893,46 @@ function toggleTheme(){ document.body.classList.toggle('dark'); const dk=documen
 (function(){ try{ if(localStorage.getItem('ferr:theme')==='dark'){ document.body.classList.add('dark'); const b=document.getElementById('themeBtn'); if(b)b.innerHTML='<i class="ti ti-sun"></i>'; } }catch(e){} })();
 
 /* ---------- nav ---------- */
-function go(tab){ const p=document.getElementById('panel-'+tab); if(!p)return; document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); p.classList.add('active'); const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){}
+function setPlanningTab(tab){
+  const content=document.querySelector('.content');
+  if(!content)return;
+  const active=tab||'daily';
+  content.dataset.planTab=active;
+  document.querySelectorAll('.planning-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.planTab===active));
+  try{localStorage.setItem('ferr:planningTab',active);}catch(e){}
+  if(active==='week'){try{renderReview();}catch(e){}}
+  if(active==='month-summary'){try{renderMonthReview();}catch(e){}}
+}
+function setActionTab(tab){
+  const content=document.querySelector('.content');
+  if(!content)return;
+  const active=tab||'test';
+  content.dataset.actionTab=active;
+  document.querySelectorAll('.action-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.actionTab===active));
+  try{localStorage.setItem('ferr:actionTab',active);}catch(e){}
+}
+function mountGa4IntoData(){
+  const host=document.getElementById('sub-data-ga4');
+  const ga4=document.getElementById('panel-ga4');
+  if(!host||!ga4)return;
+  ga4.classList.remove('panel','active');
+  ga4.classList.add('ga4-embedded');
+  if(ga4.parentElement!==host)host.appendChild(ga4);
+}
+function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){}
   if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
-  if(tab==='tasks'){try{loadUrgent();renderSopOverdueBanner();}catch(e){}} // Step C：进入任务看板时刷 banner（多人协作下即时反映）
+  if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结
 }
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>go(n.dataset.tab)));
+document.querySelectorAll('.planning-tab').forEach(btn=>btn.addEventListener('click',()=>setPlanningTab(btn.dataset.planTab)));
+document.querySelectorAll('.action-tab').forEach(btn=>btn.addEventListener('click',()=>setActionTab(btn.dataset.actionTab)));
 document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} }));
 /* 刷新后恢复上次所在页签 + 子页签（修复刷新回总览的 Bug）*/
 function restoreRoute(){
   let tab='dashboard'; try{ tab=localStorage.getItem('ferr:tab')||'dashboard'; }catch(e){}
-  if(!document.getElementById('panel-'+tab))tab='dashboard';
+  if(tab==='ga4'){ tab='data'; try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} }
+  if(tab!=='planning'&&tab!=='action'&&!document.getElementById('panel-'+tab))tab='dashboard';
   go(tab);
   let sub=null; try{ sub=localStorage.getItem('ferr:sub:'+tab); }catch(e){}
   if(sub){ const panel=document.getElementById('panel-'+tab); const st=panel&&panel.querySelector('.subtab[data-sub="'+sub+'"]'); if(st)st.click(); }
