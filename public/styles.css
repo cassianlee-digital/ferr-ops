@@ -335,7 +335,7 @@ table.hierarchy td:first-child{font-variant-numeric:tabular-nums}
 .ai-chat-item.user{justify-content:flex-end}
 .ai-chat-item.user .bubble{background:var(--primary-soft);border-color:rgba(246,66,58,.18);color:var(--text1)}
 .ai-chat-compose{border-top:1px solid var(--border);padding:14px 18px;background:var(--bg2)}
-.ai-chat-compose textarea{min-height:64px;max-height:132px;resize:vertical}
+.ai-chat-compose textarea{width:100%;box-sizing:border-box;min-height:72px;max-height:160px;resize:vertical;padding:10px 12px}
 .ai-chat-tools{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
 .ai-file-chip{font-size:11px;color:var(--text3);padding:4px 8px;border:1px solid var(--border);border-radius:999px;background:var(--bg3)}
 .fld{margin-bottom:12px}.fld label{display:block;font-size:11px;color:var(--text3);font-weight:600;margin-bottom:4px}
@@ -9453,6 +9453,8 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 .ai-tl-chip:hover { border-color: var(--primary); }
 .ai-tl-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 .ai-snap-note { font-size: 11px; margin-bottom: 8px; }
+/* AI 追问输入框：占满整行（原默认 ~20 列窄框），更舒展 */
+#aiChatInput { width: 100%; box-sizing: border-box; min-height: 76px !important; max-height: 168px; padding: 10px 12px !important; line-height: 1.6; }
 /* AI 拆解出的可采纳整改动作 */
 .ai-actions-list { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; background: var(--bg2); }
 .ai-actions-h { font-weight: 700; font-size: 12px; margin-bottom: 8px; }
