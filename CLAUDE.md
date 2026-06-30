@@ -23,9 +23,13 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 ## API / Sync Reality(真实状态,禁止把未实现描述成已完成)
 
-- **GSC 同步:未实现。** `server/src/sync/gsc.js` 仍是 `not_implemented`。
-- **GA4 同步:未实现。** `server/src/routes/ga4.js` 当前只返回**空结构 + 连接状态**(诚实空状态,非假数据)。
-- **Google Ads 同步:未实现。** `server/src/sync/ads.js` 仍是 `not_implemented`。
+- **Google 同步后端已实现(代码层面端到端打通),但尚未在生产完成 OAuth 授权,故还没拉到真实数据。**
+  - OAuth 授权/回调/刷新/撤销:`server/src/sync/googleClient.js`。
+  - GSC 同步:`server/src/sync/gsc.js`(每日 + query/page)。GA4 同步:`server/src/sync/ga4.js`(每日 + 来源/国家/设备/落地页)。Ads 同步:`server/src/sync/ads.js`(campaign + keyword)。
+  - 路由 `/api/sync/*`、`/api/google/*` 已在 `server/src/routes/index.js` 注册;数据表 `gsc_*`/`ga4_*`/`google_ads_*`/`google_oauth_*`/`google_sync_runs`/`google_projects` 已在 `migrate.js`;前端状态/连接/同步在 `public/google-projects.js`。
+  - **当前唯一卡点:三源均 `authorized:false`(从未授权)。** `redirect_uri=https://data.ferrcasting.com/api/google/auth/callback` 是生产域名 → 授权必须在生产站用 boss/manager 走 OAuth 同意页,本机 localhost 无法完成回调。授权后再 `POST /api/sync/<provider>` 才会落库。
+  - ⚠️ **Ads `GOOGLE_ADS_API_VERSION` 默认 `v24.1` 待核对** —— Google Ads REST 路径通常是 `vNN`(无 `.1`),版本不对会 404,接 Ads 前按账号实际可用版本改 `.env`。
+  - `server/src/routes/ga4.js` 是只读概览端点(从库读已同步数据),非同步逻辑。
 - `seo_weeks` / `sem_weeks` 当前**主要依赖人工录入**,无自动同步。
 - **前端图表存在「无数据时显示内置示例」的问题**(`public/index.html` 约 1745 行),必须后续修复 —— 会冒充真实趋势。
 - **时间筛选目前只停留在前端变量**(`window._timeRange`),**未真正传后端重算**,KPI/询盘/总览不受所选区间影响。
