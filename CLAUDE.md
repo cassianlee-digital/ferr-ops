@@ -29,7 +29,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - 路由 `/api/sync/*`、`/api/google/*` 已在 `server/src/routes/index.js` 注册;数据表 `gsc_*`/`ga4_*`/`google_ads_*`/`google_oauth_*`/`google_sync_runs`/`google_projects` 已在 `migrate.js`;前端状态/连接/同步在 `public/google-projects.js`。授权在生产站由 boss/manager 走 OAuth 同意页完成(redirect_uri 为生产域名,localhost 无法回调)。
   - `GOOGLE_ADS_API_VERSION=v24.1` 在生产账号**实际可用**(Ads 同步已成功),非问题。
   - `server/src/routes/ga4.js` 是只读概览端点(从库读已同步数据),非同步逻辑。
-  - **仍是手动触发同步**(点「立即同步」/`POST /api/sync/<provider>`),尚无定时自动同步。
+  - **定时自动同步已上线**:`server/src/sync/scheduler.js` 进程内调度,每日 UTC `SYNC_DAILY_HOUR_UTC`(默认 5)点同步三源 + 启动补跑(最近成功同步过期才补);`SYNC_AUTO=false` 可关。仍保留手动「立即同步」/`POST /api/sync/<provider>`。
   - 已知小缺口:① GA4 落地页维度未取 conversions 指标,`landingPages[].conversions` 恒为 null;② GSC 有 ~2 天数据延迟,默认 7 天区间通常只回 6 天。
 - `seo_weeks` / `sem_weeks` 当前**主要依赖人工录入**,无自动同步。
 - **前端图表存在「无数据时显示内置示例」的问题**(`public/index.html` 约 1745 行),必须后续修复 —— 会冒充真实趋势。
