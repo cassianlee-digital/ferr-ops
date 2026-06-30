@@ -9434,6 +9434,19 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
   box-shadow: none !important;
 }
 
+/* AI 弹窗排版优化：更宽、助手回答占满整行不留空、更舒展的间距 */
+.modal.ai-chat-modal { width: min(1040px, calc(100vw - 40px)) !important; }
+.ai-chat-scroll { padding: 24px 30px !important; min-height: 340px; }
+.ai-chat-item { margin-bottom: 16px; }
+.ai-chat-item.assistant { display: block; }
+.ai-chat-item.assistant .bubble { max-width: 100%; width: 100%; padding: 16px 20px !important; }
+.ai-chat-item.user { justify-content: flex-end; }
+.ai-chat-item.user .bubble { max-width: 78%; padding: 11px 14px !important; }
+.ai-render p { margin: 0 0 9px; }
+.ai-render h2, .ai-render h3, .ai-render h4 { margin: 15px 0 7px; font-size: 13.5px; }
+.ai-render ul, .ai-render ol { margin: 0 0 9px; padding-left: 20px; }
+.ai-render li { margin-bottom: 4px; }
+
 .ai-chat-compose {
   padding: 12px 16px !important;
   border-top: 1px solid #e5e6eb !important;
