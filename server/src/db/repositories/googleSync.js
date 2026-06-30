@@ -270,7 +270,27 @@ export function gscSummary(range) {
        LIMIT 50`
     )
     .all(params);
-  return { totals, byDate, topQueries };
+  // 按页面聚合（页面明细表用），曝光加权排名
+  const topPages = db
+    .prepare(
+      `SELECT page, SUM(clicks) clicks, SUM(impressions) impressions,
+              CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
+              CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE NULL END position
+       FROM gsc_query_daily
+       WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)
+       GROUP BY page
+       ORDER BY clicks DESC, impressions DESC
+       LIMIT 50`
+    )
+    .all(params);
+  // 区间内出现过的去重关键词数（“关键词覆盖”卡）
+  const queryCount = db
+    .prepare(
+      `SELECT COUNT(DISTINCT query) n FROM gsc_query_daily
+       WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)`
+    )
+    .get(params).n;
+  return { totals, byDate, topQueries, topPages, queryCount };
 }
 
 export function upsertGa4Daily(rows) {

@@ -233,21 +233,18 @@
 
         <!-- ===== SEO 看板 ===== -->
         <div class="subpanel active" id="sub-data-seo">
-          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber">4</span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red">11</span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple">58</span></div></div>
+          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会</div><div class="minitab" data-mini="seo-decay">流量衰退</div><div class="minitab" data-mini="seo-cann">关键词蚕食</div></div>
 
           <div class="minipanel active" id="mp-seo-overview">
-            <div class="ai-box"><div class="ai-header"><span class="ai-title"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span class="cache-tag">已缓存 · 本周 1/1</span><span>对接 GSC</span><button class="btn-ghost" onclick="aiBox(this,'你是费尔瑞SEO负责人。基于下方真实数据写一份本周SEO周报：先两句话概述点击/展现/排名走势，再分「机会」「风险」两条给出可执行建议。')">重新生成 ↗</button></div></div>
+            <div class="ai-box"><div class="ai-header"><span class="ai-title"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span>对接 GSC</span><button class="btn-ghost" onclick="aiBox(this,'你是费尔瑞SEO负责人。基于下方真实数据写一份本周SEO周报：先两句话概述点击/展现/排名走势，再分「机会」「风险」两条给出可执行建议。')">重新生成 ↗</button></div></div>
               <div class="ai-render"><div class="ai-item"><i class="ti ti-sparkles"></i><div class="body">点右上「重新生成」，基于本周录入的真实 SEO 数据生成周报（机会/风险）。未生成前不显示建议。</div></div></div>
             </div>
             <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSeoWeek()"><i class="ti ti-table-plus"></i> 录入本周 GSC 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入点击/展现/排名 → 自动更新下方图表与 KPI（自然流量环比按周环比自动算）</span></div>
-            <div class="metric-row"><div class="metric-card"><div class="metric-num" id="sb-clicks">3,612</div><div class="metric-lbl">自然点击</div><div class="metric-delta delta-pos">▲8%</div></div><div class="metric-card"><div class="metric-num" id="sb-impr">42,489</div><div class="metric-lbl">自然展现</div><div class="metric-delta delta-neg">▼17.5%</div></div><div class="metric-card"><div class="metric-num" id="sb-pos">14.1</div><div class="metric-lbl">平均排名</div><div class="metric-delta delta-neg">▲2.9</div></div><div class="metric-card"><div class="metric-num" id="sb-cov">512</div><div class="metric-lbl">关键词覆盖</div><div class="metric-delta delta-pos">▲24</div></div></div>
-            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">点击 / 展现趋势</span><span class="card-sub">近 28 天</span></div><div class="chart-wrap" style="height:170px"><canvas id="seoBoard"></canvas></div></div>
-            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">页面明细 · 按 URL</span><span class="card-sub">整改要精准到页，看这里</span></div>
-              <table class="dt"><thead><tr><th>URL</th><th class="num">点击</th><th class="num">展现</th><th class="num">CTR</th><th class="num">均排名</th><th class="num">跳出率</th><th class="ctr">分析</th></tr></thead><tbody>
-                <tr><td class="dim" style="font-size:11px">/investment-casting/</td><td class="num">142</td><td class="num">9,210</td><td class="num">1.5%</td><td class="num">14.1</td><td class="num" style="color:var(--amber)">61%</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析页面 /investment-casting/ 的SEO表现：点击142、展现9210、CTR1.5%、均排名14.1、跳出61%。给出最该先改的3个动作。','/investment-casting/ 诊断')"><i class="ti ti-bulb"></i> 诊断</button></td></tr>
-                <tr><td class="dim" style="font-size:11px">/ductile-iron-casting/</td><td class="num">96</td><td class="num">5,480</td><td class="num">1.8%</td><td class="num">6.2</td><td class="num">48%</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析页面 /ductile-iron-casting/ 的SEO表现：点击96、展现5480、CTR1.8%、均排名6.2、跳出48%。','/ductile-iron-casting/ 诊断')"><i class="ti ti-bulb"></i> 诊断</button></td></tr>
-                <tr><td class="dim" style="font-size:11px">/machining-parts/</td><td class="num">44</td><td class="num">3,048</td><td class="num">1.4%</td><td class="num">18.7</td><td class="num" style="color:var(--primary)">58%</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析页面 /machining-parts/ 的SEO表现：点击44、展现3048、CTR1.4%、均排名18.7、跳出58%偏高。','/machining-parts/ 诊断')"><i class="ti ti-bulb"></i> 诊断</button></td></tr>
-                <tr><td class="dim" style="font-size:11px">/valves/</td><td class="num">38</td><td class="num">2,910</td><td class="num">1.3%</td><td class="num">11.0</td><td class="num">52%</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('分析页面 /valves/ 的SEO表现：点击38、展现2910、CTR1.3%、均排名11.0、跳出52%。','/valves/ 诊断')"><i class="ti ti-bulb"></i> 诊断</button></td></tr>
+            <div class="metric-row"><div class="metric-card"><div class="metric-num" id="sb-clicks">—</div><div class="metric-lbl">自然点击</div><div class="metric-delta" id="sb-clicks-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-impr">—</div><div class="metric-lbl">自然展现</div><div class="metric-delta" id="sb-impr-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-pos">—</div><div class="metric-lbl">平均排名</div><div class="metric-delta" id="sb-pos-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-cov">—</div><div class="metric-lbl">关键词覆盖</div><div class="metric-delta" id="sb-cov-d"></div></div></div>
+            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">点击 / 展现趋势</span><span class="card-sub">按所选时间范围 · GSC</span></div><div class="chart-wrap" style="height:170px"><canvas id="seoBoard"></canvas></div></div>
+            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">页面明细 · 按 URL</span><span class="card-sub">整改要精准到页，看这里（GSC 同步 · 取点击前 20）</span></div>
+              <table class="dt"><thead><tr><th>URL</th><th class="num">点击</th><th class="num">展现</th><th class="num">CTR</th><th class="num">均排名</th><th class="num">跳出率</th><th class="ctr">分析</th></tr></thead><tbody id="seoPageRows">
+                <tr><td colspan="7" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
               </tbody></table>
             </div>
             <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEO 看板 · AI 诊断（按优先级）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'基于下方SEO数据，按优先级列本周最该先做的3件事，每条一句话、可执行。')">重新诊断 ↗</button></div>
@@ -1264,6 +1261,7 @@ window.addEventListener('load',async()=>{
   await loadUrgent();          // SOP-C：公司新派 urgent banner + 侧栏红点
   await loadContent();         // 内容资产
   await loadGa4();             // GA4 看板（骨架/空状态）
+  loadSeoBoardGsc();           // SEO 看板：真实 GSC 同步数据（趋势/卡片/页面明细）
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
   await loadIntegrations();    // 设置页 API 接入状态
   await loadMarket();          // 市场分析问卷表

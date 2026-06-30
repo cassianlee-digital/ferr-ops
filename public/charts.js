@@ -83,6 +83,8 @@ function updateSeoChart(range){
 }
 
 function rebuildSeoChart(){
+  // SEO 看板已改读 GSC 同步数据；有缓存则按当前粒度重渲染，否则走旧的周报兜底
+  if(window._gscBoard){ renderSeoBoard(); return; }
   const cv=document.getElementById('seoBoard'); if(!cv)return;
   const wrap=cv.closest('.chart-wrap')||cv.parentElement;
   if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); }
@@ -94,10 +96,99 @@ function rebuildSeoChart(){
   else chartEmpty('seoBoard');
 }
 
-async function loadSeoChartRange(){
-  try{ const seo=await API.get(withRange('/api/seo-weeks')); window._seoWeeksView=(seo.items||[]).map(mapSeoWeek); }
-  catch(e){ window._seoWeeksView=[]; toast('SEO trend failed: '+(e.message||'unknown error')); }
-  rebuildSeoChart();
+// 时间范围变化 → SEO 看板按区间重拉 GSC（旧名保留，调用方无需改）
+async function loadSeoChartRange(){ return loadSeoBoardGsc(); }
+
+/* ===== SEO 看板：真实 GSC 同步数据（趋势图 + 顶部卡 + 页面明细，环比上一等长窗口） ===== */
+window._gscBoard=null;
+function _shiftRange(r){
+  const day=86400000;
+  const s=new Date(r.start_date+'T00:00:00'), e=new Date(r.end_date+'T00:00:00');
+  const len=Math.round((e-s)/day)+1;
+  const prevEnd=new Date(s.getTime()-day);
+  const prevStart=new Date(prevEnd.getTime()-(len-1)*day);
+  return {start_date:formatLocalDate(prevStart), end_date:formatLocalDate(prevEnd)};
+}
+async function loadSeoBoardGsc(){
+  const cur=getCurrentRange();
+  let data=null, prev=null;
+  try{ data=await API.get(withRange('/api/google/gsc/summary')); }
+  catch(e){ window._gscBoard=null; renderSeoBoard(); return; }
+  if(cur){ try{ prev=await API.get(withRange('/api/google/gsc/summary', _shiftRange(cur))); }catch(e){ prev=null; } }
+  window._gscBoard={data,prev};
+  renderSeoBoard();
+}
+function _aggByGran(byDate, gran){
+  if(!gran||gran==='day') return (byDate||[]).map(x=>({label:(x.date||'').slice(5), clicks:+x.clicks||0, impr:+x.impressions||0}));
+  const m=new Map();
+  (byDate||[]).forEach(x=>{ const d=(x.date||'').slice(0,10); if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return;
+    const k= gran==='month'? d.slice(0,7) : _weekStart(d);
+    if(!m.has(k))m.set(k,{clicks:0,impr:0}); const o=m.get(k); o.clicks+=(+x.clicks||0); o.impr+=(+x.impressions||0);
+  });
+  return [...m.keys()].sort().map(k=>({label: gran==='month'?k:k.slice(5), clicks:m.get(k).clicks, impr:m.get(k).impr}));
+}
+function _seoDelta(id, cur, prev, lowerBetter, fmt){
+  const el=document.getElementById(id); if(!el)return;
+  if(prev==null||!isFinite(prev)||prev===0||cur==null){ el.textContent=''; el.className='metric-delta'; return; }
+  const diff=cur-prev; const better= lowerBetter ? diff<0 : diff>0;
+  const arrow= diff>0?'▲':(diff<0?'▼':'—');
+  const txt= fmt==='pct' ? Math.abs(diff/prev*100).toFixed(1)+'%' : Math.abs(diff).toFixed(1);
+  el.textContent=arrow+' '+txt;
+  el.className='metric-delta '+(better?'delta-pos':'delta-neg');
+}
+function _seoPath(u){ try{ return new URL(u).pathname || u; }catch(e){ return u||'(未知)'; } }
+function renderSeoBoard(){
+  const cv=document.getElementById('seoBoard');
+  const board=window._gscBoard, data=board&&board.data, prev=board&&board.prev;
+  const t=(data&&data.totals)||null;
+  const _t=(id,v)=>{ const e=document.getElementById(id); if(e)e.textContent=v; };
+  // 顶部卡
+  if(t){
+    _t('sb-clicks',(t.clicks||0).toLocaleString());
+    _t('sb-impr',(t.impressions||0).toLocaleString());
+    _t('sb-pos',t.position!=null?Number(t.position).toFixed(1):'—');
+    _t('sb-cov',(data.queryCount||0).toLocaleString());
+    const pt=prev&&prev.totals;
+    _seoDelta('sb-clicks-d', t.clicks, pt?pt.clicks:null, false, 'pct');
+    _seoDelta('sb-impr-d',   t.impressions, pt?pt.impressions:null, false, 'pct');
+    _seoDelta('sb-pos-d',    t.position, pt?pt.position:null, true, 'abs');
+    _seoDelta('sb-cov-d',    data.queryCount, prev?prev.queryCount:null, false, 'abs');
+  } else {
+    ['sb-clicks','sb-impr','sb-pos','sb-cov'].forEach(id=>_t(id,'—'));
+    ['sb-clicks-d','sb-impr-d','sb-pos-d','sb-cov-d'].forEach(id=>{ const e=document.getElementById(id); if(e){e.textContent='';e.className='metric-delta';} });
+  }
+  // 趋势图（双轴：左点击 / 右展现）
+  if(cv){
+    const wrap=cv.closest('.chart-wrap')||cv.parentElement;
+    if(seoChart){ try{seoChart.destroy();}catch(e){} seoChart=null; }
+    const series=_aggByGran(data&&data.byDate, window._gran);
+    if(series.length){
+      if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
+      seoChart=new Chart(cv,{type:'line',data:{labels:series.map(x=>x.label),datasets:[
+        {label:'点击',data:series.map(x=>x.clicks),borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2,yAxisID:'y'},
+        {label:'展现',data:series.map(x=>x.impr),borderColor:'#9aa1ae',borderDash:[4,3],tension:.4,pointRadius:0,borderWidth:1.5,yAxisID:'y1'}
+      ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{enabled:true}},
+        scales:{x:{ticks:{maxTicksLimit:7}},y:{position:'left',beginAtZero:true,ticks:{precision:0}},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
+    } else chartEmpty('seoBoard');
+  }
+  // 页面明细
+  const tb=document.getElementById('seoPageRows');
+  if(tb){
+    const pages=(data&&data.topPages)||[];
+    if(!pages.length){ tb.innerHTML='<tr><td colspan="7" class="dim" style="text-align:center;padding:14px">暂无真实数据 · 请完成 GSC 同步</td></tr>'; }
+    else{
+      const clean=s=>String(s).replace(/["'<>]/g,''); // 用于 onclick 单引号参数，去掉会破坏属性的字符
+      tb.innerHTML=pages.slice(0,20).map(p=>{
+        const path=_seoPath(p.page);
+        const ctr=p.ctr!=null?(p.ctr*100).toFixed(1)+'%':'—';
+        const pos=p.position!=null?Number(p.position).toFixed(1):'—';
+        const q=clean('分析页面 '+path+' 的SEO表现：点击'+(p.clicks||0)+'、展现'+(p.impressions||0)+'、CTR'+ctr+'、均排名'+pos+'。给出最该先改的3个动作。');
+        const title=clean(path+' 诊断');
+        return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+pos+'</td><td class="num dim">—</td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\''+title+'\')"><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
+      }).join('');
+    }
+  }
 }
 
 /* C-2b：有效询盘趋势——真实数据按粒度(天/周/月)聚合。询盘按天入库，三种粒度都诚实可做 */
