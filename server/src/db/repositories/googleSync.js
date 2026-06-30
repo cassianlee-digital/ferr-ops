@@ -421,3 +421,102 @@ export function adsSummary(range) {
     .all(params);
   return { totals, campaigns, keywords };
 }
+
+/* ===== 诊断引擎查询（全部基于已同步真实数据，无任何 demo） ===== */
+
+// 机会词：区间内 query+page 聚合，曝光加权排名落在 11-20（就差一步进首页）、有一定曝光。
+export function gscOpportunities(range, { minImpr = 10, limit = 50 } = {}) {
+  const params = { start: range.start_date, end: range.end_date, siteUrl: range.gsc_site_url || null, minImpr, limit };
+  return db
+    .prepare(
+      `SELECT * FROM (
+         SELECT query, page, SUM(clicks) clicks, SUM(impressions) impressions,
+                CASE WHEN SUM(impressions) > 0 THEN SUM(clicks)*1.0/SUM(impressions) ELSE NULL END ctr,
+                CASE WHEN SUM(impressions) > 0 THEN SUM(position*impressions)/SUM(impressions) ELSE NULL END position
+         FROM gsc_query_daily
+         WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)
+         GROUP BY query, page
+       ) WHERE impressions >= @minImpr AND position >= 11 AND position <= 20
+       ORDER BY impressions DESC LIMIT @limit`
+    )
+    .all(params);
+}
+
+// 蚕食：同一 query 在区间内被 >=2 个有意义曝光的页面分散排名。返回每组的页面清单。
+export function gscCannibalization(range, { minImpr = 10, limit = 50 } = {}) {
+  const params = { start: range.start_date, end: range.end_date, siteUrl: range.gsc_site_url || null, minImpr };
+  const rows = db
+    .prepare(
+      `SELECT * FROM (
+         SELECT query, page, SUM(clicks) clicks, SUM(impressions) impressions,
+                CASE WHEN SUM(impressions) > 0 THEN SUM(position*impressions)/SUM(impressions) ELSE NULL END position
+         FROM gsc_query_daily
+         WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)
+         GROUP BY query, page
+       ) WHERE impressions >= @minImpr
+       ORDER BY query ASC, impressions DESC`
+    )
+    .all(params);
+  const m = new Map();
+  for (const r of rows) {
+    if (!m.has(r.query)) m.set(r.query, []);
+    m.get(r.query).push({ page: r.page, clicks: r.clicks, impressions: r.impressions, position: r.position });
+  }
+  const groups = [];
+  for (const [query, pages] of m) {
+    if (pages.length >= 2) {
+      groups.push({ query, pages, totalImpressions: pages.reduce((s, p) => s + (p.impressions || 0), 0) });
+    }
+  }
+  groups.sort((a, b) => b.totalImpressions - a.totalImpressions);
+  return groups.slice(0, limit);
+}
+
+// 流量衰退：按页面比较「当前窗口」与「上一等长窗口」点击，跌幅达阈值且此前有量的页面。
+export function gscDecayPages(range, prevRange, { minPrevClicks = 10, dropRatio = 0.3, limit = 50 } = {}) {
+  const agg = (r) => {
+    const params = { start: r.start_date, end: r.end_date, siteUrl: range.gsc_site_url || null };
+    return db
+      .prepare(
+        `SELECT page, SUM(clicks) clicks, SUM(impressions) impressions,
+                CASE WHEN SUM(impressions) > 0 THEN SUM(position*impressions)/SUM(impressions) ELSE NULL END position
+         FROM gsc_query_daily
+         WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)
+         GROUP BY page`
+      )
+      .all(params);
+  };
+  const cur = new Map(agg(range).map((x) => [x.page, x]));
+  const out = [];
+  for (const p of agg(prevRange)) {
+    const c = cur.get(p.page) || { clicks: 0, impressions: 0, position: null };
+    if ((p.clicks || 0) >= minPrevClicks && (c.clicks || 0) <= (p.clicks || 0) * (1 - dropRatio)) {
+      out.push({
+        page: p.page,
+        clicksPrev: p.clicks || 0,
+        clicksCur: c.clicks || 0,
+        dropPct: p.clicks ? Math.round((1 - (c.clicks || 0) / p.clicks) * 100) : 0,
+        positionPrev: p.position,
+        positionCur: c.position,
+      });
+    }
+  }
+  out.sort((a, b) => b.dropPct - a.dropPct);
+  return out.slice(0, limit);
+}
+
+// 高花费零有效：区间内 cost>0 且 conversions=0 的关键词（按花费降序）。
+export function adsWasteKeywords(range, { limit = 50 } = {}) {
+  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, limit };
+  return db
+    .prepare(
+      `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName,
+              SUM(cost_micros) costMicros, SUM(clicks) clicks, SUM(conversions) conversions
+       FROM google_ads_keyword_daily
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       GROUP BY keyword_text, match_type, campaign_name
+       HAVING SUM(conversions) = 0 AND SUM(cost_micros) > 0
+       ORDER BY costMicros DESC LIMIT @limit`
+    )
+    .all(params);
+}

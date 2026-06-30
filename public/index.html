@@ -233,7 +233,7 @@
 
         <!-- ===== SEO 看板 ===== -->
         <div class="subpanel active" id="sub-data-seo">
-          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会</div><div class="minitab" data-mini="seo-decay">流量衰退</div><div class="minitab" data-mini="seo-cann">关键词蚕食</div></div>
+          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber" id="diag-opp-n" style="display:none"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red" id="diag-decay-n" style="display:none"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple" id="diag-cann-n" style="display:none"></span></div></div>
 
           <div class="minipanel active" id="mp-seo-overview">
             <div class="ai-box"><div class="ai-header"><span class="ai-title"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span>对接 GSC</span><button class="btn-ghost" onclick="aiBox(this,'你是费尔瑞SEO负责人。基于下方真实数据写一份本周SEO周报：先两句话概述点击/展现/排名走势，再分「机会」「风险」两条给出可执行建议。')">重新生成 ↗</button></div></div>
@@ -255,31 +255,23 @@
           <div class="minipanel" id="mp-seo-opp">
             <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-target-arrow"></i> 排名 11-20、就差一步进首页的词，优先攻这些性价比最高</div>
             <div class="sheet-toolbar" style="margin-bottom:10px"><button class="btn-ghost" onclick="snapshotRanks()"><i class="ti ti-camera"></i> 记录本周排名快照</button><span class="sheet-tip" id="rankTrendNote">每周点一次，积累 2 周后这里显示排名升降趋势（▲升 ▼降），验证整改效果</span></div>
-            <div class="card"><table class="dt"><thead><tr><th>关键词</th><th class="dim">所在页</th><th class="num">当前排名</th><th class="num">月展现</th><th class="ctr">动作</th></tr></thead><tbody>
-              <tr><td>investment casting</td><td class="dim" style="font-size:11px">/investment-casting/</td><td class="num"><span class="badge b-amber">14</span></td><td class="num">9,210</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('investment casting 当前排名14、月展现9210，给出冲进Top10的具体优化清单（标题/内容/内链/外链）。','机会词诊断')"><i class="ti ti-bulb"></i> 怎么冲首页</button></td></tr>
-              <tr><td>investment casting parts</td><td class="dim" style="font-size:11px">/investment-casting/</td><td class="num"><span class="badge b-amber">16</span></td><td class="num">3,400</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('investment casting parts 排名16，给出冲进Top10的具体清单。','机会词诊断')"><i class="ti ti-bulb"></i> 怎么冲首页</button></td></tr>
-              <tr><td>steel casting supplier</td><td class="dim" style="font-size:11px">/steel-casting/</td><td class="num"><span class="badge b-amber">12</span></td><td class="num">2,100</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('steel casting supplier 排名12，给出冲进Top10的具体清单。','机会词诊断')"><i class="ti ti-bulb"></i> 怎么冲首页</button></td></tr>
-              <tr><td>ductile iron supplier</td><td class="dim" style="font-size:11px">/ductile-iron-casting/</td><td class="num"><span class="badge b-amber">13</span></td><td class="num">1,650</td><td class="ctr"><button class="btn-mini" onclick="aiAsk('ductile iron supplier 排名13，给出冲进Top10的具体清单。','机会词诊断')"><i class="ti ti-bulb"></i> 怎么冲首页</button></td></tr>
+            <div class="card"><table class="dt"><thead><tr><th>关键词</th><th class="dim">所在页</th><th class="num">当前排名</th><th class="num">区间展现</th><th class="ctr">动作</th></tr></thead><tbody id="diagOppRows">
+              <tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
             </tbody></table></div>
           </div>
 
           <div class="minipanel" id="mp-seo-decay">
             <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-trending-down" style="color:var(--primary)"></i> 点击/排名近 4 周明显下滑的页面，先止损</div>
-            <div class="card"><table class="dt"><thead><tr><th>URL</th><th class="num">点击变化</th><th class="num">排名变化</th><th class="ctr">疑因</th><th class="ctr">动作</th></tr></thead><tbody>
-              <tr><td class="dim" style="font-size:11px">/machining-parts/</td><td class="num" style="color:var(--primary)">▼32%</td><td class="num" style="color:var(--primary)">15→18.7</td><td class="ctr"><span class="badge b-amber">蚕食</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('/machining-parts/ 点击4周内跌32%、排名15→18.7，疑似被其他页蚕食。给出排查与止损步骤。','衰退止损')"><i class="ti ti-bulb"></i> 止损方案</button></td></tr>
-              <tr><td class="dim" style="font-size:11px">/casting-services/</td><td class="num" style="color:var(--primary)">▼21%</td><td class="num">9→11</td><td class="ctr"><span class="badge b-gray">内容旧</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('/casting-services/ 点击跌21%、排名9→11，疑内容陈旧。给出更新方案。','衰退止损')"><i class="ti ti-bulb"></i> 止损方案</button></td></tr>
-              <tr><td class="dim" style="font-size:11px">/about/quality/</td><td class="num" style="color:var(--amber)">▼14%</td><td class="num">12→14</td><td class="ctr"><span class="badge b-gray">外链掉</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('/about/quality/ 点击跌14%、排名12→14，疑外链流失。给出方案。','衰退止损')"><i class="ti ti-bulb"></i> 止损方案</button></td></tr>
+            <div class="card"><table class="dt"><thead><tr><th>URL</th><th class="num">点击变化</th><th class="num">排名变化</th><th class="ctr">疑因</th><th class="ctr">动作</th></tr></thead><tbody id="diagDecayRows">
+              <tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
             </tbody></table></div>
           </div>
 
           <div class="minipanel" id="mp-seo-cann">
             <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-git-merge"></i> 意图重复、互相抢排名的 URL 组——合并后排名通常立竿见影。每组点「AI 合并建议」让 AI 给方案</div>
-            <div class="card"><table class="dt"><thead><tr><th>蚕食词</th><th>互相竞争的 URL</th><th class="num">分散排名</th><th class="ctr">建议</th><th class="ctr">动作</th></tr></thead><tbody id="tb-cann">
-              <tr><td>investment casting</td><td class="dim" style="font-size:11px">/investment-casting/<br>/casting-services/<br>/products/lost-wax/</td><td class="num"><span class="badge b-red">14 / 22 / 31</span></td><td class="ctr"><span class="badge b-amber">3页抢1意图</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('关键词「investment casting」被3个URL同时竞争：/investment-casting/(排名14)、/casting-services/(22)、/products/lost-wax/(31)。给出合并方案：保留哪个为主页、其余如何301或改写差异化意图、内链怎么调。','蚕食合并建议')"><i class="ti ti-git-merge"></i> AI 合并建议</button></td></tr>
-              <tr><td>ductile iron casting</td><td class="dim" style="font-size:11px">/ductile-iron-casting/<br>/products/ggg40/</td><td class="num"><span class="badge b-amber">6 / 19</span></td><td class="ctr"><span class="badge b-amber">2页重叠</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('「ductile iron casting」被 /ductile-iron-casting/(6) 与 /products/ggg40/(19) 竞争。给出是否合并、或如何差异化(牌号页保留长尾)的方案。','蚕食合并建议')"><i class="ti ti-git-merge"></i> AI 合并建议</button></td></tr>
-              <tr><td>machining parts</td><td class="dim" style="font-size:11px">/machining-parts/<br>/cnc-machining/<br>/services/machining/</td><td class="num"><span class="badge b-red">18 / 24 / 27</span></td><td class="ctr"><span class="badge b-red">严重</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk('「machining parts」被3个URL竞争：/machining-parts/(18)、/cnc-machining/(24)、/services/machining/(27)。给出合并方案。','蚕食合并建议')"><i class="ti ti-git-merge"></i> AI 合并建议</button></td></tr>
-            </tbody></table>
-            <div style="text-align:center;padding-top:10px;font-size:11px;color:var(--text3)">显示 3 / 58 组 · 接 GSC 后自动识别意图重叠</div></div>
+            <div class="card"><table class="dt"><thead><tr><th>蚕食词</th><th>互相竞争的 URL</th><th class="num">分散排名</th><th class="ctr">建议</th><th class="ctr">动作</th></tr></thead><tbody id="diagCannRows">
+              <tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
+            </tbody></table></div>
           </div>
         </div>
 
@@ -1250,6 +1242,7 @@ window.addEventListener('load',async()=>{
   await loadGa4();             // GA4 看板（骨架/空状态）
   loadSeoBoardGsc();           // SEO 看板：真实 GSC 同步数据（趋势/卡片/页面明细）
   loadSemBoardAds();           // SEM 看板：真实 Google Ads 同步数据（卡片/系列→关键词层级）
+  loadDiagnostics();           // 诊断引擎：机会词/衰退/蚕食 真实识别 + 角标计数
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
   await loadIntegrations();    // 设置页 API 接入状态
   await loadMarket();          // 市场分析问卷表

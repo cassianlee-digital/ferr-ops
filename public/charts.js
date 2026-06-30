@@ -233,6 +233,49 @@ function renderSemBoard(){
   tb.innerHTML=html;
 }
 
+/* ===== 诊断引擎：基于真实同步数据填充 SEO 三子面板 + 角标计数 ===== */
+function _attr(s){ return String(s==null?'':s).replace(/["'<>]/g,''); }
+function _badgeCount(id,n){ const e=document.getElementById(id); if(!e)return; if(n>0){ e.textContent=n; e.style.display=''; } else { e.textContent=''; e.style.display='none'; } }
+async function loadDiagnostics(){
+  let d=null;
+  try{ d=await API.get(withRange('/api/diagnostics')); }catch(e){ d=null; }
+  renderDiagnostics(d);
+}
+function renderDiagnostics(d){
+  const seo=(d&&d.seo)||{}, opp=seo.opportunities||[], dec=seo.decay||[], can=seo.cannibalization||[];
+  _badgeCount('diag-opp-n',opp.length); _badgeCount('diag-decay-n',dec.length); _badgeCount('diag-cann-n',can.length);
+  // 站点机会
+  const t1=document.getElementById('diagOppRows');
+  if(t1){
+    t1.innerHTML = opp.length ? opp.map(o=>{
+      const path=_seoPath(o.page), pos=o.position!=null?Number(o.position).toFixed(1):'—';
+      const q=_attr('关键词「'+o.query+'」当前排名'+pos+'、页面'+path+'、区间曝光'+(o.impressions||0)+'，给出冲进Top10的具体优化清单（标题/内容/内链/外链）。');
+      return '<tr><td>'+esc(o.query)+'</td><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num"><span class="badge b-amber">'+pos+'</span></td><td class="num">'+(o.impressions||0).toLocaleString()+'</td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'机会词诊断\')"><i class="ti ti-bulb"></i> 怎么冲首页</button></td></tr>';
+    }).join('') : '<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无机会词 · 完成 GSC 同步后按规则自动识别</td></tr>';
+  }
+  // 流量衰退
+  const t2=document.getElementById('diagDecayRows');
+  if(t2){
+    t2.innerHTML = dec.length ? dec.map(p=>{
+      const path=_seoPath(p.page);
+      const posChg=(p.positionPrev!=null&&p.positionCur!=null)?(Number(p.positionPrev).toFixed(1)+'→'+Number(p.positionCur).toFixed(1)):'—';
+      const q=_attr(path+' 点击近一窗跌'+p.dropPct+'%（'+p.clicksPrev+'→'+p.clicksCur+'），排名'+posChg+'。给出排查与止损步骤。');
+      return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num" style="color:var(--primary)">▼'+p.dropPct+'%</td><td class="num">'+esc(posChg)+'</td><td class="ctr"><span class="badge b-gray">需排查</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'衰退止损\')"><i class="ti ti-bulb"></i> 止损方案</button></td></tr>';
+    }).join('') : '<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无明显衰退页 · 需≥2 个等长窗口数据才能比较</td></tr>';
+  }
+  // 关键词蚕食
+  const t3=document.getElementById('diagCannRows');
+  if(t3){
+    t3.innerHTML = can.length ? can.map(g=>{
+      const urls=g.pages.map(p=>esc(_seoPath(p.page))).join('<br>');
+      const ranks=g.pages.map(p=>p.position!=null?Number(p.position).toFixed(0):'—').join(' / ');
+      const detail=g.pages.map(p=>_seoPath(p.page)+'(排名'+(p.position!=null?Number(p.position).toFixed(1):'—')+')').join('、');
+      const q=_attr('关键词「'+g.query+'」被'+g.pages.length+'个URL同时竞争：'+detail+'。给出合并方案：保留哪个为主页、其余如何301或改写差异化意图、内链怎么调。');
+      return '<tr><td>'+esc(g.query)+'</td><td class="dim" style="font-size:11px">'+urls+'</td><td class="num"><span class="badge b-red">'+esc(ranks)+'</span></td><td class="ctr"><span class="badge b-amber">'+g.pages.length+'页抢1意图</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'蚕食合并建议\')"><i class="ti ti-git-merge"></i> AI 合并建议</button></td></tr>';
+    }).join('') : '<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无蚕食组 · 完成 GSC 同步后按规则自动识别</td></tr>';
+  }
+}
+
 /* C-2b：有效询盘趋势——真实数据按粒度(天/周/月)聚合。询盘按天入库，三种粒度都诚实可做 */
 let inqChart=null;
 function _weekStart(dateStr){ const d=new Date(dateStr+'T00:00:00'); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return formatLocalDate(d); } // 周一为周起点
