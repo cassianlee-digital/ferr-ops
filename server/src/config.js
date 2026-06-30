@@ -51,7 +51,7 @@ export const config = {
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
     model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
-    maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS || 1200),
+    maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS || 4000),
   },
 
   google: {
