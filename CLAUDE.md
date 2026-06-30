@@ -36,6 +36,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **SEM 看板「概览」已接真实 Google Ads**(`public/charts.js` `loadSemBoardAds/renderSemBoard`):顶部卡 + 系列→关键词层级读 `/api/google/ads/summary`,随时间范围刷新;评估徽章按 有转化/零有效/无花费 判定;金额按账户币种、不臆造符号。
 - 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads);GA4 与总览暂未跟随。
 - **诊断引擎已上线**:`/api/diagnostics`(`server/src/routes/diagnostics.js` + `googleSync.js` 规则查询)产出 4 类真实 findings——机会词(排名11-20有曝光)、关键词蚕食(同词多页)、流量衰退(当前vs上一等长窗口点击跌幅)、高花费零有效(Ads cost>0 conv=0)。前端 SEO「站点机会/流量衰退/关键词蚕食」三子面板 + minitab 角标已读真实结果,随时间范围重算。**尚未做 CTR 异常规则。**
+- **诊断→整改闭环已通**:三类 SEO finding 每行「采纳」按钮 → POST `/api/fixes`(source=诊断引擎,evidence 记 GSC 依据)直接入整改清单(`public/charts.js` `adoptFinding`)。
+- **AI 上下文已含真实同步数据**:`aiContext.js buildContext` 注入 GSC/Ads 近30天汇总 + Top系列 + 机会词/蚕食/衰退/高花费零有效。SEM 看板「问题分析/优化思路/关键词排查」及所有 AI 按钮据此产出基于真实数据的分析。
 - **仍残留的 demo 假数据:** 整改清单 AI 框两条写死建议(`index.html` 约 348-349);GA4 看板与总览部分 mini 图仍空状态。
 - **时间筛选目前只停留在前端变量**(`window._timeRange`),总览/KPI 仍不受区间影响(询盘/SEO/SEM/诊断已真正按区间重算)。
 - **AI 目前是单 provider**,仅通过 Anthropic(`server/src/services/anthropic.js`)。
