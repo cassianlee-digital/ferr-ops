@@ -191,6 +191,48 @@ function renderSeoBoard(){
   }
 }
 
+/* ===== SEM 看板：真实 Google Ads 同步数据（顶部卡 + 系列→关键词层级，按所选时间范围） ===== */
+window._adsBoard=null;
+function _money(m){ return m==null?'—':(m/1e6).toLocaleString(undefined,{maximumFractionDigits:2}); }
+function _conv(v){ return v==null?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:2}); }
+function _adsBadge(cost,conv){ // 诚实的轻量评估
+  if((cost||0)===0) return '<span class="badge b-gray">无花费</span>';
+  if((conv||0)>0)   return '<span class="badge b-green">有转化</span>';
+  return '<span class="badge b-red">零有效</span>';
+}
+async function loadSemBoardAds(){
+  let data=null;
+  try{ data=await API.get(withRange('/api/google/ads/summary')); }
+  catch(e){ window._adsBoard=null; renderSemBoard(); return; }
+  window._adsBoard=data; renderSemBoard();
+}
+function renderSemBoard(){
+  const data=window._adsBoard, t=data&&data.totals;
+  const _t=(id,v)=>{ const e=document.getElementById(id); if(e)e.textContent=v; };
+  if(t){
+    _t('sm-conv',_conv(t.conversions));
+    _t('sm-cpconv',_money(t.costPerConversionMicros));
+    _t('sm-cost',_money(t.costMicros));
+  } else { ['sm-conv','sm-cpconv','sm-cost'].forEach(id=>_t(id,'—')); }
+  const tb=document.getElementById('semHierRows');
+  if(!tb)return;
+  const camps=(data&&data.campaigns)||[], kws=(data&&data.keywords)||[];
+  if(!camps.length){ tb.innerHTML='<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无真实数据 · 请完成 Google Ads 同步</td></tr>'; return; }
+  const byCamp=new Map(); kws.forEach(k=>{ const n=k.campaignName||''; if(!byCamp.has(n))byCamp.set(n,[]); byCamp.get(n).push(k); });
+  const cpc=(cost,conv)=> (conv&&conv>0)? _money(cost/conv) : '—';
+  let html='';
+  camps.forEach(c=>{
+    html+='<tr class="h-camp" onclick="toggleHier(this)"><td><i class="ti ti-chevron-down hicon"></i> <b>'+esc(c.campaignName||'(未命名)')+'</b></td>'
+        +'<td class="num">'+_money(c.costMicros)+'</td><td class="num">'+_conv(c.conversions)+'</td><td class="num">'+cpc(c.costMicros,c.conversions)+'</td><td class="ctr">'+_adsBadge(c.costMicros,c.conversions)+'</td></tr>';
+    (byCamp.get(c.campaignName||'')||[]).forEach(k=>{
+      const mt=k.matchType?(' · '+esc(k.matchType)):'';
+      html+='<tr class="h-kw"><td>　• '+esc(k.keyword||'')+'<span class="dim" style="font-size:11px">'+mt+'</span></td>'
+          +'<td class="num">'+_money(k.costMicros)+'</td><td class="num">'+_conv(k.conversions)+'</td><td class="num">'+cpc(k.costMicros,k.conversions)+'</td><td class="ctr">'+_adsBadge(k.costMicros,k.conversions)+'</td></tr>';
+    });
+  });
+  tb.innerHTML=html;
+}
+
 /* C-2b：有效询盘趋势——真实数据按粒度(天/周/月)聚合。询盘按天入库，三种粒度都诚实可做 */
 let inqChart=null;
 function _weekStart(dateStr){ const d=new Date(dateStr+'T00:00:00'); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return formatLocalDate(d); } // 周一为周起点

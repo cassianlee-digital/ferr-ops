@@ -80,7 +80,8 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
     document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
     loadInquiries();                 // 1e-a：询盘真实按区间重拉
-    loadSeoChartRange();             // 1e-b：SEO 折线图真实按区间重拉(不动 KPI/看板的全量 _seoWeeks)
+    loadSeoChartRange();             // 1e-b：SEO 看板按区间重拉 GSC
+    if(typeof loadSemBoardAds==='function') loadSemBoardAds(); // SEM 看板按区间重拉 Ads
     toast('时间范围：'+_range.period_label);
   });
   bar.addEventListener('change',e=>{
@@ -122,5 +123,6 @@ function submitCustomRange(){
   document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
   document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
   loadInquiries(); loadSeoChartRange();
+  if(typeof loadSemBoardAds==='function') loadSemBoardAds();
   closeModal('customRangeMask'); toast('已应用：'+_range.period_label);
 }
