@@ -10,6 +10,7 @@ import { config } from './config.js';
 import { seed } from './db/seed.js';
 import { registerAuth } from './auth/routes.js';
 import { registerRoutes } from './routes/index.js';
+import { startSyncScheduler } from './sync/scheduler.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = resolve(__dirname, '../../public');
@@ -61,6 +62,9 @@ async function main() {
 
   await app.listen({ port: config.port, host: config.host });
   app.log.info(`FERR 运营后台已启动 :${config.port}`);
+
+  // 谷歌数据定时自动同步（进程内调度）
+  startSyncScheduler(app.log);
 }
 
 main().catch((err) => {

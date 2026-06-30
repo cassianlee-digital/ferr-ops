@@ -65,4 +65,13 @@ export const config = {
     adsLoginCustomerId: (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || '').replace(/-/g, ''),
     adsApiVersion: process.env.GOOGLE_ADS_API_VERSION || 'v24.1',
   },
+
+  // 谷歌数据定时自动同步（进程内调度，无需外部 cron）。
+  sync: {
+    enabled: process.env.SYNC_AUTO !== 'false',                              // 默认开启；SYNC_AUTO=false 关闭
+    dailyHourUtc: Number(process.env.SYNC_DAILY_HOUR_UTC ?? 5),              // 每天 UTC 几点跑（默认 5 点≈北京 13 点）
+    catchUpOnStart: process.env.SYNC_CATCHUP_ON_START !== 'false',          // 启动后若近期无成功同步则补跑一次
+    startDelayMs: Number(process.env.SYNC_START_DELAY_MS ?? 60_000),        // 启动补跑前的延时（等服务稳定）
+    staleHours: Number(process.env.SYNC_STALE_HOURS ?? 20),                 // 最近成功同步超过此小时数才视为“过期”需补跑
+  },
 };
