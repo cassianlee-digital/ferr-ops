@@ -58,9 +58,54 @@ function triggerPrompt(btn){ const raw=(btn&&btn.getAttribute&&btn.getAttribute(
 function markAiTrigger(btn,item){ if(!btn||!item||!btn.classList)return; btn.classList.add('analyzed'); btn.innerHTML='<i class="ti ti-check"></i> 已分析'; const tr=btn.closest('tr'); if(tr)tr.classList.add('ai-analyzed-row'); }
 function applyAiAnalysisStates(root){ const base=root||document; base.querySelectorAll('button[onclick*="ai"]').forEach(btn=>{ const p=triggerPrompt(btn); if(!p)return; const meta=aiMeta(btn,p.prompt,p.title); const item=window._aiAnalyses.get(meta.scope_key); if(item)markAiTrigger(btn,item); }); base.querySelectorAll('.kw-ai').forEach(btn=>{ const tr=btn.closest('tr'); if(!tr)return; const n=tr.querySelector('.kw-name'); const kw=(n?n.textContent:tr.cells[0].textContent).trim(); const prompt='分析关键词「'+kw+'」的搜索意图与落地建议'; const title='「'+kw+'」意图'; const item=window._aiAnalyses.get(aiMeta(btn,prompt,title).scope_key); if(item)markAiTrigger(btn,item); }); }
 async function loadAiAnalyses(){ try{ const {items}=await API.get('/api/ai/analyses'); window._aiAnalyses=new Map((items||[]).map(x=>[x.scope_key,x])); applyAiAnalysisStates(); }catch(e){} }
-function setupAiFooter(){ const foot=document.getElementById('aiModalFoot'); if(!foot)return; foot.className='ai-chat-compose'; foot.style.display='block'; foot.innerHTML='<textarea id="aiChatInput" placeholder="继续追问、补充判断或让 AI 重写成整改动作"></textarea><div class="ai-chat-tools"><label class="btn-ghost" for="aiChatFiles"><i class="ti ti-paperclip"></i> 上传文件/图片</label><input id="aiChatFiles" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none"><span id="aiFileList" style="display:flex;gap:6px;flex-wrap:wrap"></span><button class="btn-ghost" onclick="archiveAiAnalysis()"><i class="ti ti-archive"></i> 归档</button><button class="btn-ghost" onclick="depositAi()"><i class="ti ti-database-heart"></i> 沉淀</button><button class="btn-primary" id="aiAdoptBtn" onclick="adoptAi()"><i class="ti ti-clipboard-check"></i> 采纳到整改清单</button><button class="btn-primary" style="margin-left:auto" onclick="sendAiChat()"><i class="ti ti-send"></i> 发送</button></div>'; const files=document.getElementById('aiChatFiles'); if(files)files.onchange=()=>{ const list=document.getElementById('aiFileList'); if(list)list.innerHTML=[...files.files].slice(0,5).map(f=>'<span class="ai-file-chip">'+esc(f.name)+'</span>').join(''); }; }
+function setupAiFooter(){ const foot=document.getElementById('aiModalFoot'); if(!foot)return; foot.className='ai-chat-compose'; foot.style.display='block'; foot.innerHTML='<textarea id="aiChatInput" placeholder="继续追问、补充判断或让 AI 重写成整改动作"></textarea><div class="ai-chat-tools"><label class="btn-ghost" for="aiChatFiles"><i class="ti ti-paperclip"></i> 上传文件/图片</label><input id="aiChatFiles" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none"><span id="aiFileList" style="display:flex;gap:6px;flex-wrap:wrap"></span><button class="btn-ghost" onclick="reanalyzeActive()"><i class="ti ti-refresh"></i> 重新分析</button><button class="btn-ghost" onclick="splitActions()"><i class="ti ti-list-check"></i> 拆成整改动作</button><button class="btn-ghost" onclick="archiveAiAnalysis()"><i class="ti ti-archive"></i> 归档</button><button class="btn-ghost" onclick="depositAi()"><i class="ti ti-database-heart"></i> 沉淀</button><button class="btn-primary" id="aiAdoptBtn" onclick="adoptAi()"><i class="ti ti-clipboard-check"></i> 采纳到整改清单</button><button class="btn-primary" style="margin-left:auto" onclick="sendAiChat()"><i class="ti ti-send"></i> 发送</button></div>';const files=document.getElementById('aiChatFiles'); if(files)files.onchange=()=>{ const list=document.getElementById('aiFileList'); if(list)list.innerHTML=[...files.files].slice(0,5).map(f=>'<span class="ai-file-chip">'+esc(f.name)+'</span>').join(''); }; }
 function aiMessages(item){ const msgs=(item&&item.messages&&item.messages.length)?item.messages:[{role:'assistant',content:item&&item.result_text||''}]; return msgs.filter(m=>m.content).map(m=>'<div class="ai-chat-item '+(m.role==='user'?'user':'assistant')+'"><div class="bubble ai-render">'+mdToHtml(m.content)+'</div></div>').join(''); }
-function renderAiItem(item){ window._activeAi=item; _lastAi={text:item.result_text||'',dept:aiDeptFromText((item.title||'')+' '+(item.prompt||''))}; document.getElementById('aiModalTitle').textContent=item.title||'AI 分析'; document.getElementById('aiModalBody').innerHTML=aiMessages(item); setupAiFooter(); setTimeout(()=>{ const b=document.getElementById('aiModalBody'); if(b)b.scrollTop=b.scrollHeight; },30); }
+function fmtAiTime(v){ if(!v)return ''; const d=new Date(String(v).replace(' ','T')+(/[Z+]/.test(String(v))?'':'Z')); if(isNaN(d))return String(v).slice(5,16); const p=n=>String(n).padStart(2,'0'); return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+function aiTimeline(item){
+  const hist=(item&&item.history)||[]; if(!hist.length)return '';
+  const idx=window._aiViewIdx;
+  let chips='<button class="ai-tl-chip'+(idx<0?' active':'')+'" onclick="showAiSnapshot(-1)">本次 · '+fmtAiTime(item.updated_at)+'</button>';
+  hist.forEach((h,i)=>{ chips+='<button class="ai-tl-chip'+(idx===i?' active':'')+'" onclick="showAiSnapshot('+i+')">'+(i===0?'上次':'上'+(i+1)+'次')+' · '+fmtAiTime(h.at)+'</button>'; });
+  return '<div class="ai-timeline"><span class="ai-tl-label"><i class="ti ti-history"></i> 历史对比</span>'+chips+'</div>';
+}
+function showAiSnapshot(i){ window._aiViewIdx=i; renderAiBody(); }
+function renderAiBody(){
+  const item=window._activeAi; const body=document.getElementById('aiModalBody'); if(!item||!body)return;
+  const idx=window._aiViewIdx;
+  let html=aiTimeline(item)+'<div id="aiActionsBox"></div>';
+  if(idx>=0 && item.history && item.history[idx]){
+    html+='<div class="ai-snap-note dim">— 历史快照（'+fmtAiTime(item.history[idx].at)+'）· 只读，点「本次」回到最新 —</div>';
+    html+='<div class="ai-chat-item assistant"><div class="bubble ai-render">'+mdToHtml(item.history[idx].result_text||'')+'</div></div>';
+  } else {
+    html+=aiMessages(item);
+  }
+  body.innerHTML=html;
+}
+function renderAiItem(item){ window._activeAi=item; window._aiViewIdx=-1; _lastAi={text:item.result_text||'',dept:aiDeptFromText((item.title||'')+' '+(item.prompt||''))}; document.getElementById('aiModalTitle').textContent=item.title||'AI 分析'; renderAiBody(); setupAiFooter(); setTimeout(()=>{ const b=document.getElementById('aiModalBody'); if(b)b.scrollTop=b.scrollHeight; },30); }
+// 对当前页最新数据重新分析（旧结论自动存为历史快照）
+async function reanalyzeActive(){
+  const item=window._activeAi; if(!item){toast('暂无可重新分析的项');return;}
+  document.getElementById('aiModalBody').innerHTML='<div class="ai-loading"><span class="spin"></span> AI 正在基于当前最新数据重新分析…</div>';
+  try{
+    const {item:next}=await API.post('/api/ai/analyze',{scope_key:item.scope_key,scope_type:item.scope_type,title:item.title,prompt:item.prompt,context:item.context,force:true});
+    window._aiAnalyses.set(next.scope_key,next); renderAiItem(next); toast('已基于最新数据重新分析，上次结论已存入历史');
+  }catch(e){ renderAiBody(); toast('重新分析失败：'+(e.message||'ai_failed')); }
+}
+// 把当前分析结论拆成可逐条采纳的整改动作
+async function splitActions(){
+  const item=window._activeAi; if(!item){toast('暂无可拆解的分析');return;}
+  let box=document.getElementById('aiActionsBox'); if(!box){ renderAiBody(); box=document.getElementById('aiActionsBox'); }
+  if(box)box.innerHTML='<div class="ai-loading"><span class="spin"></span> 正在拆解成整改动作…</div>';
+  try{
+    const {actions}=await API.post('/api/ai/analyses/'+item.id+'/actions',{});
+    if(!box)return;
+    if(!actions||!actions.length){ box.innerHTML='<div class="dim" style="padding:8px 2px">未能从结论中提取到明确可执行的动作。</div>'; return; }
+    box.innerHTML='<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> 可采纳的整改动作（逐条）</div>'+actions.map(a=>{
+      const dp=a.dept==='SEM'?'SEM':'SEO', ti=_attr(a.title), de=_attr(a.detail), ev=_attr(a.evidence);
+      return '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge '+(dp==='SEM'?'b-purple':'b-blue')+'">'+dp+'</span> '+esc(a.title)+'</div><div class="ai-action-d">'+esc(a.detail||'')+'</div>'+(a.evidence?'<div class="ai-action-e dim">依据：'+esc(a.evidence)+'</div>':'')+'</div><button class="btn-mini" onclick="adoptFinding(this,\''+dp+'\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></div>';
+    }).join('')+'</div>';
+  }catch(e){ if(box)box.innerHTML='<div class="dim" style="padding:8px 2px">拆解失败：'+esc(e.message||'ai_failed')+'</div>'; }
+}
 async function runAiAnalysis(btn,prompt,title,force){ const meta=aiMeta(btn,prompt,title); document.getElementById('aiModalTitle').textContent=meta.title; document.getElementById('aiModalBody').innerHTML='<div class="ai-loading"><span class="spin"></span> AI 正在结合当前页面数据和市场记忆分析...</div>'; document.getElementById('aiModalFoot').style.display='none'; openModal('aiMask'); try{ const {item}=await API.post('/api/ai/analyze',{...meta,force:force===true}); window._aiAnalyses.set(item.scope_key,item); markAiTrigger(btn,item); renderAiItem(item); }catch(e){ document.getElementById('aiModalBody').innerHTML=apiUnavailableMsg+'<p class="dim">失败原因：'+esc(e.message||'ai_failed')+'</p>'; setupAiFooter(); } }
 function aiTriggerEl(){ const ev=window.event; if(ev&&ev.target&&ev.target.closest){ const b=ev.target.closest('button,.kw-ai,.btn-ai,.btn-mini'); if(b)return b; } if(ev&&ev.currentTarget&&ev.currentTarget.classList)return ev.currentTarget; const a=document.activeElement; return (a&&a.classList)?a:null; }
 function aiAsk(prompt,title){ runAiAnalysis(aiTriggerEl(),prompt,title,false); }

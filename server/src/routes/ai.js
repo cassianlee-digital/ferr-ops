@@ -145,4 +145,46 @@ export async function aiRoutes(app) {
     if (!row) return reply.code(404).send({ error: 'not_found' });
     return { item: row };
   });
+
+  // 把一段分析结论拆成可逐条采纳的整改动作（结构化 JSON）。
+  app.post('/api/ai/analyses/:id/actions', { preHandler: requireAuth }, async (request, reply) => {
+    const row = analyses.get(Number(request.params.id));
+    if (!row) return reply.code(404).send({ error: 'not_found' });
+    const sourceText = s(row.result_text, 8000);
+    if (!sourceText) return reply.code(400).send({ error: 'no_result_to_split' });
+    const splitPrompt = [
+      '把下面这段运营分析结论，拆解成可执行的整改动作清单。',
+      '严格只输出一个 JSON 数组，不要任何额外文字/代码块标记。',
+      '每个元素是对象，字段：',
+      '- title：动作标题（≤30字，动词开头，如“暂停高花费零转化词”）',
+      '- detail：具体怎么做（含涉及的关键词/系列/页面等，1-3句）',
+      '- evidence：支撑该动作的数据依据（来自下方结论里的数字）',
+      '- dept：仅 "SEO" 或 "SEM"',
+      '只保留有明确数据支撑、可落地的动作；最多 8 条。',
+      '',
+      '[分析标题] ' + (row.title || ''),
+      '[分析结论]',
+      sourceText,
+    ].join('\n');
+    try {
+      const text = await callAnthropic(buildSystem(), splitPrompt);
+      let actions = [];
+      try {
+        const m = text.match(/\[[\s\S]*\]/);
+        actions = JSON.parse(m ? m[0] : text);
+      } catch { actions = []; }
+      actions = (Array.isArray(actions) ? actions : [])
+        .map((a) => ({
+          title: s(a && a.title, 60),
+          detail: s(a && a.detail, 500),
+          evidence: s(a && a.evidence, 500),
+          dept: /SEM/i.test(s(a && a.dept, 10)) ? 'SEM' : 'SEO',
+        }))
+        .filter((a) => a.title)
+        .slice(0, 8);
+      return { actions };
+    } catch (e) {
+      return aiError(e, request, reply);
+    }
+  });
 }

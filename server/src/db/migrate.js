@@ -195,6 +195,7 @@ CREATE TABLE IF NOT EXISTS ai_analyses (
   context_json  TEXT,
   result_text   TEXT,
   messages_json TEXT,
+  history_json  TEXT,
   state         TEXT NOT NULL DEFAULT 'analyzed',
   action_state  TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
@@ -449,6 +450,9 @@ export function migrate() {
   ensureColumns('fixes', [
     ['evidence', 'TEXT'],
     ['state', 'TEXT'], ['archived_at', 'TEXT'], ['deleted_at', 'TEXT'], ['archive_kind', 'TEXT'],
+  ]);
+  ensureColumns('ai_analyses', [
+    ['history_json', 'TEXT'], // 重新分析时把旧结论存为历史快照（时间线对比）
   ]);
   // 6.23 修改文档 7/9/12：inquiries 加客户姓名 / 跟踪反馈 / 原始等级
   ensureColumns('inquiries', [

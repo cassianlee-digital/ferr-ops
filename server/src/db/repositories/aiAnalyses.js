@@ -12,6 +12,7 @@ function decode(row) {
     ...row,
     context: safeJson(row.context_json, null),
     messages: safeJson(row.messages_json, []),
+    history: safeJson(row.history_json, []),
   };
 }
 
@@ -56,11 +57,21 @@ export function create(rec) {
 }
 
 export function replaceResult(id, fields) {
+  const prev = get(id);
+  // 重新分析：把旧结论存为历史快照（时间线对比，最多保留 12 条），不丢不归档
+  let history = (prev && prev.history) || [];
+  if (prev && prev.result_text) {
+    history = [
+      { at: prev.updated_at || prev.created_at, result_text: prev.result_text, messages: prev.messages || [] },
+      ...history,
+    ].slice(0, 12);
+  }
   db.prepare(
     `UPDATE ai_analyses
        SET result_text = @result_text,
            messages_json = @messages_json,
            context_json = @context_json,
+           history_json = @history_json,
            state = 'analyzed',
            updated_at = datetime('now'),
            archived_at = NULL
@@ -70,6 +81,7 @@ export function replaceResult(id, fields) {
     result_text: fields.result_text || '',
     messages_json: encode(fields.messages || []),
     context_json: encode(fields.context || null),
+    history_json: encode(history),
   });
   return get(id);
 }
