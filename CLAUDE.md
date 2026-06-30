@@ -32,8 +32,10 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - **定时自动同步已上线**:`server/src/sync/scheduler.js` 进程内调度,每日 UTC `SYNC_DAILY_HOUR_UTC`(默认 5)点同步三源 + 启动补跑(最近成功同步过期才补);`SYNC_AUTO=false` 可关。仍保留手动「立即同步」/`POST /api/sync/<provider>`。
   - 已知小缺口:① GA4 落地页维度未取 conversions 指标,`landingPages[].conversions` 恒为 null;② GSC 有 ~2 天数据延迟,默认 7 天区间通常只回 6 天。
 - `seo_weeks` / `sem_weeks` 当前**主要依赖人工录入**,无自动同步。
-- **SEO 看板「概览」已接真实 GSC**(`public/charts.js` `loadSeoBoardGsc/renderSeoBoard`):趋势图/顶部卡/页面明细读 `/api/google/gsc/summary`,随时间范围+粒度刷新,环比上一等长窗口;已清掉该面板写死的假卡值/假页面表/角标(4/11/58)。
-- **仍残留的 demo 假数据(待清/待诊断引擎):** SEO 的「站点机会/流量衰退/关键词蚕食」三子页仍是写死假表;**整个 SEM 看板层级表(¥ 数字)全是写死假数据**;整改清单 AI 框两条写死建议(`index.html` 约 348-349);GA4 看板与总览部分 mini 图仍空状态。这些本质是「诊断引擎」输出,建引擎时一并替换为真实。
+- **SEO 看板「概览」已接真实 GSC**(`public/charts.js` `loadSeoBoardGsc/renderSeoBoard`):趋势图/顶部卡/页面明细读 `/api/google/gsc/summary`,随时间范围+粒度刷新,环比上一等长窗口。
+- **SEM 看板「概览」已接真实 Google Ads**(`public/charts.js` `loadSemBoardAds/renderSemBoard`):顶部卡 + 系列→关键词层级读 `/api/google/ads/summary`,随时间范围刷新;评估徽章按 有转化/零有效/无花费 判定;金额按账户币种、不臆造符号。
+- 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads);GA4 与总览暂未跟随。
+- **仍残留的 demo 假数据(待诊断引擎):** SEO 的「站点机会/流量衰退/关键词蚕食」三子页仍是写死假表;整改清单 AI 框两条写死建议(`index.html` 约 348-349);GA4 看板与总览部分 mini 图仍空状态。这些本质是「诊断引擎」输出,建引擎时一并替换为真实。
 - **时间筛选目前只停留在前端变量**(`window._timeRange`),**未真正传后端重算**,KPI/询盘/总览不受所选区间影响。
 - **目前没有自动诊断规则引擎**(机会词/衰退页/CTR 异常/蚕食/高花费零有效等全靠人工)。
 - **AI 目前是单 provider**,仅通过 Anthropic(`server/src/services/anthropic.js`)。
