@@ -357,6 +357,88 @@ function renderSemBoard(){
   tb.innerHTML=html;
 }
 
+/* ===== SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势 ===== */
+window._semCostDonut=null; window._semTrend=null; window._semScatterChart=null;
+async function loadSemBoardFull(){
+  let d=null; try{ d=await API.get(withRange('/api/google/ads/board')); }catch(e){ d=null; }
+  renderSemHighlights(d); renderSemDeltaTables(d); renderSemScatter(d); renderSemCostCharts(d);
+}
+function renderSemHighlights(d){
+  const box=document.getElementById('semHighlights'); if(!box)return;
+  const hs=(d&&d.highlights)||[];
+  if(!hs.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display='';
+  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':'bad')+'">'+esc(h.text)+'</span>').join('');
+}
+function renderSemDeltaTables(d){
+  const cpc=(cost,conv)=> (conv&&conv>0)? _money(cost/conv) : '—';
+  const rowHtml=(name,c)=>'<tr><td>'+esc(name||'')+'</td><td class="num">'+_money(c.costMicros)+'</td><td class="num">'+_conv(c.conversions)+'</td><td class="num">'+_deltaHtml(c.conversions,c.convPrev,false,'abs1')+'</td><td class="num">'+cpc(c.costMicros,c.conversions)+'</td><td class="ctr">'+_adsBadge(c.costMicros,c.conversions)+'</td></tr>';
+  const ct=document.getElementById('semCampRows');
+  if(ct){ const cs=(d&&d.campaigns)||[]; ct.innerHTML=cs.length?cs.map(c=>rowHtml(c.name||'(未命名)',c)).join(''):'<tr><td colspan="6" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 Ads 同步</td></tr>'; }
+  const kt=document.getElementById('semKwRows');
+  if(kt){ const ks=(d&&d.keywords)||[]; kt.innerHTML=ks.length?ks.map(k=>rowHtml(k.keyword,k)).join(''):'<tr><td colspan="6" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 Ads 同步</td></tr>'; }
+}
+function _semScatterTitles(t,s){ const a=document.getElementById('semScatterTitle'),b=document.getElementById('semScatterSub'); if(a)a.textContent=t; if(b)b.textContent=s; }
+function renderSemScatterTargets(list){
+  const box=document.getElementById('semScatterTargets'); if(!box)return;
+  if(!list||!list.length){ box.innerHTML=''; return; }
+  box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-scissors"></i> 该砍/优化 · 高花费低转化（'+list.length+'）</div>'+list.slice(0,8).map(p=>{
+    const cost=(p.costMicros/1e6), c=Number(p.conversions||0);
+    const q=_attr('关键词「'+p.keyword+'」花费'+cost.toFixed(0)+'、转化'+c+'、点击'+(p.clicks||0)+'，花钱多但转化低。判断该暂停/降价/改精准匹配/换落地页，给出具体动作与验证指标。');
+    const ti=_attr('该砍词：'+p.keyword), de=_attr('关键词「'+p.keyword+'」('+(p.campaignName||'')+') 花'+cost.toFixed(0)+' 仅转化'+c+'，暂停或降价/改精准匹配止损。'), ev=_attr('Ads 花费'+cost.toFixed(0)+' 转化'+c+' 点击'+(p.clicks||0));
+    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(p.keyword)+'</span><span class="st-meta dim">'+esc(p.campaignName||'')+' · 花 <b style="color:#c93338">'+cost.toFixed(0)+'</b> · 转化 '+c+'</span></div><div class="st-acts"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'该砍诊断\')"><i class="ti ti-bulb"></i> 诊断</button><button class="btn-mini" onclick="adoptFinding(this,\'SEM\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
+  }).join('')+'</div>';
+}
+function renderSemScatter(d){
+  const el=document.getElementById('semScatter'), empty=document.getElementById('semScatterEmpty'); if(!el)return;
+  const _tb=document.getElementById('semScatterTargets'); if(_tb)_tb.innerHTML='';
+  const sc=(d&&d.scatter)||[];
+  if(typeof echarts==='undefined'||!sc.length){ el.style.display='none'; if(empty)empty.style.display=''; return; }
+  el.style.display=''; if(empty)empty.style.display='none';
+  if(window._semScatterChart){ try{window._semScatterChart.dispose();}catch(e){} }
+  window._semScatterChart=echarts.init(el);
+  const costs=sc.map(p=>p.costMicros/1e6), convs=sc.map(p=>Number(p.conversions||0));
+  const medCost=_median(costs), medConv=_median(convs), maxCost=Math.max(...costs,1)*1.6, maxConv=Math.max(...convs,1)*1.15+0.5;
+  const isTarget=p=>(p.costMicros/1e6)>=medCost && Number(p.conversions||0)<=medConv;
+  const short=s=>{ s=String(s||''); return s.length>20?s.slice(0,19)+'…':s; };
+  const data=sc.map(p=>{ const t=isTarget(p); return { value:[+(p.costMicros/1e6).toFixed(0),Number(p.conversions||0),p.keyword,p.clicks], itemStyle:{color:t?'#e5484d':'#7b54e0',opacity:t?.85:.6}, label:{show:t,position:'right',fontSize:9,color:'#c93338',formatter:o=>short(o.value[2])} }; });
+  window._semScatterChart.setOption({
+    grid:{left:44,right:120,top:16,bottom:44},
+    xAxis:{type:'log',name:'花费',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
+    yAxis:{type:'value',name:'转化',min:0,max:maxConv,nameGap:26,axisLabel:{fontSize:10}},
+    tooltip:{formatter:o=>esc(o.value[2])+'<br/>花费 '+o.value[0]+' · 转化 '+o.value[1]+' · 点击 '+o.value[3]},
+    series:[{type:'scatter',symbolSize:v=>Math.min(30,7+Math.sqrt(v[0]||0)/3),data,
+      markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:true,fontSize:9,color:'#9aa1ae',formatter:o=>o.dataType==='max'?'':'中位'},data:[{xAxis:medCost},{yAxis:medConv}]},
+      markArea:{silent:true,itemStyle:{color:'rgba(229,72,77,.07)'},label:{show:true,position:['80%','90%'],color:'#e5484d',fontSize:11,fontWeight:'bold',formatter:'该砍'},data:[[{xAxis:medCost,yAxis:0},{xAxis:maxCost,yAxis:medConv}]]}}]
+  });
+  renderSemScatterTargets(sc.filter(isTarget).sort((a,b)=>b.costMicros-a.costMicros));
+}
+function renderSemCostCharts(d){
+  const palette=['#7b54e0','#2f72e8','#0b9d8f','#ef9514','#e5484d','#9aa1ae'];
+  const cs=(d&&d.campaigns)||[];
+  const donutCv=document.getElementById('semCostDonut'), legend=document.getElementById('semCostLegend');
+  if(donutCv){
+    if(window._semCostDonut){ try{window._semCostDonut.destroy();}catch(e){} window._semCostDonut=null; }
+    const top=cs.slice(0,6);
+    if(top.length){
+      window._semCostDonut=new Chart(donutCv,{type:'doughnut',data:{labels:top.map(c=>c.name),datasets:[{data:top.map(c=>c.costMicros/1e6),backgroundColor:palette,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'62%'}});
+      const total=top.reduce((a,c)=>a+(c.costMicros||0),0)||1;
+      if(legend)legend.innerHTML=top.map((c,i)=>'<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span><span style="color:'+palette[i%palette.length]+'">●</span> '+esc(c.name)+'</span><b>'+Math.round((c.costMicros||0)/total*100)+'%</b></div>').join('');
+    } else if(legend){ legend.innerHTML='<span class="dim">暂无 Ads 数据 · 完成同步后显示</span>'; }
+  }
+  const trendCv=document.getElementById('semTrend');
+  if(trendCv){
+    if(window._semTrend){ try{window._semTrend.destroy();}catch(e){} window._semTrend=null; }
+    const s=(d&&d.series)||[];
+    if(s.length){
+      window._semTrend=new Chart(trendCv,{type:'line',data:{labels:s.map(x=>x.date.slice(5)),datasets:[
+        {label:'花费',data:s.map(x=>+(x.costMicros/1e6).toFixed(0)),borderColor:'#7b54e0',backgroundColor:'rgba(123,84,224,.12)',fill:true,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y'},
+        {label:'转化',data:s.map(x=>x.conversions),borderColor:'#15a85a',tension:.3,pointRadius:0,borderWidth:1.6,yAxisID:'y1'}
+      ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}}},y:{position:'left',beginAtZero:true},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
+    } else { chartEmpty('semTrend'); }
+  }
+}
+
 /* ===== 诊断引擎：基于真实同步数据填充 SEO 三子面板 + 角标计数 ===== */
 function _attr(s){ return String(s==null?'':s).replace(/["'<>]/g,''); }
 function _badgeCount(id,n){ const e=document.getElementById(id); if(!e)return; if(n>0){ e.textContent=n; e.style.display=''; } else { e.textContent=''; e.style.display='none'; } }

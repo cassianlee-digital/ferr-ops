@@ -83,6 +83,7 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     loadSeoChartRange();             // 1e-b：SEO 看板按区间重拉 GSC
     if(typeof loadSeoBoardFull==='function') loadSeoBoardFull(); // SEO 富看板按区间重拉
     if(typeof loadSemBoardAds==='function') loadSemBoardAds(); // SEM 看板按区间重拉 Ads
+    if(typeof loadSemBoardFull==='function') loadSemBoardFull(); // SEM 富看板按区间重拉
     if(typeof loadDiagnostics==='function') loadDiagnostics(); // 诊断按区间重算
     toast('时间范围：'+_range.period_label);
   });
@@ -127,6 +128,7 @@ function submitCustomRange(){
   loadInquiries(); loadSeoChartRange();
   if(typeof loadSeoBoardFull==='function') loadSeoBoardFull();
   if(typeof loadSemBoardAds==='function') loadSemBoardAds();
+  if(typeof loadSemBoardFull==='function') loadSemBoardFull();
   if(typeof loadDiagnostics==='function') loadDiagnostics();
   closeModal('customRangeMask'); toast('已应用：'+_range.period_label);
 }

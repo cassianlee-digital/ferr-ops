@@ -299,11 +299,26 @@
           </div>
           <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
           <div class="metric-row" style="grid-template-columns:repeat(3,1fr)"><div class="metric-card"><div class="metric-num" id="sm-conv" style="font-size:22px">—</div><div class="metric-lbl">转化次数</div></div><div class="metric-card"><div class="metric-num" id="sm-cpconv" style="font-size:22px">—</div><div class="metric-lbl">每转化成本</div></div><div class="metric-card"><div class="metric-num" id="sm-cost" style="font-size:22px">—</div><div class="metric-lbl">总花费</div></div></div>
-          <div class="sheet-toolbar" style="margin-bottom:12px"><span class="sheet-tip"><i class="ti ti-filter"></i> 层级筛选</span><select id="sem-hlevel" class="trange" style="cursor:pointer"><option value="all">全部层级</option><option value="camp">仅广告系列</option><option value="kw">含关键词</option></select><span class="sheet-tip" style="margin-left:auto"><i class="ti ti-info-circle"></i> 金额单位为 Ads 账户币种 · 按所选时间范围 · 来源 Google Ads 同步</span></div>
-          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">层级视图 · 系列 → 关键词</span><span class="card-sub">点系列展开，知道在哪一层操作（取花费前 50）</span></div>
-            <table class="dt hierarchy"><thead><tr><th>系列 / 关键词</th><th class="num">花费</th><th class="num">转化</th><th class="num">每转化成本</th><th class="ctr">评估</th></tr></thead><tbody id="semHierRows">
-              <tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
-            </tbody></table>
+          <div id="semHighlights" class="seo-hl" style="display:none"></div>
+          <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> 金额为 Ads 账户币种 · 按所选时间范围 · 来源 Google Ads 同步 · Δ 为转化环比</div>
+          <div class="seo-grid2">
+            <div class="card"><div class="card-head"><span class="card-title">广告系列 · 花费/转化 环比</span><span class="card-sub">Ads · 花费前 15</span></div>
+              <table class="dt"><thead><tr><th>系列</th><th class="num">花费</th><th class="num">转化</th><th class="num">Δ</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semCampRows"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
+            </div>
+            <div class="card"><div class="card-head"><span class="card-title">关键词 · 花费/转化 环比</span><span class="card-sub">Ads · 花费前 15</span></div>
+              <table class="dt"><thead><tr><th>关键词</th><th class="num">花费</th><th class="num">转化</th><th class="num">Δ</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semKwRows"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title" id="semScatterTitle">该砍还是该加 · 花费 × 转化</span><span class="card-sub" id="semScatterSub">右下红区=高花费+低转化=该砍；中位线分四象限；点=关键词</span></div>
+            <div id="semScatter" style="height:360px"></div>
+            <div id="semScatterTargets"></div>
+            <div id="semScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 Google Ads 同步后显示</div>
+          </div>
+          <div class="seo-grid2">
+            <div class="card"><div class="card-head"><span class="card-title">花费占比 · 按系列</span><span class="card-sub">Ads</span></div>
+              <div style="display:flex;align-items:center;gap:16px;min-height:150px"><div class="chart-wrap" style="height:150px;width:150px;flex-shrink:0"><canvas id="semCostDonut"></canvas></div><div id="semCostLegend" style="flex:1;font-size:11.5px"><span class="dim">加载中…</span></div></div>
+            </div>
+            <div class="card"><div class="card-head"><span class="card-title">每日趋势 · 花费/转化</span><span class="card-sub">Ads</span></div><div class="chart-wrap" style="height:190px"><canvas id="semTrend"></canvas></div></div>
           </div>
           <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 看板 · AI 诊断（按优先级）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'基于下方SEM层级数据，按优先级列本周最该先做的3件事，指明在哪一层(系列/广告组/关键词)操作。')">重新诊断 ↗</button></div>
             <div class="ai-render"><div class="ai-item"><i class="ti ti-search"></i><div class="body">点右上「重新诊断」，基于本周真实 SEM 层级数据按优先级列动作。未诊断前不显示建议。</div></div></div>
@@ -1257,7 +1272,8 @@ window.addEventListener('load',async()=>{
   await loadGa4();             // GA4 看板（骨架/空状态）
   loadSeoBoardGsc();           // SEO 看板：真实 GSC 同步数据（趋势/卡片）
   loadSeoBoardFull();          // SEO 富看板：本周要点 + Δ表 + 机会词散点 + GA4 来源
-  loadSemBoardAds();           // SEM 看板：真实 Google Ads 同步数据（卡片/系列→关键词层级）
+  loadSemBoardAds();           // SEM 看板：真实 Google Ads 同步数据（顶部卡片）
+  loadSemBoardFull();          // SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势
   loadDiagnostics();           // 诊断引擎：机会词/衰退/蚕食 真实识别 + 角标计数
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
   await loadIntegrations();    // 设置页 API 接入状态
