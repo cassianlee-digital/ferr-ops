@@ -9464,6 +9464,14 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 .ai-action-t { font-size: 12.5px; color: var(--text1); font-weight: 600; }
 .ai-action-d { font-size: 12px; color: var(--text2); margin-top: 2px; }
 .ai-action-e { font-size: 11px; margin-top: 2px; }
+/* SEO 富看板：两列网格 + 本周要点条 */
+.seo-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+@media (max-width: 900px) { .seo-grid2 { grid-template-columns: 1fr; } }
+.seo-hl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 14px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg2); }
+.seo-hl-t { font-weight: 800; font-size: 12.5px; color: var(--text1); margin-right: 4px; display: inline-flex; align-items: center; gap: 5px; }
+.seo-hl-chip { font-size: 12px; padding: 4px 10px; border-radius: 14px; border: 1px solid transparent; }
+.seo-hl-chip.good { background: rgba(21,168,90,.1); color: #12864a; border-color: rgba(21,168,90,.25); }
+.seo-hl-chip.bad { background: rgba(229,72,77,.1); color: #c93338; border-color: rgba(229,72,77,.25); }
 
 .ai-chat-compose {
   padding: 12px 16px !important;

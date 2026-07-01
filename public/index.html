@@ -241,11 +241,25 @@
             </div>
             <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSeoWeek()"><i class="ti ti-table-plus"></i> 录入本周 GSC 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入点击/展现/排名 → 自动更新下方图表与 KPI（自然流量环比按周环比自动算）</span></div>
             <div class="metric-row"><div class="metric-card"><div class="metric-num" id="sb-clicks">—</div><div class="metric-lbl">自然点击</div><div class="metric-delta" id="sb-clicks-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-impr">—</div><div class="metric-lbl">自然展现</div><div class="metric-delta" id="sb-impr-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-pos">—</div><div class="metric-lbl">平均排名</div><div class="metric-delta" id="sb-pos-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-cov">—</div><div class="metric-lbl">关键词覆盖</div><div class="metric-delta" id="sb-cov-d"></div></div></div>
+            <div id="seoHighlights" class="seo-hl" style="display:none"></div>
             <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">点击 / 展现趋势</span><span class="card-sub">按所选时间范围 · GSC</span></div><div class="chart-wrap" style="height:170px"><canvas id="seoBoard"></canvas></div></div>
-            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">页面明细 · 按 URL</span><span class="card-sub">整改要精准到页，看这里（GSC 同步 · 取点击前 20）</span></div>
-              <table class="dt"><thead><tr><th>URL</th><th class="num">点击</th><th class="num">展现</th><th class="num">CTR</th><th class="num">均排名</th><th class="num">跳出率</th><th class="ctr">分析</th></tr></thead><tbody id="seoPageRows">
-                <tr><td colspan="7" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
-              </tbody></table>
+            <div class="seo-grid2">
+              <div class="card"><div class="card-head"><span class="card-title">落地页 · 点击 & 环比</span><span class="card-sub">GSC · 点击前 15</span></div>
+                <table class="dt"><thead><tr><th>落地页</th><th class="num">点击</th><th class="num">Δ</th><th class="num">展现</th><th class="ctr">动作</th></tr></thead><tbody id="seoPagesDelta"><tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
+              </div>
+              <div class="card"><div class="card-head"><span class="card-title">关键词 · 展现/点击/排名 环比</span><span class="card-sub">GSC · 展现前 15</span></div>
+                <table class="dt"><thead><tr><th>关键词</th><th class="num">展现</th><th class="num">Δ</th><th class="num">点击</th><th class="num">排名</th><th class="num">Δ</th></tr></thead><tbody id="seoQueriesDelta"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
+              </div>
+            </div>
+            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">机会词象限 · 展现 × 排名</span><span class="card-sub">右上=高展现差排名(重点攻)；右下=高展现好排名(守住)；点=关键词</span></div>
+              <div id="seoScatter" style="height:340px"></div>
+              <div id="seoScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 GSC 同步后按展现×排名分布</div>
+            </div>
+            <div class="seo-grid2">
+              <div class="card"><div class="card-head"><span class="card-title">流量来源占比</span><span class="card-sub">GA4 · 会话</span></div>
+                <div style="display:flex;align-items:center;gap:16px;min-height:150px"><div class="chart-wrap" style="height:150px;width:150px;flex-shrink:0"><canvas id="seoSrcDonut"></canvas></div><div id="seoSrcLegend" style="flex:1;font-size:11.5px"><span class="dim">加载中…</span></div></div>
+              </div>
+              <div class="card"><div class="card-head"><span class="card-title">来源趋势 · 按天堆叠</span><span class="card-sub">GA4 · 会话</span></div><div class="chart-wrap" style="height:190px"><canvas id="seoSrcArea"></canvas></div></div>
             </div>
             <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEO 看板 · AI 诊断（按优先级）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'基于下方SEO数据，按优先级列本周最该先做的3件事，每条一句话、可执行。')">重新诊断 ↗</button></div>
               <div class="ai-render"><div class="ai-item"><i class="ti ti-search"></i><div class="body">点右上「重新诊断」，基于本周真实 SEO 数据按优先级列动作。未诊断前不显示建议。</div></div></div>
@@ -1240,7 +1254,8 @@ window.addEventListener('load',async()=>{
   await loadUrgent();          // SOP-C：公司新派 urgent banner + 侧栏红点
   await loadContent();         // 内容资产
   await loadGa4();             // GA4 看板（骨架/空状态）
-  loadSeoBoardGsc();           // SEO 看板：真实 GSC 同步数据（趋势/卡片/页面明细）
+  loadSeoBoardGsc();           // SEO 看板：真实 GSC 同步数据（趋势/卡片）
+  loadSeoBoardFull();          // SEO 富看板：本周要点 + Δ表 + 机会词散点 + GA4 来源
   loadSemBoardAds();           // SEM 看板：真实 Google Ads 同步数据（卡片/系列→关键词层级）
   loadDiagnostics();           // 诊断引擎：机会词/衰退/蚕食 真实识别 + 角标计数
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)

@@ -191,6 +191,90 @@ function renderSeoBoard(){
   }
 }
 
+/* ===== SEO 富看板（Looker 风格）：本周要点 + Δ表 + 机会词散点 + GA4 来源 ===== */
+window._seoSrcDonut=null; window._seoSrcArea=null; window._seoScatterChart=null;
+function _median(a){ const s=(a||[]).filter(x=>x!=null).sort((x,y)=>x-y); if(!s.length)return 0; const m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+// 返回带色 Δ 的 HTML（lowerBetter=true 时数值越小越好，如排名/CPC）
+function _deltaHtml(cur,prev,lowerBetter,fmt){
+  if(prev==null||!isFinite(prev)||prev===0||cur==null) return '<span class="dim">—</span>';
+  const diff=cur-prev; if(diff===0) return '<span class="dim">—</span>';
+  const better=lowerBetter?diff<0:diff>0;
+  const arrow=diff>0?'▲':'▼';
+  const txt=fmt==='pct'?Math.abs(diff/prev*100).toFixed(0)+'%':Math.abs(diff).toFixed(fmt==='abs1'?1:0);
+  return '<span class="'+(better?'delta-pos':'delta-neg')+'">'+arrow+txt+'</span>';
+}
+async function loadSeoBoardFull(){
+  let d=null;
+  try{ d=await API.get(withRange('/api/google/seo/board')); }catch(e){ d=null; }
+  renderSeoHighlights(d); renderSeoDeltaTables(d); renderSeoScatter(d); renderSeoSources(d);
+}
+function renderSeoHighlights(d){
+  const box=document.getElementById('seoHighlights'); if(!box)return;
+  const hs=(d&&d.highlights)||[];
+  if(!hs.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display='';
+  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':'bad')+'">'+esc(h.text)+'</span>').join('');
+}
+function renderSeoDeltaTables(d){
+  const pt=document.getElementById('seoPagesDelta');
+  if(pt){
+    const pages=(d&&d.pages)||[];
+    pt.innerHTML=pages.length?pages.map(p=>{
+      const path=_seoPath(p.page);
+      const q=_attr('分析落地页 '+path+' 的SEO表现：本期点击'+(p.clicks||0)+'(上期'+(p.clicksPrev||0)+')、展现'+(p.impressions||0)+'。给出最该先改的3个动作。');
+      return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(p.clicks,p.clicksPrev,false,'pct')+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'落地页诊断\')"><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
+    }).join(''):'<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 GSC 同步</td></tr>';
+  }
+  const qt=document.getElementById('seoQueriesDelta');
+  if(qt){
+    const qs=(d&&d.queries)||[];
+    qt.innerHTML=qs.length?qs.map(q=>{
+      const pos=q.position!=null?Number(q.position).toFixed(1):'—';
+      return '<tr><td>'+esc(q.query)+'</td><td class="num">'+(q.impressions||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(q.impressions,q.imprPrev,false,'pct')+'</td><td class="num">'+(q.clicks||0).toLocaleString()+'</td><td class="num">'+pos+'</td><td class="num">'+_deltaHtml(q.position,q.positionPrev,true,'abs1')+'</td></tr>';
+    }).join(''):'<tr><td colspan="6" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 GSC 同步</td></tr>';
+  }
+}
+function renderSeoScatter(d){
+  const el=document.getElementById('seoScatter'), empty=document.getElementById('seoScatterEmpty'); if(!el)return;
+  const pts=(d&&d.scatter)||[];
+  if(typeof echarts==='undefined'||!pts.length){ el.style.display='none'; if(empty)empty.style.display=''; return; }
+  el.style.display=''; if(empty)empty.style.display='none';
+  if(window._seoScatterChart){ try{window._seoScatterChart.dispose();}catch(e){} }
+  window._seoScatterChart=echarts.init(el);
+  const data=pts.map(p=>[p.impressions,p.position,p.clicks,p.query]);
+  const medImpr=_median(pts.map(p=>p.impressions)), medPos=_median(pts.map(p=>p.position));
+  window._seoScatterChart.setOption({
+    grid:{left:52,right:24,top:16,bottom:44},
+    xAxis:{type:'log',name:'展现',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
+    yAxis:{type:'value',name:'排名(越低越好)',inverse:true,min:1,nameGap:30,axisLabel:{fontSize:10}},
+    tooltip:{formatter:o=>esc(o.data[3])+'<br/>展现 '+o.data[0].toLocaleString()+' · 排名 '+o.data[1].toFixed(1)+' · 点击 '+o.data[2]},
+    series:[{type:'scatter',symbolSize:v=>Math.min(30,7+Math.sqrt(v[2]||0)*2.2),data,itemStyle:{color:'#2f72e8',opacity:.68},
+      markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:false},data:[{xAxis:medImpr},{yAxis:medPos}]}}]
+  });
+}
+function renderSeoSources(d){
+  const palette=['#2f72e8','#7b54e0','#0b9d8f','#ef9514','#e5484d','#9aa1ae'];
+  const srcs=(d&&d.sources)||[];
+  const donutCv=document.getElementById('seoSrcDonut'), legend=document.getElementById('seoSrcLegend');
+  if(donutCv){
+    if(window._seoSrcDonut){ try{window._seoSrcDonut.destroy();}catch(e){} window._seoSrcDonut=null; }
+    const top=srcs.slice(0,6);
+    if(top.length){
+      window._seoSrcDonut=new Chart(donutCv,{type:'doughnut',data:{labels:top.map(s=>s.source),datasets:[{data:top.map(s=>s.sessions),backgroundColor:palette,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'62%'}});
+      const total=top.reduce((a,s)=>a+(s.sessions||0),0)||1;
+      if(legend)legend.innerHTML=top.map((s,i)=>'<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span><span style="color:'+palette[i%palette.length]+'">●</span> '+esc(s.source)+'</span><b>'+Math.round((s.sessions||0)/total*100)+'%</b></div>').join('');
+    } else if(legend){ legend.innerHTML='<span class="dim">暂无 GA4 来源数据 · 完成同步后显示</span>'; }
+  }
+  const areaCv=document.getElementById('seoSrcArea');
+  if(areaCv){
+    if(window._seoSrcArea){ try{window._seoSrcArea.destroy();}catch(e){} window._seoSrcArea=null; }
+    const ss=d&&d.sourceSeries;
+    if(ss&&ss.dates&&ss.dates.length){
+      window._seoSrcArea=new Chart(areaCv,{type:'line',data:{labels:ss.dates.map(x=>x.slice(5)),datasets:ss.series.map((se,i)=>({label:se.source,data:se.values,borderColor:palette[i%palette.length],backgroundColor:palette[i%palette.length]+'55',fill:true,stack:'s',tension:.3,pointRadius:0,borderWidth:1.4}))},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}}});
+    } else { chartEmpty('seoSrcArea'); }
+  }
+}
+
 /* ===== SEM 看板：真实 Google Ads 同步数据（顶部卡 + 系列→关键词层级，按所选时间范围） ===== */
 window._adsBoard=null;
 function _money(m){ return m==null?'—':(m/1e6).toLocaleString(undefined,{maximumFractionDigits:2}); }
