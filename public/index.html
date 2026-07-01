@@ -300,6 +300,9 @@
           <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
           <div class="metric-row" style="grid-template-columns:repeat(3,1fr)"><div class="metric-card"><div class="metric-num" id="sm-conv" style="font-size:22px">—</div><div class="metric-lbl">转化次数</div></div><div class="metric-card"><div class="metric-num" id="sm-cpconv" style="font-size:22px">—</div><div class="metric-lbl">每转化成本</div></div><div class="metric-card"><div class="metric-num" id="sm-cost" style="font-size:22px">—</div><div class="metric-lbl">总花费</div></div></div>
           <div id="semHighlights" class="seo-hl" style="display:none"></div>
+          <div class="card" id="semAttrCard" style="margin-bottom:14px;display:none"><div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报 · 询盘归因</span><span class="card-sub">Ads 花费 ÷ 真实 SEM 有效询盘（而非 Ads 自报转化）· 按所选时间范围</span></div>
+            <div id="semAttrBody" class="attr-body"></div>
+          </div>
           <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> 金额为 Ads 账户币种 · 按所选时间范围 · 来源 Google Ads 同步</div>
           <!-- 图表提前：老板一眼看走向 -->
           <div class="seo-grid2">
@@ -1275,6 +1278,7 @@ window.addEventListener('load',async()=>{
   loadSeoBoardFull();          // SEO 富看板：本周要点 + Δ表 + 机会词散点 + GA4 来源
   loadSemBoardAds();           // SEM 看板：真实 Google Ads 同步数据（顶部卡片）
   loadSemBoardFull();          // SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势
+  loadAttribution();           // 询盘归因：Ads 花费 ÷ 真实 SEM 有效询盘
   loadDiagnostics();           // 诊断引擎：机会词/衰退/蚕食 真实识别 + 角标计数
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
   await loadIntegrations();    // 设置页 API 接入状态

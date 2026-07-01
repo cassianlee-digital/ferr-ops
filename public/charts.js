@@ -362,6 +362,34 @@ function renderSemBoard(){
   tb.innerHTML=html;
 }
 
+/* ===== 询盘归因：Ads 花费 ÷ 真实 SEM 有效询盘（对比 Ads 自报转化） ===== */
+async function loadAttribution(){
+  let d=null; try{ d=await API.get(withRange('/api/attribution')); }catch(e){ d=null; }
+  renderAttribution(d);
+}
+function renderAttribution(d){
+  const card=document.getElementById('semAttrCard'), body=document.getElementById('semAttrBody'); if(!card||!body)return;
+  const sem=d&&d.sem;
+  if(!sem || (!sem.costMicros && !sem.inquiriesTotal)){ card.style.display='none'; return; }
+  card.style.display='';
+  const cost=sem.costMicros/1e6;
+  const real=sem.costPerEffective!=null?Math.round(sem.costPerEffective).toLocaleString():'—';
+  const adsCpa=sem.adsConversions>0?Math.round(cost/sem.adsConversions).toLocaleString():'—';
+  const gap=(sem.costPerEffective!=null && sem.adsConversions>0)? sem.costPerEffective/(cost/sem.adsConversions) : null;
+  const ch=(d&&d.channels)||{};
+  const chChip=(label,c,color)=>'<span class="attr-ch"><span style="color:'+color+'">●</span> '+label+' <b>'+((c&&c.effective)||0)+'</b><span class="dim">/'+((c&&c.total)||0)+'</span></span>';
+  body.innerHTML=
+    '<div class="attr-kpis">'+
+      '<div class="attr-kpi"><div class="attr-num">'+_money(sem.costMicros)+'</div><div class="attr-lbl">SEM 花费</div></div>'+
+      '<div class="attr-kpi"><div class="attr-num">'+((sem.inquiriesEffective)||0)+'<span class="dim" style="font-size:12px">/'+((sem.inquiriesTotal)||0)+'</span></div><div class="attr-lbl">真实有效询盘(A/B)</div></div>'+
+      '<div class="attr-kpi hl"><div class="attr-num">'+real+'</div><div class="attr-lbl">真实每有效询盘成本</div></div>'+
+      '<div class="attr-kpi"><div class="attr-num dim">'+adsCpa+'</div><div class="attr-lbl">Ads 自报每转化</div></div>'+
+    '</div>'+
+    (gap&&gap>=1.3?'<div class="attr-warn"><i class="ti ti-alert-triangle"></i> 真实每询盘成本约为 Ads 自报的 '+gap.toFixed(1)+' 倍——Ads 转化统计可能虚高，别只看 Ads 后台数字。</div>':'')+
+    (sem.inquiriesEffective===0 && sem.costMicros>0?'<div class="attr-warn"><i class="ti ti-alert-triangle"></i> 本区间 SEM 付费花了 '+_money(sem.costMicros)+' 但真实有效询盘为 0——检查渠道标注或投放效果。</div>':'')+
+    '<div class="attr-ch-row"><span class="attr-ch-t">各渠道有效询盘/总数：</span>'+chChip('SEM付费',ch.SEM,'#7b54e0')+chChip('SEO自然',ch.SEO,'#2f72e8')+chChip('直接',ch.direct,'#0b9d8f')+chChip('其他',ch.other,'#ef9514')+'</div>';
+}
+
 /* ===== SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势 ===== */
 window._semCostDonut=null; window._semTrend=null; window._semScatterChart=null;
 async function loadSemBoardFull(){
