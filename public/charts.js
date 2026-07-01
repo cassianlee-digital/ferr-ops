@@ -191,6 +191,11 @@ function renderSeoBoard(){
   }
 }
 
+// 标签切换后重算可见 ECharts 尺寸（隐藏容器里 init 会拿到 0 尺寸→切过来需 resize）
+function _resizeScatters(){
+  setTimeout(()=>{ [window._seoScatterChart,window._semScatterChart].forEach(c=>{ if(c){ try{c.resize();}catch(e){} } }); },60);
+}
+
 /* ===== SEO 富看板（Looker 风格）：本周要点 + Δ表 + 机会词散点 + GA4 来源 ===== */
 window._seoSrcDonut=null; window._seoSrcArea=null; window._seoScatterChart=null;
 function _median(a){ const s=(a||[]).filter(x=>x!=null).sort((x,y)=>x-y); if(!s.length)return 0; const m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
@@ -372,17 +377,27 @@ function renderSemHighlights(d){
 }
 function renderSemDeltaTables(d){
   const cpc=(cost,conv)=> (conv&&conv>0)? _money(cost/conv) : '—';
-  const rowHtml=(name,c)=>'<tr><td>'+esc(name||'')+'</td><td class="num">'+_money(c.costMicros)+'</td><td class="num">'+_conv(c.conversions)+'</td><td class="num">'+_deltaHtml(c.conversions,c.convPrev,false,'abs1')+'</td><td class="num">'+cpc(c.costMicros,c.conversions)+'</td><td class="ctr">'+_adsBadge(c.costMicros,c.conversions)+'</td></tr>';
-  const ct=document.getElementById('semCampRows');
-  if(ct){ const cs=(d&&d.campaigns)||[]; ct.innerHTML=cs.length?cs.map(c=>rowHtml(c.name||'(未命名)',c)).join(''):'<tr><td colspan="6" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 Ads 同步</td></tr>'; }
+  const rate=(a,b)=> (b&&b>0)? (a/b*100).toFixed(1)+'%' : '—';
+  // 投放中广告系列 · 全量（像 Ads 后台）
+  const ct=document.getElementById('semCampFull');
+  if(ct){ const cs=(d&&d.campaigns)||[];
+    ct.innerHTML=cs.length?cs.map(c=>{
+      const ctr=rate(c.clicks,c.impressions), cvr=rate(Number(c.conversions||0),c.clicks);
+      const cpcCost=(c.clicks&&c.clicks>0)?_money(c.costMicros/c.clicks):'—';
+      return '<tr><td>'+esc(c.name||'(未命名)')+'</td><td class="num">'+(c.impressions||0).toLocaleString()+'</td><td class="num">'+(c.clicks||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+_money(c.costMicros)+'</td><td class="num">'+cpcCost+'</td><td class="num">'+_conv(c.conversions)+'</td><td class="num">'+cvr+'</td><td class="num">'+cpc(c.costMicros,c.conversions)+'</td><td class="ctr">'+_adsBadge(c.costMicros,c.conversions)+'</td></tr>';
+    }).join(''):'<tr><td colspan="10" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 Ads 同步</td></tr>';
+  }
+  // 关键词 · 花费/转化 环比
   const kt=document.getElementById('semKwRows');
-  if(kt){ const ks=(d&&d.keywords)||[]; kt.innerHTML=ks.length?ks.map(k=>rowHtml(k.keyword,k)).join(''):'<tr><td colspan="6" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 Ads 同步</td></tr>'; }
+  if(kt){ const ks=(d&&d.keywords)||[];
+    kt.innerHTML=ks.length?ks.map(k=>'<tr><td>'+esc(k.keyword||'')+'</td><td class="num">'+_money(k.costMicros)+'</td><td class="num">'+_conv(k.conversions)+'</td><td class="num">'+_deltaHtml(k.conversions,k.convPrev,false,'abs1')+'</td><td class="num">'+cpc(k.costMicros,k.conversions)+'</td><td class="ctr">'+_adsBadge(k.costMicros,k.conversions)+'</td></tr>').join(''):'<tr><td colspan="6" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 Ads 同步</td></tr>';
+  }
 }
 function _semScatterTitles(t,s){ const a=document.getElementById('semScatterTitle'),b=document.getElementById('semScatterSub'); if(a)a.textContent=t; if(b)b.textContent=s; }
 function renderSemScatterTargets(list){
   const box=document.getElementById('semScatterTargets'); if(!box)return;
   if(!list||!list.length){ box.innerHTML=''; return; }
-  box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-scissors"></i> 该砍/优化 · 高花费低转化（'+list.length+'）</div>'+list.slice(0,8).map(p=>{
+  box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-scissors"></i> 零转化烧钱词 · 该砍/暂停（'+list.length+'）</div>'+list.slice(0,10).map(p=>{
     const cost=(p.costMicros/1e6), c=Number(p.conversions||0);
     const q=_attr('关键词「'+p.keyword+'」花费'+cost.toFixed(0)+'、转化'+c+'、点击'+(p.clicks||0)+'，花钱多但转化低。判断该暂停/降价/改精准匹配/换落地页，给出具体动作与验证指标。');
     const ti=_attr('该砍词：'+p.keyword), de=_attr('关键词「'+p.keyword+'」('+(p.campaignName||'')+') 花'+cost.toFixed(0)+' 仅转化'+c+'，暂停或降价/改精准匹配止损。'), ev=_attr('Ads 花费'+cost.toFixed(0)+' 转化'+c+' 点击'+(p.clicks||0));
@@ -392,26 +407,32 @@ function renderSemScatterTargets(list){
 function renderSemScatter(d){
   const el=document.getElementById('semScatter'), empty=document.getElementById('semScatterEmpty'); if(!el)return;
   const _tb=document.getElementById('semScatterTargets'); if(_tb)_tb.innerHTML='';
-  const sc=(d&&d.scatter)||[];
-  if(typeof echarts==='undefined'||!sc.length){ el.style.display='none'; if(empty)empty.style.display=''; return; }
-  el.style.display=''; if(empty)empty.style.display='none';
-  if(window._semScatterChart){ try{window._semScatterChart.dispose();}catch(e){} }
-  window._semScatterChart=echarts.init(el);
-  const costs=sc.map(p=>p.costMicros/1e6), convs=sc.map(p=>Number(p.conversions||0));
-  const medCost=_median(costs), medConv=_median(convs), maxCost=Math.max(...costs,1)*1.6, maxConv=Math.max(...convs,1)*1.15+0.5;
-  const isTarget=p=>(p.costMicros/1e6)>=medCost && Number(p.conversions||0)<=medConv;
-  const short=s=>{ s=String(s||''); return s.length>20?s.slice(0,19)+'…':s; };
-  const data=sc.map(p=>{ const t=isTarget(p); return { value:[+(p.costMicros/1e6).toFixed(0),Number(p.conversions||0),p.keyword,p.clicks], itemStyle:{color:t?'#e5484d':'#7b54e0',opacity:t?.85:.6}, label:{show:t,position:'right',fontSize:9,color:'#c93338',formatter:o=>short(o.value[2])} }; });
-  window._semScatterChart.setOption({
-    grid:{left:44,right:120,top:16,bottom:44},
-    xAxis:{type:'log',name:'花费',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
-    yAxis:{type:'value',name:'转化',min:0,max:maxConv,nameGap:26,axisLabel:{fontSize:10}},
-    tooltip:{formatter:o=>esc(o.value[2])+'<br/>花费 '+o.value[0]+' · 转化 '+o.value[1]+' · 点击 '+o.value[3]},
-    series:[{type:'scatter',symbolSize:v=>Math.min(30,7+Math.sqrt(v[0]||0)/3),data,
-      markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:true,fontSize:9,color:'#9aa1ae',formatter:o=>o.dataType==='max'?'':'中位'},data:[{xAxis:medCost},{yAxis:medConv}]},
-      markArea:{silent:true,itemStyle:{color:'rgba(229,72,77,.07)'},label:{show:true,position:['80%','90%'],color:'#e5484d',fontSize:11,fontWeight:'bold',formatter:'该砍'},data:[[{xAxis:medCost,yAxis:0},{xAxis:maxCost,yAxis:medConv}]]}}]
-  });
-  renderSemScatterTargets(sc.filter(isTarget).sort((a,b)=>b.costMicros-a.costMicros));
+  const all=(d&&d.scatter)||[];
+  // 有转化的词进散点(按每转化成本散开)；零转化烧钱词进下方「该砍」清单
+  const conv=all.filter(p=>Number(p.conversions||0)>0).map(p=>({...p,cost:p.costMicros/1e6,cpa:(p.costMicros/1e6)/Number(p.conversions)}));
+  const zero=all.filter(p=>Number(p.conversions||0)===0 && p.costMicros>0).sort((a,b)=>b.costMicros-a.costMicros);
+  _semScatterTitles('花费 × 每转化成本 · 找又贵又不划算的词','点=有转化的词；上方红带=每转化成本偏高→优化出价/落地页；零转化烧钱词见下方清单');
+  if(typeof echarts!=='undefined' && conv.length){
+    el.style.display=''; if(empty)empty.style.display='none';
+    if(window._semScatterChart){ try{window._semScatterChart.dispose();}catch(e){} }
+    window._semScatterChart=echarts.init(el);
+    const medCpa=_median(conv.map(p=>p.cpa));
+    const short=s=>{ s=String(s||''); return s.length>20?s.slice(0,19)+'…':s; };
+    const data=conv.map(p=>{ const t=p.cpa>=medCpa; return { value:[+p.cost.toFixed(0),+p.cpa.toFixed(0),p.keyword,p.conversions], itemStyle:{color:t?'#e5484d':'#7b54e0',opacity:t?.85:.62}, label:{show:t,position:'right',fontSize:9,color:'#c93338',formatter:o=>short(o.value[2])} }; });
+    window._semScatterChart.setOption({
+      grid:{left:56,right:120,top:16,bottom:44},
+      xAxis:{type:'log',name:'花费',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
+      yAxis:{type:'log',name:'每转化成本',nameGap:8,axisLabel:{fontSize:10}},
+      tooltip:{formatter:o=>esc(o.value[2])+'<br/>花费 '+o.value[0]+' · 每转化成本 '+o.value[1]+' · 转化 '+o.value[3]},
+      series:[{type:'scatter',symbolSize:v=>Math.min(30,8+Math.sqrt(v[0]||0)/3),data,
+        markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:true,fontSize:9,color:'#9aa1ae',formatter:'中位每转化'},data:[{yAxis:medCpa}]},
+        markArea:{silent:true,itemStyle:{color:'rgba(229,72,77,.07)'},label:{show:true,position:['50%','8%'],color:'#e5484d',fontSize:11,fontWeight:'bold',formatter:'每转化偏贵'},data:[[{yAxis:medCpa},{yAxis:'max'}]]}}]
+    });
+  } else {
+    el.style.display='none'; if(window._semScatterChart){ try{window._semScatterChart.dispose();}catch(e){} window._semScatterChart=null; }
+    if(empty){ empty.style.display=''; empty.textContent=all.length?'本区间暂无「有转化」的关键词；零转化烧钱词见下方「该砍」清单':'暂无足够数据 · 完成 Google Ads 同步后显示'; }
+  }
+  renderSemScatterTargets(zero);
 }
 function renderSemCostCharts(d){
   const palette=['#7b54e0','#2f72e8','#0b9d8f','#ef9514','#e5484d','#9aa1ae'];

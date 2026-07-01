@@ -244,6 +244,12 @@
             <div id="seoHighlights" class="seo-hl" style="display:none"></div>
             <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">点击 / 展现趋势</span><span class="card-sub">按所选时间范围 · GSC</span></div><div class="chart-wrap" style="height:170px"><canvas id="seoBoard"></canvas></div></div>
             <div class="seo-grid2">
+              <div class="card"><div class="card-head"><span class="card-title">流量来源占比</span><span class="card-sub">GA4 · 会话</span></div>
+                <div style="display:flex;align-items:center;gap:16px;min-height:150px"><div class="chart-wrap" style="height:150px;width:150px;flex-shrink:0"><canvas id="seoSrcDonut"></canvas></div><div id="seoSrcLegend" style="flex:1;font-size:11.5px"><span class="dim">加载中…</span></div></div>
+              </div>
+              <div class="card"><div class="card-head"><span class="card-title">来源趋势 · 按天堆叠</span><span class="card-sub">GA4 · 会话</span></div><div class="chart-wrap" style="height:190px"><canvas id="seoSrcArea"></canvas></div></div>
+            </div>
+            <div class="seo-grid2">
               <div class="card"><div class="card-head"><span class="card-title">落地页 · 点击 & 环比</span><span class="card-sub">GSC · 点击前 15</span></div>
                 <table class="dt"><thead><tr><th>落地页</th><th class="num">点击</th><th class="num">Δ</th><th class="num">展现</th><th class="ctr">动作</th></tr></thead><tbody id="seoPagesDelta"><tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
               </div>
@@ -255,12 +261,6 @@
               <div id="seoScatter" style="height:360px"></div>
               <div id="seoScatterTargets"></div>
               <div id="seoScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 GSC/GA4 同步后显示</div>
-            </div>
-            <div class="seo-grid2">
-              <div class="card"><div class="card-head"><span class="card-title">流量来源占比</span><span class="card-sub">GA4 · 会话</span></div>
-                <div style="display:flex;align-items:center;gap:16px;min-height:150px"><div class="chart-wrap" style="height:150px;width:150px;flex-shrink:0"><canvas id="seoSrcDonut"></canvas></div><div id="seoSrcLegend" style="flex:1;font-size:11.5px"><span class="dim">加载中…</span></div></div>
-              </div>
-              <div class="card"><div class="card-head"><span class="card-title">来源趋势 · 按天堆叠</span><span class="card-sub">GA4 · 会话</span></div><div class="chart-wrap" style="height:190px"><canvas id="seoSrcArea"></canvas></div></div>
             </div>
             <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEO 看板 · AI 诊断（按优先级）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'基于下方SEO数据，按优先级列本周最该先做的3件事，每条一句话、可执行。')">重新诊断 ↗</button></div>
               <div class="ai-render"><div class="ai-item"><i class="ti ti-search"></i><div class="body">点右上「重新诊断」，基于本周真实 SEO 数据按优先级列动作。未诊断前不显示建议。</div></div></div>
@@ -300,25 +300,25 @@
           <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
           <div class="metric-row" style="grid-template-columns:repeat(3,1fr)"><div class="metric-card"><div class="metric-num" id="sm-conv" style="font-size:22px">—</div><div class="metric-lbl">转化次数</div></div><div class="metric-card"><div class="metric-num" id="sm-cpconv" style="font-size:22px">—</div><div class="metric-lbl">每转化成本</div></div><div class="metric-card"><div class="metric-num" id="sm-cost" style="font-size:22px">—</div><div class="metric-lbl">总花费</div></div></div>
           <div id="semHighlights" class="seo-hl" style="display:none"></div>
-          <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> 金额为 Ads 账户币种 · 按所选时间范围 · 来源 Google Ads 同步 · Δ 为转化环比</div>
-          <div class="seo-grid2">
-            <div class="card"><div class="card-head"><span class="card-title">广告系列 · 花费/转化 环比</span><span class="card-sub">Ads · 花费前 15</span></div>
-              <table class="dt"><thead><tr><th>系列</th><th class="num">花费</th><th class="num">转化</th><th class="num">Δ</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semCampRows"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
-            </div>
-            <div class="card"><div class="card-head"><span class="card-title">关键词 · 花费/转化 环比</span><span class="card-sub">Ads · 花费前 15</span></div>
-              <table class="dt"><thead><tr><th>关键词</th><th class="num">花费</th><th class="num">转化</th><th class="num">Δ</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semKwRows"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
-            </div>
-          </div>
-          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title" id="semScatterTitle">该砍还是该加 · 花费 × 转化</span><span class="card-sub" id="semScatterSub">右下红区=高花费+低转化=该砍；中位线分四象限；点=关键词</span></div>
-            <div id="semScatter" style="height:360px"></div>
-            <div id="semScatterTargets"></div>
-            <div id="semScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 Google Ads 同步后显示</div>
-          </div>
+          <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> 金额为 Ads 账户币种 · 按所选时间范围 · 来源 Google Ads 同步</div>
+          <!-- 图表提前：老板一眼看走向 -->
           <div class="seo-grid2">
             <div class="card"><div class="card-head"><span class="card-title">花费占比 · 按系列</span><span class="card-sub">Ads</span></div>
               <div style="display:flex;align-items:center;gap:16px;min-height:150px"><div class="chart-wrap" style="height:150px;width:150px;flex-shrink:0"><canvas id="semCostDonut"></canvas></div><div id="semCostLegend" style="flex:1;font-size:11.5px"><span class="dim">加载中…</span></div></div>
             </div>
             <div class="card"><div class="card-head"><span class="card-title">每日趋势 · 花费/转化</span><span class="card-sub">Ads</span></div><div class="chart-wrap" style="height:190px"><canvas id="semTrend"></canvas></div></div>
+          </div>
+          <!-- 投放中广告系列 全量（像 Ads 后台一样看） -->
+          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">投放中广告系列 · 全量</span><span class="card-sub">Ads · 每个系列完整指标（按花费排序）</span></div>
+            <div style="overflow-x:auto"><table class="dt"><thead><tr><th>系列</th><th class="num">曝光</th><th class="num">点击</th><th class="num">CTR</th><th class="num">花费</th><th class="num">CPC</th><th class="num">转化</th><th class="num">转化率</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semCampFull"><tr><td colspan="10" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table></div>
+          </div>
+          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title" id="semScatterTitle">花费 × 每转化成本</span><span class="card-sub" id="semScatterSub">找又贵又不划算的词</span></div>
+            <div id="semScatter" style="height:360px"></div>
+            <div id="semScatterTargets"></div>
+            <div id="semScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 Google Ads 同步后显示</div>
+          </div>
+          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">关键词 · 花费/转化 环比</span><span class="card-sub">Ads · 花费前 15 · Δ 为转化环比</span></div>
+            <table class="dt"><thead><tr><th>关键词</th><th class="num">花费</th><th class="num">转化</th><th class="num">Δ</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semKwRows"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
           </div>
           <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 看板 · AI 诊断（按优先级）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'基于下方SEM层级数据，按优先级列本周最该先做的3件事，指明在哪一层(系列/广告组/关键词)操作。')">重新诊断 ↗</button></div>
             <div class="ai-render"><div class="ai-item"><i class="ti ti-search"></i><div class="body">点右上「重新诊断」，基于本周真实 SEM 层级数据按优先级列动作。未诊断前不显示建议。</div></div></div>
@@ -925,7 +925,7 @@ function mountGa4IntoData(){
   ga4.classList.add('ga4-embedded');
   if(ga4.parentElement!==host)host.appendChild(ga4);
 }
-function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){}
+function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data'&&typeof _resizeScatters==='function')_resizeScatters();
   if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
   if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结
@@ -933,7 +933,7 @@ function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','dat
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>go(n.dataset.tab)));
 document.querySelectorAll('.planning-tab').forEach(btn=>btn.addEventListener('click',()=>setPlanningTab(btn.dataset.planTab)));
 document.querySelectorAll('.action-tab').forEach(btn=>btn.addEventListener('click',()=>setActionTab(btn.dataset.actionTab)));
-document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} }));
+document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} if(typeof _resizeScatters==='function')_resizeScatters(); }));
 /* 刷新后恢复上次所在页签 + 子页签（修复刷新回总览的 Bug）*/
 function restoreRoute(){
   let tab='dashboard'; try{ tab=localStorage.getItem('ferr:tab')||'dashboard'; }catch(e){}
@@ -986,6 +986,7 @@ document.querySelectorAll('.minitab[data-mini]').forEach(t=>t.addEventListener('
   wrap.querySelectorAll('.minipanel').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');
   const mp=wrap.querySelector('#mp-'+t.dataset.mini); if(mp)mp.classList.add('active');
+  if(typeof _resizeScatters==='function')_resizeScatters();
 }));
 
 /* ================= 近6周排名迷你折线 (sparkline) ================= */
