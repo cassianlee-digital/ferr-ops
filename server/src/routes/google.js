@@ -178,11 +178,12 @@ export async function googleRoutes(app) {
       const prevTot = gscSummary(gscPrev).totals;
       const { pages, queries } = googleRepo.gscBoardTables(gsc, gscPrev);
       const scatter = googleRepo.gscScatter(gsc);
+      const pageScatter = googleRepo.ga4PageScatter(ga);
       const sources = googleRepo.ga4SourcesRange(ga);
       const sourceSeries = googleRepo.ga4SourceSeries(ga);
       const highlights = buildSeoHighlights({ cur, prevTot, queries, pages });
 
-      return { connected: googleRepo.tokenStatus().gsc.authorized, project, range, prev, totals: cur, totalsPrev: prevTot, pages, queries, scatter, sources, sourceSeries, highlights };
+      return { connected: googleRepo.tokenStatus().gsc.authorized, project, range, prev, totals: cur, totalsPrev: prevTot, pages, queries, scatter, pageScatter, sources, sourceSeries, highlights };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
     }

@@ -234,11 +234,34 @@ function renderSeoDeltaTables(d){
     }).join(''):'<tr><td colspan="6" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 GSC 同步</td></tr>';
   }
 }
+function _seoScatterTitles(t,s){ const a=document.getElementById('seoScatterTitle'),b=document.getElementById('seoScatterSub'); if(a)a.textContent=t; if(b)b.textContent=s; }
 function renderSeoScatter(d){
   const el=document.getElementById('seoScatter'), empty=document.getElementById('seoScatterEmpty'); if(!el)return;
+  const ps=(d&&d.pageScatter)||[];
+  // 首选：GA4 页面级 会话 × 跳出率（参考图；高流量+高跳出=重点优化对象，自动标红）
+  if(ps.length && typeof echarts!=='undefined'){
+    el.style.display=''; if(empty)empty.style.display='none';
+    _seoScatterTitles('找出需要优化的页面 · 会话 × 跳出率','右上=高流量+高跳出=重点优化对象(红点)；中位线分四象限；点=落地页');
+    if(window._seoScatterChart){ try{window._seoScatterChart.dispose();}catch(e){} }
+    window._seoScatterChart=echarts.init(el);
+    const medS=_median(ps.map(p=>p.sessions)), medB=_median(ps.map(p=>(p.bounceRate||0)*100));
+    const data=ps.map(p=>[p.sessions,+(((p.bounceRate||0)*100).toFixed(1)),_seoPath(p.page),p.avgDuration||0]);
+    window._seoScatterChart.setOption({
+      grid:{left:52,right:24,top:16,bottom:44},
+      xAxis:{type:'log',name:'会话',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
+      yAxis:{type:'value',name:'跳出率%',min:0,max:100,nameGap:30,axisLabel:{fontSize:10}},
+      tooltip:{formatter:o=>esc(o.data[2])+'<br/>会话 '+o.data[0].toLocaleString()+' · 跳出率 '+o.data[1]+'% · 均时长 '+Math.round(o.data[3])+'s'},
+      series:[{type:'scatter',symbolSize:v=>Math.min(30,7+Math.sqrt(v[0]||0)),data,
+        itemStyle:{opacity:.72,color:o=>(o.data[0]>=medS&&o.data[1]>=medB)?'#e5484d':'#2f72e8'},
+        markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:false},data:[{xAxis:medS},{yAxis:medB}]}}]
+    });
+    return;
+  }
+  // 回退：GA4 跳出率数据未重新同步时，用 GSC 展现 × 排名 机会词散点
   const pts=(d&&d.scatter)||[];
   if(typeof echarts==='undefined'||!pts.length){ el.style.display='none'; if(empty)empty.style.display=''; return; }
   el.style.display=''; if(empty)empty.style.display='none';
+  _seoScatterTitles('机会词象限 · 展现 × 排名','（GA4 跳出率待重新同步后切换为“会话×跳出率”）右上=高展现差排名=重点攻；点=关键词');
   if(window._seoScatterChart){ try{window._seoScatterChart.dispose();}catch(e){} }
   window._seoScatterChart=echarts.init(el);
   const data=pts.map(p=>[p.impressions,p.position,p.clicks,p.query]);
@@ -262,7 +285,7 @@ function renderSeoSources(d){
     if(top.length){
       window._seoSrcDonut=new Chart(donutCv,{type:'doughnut',data:{labels:top.map(s=>s.source),datasets:[{data:top.map(s=>s.sessions),backgroundColor:palette,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'62%'}});
       const total=top.reduce((a,s)=>a+(s.sessions||0),0)||1;
-      if(legend)legend.innerHTML=top.map((s,i)=>'<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span><span style="color:'+palette[i%palette.length]+'">●</span> '+esc(s.source)+'</span><b>'+Math.round((s.sessions||0)/total*100)+'%</b></div>').join('');
+      if(legend)legend.innerHTML=top.map((s,i)=>{ const b=s.bounceRate!=null?'<span class="dim" style="font-size:10.5px"> · 跳出'+Math.round(s.bounceRate*100)+'%</span>':''; return '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span><span style="color:'+palette[i%palette.length]+'">●</span> '+esc(s.source)+b+'</span><b>'+Math.round((s.sessions||0)/total*100)+'%</b></div>'; }).join('');
     } else if(legend){ legend.innerHTML='<span class="dim">暂无 GA4 来源数据 · 完成同步后显示</span>'; }
   }
   const areaCv=document.getElementById('seoSrcArea');

@@ -296,6 +296,8 @@ CREATE TABLE IF NOT EXISTS ga4_dimension_daily (
   active_users    INTEGER NOT NULL DEFAULT 0,
   sessions        INTEGER NOT NULL DEFAULT 0,
   page_views      INTEGER NOT NULL DEFAULT 0,
+  bounce_rate     REAL,
+  avg_session_duration REAL,
   sync_run_id     INTEGER REFERENCES google_sync_runs(id),
   updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (date, property_id, dimension_type, dimension_value)
@@ -453,6 +455,9 @@ export function migrate() {
   ]);
   ensureColumns('ai_analyses', [
     ['history_json', 'TEXT'], // 重新分析时把旧结论存为历史快照（时间线对比）
+  ]);
+  ensureColumns('ga4_dimension_daily', [
+    ['bounce_rate', 'REAL'], ['avg_session_duration', 'REAL'], // 页面级跳出率散点 + 来源级跳出/时长
   ]);
   // 6.23 修改文档 7/9/12：inquiries 加客户姓名 / 跟踪反馈 / 原始等级
   ensureColumns('inquiries', [

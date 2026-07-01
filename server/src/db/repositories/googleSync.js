@@ -310,10 +310,11 @@ export function upsertGa4Daily(rows) {
 export function upsertGa4Dimensions(rows) {
   const stmt = db.prepare(
     `INSERT INTO ga4_dimension_daily
-     (date, property_id, dimension_type, dimension_value, active_users, sessions, page_views, sync_run_id, updated_at)
-     VALUES (@date, @property_id, @dimension_type, @dimension_value, @active_users, @sessions, @page_views, @sync_run_id, datetime('now'))
+     (date, property_id, dimension_type, dimension_value, active_users, sessions, page_views, bounce_rate, avg_session_duration, sync_run_id, updated_at)
+     VALUES (@date, @property_id, @dimension_type, @dimension_value, @active_users, @sessions, @page_views, @bounce_rate, @avg_session_duration, @sync_run_id, datetime('now'))
      ON CONFLICT(date, property_id, dimension_type, dimension_value) DO UPDATE SET
        active_users=excluded.active_users, sessions=excluded.sessions, page_views=excluded.page_views,
+       bounce_rate=excluded.bounce_rate, avg_session_duration=excluded.avg_session_duration,
        sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
   );
   db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
@@ -566,15 +567,37 @@ export function gscScatter(range, { minImpr = 5, limit = 120 } = {}) {
     .slice(0, limit)
     .map((r) => ({ query: r.k, impressions: r.impressions, clicks: r.clicks, position: r.position }));
 }
-// GA4 来源分段（区间汇总）：source_medium 维度
+// GA4 来源分段（区间汇总）：source_medium 维度。跳出率/时长按会话加权
 export function ga4SourcesRange(range) {
   const params = { start: range.start_date, end: range.end_date, propertyId: range.ga4_property_id || null };
   return db
     .prepare(
-      `SELECT dimension_value source, SUM(sessions) sessions, SUM(active_users) users, SUM(page_views) pageViews
+      `SELECT dimension_value source, SUM(sessions) sessions, SUM(active_users) users, SUM(page_views) pageViews,
+              CASE WHEN SUM(CASE WHEN bounce_rate IS NULL THEN 0 ELSE sessions END) > 0
+                   THEN SUM(bounce_rate*sessions)/SUM(CASE WHEN bounce_rate IS NULL THEN 0 ELSE sessions END) END bounceRate,
+              CASE WHEN SUM(CASE WHEN avg_session_duration IS NULL THEN 0 ELSE sessions END) > 0
+                   THEN SUM(avg_session_duration*sessions)/SUM(CASE WHEN avg_session_duration IS NULL THEN 0 ELSE sessions END) END avgDuration
        FROM ga4_dimension_daily
        WHERE date BETWEEN @start AND @end AND dimension_type = 'source_medium' AND (@propertyId IS NULL OR property_id = @propertyId)
        GROUP BY dimension_value ORDER BY sessions DESC`
+    )
+    .all(params);
+}
+// GA4 页面级「会话 × 跳出率」散点（找高流量高跳出=重点优化对象）。跳出率按会话加权
+export function ga4PageScatter(range, { minSessions = 5, limit = 120 } = {}) {
+  const params = { start: range.start_date, end: range.end_date, propertyId: range.ga4_property_id || null, minSessions, limit };
+  return db
+    .prepare(
+      `SELECT dimension_value page, SUM(sessions) sessions, SUM(page_views) pageViews,
+              CASE WHEN SUM(CASE WHEN bounce_rate IS NULL THEN 0 ELSE sessions END) > 0
+                   THEN SUM(bounce_rate*sessions)/SUM(CASE WHEN bounce_rate IS NULL THEN 0 ELSE sessions END) END bounceRate,
+              CASE WHEN SUM(CASE WHEN avg_session_duration IS NULL THEN 0 ELSE sessions END) > 0
+                   THEN SUM(avg_session_duration*sessions)/SUM(CASE WHEN avg_session_duration IS NULL THEN 0 ELSE sessions END) END avgDuration
+       FROM ga4_dimension_daily
+       WHERE date BETWEEN @start AND @end AND dimension_type = 'landing_page' AND (@propertyId IS NULL OR property_id = @propertyId)
+       GROUP BY dimension_value
+       HAVING SUM(sessions) >= @minSessions AND bounceRate IS NOT NULL
+       ORDER BY sessions DESC LIMIT @limit`
     )
     .all(params);
 }

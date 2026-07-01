@@ -25,7 +25,7 @@ async function dimensionReport(type, dimensionName, project, range, runId) {
   const res = await runReport(project.ga4_property_id, {
     dateRanges: [{ startDate: range.start_date, endDate: range.end_date }],
     dimensions: [{ name: 'date' }, { name: dimensionName }],
-    metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }],
+    metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }, { name: 'bounceRate' }, { name: 'averageSessionDuration' }],
     limit: 25000,
   });
   return (res.rows || []).map((r) => ({
@@ -36,6 +36,8 @@ async function dimensionReport(type, dimensionName, project, range, runId) {
     active_users: Math.round(metric(r, 0)),
     sessions: Math.round(metric(r, 1)),
     page_views: Math.round(metric(r, 2)),
+    bounce_rate: metric(r, 3),
+    avg_session_duration: metric(r, 4),
     sync_run_id: runId,
   })).filter((r) => r.date);
 }
