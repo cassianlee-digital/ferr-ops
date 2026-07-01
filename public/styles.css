@@ -5917,7 +5917,7 @@ table.dt td.editable:focus,
 }
 
 .hermes-backdrop.show {
-  display: block;
+  display: none;
 }
 
 .hermes-panel {
@@ -5927,16 +5927,31 @@ table.dt td.editable:focus,
   z-index: 130;
   display: flex;
   flex-direction: column;
-  width: min(420px, calc(100vw - 84px));
-  max-height: calc(100vh - 96px);
+  width: min(860px, calc(100vw - 84px));
+  height: min(720px, calc(100vh - 96px));
+  min-width: 420px;
+  min-height: 420px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
   border: 1px solid #dfe3eb;
   border-radius: 2px;
   background: #ffffff;
   box-shadow: 0 16px 40px rgba(31, 35, 41, .18);
   opacity: 0;
   pointer-events: none;
+  resize: both;
+  overflow: hidden;
   transform: translateX(16px);
   transition: opacity .18s ease, transform .18s ease;
+}
+
+.hermes-panel.max {
+  inset: 18px !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none;
+  max-height: none;
+  resize: none;
 }
 
 .hermes-panel.show {
@@ -5953,6 +5968,8 @@ table.dt td.editable:focus,
   padding: 0 14px;
   border-bottom: 1px solid #e5e8ef;
   background: #f7f8fa;
+  cursor: move;
+  user-select: none;
 }
 
 .hermes-avatar {
@@ -6008,9 +6025,18 @@ table.dt td.editable:focus,
 .hermes-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  overflow-y: auto;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.hermes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
 }
 
 .hermes-status {
@@ -6018,6 +6044,7 @@ table.dt td.editable:focus,
   gap: 8px;
   align-items: center;
   min-height: 34px;
+  flex: 1;
   padding: 0 10px;
   border: 1px solid #f3d6a2;
   border-radius: 2px;
@@ -6026,12 +6053,48 @@ table.dt td.editable:focus,
   font-size: 12px;
 }
 
+.hermes-identity {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  max-width: 220px;
+  padding: 0 10px;
+  border: 1px solid #e5e8ef;
+  border-radius: 2px;
+  color: #4e5969;
+  background: #ffffff;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hermes-status.ok {
+  border-color: #b7ebc6;
+  background: #f0fff4;
+  color: #166534;
+}
+
+.hermes-status.bad {
+  border-color: #fecaca;
+  background: #fff5f5;
+  color: #991b1b;
+}
+
 .hermes-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #f59e0b;
   flex-shrink: 0;
+}
+
+.hermes-status.ok .hermes-dot {
+  background: #16a34a;
+}
+
+.hermes-status.bad .hermes-dot {
+  background: #ef4444;
 }
 
 .hermes-card {
@@ -6054,6 +6117,36 @@ table.dt td.editable:focus,
   line-height: 1.7;
 }
 
+.hermes-frame-wrap {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  border: 1px solid #e5e8ef;
+  border-radius: 2px;
+  background: #061f1b;
+  overflow: hidden;
+}
+
+.hermes-frame-wrap iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #061f1b;
+}
+
+.hermes-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #fbfcfe;
+}
+
+.hermes-frame-wrap.connected .hermes-empty {
+  display: none;
+}
+
 .hermes-foot {
   display: flex;
   gap: 8px;
@@ -6074,7 +6167,8 @@ table.dt td.editable:focus,
 
 body.dark .right-rail .rail-btn,
 body.dark .hermes-panel,
-body.dark .hermes-card {
+body.dark .hermes-card,
+body.dark .hermes-identity {
   border-color: #273142;
   background: #111827;
 }
@@ -6091,7 +6185,8 @@ body.dark .hermes-card-title {
 }
 
 body.dark .hermes-sub,
-body.dark .hermes-card p {
+body.dark .hermes-card p,
+body.dark .hermes-identity {
   color: #94a3b8;
 }
 
@@ -8982,28 +9077,6 @@ body.dark .inq-map-head strong {
   transform: none;
 }
 
-.hermes-panel {
-  width: min(440px, calc(100vw - 88px));
-  box-shadow: 0 16px 38px rgba(31, 35, 41, .16);
-}
-
-.hermes-head {
-  min-height: 56px;
-  background: #f5f7fa;
-}
-
-.hermes-avatar {
-  border-radius: 2px;
-}
-
-.hermes-status {
-  border-radius: 2px;
-}
-
-.hermes-card {
-  border-radius: 2px;
-}
-
 body.dark .kpi-val,
 body.dark #panel-dashboard .page-title,
 body.dark #panel-dashboard .card-title,
@@ -10768,3 +10841,8 @@ body.dark #panel-archive .archive-content .archive-text {
 .attr-report-grid { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); }
 .attr-box { background: var(--bg3); padding: 11px 14px; }
 @media (max-width: 760px) { .sem-stats { grid-template-columns: repeat(2, 1fr); } }
+/* 阶段4：要点带 + 系列筛选器同一行 */
+.sem-hl-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.sem-hl-row #semHighlights { flex: 1; margin-bottom: 0; min-width: 200px; }
+.sem-filter { margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--text2); font-size: 12px; }
+.sem-filter select { padding: 6px 10px; border: 1px solid var(--border); background: var(--bg2); color: var(--text1); font-size: 12px; max-width: 260px; cursor: pointer; }

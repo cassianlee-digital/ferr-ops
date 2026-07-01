@@ -387,7 +387,7 @@ export function upsertAdsKeywords(rows) {
 }
 
 export function adsSummary(range) {
-  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null };
+  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null };
   const totals = db
     .prepare(
       `SELECT COALESCE(SUM(cost_micros),0) costMicros, COALESCE(SUM(impressions),0) impressions,
@@ -395,7 +395,7 @@ export function adsSummary(range) {
               CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
               CASE WHEN SUM(clicks) > 0 THEN SUM(cost_micros) / SUM(clicks) ELSE NULL END averageCpcMicros,
               CASE WHEN SUM(conversions) > 0 THEN SUM(cost_micros) / SUM(conversions) ELSE NULL END costPerConversionMicros
-       FROM google_ads_campaign_daily WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)`
+       FROM google_ads_campaign_daily WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)`
     )
     .get(params);
   const campaigns = db
@@ -403,7 +403,7 @@ export function adsSummary(range) {
       `SELECT campaign_id campaignId, campaign_name campaignName, SUM(cost_micros) costMicros,
               SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_campaign_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
        GROUP BY campaign_id, campaign_name
        ORDER BY costMicros DESC
        LIMIT 50`
@@ -414,7 +414,7 @@ export function adsSummary(range) {
       `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName, SUM(cost_micros) costMicros,
               SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_keyword_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
        GROUP BY keyword_text, match_type, campaign_name
        ORDER BY costMicros DESC
        LIMIT 50`
@@ -508,13 +508,13 @@ export function gscDecayPages(range, prevRange, { minPrevClicks = 10, dropRatio 
 
 // 高花费零有效：区间内 cost>0 且 conversions=0 的关键词（按花费降序）。
 export function adsWasteKeywords(range, { limit = 50 } = {}) {
-  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, limit };
+  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null, limit };
   return db
     .prepare(
       `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName,
               SUM(cost_micros) costMicros, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_keyword_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
        GROUP BY keyword_text, match_type, campaign_name
        HAVING SUM(conversions) = 0 AND SUM(cost_micros) > 0
        ORDER BY costMicros DESC LIMIT @limit`
@@ -585,7 +585,7 @@ export function ga4SourcesRange(range) {
 }
 /* ===== SEM 富看板：带 Δ 的系列/关键词表 + 花费×转化散点 + 日趋势 ===== */
 function _adsParams(range) {
-  return { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null };
+  return { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null };
 }
 function adsCampaignAgg(range) {
   return db
@@ -593,7 +593,7 @@ function adsCampaignAgg(range) {
       `SELECT campaign_id id, campaign_name name, SUM(cost_micros) costMicros, SUM(impressions) impressions,
               SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_campaign_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
        GROUP BY campaign_id, campaign_name`
     )
     .all(_adsParams(range));
@@ -604,7 +604,7 @@ function adsKeywordAgg(range) {
       `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName, SUM(cost_micros) costMicros,
               SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_keyword_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
        GROUP BY keyword_text, match_type, campaign_name`
     )
     .all(_adsParams(range));
@@ -637,7 +637,7 @@ export function adsSeries(range) {
     .prepare(
       `SELECT date, SUM(cost_micros) costMicros, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_campaign_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
        GROUP BY date ORDER BY date`
     )
     .all(_adsParams(range));

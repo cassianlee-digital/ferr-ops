@@ -294,8 +294,11 @@
         <div class="subpanel" id="sub-data-sem">
           <div class="minitabs"><div class="minitab active" data-mini="sem-overview">概览</div><div class="minitab" data-mini="sem-problem">问题分析</div><div class="minitab" data-mini="sem-optimize">优化思路</div><div class="minitab" data-mini="sem-keyword">关键词排查</div></div>
           <div class="minipanel active" id="mp-sem-overview">
-          <!-- 要点带：替用户先判断本周轻重（红跌绿涨） -->
-          <div id="semHighlights" class="seo-hl" style="display:none"></div>
+          <!-- 要点带 + 系列筛选器（旁边）：选后全页 Ads 数据联动，默认全部系列 -->
+          <div class="sem-hl-row">
+            <div id="semHighlights" class="seo-hl" style="display:none"></div>
+            <div class="sem-filter"><i class="ti ti-filter"></i> <select id="semCampFilter" onchange="onSemCampaignChange(this.value)"><option value="">全部系列</option></select></div>
+          </div>
           <!-- 账户体检（合并一栏、去重）+ 真实询盘回报（3项·底色加深）并排 -->
           <div class="sem-top">
             <div class="card sem-health">
@@ -312,7 +315,7 @@
               </div>
             </div>
             <div class="card attr-report" id="semAttrCard" style="display:none">
-              <div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报</span><span class="card-sub">花费 ÷ 真实有效询盘</span></div>
+              <div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报</span><span class="card-sub">花费 ÷ 真实有效询盘<span id="semAttrScope" style="display:none;color:var(--amber)"> · 账户级，不随系列筛选</span></span></div>
               <div id="semAttrBody"></div>
             </div>
           </div>

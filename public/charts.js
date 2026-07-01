@@ -329,9 +329,20 @@ function _adsBadge(cost,conv){ // 诚实的轻量评估
   if((conv||0)>0)   return '<span class="badge b-green">有转化</span>';
   return '<span class="badge b-red">零有效</span>';
 }
+/* 系列筛选：''=全部；不持久化（每次打开 SEM 看板默认全部）。选后全页 Ads 数据联动 */
+window._semCampaign='';
+function withSemCampaign(path){ const c=window._semCampaign; return c?(path+(path.includes('?')?'&':'?')+'campaign_id='+encodeURIComponent(c)):path; }
+function onSemCampaignChange(v){ window._semCampaign=v||''; loadSemBoardAds(); loadSemBoardFull(); const el=document.getElementById('semAttrScope'); if(el)el.style.display=window._semCampaign?'':'none'; }
+// 用完整系列列表填充下拉（仅未筛选时，避免筛选态只剩1个把选项覆盖掉）
+function _fillSemCampaignFilter(list){
+  const sel=document.getElementById('semCampFilter'); if(!sel||window._semCampaign)return;
+  const cur=sel.value;
+  sel.innerHTML=['<option value="">全部系列</option>'].concat((list||[]).map(c=>'<option value="'+esc(c.campaignId)+'">'+esc(c.campaignName||'(未命名)')+'</option>')).join('');
+  sel.value=cur;
+}
 async function loadSemBoardAds(){
   let data=null;
-  try{ data=await API.get(withRange('/api/google/ads/summary')); }
+  try{ data=await API.get(withSemCampaign(withRange('/api/google/ads/summary'))); }
   catch(e){ window._adsBoard=null; renderSemBoard(); return; }
   window._adsBoard=data; renderSemBoard();
 }
@@ -351,6 +362,7 @@ function renderSemBoard(){
     _t('sm-cvr',(t.clicks>0)?_pct(Number(t.conversions||0)/t.clicks):'—'); // 转化率=转化/点击
     _t('sm-cpconv',_money(t.costPerConversionMicros));
   } else { ids.forEach(id=>_t(id,'—')); }
+  if(data) _fillSemCampaignFilter(data.campaigns); // 未筛选时用完整系列列表填充下拉
   const tb=document.getElementById('semHierRows');
   if(!tb)return;
   const camps=(data&&data.campaigns)||[], kws=(data&&data.keywords)||[];
@@ -398,7 +410,7 @@ function renderAttribution(d){
 /* ===== SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势 ===== */
 window._semCostDonut=null; window._semTrend=null; window._semScatterChart=null;
 async function loadSemBoardFull(){
-  let d=null; try{ d=await API.get(withRange('/api/google/ads/board')); }catch(e){ d=null; }
+  let d=null; try{ d=await API.get(withSemCampaign(withRange('/api/google/ads/board'))); }catch(e){ d=null; }
   renderSemHighlights(d); renderSemDeltaTables(d); renderSemScatter(d); renderSemCostCharts(d);
 }
 function renderSemHighlights(d){
