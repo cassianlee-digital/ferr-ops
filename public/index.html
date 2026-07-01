@@ -291,15 +291,29 @@
         <div class="subpanel" id="sub-data-sem">
           <div class="minitabs"><div class="minitab active" data-mini="sem-overview">概览</div><div class="minitab" data-mini="sem-problem">问题分析</div><div class="minitab" data-mini="sem-optimize">优化思路</div><div class="minitab" data-mini="sem-keyword">关键词排查</div></div>
           <div class="minipanel active" id="mp-sem-overview">
-          <!-- ① 要点带：替用户先判断本周轻重（红跌绿涨），提到最顶 -->
-          <div id="semHighlights" class="seo-hl band" style="display:none"></div>
-          <!-- ② Hero：这钱花得值不值——真实询盘回报（花费 ÷ 真实有效询盘），全页主角 -->
-          <div class="card hero-card" id="semAttrCard" style="margin-bottom:14px;display:none"><div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报 · 询盘归因</span><span class="card-sub">Ads 花费 ÷ 真实 SEM 有效询盘（而非 Ads 自报转化）· 按所选时间范围</span></div>
-            <div id="semAttrBody" class="attr-body"></div>
+          <!-- 要点带：替用户先判断本周轻重（红跌绿涨） -->
+          <div id="semHighlights" class="seo-hl" style="display:none"></div>
+          <!-- 账户体检（合并一栏、去重）+ 真实询盘回报（3项·底色加深）并排 -->
+          <div class="sem-top">
+            <div class="card sem-health">
+              <div class="card-head"><span class="card-title">账户体检 · 本区间</span><span class="card-sub">Ads · 按所选时间范围</span></div>
+              <div class="sem-stats">
+                <div class="sem-stat"><div class="sem-stat-n" id="sm-cost">—</div><div class="sem-stat-l">花费</div></div>
+                <div class="sem-stat"><div class="sem-stat-n" id="sm-impr">—</div><div class="sem-stat-l">展示次数</div></div>
+                <div class="sem-stat"><div class="sem-stat-n" id="sm-clicks">—</div><div class="sem-stat-l">点击次数</div></div>
+                <div class="sem-stat"><div class="sem-stat-n" id="sm-ctr">—</div><div class="sem-stat-l">点击率</div></div>
+                <div class="sem-stat"><div class="sem-stat-n" id="sm-cpc">—</div><div class="sem-stat-l">平均每次点击费用</div></div>
+                <div class="sem-stat"><div class="sem-stat-n" id="sm-conv">—</div><div class="sem-stat-l">转化次数</div></div>
+                <div class="sem-stat"><div class="sem-stat-n" id="sm-cvr">—</div><div class="sem-stat-l">转化率</div></div>
+                <div class="sem-stat"><div class="sem-stat-n" id="sm-cpconv">—</div><div class="sem-stat-l">每转化成本</div></div>
+              </div>
+            </div>
+            <div class="card attr-report" id="semAttrCard" style="display:none">
+              <div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报</span><span class="card-sub">花费 ÷ 真实有效询盘</span></div>
+              <div id="semAttrBody"></div>
+            </div>
           </div>
-          <!-- ③ 账户体检小卡（配角） -->
-          <div class="metric-row" style="grid-template-columns:repeat(3,1fr)"><div class="metric-card"><div class="metric-num" id="sm-conv" style="font-size:22px">—</div><div class="metric-lbl">转化次数</div></div><div class="metric-card"><div class="metric-num" id="sm-cpconv" style="font-size:22px">—</div><div class="metric-lbl">每转化成本</div></div><div class="metric-card"><div class="metric-num" id="sm-cost" style="font-size:22px">—</div><div class="metric-lbl">总花费</div></div></div>
-          <div class="sheet-toolbar" style="margin:12px 0"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
+          <div class="sheet-toolbar" style="margin:0 0 14px"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
           <!-- 图表提前：老板一眼看走向 -->
           <div class="seo-grid2">
             <div class="card"><div class="card-head"><span class="card-title">花费占比 · 按系列</span><span class="card-sub">Ads</span></div>

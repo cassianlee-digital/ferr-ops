@@ -338,11 +338,19 @@ async function loadSemBoardAds(){
 function renderSemBoard(){
   const data=window._adsBoard, t=data&&data.totals;
   const _t=(id,v)=>{ const e=document.getElementById(id); if(e)e.textContent=v; };
+  const _int=v=>v==null?'—':Number(v).toLocaleString();
+  const _pct=v=>v==null?'—':(Number(v)*100).toFixed(2)+'%';
+  const ids=['sm-cost','sm-impr','sm-clicks','sm-ctr','sm-cpc','sm-conv','sm-cvr','sm-cpconv'];
   if(t){
-    _t('sm-conv',_conv(t.conversions));
-    _t('sm-cpconv',_money(t.costPerConversionMicros));
     _t('sm-cost',_money(t.costMicros));
-  } else { ['sm-conv','sm-cpconv','sm-cost'].forEach(id=>_t(id,'—')); }
+    _t('sm-impr',_int(t.impressions));
+    _t('sm-clicks',_int(t.clicks));
+    _t('sm-ctr',_pct(t.ctr));                                   // ctr 为 0~1 比例
+    _t('sm-cpc',_money(t.averageCpcMicros));
+    _t('sm-conv',_conv(t.conversions));
+    _t('sm-cvr',(t.clicks>0)?_pct(Number(t.conversions||0)/t.clicks):'—'); // 转化率=转化/点击
+    _t('sm-cpconv',_money(t.costPerConversionMicros));
+  } else { ids.forEach(id=>_t(id,'—')); }
   const tb=document.getElementById('semHierRows');
   if(!tb)return;
   const camps=(data&&data.campaigns)||[], kws=(data&&data.keywords)||[];
@@ -376,18 +384,15 @@ function renderAttribution(d){
   const real=sem.costPerEffective!=null?Math.round(sem.costPerEffective).toLocaleString():'—';
   const adsCpa=sem.adsConversions>0?Math.round(cost/sem.adsConversions).toLocaleString():'—';
   const gap=(sem.costPerEffective!=null && sem.adsConversions>0)? sem.costPerEffective/(cost/sem.adsConversions) : null;
-  const ch=(d&&d.channels)||{};
-  const chChip=(label,c,color)=>'<span class="attr-ch"><span style="color:'+color+'">●</span> '+label+' <b>'+((c&&c.effective)||0)+'</b><span class="dim">/'+((c&&c.total)||0)+'</span></span>';
+  // 精简为 3 项：真实有效询盘 / A级询盘 / 真实每有效询盘成本(对比 Ads 自报)
   body.innerHTML=
-    '<div class="attr-kpis">'+
-      '<div class="attr-kpi"><div class="attr-num">'+_money(sem.costMicros)+'</div><div class="attr-lbl">SEM 花费</div></div>'+
-      '<div class="attr-kpi"><div class="attr-num">'+((sem.inquiriesEffective)||0)+'<span class="dim" style="font-size:12px">/'+((sem.inquiriesTotal)||0)+'</span></div><div class="attr-lbl">真实有效询盘(A/B)</div></div>'+
-      '<div class="attr-kpi hl"><div class="attr-num">'+real+'</div><div class="attr-lbl">真实每有效询盘成本</div></div>'+
-      '<div class="attr-kpi"><div class="attr-num dim">'+adsCpa+'</div><div class="attr-lbl">Ads 自报每转化</div></div>'+
+    '<div class="attr-report-grid">'+
+      '<div class="attr-box"><div class="attr-num">'+((sem.inquiriesEffective)||0)+'<span class="dim" style="font-size:12px">/'+((sem.inquiriesTotal)||0)+'</span></div><div class="attr-lbl">真实有效询盘 (A/B)</div></div>'+
+      '<div class="attr-box"><div class="attr-num">'+((sem.inquiriesA)||0)+'</div><div class="attr-lbl">A 级询盘数量</div></div>'+
+      '<div class="attr-box"><div class="attr-num">'+real+'</div><div class="attr-lbl">真实每有效询盘成本 · Ads 自报 '+adsCpa+'</div></div>'+
     '</div>'+
     (gap&&gap>=1.3?'<div class="attr-warn"><i class="ti ti-alert-triangle"></i> 真实每询盘成本约为 Ads 自报的 '+gap.toFixed(1)+' 倍——Ads 转化统计可能虚高，别只看 Ads 后台数字。</div>':'')+
-    (sem.inquiriesEffective===0 && sem.costMicros>0?'<div class="attr-warn"><i class="ti ti-alert-triangle"></i> 本区间 SEM 付费花了 '+_money(sem.costMicros)+' 但真实有效询盘为 0——检查渠道标注或投放效果。</div>':'')+
-    '<div class="attr-ch-row"><span class="attr-ch-t">各渠道有效询盘/总数：</span>'+chChip('SEM付费',ch.SEM,'#7b54e0')+chChip('SEO自然',ch.SEO,'#2f72e8')+chChip('直接',ch.direct,'#0b9d8f')+chChip('其他',ch.other,'#ef9514')+'</div>';
+    (sem.inquiriesEffective===0 && sem.costMicros>0?'<div class="attr-warn"><i class="ti ti-alert-triangle"></i> 本区间 SEM 付费花了 '+_money(sem.costMicros)+' 但真实有效询盘为 0——检查渠道标注或投放效果。</div>':'');
 }
 
 /* ===== SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势 ===== */

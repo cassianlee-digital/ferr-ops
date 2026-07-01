@@ -47,9 +47,7 @@ function renderBoardCards(){
   const sw=(window._seoWeeks||[]).slice(-1)[0];
   if(sw){ _t('sb-clicks',(sw.clicks||0).toLocaleString()); _t('sb-impr',(sw.impr||0).toLocaleString()); _t('sb-pos',sw.pos!=null?sw.pos:'—'); _t('sb-cov',sw.coverage!=null?(sw.coverage||0).toLocaleString():'—'); }
   else { ['sb-clicks','sb-impr','sb-pos','sb-cov'].forEach(id=>_t(id,'—')); }
-  const mw=(window._semWeeks||[]).slice(-1)[0];
-  if(mw){ _t('sm-conv',mw.conv!=null?mw.conv:'—'); _t('sm-cpconv',mw.cpconv!=null?('¥'+mw.cpconv):'—'); _t('sm-cost',mw.cost>=1000?('¥'+(mw.cost/1000).toFixed(1)+'k'):('¥'+(mw.cost||0))); }
-  else { ['sm-conv','sm-cpconv','sm-cost'].forEach(id=>_t(id,'—')); }
+  // SEM「账户体检」卡（sm-cost/impr/clicks/ctr/cpc/conv/cvr/cpconv）改由 Ads 同步 renderSemBoard 单一驱动，避免与人工周报来源混用（8 指标同源）
 }
 /* SEM 层级筛选下拉 */
 document.addEventListener('change',e=>{
@@ -100,8 +98,7 @@ async function submitSemWeek(){
   try{
     const {item}=await API.post('/api/sem-weeks',body); // CPC/CTR/每次转化费用由后端计算
     const rec=mapSemWeek(item); window._semWeeks.push(rec); applySemActuals();
-    _setTxt('sm-cost',rec.cost>=1000?('¥'+(rec.cost/1000).toFixed(1)+'k'):('¥'+rec.cost));
-    _setTxt('sm-conv',rec.conv); _setTxt('sm-cpconv',rec.cpconv!=null?('¥'+rec.cpconv):'—');
+    if(typeof loadSemBoardAds==='function')loadSemBoardAds(); // 账户体检卡由 Ads 同步单一驱动，导入后刷新（人工周报仅回写 KPI）
     renderKPI(); closeModal('semWkMask');
     toast('已导入本周 Ads 数据 · CPC ¥'+(rec.cpc??'-')+' / CTR '+(rec.ctr??'-')+'% / 每询盘 ¥'+(rec.cpconv??'-')+'（后端计算）, KPI 已更新');
   }catch(e){ toast(e.status===403?'无权录入（仅陈/SEM 可录）':'保存失败：'+e.message); }
