@@ -235,26 +235,43 @@ function renderSeoDeltaTables(d){
   }
 }
 function _seoScatterTitles(t,s){ const a=document.getElementById('seoScatterTitle'),b=document.getElementById('seoScatterSub'); if(a)a.textContent=t; if(b)b.textContent=s; }
+function renderSeoScatterTargets(list){
+  const box=document.getElementById('seoScatterTargets'); if(!box)return;
+  if(!list||!list.length){ box.innerHTML=''; return; }
+  box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-target-arrow"></i> 重点优化对象 · 高流量高跳出（'+list.length+'）</div>'+list.slice(0,8).map(p=>{
+    const path=_seoPath(p.page), b=Math.round((p.bounceRate||0)*100), dur=Math.round(p.avgDuration||0);
+    const q=_attr('落地页 '+path+' 会话'+p.sessions+'、跳出率'+b+'%、均时长'+dur+'s，流量不小但跳出偏高。给出降低跳出、提升留存与转化的具体优化动作（首屏/内容匹配/CTA/加载速度）。');
+    const ti=_attr('降跳出：'+path), de=_attr('落地页 '+path+' 高流量('+p.sessions+'会话)高跳出('+b+'%)，优化首屏/内容匹配/CTA 降低跳出、提升转化。'), ev=_attr('GA4 会话'+p.sessions+' 跳出'+b+'% 时长'+dur+'s');
+    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(path)+'</span><span class="st-meta dim">'+p.sessions.toLocaleString()+' 会话 · 跳出 <b style="color:#c93338">'+b+'%</b> · '+dur+'s</span></div><div class="st-acts"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'降跳出诊断\')"><i class="ti ti-bulb"></i> 诊断</button><button class="btn-mini" onclick="adoptFinding(this,\'SEO\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
+  }).join('')+'</div>';
+}
 function renderSeoScatter(d){
   const el=document.getElementById('seoScatter'), empty=document.getElementById('seoScatterEmpty'); if(!el)return;
+  const _tb=document.getElementById('seoScatterTargets'); if(_tb)_tb.innerHTML='';
   const ps=(d&&d.pageScatter)||[];
   // 首选：GA4 页面级 会话 × 跳出率（参考图；高流量+高跳出=重点优化对象，自动标红）
   if(ps.length && typeof echarts!=='undefined'){
     el.style.display=''; if(empty)empty.style.display='none';
-    _seoScatterTitles('找出需要优化的页面 · 会话 × 跳出率','右上=高流量+高跳出=重点优化对象(红点)；中位线分四象限；点=落地页');
+    _seoScatterTitles('找出需要优化的页面 · 会话 × 跳出率','右上红区=高流量+高跳出=重点优化对象；中位线分四象限；点=落地页');
     if(window._seoScatterChart){ try{window._seoScatterChart.dispose();}catch(e){} }
     window._seoScatterChart=echarts.init(el);
     const medS=_median(ps.map(p=>p.sessions)), medB=_median(ps.map(p=>(p.bounceRate||0)*100));
-    const data=ps.map(p=>[p.sessions,+(((p.bounceRate||0)*100).toFixed(1)),_seoPath(p.page),p.avgDuration||0]);
+    const maxS=Math.max(...ps.map(p=>p.sessions),1)*1.6;
+    const isTarget=p=>p.sessions>=medS && (p.bounceRate||0)*100>=medB;
+    const short=u=>{ const s=_seoPath(u); return s.length>22?'…'+s.slice(-21):s; };
+    const data=ps.map(p=>{ const t=isTarget(p); return { value:[p.sessions,+(((p.bounceRate||0)*100).toFixed(1)),_seoPath(p.page),p.avgDuration||0],
+      itemStyle:{color:t?'#e5484d':'#2f72e8',opacity:t?.85:.6},
+      label:{show:t,position:'right',fontSize:9,color:'#c93338',formatter:o=>short(o.value[2])} }; });
     window._seoScatterChart.setOption({
-      grid:{left:52,right:24,top:16,bottom:44},
+      grid:{left:52,right:120,top:16,bottom:44},
       xAxis:{type:'log',name:'会话',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
       yAxis:{type:'value',name:'跳出率%',min:0,max:100,nameGap:30,axisLabel:{fontSize:10}},
-      tooltip:{formatter:o=>esc(o.data[2])+'<br/>会话 '+o.data[0].toLocaleString()+' · 跳出率 '+o.data[1]+'% · 均时长 '+Math.round(o.data[3])+'s'},
-      series:[{type:'scatter',symbolSize:v=>Math.min(30,7+Math.sqrt(v[0]||0)),data,
-        itemStyle:{opacity:.72,color:o=>(o.data[0]>=medS&&o.data[1]>=medB)?'#e5484d':'#2f72e8'},
-        markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:false},data:[{xAxis:medS},{yAxis:medB}]}}]
+      tooltip:{formatter:o=>esc(o.value[2])+'<br/>会话 '+o.value[0].toLocaleString()+' · 跳出率 '+o.value[1]+'% · 均时长 '+Math.round(o.value[3])+'s'},
+      series:[{type:'scatter',symbolSize:v=>Math.min(32,8+Math.sqrt(v[0]||0)),data,
+        markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:true,fontSize:9,color:'#9aa1ae',formatter:o=>o.dataType==='max'?'':'中位'},data:[{xAxis:medS},{yAxis:medB}]},
+        markArea:{silent:true,itemStyle:{color:'rgba(229,72,77,.07)'},label:{show:true,position:['85%','6%'],color:'#e5484d',fontSize:11,fontWeight:'bold',formatter:'重点优化对象'},data:[[{xAxis:medS,yAxis:medB},{xAxis:maxS,yAxis:100}]]}}]
     });
+    renderSeoScatterTargets(ps.filter(isTarget).sort((a,b)=>b.sessions-a.sessions));
     return;
   }
   // 回退：GA4 跳出率数据未重新同步时，用 GSC 展现 × 排名 机会词散点
