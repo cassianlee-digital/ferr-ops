@@ -43,11 +43,7 @@ async function loadWeeks(){
 }
 /* 数据看板顶部指标卡：从最新一周回填，无数据显示 — */
 function renderBoardCards(){
-  const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  const sw=(window._seoWeeks||[]).slice(-1)[0];
-  if(sw){ _t('sb-clicks',(sw.clicks||0).toLocaleString()); _t('sb-impr',(sw.impr||0).toLocaleString()); _t('sb-pos',sw.pos!=null?sw.pos:'—'); _t('sb-cov',sw.coverage!=null?(sw.coverage||0).toLocaleString():'—'); }
-  else { ['sb-clicks','sb-impr','sb-pos','sb-cov'].forEach(id=>_t(id,'—')); }
-  // SEM「账户体检」卡（sm-cost/impr/clicks/ctr/cpc/conv/cvr/cpconv）改由 Ads 同步 renderSemBoard 单一驱动，避免与人工周报来源混用（8 指标同源）
+  // SEO 顶部卡（sb-*）改由 GSC 同步 loadSeoBoardGsc 单一驱动；SEM「账户体检」卡由 Ads 同步 renderSemBoard 驱动。均不再用人工周报覆盖，避免来源混用（人工周报只回写 KPI）
 }
 /* SEM 层级筛选下拉 */
 document.addEventListener('change',e=>{
@@ -81,8 +77,7 @@ async function submitSeoWeek(){
   try{
     const {item}=await API.post('/api/seo-weeks',body);
     const rec=mapSeoWeek(item); window._seoWeeks.push(rec); applySeoActuals();
-    _setTxt('sb-clicks',(rec.clicks||0).toLocaleString()); _setTxt('sb-impr',(rec.impr||0).toLocaleString());
-    if(rec.pos!=null)_setTxt('sb-pos',rec.pos); if(rec.coverage!=null)_setTxt('sb-cov',rec.coverage.toLocaleString());
+    if(typeof loadSeoBoardGsc==='function')loadSeoBoardGsc(); // 顶部卡由 GSC 同步单一驱动，录入后刷新（人工周报仍回写 KPI 与趋势）
     seoFull=seoSeriesFromWeeks(); if(seoChart){seoChart.data=buildSeoData(seoFull);seoChart.update();}
     renderKPI(); closeModal('seoWkMask');
     const wow=window._seoWeeks.length>1?('，自然流量环比 '+(SEO[0].a>=0?'+':'')+SEO[0].a+'%'):'';

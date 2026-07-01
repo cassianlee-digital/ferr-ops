@@ -254,18 +254,21 @@
                 <table class="dt"><thead><tr><th>关键词</th><th class="num">展现</th><th class="num">Δ</th><th class="num">点击</th><th class="num">排名</th><th class="num">Δ</th></tr></thead><tbody id="seoQueriesDelta"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
               </div>
             </div>
-            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title" id="seoScatterTitle">找出需要优化的页面 · 会话 × 跳出率</span><span class="card-sub" id="seoScatterSub">右上=高流量+高跳出=重点优化对象；中位线分四象限；点=落地页</span></div>
-              <div id="seoScatter" style="height:360px"></div>
-              <div id="seoScatterTargets"></div>
-              <div id="seoScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 GSC/GA4 同步后显示</div>
-            </div>
+            <!-- 会话×跳出率气泡图已移至「站点机会」子tab -->
             <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEO 看板 · AI 诊断（按优先级）</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'基于下方SEO数据，按优先级列本周最该先做的3件事，每条一句话、可执行。')">重新诊断 ↗</button></div>
               <div class="ai-render"><div class="ai-item"><i class="ti ti-search"></i><div class="body">点右上「重新诊断」，基于本周真实 SEO 数据按优先级列动作。未诊断前不显示建议。</div></div></div>
             </div>
           </div>
 
           <div class="minipanel" id="mp-seo-opp">
-            <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-target-arrow"></i> 排名 11-20、就差一步进首页的词，优先攻这些性价比最高</div>
+            <!-- 先气泡图：高流量+高跳出=重点优化页面 -->
+            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title" id="seoScatterTitle">找出需要优化的页面 · 会话 × 跳出率</span><span class="card-sub" id="seoScatterSub">右上=高流量+高跳出=重点优化对象；中位线分四象限；点=落地页</span></div>
+              <div id="seoScatter" style="height:360px"></div>
+              <div id="seoScatterTargets"></div>
+              <div id="seoScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 GSC/GA4 同步后显示</div>
+            </div>
+            <!-- 后机会词：排名 11-20 -->
+            <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-target-arrow"></i> 机会词 · 排名 11-20、就差一步进首页，优先攻性价比最高的</div>
             <div class="sheet-toolbar" style="margin-bottom:10px"><button class="btn-ghost" onclick="snapshotRanks()"><i class="ti ti-camera"></i> 记录本周排名快照</button><span class="sheet-tip" id="rankTrendNote">每周点一次，积累 2 周后这里显示排名升降趋势（▲升 ▼降），验证整改效果</span></div>
             <div class="card"><table class="dt"><thead><tr><th>关键词</th><th class="dim">所在页</th><th class="num">当前排名</th><th class="num">区间展现</th><th class="ctr">动作</th></tr></thead><tbody id="diagOppRows">
               <tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
@@ -652,31 +655,39 @@
 
 <div class="hermes-backdrop" id="hermesBackdrop" onclick="closeHermesPanel()"></div>
 <section class="hermes-panel" id="hermesPanel" aria-label="Hermes 智能体面板">
-  <div class="hermes-head">
+  <div class="hermes-head" id="hermesDragHandle">
     <div class="hermes-avatar"><i class="ti ti-robot"></i></div>
     <div>
       <div class="hermes-title">Hermes 智能体</div>
-      <div class="hermes-sub">运营管家入口 · 待接入独立服务</div>
+      <div class="hermes-sub" id="hermesSub">运营管家入口 · 正在等待配置</div>
     </div>
+    <button class="hermes-close" type="button" onclick="toggleHermesMaximize()" title="最大化/还原"><i class="ti ti-arrows-maximize"></i></button>
     <button class="hermes-close" type="button" onclick="closeHermesPanel()" title="关闭"><i class="ti ti-x"></i></button>
   </div>
   <div class="hermes-body">
-    <div class="hermes-status">
-      <span class="hermes-dot"></span>
-      <span>当前状态：尚未连接智能体服务器</span>
+    <div class="hermes-toolbar">
+      <div class="hermes-status" id="hermesStatusBox">
+        <span class="hermes-dot" id="hermesDot"></span>
+        <span id="hermesStatusText">当前状态：尚未检查智能体服务器</span>
+      </div>
+      <div class="hermes-identity" id="hermesIdentity">身份：—</div>
     </div>
-    <div class="hermes-card">
-      <div class="hermes-card-title">接入目标</div>
-      <p>后续这里会嵌入 Hermes Agent，用来做运营问答、任务提醒、复盘建议和数据解释。</p>
-    </div>
-    <div class="hermes-card">
-      <div class="hermes-card-title">当前版本</div>
-      <p>本轮只完成入口、面板和状态提示，不会访问外部服务器，也不会影响现有数据保存与 Google 授权。</p>
+    <div class="hermes-frame-wrap" id="hermesFrameWrap">
+      <iframe id="hermesFrame" title="Hermes Agent" referrerpolicy="no-referrer"></iframe>
+      <div class="hermes-empty" id="hermesEmpty">
+        <div class="hermes-card">
+          <div class="hermes-card-title">Hermes 未连接</div>
+          <p id="hermesDetail">需要配置 HERMES_AGENT_URL；如果后台是 HTTPS，Hermes 也建议使用 HTTPS。</p>
+          <p id="hermesEndpoint">服务地址：—</p>
+        </div>
+      </div>
     </div>
   </div>
   <div class="hermes-foot">
-    <button class="btn-ghost" type="button" onclick="go('settings');closeHermesPanel()">打开设置</button>
-    <button class="btn-primary" type="button" onclick="toast('Hermes 智能体服务器待配置')">检查接入状态</button>
+    <button class="btn-ghost" type="button" onclick="resetHermesWindow()">重置窗口</button>
+    <button class="btn-ghost" type="button" onclick="syncHermesPageDetail(true)">读取当前页</button>
+    <button class="btn-ghost" type="button" onclick="refreshHermesStatus(true)">检查接入状态</button>
+    <button class="btn-primary" type="button" id="hermesOpenBtn" onclick="openHermesAgent()" disabled>打开 Hermes</button>
   </div>
 </section>
 
@@ -827,6 +838,7 @@
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
 <script src="/api.js"></script>
+<script src="/hermes.js"></script>
 <!-- 阶段2 拆分：Google 接入/数据源状态 + GA4 看板。仅定义函数（loadGa4/loadIntegrations 等），
      依赖 esc()/toast()（下方内联）在调用时（window load）才解析；window load 初始化在内联脚本末尾。 -->
 <script src="/google-projects.js"></script>
@@ -897,22 +909,9 @@ function mdToHtml(t){
    — aiAsk/aiBox/ai / runAiAnalysis / loadAiAnalyses / applyAiAnalysisStates / renderAiItem / sendAiChat / archiveAiAnalysis / depositAi（esc/mdToHtml/callClaude 仍内联）*/
 
 /* ================= MODALS ================= */
-function openHermesPanel(){
-  const panel=document.getElementById('hermesPanel');
-  const backdrop=document.getElementById('hermesBackdrop');
-  if(panel)panel.classList.add('show');
-  if(backdrop)backdrop.classList.add('show');
-}
-function closeHermesPanel(){
-  const panel=document.getElementById('hermesPanel');
-  const backdrop=document.getElementById('hermesBackdrop');
-  if(panel)panel.classList.remove('show');
-  if(backdrop)backdrop.classList.remove('show');
-}
 function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.modal-mask').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m)m.classList.remove('show'); }));
-document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeHermesPanel(); });
 let tt;
 function showToast(){ const t=document.getElementById('toast'); t.style.transform='translateX(-50%) translateY(0)'; clearTimeout(tt); tt=setTimeout(hideToast,3400); }
 function hideToast(){ document.getElementById('toast').style.transform='translateX(-50%) translateY(80px)'; }
