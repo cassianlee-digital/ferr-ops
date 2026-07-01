@@ -10697,3 +10697,58 @@ body.dark #panel-archive .archive-date,
 body.dark #panel-archive .archive-content .archive-text {
   color: #e5e7eb;
 }
+
+/* ============================================================
+   数据看板优化 7.1 · 阶段1 视觉基线（追加覆盖：靠源顺序 + 必要处 !important）
+   ① 全站 radius=0（仅矩形框；状态点/甜甜圈/开关/头像等圆形不列入）
+   ② 去彩色框线（中性化上轮加的琥珀/紫左条与询盘归因高亮框；语义涨跌chip/警示保留颜色）
+   ③ 两级 TAB 层级：一级=下划线主级、二级=托盘内分段（视觉上从属含于一级）
+   全部用主题变量，暗色模式安全。
+   ============================================================ */
+
+/* ① 全站直角 —— 明确列举矩形框，避免误伤圆形元素 */
+.card, .metric-card, .ai-box, .ai-render, .ai-item, .seo-hl, .seo-hl-chip,
+.attr-kpi, .attr-warn, .attr-ch, .badge, .b-red, .b-green, .b-amber, .b-purple, .b-blue, .b-gray,
+.btn-primary, .btn-ghost, .btn-ai, .btn-mini, .aibtn, .cache-tag,
+.trange, .tgran, .tauto, .subtab, .minitab, .sheet-tip, .sheet-toolbar,
+.dt, .dt th, .dt td, table, input, select, textarea, .chart-wrap,
+.tcard, .banner-red, .kw-pg, .cat-tab, .loopstep, .theme-btn,
+.modal, .box, .attr-body, .hero-card {
+  border-radius: 0 !important;
+}
+
+/* ② 去彩色框线：中性化上轮加的左条 accent 与询盘归因高亮框；保留中性描边 */
+.hero-card { border-color: var(--border) !important; box-shadow: var(--sh) !important; }
+.hero-card::before { display: none !important; }
+.seo-hl.band { border-left: 1px solid var(--border) !important; padding-left: 14px !important; }
+.attr-kpi.hl { border-color: var(--border) !important; background: var(--bg2) !important; }
+.hero-card .attr-kpi.hl .attr-num { color: var(--text1) !important; }
+
+/* ③ 两级 TAB 层级（仅数据看板） */
+/* 一级 SEO/SEM/GA4/周报 = 主级：下划线 tab，更大更粗、无填充 */
+#panel-data .subtabs { gap: 2px !important; border-bottom: 2px solid var(--border) !important; margin-bottom: 12px !important; }
+#panel-data .subtabs .subtab {
+  font-size: 14px !important; font-weight: 700 !important; padding: 10px 20px !important;
+  background: transparent !important; border: none !important; border-bottom: 3px solid transparent !important;
+  margin-bottom: -2px !important; color: var(--text2) !important;
+}
+#panel-data .subtabs .subtab:hover { color: var(--text1) !important; }
+#panel-data .subtabs .subtab.active {
+  color: var(--primary) !important; border-bottom-color: var(--primary) !important; background: transparent !important;
+}
+/* 二级 概览/问题分析… = 从属：托盘内分段按钮，读作"含于当前一级 tab" */
+#panel-data .minitabs {
+  margin: 0 0 14px 0 !important; padding: 5px !important; gap: 4px !important;
+  background: var(--bg3) !important; border: 1px solid var(--border) !important;
+  display: inline-flex !important; flex-wrap: wrap !important;
+}
+#panel-data .minitabs .minitab {
+  font-size: 12px !important; font-weight: 600 !important; padding: 5px 13px !important;
+  background: transparent !important; border: 1px solid transparent !important; color: var(--text2) !important;
+}
+#panel-data .minitabs .minitab:hover { color: var(--text1) !important; }
+#panel-data .minitabs .minitab.active {
+  background: var(--bg2) !important; color: var(--primary) !important;
+  border-color: var(--border) !important; box-shadow: var(--sh) !important;
+}
+#panel-data .minitabs .minitab.active .badge { background: var(--primary-soft) !important; color: var(--primary) !important; }
