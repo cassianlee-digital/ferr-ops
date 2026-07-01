@@ -520,3 +520,88 @@ export function adsWasteKeywords(range, { limit = 50 } = {}) {
     )
     .all(params);
 }
+
+/* ===== SEO 看板(Looker 风格)聚合：带 Δ 的表 / 散点 / GA4 来源 ===== */
+function _gscParams(range) {
+  return { start: range.start_date, end: range.end_date, siteUrl: range.gsc_site_url || null };
+}
+// 按 query 或 page 聚合 GSC 区间数据（col 受控白名单，非用户输入）
+function gscAggBy(range, col) {
+  return db
+    .prepare(
+      `SELECT ${col} k, SUM(clicks) clicks, SUM(impressions) impressions,
+              CASE WHEN SUM(impressions) > 0 THEN SUM(position*impressions)/SUM(impressions) ELSE NULL END position
+       FROM gsc_query_daily
+       WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)
+       GROUP BY ${col}`
+    )
+    .all(_gscParams(range));
+}
+// 落地页表 + Query 表，均带「当前 vs 上一等长窗口」的前值（Δ 在路由/前端算）
+export function gscBoardTables(range, prev, { limit = 15 } = {}) {
+  const mapOf = (rows) => new Map(rows.map((r) => [r.k, r]));
+  const pPrev = mapOf(gscAggBy(prev, 'page'));
+  const pages = gscAggBy(range, 'page')
+    .map((r) => {
+      const pv = pPrev.get(r.k) || { clicks: 0, impressions: 0 };
+      return { page: r.k, clicks: r.clicks, clicksPrev: pv.clicks || 0, impressions: r.impressions, imprPrev: pv.impressions || 0, position: r.position };
+    })
+    .sort((a, b) => b.clicks - a.clicks)
+    .slice(0, limit);
+  const qPrev = mapOf(gscAggBy(prev, 'query'));
+  const queries = gscAggBy(range, 'query')
+    .map((r) => {
+      const pv = qPrev.get(r.k) || { clicks: 0, impressions: 0, position: null };
+      return { query: r.k, impressions: r.impressions, imprPrev: pv.impressions || 0, clicks: r.clicks, clicksPrev: pv.clicks || 0, position: r.position, positionPrev: pv.position };
+    })
+    .sort((a, b) => b.impressions - a.impressions)
+    .slice(0, limit);
+  return { pages, queries };
+}
+// 散点象限：每个 query 的 展现 × 排名（前端画中位线分四象限）
+export function gscScatter(range, { minImpr = 5, limit = 120 } = {}) {
+  return gscAggBy(range, 'query')
+    .filter((r) => r.impressions >= minImpr && r.position != null)
+    .sort((a, b) => b.impressions - a.impressions)
+    .slice(0, limit)
+    .map((r) => ({ query: r.k, impressions: r.impressions, clicks: r.clicks, position: r.position }));
+}
+// GA4 来源分段（区间汇总）：source_medium 维度
+export function ga4SourcesRange(range) {
+  const params = { start: range.start_date, end: range.end_date, propertyId: range.ga4_property_id || null };
+  return db
+    .prepare(
+      `SELECT dimension_value source, SUM(sessions) sessions, SUM(active_users) users, SUM(page_views) pageViews
+       FROM ga4_dimension_daily
+       WHERE date BETWEEN @start AND @end AND dimension_type = 'source_medium' AND (@propertyId IS NULL OR property_id = @propertyId)
+       GROUP BY dimension_value ORDER BY sessions DESC`
+    )
+    .all(params);
+}
+// GA4 来源随时间（堆叠面积）：Top N 来源 + 其他
+export function ga4SourceSeries(range, { topN = 5 } = {}) {
+  const params = { start: range.start_date, end: range.end_date, propertyId: range.ga4_property_id || null };
+  const rows = db
+    .prepare(
+      `SELECT date, dimension_value source, SUM(sessions) sessions
+       FROM ga4_dimension_daily
+       WHERE date BETWEEN @start AND @end AND dimension_type = 'source_medium' AND (@propertyId IS NULL OR property_id = @propertyId)
+       GROUP BY date, dimension_value`
+    )
+    .all(params);
+  const totBy = new Map();
+  rows.forEach((r) => totBy.set(r.source, (totBy.get(r.source) || 0) + r.sessions));
+  const top = [...totBy.entries()].sort((a, b) => b[1] - a[1]).slice(0, topN).map((x) => x[0]);
+  const topSet = new Set(top);
+  const dates = [...new Set(rows.map((r) => r.date))].sort();
+  const di = new Map(dates.map((d, i) => [d, i]));
+  const hasOther = rows.some((r) => !topSet.has(r.source));
+  const keys = hasOther ? [...top, '其他'] : [...top];
+  const seriesMap = new Map(keys.map((s) => [s, new Array(dates.length).fill(0)]));
+  rows.forEach((r) => {
+    const key = topSet.has(r.source) ? r.source : '其他';
+    const arr = seriesMap.get(key);
+    if (arr) arr[di.get(r.date)] += r.sessions;
+  });
+  return { dates, series: [...seriesMap.entries()].map(([source, values]) => ({ source, values })) };
+}

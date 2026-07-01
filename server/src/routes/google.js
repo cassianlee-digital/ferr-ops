@@ -4,6 +4,45 @@ import * as googleRepo from '../db/repositories/googleSync.js';
 import { adsSummary, ga4Overview, gscSummary } from '../db/repositories/googleSync.js';
 import { buildAuthUrl, exchangeCode, normalizeRange, projectProviderConfig, resolveProject } from '../sync/googleClient.js';
 
+// 上一等长窗口（用于 Δ 环比）
+function seoPrevRange(range) {
+  const day = 86400000;
+  const s = new Date(range.start_date + 'T00:00:00Z');
+  const e = new Date(range.end_date + 'T00:00:00Z');
+  const len = Math.round((e - s) / day) + 1;
+  const prevEnd = new Date(s.getTime() - day);
+  const prevStart = new Date(prevEnd.getTime() - (len - 1) * day);
+  const iso = (d) => d.toISOString().slice(0, 10);
+  return { start_date: iso(prevStart), end_date: iso(prevEnd) };
+}
+const _pct = (cur, prev) => (prev ? Math.round((cur / prev - 1) * 100) : (cur ? 100 : 0));
+// 自动挑「本周要点」：最大的涨/跌，供老板一眼看走向
+function buildSeoHighlights({ cur, prevTot, queries, pages }) {
+  const H = [];
+  if (cur && prevTot) {
+    if (cur.clicks != null) {
+      const dc = _pct(cur.clicks, prevTot.clicks);
+      H.push({ tone: dc >= 0 ? 'good' : 'bad', text: `自然点击 ${cur.clicks.toLocaleString()}（${dc >= 0 ? '+' : ''}${dc}% vs 上一周期）` });
+    }
+    if (cur.position != null && prevTot.position != null) {
+      const dp = +(cur.position - prevTot.position).toFixed(1); // 负=排名变好
+      H.push({ tone: dp <= 0 ? 'good' : 'bad', text: `平均排名 ${cur.position.toFixed(1)}（${dp <= 0 ? '↑进步' : '↓退步'} ${Math.abs(dp)}）` });
+    }
+  }
+  const wd = (queries || []).map((q) => ({ ...q, d: (q.clicks || 0) - (q.clicksPrev || 0) }));
+  const up = [...wd].sort((a, b) => b.d - a.d)[0];
+  const dn = [...wd].sort((a, b) => a.d - b.d)[0];
+  if (up && up.d > 0) H.push({ tone: 'good', text: `「${up.query}」点击 +${up.d}（排名 ${up.position != null ? up.position.toFixed(1) : '-'}）` });
+  if (dn && dn.d < 0) H.push({ tone: 'bad', text: `「${dn.query}」点击 ${dn.d}，需关注` });
+  const strip = (u) => String(u || '').replace(/^https?:\/\/[^/]+/, '') || '/';
+  const pd = (pages || [])
+    .map((p) => ({ ...p, dp: _pct(p.clicks, p.clicksPrev) }))
+    .filter((p) => (p.clicksPrev || 0) >= 20)
+    .sort((a, b) => a.dp - b.dp)[0];
+  if (pd && pd.dp < 0) H.push({ tone: 'bad', text: `页面 ${strip(pd.page)} 点击 ${pd.dp}%` });
+  return H.slice(0, 6);
+}
+
 function statusFor(provider, tokens, runs, project) {
   const pc = projectProviderConfig(provider, project);
   const token = tokens[provider] || {};
@@ -120,6 +159,30 @@ export async function googleRoutes(app) {
       const project = resolveProject(request.query || {});
       const range = { ...normalizeRange(request.query || {}), ga4_property_id: project.ga4_property_id };
       return { connected: googleRepo.tokenStatus().ga4.authorized, project, ...ga4Overview(range) };
+    } catch (e) {
+      return reply.code(400).send({ error: e.message || 'bad_request' });
+    }
+  });
+
+  // SEO 看板一次性聚合：带 Δ 的落地页/Query 表 + 机会词散点 + GA4 来源(甜甜圈+堆叠面积) + 本周要点
+  app.get('/api/google/seo/board', { preHandler: requireAuth }, async (request, reply) => {
+    try {
+      const project = resolveProject(request.query || {});
+      const range = normalizeRange(request.query || {});
+      const prev = seoPrevRange(range);
+      const gsc = { ...range, gsc_site_url: project.gsc_site_url };
+      const gscPrev = { ...prev, gsc_site_url: project.gsc_site_url };
+      const ga = { ...range, ga4_property_id: project.ga4_property_id };
+
+      const cur = gscSummary(gsc).totals;
+      const prevTot = gscSummary(gscPrev).totals;
+      const { pages, queries } = googleRepo.gscBoardTables(gsc, gscPrev);
+      const scatter = googleRepo.gscScatter(gsc);
+      const sources = googleRepo.ga4SourcesRange(ga);
+      const sourceSeries = googleRepo.ga4SourceSeries(ga);
+      const highlights = buildSeoHighlights({ cur, prevTot, queries, pages });
+
+      return { connected: googleRepo.tokenStatus().gsc.authorized, project, range, prev, totals: cur, totalsPrev: prevTot, pages, queries, scatter, sources, sourceSeries, highlights };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
     }
