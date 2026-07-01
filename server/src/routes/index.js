@@ -21,6 +21,7 @@ import { dataSourcesRoutes } from './dataSources.js';
 import { sopRoutes } from './sop.js';
 import { googleRoutes } from './google.js';
 import { diagnosticsRoutes } from './diagnostics.js';
+import { attributionRoutes } from './attribution.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -45,4 +46,5 @@ export async function registerRoutes(app) {
   await app.register(sopRoutes);
   await app.register(googleRoutes);
   await app.register(diagnosticsRoutes);
+  await app.register(attributionRoutes);
 }
