@@ -42,6 +42,29 @@ function buildSeoHighlights({ cur, prevTot, queries, pages }) {
   if (pd && pd.dp < 0) H.push({ tone: 'bad', text: `页面 ${strip(pd.page)} 点击 ${pd.dp}%` });
   return H.slice(0, 6);
 }
+const _m6 = (v) => (v == null ? 0 : v / 1e6);
+// SEM 本周要点：转化/每转化成本环比 + 高花费零转化 + 最佳系列
+function buildAdsHighlights({ cur, prevTot, keywords, campaigns }) {
+  const H = [];
+  if (cur && prevTot) {
+    if (cur.conversions != null) {
+      const dc = _pct(cur.conversions, prevTot.conversions);
+      H.push({ tone: dc >= 0 ? 'good' : 'bad', text: `转化 ${Number(cur.conversions).toFixed(1)}（${dc >= 0 ? '+' : ''}${dc}% vs 上一周期）` });
+    }
+    if (cur.costPerConversionMicros != null && prevTot.costPerConversionMicros != null) {
+      const dp = _pct(_m6(cur.costPerConversionMicros), _m6(prevTot.costPerConversionMicros));
+      H.push({ tone: dp <= 0 ? 'good' : 'bad', text: `每转化成本 ${_m6(cur.costPerConversionMicros).toFixed(0)}（${dp >= 0 ? '+' : ''}${dp}%，越低越好）` });
+    }
+  }
+  const zero = (keywords || []).filter((k) => (k.conversions || 0) === 0 && (k.costMicros || 0) > 0);
+  const wasted = zero.reduce((s, k) => s + (k.costMicros || 0), 0);
+  if (wasted > 0) H.push({ tone: 'bad', text: `高花费零转化词合计花 ${_m6(wasted).toFixed(0)}（${zero.length} 个词）` });
+  const worst = [...zero].sort((a, b) => b.costMicros - a.costMicros)[0];
+  if (worst) H.push({ tone: 'bad', text: `最烧钱零转化：「${worst.keyword}」花 ${_m6(worst.costMicros).toFixed(0)}` });
+  const best = [...(campaigns || [])].sort((a, b) => (b.conversions || 0) - (a.conversions || 0))[0];
+  if (best && best.conversions > 0) H.push({ tone: 'good', text: `最佳系列「${best.name}」转化 ${Number(best.conversions).toFixed(1)}` });
+  return H.slice(0, 6);
+}
 
 function statusFor(provider, tokens, runs, project) {
   const pc = projectProviderConfig(provider, project);
@@ -184,6 +207,26 @@ export async function googleRoutes(app) {
       const highlights = buildSeoHighlights({ cur, prevTot, queries, pages });
 
       return { connected: googleRepo.tokenStatus().gsc.authorized, project, range, prev, totals: cur, totalsPrev: prevTot, pages, queries, scatter, pageScatter, sources, sourceSeries, highlights };
+    } catch (e) {
+      return reply.code(400).send({ error: e.message || 'bad_request' });
+    }
+  });
+
+  // SEM 看板一次性聚合：带 Δ 的系列/关键词表 + 花费×转化散点 + 日趋势 + 本周要点
+  app.get('/api/google/ads/board', { preHandler: requireAuth }, async (request, reply) => {
+    try {
+      const project = resolveProject(request.query || {});
+      const range = normalizeRange(request.query || {});
+      const prev = seoPrevRange(range);
+      const ads = { ...range, ads_customer_id: project.ads_customer_id };
+      const adsPrev = { ...prev, ads_customer_id: project.ads_customer_id };
+      const cur = adsSummary(ads).totals;
+      const prevTot = adsSummary(adsPrev).totals;
+      const { campaigns, keywords } = googleRepo.adsBoardTables(ads, adsPrev);
+      const scatter = googleRepo.adsScatter(ads);
+      const series = googleRepo.adsSeries(ads);
+      const highlights = buildAdsHighlights({ cur, prevTot, keywords, campaigns });
+      return { connected: googleRepo.tokenStatus().ads.authorized, project, range, prev, totals: cur, totalsPrev: prevTot, campaigns, keywords, scatter, series, highlights };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
     }

@@ -583,6 +583,66 @@ export function ga4SourcesRange(range) {
     )
     .all(params);
 }
+/* ===== SEM 富看板：带 Δ 的系列/关键词表 + 花费×转化散点 + 日趋势 ===== */
+function _adsParams(range) {
+  return { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null };
+}
+function adsCampaignAgg(range) {
+  return db
+    .prepare(
+      `SELECT campaign_id id, campaign_name name, SUM(cost_micros) costMicros, SUM(impressions) impressions,
+              SUM(clicks) clicks, SUM(conversions) conversions
+       FROM google_ads_campaign_daily
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       GROUP BY campaign_id, campaign_name`
+    )
+    .all(_adsParams(range));
+}
+function adsKeywordAgg(range) {
+  return db
+    .prepare(
+      `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName, SUM(cost_micros) costMicros,
+              SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
+       FROM google_ads_keyword_daily
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       GROUP BY keyword_text, match_type, campaign_name`
+    )
+    .all(_adsParams(range));
+}
+export function adsBoardTables(range, prev, { limit = 15 } = {}) {
+  const cPrev = new Map(adsCampaignAgg(prev).map((r) => [r.id, r]));
+  const campaigns = adsCampaignAgg(range)
+    .map((r) => { const pv = cPrev.get(r.id) || {}; return { ...r, costPrev: pv.costMicros || 0, clicksPrev: pv.clicks || 0, convPrev: pv.conversions || 0 }; })
+    .sort((a, b) => b.costMicros - a.costMicros)
+    .slice(0, limit);
+  const kKey = (r) => r.keyword + '|' + r.matchType + '|' + r.campaignName;
+  const kPrev = new Map(adsKeywordAgg(prev).map((r) => [kKey(r), r]));
+  const keywords = adsKeywordAgg(range)
+    .map((r) => { const pv = kPrev.get(kKey(r)) || {}; return { ...r, costPrev: pv.costMicros || 0, clicksPrev: pv.clicks || 0, convPrev: pv.conversions || 0 }; })
+    .sort((a, b) => b.costMicros - a.costMicros)
+    .slice(0, limit);
+  return { campaigns, keywords };
+}
+// 散点：花费 × 转化（高花费低转化=该砍，前端画中位线分四象限）
+export function adsScatter(range, { limit = 120 } = {}) {
+  return adsKeywordAgg(range)
+    .filter((r) => r.costMicros > 0)
+    .sort((a, b) => b.costMicros - a.costMicros)
+    .slice(0, limit)
+    .map((r) => ({ keyword: r.keyword, campaignName: r.campaignName, costMicros: r.costMicros, conversions: r.conversions, clicks: r.clicks }));
+}
+// 日趋势：每天 花费/点击/转化
+export function adsSeries(range) {
+  return db
+    .prepare(
+      `SELECT date, SUM(cost_micros) costMicros, SUM(clicks) clicks, SUM(conversions) conversions
+       FROM google_ads_campaign_daily
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId)
+       GROUP BY date ORDER BY date`
+    )
+    .all(_adsParams(range));
+}
+
 // GA4 页面级「会话 × 跳出率」散点（找高流量高跳出=重点优化对象）。跳出率按会话加权
 export function ga4PageScatter(range, { minSessions = 5, limit = 120 } = {}) {
   const params = { start: range.start_date, end: range.end_date, propertyId: range.ga4_property_id || null, minSessions, limit };
