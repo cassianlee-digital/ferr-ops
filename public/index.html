@@ -229,16 +229,14 @@
         <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
         <div class="timebar-inline" data-time data-gran="week,month"></div>
         <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock"></i> 时间范围影响：询盘、SEO 看板（GSC）、SEM 看板（Ads）。GA4 看板与总览暂未跟随时间范围。</div>
-        <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div></div>
+        <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div><div class="subtab" data-sub="data-report">AI 周报</div></div>
 
         <!-- ===== SEO 看板 ===== -->
         <div class="subpanel active" id="sub-data-seo">
           <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber" id="diag-opp-n" style="display:none"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red" id="diag-decay-n" style="display:none"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple" id="diag-cann-n" style="display:none"></span></div></div>
 
           <div class="minipanel active" id="mp-seo-overview">
-            <div class="ai-box"><div class="ai-header"><span class="ai-title"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span>对接 GSC</span><button class="btn-ghost" onclick="aiBox(this,'你是费尔瑞SEO负责人。基于下方真实数据写一份本周SEO周报：先两句话概述点击/展现/排名走势，再分「机会」「风险」两条给出可执行建议。')">重新生成 ↗</button></div></div>
-              <div class="ai-render"><div class="ai-item"><i class="ti ti-sparkles"></i><div class="body">点右上「重新生成」，基于本周录入的真实 SEO 数据生成周报（机会/风险）。未生成前不显示建议。</div></div></div>
-            </div>
+            <!-- AI 周报已移至「AI 周报」子tab（周级低频，不占概览黄金位） -->
             <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSeoWeek()"><i class="ti ti-table-plus"></i> 录入本周 GSC 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入点击/展现/排名 → 自动更新下方图表与 KPI（自然流量环比按周环比自动算）</span></div>
             <div class="metric-row"><div class="metric-card"><div class="metric-num" id="sb-clicks">—</div><div class="metric-lbl">自然点击</div><div class="metric-delta" id="sb-clicks-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-impr">—</div><div class="metric-lbl">自然展现</div><div class="metric-delta" id="sb-impr-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-pos">—</div><div class="metric-lbl">平均排名</div><div class="metric-delta" id="sb-pos-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-cov">—</div><div class="metric-lbl">关键词覆盖</div><div class="metric-delta" id="sb-cov-d"></div></div></div>
             <div id="seoHighlights" class="seo-hl" style="display:none"></div>
@@ -294,15 +292,15 @@
         <div class="subpanel" id="sub-data-sem">
           <div class="minitabs"><div class="minitab active" data-mini="sem-overview">概览</div><div class="minitab" data-mini="sem-problem">问题分析</div><div class="minitab" data-mini="sem-optimize">优化思路</div><div class="minitab" data-mini="sem-keyword">关键词排查</div></div>
           <div class="minipanel active" id="mp-sem-overview">
-          <div class="ai-box purple"><div class="ai-header"><span class="ai-title" style="color:var(--purple)"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span class="cache-tag">已缓存 · 本周 1/1</span><button class="btn-ghost" onclick="aiBox(this,'你是费尔瑞SEM负责人。基于下方真实数据写本周Ads周报：概述花费/ROAS/有效询盘成本，再给「立即做」「本周做」两条建议。')">重新生成 ↗</button></div></div>
-            <div class="ai-render"><div class="ai-item"><i class="ti ti-sparkles"></i><div class="body">点右上「重新生成」，基于本周导入的真实 Ads 数据生成周报（立即做/本周做）。未生成前不显示建议。</div></div></div>
-          </div>
-          <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
-          <div class="metric-row" style="grid-template-columns:repeat(3,1fr)"><div class="metric-card"><div class="metric-num" id="sm-conv" style="font-size:22px">—</div><div class="metric-lbl">转化次数</div></div><div class="metric-card"><div class="metric-num" id="sm-cpconv" style="font-size:22px">—</div><div class="metric-lbl">每转化成本</div></div><div class="metric-card"><div class="metric-num" id="sm-cost" style="font-size:22px">—</div><div class="metric-lbl">总花费</div></div></div>
-          <div id="semHighlights" class="seo-hl" style="display:none"></div>
-          <div class="card" id="semAttrCard" style="margin-bottom:14px;display:none"><div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报 · 询盘归因</span><span class="card-sub">Ads 花费 ÷ 真实 SEM 有效询盘（而非 Ads 自报转化）· 按所选时间范围</span></div>
+          <!-- ① 要点带：替用户先判断本周轻重（红跌绿涨），提到最顶 -->
+          <div id="semHighlights" class="seo-hl band" style="display:none"></div>
+          <!-- ② Hero：这钱花得值不值——真实询盘回报（花费 ÷ 真实有效询盘），全页主角 -->
+          <div class="card hero-card" id="semAttrCard" style="margin-bottom:14px;display:none"><div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报 · 询盘归因</span><span class="card-sub">Ads 花费 ÷ 真实 SEM 有效询盘（而非 Ads 自报转化）· 按所选时间范围</span></div>
             <div id="semAttrBody" class="attr-body"></div>
           </div>
+          <!-- ③ 账户体检小卡（配角） -->
+          <div class="metric-row" style="grid-template-columns:repeat(3,1fr)"><div class="metric-card"><div class="metric-num" id="sm-conv" style="font-size:22px">—</div><div class="metric-lbl">转化次数</div></div><div class="metric-card"><div class="metric-num" id="sm-cpconv" style="font-size:22px">—</div><div class="metric-lbl">每转化成本</div></div><div class="metric-card"><div class="metric-num" id="sm-cost" style="font-size:22px">—</div><div class="metric-lbl">总花费</div></div></div>
+          <div class="sheet-toolbar" style="margin:12px 0"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
           <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> 金额为 Ads 账户币种 · 按所选时间范围 · 来源 Google Ads 同步</div>
           <!-- 图表提前：老板一眼看走向 -->
           <div class="seo-grid2">
@@ -345,6 +343,19 @@
           </div>
         </div>
         <div class="subpanel" id="sub-data-ga4"></div>
+
+        <!-- ===== AI 周报（SEO + SEM 合一，周级低频，独立 tab，不占概览黄金位） ===== -->
+        <div class="subpanel" id="sub-data-report">
+          <div class="sheet-tip" style="margin-bottom:12px"><i class="ti ti-calendar-week"></i> 周报每周测一次即可，已从概览移到这里。基于真实同步数据点「重新生成」按本周数据出结论；结论存入历史时间线可回溯。</div>
+          <div class="card-title" style="margin:2px 0 8px"><i class="ti ti-brand-google" style="color:var(--green)"></i> SEO 周报</div>
+          <div class="ai-box" style="margin-bottom:16px"><div class="ai-header"><span class="ai-title"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span>对接 GSC</span><button class="btn-ghost" onclick="aiBox(this,'你是费尔瑞SEO负责人。基于下方真实数据写一份本周SEO周报：先两句话概述点击/展现/排名走势，再分「机会」「风险」两条给出可执行建议。')">重新生成 ↗</button></div></div>
+            <div class="ai-render"><div class="ai-item"><i class="ti ti-sparkles"></i><div class="body">点右上「重新生成」，基于本周录入的真实 SEO 数据生成周报（机会/风险）。未生成前不显示建议。</div></div></div>
+          </div>
+          <div class="card-title" style="margin:2px 0 8px"><i class="ti ti-ad" style="color:var(--purple)"></i> SEM 周报</div>
+          <div class="ai-box purple"><div class="ai-header"><span class="ai-title" style="color:var(--purple)"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span class="cache-tag">已缓存 · 本周 1/1</span><button class="btn-ghost" onclick="aiBox(this,'你是费尔瑞SEM负责人。基于下方真实数据写本周Ads周报：概述花费/ROAS/有效询盘成本，再给「立即做」「本周做」两条建议。')">重新生成 ↗</button></div></div>
+            <div class="ai-render"><div class="ai-item"><i class="ti ti-sparkles"></i><div class="body">点右上「重新生成」，基于本周导入的真实 Ads 数据生成周报（立即做/本周做）。未生成前不显示建议。</div></div></div>
+          </div>
+        </div>
       </div>
 
       <!-- ============ ④ 整改清单 ============ -->

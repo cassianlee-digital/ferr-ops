@@ -9483,6 +9483,12 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 .attr-ch-row { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 12px; }
 .attr-ch-t { color: var(--text3); }
 .attr-ch b { color: var(--text1); }
+/* 概览三层：要点带横幅 + Hero 主角卡（SEM 询盘归因） */
+.seo-hl.band { border-left: 4px solid var(--amber); padding-left: 14px; }
+.hero-card { border-color: rgba(123,84,224,.45); box-shadow: 0 6px 22px rgba(123,84,224,.13); position: relative; }
+.hero-card::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px; border-radius: 0 4px 4px 0; background: var(--purple); }
+.hero-card .card-title { font-size: 14px; }
+.hero-card .attr-kpi.hl .attr-num { color: var(--purple); }
 /* 散点下方「重点优化对象」可动手清单 */
 .scatter-targets { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px; }
 .scatter-targets .st-head { font-weight: 700; font-size: 12px; color: #c93338; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
