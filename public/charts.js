@@ -462,6 +462,8 @@ function renderSemScatter(d){
   }
   renderSemScatterTargets(zero);
 }
+// 两个 YYYY-MM-DD 相差天数（用于把上一区间日趋势按天偏移对齐到当前区间）
+function _dayDiff(a,b){ return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000); }
 function renderSemCostCharts(d){
   const palette=['#7b54e0','#2f72e8','#0b9d8f','#ef9514','#e5484d','#9aa1ae'];
   const cs=(d&&d.campaigns)||[];
@@ -480,10 +482,24 @@ function renderSemCostCharts(d){
     if(window._semTrend){ try{window._semTrend.destroy();}catch(e){} window._semTrend=null; }
     const s=(d&&d.series)||[];
     if(s.length){
-      window._semTrend=new Chart(trendCv,{type:'line',data:{labels:s.map(x=>x.date.slice(5)),datasets:[
+      // 上一等长区间对比：按「距各自窗口起点的天数」对齐（兼容缺天），画成灰虚线幽灵线
+      const sp=(d&&d.seriesPrev)||[], rng=d&&d.range, pv=d&&d.prev;
+      const prevCost=[], prevConv=[], prevDate=[];
+      if(sp.length && rng && pv){
+        const mCost=new Map(), mConv=new Map(), mDate=new Map();
+        sp.forEach(x=>{ const o=_dayDiff(pv.start_date,x.date); mCost.set(o,+(x.costMicros/1e6).toFixed(0)); mConv.set(o,x.conversions); mDate.set(o,x.date); });
+        s.forEach(x=>{ const o=_dayDiff(rng.start_date,x.date); prevCost.push(mCost.has(o)?mCost.get(o):null); prevConv.push(mConv.has(o)?mConv.get(o):null); prevDate.push(mDate.has(o)?mDate.get(o):null); });
+      }
+      const hasPrev=prevCost.some(v=>v!=null);
+      const datasets=[
         {label:'花费',data:s.map(x=>+(x.costMicros/1e6).toFixed(0)),borderColor:'#7b54e0',backgroundColor:'rgba(123,84,224,.12)',fill:true,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y'},
         {label:'转化',data:s.map(x=>x.conversions),borderColor:'#15a85a',tension:.3,pointRadius:0,borderWidth:1.6,yAxisID:'y1'}
-      ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}}},y:{position:'left',beginAtZero:true},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
+      ];
+      if(hasPrev){ datasets.push(
+        {label:'花费·上一区间',data:prevCost,borderColor:'rgba(123,84,224,.45)',borderDash:[5,4],borderWidth:1.4,pointRadius:0,tension:.3,fill:false,spanGaps:true,yAxisID:'y'},
+        {label:'转化·上一区间',data:prevConv,borderColor:'rgba(21,168,90,.5)',borderDash:[5,4],borderWidth:1.2,pointRadius:0,tension:.3,fill:false,spanGaps:true,yAxisID:'y1'}
+      ); }
+      window._semTrend=new Chart(trendCv,{type:'line',data:{labels:s.map(x=>x.date.slice(5)),datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},tooltip:hasPrev?{callbacks:{footer:items=>{ const i=items&&items[0]&&items[0].dataIndex; const pd=(i!=null)?prevDate[i]:null; return pd?('对应上一区间：'+pd):''; }}}:{}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}}},y:{position:'left',beginAtZero:true},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
     } else { chartEmpty('semTrend'); }
   }
 }
