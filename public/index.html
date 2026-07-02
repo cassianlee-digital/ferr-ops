@@ -97,12 +97,12 @@
           </div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search" style="color:var(--blue)"></i> SEO 总览</span><span class="badge b-blue">李</span></div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"><div><div class="metric-num" style="font-size:19px">3,612</div><div class="metric-lbl">自然点击</div><div class="metric-delta delta-pos">▲8%</div></div><div><div class="metric-num" style="font-size:19px">30%</div><div class="metric-lbl">Top10 占比</div><div class="metric-delta delta-neg">▼10pp</div></div><div><div class="metric-num" style="font-size:19px">186</div><div class="metric-lbl">收录页面</div><div class="metric-delta delta-pos">▲8</div></div></div>
+          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search" style="color:var(--blue)"></i> SEO 总览</span><span class="card-sub">GSC · 本月至今</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"><div><div class="metric-num" style="font-size:19px" id="ov-seo-clicks">—</div><div class="metric-lbl">自然点击</div></div><div><div class="metric-num" style="font-size:19px" id="ov-seo-impr">—</div><div class="metric-lbl">自然展现</div></div><div><div class="metric-num" style="font-size:19px" id="ov-seo-pos">—</div><div class="metric-lbl">平均排名</div></div></div>
             <div class="chart-wrap" style="height:100px"><canvas id="seoMini"></canvas></div>
             <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px"><button class="btn-ai" onclick="ai('给SEO本月总览级AI诊断，按优先级列最该先做的3件事')"><i class="ti ti-sparkles"></i> SEO AI 诊断 ↗</button></div></div>
-          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-ad-2" style="color:var(--purple)"></i> SEM 总览</span><span class="badge b-purple">陈</span></div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"><div><div class="metric-num" style="font-size:19px">¥28.8k</div><div class="metric-lbl">花费</div><div class="metric-delta delta-neg">▲8%</div></div><div><div class="metric-num" style="font-size:19px">3.2x</div><div class="metric-lbl">ROAS</div><div class="metric-delta delta-pos">▲0.4</div></div><div><div class="metric-num" style="font-size:19px">7.2</div><div class="metric-lbl">质量分</div><div class="metric-delta delta-pos">▲0.3</div></div></div>
+          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-ad-2" style="color:var(--purple)"></i> SEM 总览</span><span class="card-sub">Ads · 本月至今</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"><div><div class="metric-num" style="font-size:19px" id="ov-sem-cost">—</div><div class="metric-lbl">花费</div></div><div><div class="metric-num" style="font-size:19px" id="ov-sem-conv">—</div><div class="metric-lbl">转化</div></div><div><div class="metric-num" style="font-size:19px" id="ov-sem-cpa">—</div><div class="metric-lbl">每转化成本</div></div></div>
             <div class="chart-wrap" style="height:100px"><canvas id="semMini"></canvas></div>
             <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px"><button class="btn-ai" onclick="ai('给SEM本月总览级AI诊断，按优先级列最该先做的3件事')"><i class="ti ti-sparkles"></i> SEM AI 诊断 ↗</button></div></div>
         </div>
@@ -237,8 +237,7 @@
           <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber" id="diag-opp-n" style="display:none"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red" id="diag-decay-n" style="display:none"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple" id="diag-cann-n" style="display:none"></span></div></div>
 
           <div class="minipanel active" id="mp-seo-overview">
-            <!-- AI 周报已移至「AI 周报」子tab（周级低频，不占概览黄金位） -->
-            <div class="sheet-toolbar" style="margin-bottom:12px"><button class="btn-primary" onclick="openSeoWeek()"><i class="ti ti-table-plus"></i> 录入本周 GSC 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入点击/展现/排名 → 自动更新下方图表与 KPI（自然流量环比按周环比自动算）</span></div>
+            <!-- AI 周报已移至「AI 周报」子tab；数据由 GSC 同步驱动，手动录入入口已移除 -->
             <div class="metric-row"><div class="metric-card"><div class="metric-num" id="sb-clicks">—</div><div class="metric-lbl">自然点击</div><div class="metric-delta" id="sb-clicks-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-impr">—</div><div class="metric-lbl">自然展现</div><div class="metric-delta" id="sb-impr-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-pos">—</div><div class="metric-lbl">平均排名</div><div class="metric-delta" id="sb-pos-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-cov">—</div><div class="metric-lbl">关键词覆盖</div><div class="metric-delta" id="sb-cov-d"></div></div></div>
             <div id="seoHighlights" class="seo-hl" style="display:none"></div>
             <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">点击 / 展现趋势</span><span class="card-sub">按所选时间范围 · GSC</span></div><div class="chart-wrap" style="height:170px"><canvas id="seoBoard"></canvas></div></div>
@@ -321,7 +320,7 @@
               <div id="semAttrBody"></div>
             </div>
           </div>
-          <div class="sheet-toolbar" style="margin:0 0 14px"><button class="btn-primary" onclick="openSemWeek()"><i class="ti ti-table-plus"></i> 导入本周 Ads 数据</button><span class="sheet-tip"><i class="ti ti-info-circle"></i> 录入花费/点击/转化/ROAS → CPC、CTR、每询盘成本自动算并回写 KPI</span></div>
+          <!-- 手动「导入本周 Ads 数据」入口已移除：数据由 Google Ads 同步驱动 -->
           <!-- 图表提前：老板一眼看走向 -->
           <div class="seo-grid2">
             <div class="card"><div class="card-head"><span class="card-title">花费占比 · 按系列</span><span class="card-sub">Ads</span></div>
@@ -1293,6 +1292,7 @@ window.addEventListener('load',async()=>{
   renderSparklines();
   await hydrate();             // 询盘/否词/广告/排名快照
   loadDashboardInq();          // 6.23 文档 2：总览询盘趋势独立拉当月，与全局时间范围解耦
+  loadDashboardBoards();       // 总览 SEO/SEM 两卡：接真实当月 GSC/Ads 数据（替换写死 demo）
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目 + 沉淀表
   await loadAiAnalyses();      // AI 分析记录：恢复“已分析”状态和历史文档

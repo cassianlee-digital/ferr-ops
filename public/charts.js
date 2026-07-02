@@ -606,6 +606,34 @@ async function loadDataFreshness(){
   el.innerHTML='<i class="ti ti-database"></i> '+chip('GSC',d.gsc)+chip('GA4',d.ga4)+chip('Ads',d.ads)
     +'<span class="dim fresh-help">区间实际有数据天数 / 所选总天数 · 时间范围影响：询盘、SEO(GSC)、SEM(Ads)、GA4</span>';
 }
+/* 总览 SEO/SEM 两卡：接真实当月数据（本月 1 号~今天），替换原写死的 demo 数字。独立于全局时间范围（固定当月） */
+window._ovSeoMini=null; window._ovSemMini=null;
+function _ovSpark(id, rows, valFn, color){
+  const cv=document.getElementById(id); if(!cv)return;
+  const key='_ov'+(id==='seoMini'?'Seo':'Sem')+'Mini';
+  if(window[key]){ try{window[key].destroy();}catch(e){} window[key]=null; }
+  if(!rows||!rows.length){ chartEmpty(id); return; }
+  const wrap=cv.closest('.chart-wrap'); if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
+  window[key]=new Chart(cv,{type:'line',data:{labels:rows.map(x=>(x.date||'').slice(5)),datasets:[{data:rows.map(valFn),borderColor:color,backgroundColor:color+'1a',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:true}},scales:{x:{display:false},y:{display:false,beginAtZero:true}}}});
+}
+async function loadDashboardBoards(){
+  if(window.DEMO_MODE)return;
+  const today=formatLocalDate(new Date()), first=today.slice(0,7)+'-01';
+  const r={start_date:first,end_date:today};
+  const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  let g=null; try{ g=await API.get(withRange('/api/google/gsc/summary',r)); }catch(e){}
+  const gt=g&&g.totals;
+  _t('ov-seo-clicks', gt?(gt.clicks||0).toLocaleString():'—');
+  _t('ov-seo-impr',   gt?(gt.impressions||0).toLocaleString():'—');
+  _t('ov-seo-pos',    gt&&gt.position!=null?Number(gt.position).toFixed(1):'—');
+  _ovSpark('seoMini', (g&&g.byDate)||[], x=>+x.clicks||0, '#2f72e8');
+  let a=null; try{ a=await API.get(withRange('/api/google/ads/board',r)); }catch(e){}
+  const at=a&&a.totals;
+  _t('ov-sem-cost', at?_money(at.costMicros):'—');
+  _t('ov-sem-conv', at?_conv(at.conversions):'—');
+  _t('ov-sem-cpa',  at?_money(at.costPerConversionMicros):'—');
+  _ovSpark('semMini', (a&&a.series)||[], x=>(x.costMicros||0)/1e6, '#7b54e0');
+}
 async function loadDiagnostics(){
   let d=null;
   try{ d=await API.get(withRange('/api/diagnostics')); }catch(e){ d=null; }

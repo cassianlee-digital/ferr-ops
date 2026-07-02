@@ -249,17 +249,17 @@ async function renderGlobe(){
       selectedMode:false,
       label:{ show:false },
       itemStyle:{
-        areaColor:'#2f7dcc',
-        borderColor:'rgba(255,255,255,.86)',
-        borderWidth:.8
+        areaColor:'#17263f',
+        borderColor:'rgba(120,155,205,.20)',
+        borderWidth:.6
       },
       emphasis:{
-        disabled:true,
-        itemStyle:{ areaColor:'#2f7dcc' }
+        disabled:false,
+        itemStyle:{ areaColor:'#22375c', borderColor:'rgba(150,190,240,.35)' }
       },
       regions:[
-        { name:'Antarctica', itemStyle:{ areaColor:'#2f7dcc', borderColor:'rgba(255,255,255,.58)' } },
-        { name:'Greenland', itemStyle:{ areaColor:'#2f7dcc', borderColor:'rgba(255,255,255,.58)' } }
+        { name:'Antarctica', itemStyle:{ areaColor:'#17263f', borderColor:'rgba(120,155,205,.14)' } },
+        { name:'Greenland', itemStyle:{ areaColor:'#17263f', borderColor:'rgba(120,155,205,.14)' } }
       ]
     },
     series:[
@@ -274,16 +274,16 @@ async function renderGlobe(){
         effect:{
           show:true,
           period:4.2,
-          trailLength:.035,
+          trailLength:.05,
           symbol:'arrow',
-          symbolSize:9,
-          color:'#f43f3a'
+          symbolSize:8,
+          color:'#7dd3fc'
         },
         lineStyle:{
-          color:'#f43f3a',
-          width:2.2,
-          opacity:.95,
-          curveness:.24
+          color:'#38bdf8',
+          width:1.8,
+          opacity:.85,
+          curveness:.28
         },
         emphasis:{
           lineStyle:{ opacity:1, width:3.2 }
@@ -297,17 +297,17 @@ async function renderGlobe(){
         data:pointData,
         symbolSize:(value) => Math.min(20, 10 + (value[2] || 0) * 1.4),
         rippleEffect:{ brushType:'stroke', scale:2.5, period:3.6 },
-        itemStyle:{ color:'#f43f3a', borderColor:'#fff', borderWidth:2.4 },
+        itemStyle:{ color:'#38bdf8', borderColor:'rgba(255,255,255,.9)', borderWidth:1.6, shadowBlur:12, shadowColor:'rgba(56,189,248,.7)' },
         label:{
           show:true,
           formatter:(params) => `${params.name} ${params.value[2] || ''}`,
           position:'right',
-          color:'#1d2a3a',
-          fontSize:15,
-          fontWeight:900,
+          color:'#e6f0ff',
+          fontSize:14,
+          fontWeight:800,
           fontFamily:'Inter, Microsoft YaHei, Arial, sans-serif',
-          textBorderColor:'#ffffff',
-          textBorderWidth:2.4
+          textBorderColor:'rgba(8,16,32,.95)',
+          textBorderWidth:3
         }
       },
       {
@@ -317,17 +317,17 @@ async function renderGlobe(){
         zlevel:5,
         data:[{ name:'青岛', value:[QINGDAO[0], QINGDAO[1], 1] }],
         symbolSize:19,
-        itemStyle:{ color:'#08bde8', borderColor:'#fff', borderWidth:3 },
+        itemStyle:{ color:'#fbbf24', borderColor:'rgba(255,255,255,.9)', borderWidth:2.4, shadowBlur:14, shadowColor:'rgba(251,191,36,.7)' },
         label:{
           show:true,
           formatter:'青岛',
           position:'left',
-          color:'#16243a',
-          fontSize:16,
-          fontWeight:900,
+          color:'#fde68a',
+          fontSize:15,
+          fontWeight:800,
           fontFamily:'Inter, Microsoft YaHei, Arial, sans-serif',
-          textBorderColor:'#ffffff',
-          textBorderWidth:2.8
+          textBorderColor:'rgba(8,16,32,.95)',
+          textBorderWidth:3
         }
       }
     ]

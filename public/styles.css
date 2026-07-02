@@ -10838,7 +10838,7 @@ body.dark #panel-archive .archive-content .archive-text {
 .sem-stat-n { font-size: 19px; font-weight: 800; color: var(--text1); }
 .sem-stat-l { font-size: 11.5px; color: var(--text3); margin-top: 3px; }
 /* 真实询盘回报：3 项，底色加深与左侧体检卡区分 */
-.attr-report-grid { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.attr-report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
 .attr-box { background: var(--bg3); padding: 11px 14px; }
 @media (max-width: 760px) { .sem-stats { grid-template-columns: repeat(2, 1fr); } }
 /* 阶段4：要点带 + 系列筛选器同一行 */
@@ -10857,3 +10857,19 @@ body.dark #panel-archive .archive-content .archive-text {
 .fresh-chip.bad { border-color: rgba(229,72,77,.35); background: rgba(229,72,77,.06); }
 .fresh-chip.gray { color: var(--text3); }
 .fresh-help { margin-left: auto; font-size: 11px; }
+
+/* ============================================================
+   询盘世界地图 · Starlink 深色高级风（追加覆盖，末尾生效）
+   深色海洋 + 暗色陆地 + 发光飞线/点 + 浅色标签
+   ============================================================ */
+#panel-inquiry .card:has(#inqGlobe) { background: #0b1220 !important; border-color: #1b2942 !important; box-shadow: 0 8px 30px rgba(3,8,20,.45) !important; }
+#panel-inquiry .card:has(#inqGlobe) .card-title { color: #e6f0ff !important; }
+#panel-inquiry .card:has(#inqGlobe) .card-head span,
+#panel-inquiry .card:has(#inqGlobe) .card-sub { color: #7d93b3 !important; }
+.inq-flat-map, .inq-blue-map { background: transparent !important; }
+.inq-echarts-map { background: radial-gradient(130% 100% at 50% -10%, #14243f 0%, #0b1220 68%) !important; }
+.inq-map-head strong { color: #e6f0ff !important; }
+.inq-map-head span, .inq-map-total { color: #8aa0c0 !important; }
+.inq-map-panel div { background: rgba(30,48,80,.45) !important; border-color: rgba(90,130,180,.20) !important; }
+.inq-map-panel div, .inq-map-panel b { color: #dbe7f5 !important; }
+.inq-map-panel span { color: #8aa0c0 !important; }
