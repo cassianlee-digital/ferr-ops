@@ -152,16 +152,34 @@
       <div class="panel" id="panel-inquiry">
         <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><button class="btn-primary" onclick="openInquiry()"><i class="ti ti-plus"></i> 录入询盘</button></div>
         <div class="timebar-inline" data-time data-gran="day,week,month"></div>
-        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock"></i> 当前时间范围会筛选下方询盘列表与询盘统计。</div>
-<!-- 条目 13：删询盘评级页 metric-row 四个框（顶栏 KPI pill 已有 有效询盘/A级占比/有效询盘率） -->
-        <div style="display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start">
-          <div>
-          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；右侧地球仪按表格数据实时高亮各国并画青岛飞线</span></div>
+<!-- Hero：最新询盘 feed（左·可折叠）+ 全球飞线地图（右·2/3）— 一进页面即见录入询盘 -->
+        <div class="inq-hero" id="inqHero">
+          <aside class="card inq-feed" id="inqFeed">
+            <div class="inq-feed-head">
+              <div><span class="card-title">最新询盘</span> <span class="card-sub" id="inqFeedCount">—</span></div>
+            </div>
+            <div class="inq-feed-tip"><i class="ti ti-clock"></i> 本月询盘 · 随时间范围筛选；历史月份见下方明细表</div>
+            <div class="inq-feed-list" id="inqFeedList">
+              <table class="dt inq-cur-table">
+                <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr" style="width:96px">跟踪反馈</th><th class="ctr" style="width:104px">操作</th></tr></thead>
+                <tbody id="tb-inq-cur" class="inq-tb"></tbody>
+              </table>
+            </div>
+          </aside>
+          <div class="card inq-map-card">
+            <div class="card-head"><span class="card-title">🌍 全球询盘分布</span><span class="card-sub">青岛 → 各国飞线</span></div>
+            <div id="inqGlobe" style="width:100%;aspect-ratio:2.1 / 1"></div>
+          </div>
+        </div>
+
+<!-- 询盘明细表（全宽）-->
+        <div>
+          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；上方地图按表格数据实时高亮各国并画青岛飞线</span></div>
           <div class="card"><table class="dt">
           <!-- 6.23 文档 11/12/7：删销售确认列；加客户姓名（日期后）+ 跟踪反馈（备注后）；总列数 = 10（colspan 同步） -->
           <!-- P3：末尾加「操作」删除列；总列数 10 → 11（colspan 同步） -->
           <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr" style="width:120px">跟踪反馈</th><th class="ctr" style="width:60px">操作</th></tr></thead>
-          <tbody id="tb-inq">
+          <tbody id="tb-inq" class="inq-tb">
             <tr><td>06-04</td><td>🇩🇪 德国</td><td class="ctr"><span class="badge b-blue">欧洲</span></td><td class="ctr"><span class="tagselect b-blue" data-kind="channel">SEO自然<i class="ti ti-chevron-down"></i></span></td><td>ductile iron casting / 球铁页</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
             <tr><td>06-04</td><td>🇺🇸 美国</td><td class="ctr"><span class="badge b-purple">北美</span></td><td class="ctr"><span class="tagselect b-purple" data-kind="channel">SEM付费<i class="ti ti-chevron-down"></i></span></td><td>casting to drawing / 按图询价</td><td class="ctr"><span class="tagselect b-amber" data-kind="product">铸造<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-green">A</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
             <tr><td>06-03</td><td>🇪🇸 西班牙</td><td class="ctr"><span class="badge b-blue">欧洲</span></td><td class="ctr"><span class="tagselect b-blue" data-kind="channel">SEO自然<i class="ti ti-chevron-down"></i></span></td><td>industrial valves / 阀门页</td><td class="ctr"><span class="tagselect b-purple" data-kind="product">阀门<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="badge b-blue">B</span></td><td class="ctr"><i class="ti ti-circle-check" style="color:var(--green)"></i></td></tr>
@@ -171,8 +189,6 @@
           </tbody>
         </table></div>
           </div>
-          <div class="card" style="position:sticky;top:64px"><div class="card-head"><span class="card-title">🌍 全球询盘分布</span><span class="card-sub">青岛 → 各国飞线</span></div><div id="inqGlobe" style="height:380px;width:100%"></div><div id="inqGlobe-empty" style="display:none;text-align:center;color:var(--text3);font-size:12px;padding:10px">暂无询盘数据 · 录入后自动高亮</div></div>
-        </div>
       </div>
 
       <!-- ============ ① 月度计划 ============ -->
@@ -1037,6 +1053,7 @@ async function loadInquiries(){
     const {items,stats}=await API.get(withRange('/api/inquiries'));
     window._inqCache=items||[];
     renderInqList(); // C组：按月分组渲染（清掉旧行/静态示例行，当月展开、上月折叠）
+    try{ renderInqFeed(); }catch(_){} // Hero 左栏「最新询盘」同步刷新
     refreshInqStats(stats);
     // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
     renderInqDonuts();  // BUG-6：KPI 页两个 donut 同步真实重绘

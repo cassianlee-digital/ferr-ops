@@ -150,7 +150,6 @@ function renderShell(el, groups, bodyHtml){
         <div class="inq-map-total">${groups.length} 个国家 · ${(window._inqCache || []).length} 条询盘</div>
       </div>
       ${bodyHtml}
-      <div class="inq-map-panel">${topCountriesHtml(groups)}</div>
     </div>
   `;
 }
@@ -244,22 +243,22 @@ async function renderGlobe(){
       left:18,
       right:18,
       top:40,
-      bottom:44,
+      bottom:16,
       silent:false,
       selectedMode:false,
       label:{ show:false },
       itemStyle:{
-        areaColor:'#17263f',
-        borderColor:'rgba(120,155,205,.20)',
-        borderWidth:.6
+        areaColor:'#ffffff',
+        borderColor:'#1a1a1a',
+        borderWidth:.8
       },
       emphasis:{
         disabled:false,
-        itemStyle:{ areaColor:'#22375c', borderColor:'rgba(150,190,240,.35)' }
+        itemStyle:{ areaColor:'#eef1f5', borderColor:'#000' }
       },
       regions:[
-        { name:'Antarctica', itemStyle:{ areaColor:'#17263f', borderColor:'rgba(120,155,205,.14)' } },
-        { name:'Greenland', itemStyle:{ areaColor:'#17263f', borderColor:'rgba(120,155,205,.14)' } }
+        { name:'Antarctica', itemStyle:{ areaColor:'#ffffff', borderColor:'rgba(0,0,0,.28)' } },
+        { name:'Greenland', itemStyle:{ areaColor:'#ffffff', borderColor:'rgba(0,0,0,.28)' } }
       ]
     },
     series:[
@@ -302,11 +301,11 @@ async function renderGlobe(){
           show:true,
           formatter:(params) => `${params.name} ${params.value[2] || ''}`,
           position:'right',
-          color:'#e6f0ff',
+          color:'#172033',
           fontSize:14,
           fontWeight:800,
           fontFamily:'Inter, Microsoft YaHei, Arial, sans-serif',
-          textBorderColor:'rgba(8,16,32,.95)',
+          textBorderColor:'rgba(255,255,255,.95)',
           textBorderWidth:3
         }
       },
@@ -322,11 +321,11 @@ async function renderGlobe(){
           show:true,
           formatter:'青岛',
           position:'left',
-          color:'#fde68a',
+          color:'#b45309',
           fontSize:15,
           fontWeight:800,
           fontFamily:'Inter, Microsoft YaHei, Arial, sans-serif',
-          textBorderColor:'rgba(8,16,32,.95)',
+          textBorderColor:'#ffffff',
           textBorderWidth:3
         }
       }

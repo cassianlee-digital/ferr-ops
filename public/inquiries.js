@@ -52,14 +52,14 @@ async function submitTrack(){
     await API.patch('/api/inquiries/'+_trackEditing.id,{tracking_feedback:text});
     _trackEditing.tracking_feedback=text;
     // 重渲该行的跟踪反馈 td（最后一列）
-    const tr=document.querySelector('#tb-inq tr[data-id="'+_trackEditing.id+'"]');
+    const tr=document.querySelector('.inq-tb tr[data-id="'+_trackEditing.id+'"]');
     if(tr&&tr.lastElementChild)tr.lastElementChild.innerHTML=trackCellHtml(_trackEditing);
     closeModal('trackMask'); toast('已保存跟踪反馈');
   }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+(e.message||'')); }
 }
 // 委托：点 .track-cell 打开弹框
 document.addEventListener('click',e=>{
-  const t=e.target.closest('#tb-inq .track-cell'); if(!t)return;
+  const t=e.target.closest('.inq-tb .track-cell'); if(!t)return;
   const tr=t.closest('tr'); if(tr)openTrack(tr);
 });
 
@@ -89,7 +89,7 @@ function inqRowHtml(r){
 function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
 /* P3：询盘删除 → 就地确认 → 软删归档（进归档页「询盘」桶）→ 重拉列表/统计/总览/归档 */
 document.addEventListener('click',async e=>{
-  const btn=e.target.closest('#tb-inq .inq-del'); if(!btn)return;
+  const btn=e.target.closest('.inq-tb .inq-del'); if(!btn)return;
   const tr=btn.closest('tr'); const id=tr&&tr.dataset.id; if(!id)return;
   if(!inlineConfirm(btn,'确认删除'))return;
   try{
@@ -100,18 +100,18 @@ document.addEventListener('click',async e=>{
     toast('已删除 · 已归档到「归档」页');
   }catch(err){ toast(err&&err.status===403?'无权操作':'删除失败'); }
 });
-/* C组：询盘按月分组渲染——当月展开，上月及更早默认折叠（点月份条展开/收起）*/
+/* 明细表(下方)：只渲染「之前月份」，当月不在此显示（当月见上方「最新询盘」表）。
+   历史月份按月分组、默认折叠（点月份条展开/收起）。*/
 function renderInqList(){
   const tb=document.getElementById('tb-inq'); if(!tb)return; tb.innerHTML='';
-  const rows=(window._inqCache||[]).filter(r=>r&&r.date).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0); // 日期倒序
-  if(!rows.length)return;
   const curM=formatLocalDate(new Date()).slice(0,7);
+  const rows=(window._inqCache||[]).filter(r=>r&&r.date&&r.date.slice(0,7)!==curM).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0); // 排除当月、日期倒序
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="11" class="dim" style="text-align:center;padding:16px">暂无历史月份询盘 · 本月询盘见上方「最新询盘」</td></tr>'; return; }
   const groups=[]; const idx={};
   rows.forEach(r=>{ const ym=r.date.slice(0,7); if(idx[ym]==null){ idx[ym]=groups.length; groups.push({ym,items:[]}); } groups[idx[ym]].items.push(r); });
   groups.forEach(g=>{
-    const collapsed=g.ym!==curM;
-    const sep=document.createElement('tr'); sep.className='inq-msep'+(collapsed?' collapsed':''); sep.dataset.month=g.ym;
-    sep.innerHTML=`<td colspan="11" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span>${g.ym===curM?'<span class="badge b-green" style="margin-left:6px">本月</span>':''}</td>`;
+    const sep=document.createElement('tr'); sep.className='inq-msep collapsed'; sep.dataset.month=g.ym;
+    sep.innerHTML=`<td colspan="11" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span></td>`;
     tb.appendChild(sep);
     g.items.forEach(r=>{
       const tr=document.createElement('tr');
@@ -119,7 +119,7 @@ function renderInqList(){
       tr.dataset.month=g.ym;
       // 6.23 文档 7/8/12：行级 dataset 让 PATCH 链路通（等级 tagselect / 客户姓名 editable / 跟踪反馈弹框）
       if(r.id){ tr.dataset.id=r.id; tr.dataset.ep='/api/inquiries'; }
-      if(collapsed)tr.style.display='none';
+      tr.style.display='none'; // 历史月份默认折叠
       tr.innerHTML=inqRowHtml(r);
       tb.appendChild(tr);
     });
@@ -135,4 +135,31 @@ function toggleInqMonth(td){
 // 保留 stats 写入 _inqStats 缓存，供其他地方读取；不再回填已删除的 DOM。
 function refreshInqStats(stats){
   if(stats)window._inqStats=stats;
+}
+/* 「最新询盘」(上方左栏)：只渲染「当月」，表格形式、与下方明细表同款（同 inqRowHtml，可编辑/评级/跟踪/删除）。
+   询盘多时容器内下滑显示。*/
+function renderInqFeed(){
+  const tb=document.getElementById('tb-inq-cur'); if(!tb)return; tb.innerHTML='';
+  const curM=formatLocalDate(new Date()).slice(0,7); // 本月 YYYY-MM（本地）
+  const rows=(window._inqCache||[]).filter(r=>r&&r.date&&r.date.slice(0,7)===curM).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+  const cnt=document.getElementById('inqFeedCount'); if(cnt)cnt.textContent=rows.length?('本月 '+rows.length+' 条'):'本月暂无';
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="11" class="dim" style="text-align:center;padding:20px">本月暂无询盘 · 录入后即时显示</td></tr>'; return; }
+  const p=curM.split('-');
+  const sep=document.createElement('tr'); sep.className='inq-msep'; sep.dataset.month=curM;
+  sep.innerHTML=`<td colspan="11" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${p[0]}年${(+p[1])}月 <span class="dim" style="font-weight:400">· ${rows.length} 条</span><span class="badge b-green" style="margin-left:6px">本月</span></td>`;
+  tb.appendChild(sep);
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.className='inq-mrow'+(isUpgraded(r)?' inq-upgraded':'');
+    tr.dataset.month=curM;
+    if(r.id){ tr.dataset.id=r.id; tr.dataset.ep='/api/inquiries'; }
+    tr.innerHTML=inqRowHtml(r);
+    tb.appendChild(tr);
+  });
+}
+/* Hero 左栏折叠/展开：地图随宽度变化后重排（触发已绑定的 resize 处理）*/
+function toggleInqFeed(){
+  const hero=document.getElementById('inqHero'); if(!hero)return;
+  hero.classList.toggle('feed-collapsed');
+  setTimeout(()=>{ try{ window.dispatchEvent(new Event('resize')); }catch(_){} },300);
 }
