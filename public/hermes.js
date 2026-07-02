@@ -5,6 +5,8 @@
   const ROLE_LABEL = { seo: 'SEO 李', sem: 'SEM 陈', manager: '主管', boss: '老板' };
   let lastSessionSentAt = 0;
   let sessionTimer = null;
+  let prewarmStarted = false;
+  let prewarmAttempts = 0;
 
   function byId(id) { return document.getElementById(id); }
   function currentUser() { return window.ME || {}; }
@@ -290,6 +292,20 @@
     window.open(url, '_blank', 'noopener');
   }
 
+  function prewarmHermesFrame() {
+    if (prewarmStarted) return;
+    prewarmStarted = true;
+    const run = () => {
+      prewarmAttempts += 1;
+      if (window.API) {
+        refreshHermesStatus(false);
+        return;
+      }
+      if (prewarmAttempts < 8) setTimeout(run, 1200);
+    };
+    setTimeout(run, 1200);
+  }
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeHermesPanel();
   });
@@ -318,4 +334,7 @@
   window.toggleHermesMaximize = toggleHermesMaximize;
   window.syncHermesSession = syncHermesSession;
   window.syncHermesPageDetail = syncHermesPageDetail;
+
+  if (document.readyState === 'complete') prewarmHermesFrame();
+  else window.addEventListener('load', prewarmHermesFrame, { once: true });
 })();
