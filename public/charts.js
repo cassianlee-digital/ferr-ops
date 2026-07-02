@@ -618,8 +618,10 @@ function _ovSpark(id, rows, valFn, color){
 }
 async function loadDashboardBoards(){
   if(window.DEMO_MODE)return;
-  const today=formatLocalDate(new Date()), first=today.slice(0,7)+'-01';
-  const r={start_date:first,end_date:today};
+  // 「当月」在月初几乎无数据 + GSC 有 2-3 天延迟 → 用近30天滚动窗口，保证总览始终有真实数据
+  const today=formatLocalDate(new Date());
+  const s=new Date(); s.setDate(s.getDate()-29);
+  const r={start_date:formatLocalDate(s),end_date:today};
   const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   let g=null; try{ g=await API.get(withRange('/api/google/gsc/summary',r)); }catch(e){}
   const gt=g&&g.totals;
