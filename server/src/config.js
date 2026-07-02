@@ -54,6 +54,11 @@ export const config = {
     maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS || 4000),
   },
 
+  hermes: {
+    url: (process.env.HERMES_AGENT_URL || '').replace(/\/+$/, ''),
+    sharedSecret: process.env.HERMES_SHARED_SECRET || '',
+  },
+
   google: {
     clientId: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
