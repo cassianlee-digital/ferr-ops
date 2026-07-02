@@ -97,6 +97,7 @@ function googleProviderRow(provider,s,project){
       ${missing}${lastError}
     </div>
     <button class="btn-ghost" onclick="startGoogleAuth('${provider}')" ${authDisabled}><i class="ti ti-brand-google"></i> 授权</button>
+    <button class="btn-ghost" onclick="backfillGoogle('${provider}',90,this)" ${syncDisabled} title="回补最近 90 天历史（首次接入或图表前段空白时用，可能耗时较久）"><i class="ti ti-history"></i> 回补90天</button>
     <button class="btn-primary" onclick="syncGoogle('${provider}',this)" ${syncDisabled}><i class="ti ti-refresh"></i> 立即同步</button>
   </div>`;
 }
@@ -105,6 +106,26 @@ function startGoogleAuth(provider){
   location.href='/api/google/auth/start?provider='+encodeURIComponent(provider);
 }
 
+// 回补历史：默认同步只拉 7 天，早期数据从未进库 → 一键拉最近 N 天填补图表空白段
+async function backfillGoogle(provider,days,btn){
+  const old=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2"></i> 回补中…'; }
+  try{
+    const end=new Date(); end.setUTCDate(end.getUTCDate()-1);
+    const start=new Date(end); start.setUTCDate(start.getUTCDate()-(days-1));
+    const iso=d=>d.toISOString().slice(0,10);
+    const r=await API.post('/api/sync/'+encodeURIComponent(provider),{start_date:iso(start),end_date:iso(end)});
+    toast(`${INTEG_LABEL[provider]||provider} 回补 ${days} 天完成，写入 ${r.rowsWritten||0} 行`);
+    await loadDataSourcesStatus(); await loadIntegrations();
+    if(provider==='ga4'&&typeof loadGa4==='function') await loadGa4();
+    if(typeof loadDataFreshness==='function') loadDataFreshness();
+  }catch(e){
+    const missing=e&&e.body&&e.body.missing&&e.body.missing.length ? `，缺少：${e.body.missing.join(', ')}` : '';
+    toast(`回补失败：${e.message}${missing}`);
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML=old; }
+  }
+}
 async function syncGoogle(provider,btn){
   const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2"></i> 同步中'; }
