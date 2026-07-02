@@ -1,0 +1,354 @@
+/* ============================================================
+   page-fixes.css — 整改清单页(#panel-fix)专属样式
+   来源:从 styles.css 抽离并合并去重。
+   - 原 "Fix ledger second pass"(Aliyun 风格)为主体,原样保留。
+   - 原 "Fix ledger focus pass" ~149 行已折叠:其中约九成被 second
+     pass 或全局 !important 的 .ai-item 共享规则覆盖(死代码,已删);
+     仅下方「focus pass 残留」5 条属性仍真正生效,单独保留。
+   共享规则(.ai-item 布局跨 5 面板、action-composite 外壳与 #panel-test
+   共用)不在本文件,仍在 styles.css。加载顺序:必须在 styles.css 之后。
+   ============================================================ */
+
+/* ---- Fix ledger second pass: Aliyun-style remediation console ---- */
+#panel-fix {
+  --fix-console-border: #e5e8ef;
+  --fix-console-head: #f5f7fa;
+  --fix-console-soft: #f7f9fc;
+  --fix-console-muted: #6b778c;
+  --fix-console-blue: #1677ff;
+  --fix-title-w: 16%;
+  --fix-dept-w: 82px;
+  --fix-evidence-w: 25%;
+  --fix-detail-w: 29%;
+  --fix-owner-w: 86px;
+  --fix-date-w: 126px;
+  --fix-result-w: 120px;
+  --fix-action-w: 132px;
+}
+
+#panel-fix .page-head {
+  min-height: 54px;
+  margin-bottom: 0;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--fix-console-border);
+}
+
+#panel-fix .page-head .page-title {
+  font-size: 22px;
+  font-weight: 500;
+}
+
+#panel-fix .page-head .page-sub {
+  max-width: 860px;
+  margin-top: 5px;
+  color: var(--fix-console-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+#panel-fix .page-head > div:last-child {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+  margin-left: 16px;
+}
+
+#panel-fix .page-head .btn-primary,
+#panel-fix .page-head .btn-ai {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 2px;
+  font-size: 13px;
+  font-weight: 400;
+  box-shadow: none;
+}
+
+#panel-fix .page-head .btn-ai {
+  border: 1px solid #d7e6ff;
+  background: #ffffff;
+  color: var(--fix-console-blue);
+}
+
+#panel-fix .timebar-inline {
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--fix-console-border);
+}
+
+#panel-fix .timebar-inline .btn,
+#panel-fix .timebar-inline button,
+#panel-fix .timebar-inline select,
+#panel-fix .timebar-inline input {
+  height: 30px;
+  border-radius: 2px;
+}
+
+#panel-fix .sheet-tip {
+  min-height: 34px;
+  margin: 12px 0 !important;
+  padding: 0 12px;
+  border: 1px solid #d7e6ff;
+  border-radius: 2px;
+  background: #f5f9ff;
+  color: #4e5969;
+  font-size: 12px;
+}
+
+#panel-fix .sheet-tip i {
+  color: var(--fix-console-blue);
+}
+
+#panel-fix .card:has(.fix-table) {
+  margin-bottom: 14px !important;
+  border: 1px solid var(--fix-console-border);
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: none;
+  overflow-x: auto;
+}
+
+#panel-fix .fix-table {
+  min-width: 1380px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #ffffff;
+}
+
+#panel-fix .fix-table th:nth-child(1) { width: var(--fix-title-w); }
+#panel-fix .fix-table th:nth-child(2) { width: var(--fix-dept-w); }
+#panel-fix .fix-table th:nth-child(3) { width: var(--fix-evidence-w); }
+#panel-fix .fix-table th:nth-child(4) { width: var(--fix-detail-w); }
+#panel-fix .fix-table th:nth-child(5) { width: var(--fix-owner-w); }
+#panel-fix .fix-table th:nth-child(6) { width: var(--fix-date-w); }
+#panel-fix .fix-table th:nth-child(7) { width: var(--fix-result-w); }
+#panel-fix .fix-table th:nth-child(8) { width: var(--fix-action-w) !important; }
+
+#panel-fix .fix-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 42px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--fix-console-border);
+  background: var(--fix-console-head);
+  color: #4e5969;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+}
+
+#panel-fix .fix-table thead th.ctr,
+#panel-fix .fix-table thead th:nth-child(2),
+#panel-fix .fix-table thead th:nth-child(5),
+#panel-fix .fix-table thead th:nth-child(6),
+#panel-fix .fix-table thead th:nth-child(7),
+#panel-fix .fix-table thead th:nth-child(8) {
+  text-align: center;
+}
+
+#panel-fix .fix-table tbody td {
+  min-height: 58px;
+  padding: 12px;
+  border-bottom: 1px solid #eef1f5;
+  background: #ffffff;
+  color: #1f2329;
+  font-size: 13px;
+  line-height: 1.6;
+  vertical-align: top !important;
+}
+
+#panel-fix .fix-table tbody tr:hover td {
+  background: #f8fbff;
+}
+
+#panel-fix .fix-table tbody td:nth-child(1) {
+  font-weight: 500;
+}
+
+#panel-fix .fix-table tbody td:nth-child(3) {
+  color: #6b778c;
+  font-size: 12px !important;
+}
+
+#panel-fix .fix-table tbody td:nth-child(4) {
+  color: #374151;
+}
+
+#panel-fix .fix-table tbody td:nth-child(2),
+#panel-fix .fix-table tbody td:nth-child(5),
+#panel-fix .fix-table tbody td:nth-child(6),
+#panel-fix .fix-table tbody td:nth-child(7),
+#panel-fix .fix-table tbody td:nth-child(8) {
+  padding-left: 8px;
+  padding-right: 8px;
+  text-align: center;
+  vertical-align: middle !important;
+}
+
+#panel-fix .fix-table tbody td:nth-child(1),
+#panel-fix .fix-table tbody td:nth-child(3),
+#panel-fix .fix-table tbody td:nth-child(4) {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+#panel-fix .fix-table tbody td:nth-child(1):empty::before,
+#panel-fix .fix-table tbody td:nth-child(3):empty::before,
+#panel-fix .fix-table tbody td:nth-child(4):empty::before {
+  content: "待补充";
+  color: #c0c4cc;
+  font-weight: 400;
+}
+
+#panel-fix .fix-table td[contenteditable="true"],
+#panel-fix .fix-table .editable {
+  outline: 0;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+
+#panel-fix .fix-table td[contenteditable="true"]:focus,
+#panel-fix .fix-table .editable:focus {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px var(--fix-console-blue);
+}
+
+#panel-fix .fix-table .tagselect {
+  min-width: 48px;
+  max-width: 100%;
+  height: 24px;
+  justify-content: center;
+  border-radius: 2px;
+  background: #ffffff !important;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+#panel-fix .fix-table td:nth-child(7) .tagselect {
+  min-width: 82px;
+  border-color: #d7e6ff;
+  background: #f5f9ff !important;
+  color: var(--fix-console-blue);
+}
+
+#panel-fix .fix-table input.cell-date {
+  width: 108px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid #d9dfe8;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #4e5969;
+  font-size: 12px;
+  text-align: center;
+}
+
+#panel-fix .fix-table input.cell-date:focus {
+  border-color: var(--fix-console-blue);
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, .08);
+  outline: 0;
+}
+
+#panel-fix .fix-table tbody td:nth-child(8) {
+  white-space: normal;
+}
+
+#panel-fix .fix-table tbody td:nth-child(8) .btn-mini {
+  width: 96px;
+  min-height: 28px;
+  margin: 3px auto;
+  padding: 0 8px;
+  justify-content: center;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #4e5969;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+#panel-fix .fix-table tbody td:nth-child(8) .btn-mini:hover {
+  border-color: #bedaff;
+  color: var(--fix-console-blue);
+  background: #f5f9ff;
+}
+
+#panel-fix .ai-box {
+  margin-top: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--fix-console-border);
+  border-left: 3px solid var(--fix-console-blue);
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#panel-fix .ai-header {
+  min-height: 30px;
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eef1f5;
+}
+
+#panel-fix .ai-title {
+  color: #1f2329;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#panel-fix .ai-header .btn-ai {
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid #d7e6ff;
+  border-radius: 2px;
+  background: #ffffff;
+  color: var(--fix-console-blue);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+#panel-fix .ai-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f2f5;
+  color: #4e5969;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+#panel-fix .ai-item:last-child {
+  border-bottom: 0;
+}
+
+#panel-fix .ai-item i {
+  margin-top: 3px;
+  color: var(--fix-console-blue);
+  font-size: 14px;
+}
+
+#panel-fix .ai-item .body strong {
+  margin-right: 4px;
+  color: #1f2329;
+  font-weight: 500;
+}
+
+@media (max-width: 1180px) {
+  #panel-fix .page-head {
+    align-items: flex-start;
+  }
+
+  #panel-fix .page-head > div:last-child {
+    margin: 12px 0 0;
+  }
+}
+
+/* ---- focus pass 残留:second pass 未覆盖、仍生效的有效规则 ---- */
+#panel-fix .page-head { align-items: center; }
+#panel-fix .timebar-inline { display: flex; align-items: center; gap: 8px; }
+#panel-fix .fix-table .tagselect { width: max-content; }
+#panel-fix .fix-table td:nth-child(2) .tagselect,
+#panel-fix .fix-table td:nth-child(5) .tagselect { min-width: 44px; }
+#panel-fix .fix-table input.cell-date { min-width: 0; }
