@@ -2,7 +2,7 @@
    经典 script + window 全局兼容。依赖（均在调用时解析）：window.API、esc()（index.html 内联）。
    第一期：骨架 + 空状态；第二期接 GA4 Data API 填充。 */
 async function loadGa4(){
-  let r={connected:false}; try{ r=await API.get('/api/ga4/overview'); }catch(e){}
+  let r={connected:false}; try{ r=await API.get(withRange('/api/ga4/overview')); }catch(e){} // 阶段5：跟随所选时间范围
   const st=document.getElementById('ga4-status'); if(st){ st.className='badge '+(r.connected?'b-green':'b-gray'); st.textContent=r.connected?'已接入':'未接入'; }
   const hint=document.getElementById('ga4-hint'); if(hint)hint.style.display=r.connected?'none':'flex';
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=(v==null?'—':v);};

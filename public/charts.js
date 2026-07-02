@@ -534,6 +534,23 @@ async function adoptFinding(btn,dept,title,detail,evidence){
     if(typeof toastGo==='function') toastGo('已采纳 → 整改清单 · 已入库','fix'); else toast('已采纳 → 整改清单');
   }catch(e){ toast((typeof persistFailMsg==='function')?persistFailMsg(e):'保存失败,未入库'); }
 }
+/* 阶段5：数据新鲜度条——三源实际有数据天数 / 区间总天数 + 最后同步时间 + 连接态 */
+async function loadDataFreshness(){
+  const el=document.getElementById('dataFreshness'); if(!el)return;
+  let d=null; try{ d=await API.get(withRange('/api/data-freshness')); }catch(e){ el.innerHTML='<span class="dim">数据新鲜度读取失败</span>'; return; }
+  const fmt=v=>{ if(!v)return '从未'; const s=String(v).replace(' ','T'); const t=new Date(/Z|[+-]\d{2}/.test(s)?s:s+'Z'); if(isNaN(t))return String(v).slice(5,16);
+    const p=n=>String(n).padStart(2,'0'); const dif=Math.floor((Date.now()-t.getTime())/60000);
+    if(dif<60)return dif+' 分钟前'; if(dif<1440)return Math.floor(dif/60)+' 小时前';
+    return (t.getMonth()+1)+'/'+t.getDate()+' '+p(t.getHours())+':'+p(t.getMinutes()); };
+  const chip=(name,s)=>{
+    if(!s.connected)return '<span class="fresh-chip gray"><b>'+name+'</b> 未接入</span>';
+    const cov=s.days>0?Math.round(s.daysWithData/s.days*100):0;
+    const tone=s.daysWithData===0?'bad':(cov<70?'warn':'good');
+    return '<span class="fresh-chip '+tone+'"><b>'+name+'</b> 有数据 '+s.daysWithData+'/'+s.days+' 天<span class="dim"> · '+fmt(s.lastSync)+(s.status==='failed'?' <b style="color:var(--primary)">失败</b>':'')+'</span></span>';
+  };
+  el.innerHTML='<i class="ti ti-database"></i> '+chip('GSC',d.gsc)+chip('GA4',d.ga4)+chip('Ads',d.ads)
+    +'<span class="dim fresh-help">区间实际有数据天数 / 所选总天数 · 时间范围影响：询盘、SEO(GSC)、SEM(Ads)、GA4</span>';
+}
 async function loadDiagnostics(){
   let d=null;
   try{ d=await API.get(withRange('/api/diagnostics')); }catch(e){ d=null; }

@@ -22,6 +22,8 @@ import { sopRoutes } from './sop.js';
 import { googleRoutes } from './google.js';
 import { diagnosticsRoutes } from './diagnostics.js';
 import { attributionRoutes } from './attribution.js';
+import { hermesRoutes } from './hermes.js';
+import { dataFreshnessRoutes } from './dataFreshness.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -47,4 +49,6 @@ export async function registerRoutes(app) {
   await app.register(googleRoutes);
   await app.register(diagnosticsRoutes);
   await app.register(attributionRoutes);
+  await app.register(hermesRoutes);
+  await app.register(dataFreshnessRoutes);
 }

@@ -228,6 +228,8 @@
       <div class="panel" id="panel-data">
         <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
         <div class="timebar-inline" data-time data-gran="week,month"></div>
+        <!-- 阶段5：数据新鲜度条——三源实际有数据天数 + 最后同步时间，替代之前删掉的碎提示 -->
+        <div id="dataFreshness" class="data-fresh"><span class="dim">数据新鲜度加载中…</span></div>
         <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div><div class="subtab" data-sub="data-report">AI 周报</div></div>
 
         <!-- ===== SEO 看板 ===== -->
@@ -1305,6 +1307,7 @@ window.addEventListener('load',async()=>{
   loadSemBoardFull();          // SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势
   loadAttribution();           // 询盘归因：Ads 花费 ÷ 真实 SEM 有效询盘
   loadDiagnostics();           // 诊断引擎：机会词/衰退/蚕食 真实识别 + 角标计数
+  loadDataFreshness();         // 阶段5：数据新鲜度条（三源实际有数据天数 + 最后同步）
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
   await loadIntegrations();    // 设置页 API 接入状态
   await loadMarket();          // 市场分析问卷表

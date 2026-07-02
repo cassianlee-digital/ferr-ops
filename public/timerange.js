@@ -86,6 +86,8 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     if(typeof loadSemBoardFull==='function') loadSemBoardFull(); // SEM 富看板按区间重拉
     if(typeof loadAttribution==='function') loadAttribution(); // 询盘归因按区间重算
     if(typeof loadDiagnostics==='function') loadDiagnostics(); // 诊断按区间重算
+    if(typeof loadGa4==='function') loadGa4(); // 阶段5：GA4 按区间重算
+    if(typeof loadDataFreshness==='function') loadDataFreshness(); // 阶段5：数据新鲜度条按区间重算
     toast('时间范围：'+_range.period_label);
   });
   bar.addEventListener('change',e=>{
@@ -132,5 +134,7 @@ function submitCustomRange(){
   if(typeof loadSemBoardFull==='function') loadSemBoardFull();
   if(typeof loadAttribution==='function') loadAttribution();
   if(typeof loadDiagnostics==='function') loadDiagnostics();
+  if(typeof loadGa4==='function') loadGa4();
+  if(typeof loadDataFreshness==='function') loadDataFreshness();
   closeModal('customRangeMask'); toast('已应用：'+_range.period_label);
 }
