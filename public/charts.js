@@ -161,15 +161,25 @@ function renderSeoBoard(){
   if(cv){
     const wrap=cv.closest('.chart-wrap')||cv.parentElement;
     if(seoChart){ try{seoChart.destroy();}catch(e){} seoChart=null; }
-    const series=_aggByGran(data&&data.byDate, window._gran);
-    if(series.length){
+    const gran=window._gran;
+    // day 粒度按所选完整时间区间铺 X 轴（缺天断线）；week/month 保持原聚合行为
+    let labels, clicks, impr;
+    if(!gran||gran==='day'){
+      const rng=(board&&board.data&&board.data.range)||(typeof getCurrentRange==='function'?getCurrentRange():null);
+      const a=_alignDaily(data&&data.byDate, rng, 'date');
+      labels=a.labels; clicks=a.rows.map(r=>r?(+r.clicks||0):null); impr=a.rows.map(r=>r?(+r.impressions||0):null);
+    } else {
+      const s=_aggByGran(data&&data.byDate, gran);
+      labels=s.map(x=>x.label); clicks=s.map(x=>x.clicks); impr=s.map(x=>x.impr);
+    }
+    if(labels.length && (clicks.some(v=>v!=null)||impr.some(v=>v!=null))){
       if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
-      seoChart=new Chart(cv,{type:'line',data:{labels:series.map(x=>x.label),datasets:[
-        {label:'点击',data:series.map(x=>x.clicks),borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2,yAxisID:'y'},
-        {label:'展现',data:series.map(x=>x.impr),borderColor:'#9aa1ae',borderDash:[4,3],tension:.4,pointRadius:0,borderWidth:1.5,yAxisID:'y1'}
+      seoChart=new Chart(cv,{type:'line',data:{labels,datasets:[
+        {label:'点击',data:clicks,borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2,yAxisID:'y',spanGaps:false},
+        {label:'展现',data:impr,borderColor:'#9aa1ae',borderDash:[4,3],tension:.4,pointRadius:0,borderWidth:1.5,yAxisID:'y1',spanGaps:false}
       ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
         plugins:{legend:{display:false},tooltip:{enabled:true}},
-        scales:{x:{ticks:{maxTicksLimit:7}},y:{position:'left',beginAtZero:true,ticks:{precision:0}},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
+        scales:{x:{ticks:{maxTicksLimit:_xTickLimit(labels.length)}},y:{position:'left',beginAtZero:true,ticks:{precision:0}},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
     } else chartEmpty('seoBoard');
   }
   // 页面明细
@@ -315,7 +325,12 @@ function renderSeoSources(d){
     if(window._seoSrcArea){ try{window._seoSrcArea.destroy();}catch(e){} window._seoSrcArea=null; }
     const ss=d&&d.sourceSeries;
     if(ss&&ss.dates&&ss.dates.length){
-      window._seoSrcArea=new Chart(areaCv,{type:'line',data:{labels:ss.dates.map(x=>x.slice(5)),datasets:ss.series.map((se,i)=>({label:se.source,data:se.values,borderColor:palette[i%palette.length],backgroundColor:palette[i%palette.length]+'55',fill:true,stack:'s',tension:.3,pointRadius:0,borderWidth:1.4}))},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}}});
+      // 按所选完整时间区间铺 X 轴（缺天填 0，堆叠图保结构）
+      const rng=(d&&d.range)||(typeof getCurrentRange==='function'?getCurrentRange():null);
+      const dRows=ss.dates.map((x,i)=>({date:x,_i:i}));
+      const aligned=_alignDaily(dRows,rng,'date');
+      const datasets=ss.series.map((se,i)=>({label:se.source,data:aligned.rows.map(r=>r?(se.values[r._i]||0):0),borderColor:palette[i%palette.length],backgroundColor:palette[i%palette.length]+'55',fill:true,stack:'s',tension:.3,pointRadius:0,borderWidth:1.4}));
+      window._seoSrcArea=new Chart(areaCv,{type:'line',data:{labels:aligned.labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:_xTickLimit(aligned.labels.length),font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}}});
     } else { chartEmpty('seoSrcArea'); }
   }
 }
@@ -481,6 +496,24 @@ function renderSemScatter(d){
 }
 // 两个 YYYY-MM-DD 相差天数（用于把上一区间日趋势按天偏移对齐到当前区间）
 function _dayDiff(a,b){ return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000); }
+// 按所选完整区间生成日 labels + 数据按日期对齐（缺天返回 null，用于线图断线；堆叠图调用者自行把 null 换 0）
+// rows: [{date:'YYYY-MM-DD',...}]; range: {start_date,end_date}; dateKey 默认 'date'
+function _alignDaily(rows,range,dateKey){
+  const key=dateKey||'date';
+  const r=range||(typeof getCurrentRange==='function'?getCurrentRange():null);
+  if(!r||!r.start_date||!r.end_date) return {labels:(rows||[]).map(x=>String(x[key]).slice(5,10)), rows:(rows||[]).slice(), isoDates:(rows||[]).map(x=>String(x[key]).slice(0,10))};
+  const m=new Map((rows||[]).map(x=>[String(x[key]).slice(0,10),x]));
+  const labels=[], out=[], iso=[];
+  let d=Date.parse(r.start_date+'T00:00:00Z'); const end=Date.parse(r.end_date+'T00:00:00Z');
+  while(d<=end){
+    const s=new Date(d).toISOString().slice(0,10);
+    iso.push(s); labels.push(s.slice(5)); out.push(m.get(s)||null);
+    d+=86400000;
+  }
+  return {labels, rows:out, isoDates:iso};
+}
+// 全区间较长时 tick 密度控制（避免 365 天挤爆 X 轴）
+function _xTickLimit(n){ if(n<=14)return n; if(n<=31)return 10; if(n<=90)return 12; if(n<=180)return 12; return 14; }
 function renderSemCostCharts(d){
   const palette=['#7b54e0','#2f72e8','#0b9d8f','#ef9514','#e5484d','#9aa1ae'];
   const cs=(d&&d.campaigns)||[];
@@ -498,25 +531,30 @@ function renderSemCostCharts(d){
   if(trendCv){
     if(window._semTrend){ try{window._semTrend.destroy();}catch(e){} window._semTrend=null; }
     const s=(d&&d.series)||[];
-    if(s.length){
+    // 按「所选完整时间区间」铺 X 轴（缺天断线），让选 30/90 天时能一眼看到覆盖范围
+    const rng=(d&&d.range)||(typeof getCurrentRange==='function'?getCurrentRange():null);
+    const aligned=_alignDaily(s,rng,'date');
+    if(aligned.rows.some(r=>r)){
+      const cost=aligned.rows.map(r=>r?+(r.costMicros/1e6).toFixed(0):null);
+      const conv=aligned.rows.map(r=>r?r.conversions:null);
       // 上一等长区间对比：按「距各自窗口起点的天数」对齐（兼容缺天），画成灰虚线幽灵线
-      const sp=(d&&d.seriesPrev)||[], rng=d&&d.range, pv=d&&d.prev;
+      const sp=(d&&d.seriesPrev)||[], pv=d&&d.prev;
       const prevCost=[], prevConv=[], prevDate=[];
       if(sp.length && rng && pv){
         const mCost=new Map(), mConv=new Map(), mDate=new Map();
         sp.forEach(x=>{ const o=_dayDiff(pv.start_date,x.date); mCost.set(o,+(x.costMicros/1e6).toFixed(0)); mConv.set(o,x.conversions); mDate.set(o,x.date); });
-        s.forEach(x=>{ const o=_dayDiff(rng.start_date,x.date); prevCost.push(mCost.has(o)?mCost.get(o):null); prevConv.push(mConv.has(o)?mConv.get(o):null); prevDate.push(mDate.has(o)?mDate.get(o):null); });
+        aligned.isoDates.forEach(iso=>{ const o=_dayDiff(rng.start_date,iso); prevCost.push(mCost.has(o)?mCost.get(o):null); prevConv.push(mConv.has(o)?mConv.get(o):null); prevDate.push(mDate.has(o)?mDate.get(o):null); });
       }
       const hasPrev=prevCost.some(v=>v!=null);
       const datasets=[
-        {label:'花费',data:s.map(x=>+(x.costMicros/1e6).toFixed(0)),borderColor:'#7b54e0',backgroundColor:'rgba(123,84,224,.12)',fill:true,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y'},
-        {label:'转化',data:s.map(x=>x.conversions),borderColor:'#15a85a',tension:.3,pointRadius:0,borderWidth:1.6,yAxisID:'y1'}
+        {label:'花费',data:cost,borderColor:'#7b54e0',backgroundColor:'rgba(123,84,224,.12)',fill:true,tension:.3,pointRadius:0,borderWidth:2,yAxisID:'y',spanGaps:false},
+        {label:'转化',data:conv,borderColor:'#15a85a',tension:.3,pointRadius:0,borderWidth:1.6,yAxisID:'y1',spanGaps:false}
       ];
       if(hasPrev){ datasets.push(
         {label:'花费·上一区间',data:prevCost,borderColor:'rgba(123,84,224,.45)',borderDash:[5,4],borderWidth:1.4,pointRadius:0,tension:.3,fill:false,spanGaps:true,yAxisID:'y'},
         {label:'转化·上一区间',data:prevConv,borderColor:'rgba(21,168,90,.5)',borderDash:[5,4],borderWidth:1.2,pointRadius:0,tension:.3,fill:false,spanGaps:true,yAxisID:'y1'}
       ); }
-      window._semTrend=new Chart(trendCv,{type:'line',data:{labels:s.map(x=>x.date.slice(5)),datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},tooltip:hasPrev?{callbacks:{footer:items=>{ const i=items&&items[0]&&items[0].dataIndex; const pd=(i!=null)?prevDate[i]:null; return pd?('对应上一区间：'+pd):''; }}}:{}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}}},y:{position:'left',beginAtZero:true},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
+      window._semTrend=new Chart(trendCv,{type:'line',data:{labels:aligned.labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},tooltip:hasPrev?{callbacks:{footer:items=>{ const i=items&&items[0]&&items[0].dataIndex; const pd=(i!=null)?prevDate[i]:null; return pd?('对应上一区间：'+pd):''; }}}:{}},scales:{x:{ticks:{maxTicksLimit:_xTickLimit(aligned.labels.length),font:{size:10}}},y:{position:'left',beginAtZero:true},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
     } else { chartEmpty('semTrend'); }
   }
 }
