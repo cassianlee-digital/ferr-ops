@@ -345,9 +345,26 @@ function _adsBadge(cost,conv){ // 诚实的轻量评估
   return '<span class="badge b-red">零有效</span>';
 }
 /* 系列筛选：''=全部；不持久化（每次打开 SEM 看板默认全部）。选后全页 Ads 数据联动 */
-window._semCampaign='';
-function withSemCampaign(path){ const c=window._semCampaign; return c?(path+(path.includes('?')?'&':'?')+'campaign_id='+encodeURIComponent(c)):path; }
-function onSemCampaignChange(v){ window._semCampaign=v||''; loadSemBoardAds(); loadSemBoardFull(); const el=document.getElementById('semAttrScope'); if(el)el.style.display=window._semCampaign?'':'none'; }
+window._semCampaign=''; window._semAdGroup='';
+function withSemCampaign(path){ // 带上系列 + 广告组筛选参数
+  let p=path; const add=(k,v)=>{ if(v)p+=(p.includes('?')?'&':'?')+k+'='+encodeURIComponent(v); };
+  add('campaign_id',window._semCampaign); add('ad_group_id',window._semAdGroup); return p;
+}
+function _semScopeNote(){ const el=document.getElementById('semAttrScope'); if(el)el.style.display=(window._semCampaign||window._semAdGroup)?'':'none'; }
+function onSemCampaignChange(v){
+  window._semCampaign=v||''; window._semAdGroup=''; // 系列变→广告组重置（广告组隶属系列）
+  const ag=document.getElementById('semAdGroupFilter'); if(ag){ ag.value=''; ag.disabled=!window._semCampaign; }
+  loadSemBoardAds(); loadSemBoardFull(); _semScopeNote();
+}
+function onSemAdGroupChange(v){ window._semAdGroup=v||''; loadSemBoardAds(); loadSemBoardFull(); _semScopeNote(); }
+// 广告组下拉：仅在选了系列时启用；用当前系列的广告组列表填充，保持已选
+function _fillSemAdGroupFilter(list){
+  const sel=document.getElementById('semAdGroupFilter'); if(!sel)return;
+  if(!window._semCampaign){ sel.innerHTML='<option value="">全部广告组</option>'; sel.disabled=true; return; }
+  sel.disabled=false; const cur=sel.value;
+  sel.innerHTML=['<option value="">全部广告组</option>'].concat((list||[]).map(g=>'<option value="'+esc(g.adGroupId)+'">'+esc(g.adGroupName||'(未命名广告组)')+'</option>')).join('');
+  sel.value=cur;
+}
 // 用完整系列列表填充下拉（仅未筛选时，避免筛选态只剩1个把选项覆盖掉）
 function _fillSemCampaignFilter(list){
   const sel=document.getElementById('semCampFilter'); if(!sel||window._semCampaign)return;
@@ -377,7 +394,7 @@ function renderSemBoard(){
     _t('sm-cvr',(t.clicks>0)?_pct(Number(t.conversions||0)/t.clicks):'—'); // 转化率=转化/点击
     _t('sm-cpconv',_money(t.costPerConversionMicros));
   } else { ids.forEach(id=>_t(id,'—')); }
-  if(data) _fillSemCampaignFilter(data.campaigns); // 未筛选时用完整系列列表填充下拉
+  if(data){ _fillSemCampaignFilter(data.campaigns); _fillSemAdGroupFilter(data.adGroups); } // 系列/广告组下拉填充
   const tb=document.getElementById('semHierRows');
   if(!tb)return;
   const camps=(data&&data.campaigns)||[], kws=(data&&data.keywords)||[];

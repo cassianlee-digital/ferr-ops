@@ -387,17 +387,18 @@ export function upsertAdsKeywords(rows) {
 }
 
 export function adsSummary(range) {
-  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null };
-  const totals = db
-    .prepare(
-      `SELECT COALESCE(SUM(cost_micros),0) costMicros, COALESCE(SUM(impressions),0) impressions,
-              COALESCE(SUM(clicks),0) clicks, COALESCE(SUM(conversions),0) conversions,
-              CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
-              CASE WHEN SUM(clicks) > 0 THEN SUM(cost_micros) / SUM(clicks) ELSE NULL END averageCpcMicros,
-              CASE WHEN SUM(conversions) > 0 THEN SUM(cost_micros) / SUM(conversions) ELSE NULL END costPerConversionMicros
-       FROM google_ads_campaign_daily WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)`
-    )
-    .get(params);
+  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null, adGroupId: range.ads_ad_group_id || null };
+  const byAdGroup = !!range.ads_ad_group_id;
+  const metricsSel =
+    `SELECT COALESCE(SUM(cost_micros),0) costMicros, COALESCE(SUM(impressions),0) impressions,
+            COALESCE(SUM(clicks),0) clicks, COALESCE(SUM(conversions),0) conversions,
+            CASE WHEN SUM(impressions) > 0 THEN SUM(clicks) * 1.0 / SUM(impressions) ELSE NULL END ctr,
+            CASE WHEN SUM(clicks) > 0 THEN SUM(cost_micros) / SUM(clicks) ELSE NULL END averageCpcMicros,
+            CASE WHEN SUM(conversions) > 0 THEN SUM(cost_micros) / SUM(conversions) ELSE NULL END costPerConversionMicros`;
+  // 选了广告组：从 keyword_daily 聚合（唯一含广告组维度的表）；否则用 campaign_daily
+  const totals = byAdGroup
+    ? db.prepare(`${metricsSel} FROM google_ads_keyword_daily WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId) AND (@adGroupId IS NULL OR ad_group_id = @adGroupId)`).get(params)
+    : db.prepare(`${metricsSel} FROM google_ads_campaign_daily WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)`).get(params);
   const campaigns = db
     .prepare(
       `SELECT campaign_id campaignId, campaign_name campaignName, SUM(cost_micros) costMicros,
@@ -414,13 +415,24 @@ export function adsSummary(range) {
       `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName, SUM(cost_micros) costMicros,
               SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_keyword_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId) AND (@adGroupId IS NULL OR ad_group_id = @adGroupId)
        GROUP BY keyword_text, match_type, campaign_name
        ORDER BY costMicros DESC
        LIMIT 50`
     )
     .all(params);
-  return { totals, campaigns, keywords };
+  // 广告组下拉列表：按当前系列过滤（级联），不按广告组自身过滤以保证列表完整
+  const adGroups = db
+    .prepare(
+      `SELECT ad_group_id adGroupId, COALESCE(NULLIF(ad_group_name,''),'(未命名广告组)') adGroupName, campaign_id campaignId, SUM(cost_micros) costMicros
+       FROM google_ads_keyword_daily
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId) AND ad_group_id <> ''
+       GROUP BY ad_group_id, ad_group_name, campaign_id
+       ORDER BY costMicros DESC
+       LIMIT 200`
+    )
+    .all(params);
+  return { totals, campaigns, keywords, adGroups };
 }
 
 /* ===== 诊断引擎查询（全部基于已同步真实数据，无任何 demo） ===== */
@@ -508,13 +520,13 @@ export function gscDecayPages(range, prevRange, { minPrevClicks = 10, dropRatio 
 
 // 高花费零有效：区间内 cost>0 且 conversions=0 的关键词（按花费降序）。
 export function adsWasteKeywords(range, { limit = 50 } = {}) {
-  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null, limit };
+  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null, adGroupId: range.ads_ad_group_id || null, limit };
   return db
     .prepare(
       `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName,
               SUM(cost_micros) costMicros, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_keyword_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId) AND (@adGroupId IS NULL OR ad_group_id = @adGroupId)
        GROUP BY keyword_text, match_type, campaign_name
        HAVING SUM(conversions) = 0 AND SUM(cost_micros) > 0
        ORDER BY costMicros DESC LIMIT @limit`
@@ -585,7 +597,7 @@ export function ga4SourcesRange(range) {
 }
 /* ===== SEM 富看板：带 Δ 的系列/关键词表 + 花费×转化散点 + 日趋势 ===== */
 function _adsParams(range) {
-  return { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null };
+  return { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null, adGroupId: range.ads_ad_group_id || null };
 }
 function adsCampaignAgg(range) {
   return db
@@ -604,7 +616,7 @@ function adsKeywordAgg(range) {
       `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName, SUM(cost_micros) costMicros,
               SUM(impressions) impressions, SUM(clicks) clicks, SUM(conversions) conversions
        FROM google_ads_keyword_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId) AND (@adGroupId IS NULL OR ad_group_id = @adGroupId)
        GROUP BY keyword_text, match_type, campaign_name`
     )
     .all(_adsParams(range));
@@ -631,13 +643,16 @@ export function adsScatter(range, { limit = 120 } = {}) {
     .slice(0, limit)
     .map((r) => ({ keyword: r.keyword, campaignName: r.campaignName, costMicros: r.costMicros, conversions: r.conversions, clicks: r.clicks }));
 }
-// 日趋势：每天 花费/点击/转化
+// 日趋势：每天 花费/点击/转化。选了广告组时从 keyword_daily 聚合（campaign_daily 无广告组维度）
 export function adsSeries(range) {
+  const byAdGroup = !!range.ads_ad_group_id;
+  const table = byAdGroup ? 'google_ads_keyword_daily' : 'google_ads_campaign_daily';
+  const agClause = byAdGroup ? ' AND (@adGroupId IS NULL OR ad_group_id = @adGroupId)' : '';
   return db
     .prepare(
       `SELECT date, SUM(cost_micros) costMicros, SUM(clicks) clicks, SUM(conversions) conversions
-       FROM google_ads_campaign_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)
+       FROM ${table}
+       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId)${agClause}
        GROUP BY date ORDER BY date`
     )
     .all(_adsParams(range));

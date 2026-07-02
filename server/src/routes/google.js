@@ -219,8 +219,9 @@ export async function googleRoutes(app) {
       const range = normalizeRange(request.query || {});
       const prev = seoPrevRange(range);
       const campaignId = (request.query || {}).campaign_id || null; // 系列筛选，null=全部
-      const ads = { ...range, ads_customer_id: project.ads_customer_id, ads_campaign_id: campaignId };
-      const adsPrev = { ...prev, ads_customer_id: project.ads_customer_id, ads_campaign_id: campaignId };
+      const adGroupId = (request.query || {}).ad_group_id || null;   // 广告组筛选，null=全部
+      const ads = { ...range, ads_customer_id: project.ads_customer_id, ads_campaign_id: campaignId, ads_ad_group_id: adGroupId };
+      const adsPrev = { ...prev, ads_customer_id: project.ads_customer_id, ads_campaign_id: campaignId, ads_ad_group_id: adGroupId };
       const cur = adsSummary(ads).totals;
       const prevTot = adsSummary(adsPrev).totals;
       const { campaigns, keywords } = googleRepo.adsBoardTables(ads, adsPrev);
@@ -237,7 +238,7 @@ export async function googleRoutes(app) {
   app.get('/api/google/ads/summary', { preHandler: requireAuth }, async (request, reply) => {
     try {
       const project = resolveProject(request.query || {});
-      const range = { ...normalizeRange(request.query || {}), ads_customer_id: project.ads_customer_id, ads_campaign_id: (request.query || {}).campaign_id || null };
+      const range = { ...normalizeRange(request.query || {}), ads_customer_id: project.ads_customer_id, ads_campaign_id: (request.query || {}).campaign_id || null, ads_ad_group_id: (request.query || {}).ad_group_id || null };
       return { connected: googleRepo.tokenStatus().ads.authorized, project, ...adsSummary(range) };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
