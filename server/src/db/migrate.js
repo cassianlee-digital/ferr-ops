@@ -327,6 +327,7 @@ CREATE TABLE IF NOT EXISTS google_ads_keyword_daily (
   campaign_id                TEXT NOT NULL,
   campaign_name              TEXT,
   ad_group_id                TEXT NOT NULL,
+  ad_group_name              TEXT,
   criterion_id               TEXT NOT NULL,
   keyword_text               TEXT,
   match_type                 TEXT,
@@ -466,6 +467,10 @@ export function migrate() {
   ]);
   ensureColumns('google_sync_runs', [
     ['project_id', 'INTEGER'],
+  ]);
+  // 阶段6：广告组维度——旧库补 ad_group_name（需重新同步一次才有值）
+  ensureColumns('google_ads_keyword_daily', [
+    ['ad_group_name', 'TEXT'],
   ]);
   ensureColumns('google_projects', [
     ['gsc_site_url', 'TEXT'], ['ga4_property_id', 'TEXT'], ['ads_customer_id', 'TEXT'],

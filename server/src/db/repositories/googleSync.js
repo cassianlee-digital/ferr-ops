@@ -371,12 +371,12 @@ export function upsertAdsCampaigns(rows) {
 export function upsertAdsKeywords(rows) {
   const stmt = db.prepare(
     `INSERT INTO google_ads_keyword_daily
-     (date, customer_id, campaign_id, campaign_name, ad_group_id, criterion_id, keyword_text, match_type,
+     (date, customer_id, campaign_id, campaign_name, ad_group_id, ad_group_name, criterion_id, keyword_text, match_type,
       cost_micros, impressions, clicks, conversions, ctr, average_cpc_micros, cost_per_conversion_micros, sync_run_id, updated_at)
-     VALUES (@date, @customer_id, @campaign_id, @campaign_name, @ad_group_id, @criterion_id, @keyword_text, @match_type,
+     VALUES (@date, @customer_id, @campaign_id, @campaign_name, @ad_group_id, @ad_group_name, @criterion_id, @keyword_text, @match_type,
       @cost_micros, @impressions, @clicks, @conversions, @ctr, @average_cpc_micros, @cost_per_conversion_micros, @sync_run_id, datetime('now'))
      ON CONFLICT(date, customer_id, campaign_id, ad_group_id, criterion_id) DO UPDATE SET
-      campaign_name=excluded.campaign_name, keyword_text=excluded.keyword_text, match_type=excluded.match_type,
+      campaign_name=excluded.campaign_name, ad_group_name=excluded.ad_group_name, keyword_text=excluded.keyword_text, match_type=excluded.match_type,
       cost_micros=excluded.cost_micros, impressions=excluded.impressions, clicks=excluded.clicks,
       conversions=excluded.conversions, ctr=excluded.ctr, average_cpc_micros=excluded.average_cpc_micros,
       cost_per_conversion_micros=excluded.cost_per_conversion_micros, sync_run_id=excluded.sync_run_id,

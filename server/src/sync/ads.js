@@ -55,6 +55,7 @@ function keywordRow(r, project, runId) {
   return {
     ...base,
     ad_group_id: String(r.adGroup?.id || ''),
+    ad_group_name: r.adGroup?.name || '',
     criterion_id: String(r.adGroupCriterion?.criterionId || ''),
     keyword_text: r.adGroupCriterion?.keyword?.text || '',
     match_type: r.adGroupCriterion?.keyword?.matchType || '',
@@ -96,6 +97,7 @@ export async function syncAds(input = {}) {
         campaign.id,
         campaign.name,
         ad_group.id,
+        ad_group.name,
         ad_group_criterion.criterion_id,
         ad_group_criterion.keyword.text,
         ad_group_criterion.keyword.match_type,
