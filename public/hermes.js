@@ -292,6 +292,29 @@
     window.open(url, '_blank', 'noopener');
   }
 
+  async function createHermesDailyLearning() {
+    if (!window.API || !window.ME) return;
+    const btn = byId('hermesLearnBtn');
+    const oldText = btn ? btn.textContent : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '沉淀中...';
+    }
+    try {
+      await syncHermesSession(true);
+      await window.API.post('/api/hermes/memories/daily-learning', {});
+      if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
+      if (window.toast) window.toast('Hermes 已沉淀今日运营记忆');
+    } catch (e) {
+      if (window.toast) window.toast('Hermes 记忆沉淀失败：' + (e.message || 'learning_failed'));
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = oldText || '沉淀今日记忆';
+      }
+    }
+  }
+
   function prewarmHermesFrame() {
     if (prewarmStarted) return;
     prewarmStarted = true;
@@ -330,6 +353,7 @@
   window.closeHermesPanel = closeHermesPanel;
   window.refreshHermesStatus = refreshHermesStatus;
   window.openHermesAgent = openHermesAgent;
+  window.createHermesDailyLearning = createHermesDailyLearning;
   window.resetHermesWindow = resetHermesWindow;
   window.toggleHermesMaximize = toggleHermesMaximize;
   window.syncHermesSession = syncHermesSession;

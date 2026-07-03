@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/base.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/page-fixes.css">
+<link rel="stylesheet" href="/page-settings.css">
 </head>
 <body>
 <div class="wrap">
@@ -30,6 +31,7 @@
       <div class="nav-item" data-tab="keywords"><i class="ti ti-key"></i> 关键词库</div>
       <div class="nav-item" data-tab="content"><i class="ti ti-file-stack"></i> 内容资产</div>
       <div class="nav-item" data-tab="market"><i class="ti ti-map-search"></i> 市场分析</div>
+      <div class="nav-item" data-tab="ai-memory"><i class="ti ti-brain"></i> AI 记忆</div>
       <div class="nav-item" data-tab="deposit"><i class="ti ti-database-heart"></i> 沉淀表</div>
       <div class="nav-item" data-tab="archive"><i class="ti ti-archive"></i> 归档</div></div>
     <div class="nav-section"><div class="nav-label">系统</div>
@@ -487,6 +489,76 @@
         </div>
       </div>
 
+      <!-- ============ AI 记忆 ============ -->
+      <div class="panel" id="panel-ai-memory">
+        <div class="page-head">
+          <div>
+            <div class="page-title">AI 记忆</div>
+            <div class="page-sub">Hermes 的长期运营认知：客户事实、判断标准、决策、风险和每日学习沉淀</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-ghost" onclick="createHermesDailyLearning()"><i class="ti ti-sparkles"></i> 沉淀今日记忆</button>
+            <button class="btn-primary" onclick="loadHermesMemories(true)"><i class="ti ti-refresh"></i> 刷新</button>
+          </div>
+        </div>
+        <div class="banner banner-red" style="margin-bottom:14px">
+          <i class="ti ti-shield-check" style="color:var(--primary);font-size:18px"></i>
+          <div>
+            <div class="banner-t">这里不是聊天记录，是 Hermes 的企业长期记忆。</div>
+            <div class="banner-s">只放可以长期复用的事实、判断和经验；错误、过期、太泛的内容要停用，避免以后分析被带偏。</div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-head"><span class="card-title">新增一条记忆</span><span class="card-sub">建议写成“事实 + 证据 + 后续怎么用”</span></div>
+            <div class="fld-row">
+              <div class="fld"><label>类型</label><select id="hm-kind">
+                <option value="market">市场 / 客户</option>
+                <option value="operation">运营经验</option>
+                <option value="decision">决策标准</option>
+                <option value="risk">风险提醒</option>
+                <option value="company">公司事实</option>
+                <option value="customer">客户画像</option>
+                <option value="preference">偏好</option>
+                <option value="learning">每日学习</option>
+              </select></div>
+              <div class="fld"><label>重要度</label><select id="hm-importance">
+                <option value="5">5 · 核心</option>
+                <option value="4">4 · 重要</option>
+                <option value="3" selected>3 · 常规</option>
+                <option value="2">2 · 参考</option>
+                <option value="1">1 · 低</option>
+              </select></div>
+            </div>
+            <div class="fld"><label>标题</label><input id="hm-title" maxlength="120" placeholder="例如：欧美客户更看重按图定制与资质证明"></div>
+            <div class="fld"><label>记忆内容</label><textarea id="hm-content" rows="5" placeholder="写清楚 Hermes 以后应该记住什么，以及分析时怎么使用。"></textarea></div>
+            <div class="fld"><label>证据 / 来源</label><textarea id="hm-evidence" rows="3" placeholder="例如：市场分析第 3/7/12 题、SEM 周报、询盘复盘、老板决策等。"></textarea></div>
+            <div class="fld"><label>来源标记</label><input id="hm-source" value="manual" maxlength="80"></div>
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+              <button class="btn-ghost" onclick="resetHermesMemoryForm()">清空</button>
+              <button class="btn-primary" onclick="saveHermesMemory()"><i class="ti ti-device-floppy"></i> 存入 AI 记忆</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">记忆质量规则</span><span class="card-sub">保证 Hermes 越学越准</span></div>
+            <div class="ai-item"><i class="ti ti-check"></i><div class="body"><strong>该存：</strong>客户真实反馈、有效/无效经验、老板判断标准、已验证的转化规律。</div></div>
+            <div class="ai-item"><i class="ti ti-x"></i><div class="body"><strong>别存：</strong>一次性的临时任务、没证据的猜测、泛泛而谈的营销常识。</div></div>
+            <div class="ai-item"><i class="ti ti-alert-triangle"></i><div class="body"><strong>要删：</strong>过期、错误、和新数据冲突的记忆。停用后不会再进入 Hermes 长期上下文。</div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-head">
+            <span class="card-title">已沉淀记忆</span>
+            <span class="card-sub" id="hm-count">加载中...</span>
+          </div>
+          <table class="dt">
+            <thead><tr><th style="width:86px">类型</th><th style="width:90px" class="ctr">重要度</th><th>标题 / 内容</th><th>证据</th><th style="width:140px">更新时间</th><th class="ctr" style="width:86px">操作</th></tr></thead>
+            <tbody id="tb-hermes-memory"></tbody>
+          </table>
+          <div id="hm-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-brain-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 AI 记忆，先从市场分析或今日运营复盘沉淀第一条</div>
+        </div>
+      </div>
+
       <!-- ============ 沉淀表 ============ -->
       <div class="panel" id="panel-deposit">
         <div class="page-head"><div><div class="page-title">沉淀表</div><div class="page-sub">点过「沉淀」「采纳」的数据/线索自动归档到这里，也可手动增删改</div></div><button class="btn-primary" onclick="addDepositRow()"><i class="ti ti-plus"></i> 加一行</button></div>
@@ -861,6 +933,7 @@
 <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
 <script src="/api.js"></script>
 <script src="/hermes.js"></script>
+<script src="/hermes-memory.js"></script>
 <!-- 阶段2 拆分：Google 接入/数据源状态 + GA4 看板。仅定义函数（loadGa4/loadIntegrations 等），
      依赖 esc()/toast()（下方内联）在调用时（window load）才解析；window load 初始化在内联脚本末尾。 -->
 <script src="/google-projects.js"></script>
@@ -1330,6 +1403,7 @@ window.addEventListener('load',async()=>{
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
   await loadIntegrations();    // 设置页 API 接入状态
   await loadMarket();          // 市场分析问卷表
+  if (typeof loadHermesMemories === 'function') await loadHermesMemories(false); // AI 记忆
   await loadBrain();           // AI 记忆体状态 + 摘要
   await renderReview();        // 复盘周报（手风琴+并排）
   refreshInqStats();

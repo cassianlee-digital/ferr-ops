@@ -9,7 +9,7 @@ const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
-  'content_assets',
+  'content_assets', 'hermes_memories',
   'sop_definitions', 'sop_completions',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
@@ -399,6 +399,20 @@ CREATE TABLE IF NOT EXISTS monthly_snapshots (
 );
 
 -- SOP 引擎（Step A）：定义 + 完成记录
+CREATE TABLE IF NOT EXISTS hermes_memories (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind        TEXT NOT NULL CHECK (kind IN ('company','customer','market','operation','decision','learning','preference','risk')),
+  title       TEXT NOT NULL,
+  content     TEXT NOT NULL,
+  evidence    TEXT,
+  source      TEXT,
+  importance  INTEGER NOT NULL DEFAULT 3,
+  active      INTEGER NOT NULL DEFAULT 1,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_hermes_memories_active_kind ON hermes_memories(active, kind, importance);
+
 CREATE TABLE IF NOT EXISTS sop_definitions (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   dept       TEXT NOT NULL,                                -- SEM / SEO / 公司

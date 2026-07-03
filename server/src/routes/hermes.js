@@ -1,11 +1,14 @@
-import { requireAuth } from '../auth/middleware.js';
+import { editor, requireAuth } from '../auth/middleware.js';
 import { config } from '../config.js';
 import { buildContext } from '../services/aiContext.js';
+import * as marketBrain from '../services/marketBrain.js';
 import * as kpiRepo from '../db/repositories/kpi.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
 import * as seoRepo from '../db/repositories/seoWeeks.js';
 import * as semRepo from '../db/repositories/semWeeks.js';
 import * as kwRepo from '../db/repositories/keywords.js';
+import * as marketResearchRepo from '../db/repositories/marketResearch.js';
+import * as hermesMemoryRepo from '../db/repositories/hermesMemories.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -273,6 +276,101 @@ function buildOpsDiagnosis(operator) {
   };
 }
 
+function safeJson(value) {
+  try { return value ? JSON.parse(value) : null; } catch { return null; }
+}
+
+function buildEnterpriseMemory() {
+  let brainState = null;
+  let marketSummary = '';
+  let marketRows = [];
+  let longTermMemories = [];
+  const missing = [];
+
+  try {
+    brainState = marketBrain.checkState();
+    marketSummary = marketBrain.getSummary();
+  } catch {
+    missing.push('market_brain');
+  }
+
+  try {
+    marketRows = marketResearchRepo.list().slice(0, 80).map((r) => ({
+      section: r.section || '',
+      question: r.question || '',
+      answers: safeJson(r.answers) || r.answers || '',
+    }));
+  } catch {
+    missing.push('market_research');
+  }
+
+  try {
+    longTermMemories = hermesMemoryRepo.list({ activeOnly: true, limit: 30 });
+  } catch {
+    missing.push('hermes_memories');
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    purpose: 'Long-lived enterprise memory for Hermes. Use this before generic marketing assumptions.',
+    marketBrain: {
+      state: brainState,
+      summary: marketSummary,
+      instruction: marketSummary
+        ? 'Treat this market summary as FERR company background and customer reality.'
+        : 'Market research exists but AI memory summary is empty or not refreshed. Ask user to click Sync / Update AI memory on Market Analysis.',
+    },
+    marketResearch: {
+      totalRows: marketRows.length,
+      sampleRows: marketRows.slice(0, 12),
+      instruction: 'Use market research rows as customer/ICP evidence. Do not quote rows not present in this payload.',
+    },
+    longTermMemories,
+    missingData: missing,
+  };
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function buildDailyLearningMemory(operator) {
+  const diagnosis = buildOpsDiagnosis(operator);
+  const enterpriseMemory = buildEnterpriseMemory();
+  const day = todayKey();
+  const cards = diagnosis.priorityCards || [];
+  const high = cards.filter((c) => c.severity === 'high');
+  const focus = (high.length ? high : cards).slice(0, 5);
+  const missing = [
+    ...(diagnosis.missingData || []),
+    ...(enterpriseMemory.missingData || []),
+  ];
+
+  const content = [
+    `日期：${day}`,
+    `角色视角：${operator.role}`,
+    `今日核心判断：${focus.length ? '优先盯住 ' + focus.map((c) => c.title).join('；') : '当前没有足够诊断卡，需要先补数据。'}`,
+    '',
+    '今日优先动作：',
+    ...(focus.length ? focus.map((c, i) => `${i + 1}. ${c.title}｜${c.action}｜负责人：${c.owner}｜验证：${c.verifyMetric}｜复盘：${c.reviewWindow}`) : ['1. 补齐 KPI/SEO/SEM/询盘数据后再生成诊断。']),
+    '',
+    `市场记忆状态：${enterpriseMemory.marketBrain?.summary ? '已有市场分析摘要' : '市场分析摘要未生成或需更新'}`,
+    missing.length ? `缺失/需补充数据：${[...new Set(missing)].join('、')}` : '缺失/需补充数据：暂无',
+  ].join('\n');
+
+  const evidence = focus.map((c) => `${c.title}: ${c.evidence}`).join('\n');
+  const item = hermesMemoryRepo.upsertBySourceTitle({
+    kind: 'learning',
+    title: `每日运营学习 ${day}`,
+    content,
+    evidence,
+    source: 'hermes_daily_learning',
+    importance: 5,
+  });
+
+  return { item, diagnosis, enterpriseMemory };
+}
+
 const pageContexts = new Map();
 const sessions = new Map();
 
@@ -441,6 +539,7 @@ function contextPayload(request) {
     const session = latestSession(operator);
     const pageContext = latestPageContext(operator);
     const opsDiagnosis = buildOpsDiagnosis(operator);
+    const enterpriseMemory = buildEnterpriseMemory();
     return {
       ok: true,
       generatedAt: new Date().toISOString(),
@@ -455,6 +554,7 @@ function contextPayload(request) {
       session,
       pageContext,
       opsDiagnosis,
+      enterpriseMemory,
       assistantBrief: assistantBrief(operator),
       assistantPlaybook: assistantPlaybook(operator),
       assistantInstructions: [
@@ -462,6 +562,9 @@ function contextPayload(request) {
         'For SEM: prioritize spend, conversions, CPC, CPA, CTR, quality score, ROAS, negative keywords, and budget allocation.',
         'For SEO: prioritize clicks, impressions, CTR, ranking, decay pages, opportunity keywords, cannibalization, and content tasks.',
         'Use opsDiagnosis.priorityCards as the first evidence pool before giving recommendations.',
+        'Use enterpriseMemory.marketBrain and enterpriseMemory.longTermMemories as FERR company/customer background.',
+        'Market Analysis is first-party business research. Treat it as higher priority than generic web/LLM knowledge.',
+        'The system can persist a daily learning memory via /api/hermes/memories/daily-learning so future analysis becomes more company-specific.',
         'Every action must include evidence, judgment, concrete action, owner, verification metric, and review window.',
         'If pageContext exists, mention which current page/table evidence you used.',
       ],
@@ -532,6 +635,24 @@ export async function hermesRoutes(app) {
   app.post('/api/hermes/context', { preHandler: requireHermesContextAuth }, async (request) => contextPayload(request));
   app.get('/api/hermes/session', { preHandler: requireHermesContextAuth }, async (request) => sessionPayload(request));
   app.get('/api/hermes/page-context', { preHandler: requireHermesContextAuth }, async (request) => pageDetailPayload(request));
+  app.get('/api/hermes/memories', { preHandler: requireAuth }, async () => ({
+    items: hermesMemoryRepo.list({ activeOnly: true, limit: 100 }),
+  }));
+  app.post('/api/hermes/memories', editor, async (request, reply) => {
+    const item = hermesMemoryRepo.create(request.body || {});
+    if (!item) return reply.code(400).send({ error: 'title_and_content_required' });
+    reply.code(201);
+    return { item };
+  });
+  app.post('/api/hermes/memories/daily-learning', editor, async (request) => {
+    const operator = resolveOperator(request);
+    return buildDailyLearningMemory(operator);
+  });
+  app.delete('/api/hermes/memories/:id', editor, async (request, reply) => {
+    const item = hermesMemoryRepo.deactivate(Number(request.params.id));
+    if (!item) return reply.code(404).send({ error: 'not_found' });
+    return { item };
+  });
 
   app.post('/api/hermes/page-context', { preHandler: requireAuth }, async (request) => {
     const operator = resolveOperator(request);
