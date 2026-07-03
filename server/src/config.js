@@ -57,6 +57,7 @@ export const config = {
   hermes: {
     url: (process.env.HERMES_AGENT_URL || '').replace(/\/+$/, ''),
     sharedSecret: process.env.HERMES_SHARED_SECRET || '',
+    dailyLearningAuto: process.env.HERMES_DAILY_LEARNING_AUTO !== 'false',
   },
 
   google: {

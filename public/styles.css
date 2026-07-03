@@ -81,10 +81,7 @@ table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
   min-height:32px;
   font-weight:750;
 }
-.btn-primary{
-  background:linear-gradient(180deg,#ff5a52 0%,#ef3f3a 100%);
-  box-shadow:0 8px 18px rgba(239,63,58,.22);
-}
+/* .btn-primary/.btn-ai base → components.css (block1). red-gradient pass removed. */
 .btn-ghost,.theme-btn,.trange,.tgran,.cat-tab,.kw-pg,.kw-pg-size{
   background:#fff;
   border-color:var(--border2);
@@ -95,7 +92,6 @@ table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
   border-color:#bfc7d6;
   color:var(--text1);
 }
-.btn-ai{border-radius:8px;background:#fff4f3;border-color:#ffd6d3}
 
 .badge,.tagselect,.cache-tag{
   border-radius:999px;
@@ -341,9 +337,7 @@ table.dt tbody tr:hover{background:#f5f8fc}
   border-radius:8px;
   letter-spacing:0;
 }
-.btn-primary{
-  box-shadow:0 8px 18px rgba(239,63,58,.20);
-}
+/* .btn-primary base box-shadow → components.css (block1, none). hover kept. */
 .btn-primary:hover{
   filter:none;
   transform:translateY(-1px);
@@ -1621,36 +1615,13 @@ body {
   margin-bottom: 16px;
 }
 
-.btn-primary {
-  min-height: 32px;
-  padding: 0 14px;
-  border: 1px solid var(--primary);
-  border-radius: 2px;
-  background: var(--primary);
-  box-shadow: none;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 400;
-}
-
+/* .btn-primary / .btn-ai base (Aliyun pass) → components.css (block1). hover kept. */
 .btn-primary:hover {
   background: var(--primary2);
   border-color: var(--primary2);
   filter: none;
   transform: none;
   box-shadow: none;
-}
-
-.btn-ai {
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px solid #bedaff;
-  border-radius: 2px;
-  background: var(--primary-soft);
-  box-shadow: none;
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 500;
 }
 
 .timebar-inline {
@@ -6369,11 +6340,7 @@ button.add-task {
   box-shadow: none !important;
 }
 
-.btn-primary {
-  border: 1px solid #1677ff;
-  background: #1677ff;
-}
-
+/* .btn-primary base border/bg → components.css (block1). hover kept. */
 .btn-primary:hover {
   background: #0f6be8;
   border-color: #0f6be8;
@@ -6405,11 +6372,7 @@ button.add-task {
   filter: none;
 }
 
-.btn-ai {
-  background: #f7fbff;
-  border-color: #cfe0ff;
-  color: #1677ff;
-}
+/* .btn-ai base bg/border/color → components.css (block1). */
 
 .btn-mini,
 .cat-tab,

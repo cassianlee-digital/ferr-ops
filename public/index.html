@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/page-fixes.css">
 <link rel="stylesheet" href="/page-settings.css">
+<link rel="stylesheet" href="/components.css">
 </head>
 <body>
 <div class="wrap">
@@ -530,13 +531,14 @@
                 <option value="1">1 · 低</option>
               </select></div>
             </div>
+            <input type="hidden" id="hm-id">
             <div class="fld"><label>标题</label><input id="hm-title" maxlength="120" placeholder="例如：欧美客户更看重按图定制与资质证明"></div>
             <div class="fld"><label>记忆内容</label><textarea id="hm-content" rows="5" placeholder="写清楚 Hermes 以后应该记住什么，以及分析时怎么使用。"></textarea></div>
             <div class="fld"><label>证据 / 来源</label><textarea id="hm-evidence" rows="3" placeholder="例如：市场分析第 3/7/12 题、SEM 周报、询盘复盘、老板决策等。"></textarea></div>
             <div class="fld"><label>来源标记</label><input id="hm-source" value="manual" maxlength="80"></div>
             <div style="display:flex;justify-content:flex-end;gap:8px">
               <button class="btn-ghost" onclick="resetHermesMemoryForm()">清空</button>
-              <button class="btn-primary" onclick="saveHermesMemory()"><i class="ti ti-device-floppy"></i> 存入 AI 记忆</button>
+              <button class="btn-primary" onclick="saveHermesMemory()"><i class="ti ti-device-floppy"></i> <span id="hm-submit-label">存入 AI 记忆</span></button>
             </div>
           </div>
           <div class="card">
@@ -547,12 +549,31 @@
           </div>
         </div>
         <div class="card" style="margin-top:14px">
+          <div class="card-head"><span class="card-title">反馈一条 Hermes 建议</span><span class="card-sub">让它记住哪些建议有用、哪些不适合 FERR</span></div>
+          <div class="fld-row">
+            <div class="fld"><label>反馈结果</label><select id="hf-result">
+              <option value="adopted">采纳 · 有价值</option>
+              <option value="done">已执行 · 后续可复用</option>
+              <option value="rejected">暂不采纳 · 不符合当前策略</option>
+              <option value="wrong">不准 · 判断错误</option>
+              <option value="generic">太泛 · 没有结合业务</option>
+            </select></div>
+            <div class="fld"><label>关联范围</label><input id="hf-scope" maxlength="80" placeholder="例如：SEM关键词 / 市场分析 / 日计划 / KPI"></div>
+          </div>
+          <div class="fld"><label>Hermes 原建议</label><textarea id="hf-suggestion" rows="3" placeholder="把 Hermes 刚才那条建议或核心观点贴在这里。"></textarea></div>
+          <div class="fld"><label>你的判断 / 结果</label><textarea id="hf-note" rows="3" placeholder="为什么采纳、为什么不准、执行后结果如何。"></textarea></div>
+          <div style="display:flex;justify-content:flex-end;gap:8px">
+            <button class="btn-ghost" onclick="resetHermesFeedbackForm()">清空反馈</button>
+            <button class="btn-primary" onclick="saveHermesFeedback()"><i class="ti ti-message-check"></i> 沉淀反馈</button>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
           <div class="card-head">
             <span class="card-title">已沉淀记忆</span>
             <span class="card-sub" id="hm-count">加载中...</span>
           </div>
           <table class="dt">
-            <thead><tr><th style="width:86px">类型</th><th style="width:90px" class="ctr">重要度</th><th>标题 / 内容</th><th>证据</th><th style="width:140px">更新时间</th><th class="ctr" style="width:86px">操作</th></tr></thead>
+            <thead><tr><th style="width:86px">类型</th><th style="width:90px" class="ctr">重要度</th><th>标题 / 内容</th><th>证据</th><th style="width:140px">更新时间</th><th class="ctr" style="width:126px">操作</th></tr></thead>
             <tbody id="tb-hermes-memory"></tbody>
           </table>
           <div id="hm-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-brain-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 AI 记忆，先从市场分析或今日运营复盘沉淀第一条</div>

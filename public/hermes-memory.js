@@ -22,6 +22,14 @@
     return el ? el.value.trim() : '';
   }
 
+  const FEEDBACK_LABEL = {
+    adopted: '采纳 · 有价值',
+    done: '已执行 · 后续可复用',
+    rejected: '暂不采纳 · 不符合当前策略',
+    wrong: '不准 · 判断错误',
+    generic: '太泛 · 没有结合业务',
+  };
+
   function td(value, className) {
     const cell = document.createElement('td');
     if (className) cell.className = className;
@@ -71,12 +79,18 @@
     tr.appendChild(td(row.updated_at || row.created_at || '—', 'dim'));
 
     const action = td('', 'ctr');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn-ghost';
-    btn.textContent = '停用';
-    btn.addEventListener('click', () => deactivateHermesMemory(row.id));
-    action.appendChild(btn);
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'btn-ghost';
+    editBtn.textContent = '编辑';
+    editBtn.addEventListener('click', () => editHermesMemory(row));
+    const stopBtn = document.createElement('button');
+    stopBtn.type = 'button';
+    stopBtn.className = 'btn-ghost';
+    stopBtn.textContent = '停用';
+    stopBtn.style.marginLeft = '6px';
+    stopBtn.addEventListener('click', () => deactivateHermesMemory(row.id));
+    action.append(editBtn, stopBtn);
     tr.appendChild(action);
     return tr;
   }
@@ -103,10 +117,24 @@
   }
 
   function resetHermesMemoryForm() {
-    ['hm-title', 'hm-content', 'hm-evidence'].forEach((id) => { const el = byId(id); if (el) el.value = ''; });
+    ['hm-id', 'hm-title', 'hm-content', 'hm-evidence'].forEach((id) => { const el = byId(id); if (el) el.value = ''; });
     const kind = byId('hm-kind'); if (kind) kind.value = 'market';
     const importance = byId('hm-importance'); if (importance) importance.value = '3';
     const source = byId('hm-source'); if (source) source.value = 'manual';
+    setText(byId('hm-submit-label'), '存入 AI 记忆');
+  }
+
+  function editHermesMemory(row) {
+    const id = byId('hm-id'); if (id) id.value = row.id || '';
+    const kind = byId('hm-kind'); if (kind) kind.value = row.kind || 'learning';
+    const importance = byId('hm-importance'); if (importance) importance.value = String(row.importance || 3);
+    const title = byId('hm-title'); if (title) title.value = text(row.title);
+    const content = byId('hm-content'); if (content) content.value = text(row.content);
+    const evidence = byId('hm-evidence'); if (evidence) evidence.value = text(row.evidence);
+    const source = byId('hm-source'); if (source) source.value = text(row.source || 'manual');
+    setText(byId('hm-submit-label'), '更新 AI 记忆');
+    const panel = byId('panel-ai-memory');
+    if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function saveHermesMemory() {
@@ -123,10 +151,12 @@
       return;
     }
     try {
-      await window.API.post('/api/hermes/memories', body);
+      const id = field('hm-id');
+      if (id) await window.API.patch('/api/hermes/memories/' + encodeURIComponent(id), body);
+      else await window.API.post('/api/hermes/memories', body);
       resetHermesMemoryForm();
       await loadHermesMemories(false);
-      toastSafe('已存入 AI 记忆');
+      toastSafe(id ? 'AI 记忆已更新' : '已存入 AI 记忆');
     } catch (e) {
       toastSafe(e.status === 403 ? '无权修改 AI 记忆' : '保存失败：' + (e.message || 'unknown_error'));
     }
@@ -144,7 +174,47 @@
     }
   }
 
+  function resetHermesFeedbackForm() {
+    ['hf-scope', 'hf-suggestion', 'hf-note'].forEach((id) => { const el = byId(id); if (el) el.value = ''; });
+    const result = byId('hf-result'); if (result) result.value = 'adopted';
+  }
+
+  async function saveHermesFeedback() {
+    const result = field('hf-result') || 'adopted';
+    const suggestion = field('hf-suggestion');
+    const note = field('hf-note');
+    const scope = field('hf-scope') || '未指定范围';
+    if (!suggestion || !note) {
+      toastSafe('原建议和你的判断不能为空');
+      return;
+    }
+    const negative = result === 'wrong' || result === 'generic';
+    const body = {
+      kind: negative ? 'risk' : (result === 'rejected' ? 'preference' : 'learning'),
+      importance: negative ? 4 : 3,
+      title: 'Hermes建议反馈：' + (FEEDBACK_LABEL[result] || result),
+      content: [
+        '适用范围：' + scope,
+        '反馈结果：' + (FEEDBACK_LABEL[result] || result),
+        '原建议：' + suggestion,
+        '人工判断：' + note,
+      ].join('\n'),
+      evidence: '来源：AI记忆页人工反馈；页面：' + (window._curTab || location.pathname),
+      source: 'hermes_feedback',
+    };
+    try {
+      await window.API.post('/api/hermes/memories', body);
+      resetHermesFeedbackForm();
+      await loadHermesMemories(false);
+      toastSafe('反馈已沉淀，Hermes 后续会参考');
+    } catch (e) {
+      toastSafe(e.status === 403 ? '无权沉淀反馈' : '反馈保存失败：' + (e.message || 'unknown_error'));
+    }
+  }
+
   window.loadHermesMemories = loadHermesMemories;
   window.saveHermesMemory = saveHermesMemory;
   window.resetHermesMemoryForm = resetHermesMemoryForm;
+  window.saveHermesFeedback = saveHermesFeedback;
+  window.resetHermesFeedbackForm = resetHermesFeedbackForm;
 })();

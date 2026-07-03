@@ -1,0 +1,64 @@
+/* components.css — shared component single-source (scientific rewrite, incremental strangle)
+   Block 1: buttons (.btn-primary / .btn-ghost / .btn-ai).
+   Values below reproduce the live computed BASE (plain-specificity) of each class,
+   read from getComputedStyle on 2026-07-03 at vw=1280. Higher-specificity context
+   modifiers (.modal / #panel-* / .ai-box.purple / .hermes-* / page-head / dark / @media)
+   still live in styles.css for now and keep protecting their instances — they will be
+   migrated here in later blocks. Do NOT add !important; keep one declaration per value. */
+
+.btn-primary{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-height:32px;
+  padding:0 14px;
+  border:1px solid #1677ff;
+  border-radius:0;
+  background:#1677ff;
+  color:#fff;
+  font-family:Arial;
+  font-size:13px;
+  font-weight:400;
+  line-height:1;
+  text-align:center;
+  box-shadow:none;
+  cursor:pointer;
+}
+
+.btn-ghost{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-height:32px;
+  padding:0 12px;
+  border:1px solid transparent;
+  border-radius:0;
+  background:transparent;
+  color:#1677ff;
+  font-family:Arial;
+  font-size:13px;
+  font-weight:400;
+  line-height:1;
+  text-align:center;
+  box-shadow:none;
+  cursor:pointer;
+}
+
+.btn-ai{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-height:32px;
+  padding:0 10px;
+  border:1px solid #cfe0ff;
+  border-radius:0;
+  background:#f7fbff;
+  color:#1677ff;
+  font-family:Arial;
+  font-size:13px;
+  font-weight:400;
+  line-height:1;
+  text-align:center;
+  box-shadow:none;
+  cursor:pointer;
+}

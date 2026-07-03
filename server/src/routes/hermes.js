@@ -334,7 +334,7 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function buildDailyLearningMemory(operator) {
+export function buildDailyLearningMemory(operator) {
   const diagnosis = buildOpsDiagnosis(operator);
   const enterpriseMemory = buildEnterpriseMemory();
   const day = todayKey();
@@ -642,6 +642,11 @@ export async function hermesRoutes(app) {
     const item = hermesMemoryRepo.create(request.body || {});
     if (!item) return reply.code(400).send({ error: 'title_and_content_required' });
     reply.code(201);
+    return { item };
+  });
+  app.patch('/api/hermes/memories/:id', editor, async (request, reply) => {
+    const item = hermesMemoryRepo.update(Number(request.params.id), request.body || {});
+    if (!item) return reply.code(400).send({ error: 'title_and_content_required_or_not_found' });
     return { item };
   });
   app.post('/api/hermes/memories/daily-learning', editor, async (request) => {

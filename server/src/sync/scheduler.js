@@ -7,9 +7,11 @@ import * as repo from '../db/repositories/googleSync.js';
 import { syncGsc } from './gsc.js';
 import { syncGa4 } from './ga4.js';
 import { syncAds } from './ads.js';
+import { buildDailyLearningMemory } from '../routes/hermes.js';
 
 const SYNCERS = { gsc: syncGsc, ga4: syncGa4, ads: syncAds };
 let running = false;
+let learningRunning = false;
 
 // SQLite 存的是 UTC（datetime('now')），'YYYY-MM-DD HH:MM:SS' 需补 Z 再解析，避免被当本地时区。
 function parseUtc(s) {
@@ -46,6 +48,26 @@ async function runAll(log, reason) {
   log.info(`[sync] 自动同步完成（${reason}）：${summary.join('，')}`);
 }
 
+async function runHermesDailyLearning(log, reason) {
+  if (!config.hermes.dailyLearningAuto) return;
+  if (learningRunning) {
+    log.warn('[hermes] 上一轮每日学习未结束，跳过本轮');
+    return;
+  }
+  learningRunning = true;
+  try {
+    const r = buildDailyLearningMemory({
+      role: 'boss',
+      persona: { label: '老板' },
+    });
+    log.info(`[hermes] 每日运营学习已沉淀（${reason}）：${r.item?.title || '无标题'}`);
+  } catch (e) {
+    log.error({ err: e.message || String(e) }, '[hermes] 每日运营学习沉淀失败');
+  } finally {
+    learningRunning = false;
+  }
+}
+
 function msUntilNextDailyHour(hourUtc) {
   const now = new Date();
   const next = new Date(now);
@@ -72,27 +94,31 @@ function needCatchUp(log) {
 }
 
 export function startSyncScheduler(log) {
-  if (!config.sync.enabled) {
-    log.info('[sync] 自动同步已禁用（SYNC_AUTO=false）');
-    return;
-  }
+  if (!config.sync.enabled) log.info('[sync] 自动同步已禁用（SYNC_AUTO=false）');
+  if (!config.hermes.dailyLearningAuto) log.info('[hermes] 每日运营学习已禁用（HERMES_DAILY_LEARNING_AUTO=false）');
+  if (!config.sync.enabled && !config.hermes.dailyLearningAuto) return;
+
   const hour = config.sync.dailyHourUtc;
 
   const schedule = () => {
     const delay = msUntilNextDailyHour(hour);
     setTimeout(async () => {
-      await runAll(log, '每日定时');
+      if (config.sync.enabled) await runAll(log, '每日定时');
+      await runHermesDailyLearning(log, '每日定时');
       schedule(); // 排下一天
     }, delay).unref?.();
-    log.info(`[sync] 已排程：每日 UTC ${hour}:00 自动同步（约 ${Math.round(delay / 3600_000)}h 后首次）`);
+    log.info(`[sync] 已排程：每日 UTC ${hour}:00 自动同步 / Hermes 学习（约 ${Math.round(delay / 3600_000)}h 后首次）`);
   };
   schedule();
 
-  if (config.sync.catchUpOnStart) {
-    setTimeout(() => {
+  if (config.sync.catchUpOnStart || config.hermes.dailyLearningAuto) {
+    setTimeout(async () => {
       try {
-        if (needCatchUp(log)) runAll(log, '启动补跑');
-        else log.info('[sync] 近期已有成功同步，跳过启动补跑');
+        if (config.sync.enabled) {
+          if (needCatchUp(log)) await runAll(log, '启动补跑');
+          else log.info('[sync] 近期已有成功同步，跳过启动补跑');
+        }
+        await runHermesDailyLearning(log, '启动补跑');
       } catch (e) {
         log.error({ err: e.message || String(e) }, '[sync] 启动补跑检查失败');
       }

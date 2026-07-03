@@ -69,6 +69,33 @@ export function upsertBySourceTitle(input = {}) {
   return create(payload);
 }
 
+export function update(id, input = {}) {
+  const title = String(input.title || '').trim();
+  const content = String(input.content || '').trim();
+  if (!title || !content) return null;
+
+  db.prepare(
+    `UPDATE hermes_memories
+     SET kind=@kind,
+         title=@title,
+         content=@content,
+         evidence=@evidence,
+         source=@source,
+         importance=@importance,
+         updated_at=datetime('now')
+     WHERE id=@id AND active = 1`
+  ).run({
+    id,
+    kind: cleanKind(input.kind),
+    title,
+    content,
+    evidence: input.evidence == null ? null : String(input.evidence),
+    source: input.source == null ? 'manual' : String(input.source),
+    importance: Math.max(1, Math.min(5, Number(input.importance) || 3)),
+  });
+  return row(id);
+}
+
 export function deactivate(id) {
   db.prepare("UPDATE hermes_memories SET active = 0, updated_at = datetime('now') WHERE id = ?").run(id);
   return row(id);
