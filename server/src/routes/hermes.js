@@ -1,6 +1,11 @@
 import { requireAuth } from '../auth/middleware.js';
 import { config } from '../config.js';
 import { buildContext } from '../services/aiContext.js';
+import * as kpiRepo from '../db/repositories/kpi.js';
+import * as inqRepo from '../db/repositories/inquiries.js';
+import * as seoRepo from '../db/repositories/seoWeeks.js';
+import * as semRepo from '../db/repositories/semWeeks.js';
+import * as kwRepo from '../db/repositories/keywords.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -24,6 +29,249 @@ const ROLE_PERSONAS = {
     style: '反馈要少术语，多结论、影响和下一步决策。',
   },
 };
+
+const RESPONSE_CONTRACT = [
+  '你不是通用聊天机器人，而是 ferr-ops 里的运营助理。回答必须像在后台里和同事一起复盘数据。',
+  '先说结论，但每个结论必须带数据证据；没有数据就明确说缺什么，不能编。',
+  '默认输出结构：1) 结论 2) 证据 3) 优先级动作 4) 负责人/角色 5) 验证指标 6) 复盘时间。',
+  '禁止只给“优化关键词、提升落地页、持续观察”这种泛泛建议；每条动作必须能落到具体词、页面、计划、指标或任务。',
+  '如果用户问“当前页/这张表/这个计划/这些关键词”，必须优先使用 pageContext；pageContext 为空时提醒先读取当前页或调用 ferr_page_detail。',
+  '数据优先级：当前页 pageContext > ferr-ops 诊断/同步数据 > KPI/周报/关键词库 > 市场记忆。',
+];
+
+const SEM_PLAYBOOK = [
+  'SEM 判断优先级：先看有效询盘/转化，再看花费、CPC、CPA、CTR、质量分、ROAS。',
+  '高花费零转化词：优先建议暂停、降价、收窄匹配或加入否词，并要求 3-7 天复盘。',
+  'CPC 高于目标且转化不足：不要只说降 CPC，要指出应检查匹配方式、质量分、落地页相关性和搜索词浪费。',
+  'CTR 达标但转化差：优先怀疑落地页、询盘表单、词意图不准或地区/设备流量质量。',
+  'CTR 低且质量分低：优先建议重写创意、拆分广告组、提高关键词与落地页一致性。',
+  '预算建议必须说明：加预算给什么，减预算从哪里减，预期用哪个指标验证。',
+];
+
+const SEO_PLAYBOOK = [
+  'SEO 判断优先级：先看点击/展现/CTR/排名变化，再看页面衰退、机会词、关键词蚕食和收录。',
+  '排名 11-20 且展现高的词：优先做标题、段落覆盖、内链和落地页强化。',
+  '展现高 CTR 低：优先改标题/描述/搜索意图匹配，不要先大改正文。',
+  '点击或排名衰退页面：先查是否内容过期、竞争页变强、关键词覆盖变窄、内链减少。',
+  '关键词蚕食：要指出冲突页面，并建议主页面、合并/重定向/内链锚文本策略。',
+  '内容建议必须绑定词、页面、预期指标和复盘周期。',
+];
+
+function assistantPlaybook(operator) {
+  const role = operator.role || 'manager';
+  const roleRule = {
+    boss: '老板视角：少讲过程，多讲投入产出、风险、瓶颈、需要拍板的动作。',
+    manager: '主管视角：先排优先级，再拆给 SEO/SEM，强调闭环、负责人和复盘。',
+    seo: 'SEO 视角：重点给页面、关键词、内容、内链、收录和验证指标。',
+    sem: 'SEM 视角：重点给预算、关键词、否词、创意、落地页、转化成本和验证指标。',
+  }[role] || '按当前角色给出可执行建议。';
+
+  return {
+    identity: 'FERR SEO/SEM 运营指挥中心内置助手',
+    responseContract: RESPONSE_CONTRACT,
+    roleRule,
+    semPlaybook: SEM_PLAYBOOK,
+    seoPlaybook: SEO_PLAYBOOK,
+    evidenceRules: [
+      '引用数字时说明来源：当前页、KPI、周报、GSC、Ads、询盘或市场记忆。',
+      '如果 GSC/GA4/Ads 未接入或为空，必须明说，不能假装有数据。',
+      '如果只有全局上下文，没有当前页，要标注“基于全局数据，不是当前页表格”。',
+    ],
+    actionTemplate: {
+      title: '动作标题',
+      evidence: '用到的数据证据',
+      judgment: '为什么这么判断',
+      action: '具体怎么做',
+      owner: '老板/主管/SEO/SEM',
+      verifyMetric: '复盘时看什么指标',
+      reviewWindow: '建议复盘时间',
+    },
+  };
+}
+
+function assistantBrief(operator) {
+  const label = operator.persona?.label || operator.role || '运营';
+  return [
+    '你现在不是通用 GPT，你是 ferr-ops 后台里的 FERR 运营助理。',
+    `当前服务对象：${label}。回答要符合这个角色视角。`,
+    '回答前先判断用户是在问当前页，还是问全局经营数据。',
+    '如果问当前页、这张表、这个计划、这些关键词：必须先看 pageContext；没有 pageContext 就要求先读取当前页。',
+    '如果问 SEO/SEM/KPI/经营判断：必须基于 ferr_full_context 的真实数据，不允许凭经验编。',
+    '输出必须短而硬：结论、证据、判断、动作、负责人、验证指标、复盘时间。',
+    '每条建议都必须能落地成后台任务；不能只说“持续优化、提升质量、关注数据”。',
+    '数据不足时要直接说缺什么数据，以及缺数据会影响哪一类判断。',
+  ].join('\n');
+}
+
+function numericValue(value) {
+  const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function kpiDirection(name) {
+  const text = String(name || '').toLowerCase();
+  if (/cpc|成本|费用|跳出|cost|bounce/.test(text)) return 'lower';
+  return 'higher';
+}
+
+function makeCard({ area, severity = 'medium', title, evidence, judgment, action, owner, verifyMetric, reviewWindow, source }) {
+  return { area, severity, title, evidence, judgment, action, owner, verifyMetric, reviewWindow, source };
+}
+
+function buildOpsDiagnosis(operator) {
+  const cards = [];
+  const missing = [];
+
+  try {
+    const rows = kpiRepo.list();
+    for (const row of rows) {
+      const target = numericValue(row.target);
+      const actual = numericValue(row.actual);
+      if (target == null || actual == null) continue;
+      const direction = kpiDirection(row.name);
+      const offTarget = direction === 'lower' ? actual > target : actual < target;
+      if (!offTarget) continue;
+      const gap = direction === 'lower' ? actual - target : target - actual;
+      cards.push(makeCard({
+        area: row.grp || 'kpi',
+        severity: gap / Math.max(Math.abs(target), 1) >= 0.3 ? 'high' : 'medium',
+        title: `${row.name} 未达标`,
+        evidence: `KPI ${row.name}: target=${row.target}, actual=${row.actual}`,
+        judgment: direction === 'lower' ? '该指标越低越好，当前实际值高于目标。' : '该指标越高越好，当前实际值低于目标。',
+        action: '优先定位影响该 KPI 的页面、关键词、计划或询盘来源，并拆成 1-2 个本周可执行动作。',
+        owner: row.grp === 'seo' ? 'SEO' : row.grp === 'sem' ? 'SEM' : '主管/老板',
+        verifyMetric: row.name,
+        reviewWindow: '下一次周报或 7 天后复盘',
+        source: 'kpi_targets',
+      }));
+    }
+  } catch {
+    missing.push('KPI targets');
+  }
+
+  try {
+    const s = inqRepo.stats();
+    cards.push(makeCard({
+      area: 'inquiry',
+      severity: s.valid > 0 ? 'medium' : 'high',
+      title: '询盘质量基线',
+      evidence: `total=${s.total}, valid=${s.valid}, A=${s.a}, B=${s.b}, C=${s.c}, validRate=${s.rate}%, ARatio=${s.aRatio}%`,
+      judgment: s.valid > 0 ? '已有有效询盘，可用来校验 SEO/SEM 动作是否带来真实业务结果。' : '当前缺少有效询盘，投放和内容建议都需要先验证线索质量。',
+      action: '所有 SEO/SEM 优化动作都要绑定有效询盘或 A/B 级询盘变化，不只看流量或点击。',
+      owner: '主管/SEO/SEM',
+      verifyMetric: '有效询盘数、A 级询盘占比、有效率',
+      reviewWindow: '每周复盘',
+      source: 'inquiries.stats',
+    }));
+  } catch {
+    missing.push('inquiries');
+  }
+
+  try {
+    const sem = semRepo.latest();
+    if (sem) {
+      if (numericValue(sem.cost) > 0 && numericValue(sem.conversions) === 0) {
+        cards.push(makeCard({
+          area: 'sem',
+          severity: 'high',
+          title: 'SEM 有花费但无转化',
+          evidence: `week=${sem.week_date}, cost=${sem.cost}, clicks=${sem.clicks}, conversions=${sem.conversions}`,
+          judgment: '已产生点击成本但没有转化，优先怀疑关键词意图、匹配方式、落地页或询盘入口。',
+          action: '先暂停或降价高花费低转化词；检查搜索词并补否词；同步检查落地页和表单。',
+          owner: 'SEM',
+          verifyMetric: 'conversions, cost_per_conv, valid inquiries',
+          reviewWindow: '3-7 天复盘',
+          source: 'sem_weeks.latest',
+        }));
+      }
+      if (numericValue(sem.cpc) != null && numericValue(sem.ctr) != null) {
+        cards.push(makeCard({
+          area: 'sem',
+          severity: 'medium',
+          title: 'SEM 周报关键指标',
+          evidence: `week=${sem.week_date}, CPC=${sem.cpc}, CTR=${sem.ctr}, quality_score=${sem.quality_score}, ROAS=${sem.roas}, cost_per_conv=${sem.cost_per_conv}`,
+          judgment: '这组指标应用来判断是流量质量问题、创意相关性问题，还是转化链路问题。',
+          action: '按 CPC/CTR/质量分/转化成本拆分计划和关键词，优先处理高成本低转化组合。',
+          owner: 'SEM',
+          verifyMetric: 'CPC, CTR, quality_score, cost_per_conv, conversions',
+          reviewWindow: '每周复盘',
+          source: 'sem_weeks.latest',
+        }));
+      }
+    } else {
+      missing.push('SEM weekly report');
+    }
+  } catch {
+    missing.push('SEM weekly report');
+  }
+
+  try {
+    const seoWeeks = seoRepo.latestTwo();
+    const latest = seoWeeks[0];
+    const prev = seoWeeks[1];
+    if (latest) {
+      if (prev && numericValue(latest.clicks) != null && numericValue(prev.clicks) != null && Number(latest.clicks) < Number(prev.clicks)) {
+        cards.push(makeCard({
+          area: 'seo',
+          severity: 'high',
+          title: 'SEO 点击下滑',
+          evidence: `latest=${latest.week_date} clicks=${latest.clicks}; prev=${prev.week_date} clicks=${prev.clicks}`,
+          judgment: '自然点击较上期下降，需要优先排查衰退页面、机会词和标题 CTR。',
+          action: '找点击下滑页面；优先改展现高 CTR 低页面标题/描述；给排名 11-20 机会词补内容和内链。',
+          owner: 'SEO',
+          verifyMetric: 'GSC clicks, CTR, avg_position',
+          reviewWindow: '7-14 天复盘',
+          source: 'seo_weeks.latestTwo',
+        }));
+      }
+      cards.push(makeCard({
+        area: 'seo',
+        severity: 'medium',
+        title: 'SEO 周报关键指标',
+        evidence: `week=${latest.week_date}, clicks=${latest.clicks}, impressions=${latest.impressions}, avg_position=${latest.avg_position}, top10_ratio=${latest.top10_ratio}, coverage=${latest.coverage}, indexed_pages=${latest.indexed_pages}`,
+        judgment: '这组指标应用来判断是排名问题、CTR 问题、收录问题，还是关键词覆盖不足。',
+        action: '按展现高低、排名区间和页面类型拆 SEO 任务，不要只写泛泛内容建议。',
+        owner: 'SEO',
+        verifyMetric: 'clicks, impressions, CTR, avg_position, indexed_pages',
+        reviewWindow: '每周复盘',
+        source: 'seo_weeks.latest',
+      }));
+    } else {
+      missing.push('SEO weekly report');
+    }
+  } catch {
+    missing.push('SEO weekly report');
+  }
+
+  try {
+    const semKeywords = kwRepo.list('sem').slice(0, 12).map((k) => k.keyword);
+    const seoKeywords = kwRepo.list('seo').slice(0, 12).map((k) => k.keyword);
+    if (semKeywords.length || seoKeywords.length) {
+      cards.push(makeCard({
+        area: 'keywords',
+        severity: 'medium',
+        title: '关键词库可用于落地动作',
+        evidence: `sem=${semKeywords.join(', ') || '-'}; seo=${seoKeywords.join(', ') || '-'}`,
+        judgment: '关键词库能把建议落到具体词，但是否浪费/机会仍需结合 Ads/GSC 明细。',
+        action: '让 Hermes 输出建议时必须引用具体关键词，并说明要暂停、扩展、否定、改内容还是改落地页。',
+        owner: 'SEO/SEM',
+        verifyMetric: 'keyword rank, CTR, CPC, conversions',
+        reviewWindow: '7-14 天复盘',
+        source: 'keywords',
+      }));
+    }
+  } catch {
+    missing.push('keywords');
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    role: operator.role,
+    priorityCards: cards.slice(0, 10),
+    missingData: [...new Set(missing)],
+    usage: 'Use priorityCards as the first evidence pool. Do not replace them with generic marketing advice.',
+  };
+}
 
 const pageContexts = new Map();
 const sessions = new Map();
@@ -70,6 +318,7 @@ function contextKeys(operator) {
   return [
     operator.username ? 'user:' + operator.username : '',
     operator.role ? 'role:' + operator.role : '',
+    'latest',
   ].filter(Boolean);
 }
 
@@ -149,7 +398,12 @@ function sessionPayload(request) {
     },
     session: latestSession(operator),
     hasPageDetail: Boolean(latestPageContext(operator)),
+    assistantBrief: assistantBrief(operator),
+    assistantPlaybook: assistantPlaybook(operator),
     instructions: [
+      'When the user asks for SEO/SEM/KPI analysis, call ferr_full_context before answering.',
+      'When the user asks about the current page/table/plan/keywords, call ferr_page_detail before answering.',
+      'Follow assistantPlaybook: evidence first, then judgment, action, owner, verification metric, and review window.',
       '这是轻量会话状态，只用于判断用户当前在哪个页面。',
       '如果用户要求分析“当前页面/这里/这张表/这个计划/这些关键词”，请再调用 page detail 接口读取当前页面详情。',
     ],
@@ -170,6 +424,13 @@ function pageDetailPayload(request) {
       persona: operator.persona,
     },
     pageContext: latestPageContext(operator),
+    assistantBrief: assistantBrief(operator),
+    assistantPlaybook: assistantPlaybook(operator),
+    instructions: [
+      'Use this payload for current page/table/plan/keyword analysis.',
+      'If pageContext is null, tell the user to click “读取当前页” in ferr-ops before analyzing the current page.',
+      'Do not invent fields that are not present in pageContext.',
+    ],
   };
 }
 
@@ -179,6 +440,7 @@ function contextPayload(request) {
     const operator = resolveOperator(request);
     const session = latestSession(operator);
     const pageContext = latestPageContext(operator);
+    const opsDiagnosis = buildOpsDiagnosis(operator);
     return {
       ok: true,
       generatedAt: new Date().toISOString(),
@@ -192,6 +454,17 @@ function contextPayload(request) {
       },
       session,
       pageContext,
+      opsDiagnosis,
+      assistantBrief: assistantBrief(operator),
+      assistantPlaybook: assistantPlaybook(operator),
+      assistantInstructions: [
+        'Do not answer like a generic GPT assistant.',
+        'For SEM: prioritize spend, conversions, CPC, CPA, CTR, quality score, ROAS, negative keywords, and budget allocation.',
+        'For SEO: prioritize clicks, impressions, CTR, ranking, decay pages, opportunity keywords, cannibalization, and content tasks.',
+        'Use opsDiagnosis.priorityCards as the first evidence pool before giving recommendations.',
+        'Every action must include evidence, judgment, concrete action, owner, verification metric, and review window.',
+        'If pageContext exists, mention which current page/table evidence you used.',
+      ],
       system: [
         '你是 FERR 内部 SEO / SEM 运营助理。',
         '所有建议必须基于 ferr-ops 返回的真实数据上下文。',
