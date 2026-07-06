@@ -76,3 +76,40 @@
   box-shadow:none;
   transition:box-shadow .2s, transform .2s;
 }
+
+/* Block 3: table.dt. base = live computed plain-specificity (vw=1280); inject-at-end
+   verified 0 change (light+dark). Per-page/per-class variants (market/data cell padding,
+   border-collapse separate/collapse, sticky th, td.editable, tbody tr:hover, tr:last-child
+   border) stay in base.css/styles.css until migrated in later increments. */
+table.dt{width:100%;table-layout:fixed;font-size:13px}
+table.dt th{
+  padding:0 12px;
+  color:#4e5969;
+  font-weight:500;
+  font-size:12px;
+  line-height:1.5;
+  text-transform:none;
+  letter-spacing:normal;
+  text-align:left;
+  vertical-align:middle;
+  background:#f7f8fa;
+  border-bottom:1px solid #e5e6eb;
+  border-right:1px solid #e5e6eb;
+  white-space:nowrap;
+}
+table.dt th.ctr{text-align:center}
+table.dt th.num{text-align:right}
+table.dt th:last-child{border-right:0}
+table.dt td{
+  padding:10px 12px;
+  color:#1f2329;
+  font-size:13px;
+  line-height:1.55;
+  vertical-align:middle;
+  border-bottom:1px solid #edf0f5;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+table.dt td.ctr{text-align:center}
+table.dt td.num{text-align:right}
