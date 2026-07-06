@@ -62,3 +62,17 @@
   box-shadow:none;
   cursor:pointer;
 }
+
+/* Block 2: card. base = live computed plain-specificity of a padded .card (vw=1280).
+   radius/box-shadow are enforced by the global !important flattener (cross-component
+   phase) — set here to the intended flat values but currently masked by it. Per-context
+   variants (padding-0 container cards, settings radius2, plan/test borderless, dashed
+   placeholder) are higher-specificity and stay in styles.css for their page phases. */
+.card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:0;
+  padding:16px 18px;
+  box-shadow:none;
+  transition:box-shadow .2s, transform .2s;
+}

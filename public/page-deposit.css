@@ -1,0 +1,27 @@
+/* page-deposit.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+#panel-deposit table.dt {
+  min-width: 900px;
+}
+
+#panel-deposit table.dt th:nth-child(3),
+#panel-deposit table.dt td:nth-child(3),
+#panel-deposit table.dt th:nth-child(4),
+#panel-deposit table.dt td:nth-child(4) {
+  width: 34%;
+}
+
+#panel-deposit table.dt th:nth-child(1),
+#panel-deposit table.dt td:nth-child(1) {
+  width: 112px !important;
+}
+
+#panel-deposit table.dt th:nth-child(2),
+#panel-deposit table.dt td:nth-child(2) {
+  width: 120px !important;
+}
+
+#panel-deposit table.dt th:nth-child(5),
+#panel-deposit table.dt td:nth-child(5) {
+  width: 76px !important;
+}

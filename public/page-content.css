@@ -1,0 +1,62 @@
+/* page-content.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+.tagselect.b-gray {
+  color: var(--text2);
+  border-color: var(--border);
+}
+
+#panel-content table.dt tbody td,
+#panel-deposit table.dt tbody td {
+  min-height: 44px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #eef1f5;
+  color: #1f2329;
+  font-size: 13px;
+  line-height: 1.55;
+  vertical-align: middle;
+}
+
+#panel-content table.dt th:nth-child(1),
+#panel-content table.dt td:nth-child(1) {
+  width: 190px;
+}
+
+#panel-content table.dt th:nth-child(2),
+#panel-content table.dt td:nth-child(2),
+#panel-content table.dt th:nth-child(8),
+#panel-content table.dt td:nth-child(8) {
+  width: 220px;
+}
+
+#panel-content table.dt th:nth-child(3),
+#panel-content table.dt td:nth-child(3),
+#panel-content table.dt th:nth-child(7),
+#panel-content table.dt td:nth-child(7) {
+  width: 110px;
+}
+
+#panel-content table.dt th:nth-child(9),
+#panel-content table.dt td:nth-child(9) {
+  width: 70px;
+}
+
+#panel-content .badge,
+#panel-content .tagselect,
+#panel-deposit .badge,
+#panel-deposit .tagselect {
+  min-height: 22px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+#panel-content table.dt {
+  min-width: 1180px;
+}
+
+#panel-content .page-head .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}

@@ -1,0 +1,262 @@
+/* page-kpi.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+.progress-bar{height:7px;background:#edf1f6}
+
+.progress-bar{
+  height:6px;
+  border-radius:999px;
+  background:#edf1f6;
+}
+
+.progress-fill{border-radius:999px}
+
+#totalRows>div,#seoRows>div,#semRows>div{
+  padding:10px 0!important;
+  font-size:12px!important;
+  border-bottom-color:#eef2f6!important;
+}
+
+#totalRows>div>div:first-child>div:first-child,
+#seoRows>div>div:first-child>div:first-child,
+#semRows>div>div:first-child>div:first-child{
+  font-weight:750!important;
+  color:#202636;
+}
+
+#totalRows>div>div:first-child>div:last-child,
+#seoRows>div>div:first-child>div:last-child,
+#semRows>div>div:first-child>div:last-child{
+  margin-top:2px;
+  font-size:10.5px!important;
+}
+
+#panel-kpi .gauge{
+  width:132px;
+  height:132px;
+}
+
+#panel-kpi .gauge svg{
+  width:132px;
+  height:132px;
+}
+
+#panel-kpi .gauge-score{
+  font-size:31px;
+  letter-spacing:0;
+}
+
+#panel-kpi>.grid2 .card{
+  min-height:188px;
+}
+
+#panel-kpi .page-head .btn-ghost,
+#panel-data .page-head .btn-ghost {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #4e5969;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+#panel-kpi .grid3,
+#panel-kpi .grid2 {
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+#panel-kpi > .page-head + .sheet-tip + .grid3 .card {
+  min-height: 220px;
+  padding: 0 0 18px;
+  justify-content: flex-start;
+}
+
+#panel-kpi > .page-head + .sheet-tip + .grid3 .card-head {
+  width: 100%;
+  min-height: 42px;
+  margin: 0 0 14px;
+  padding: 0 16px;
+  justify-content: center !important;
+}
+
+#panel-kpi .gauge {
+  width: 132px;
+  height: 132px;
+}
+
+#panel-kpi .gauge svg {
+  width: 132px;
+  height: 132px;
+}
+
+#panel-kpi .gauge svg circle:first-child {
+  stroke: #eef1f5;
+}
+
+#panel-kpi .gauge-score {
+  color: #1f2329;
+  font-size: 30px;
+  font-weight: 600;
+}
+
+#panel-kpi .gauge-max {
+  color: #86909c;
+  font-size: 11px;
+}
+
+#panel-kpi .grade-badge {
+  min-height: 24px;
+  margin: 8px auto 0 !important;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#totalRows,
+#seoRows,
+#semRows {
+  padding: 4px 16px 10px;
+}
+
+#totalRows > div,
+#seoRows > div,
+#semRows > div {
+  min-height: 48px;
+  padding: 9px 0 !important;
+  border-bottom: 1px solid #eef1f5 !important;
+  font-size: 13px !important;
+}
+
+#totalRows > div:last-child,
+#seoRows > div:last-child,
+#semRows > div:last-child {
+  border-bottom: 0 !important;
+}
+
+#totalRows > div > div:first-child > div:first-child,
+#seoRows > div > div:first-child > div:first-child,
+#semRows > div > div:first-child > div:first-child {
+  color: #1f2329;
+  font-weight: 500 !important;
+}
+
+#totalRows > div > div:first-child > div:last-child,
+#seoRows > div > div:first-child > div:last-child,
+#semRows > div > div:first-child > div:last-child {
+  color: #86909c;
+  font-size: 12px !important;
+}
+
+#panel-kpi .progress-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: #eef1f5;
+}
+
+#panel-kpi .progress-fill {
+  border-radius: 999px;
+}
+
+#panel-kpi > .grid2 .card {
+  min-height: 200px;
+  overflow: hidden;
+}
+
+#panel-kpi > .grid2 .card > div:not(.card-head) {
+  padding: 14px 16px;
+}
+
+#panel-kpi .chart-wrap {
+  background: #ffffff;
+}
+
+#panel-kpi > .page-head + .sheet-tip + .grid3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#panel-kpi > .page-head + .sheet-tip + .grid3 .card {
+  min-height: 206px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#panel-kpi > .page-head + .sheet-tip + .grid3 .card-head {
+  flex: 0 0 auto;
+  margin-bottom: 12px;
+}
+
+#panel-kpi .gauge,
+#panel-kpi .gauge svg {
+  width: 124px;
+  height: 124px;
+}
+
+#panel-kpi .gauge-score {
+  font-size: 28px;
+}
+
+#totalRows,
+#seoRows,
+#semRows {
+  padding: 2px 16px 8px;
+}
+
+#totalRows > div,
+#seoRows > div,
+#semRows > div {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 14px;
+  align-items: center;
+}
+
+#totalRows > div > div:first-child,
+#seoRows > div > div:first-child,
+#semRows > div > div:first-child {
+  min-width: 0;
+}
+
+#panel-kpi > .grid2 {
+  align-items: stretch;
+}
+
+#panel-kpi > .grid2 .card {
+  min-height: 188px;
+}
+
+#panel-kpi > .grid2 .card > div:not(.card-head) {
+  min-height: 144px;
+  gap: 22px !important;
+}
+
+#panel-kpi > .grid2 .card > div:not(.card-head) > div:last-child {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+#panel-kpi > .grid2 .card > div:not(.card-head) > div:last-child > div {
+  min-height: 24px;
+  margin-bottom: 6px !important;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f2f5;
+  color: #4e5969;
+  font-size: 12px;
+}
+
+#panel-kpi > .grid2 .card > div:not(.card-head) > div:last-child > div:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+#panel-kpi > .grid2 .card > div:not(.card-head) b {
+  color: #1f2329;
+  font-size: 13px;
+  font-weight: 600;
+}

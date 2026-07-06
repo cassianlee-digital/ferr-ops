@@ -1,0 +1,317 @@
+/* page-tasks.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+#panel-tasks .page-head{
+  margin-bottom:16px;
+}
+
+#panel-tasks .banner{
+  border-radius:8px;
+  border-color:#ffd8d5;
+  box-shadow:0 8px 22px rgba(239,63,58,.08);
+}
+
+#panel-tasks .tboard{
+  gap:18px;
+}
+
+#panel-tasks .pblock{
+  padding:16px;
+  border-radius:8px;
+  border-color:#e2e7f0;
+  background:linear-gradient(180deg,#fff 0%,#fcfdff 100%);
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px rgba(15,23,42,.055);
+}
+
+#panel-tasks .pblock-head{
+  min-height:34px;
+  margin-bottom:14px;
+  padding-bottom:12px;
+  border-bottom:1px solid #eef2f6;
+}
+
+#panel-tasks .pblock-head .pn{
+  font-size:13.5px;
+  color:#202636;
+}
+
+#panel-tasks .kcount{
+  height:24px;
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  background:#f1f4f8;
+  color:#718095;
+  font-size:11px;
+  font-weight:750;
+}
+
+#panel-tasks .sopnew{
+  gap:14px;
+}
+
+#panel-tasks .colcap{
+  margin-bottom:9px;
+  padding-bottom:8px;
+  border-bottom-color:#eef2f6;
+  font-size:10.5px;
+  letter-spacing:0;
+  color:#7b8798;
+}
+
+#panel-tasks .sop-empty-hint{
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px!important;
+  border:1px dashed #d9e0ec;
+  border-radius:8px;
+  background:#fbfcfe;
+  color:#9aa4b5!important;
+}
+
+#panel-tasks .add-task{
+  min-height:36px;
+  margin-top:8px;
+  border-radius:8px;
+  border-color:#d7deea;
+  background:#fbfcfe;
+  font-size:12px;
+  font-weight:750;
+}
+
+body.dark #panel-tasks .pblock,
+body.dark #panel-tasks .tcard{
+  background:#10151d;
+  border-color:#202838;
+}
+
+body.dark #panel-tasks .pblock-head .pn,
+body.dark #panel-tasks .ttitle{
+  color:#f3f6fb;
+}
+
+body.dark #panel-tasks .kcount{
+  background:#151d28;
+}
+
+#panel-tasks .tboard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+#panel-tasks .pblock {
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#panel-tasks .pblock-head {
+  min-height: 44px;
+  margin: 0;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  background: #fafafa;
+}
+
+#panel-tasks .pblock-head .pn {
+  color: var(--text1);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#panel-tasks .kcount {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 2px;
+  background: #f0f2f5;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+#panel-tasks .sopnew {
+  gap: 0;
+  padding: 12px 14px 14px;
+}
+
+#panel-tasks .sopnew > div + div {
+  margin-top: 14px;
+}
+
+#panel-tasks .colcap {
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+#panel-tasks .sop-empty-hint {
+  min-height: 50px;
+  padding: 10px !important;
+  border: 1px dashed var(--border2);
+  border-radius: 2px;
+  background: #fafafa;
+  color: var(--text3) !important;
+  font-size: 12px !important;
+}
+
+#panel-tasks .add-task {
+  min-height: 34px;
+  margin-top: 8px;
+  border: 1px dashed var(--border2);
+  border-radius: 2px;
+  background: #ffffff;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+#panel-tasks {
+  --task-border: #dfe3ea;
+  --task-soft: #fafbfc;
+  --task-muted: #86909c;
+}
+
+#panel-tasks .page-head {
+  align-items: center;
+}
+
+#panel-tasks .page-head > .btn-primary {
+  margin-left: auto;
+}
+
+#panel-tasks .banner {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+#panel-tasks .banner-red {
+  border-color: #ffd7d7;
+  background: #fff7f6;
+}
+
+#panel-tasks .banner-t {
+  color: var(--text1);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#panel-tasks .banner-s {
+  color: var(--text2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+#panel-tasks .tboard {
+  grid-template-columns: .96fr 1fr 1fr;
+  gap: 16px;
+}
+
+#panel-tasks .pblock {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  border-color: var(--task-border);
+}
+
+#panel-tasks .pblock:has(#sop-company) {
+  border-top: 2px solid var(--danger);
+}
+
+#panel-tasks .pblock:has(#sop-sem) {
+  border-top: 2px solid #7b61ff;
+}
+
+#panel-tasks .pblock:has(#sop-seo) {
+  border-top: 2px solid var(--primary);
+}
+
+#panel-tasks .pblock-head {
+  min-height: 46px;
+  padding: 0 16px;
+  background: #ffffff;
+}
+
+#panel-tasks .pblock-head .badge {
+  min-width: 34px;
+  height: 22px;
+  font-weight: 500;
+}
+
+#panel-tasks .pblock-head .pn {
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+#panel-tasks .kcount {
+  height: 24px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: var(--task-muted);
+}
+
+#panel-tasks .sopnew {
+  flex: 1;
+  padding: 12px 14px 14px;
+  background: var(--task-soft);
+}
+
+#panel-tasks .sopnew > div {
+  padding: 0 0 12px;
+}
+
+#panel-tasks .sopnew > div + div {
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+#panel-tasks .colcap,
+#panel-tasks .freq-cap {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#panel-tasks .sop-empty-hint {
+  min-height: 72px;
+  flex-direction: column;
+  gap: 4px;
+  border-color: #d9dfe8;
+  background: #ffffff;
+  line-height: 1.5;
+}
+
+#panel-tasks .sop-empty-hint::before {
+  content: "暂无固定任务";
+  display: block;
+  color: var(--text2);
+  font-size: 13px;
+}
+
+#panel-tasks .add-task {
+  min-height: 34px;
+  border-color: #cfd7e5;
+  background: #ffffff;
+}
+
+#panel-tasks .add-task i {
+  font-size: 15px;
+}

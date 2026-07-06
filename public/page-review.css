@@ -1,0 +1,184 @@
+/* page-review.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+#panel-review .acc-week {
+  margin: 0 0 12px;
+  border: 1px solid var(--report-border, #e5e6eb);
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+#panel-review .acc-bar {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--report-border, #e5e6eb);
+  background: var(--report-head, #f7f8fa);
+  color: #1f2329;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#panel-review .acc-bar .hicon {
+  margin-right: 8px;
+  color: #86909c;
+  transition: transform .18s ease;
+}
+
+#panel-review .acc-week.collapsed .acc-bar {
+  border-bottom-color: transparent;
+}
+
+#panel-review .acc-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  background: #ffffff;
+}
+
+#panel-review .rv-col {
+  min-width: 0;
+  padding: 14px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#panel-review .rv-col + .rv-col {
+  border-left: 1px solid var(--report-border, #e5e6eb);
+}
+
+#panel-review .rv-col > div:first-child {
+  margin-bottom: 12px !important;
+  color: #1f2329 !important;
+  font-size: 14px;
+  font-weight: 600 !important;
+}
+
+#panel-review .rv-col.seo {
+  border-top: 2px solid var(--report-blue, #1677ff);
+}
+
+#panel-review .rv-col.sem {
+  border-top: 2px solid var(--report-purple, #7b61ff);
+}
+
+#panel-review .rv-sec {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 1px solid #edf0f5;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+#panel-review .rv-sec h5 {
+  margin: 0;
+  padding: 9px 12px;
+  border-bottom: 1px solid #edf0f5;
+  background: #fbfcfe;
+  color: #4e5969;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#panel-review .rv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+#panel-review .rv-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  margin: 0;
+  padding: 0 12px;
+  border-top: 1px solid #edf0f5;
+  color: var(--report-blue, #1677ff);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#panel-review .acc-month,
+#panel-month-review .acc-month {
+  margin-bottom: 12px;
+  border: 1px solid #e5e6eb;
+  background: #ffffff;
+}
+
+#panel-review .acc-month-bar,
+#panel-month-review .acc-month-bar {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border-bottom: 1px solid #e5e6eb;
+  background: #f7f8fa;
+  color: #1f2329;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#panel-review .acc-month-bar .hicon,
+#panel-month-review .acc-month-bar .hicon {
+  margin-right: 8px;
+  color: #86909c;
+  transition: transform .18s ease;
+}
+
+#panel-review .acc-month.collapsed .acc-month-bar,
+#panel-month-review .acc-month.collapsed .acc-month-bar {
+  border-bottom-color: transparent;
+}
+
+#panel-review .acc-month.collapsed .acc-month-body,
+#panel-month-review .acc-month.collapsed .acc-month-body {
+  display: none;
+}
+
+#panel-review .acc-month.collapsed .acc-month-bar .hicon,
+#panel-month-review .acc-month.collapsed .acc-month-bar .hicon {
+  transform: rotate(-90deg);
+}
+
+#panel-review .acc-month-body,
+#panel-month-review .acc-month-body {
+  padding: 12px;
+}
+
+#panel-review .rv-owner,
+#panel-month-review .rv-owner {
+  margin-bottom: 12px !important;
+  color: #1f2329 !important;
+  font-size: 14px;
+  font-weight: 600 !important;
+}
+
+body.dark .content.planning-composite .planning-shell,
+body.dark .content.planning-composite #panel-plan .page-head,
+body.dark .content.planning-composite #panel-tasks .page-head,
+body.dark .content.planning-composite #panel-review .page-head,
+body.dark .content.planning-composite #panel-month-review .page-head,
+body.dark #panel-review .acc-month,
+body.dark #panel-month-review .acc-month,
+body.dark #panel-review .acc-month-bar,
+body.dark #panel-month-review .acc-month-bar {
+  border-color: #273142 !important;
+}
+
+body.dark #panel-review .acc-month,
+body.dark #panel-month-review .acc-month {
+  background: #111827;
+}
+
+body.dark #panel-review .acc-month-bar,
+body.dark #panel-month-review .acc-month-bar {
+  background: #0f172a;
+  color: #e5e7eb;
+}

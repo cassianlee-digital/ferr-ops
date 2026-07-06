@@ -1,0 +1,6 @@
+/* page-test.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+#panel-test table.dt th:nth-child(4),
+#panel-test table.dt th:nth-child(5) {
+  width: 15%;
+}
