@@ -352,3 +352,42 @@
 #panel-fix .fix-table td:nth-child(2) .tagselect,
 #panel-fix .fix-table td:nth-child(5) .tagselect { min-width: 44px; }
 #panel-fix .fix-table input.cell-date { min-width: 0; }
+
+
+/* --- appended from styles.css (per-page split, DOM-oracle + safety filter) --- */
+
+#panel-fix .fix-table th:nth-child(1) {
+  width: 13%;
+}
+
+#panel-fix .fix-table th:nth-child(2) {
+  width: 76px;
+}
+
+#panel-fix .fix-table th:nth-child(3) {
+  width: 28%;
+}
+
+#panel-fix .fix-table th:nth-child(4) {
+  width: 30%;
+}
+
+#panel-fix .fix-table th:nth-child(5) {
+  width: 78px;
+}
+
+#panel-fix .fix-table th:nth-child(6) {
+  width: 108px;
+}
+
+#panel-fix .fix-table th:nth-child(7) {
+  width: 104px;
+}
+
+#panel-fix .card {
+  overflow-x: auto;
+}
+
+#panel-fix .fix-table {
+  min-width: 1160px;
+}
