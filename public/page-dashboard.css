@@ -1,0 +1,354 @@
+/* page-dashboard.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+.score-hero{gap:24px}
+
+.panel.active {
+  min-height: calc(100vh - 84px);
+}
+
+.panel.active {
+  min-width: 0;
+}
+
+#panel-dashboard .page-head {
+  align-items: center;
+  min-height: 54px;
+  margin-bottom: 14px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid #e5e8ef;
+}
+
+#panel-dashboard .page-title {
+  font-size: 22px;
+  font-weight: 500;
+}
+
+#panel-dashboard .page-sub {
+  margin-top: 5px;
+  color: #6b778c;
+  font-size: 12px;
+}
+
+#panel-dashboard .grid32,
+#panel-dashboard .grid2 {
+  gap: 14px !important;
+  margin-bottom: 14px;
+}
+
+#panel-dashboard .card {
+  border: 1px solid #e5e8ef;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+#panel-dashboard .card-head {
+  min-height: 42px;
+  margin: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid #e5e8ef;
+  background: #f5f7fa;
+}
+
+#panel-dashboard .card-title {
+  color: #1f2329 !important;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#panel-dashboard .card-link,
+#panel-dashboard .card-sub {
+  color: #86909c;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+#panel-dashboard .card-link {
+  cursor: pointer;
+}
+
+#panel-dashboard .score-hero {
+  min-height: 176px;
+  padding: 18px 18px 16px;
+}
+
+#panel-dashboard .gauge,
+#panel-dashboard .gauge svg {
+  width: 128px;
+  height: 128px;
+}
+
+#panel-dashboard .gauge-score {
+  color: #1f2329;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+#panel-dashboard .grade-badge {
+  min-height: 24px;
+  width: max-content;
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+#panel-dashboard #miniScores {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+#panel-dashboard #miniScores > div {
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid #eef1f5;
+  border-radius: 2px;
+  background: #fbfcfe;
+}
+
+#panel-dashboard .legend {
+  margin: 12px 16px 0;
+}
+
+#panel-dashboard .chart-wrap {
+  padding: 8px 16px 14px;
+  background: #ffffff;
+}
+
+#panel-dashboard .metric-num,
+#panel-dashboard .metric-num[style] {
+  color: #1f2329;
+  font-size: 20px !important;
+  font-weight: 600;
+}
+
+#panel-dashboard .metric-lbl {
+  margin-top: 5px;
+  color: #86909c;
+  font-size: 12px;
+}
+
+#panel-dashboard table.dt {
+  min-width: 760px;
+  border: 0;
+}
+
+#panel-dashboard table.dt th {
+  height: 40px;
+  background: #f5f7fa;
+  color: #4e5969;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#panel-dashboard table.dt td {
+  min-height: 44px;
+  color: #1f2329;
+  font-size: 13px;
+}
+
+#panel-dashboard .ai-box {
+  padding: 0;
+  border: 1px solid #e5e8ef;
+  border-left: 0;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#panel-dashboard .ai-box::before {
+  content: "";
+  display: block;
+  height: 2px;
+  background: #1677ff;
+}
+
+#panel-dashboard .ai-header {
+  min-height: 44px;
+  margin: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid #eef1f5;
+}
+
+#panel-dashboard .ai-item {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f2f5;
+  color: #4e5969;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+#panel-dashboard .ai-item:last-child {
+  border-bottom: 0;
+}
+
+body.dark #panel-dashboard .page-head,
+body.dark #panel-dashboard .card,
+body.dark #panel-dashboard .card-head,
+body.dark #panel-dashboard .ai-box,
+body.dark #panel-dashboard .ai-header,
+body.dark #panel-dashboard .ai-item,
+body.dark #panel-dashboard #miniScores > div {
+  border-color: #273142;
+}
+
+body.dark #panel-dashboard .card-head,
+body.dark #panel-dashboard table.dt th,
+body.dark #panel-dashboard #miniScores > div {
+  background: #0f172a !important;
+}
+
+body.dark #panel-dashboard .chart-wrap {
+  background: #111827;
+}
+
+body.dark #panel-dashboard .ai-item {
+  color: #cbd5e1;
+}
+
+.panel.active > .page-head {
+  min-height: 58px;
+  margin: 0 0 16px !important;
+  padding: 0 0 14px !important;
+  border-bottom: 1px solid #e5e6eb !important;
+  background: transparent !important;
+  align-items: flex-end;
+}
+
+.panel.active > .page-head > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.panel.active > .page-head > div:last-child,
+.panel.active > .page-head > button,
+.panel.active > .page-head > span {
+  flex: 0 0 auto;
+}
+
+.panel.active > .page-head .page-title,
+.panel.active > .page-head .page-title[style] {
+  color: #1f2329 !important;
+  font-size: var(--console-title-size) !important;
+  font-weight: 500 !important;
+  line-height: 1.25;
+  letter-spacing: 0 !important;
+}
+
+.panel.active > .page-head .page-sub {
+  max-width: 980px;
+  margin-top: 6px !important;
+  color: #86909c !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.6 !important;
+}
+
+.panel.active > .grid2,
+.panel.active > .grid3,
+.panel.active > .grid32,
+.panel.active > .metric-row,
+.panel.active > .cols2,
+.panel.active > .tboard {
+  gap: var(--console-section-gap) !important;
+  margin-bottom: var(--console-section-gap) !important;
+}
+
+.panel.active > .card,
+.panel.active > .ai-box,
+.panel.active > .setting-card,
+.panel.active > .settings-panel {
+  margin-bottom: var(--console-section-gap) !important;
+}
+
+.panel.active .card-head {
+  min-height: 42px;
+  margin-bottom: 0 !important;
+  padding: 0 14px;
+  border-bottom: 1px solid #e5e6eb !important;
+  background: #f7f8fa !important;
+}
+
+.panel.active .card-head + table.dt,
+.panel.active .card-head + .chart-wrap,
+.panel.active .card-head + .ai-render,
+.panel.active .card-head + .metric-row {
+  margin-top: 0 !important;
+}
+
+.panel.active .card-title {
+  color: #1f2329 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.4;
+}
+
+.panel.active .card-sub {
+  color: #86909c !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+}
+
+.panel.active table.dt th {
+  height: 40px;
+}
+
+.panel.active table.dt td {
+  min-height: 42px;
+}
+
+body.dark .panel.active > .page-head {
+  border-color: #273142 !important;
+}
+
+body.dark .panel.active > .page-head .page-title,
+body.dark .panel.active .card-title {
+  color: #e5e7eb !important;
+}
+
+body.dark .panel.active > .page-head .page-sub,
+body.dark .panel.active .card-sub {
+  color: #94a3b8 !important;
+}
+
+body.dark .panel.active .card-head {
+  border-color: #273142 !important;
+  background: #172033 !important;
+}
+
+.panel.active > .page-head,
+.panel.active > .subtabs,
+.panel.active > .timebar-inline,
+.panel.active > .sheet-toolbar,
+.panel.active > .sheet-tip,
+.panel.active > .banner,
+.panel.active > .card,
+.panel.active > .ai-box,
+.panel.active > .grid2,
+.panel.active > .grid3,
+.panel.active > .grid32,
+.panel.active > .metric-row,
+.panel.active > .cols2,
+.panel.active > .tboard {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#panel-dashboard .grid2 > .card > div[style*="grid-template-columns:repeat(3,1fr)"] {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+  margin: 0 !important;
+  padding: 18px 18px 14px !important;
+}
+
+#panel-dashboard .grid2 > .card > div[style*="grid-template-columns:repeat(3,1fr)"] > div {
+  min-width: 0;
+  padding: 0 6px;
+}
+
+#panel-dashboard .grid2 > .card > div[style*="grid-template-columns:repeat(3,1fr)"] .metric-lbl {
+  margin-top: 7px !important;
+}

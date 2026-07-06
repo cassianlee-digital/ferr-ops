@@ -1,0 +1,145 @@
+/* page-ga4.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+#panel-ga4 #ga4-status {
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+#panel-ga4 table.dt {
+  min-width: 560px;
+}
+
+#panel-ga4 {
+  --ga4-border: #e5e8ef;
+}
+
+#panel-ga4 #ga4-hint {
+  display: none;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 20px 14px;
+  padding: 11px 12px;
+  border: 1px solid #f3d6a2;
+  border-radius: 2px;
+  background: #fffaf0;
+  box-shadow: none;
+}
+
+#panel-ga4 #ga4-hint i {
+  color: #d97706 !important;
+}
+
+#panel-ga4 #ga4-hint .banner-t {
+  color: #1f2329;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#panel-ga4 #ga4-hint .banner-s {
+  margin-top: 2px;
+  color: #6b778c;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+#panel-ga4 .metric-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 12px;
+  margin: 0 20px 14px;
+}
+
+#panel-ga4 .metric-card {
+  min-height: 82px;
+  padding: 14px 16px;
+  border: 1px solid var(--ga4-border);
+  border-left: 3px solid var(--report-blue, #1677ff);
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#panel-ga4 .metric-num,
+#panel-ga4 .metric-num[style] {
+  color: #1f2329;
+  font-size: 22px !important;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+#panel-ga4 .metric-lbl {
+  margin-top: 8px;
+  color: #86909c;
+  font-size: 12px;
+}
+
+#panel-ga4 .grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 20px 14px;
+}
+
+#panel-ga4 .card-head {
+  min-height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--ga4-border);
+  background: var(--report-head, #f7f8fa);
+}
+
+#panel-ga4 .card-title {
+  color: #1f2329;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#panel-ga4 .chart-wrap {
+  padding: 10px 12px 0;
+  background: #ffffff;
+}
+
+#panel-ga4 .metric-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#panel-ga4 .ga4-empty {
+  min-height: 96px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+#panel-ga4 .chart-wrap + .ga4-empty {
+  border-top: 0;
+}
+
+#panel-ga4 .timebar-inline .btn,
+#panel-ga4 .timebar-inline button,
+#panel-ga4 .timebar-inline select,
+#panel-ga4 .timebar-inline input {
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+#sub-data-ga4 #panel-ga4 {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#sub-data-ga4 #panel-ga4 .page-head {
+  margin-top: 0 !important;
+}
+
+#sub-data-ga4 #panel-ga4 .metric-row,
+#sub-data-ga4 #panel-ga4 .grid2 {
+  padding-right: 20px;
+  padding-left: 20px;
+}

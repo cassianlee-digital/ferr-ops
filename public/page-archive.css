@@ -1,0 +1,171 @@
+/* page-archive.css — extracted verbatim from styles.css (DOM-oracle per-page split). */
+
+#panel-archive .subtab {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #4e5969;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 44px;
+  white-space: nowrap;
+}
+
+#panel-archive .subtab.active {
+  border-bottom-color: var(--report-blue, #1677ff);
+  color: var(--report-blue, #1677ff);
+  background: transparent;
+  font-weight: 600;
+}
+
+#panel-archive .subpanel {
+  padding: 16px 20px 22px;
+}
+
+#panel-archive table.dt {
+  min-width: 900px;
+}
+
+#sub-arc-inquiry table.dt {
+  min-width: 1080px;
+}
+
+#panel-archive table.dt tbody td,
+#panel-ga4 table.dt tbody td {
+  min-height: 44px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #eef1f5;
+  color: #1f2329;
+  font-size: 13px;
+  line-height: 1.55;
+  vertical-align: middle;
+}
+
+#panel-archive table.dt tbody tr:last-child td,
+#panel-ga4 table.dt tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+#panel-archive table.dt .ctr,
+#panel-ga4 table.dt .ctr {
+  text-align: center;
+}
+
+#panel-archive .btn-mini {
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+#panel-archive [id^="arc-"][id$="-empty"] i,
+#panel-ga4 .ga4-empty i {
+  color: #c0c6d0;
+}
+
+#panel-archive table.dt {
+  min-width: 820px;
+}
+
+#sub-arc-inquiry table.dt {
+  min-width: 980px;
+}
+
+#panel-archive table.dt td:last-child {
+  white-space: nowrap;
+}
+
+#panel-archive .archive-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+#panel-archive .archive-main {
+  min-width: 920px !important;
+}
+
+#panel-archive .archive-inquiry {
+  min-width: 1080px !important;
+}
+
+#panel-archive .archive-main th:nth-child(1) { width: 132px; }
+
+#panel-archive .archive-main th:nth-child(2) { width: 94px; }
+
+#panel-archive .archive-main th:nth-child(4) { width: 88px; }
+
+#panel-archive .archive-main th:nth-child(5) { width: 168px; }
+
+#panel-archive .archive-inquiry th:nth-child(1) { width: 132px; }
+
+#panel-archive .archive-inquiry th:nth-child(2) { width: 74px; }
+
+#panel-archive .archive-inquiry th:nth-child(3) { width: 210px; }
+
+#panel-archive .archive-inquiry th:nth-child(5) { width: 72px; }
+
+#panel-archive .archive-inquiry th:nth-child(6) { width: 96px; }
+
+#panel-archive .archive-inquiry th:nth-child(7) { width: 168px; }
+
+#panel-archive .archive-date,
+#panel-archive .archive-short-date,
+#panel-archive .archive-source,
+#panel-archive .archive-dept,
+#panel-archive .archive-grade,
+#panel-archive .archive-channel,
+#panel-archive .archive-actions {
+  white-space: nowrap !important;
+}
+
+#panel-archive .archive-date {
+  color: #1f2329;
+  font-variant-numeric: tabular-nums;
+}
+
+#panel-archive .archive-content,
+#panel-archive .archive-customer,
+#panel-archive .archive-source-term {
+  min-width: 0;
+}
+
+#panel-archive .archive-text {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#panel-archive .archive-content .archive-text {
+  color: #1f2329;
+  font-weight: 500;
+}
+
+#panel-archive .archive-actions {
+  text-align: right !important;
+}
+
+#panel-archive .archive-actions .btn-mini {
+  margin-left: 6px;
+}
+
+#panel-archive .archive-actions .btn-mini:first-child {
+  margin-left: 0;
+}
+
+#panel-archive .archive-table tbody td {
+  height: 54px;
+}
+
+body.dark #panel-archive .archive-date,
+body.dark #panel-archive .archive-content .archive-text {
+  color: #e5e7eb;
+}
