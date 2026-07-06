@@ -148,14 +148,8 @@ table.dt td.editable{white-space:pre-wrap;overflow:visible;overflow-wrap:anywher
 .ctr{text-align:center}th.ctr{text-align:center}
 .dim{color:var(--text2)}
 
-.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:11px;font-size:10.5px;font-weight:700;white-space:nowrap}
-.b-red{background:var(--primary-soft);color:var(--primary)}
-.b-green{background:var(--green-soft);color:var(--green)}
-.b-amber{background:var(--amber-soft);color:var(--amber)}
-.b-blue{background:var(--blue-soft);color:var(--blue)}
-.b-purple{background:var(--purple-soft);color:var(--purple)}
+/* .badge + .b-red/green/amber/blue/purple/gray → components.css (block4). */
 .b-teal{background:var(--teal-soft);color:var(--teal)}
-.b-gray{background:var(--bg4);color:var(--text2)}
 
 /* btn-primary/.btn-ghost/.btn-ai base defs → moved to components.css (scientific rewrite block 1); hover kept here until hover pass */
 .btn-primary:hover{filter:brightness(1.06)}
@@ -272,8 +266,7 @@ table.dt td.editable:focus{background:transparent;border-radius:0;box-shadow:ins
 .cat-tab.add{border-style:dashed;color:var(--text3)}
 
 /* colored tag-select */
-.tagselect{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:11px;font-size:10.5px;font-weight:700;cursor:pointer;user-select:none;white-space:nowrap}
-.tagselect i{font-size:12px;opacity:.6}
+/* .tagselect + .tagselect i → components.css (block4). */
 #selMenu{position:fixed;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:6px;z-index:90;display:none;flex-direction:column;gap:4px}
 #selMenu .opt{padding:3px 6px;border-radius:8px;cursor:pointer;display:flex}
 #selMenu .opt:hover{background:var(--bg3)}
@@ -325,7 +318,7 @@ table.dt td.editable:focus{background:transparent;border-radius:0;box-shadow:ins
 .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
 .legend-dot{width:8px;height:8px;border-radius:50%}
 .report-meta{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text3);flex-wrap:wrap}
-.cache-tag{background:var(--green-soft);color:var(--green);border-radius:10px;padding:2px 9px;font-weight:700}
+/* .cache-tag → components.css (block4). */
 .mkt-list{font-size:12px;line-height:1.9;color:var(--text2)}
 .mkt-list b{color:var(--text1)}
 .chip{display:inline-block;padding:3px 10px;border-radius:13px;font-size:11px;font-weight:600;margin:0 6px 6px 0;background:var(--bg3);border:1px solid var(--border)}

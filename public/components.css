@@ -113,3 +113,30 @@ table.dt td{
 }
 table.dt td.ctr{text-align:center}
 table.dt td.num{text-align:right}
+
+/* Block 4: badge / .b-* color chips / tagselect / cache-tag. base = live computed
+   (vw=1280); inject-at-end verified 0 change (light+dark). radius:0 via flattener.
+   .b-teal + .minitab.active .badge context stay in base.css/styles.css. */
+.badge, .tagselect, .cache-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  min-height:22px;
+  padding:0 8px;
+  border:1px solid transparent;
+  border-radius:0;
+  font-size:12px;
+  font-weight:400;
+  line-height:1;
+}
+.badge, .tagselect{white-space:nowrap}
+.tagselect{cursor:pointer;user-select:none}
+.tagselect i{font-size:12px;opacity:.7}
+.b-red{background:#fff7f7;color:#f53f3f;border-color:#ffd8d6}
+.b-green{background:#f6ffed;color:#15803d;border-color:#c8f2d4}
+.b-amber{background:#fffaf0;color:#d97706;border-color:#ffe7ba}
+.b-blue{background:#f5f9ff;color:#1677ff;border-color:#d6e4ff}
+.b-purple{background:#f4efff;color:#6f49d1;border-color:transparent}
+.b-gray{background:#f7f8fa;color:#4e5969;border-color:#e5e8ef}
+.tagselect{background:#f6ffed;color:#15803d;border-color:#c8f2d4}
+.cache-tag{background:#f6fffb;color:#00a870;border-color:transparent}
