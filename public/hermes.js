@@ -1,16 +1,23 @@
-/* Hermes Agent adapter.
-   Kept separate from the core dashboard so agent integration can fail safely. */
+/* Hermes / Ferr Ops assistant entry.
+   The daily operator UI stays native to ferr-ops; the official Hermes console
+   is kept as an advanced-mode escape hatch. */
 (function () {
   const STORE_KEY = 'ferr:hermes-window';
   const ROLE_LABEL = { seo: 'SEO 李', sem: 'SEM 陈', manager: '主管', boss: '老板' };
+  const MAX_HISTORY = 8;
+
   let lastSessionSentAt = 0;
   let sessionTimer = null;
-  let prewarmStarted = false;
-  let prewarmAttempts = 0;
+  let statusChecked = false;
+  let lastHermesState = null;
+  let messages = [];
 
   function byId(id) { return document.getElementById(id); }
   function currentUser() { return window.ME || {}; }
   function roleLabel(role) { return ROLE_LABEL[role] || role || '未识别'; }
+  function escapeText(s) { return window.esc ? window.esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function renderMarkdown(s) { return window.mdToHtml ? window.mdToHtml(s) : '<p>' + escapeText(s).replace(/\n/g, '<br>') + '</p>'; }
+  function toastSafe(text) { if (window.toast) window.toast(text); }
 
   function appendLaunchParams(url) {
     const me = currentUser();
@@ -25,7 +32,12 @@
   }
 
   function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
-  function txt(el, max) { return (el ? (el.innerText || el.textContent || '') : '').replace(/\s+/g, ' ').trim().slice(0, max || 4000); }
+  function txt(el, max) {
+    return (el ? (el.innerText || el.textContent || '') : '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, max || 4000);
+  }
   function isVisible(el) {
     if (!el) return false;
     const r = el.getBoundingClientRect();
@@ -55,7 +67,9 @@
       subtitle: txt(panel.querySelector('.page-sub,.card-sub'), 300),
       visibleText: txt(panel, 6000),
     }));
-    const tables = activePanels.flatMap((panel) => [...panel.querySelectorAll('table')].filter(isVisible).slice(0, 3).map(collectTable)).slice(0, 6);
+    const tables = activePanels
+      .flatMap((panel) => [...panel.querySelectorAll('table')].filter(isVisible).slice(0, 3).map(collectTable))
+      .slice(0, 6);
     return {
       url: location.pathname + location.search + location.hash,
       tab: window._curTab || '',
@@ -67,18 +81,16 @@
   }
 
   function collectSessionState() {
-    const activeNav = document.querySelector('.nav-item.active');
-    const activePanels = [...document.querySelectorAll('.panel.active')].filter(isVisible).slice(0, 4);
-    const activeSubtabs = [...document.querySelectorAll('.subtab.active,.planning-tab.active,.action-tab.active')].filter(isVisible);
+    const page = collectPageContext();
     return {
-      url: location.pathname + location.search + location.hash,
-      tab: window._curTab || '',
-      nav: txt(activeNav, 120),
-      subtabs: activeSubtabs.map((x) => txt(x, 120)).filter(Boolean),
-      panels: activePanels.map((panel) => ({
-        id: panel.id || '',
-        title: txt(panel.querySelector('.page-title,.card-title,h1,h2'), 160),
-        subtitle: txt(panel.querySelector('.page-sub,.card-sub'), 300),
+      url: page.url,
+      tab: page.tab,
+      nav: page.nav,
+      subtabs: page.subtabs,
+      panels: page.panels.map((panel) => ({
+        id: panel.id,
+        title: panel.title,
+        subtitle: panel.subtitle,
       })),
     };
   }
@@ -97,14 +109,14 @@
   }
 
   async function syncHermesPageDetail(manual) {
-    if (!window.API || !window.ME) return;
+    if (!window.API || !window.ME) return false;
     try {
       await window.API.post('/api/hermes/page-context', collectPageContext());
       await syncHermesSession(true);
-      if (manual && window.toast) window.toast('Hermes 已读取当前页面内容');
+      if (manual) toastSafe('已读取当前页面内容');
       return true;
     } catch (e) {
-      if (manual && window.toast) window.toast('Hermes 读取当前页失败：' + (e.message || 'sync_failed'));
+      if (manual) toastSafe('读取当前页失败：' + (e.message || 'sync_failed'));
       return false;
     }
   }
@@ -177,10 +189,8 @@
       const move = (ev) => {
         const width = panel.offsetWidth;
         const height = panel.offsetHeight;
-        const left = clamp(start.left + ev.clientX - startX, 12, window.innerWidth - width - 12);
-        const top = clamp(start.top + ev.clientY - startY, 12, window.innerHeight - height - 12);
-        panel.style.left = left + 'px';
-        panel.style.top = top + 'px';
+        panel.style.left = clamp(start.left + ev.clientX - startX, 12, window.innerWidth - width - 12) + 'px';
+        panel.style.top = clamp(start.top + ev.clientY - startY, 12, window.innerHeight - height - 12) + 'px';
       };
       const up = () => {
         handle.removeEventListener('pointermove', move);
@@ -202,66 +212,182 @@
   }
 
   function setHermesView(state) {
+    lastHermesState = state || {};
     const statusBox = byId('hermesStatusBox');
     const statusText = byId('hermesStatusText');
     const sub = byId('hermesSub');
-    const endpoint = byId('hermesEndpoint');
     const detail = byId('hermesDetail');
     const openBtn = byId('hermesOpenBtn');
-    const frame = byId('hermesFrame');
-    const frameWrap = byId('hermesFrameWrap');
     const identity = byId('hermesIdentity');
-    const connected = !!(state && state.connected);
-    const configured = !!(state && state.configured);
-    const me = currentUser();
-    const launchUrl = connected && state.url ? appendLaunchParams(state.url) : '';
+    const connected = !!lastHermesState.connected;
+    const configured = !!lastHermesState.configured;
+    const launchUrl = connected && lastHermesState.url ? appendLaunchParams(lastHermesState.url) : '';
 
     if (statusBox) {
       statusBox.classList.toggle('ok', connected);
       statusBox.classList.toggle('bad', configured && !connected);
     }
-    if (sub) sub.textContent = connected ? '运营管家入口 · 已连接独立服务' : (configured ? '运营管家入口 · 服务暂不可达' : '运营管家入口 · 尚未配置');
+    if (sub) sub.textContent = '运营助手入口 · 官方 Hermes 保留为高级模式';
     if (statusText) {
-      if (connected) statusText.textContent = '当前状态：Hermes 智能体服务器可访问';
-      else if (configured) statusText.textContent = '当前状态：已配置，但连接失败';
-      else statusText.textContent = '当前状态：尚未配置智能体服务器';
+      if (connected) statusText.textContent = '当前状态：官方 Hermes 可访问；本面板使用 ferr-ops 自有助手入口';
+      else if (configured) statusText.textContent = '当前状态：官方 Hermes 已配置但连接失败；本面板仍可使用后台 AI';
+      else statusText.textContent = '当前状态：未配置官方 Hermes；本面板仍可使用后台 AI';
     }
-    if (endpoint) endpoint.textContent = state && state.url ? state.url : '需要在服务器 .env 配置 HERMES_AGENT_URL。';
-    if (identity) identity.textContent = '身份：' + roleLabel(me.role);
+    if (identity) identity.textContent = '身份：' + roleLabel(currentUser().role);
     if (detail) {
       const parts = [];
-      if (state && state.statusCode) parts.push('HTTP ' + state.statusCode + ' ' + (state.statusText || ''));
-      if (state && state.error) parts.push('原因：' + state.error);
-      if (state && state.detail) parts.push(state.detail);
-      if (state && state.checkedAt) parts.push('检查时间：' + new Date(state.checkedAt).toLocaleString());
-      detail.textContent = parts.length ? parts.join(' · ') : '当前阶段只检查 Hermes 服务是否可达，并提供独立打开入口；不会把后台密钥、Google 授权或数据库凭据交给前端。';
+      if (lastHermesState.error) parts.push('官方 Hermes：' + lastHermesState.error);
+      if (lastHermesState.checkedAt) parts.push('检查时间：' + new Date(lastHermesState.checkedAt).toLocaleString());
+      detail.textContent = parts.length
+        ? parts.join(' · ')
+        : '当前入口使用 ferr-ops 后台真实上下文；GSC/GA4/Google Ads 自动同步未接入时不会被当作事实。';
     }
     if (openBtn) {
-      openBtn.disabled = !connected || !(state && state.url);
+      openBtn.disabled = !launchUrl;
       openBtn.dataset.url = launchUrl;
-    }
-    if (frameWrap) frameWrap.classList.toggle('connected', connected);
-    if (frame) {
-      if (launchUrl && frame.dataset.src !== launchUrl) {
-        frame.dataset.src = launchUrl;
-        frame.src = launchUrl;
-      } else if (!launchUrl) {
-        frame.removeAttribute('src');
-        frame.dataset.src = '';
-      }
     }
   }
 
   async function refreshHermesStatus(manual) {
     const statusText = byId('hermesStatusText');
-    if (statusText) statusText.textContent = '当前状态：正在检查 Hermes 智能体服务器…';
+    if (statusText) statusText.textContent = '当前状态：正在检查官方 Hermes 连接…';
     try {
       const state = await window.API.get('/api/hermes/status');
+      statusChecked = true;
       setHermesView(state);
-      if (manual && window.toast) window.toast(state.connected ? 'Hermes 已连接' : 'Hermes 未连接：' + (state.error || 'unknown'));
+      if (manual) toastSafe(state.connected ? '官方 Hermes 已连接' : '官方 Hermes 未连接：' + (state.error || 'unknown'));
     } catch (e) {
+      statusChecked = true;
       setHermesView({ configured: false, connected: false, error: e.message || 'status_failed' });
-      if (manual && window.toast) window.toast('Hermes 状态检查失败：' + (e.message || 'status_failed'));
+      if (manual) toastSafe('Hermes 状态检查失败：' + (e.message || 'status_failed'));
+    }
+  }
+
+  function messageHistoryBlock() {
+    return messages
+      .filter((m) => m.content && !m.loading)
+      .slice(-MAX_HISTORY)
+      .map((m) => (m.role === 'assistant' ? 'AI' : '用户') + '：' + m.content)
+      .join('\n');
+  }
+
+  function buildOpsPrompt(userPrompt) {
+    const page = collectPageContext();
+    const history = messageHistoryBlock();
+    return [
+      '你是 ferr-ops 内置运营助手，不是通用聊天机器人。',
+      '必须基于后台真实数据、当前页面上下文和用户问题回答；缺少数据时直接说明缺少什么，不要编造 GSC、GA4、Google Ads 自动同步数据。',
+      '输出尽量短，结构固定为：证据摘要、判断、建议动作、验证指标、风险。',
+      '',
+      history ? '[最近对话]\n' + history : '',
+      '[当前页面上下文]\n' + JSON.stringify(page, null, 2).slice(0, 8000),
+      '',
+      '[用户问题]\n' + String(userPrompt || '').slice(0, 4000),
+    ].filter(Boolean).join('\n\n');
+  }
+
+  function renderMessageItem(message, index) {
+    const row = document.createElement('div');
+    row.className = 'hermes-msg ' + (message.role === 'user' ? 'user' : 'assistant');
+
+    const bubble = document.createElement('div');
+    bubble.className = 'hermes-msg-bubble';
+    if (message.loading) {
+      bubble.innerHTML = '<div class="ai-loading"><span class="spin"></span> 正在基于后台数据分析...</div>';
+    } else if (message.role === 'assistant') {
+      bubble.innerHTML = '<div class="ai-render">' + renderMarkdown(message.content) + '</div>';
+    } else {
+      bubble.textContent = message.content;
+    }
+    row.appendChild(bubble);
+
+    if (!message.loading) {
+      const tools = document.createElement('div');
+      tools.className = 'hermes-msg-tools';
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'hermes-copy';
+      copy.dataset.index = String(index);
+      copy.innerHTML = '<i class="ti ti-copy"></i> 复制';
+      tools.appendChild(copy);
+      row.appendChild(tools);
+    }
+    return row;
+  }
+
+  function renderMessages() {
+    const log = byId('hermesChatLog');
+    const welcome = byId('hermesWelcome');
+    if (!log) return;
+    log.innerHTML = '';
+    messages.forEach((message, index) => log.appendChild(renderMessageItem(message, index)));
+    if (welcome) welcome.classList.toggle('compact', messages.length > 0);
+    setTimeout(() => { log.scrollTop = log.scrollHeight; }, 20);
+  }
+
+  function setSending(isSending) {
+    const btn = byId('hermesSendBtn');
+    const input = byId('hermesInput');
+    if (btn) btn.disabled = !!isSending;
+    if (input) input.disabled = !!isSending;
+  }
+
+  async function sendHermesPrompt(rawPrompt) {
+    if (!window.API) return;
+    const input = byId('hermesInput');
+    const prompt = String(rawPrompt || (input && input.value) || '').trim();
+    if (!prompt) {
+      toastSafe('请输入要问 Hermes 的内容');
+      return;
+    }
+    if (input) input.value = '';
+    const opsPrompt = buildOpsPrompt(prompt);
+
+    messages.push({ role: 'user', content: prompt });
+    messages.push({ role: 'assistant', content: '', loading: true });
+    renderMessages();
+    setSending(true);
+
+    try {
+      await syncHermesSession(true);
+      const { text } = await window.API.post('/api/ai', { prompt: opsPrompt });
+      messages[messages.length - 1] = { role: 'assistant', content: text || '没有返回内容。' };
+    } catch (e) {
+      const reason = e && e.message ? e.message : 'ai_failed';
+      messages[messages.length - 1] = {
+        role: 'assistant',
+        content: 'AI 暂时不可用。\n\n原因：' + reason + '\n\n请确认后端 AI 配置是否完整，或稍后重试。',
+      };
+    } finally {
+      setSending(false);
+      renderMessages();
+    }
+  }
+
+  function askHermesStarter(prompt) {
+    sendHermesPrompt(prompt);
+  }
+
+  function clearHermesChat() {
+    messages = [];
+    renderMessages();
+  }
+
+  async function copyHermesMessage(index) {
+    const item = messages[Number(index)];
+    if (!item || !item.content) return;
+    try {
+      await navigator.clipboard.writeText(item.content);
+      toastSafe('已复制');
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = item.content;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toastSafe('已复制'); } catch { toastSafe('复制失败，请手动选择文本'); }
+      ta.remove();
     }
   }
 
@@ -271,7 +397,7 @@
     restoreWindowState();
     syncHermesSession(true);
     if (panel) panel.classList.add('show');
-    refreshHermesStatus(false);
+    if (!statusChecked) refreshHermesStatus(false);
   }
 
   function closeHermesPanel() {
@@ -286,7 +412,7 @@
     const btn = byId('hermesOpenBtn');
     const url = btn && btn.dataset && btn.dataset.url;
     if (!url) {
-      if (window.toast) window.toast('Hermes 智能体服务器未连接');
+      toastSafe('官方 Hermes 未连接');
       return;
     }
     window.open(url, '_blank', 'noopener');
@@ -304,9 +430,9 @@
       await syncHermesSession(true);
       await window.API.post('/api/hermes/memories/daily-learning', {});
       if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
-      if (window.toast) window.toast('Hermes 已沉淀今日运营记忆');
+      toastSafe('Hermes 已沉淀今日运营记忆');
     } catch (e) {
-      if (window.toast) window.toast('Hermes 记忆沉淀失败：' + (e.message || 'learning_failed'));
+      toastSafe('Hermes 记忆沉淀失败：' + (e.message || 'learning_failed'));
     } finally {
       if (btn) {
         btn.disabled = false;
@@ -315,37 +441,34 @@
     }
   }
 
-  function prewarmHermesFrame() {
-    if (prewarmStarted) return;
-    prewarmStarted = true;
-    const run = () => {
-      prewarmAttempts += 1;
-      if (window.API) {
-        refreshHermesStatus(false);
-        return;
-      }
-      if (prewarmAttempts < 8) setTimeout(run, 1200);
-    };
-    setTimeout(run, 1200);
-  }
-
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeHermesPanel();
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === byId('hermesInput')) {
+      e.preventDefault();
+      sendHermesPrompt();
+    }
   });
+
   document.addEventListener('click', (e) => {
+    const copyBtn = e.target.closest && e.target.closest('.hermes-copy');
+    if (copyBtn) {
+      copyHermesMessage(copyBtn.dataset.index);
+      return;
+    }
     if (e.target.closest('.nav-item,.subtab,.planning-tab,.action-tab,.btn-primary,.btn-ghost,.btn-ai')) {
       scheduleSessionSync(500);
     }
   });
+
   document.addEventListener('input', (e) => {
     if (e.target.closest('.panel.active')) scheduleSessionSync(900);
   });
+
   window.addEventListener('message', (event) => {
     const data = event && event.data;
     if (!data || data.type !== 'ferr:read-page-context') return;
     syncHermesPageDetail(false).then((ok) => {
-      const frame = byId('hermesFrame');
-      if (frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'ferr:page-context-ready', ok }, '*');
+      event.source && event.source.postMessage({ type: 'ferr:page-context-ready', ok }, '*');
     });
   });
 
@@ -358,7 +481,9 @@
   window.toggleHermesMaximize = toggleHermesMaximize;
   window.syncHermesSession = syncHermesSession;
   window.syncHermesPageDetail = syncHermesPageDetail;
+  window.sendHermesPrompt = sendHermesPrompt;
+  window.askHermesStarter = askHermesStarter;
+  window.clearHermesChat = clearHermesChat;
 
-  if (document.readyState === 'complete') prewarmHermesFrame();
-  else window.addEventListener('load', prewarmHermesFrame, { once: true });
+  document.addEventListener('DOMContentLoaded', () => setHermesView(lastHermesState || {}));
 })();

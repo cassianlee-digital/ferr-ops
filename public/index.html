@@ -800,22 +800,41 @@
       </div>
       <div class="hermes-identity" id="hermesIdentity">身份：—</div>
     </div>
-    <div class="hermes-frame-wrap" id="hermesFrameWrap">
-      <iframe id="hermesFrame" title="Hermes Agent" referrerpolicy="no-referrer"></iframe>
-      <div class="hermes-empty" id="hermesEmpty">
-        <div class="hermes-card">
-          <div class="hermes-card-title">Hermes 未连接</div>
-          <p id="hermesDetail">需要配置 HERMES_AGENT_URL；如果后台是 HTTPS，Hermes 也建议使用 HTTPS。</p>
-          <p id="hermesEndpoint">服务地址：—</p>
+    <div class="hermes-workspace">
+      <div class="hermes-welcome" id="hermesWelcome">
+        <div class="hermes-welcome-main">
+          <div class="hermes-mark"><i class="ti ti-sparkles"></i></div>
+          <div>
+            <div class="hermes-welcome-title">Ferr Ops 运营助手</div>
+            <p>基于后台已录入的 KPI、询盘、SEO/SEM 周报和关键词数据回答。未接入的 GSC、GA4、Google Ads 自动同步不会被当成真实数据。</p>
+          </div>
         </div>
+        <div class="hermes-quick-grid">
+          <button type="button" class="hermes-quick" onclick="askHermesStarter('本周 SEO 有哪些异常？请按证据、判断、动作、验证指标输出。')"><i class="ti ti-chart-line"></i><span>本周 SEO 异常</span></button>
+          <button type="button" class="hermes-quick" onclick="askHermesStarter('哪些关键词值得优先优化？请说明依据和下一步动作。')"><i class="ti ti-key"></i><span>关键词优先级</span></button>
+          <button type="button" class="hermes-quick" onclick="askHermesStarter('SEM 有哪些高花费低转化风险？请不要编造未接入广告同步数据。')"><i class="ti ti-bullhorn"></i><span>SEM 风险排查</span></button>
+          <button type="button" class="hermes-quick" onclick="askHermesStarter('帮我生成本周运营复盘草稿，包含结论、证据、动作和下周验证指标。')"><i class="ti ti-notes"></i><span>周报复盘草稿</span></button>
+        </div>
+      </div>
+      <div class="hermes-chat-log" id="hermesChatLog" aria-live="polite"></div>
+      <div class="hermes-agent-note">
+        <i class="ti ti-alert-circle"></i>
+        <span id="hermesDetail">当前入口使用 ferr-ops 后台真实上下文；官方 Hermes 后台保留为高级模式。</span>
+      </div>
+    </div>
+    <div class="hermes-compose">
+      <textarea id="hermesInput" rows="3" placeholder="直接问运营问题，例如：这页数据有哪些异常？帮我把结论改成整改动作。"></textarea>
+      <div class="hermes-compose-tools">
+        <button class="btn-ghost" type="button" onclick="syncHermesPageDetail(true)"><i class="ti ti-file-search"></i> 读取当前页</button>
+        <button class="btn-ghost" type="button" onclick="refreshHermesStatus(true)"><i class="ti ti-plug-connected"></i> 检查接入</button>
+        <button class="btn-primary" type="button" id="hermesSendBtn" onclick="sendHermesPrompt()"><i class="ti ti-send"></i> 发送</button>
       </div>
     </div>
   </div>
   <div class="hermes-foot">
     <button class="btn-ghost" type="button" onclick="resetHermesWindow()">重置窗口</button>
-    <button class="btn-ghost" type="button" onclick="syncHermesPageDetail(true)">读取当前页</button>
-    <button class="btn-ghost" type="button" onclick="refreshHermesStatus(true)">检查接入状态</button>
-    <button class="btn-primary" type="button" id="hermesOpenBtn" onclick="openHermesAgent()" disabled>打开 Hermes</button>
+    <button class="btn-ghost" type="button" onclick="clearHermesChat()">清空对话</button>
+    <button class="btn-primary" type="button" id="hermesOpenBtn" onclick="openHermesAgent()" disabled>高级模式：打开 Hermes</button>
   </div>
 </section>
 
