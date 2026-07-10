@@ -495,10 +495,55 @@ export function migrate() {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind)'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_fixes_state ON fixes(state)'); } catch (e) {}
 
+  // 周报 week_key 从「年-月-第几周」升级为「本周周一日期 YYYY-MM-DD」，根治相邻周撞 key。幂等。
+  try { migrateWeeklyKeysToMonday(); } catch (e) {}
+
   db.prepare(
     `INSERT INTO meta (key,value) VALUES ('schema_version',?)
      ON CONFLICT(key) DO UPDATE SET value=excluded.value`
   ).run(SCHEMA_VERSION);
+}
+
+// 把旧「年-月-第几周」周报键改写成「本周周一日期 YYYY-MM-DD」。幂等：日期键/月报键都不匹配 legacy 正则。
+function migrateWeeklyKeysToMonday() {
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const lastMondayOfMonth = (y, m) => { // m 为 1-based
+    for (let day = new Date(y, m, 0).getDate(); day >= 1; day--) {
+      const d = new Date(y, m - 1, day);
+      if ((d.getDay() || 7) === 1) return d;
+    }
+    return null;
+  };
+  const mondayInMonthWeek = (y, m, w) => { // 该月内 ceil(day/7)===w 的那个周一
+    for (let day = (w - 1) * 7 + 1; day <= w * 7; day++) {
+      const d = new Date(y, m - 1, day);
+      if (d.getMonth() !== m - 1) break;
+      if ((d.getDay() || 7) === 1) return d;
+    }
+    return null;
+  };
+  const rows = db.prepare('SELECT DISTINCT week_key FROM weekly_reports').all();
+  const move = db.prepare('UPDATE OR REPLACE weekly_reports SET week_key=? WHERE week_key=?');
+  const tx = db.transaction(() => {
+    for (const { week_key } of rows) {
+      const mm = /^(\d{4})-(\d{1,2})-([1-5])$/.exec(String(week_key)); // legacy 第几周恒为单位数
+      if (!mm) continue;
+      const y = Number(mm[1]); const m = Number(mm[2]); const w = Number(mm[3]);
+      let monday = null;
+      if (w === 1) {
+        // 旧代码「第5周→次月第1周」进位:上月末周(周一≥29)被存成本月第1周。优先还原到上月那个周一。
+        const py = m === 1 ? y - 1 : y;
+        const pm = m === 1 ? 12 : m - 1;
+        const lm = lastMondayOfMonth(py, pm);
+        if (lm && Math.ceil(lm.getDate() / 7) >= 5) monday = lm;
+      }
+      if (!monday) monday = mondayInMonthWeek(y, m, w);
+      if (!monday) continue;
+      const key = `${monday.getFullYear()}-${pad2(monday.getMonth() + 1)}-${pad2(monday.getDate())}`;
+      if (key !== week_key) move.run(key, week_key);
+    }
+  });
+  tx();
 }
 
 // 仅在列缺失时 ALTER TABLE ADD COLUMN（SQLite 无 IF NOT EXISTS，靠 PRAGMA 自查）。

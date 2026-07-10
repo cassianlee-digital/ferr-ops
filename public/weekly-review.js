@@ -15,23 +15,30 @@ const RV_MONTH_SECTIONS = [
   ['next_plan', '④ 下月工作计划', []]
 ];
 
+function rvPad2(n) { return String(n).padStart(2, '0'); }
+
+// 周 key = 本周「周一」的本地日期 YYYY-MM-DD。唯一、不撞、天然处理月末跨月。
+function mondayOf(key) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ''));
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function reportWeekStart(now = new Date()) {
   const d = new Date(now);
   const day = d.getDay() || 7;
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() - day + 1);
-  if ((now.getDay() || 7) === 1 && now.getHours() < 8) d.setDate(d.getDate() - 7);
+  // 周一 9:00 之前仍算「上一周」——新一周的填写框每周一早上 9 点才启用。
+  if ((now.getDay() || 7) === 1 && now.getHours() < 9) d.setDate(d.getDate() - 7);
   return d;
 }
 
 function keyFromWeekStart(start) {
-  // 周归属于「本周周一所在的月」，周序 = ceil(周一日期/7)。
-  // 不做「第5周→次月第1周」进位:那会让上月末的周(周一在29-31)与次月真正的第1周撞成同一 key。
   const d = new Date(start);
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const week = Math.ceil(d.getDate() / 7);
-  return `${year}-${month}-${week}`;
+  return `${d.getFullYear()}-${rvPad2(d.getMonth() + 1)}-${rvPad2(d.getDate())}`;
 }
 
 function curWeekKey() {
@@ -44,10 +51,14 @@ function curMonthKey() {
 }
 
 function parseWeekKey(key) {
-  const p = String(key || '').split('-').map(Number);
-  if (p.length < 3 || !p[0] || !p[1] || !p[2]) return null;
-  const [year, month, week] = p;
-  return { year, month, week, monthKey: `${year}-${month}` };
+  const mon = mondayOf(key);
+  if (!mon) return null;
+  // 归属月 = 本周「周四」所在的月（周四=一周多数天所在月，避免跨月周被算错月份）。
+  const thu = new Date(mon);
+  thu.setDate(thu.getDate() + 3);
+  const year = thu.getFullYear();
+  const month = thu.getMonth() + 1;
+  return { monday: mon, year, month, monthKey: `${year}-${month}` };
 }
 
 function parseMonthKey(key) {
@@ -59,7 +70,7 @@ function currentWeekShouldOpen() {
   const now = new Date();
   const start = reportWeekStart(now);
   const openAt = new Date(start);
-  openAt.setHours(8, 0, 0, 0);
+  openAt.setHours(9, 0, 0, 0);
   const closeAt = new Date(start);
   closeAt.setDate(closeAt.getDate() + 4);
   closeAt.setHours(22, 0, 0, 0);
@@ -68,12 +79,15 @@ function currentWeekShouldOpen() {
 
 function weekLabel(key) {
   const p = parseWeekKey(key);
-  return p ? `${p.year}年${p.month}月第${p.week}周` : key;
+  if (!p) return key;
+  const sun = new Date(p.monday);
+  sun.setDate(sun.getDate() + 6);
+  return `${p.monday.getMonth() + 1}月${p.monday.getDate()}日 – ${sun.getMonth() + 1}月${sun.getDate()}日`;
 }
 
 function canonicalWeekKey(key) {
-  const p = parseWeekKey(key);
-  return p ? `${p.year}-${p.month}-${p.week}` : key;
+  const mon = mondayOf(key);
+  return mon ? keyFromWeekStart(mon) : key;
 }
 
 function monthLabel(key) {
@@ -87,11 +101,8 @@ function monthGroupLabel(monthKey) {
 }
 
 function sortWeekKeys(keys) {
-  return [...keys].sort((a, b) => {
-    const pa = parseWeekKey(a) || { year: 0, month: 0, week: 0 };
-    const pb = parseWeekKey(b) || { year: 0, month: 0, week: 0 };
-    return (pb.year - pa.year) || (pb.month - pa.month) || (pb.week - pa.week);
-  });
+  // 日期键 YYYY-MM-DD 按字符串倒序即为按时间倒序。
+  return [...keys].sort((a, b) => String(b).localeCompare(String(a)));
 }
 
 function sortMonthKeys(keys) {
