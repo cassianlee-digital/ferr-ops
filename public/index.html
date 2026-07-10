@@ -805,8 +805,8 @@
         <div class="hermes-welcome-main">
           <div class="hermes-mark"><i class="ti ti-sparkles"></i></div>
           <div>
-            <div class="hermes-welcome-title">Ferr Ops 运营助手</div>
-            <p>基于后台已录入的 KPI、询盘、SEO/SEM 周报和关键词数据回答。未接入的 GSC、GA4、Google Ads 自动同步不会被当成真实数据。</p>
+            <div class="hermes-welcome-title">Hermes 运营智能体</div>
+            <p>通过 Hermes Gateway 使用长期记忆、技能规则、工作流和当前后台数据。未接入的 GSC、GA4、Google Ads 自动同步不会被当成真实数据。</p>
           </div>
         </div>
         <div class="hermes-quick-grid">
@@ -819,7 +819,7 @@
       <div class="hermes-chat-log" id="hermesChatLog" aria-live="polite"></div>
       <div class="hermes-agent-note">
         <i class="ti ti-alert-circle"></i>
-        <span id="hermesDetail">当前入口使用 ferr-ops 后台真实上下文；官方 Hermes 后台保留为高级模式。</span>
+        <span id="hermesDetail">当前入口走 Hermes Gateway：长期记忆、技能规则、工作流、当前页上下文和附件会共同参与判断。</span>
       </div>
     </div>
     <div class="hermes-compose">
@@ -828,6 +828,18 @@
       <div class="hermes-compose-tools">
         <label class="btn-ghost hermes-upload-btn" for="hermesFiles"><i class="ti ti-paperclip"></i> 上传文件/截图</label>
         <input id="hermesFiles" type="file" multiple accept="image/*,.csv,.txt,.md,.json,.pdf,.xls,.xlsx" style="display:none">
+        <select id="hermesSkill" class="hermes-select" title="Hermes 技能">
+          <option value="auto">自动判断</option>
+          <option value="seo_diagnosis">SEO 诊断</option>
+          <option value="sem_waste">SEM 浪费排查</option>
+          <option value="weekly_review">周报复盘</option>
+          <option value="sop_draft">SOP 草稿</option>
+        </select>
+        <select id="hermesWorkflow" class="hermes-select" title="Hermes 工作流">
+          <option value="answer">直接回答</option>
+          <option value="diagnose_to_action">诊断到动作</option>
+          <option value="learn_to_memory">学习沉淀</option>
+        </select>
         <button class="btn-ghost" type="button" onclick="syncHermesPageDetail(true)"><i class="ti ti-file-search"></i> 读取当前页</button>
         <button class="btn-ghost" type="button" onclick="refreshHermesStatus(true)"><i class="ti ti-plug-connected"></i> 检查接入</button>
         <button class="btn-primary" type="button" id="hermesSendBtn" onclick="sendHermesPrompt()"><i class="ti ti-send"></i> 发送</button>

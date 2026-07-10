@@ -1,6 +1,8 @@
 import { editor, requireAuth } from '../auth/middleware.js';
 import { config } from '../config.js';
 import { buildContext } from '../services/aiContext.js';
+import { callAnthropic } from '../services/anthropic.js';
+import { attachmentPromptBlock, cleanAiAttachments } from '../services/aiAttachments.js';
 import * as marketBrain from '../services/marketBrain.js';
 import * as kpiRepo from '../db/repositories/kpi.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
@@ -59,6 +61,44 @@ const SEO_PLAYBOOK = [
   '关键词蚕食：要指出冲突页面，并建议主页面、合并/重定向/内链锚文本策略。',
   '内容建议必须绑定词、页面、预期指标和复盘周期。',
 ];
+
+const HERMES_SKILLS = {
+  auto: {
+    label: '自动判断',
+    instruction: '先判断用户问题属于 SEO、SEM、复盘、任务还是 SOP，再选择对应分析方式。',
+  },
+  seo_diagnosis: {
+    label: 'SEO 诊断',
+    instruction: '优先使用 SEO playbook，输出页面、关键词、内容、内链、收录和验证指标。',
+  },
+  sem_waste: {
+    label: 'SEM 浪费排查',
+    instruction: '优先使用 SEM playbook，识别高花费低转化、否词、匹配方式、创意和落地页问题。',
+  },
+  weekly_review: {
+    label: '周报复盘',
+    instruction: '输出本周结论、证据、已做动作、下周动作、负责人和复盘指标。',
+  },
+  sop_draft: {
+    label: 'SOP 草稿',
+    instruction: '把经验沉淀成可复用 SOP：触发条件、检查步骤、判断标准、输出物、复盘频率。',
+  },
+};
+
+const HERMES_WORKFLOWS = {
+  answer: {
+    label: '直接回答',
+    instruction: '直接回答用户问题，但必须引用 Hermes 上下文证据。',
+  },
+  diagnose_to_action: {
+    label: '诊断到动作',
+    instruction: '按“发现问题 → 证据 → 根因判断 → 整改动作 → 验证指标 → 复盘时间”输出。',
+  },
+  learn_to_memory: {
+    label: '学习沉淀',
+    instruction: '回答后追加“可沉淀记忆”，写清 Hermes 应记住的事实、判断规则和适用场景。',
+  },
+};
 
 function assistantPlaybook(operator) {
   const role = operator.role || 'manager';
@@ -440,6 +480,76 @@ function trimText(value, max = 12000) {
   return String(value == null ? '' : value).replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
+function safeChoice(value, dict, fallback) {
+  const key = String(value || '').trim();
+  return dict[key] ? key : fallback;
+}
+
+function chatHistoryBlock(history) {
+  const rows = Array.isArray(history) ? history.slice(-8) : [];
+  return rows
+    .map((m) => `${m?.role === 'assistant' ? 'AI' : '用户'}：${trimText(m?.content, 1600)}`)
+    .filter((line) => line.replace(/^.*?：/, '').trim())
+    .join('\n');
+}
+
+function hermesSystem(context) {
+  const operator = context.operator;
+  return [
+    '你是 Hermes for ferr-ops，不是普通大模型聊天。',
+    '你必须使用 ferr-ops 的长期记忆、诊断卡、角色 playbook、当前页上下文和用户附件来回答。',
+    '你可以学习：当用户要求沉淀、复盘、SOP 或工作流时，要输出可写入 Hermes 记忆的结构化内容。',
+    '你可以执行技能：根据 selectedSkill 使用对应 playbook，不要泛泛回答。',
+    '你可以执行工作流：根据 selectedWorkflow 把答案组织成可闭环的步骤。',
+    '所有建议必须能追溯到证据；没有数据时要明确说缺什么。',
+    '禁止把 GSC、GA4、Google Ads 未接入的数据当成事实。',
+    `当前角色：${operator.persona.label}`,
+    `角色关注：${operator.persona.focus}`,
+    `反馈风格：${operator.persona.style}`,
+  ].join('\n');
+}
+
+function hermesChatPrompt({ context, message, history, attachments, skillKey, workflowKey }) {
+  const skill = HERMES_SKILLS[skillKey] || HERMES_SKILLS.auto;
+  const workflow = HERMES_WORKFLOWS[workflowKey] || HERMES_WORKFLOWS.answer;
+  const memory = context.enterpriseMemory || {};
+  const diagnosis = context.opsDiagnosis || {};
+  const payload = {
+    operator: context.operator,
+    session: context.session,
+    pageContext: context.pageContext,
+    opsDiagnosis: diagnosis,
+    enterpriseMemory: {
+      marketBrain: memory.marketBrain,
+      longTermMemories: memory.longTermMemories,
+      missingData: memory.missingData,
+    },
+    assistantPlaybook: context.assistantPlaybook,
+    backendContext: trimText(context.context, 12000),
+  };
+
+  return [
+    '[Hermes 本轮技能]',
+    `${skill.label}: ${skill.instruction}`,
+    '',
+    '[Hermes 本轮工作流]',
+    `${workflow.label}: ${workflow.instruction}`,
+    '',
+    history ? '[最近对话]\n' + history : '',
+    '[Hermes 上下文]',
+    JSON.stringify(payload, null, 2).slice(0, 26000),
+    attachmentPromptBlock(attachments),
+    '',
+    '[用户问题]',
+    trimText(message, 5000),
+    '',
+    '输出要求：',
+    '1. 先用一行说明本次使用了哪个 Hermes 技能/工作流。',
+    '2. 正文按：结论、证据、判断、动作、负责人、验证指标、复盘时间。',
+    '3. 如果适合沉淀，最后追加“可沉淀记忆”，但不要声称已经写入，除非用户点击沉淀。',
+  ].filter(Boolean).join('\n');
+}
+
 function sanitizeSession(body) {
   const panels = Array.isArray(body?.panels) ? body.panels : [];
   return {
@@ -628,6 +738,55 @@ export async function hermesRoutes(app) {
       });
     } finally {
       clearTimeout(timer);
+    }
+  });
+
+  app.get('/api/hermes/capabilities', { preHandler: requireAuth }, async () => ({
+    ok: true,
+    mode: 'ferr_hermes_gateway',
+    skills: Object.entries(HERMES_SKILLS).map(([id, item]) => ({ id, label: item.label, instruction: item.instruction })),
+    workflows: Object.entries(HERMES_WORKFLOWS).map(([id, item]) => ({ id, label: item.label, instruction: item.instruction })),
+    note: '当前使用 ferr-ops 本地 Hermes 记忆、playbook、诊断卡和上下文网关；官方 Hermes 控制台仍作为高级模式入口。',
+  }));
+
+  app.post('/api/hermes/chat', { preHandler: requireAuth }, async (request, reply) => {
+    const message = trimText(request.body?.message, 5000);
+    if (!message) return reply.code(400).send({ error: 'message_required' });
+
+    const skillKey = safeChoice(request.body?.skill, HERMES_SKILLS, 'auto');
+    const workflowKey = safeChoice(request.body?.workflow, HERMES_WORKFLOWS, 'answer');
+    const attachments = cleanAiAttachments(request.body?.attachments);
+    const history = chatHistoryBlock(request.body?.history);
+    const context = contextPayload(request);
+
+    if (!context.ok) return reply.code(500).send({ error: context.error || 'hermes_context_failed', detail: context.detail || '' });
+
+    try {
+      const text = await callAnthropic(
+        hermesSystem(context),
+        hermesChatPrompt({ context, message, history, attachments, skillKey, workflowKey }),
+        { attachments },
+      );
+      return {
+        text,
+        hermes: {
+          mode: 'ferr_hermes_gateway',
+          skill: { id: skillKey, label: HERMES_SKILLS[skillKey].label },
+          workflow: { id: workflowKey, label: HERMES_WORKFLOWS[workflowKey].label },
+          usedMemory: Boolean(context.enterpriseMemory?.longTermMemories?.length),
+          usedPageContext: Boolean(context.pageContext),
+          missingData: [
+            ...(context.opsDiagnosis?.missingData || []),
+            ...(context.enterpriseMemory?.missingData || []),
+          ],
+        },
+      };
+    } catch (e) {
+      request.log.error({ err: e.message, status: e.status }, 'hermes chat failed');
+      return reply.code(e.code === 'NO_KEY' ? 503 : 502).send({
+        error: e.code === 'NO_KEY' ? 'ai_unconfigured' : (e.message || 'hermes_chat_failed'),
+        detail: trimText(e.detail, 400),
+      });
     }
   });
 

@@ -3793,6 +3793,15 @@ table.dt td.editable:focus,
   flex-wrap: wrap;
 }
 
+.hermes-msg-meta {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #dfe6f2;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .hermes-copy {
   display: inline-flex;
   align-items: center;
@@ -3936,6 +3945,23 @@ table.dt td.editable:focus,
   cursor: pointer;
 }
 
+.hermes-select {
+  min-height: 34px;
+  max-width: 160px;
+  border: 1px solid #dfe6f2;
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #334155;
+  padding: 0 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.hermes-select:focus {
+  border-color: #2f6df6;
+  box-shadow: 0 0 0 3px rgba(47, 109, 246, .10);
+}
+
 .hermes-compose-tools .btn-primary {
   margin-left: auto;
 }
@@ -4026,8 +4052,15 @@ body.dark .hermes-compose textarea {
 }
 
 body.dark .hermes-file-chip small,
-body.dark .hermes-file-remove {
+body.dark .hermes-file-remove,
+body.dark .hermes-msg-meta {
   color: #94a3b8;
+}
+
+body.dark .hermes-select {
+  border-color: #273142;
+  background: #0f172a;
+  color: #cbd5e1;
 }
 
 @media (max-width: 760px) {

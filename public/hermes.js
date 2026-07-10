@@ -394,11 +394,11 @@
       statusBox.classList.toggle('ok', connected);
       statusBox.classList.toggle('bad', configured && !connected);
     }
-    if (sub) sub.textContent = '运营助手入口 · 官方 Hermes 保留为高级模式';
+    if (sub) sub.textContent = 'Hermes Gateway · 记忆 / 技能 / 工作流';
     if (statusText) {
-      if (connected) statusText.textContent = '当前状态：官方 Hermes 可访问；本面板使用 ferr-ops 自有助手入口';
-      else if (configured) statusText.textContent = '当前状态：官方 Hermes 已配置但连接失败；本面板仍可使用后台 AI';
-      else statusText.textContent = '当前状态：未配置官方 Hermes；本面板仍可使用后台 AI';
+      if (connected) statusText.textContent = '当前状态：官方 Hermes 可访问；当前面板走 Hermes Gateway';
+      else if (configured) statusText.textContent = '当前状态：官方 Hermes 已配置但连接失败；当前面板仍走本地 Hermes Gateway';
+      else statusText.textContent = '当前状态：未配置官方 Hermes；当前面板走本地 Hermes Gateway';
     }
     if (identity) identity.textContent = '身份：' + roleLabel(currentUser().role);
     if (detail) {
@@ -407,7 +407,7 @@
       if (lastHermesState.checkedAt) parts.push('检查时间：' + new Date(lastHermesState.checkedAt).toLocaleString());
       detail.textContent = parts.length
         ? parts.join(' · ')
-        : '当前入口使用 ferr-ops 后台真实上下文；GSC/GA4/Google Ads 自动同步未接入时不会被当作事实。';
+        : '当前入口走 Hermes Gateway：长期记忆、技能规则、工作流、当前页上下文和附件会共同参与判断。';
     }
     if (openBtn) {
       openBtn.disabled = !launchUrl;
@@ -430,29 +430,18 @@
     }
   }
 
-  function messageHistoryBlock() {
+  function messageHistoryPayload() {
     return messages
       .filter((m) => m.content && !m.loading)
       .slice(-MAX_HISTORY)
-      .map((m) => (m.role === 'assistant' ? 'AI' : '用户') + '：' + m.content)
-      .join('\n');
+      .map((m) => ({ role: m.role, content: m.content }));
   }
 
-  function buildOpsPrompt(userPrompt, attachedFiles) {
-    const page = collectPageContext();
-    const history = messageHistoryBlock();
-    return [
-      '你是 ferr-ops 内置运营助手，不是通用聊天机器人。',
-      '必须基于后台真实数据、当前页面上下文和用户问题回答；缺少数据时直接说明缺少什么，不要编造 GSC、GA4、Google Ads 自动同步数据。',
-      '如果用户上传了附件，必须区分“后台真实数据”“当前页面数据”“用户上传附件”。不要把附件内容误写成已同步数据。',
-      '输出尽量短，结构固定为：证据摘要、判断、建议动作、验证指标、风险。',
-      '',
-      history ? '[最近对话]\n' + history : '',
-      '[当前页面上下文]\n' + JSON.stringify(page, null, 2).slice(0, 8000),
-      attachmentPromptBlock(attachedFiles || []),
-      '',
-      '[用户问题]\n' + String(userPrompt || '').slice(0, 4000),
-    ].filter(Boolean).join('\n\n');
+  function selectedGatewayMode() {
+    return {
+      skill: (byId('hermesSkill') && byId('hermesSkill').value) || 'auto',
+      workflow: (byId('hermesWorkflow') && byId('hermesWorkflow').value) || 'answer',
+    };
   }
 
   function renderMessageItem(message, index) {
@@ -473,6 +462,20 @@
       files.className = 'hermes-msg-files';
       renderAttachmentChips(files, message.attachments, { removable: false });
       bubble.appendChild(files);
+    }
+    if (message.hermes) {
+      const meta = document.createElement('div');
+      meta.className = 'hermes-msg-meta';
+      const missing = (message.hermes.missingData || []).filter(Boolean);
+      meta.textContent = [
+        'Hermes Gateway',
+        message.hermes.skill && message.hermes.skill.label ? '技能：' + message.hermes.skill.label : '',
+        message.hermes.workflow && message.hermes.workflow.label ? '工作流：' + message.hermes.workflow.label : '',
+        message.hermes.usedMemory ? '已使用长期记忆' : '',
+        message.hermes.usedPageContext ? '已使用当前页' : '',
+        missing.length ? '缺失：' + missing.slice(0, 3).join('、') : '',
+      ].filter(Boolean).join(' · ');
+      bubble.appendChild(meta);
     }
     row.appendChild(bubble);
 
@@ -517,8 +520,9 @@
     }
     if (input) input.value = '';
     const attachedFiles = attachments.slice();
-    const opsPrompt = buildOpsPrompt(prompt, attachedFiles);
     const requestAttachments = attachmentRequestPayload(attachedFiles);
+    const gatewayMode = selectedGatewayMode();
+    const historyPayload = messageHistoryPayload();
     attachments = [];
     renderAttachments();
 
@@ -529,13 +533,19 @@
 
     try {
       await syncHermesSession(true);
-      const { text } = await window.API.post('/api/ai', { prompt: opsPrompt, attachments: requestAttachments });
-      messages[messages.length - 1] = { role: 'assistant', content: text || '没有返回内容。' };
+      const res = await window.API.post('/api/hermes/chat', {
+        message: prompt,
+        history: historyPayload,
+        attachments: requestAttachments,
+        skill: gatewayMode.skill,
+        workflow: gatewayMode.workflow,
+      });
+      messages[messages.length - 1] = { role: 'assistant', content: res.text || '没有返回内容。', hermes: res.hermes };
     } catch (e) {
       const reason = e && e.message ? e.message : 'ai_failed';
       messages[messages.length - 1] = {
         role: 'assistant',
-        content: 'AI 暂时不可用。\n\n原因：' + reason + '\n\n请确认后端 AI 配置是否完整，或稍后重试。',
+        content: 'Hermes Gateway 暂时不可用。\n\n原因：' + reason + '\n\n请确认后端 AI 配置、Hermes 记忆上下文或模型视觉能力是否正常。',
       };
     } finally {
       setSending(false);
