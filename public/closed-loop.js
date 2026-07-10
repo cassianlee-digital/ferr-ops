@@ -49,7 +49,7 @@ function scopeDept(btn,txt){
 const clip=(s,n)=>s.length>n?s.slice(0,n)+'…':s;
 
 function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
-  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${s.dept}诊断</span></td><td>${esc(text)}</td><td class="dim" style="font-size:11px"></td><td class="ctr"><span class="badge ${ac}">${act}</span></td>`);}
+  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc(s.dept)}诊断</span></td><td>${esc(text)}</td><td class="dim" style="font-size:11px"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);}
 /* 整改行：问题/所属/依据/动作/负责人/截止/结果，全部可编辑或可选；绑定 id 后失焦即存 */
 function fixRowHtml(f){
   const dept=f.dept==='SEM'?'SEM':'SEO'; const c=dept==='SEM'?'b-purple':'b-blue';
