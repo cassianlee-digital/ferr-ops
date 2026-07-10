@@ -5,7 +5,7 @@
 }
 
 #panel-tasks .banner{
-  border-radius:8px;
+  border-radius:var(--radius);
   border-color:#ffd8d5;
   box-shadow:0 8px 22px rgba(239,63,58,.08);
 }
@@ -16,7 +16,7 @@
 
 #panel-tasks .pblock{
   padding:16px;
-  border-radius:8px;
+  border-radius:var(--radius);
   border-color:#e2e7f0;
   background:linear-gradient(180deg,#fff 0%,#fcfdff 100%);
   box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px rgba(15,23,42,.055);
@@ -30,7 +30,7 @@
 }
 
 #panel-tasks .pblock-head .pn{
-  font-size:13.5px;
+  font-size:14px;
   color:#202636;
 }
 
@@ -42,7 +42,7 @@
   background:#f1f4f8;
   color:#718095;
   font-size:11px;
-  font-weight:750;
+  font-weight:700;
 }
 
 #panel-tasks .sopnew{
@@ -53,7 +53,7 @@
   margin-bottom:9px;
   padding-bottom:8px;
   border-bottom-color:#eef2f6;
-  font-size:10.5px;
+  font-size:11px;
   letter-spacing:0;
   color:#7b8798;
 }
@@ -65,7 +65,7 @@
   justify-content:center;
   padding:10px!important;
   border:1px dashed #d9e0ec;
-  border-radius:8px;
+  border-radius:var(--radius);
   background:#fbfcfe;
   color:#9aa4b5!important;
 }
@@ -73,11 +73,11 @@
 #panel-tasks .add-task{
   min-height:36px;
   margin-top:8px;
-  border-radius:8px;
+  border-radius:var(--radius);
   border-color:#d7deea;
   background:#fbfcfe;
   font-size:12px;
-  font-weight:750;
+  font-weight:700;
 }
 
 body.dark #panel-tasks .pblock,
@@ -106,7 +106,7 @@ body.dark #panel-tasks .kcount{
   min-width: 0;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
 }
@@ -128,7 +128,7 @@ body.dark #panel-tasks .kcount{
 #panel-tasks .kcount {
   height: 22px;
   padding: 0 8px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f0f2f5;
   color: var(--text3);
   font-size: 12px;
@@ -159,7 +159,7 @@ body.dark #panel-tasks .kcount{
   min-height: 50px;
   padding: 10px !important;
   border: 1px dashed var(--border2);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #fafafa;
   color: var(--text3) !important;
   font-size: 12px !important;
@@ -169,7 +169,7 @@ body.dark #panel-tasks .kcount{
   min-height: 34px;
   margin-top: 8px;
   border: 1px dashed var(--border2);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   color: var(--text2);
   font-size: 13px;
@@ -193,7 +193,7 @@ body.dark #panel-tasks .kcount{
 #panel-tasks .banner {
   margin-bottom: 12px;
   padding: 10px 12px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   box-shadow: none;
 }
 

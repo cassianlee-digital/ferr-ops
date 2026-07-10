@@ -3,7 +3,7 @@
 #panel-review .acc-week {
   margin: 0 0 12px;
   border: 1px solid var(--report-border, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   overflow: hidden;
@@ -71,7 +71,7 @@
   margin: 0 0 12px;
   padding: 0;
   border: 1px solid #edf0f5;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
 }
 

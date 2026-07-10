@@ -17,14 +17,14 @@ body{
 .logo{border-bottom:1px solid #202838}
 .logo-text{color:#f6f8fb}.logo-text small{color:#7d889b}
 .logo{padding:16px 14px 15px;gap:12px}
-.logo-icon{width:42px;height:42px;border-radius:8px;padding:0;background:transparent;overflow:hidden;flex-shrink:0;box-shadow:0 10px 24px rgba(239,63,58,.22),0 0 0 1px rgba(255,255,255,.08)}
+.logo-icon{width:42px;height:42px;border-radius:var(--radius);padding:0;background:transparent;overflow:hidden;flex-shrink:0;box-shadow:0 10px 24px rgba(239,63,58,.22),0 0 0 1px rgba(255,255,255,.08)}
 .logo-icon img{display:block;width:100%;height:100%;object-fit:cover}
-.logo-text{font-size:14px;font-weight:850;letter-spacing:0;line-height:1.15}
-.logo-text small{font-size:10.5px;letter-spacing:0;margin-top:3px;color:#7d889b}
+.logo-text{font-size:14px;font-weight:700;letter-spacing:0;line-height:1.15}
+.logo-text small{font-size:11px;letter-spacing:0;margin-top:3px;color:#7d889b}
 .nav-label{color:#667287}
-.nav-item{color:#a5afc2;border-radius:8px;padding:8px 10px}
+.nav-item{color:#a5afc2;border-radius:var(--radius);padding:8px 10px}
 .nav-item:hover{background:#171e2b;color:#fff}
-.nav-item.active{background:#1f2a3d;color:#fff;font-weight:750;box-shadow:inset 3px 0 0 var(--primary)}
+.nav-item.active{background:#1f2a3d;color:#fff;font-weight:700;box-shadow:inset 3px 0 0 var(--primary)}
 .main{background:transparent}
 .topbar{
   min-height:64px;
@@ -34,30 +34,30 @@ body{
 }
 .content{padding:26px 30px 34px}
 .page-head{margin-bottom:18px}
-.page-title{font-size:20px;letter-spacing:0;font-weight:850}
+.page-title{font-size:20px;letter-spacing:0;font-weight:700}
 .page-sub{font-size:12px;color:var(--text3)}
 .metric-card,.person-card,.acc-week,.rv-col{
-  border-radius:8px;
+  border-radius:var(--radius);
   border:1px solid rgba(216,221,232,.92);
   box-shadow:var(--sh);
 }
 /* .card base (dead early pass: radius8/gradient/pad18) → components.css (block2). */
 .card:hover,.metric-card:hover,.person-card:hover{box-shadow:var(--sh-lift);transform:none}
 .card-head{min-height:28px;margin-bottom:14px}
-.card-title{font-size:13px;font-weight:850;letter-spacing:0}
+.card-title{font-size:13px;font-weight:700;letter-spacing:0}
 .card-sub,.sheet-tip,.sync-note{color:var(--text3)}
 .grid2,.grid3,.grid32,.metric-row{gap:16px;margin-bottom:16px}
 
 table.dt{
   border-collapse:separate;
   border-spacing:0;
-  font-size:12.5px;
+  font-size:13px;
 }
 table.dt th{
   background:#f8fafd;
   color:#8a95a8;
   font-size:11px;
-  font-weight:750;
+  font-weight:700;
   letter-spacing:0;
   text-transform:none;
   padding:11px 14px;
@@ -74,9 +74,9 @@ table.dt tbody tr:nth-child(even){background:rgba(248,250,253,.68)}
 table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
 
 .btn-primary,.btn-ghost,.btn-ai,.btn-mini,.theme-btn,.trange,.tgran,.cat-tab,.kw-pg,.kw-pg-size{
-  border-radius:8px;
+  border-radius:var(--radius);
   min-height:32px;
-  font-weight:750;
+  font-weight:700;
 }
 /* .btn-primary/.btn-ai base → components.css (block1). red-gradient pass removed. */
 .btn-ghost,.theme-btn,.trange,.tgran,.cat-tab,.kw-pg,.kw-pg-size{
@@ -93,7 +93,7 @@ table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
 .badge,.tagselect,.cache-tag{
   border-radius:999px;
   padding:3px 10px;
-  font-weight:750;
+  font-weight:700;
 }
 .b-gray{background:#eef1f6;color:#687386}
 .b-red{background:#fff1f0;color:#df3530}
@@ -106,7 +106,7 @@ table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
   padding:16px 18px;
   background:#fff;
 }
-.metric-num{font-size:26px;font-weight:850;letter-spacing:0}
+.metric-num{font-size:26px;font-weight:700;letter-spacing:0}
 .metric-lbl{color:#748096}
 
 
@@ -116,11 +116,11 @@ table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
   background:#edf1f6;
   border:1px solid var(--border);
   padding:4px;
-  border-radius:8px;
+  border-radius:var(--radius);
 }
 .subtab{
   border-bottom:none;
-  border-radius:6px;
+  border-radius:var(--radius);
   padding:8px 13px;
 }
 .subtab.active{
@@ -142,7 +142,7 @@ table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
   min-height:36px;
   background:#fff;
   border-color:#dfe4ee;
-  border-radius:8px;
+  border-radius:var(--radius);
   box-shadow:0 1px 1px rgba(17,24,39,.03);
 }
 .fld input:focus,.fld select:focus,.fld textarea:focus,input.cell-date:focus{
@@ -150,9 +150,9 @@ table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
   border-color:#9fb2d0;
   box-shadow:0 0 0 3px rgba(47,114,232,.12);
 }
-.modal{border-radius:8px}
+.modal{border-radius:var(--radius)}
 .modal-head,.modal-foot{background:#fbfcfe}
-.banner{border-radius:8px}
+.banner{border-radius:var(--radius)}
 
 body.dark .sidebar{background:#080b10;border-right-color:#1b2230}
 body.dark .topbar{background:rgba(8,11,16,.82);border-bottom-color:#1b2230}
@@ -186,21 +186,21 @@ body.dark .editable[data-kpi],body.dark .fld input,body.dark .fld select,body.da
 .logo-icon{
   width:44px;
   height:44px;
-  border-radius:8px;
+  border-radius:var(--radius);
 }
 .logo-text{
-  font-size:14.5px;
-  font-weight:850;
+  font-size:15px;
+  font-weight:700;
 }
 .logo-text small{
-  font-size:10.5px;
+  font-size:11px;
   color:#808ba0;
 }
 .nav-section{padding:12px 12px 4px}
 .nav-label{
   margin:0 0 7px 2px;
   font-size:10px;
-  font-weight:800;
+  font-weight:700;
   letter-spacing:0;
   color:#6b768a;
 }
@@ -208,9 +208,9 @@ body.dark .editable[data-kpi],body.dark .fld input,body.dark .fld select,body.da
   min-height:38px;
   padding:0 11px;
   gap:10px;
-  border-radius:8px;
+  border-radius:var(--radius);
   font-size:13px;
-  font-weight:650;
+  font-weight:600;
 }
 .nav-item i{
   width:20px;
@@ -246,12 +246,12 @@ body.dark .editable[data-kpi],body.dark .fld input,body.dark .fld select,body.da
 .kpi-pill{
   min-height:34px;
   padding:0 12px;
-  border-radius:8px;
+  border-radius:var(--radius);
   background:rgba(255,255,255,.86);
   box-shadow:none;
 }
 .kpi-label{font-size:11px;color:#8a94a6}
-.kpi-val{font-size:12.5px;color:#202636}
+.kpi-val{font-size:13px;color:#202636}
 .content{
   padding:28px 32px 42px;
   max-width:1680px;
@@ -262,12 +262,12 @@ body.dark .editable[data-kpi],body.dark .fld input,body.dark .fld select,body.da
 }
 .page-title{
   font-size:22px;
-  font-weight:850;
+  font-weight:700;
   line-height:1.2;
 }
 .page-sub{
   margin-top:5px;
-  font-size:12.5px;
+  font-size:13px;
 }
 .metric-card,.person-card,.acc-week,.rv-col{
   border-radius:var(--radius);
@@ -280,17 +280,17 @@ body.dark .editable[data-kpi],body.dark .fld input,body.dark .fld select,body.da
   margin-bottom:15px;
 }
 .card-title{
-  font-size:13.5px;
-  font-weight:850;
+  font-size:14px;
+  font-weight:700;
   color:#202636;
 }
-.card-sub{font-size:11.5px}
+.card-sub{font-size:12px}
 .grid2,.grid3,.grid32,.metric-row{
   gap:18px;
   margin-bottom:18px;
 }
 table.dt{
-  font-size:12.5px;
+  font-size:13px;
   color:#222938;
 }
 table.dt th{
@@ -307,7 +307,7 @@ table.dt td{
 table.dt tbody tr:nth-child(even){background:#fafbfe}
 table.dt tbody tr:hover{background:#f5f8fc}
 .btn-primary,.btn-ghost,.btn-ai,.btn-mini,.theme-btn,.trange,.tgran,.cat-tab,.kw-pg,.kw-pg-size{
-  border-radius:8px;
+  border-radius:var(--radius);
   letter-spacing:0;
 }
 /* .btn-primary base box-shadow → components.css (block1, none). hover kept. */
@@ -329,7 +329,7 @@ table.dt tbody tr:hover{background:#f5f8fc}
 
 .gauge-score{
   font-size:32px;
-  font-weight:850;
+  font-weight:700;
 }
 .gauge-max{font-size:11px}
 
@@ -338,8 +338,8 @@ table.dt tbody tr:hover{background:#f5f8fc}
 
 
 .fld label{
-  font-size:11.5px;
-  font-weight:750;
+  font-size:12px;
+  font-weight:700;
   color:#7b8496;
 }
 .fld input,.fld select,.fld textarea,input.cell-date{
@@ -395,7 +395,7 @@ body.dark table.dt th{background:#121923}
 
 #sub-set-kpi table.dt{
   border:1px solid #edf1f6;
-  border-radius:8px;
+  border-radius:var(--radius);
   overflow:hidden;
 }
 
@@ -407,7 +407,7 @@ body.dark table.dt th{background:#121923}
   min-width:54px;
   min-height:30px;
   font-size:13px;
-  font-weight:750;
+  font-weight:700;
   background:#fbfcff;
   border-color:#d9e0ec;
 }
@@ -447,7 +447,7 @@ body.dark table.dt th{background:#121923}
   margin:0 0 10px!important;
   padding:10px 12px;
   border:1px solid #eef2f6;
-  border-radius:8px;
+  border-radius:var(--radius);
   background:#fbfcfe;
 }
 #integ-rows>div:not(.sheet-tip):not(.banner){
@@ -491,7 +491,7 @@ body.dark #integ-rows>.sheet-tip{
 
 
 .inq-feed-btn{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
-  border:1px solid var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;border-radius:8px;font-size:16px}
+  border:1px solid var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;border-radius:var(--radius);font-size:16px}
 .inq-feed-btn:hover{color:var(--primary);border-color:var(--primary)}
 
 /* 最新询盘表：容器内滚动（询盘多时下滑），表头吸顶，右侧留安全边距 */
@@ -508,7 +508,7 @@ body.dark #integ-rows>.sheet-tip{
   margin-bottom:14px!important;
   padding:10px 12px;
   border:1px solid #eef2f6;
-  border-radius:8px;
+  border-radius:var(--radius);
   background:#fbfcfe;
 }
 #panel-inquiry>div[style*="grid-template-columns"]{
@@ -524,7 +524,7 @@ body.dark #integ-rows>.sheet-tip{
 
 #inqGlobe-empty{
   border:1px dashed #d8deea;
-  border-radius:8px;
+  border-radius:var(--radius);
   background:#fbfcfe;
 }
 
@@ -549,7 +549,7 @@ body.dark #integ-rows>.sheet-tip{
 #panel-tasks .tcard{
   margin-bottom:8px;
   padding:11px 12px;
-  border-radius:8px;
+  border-radius:var(--radius);
   border:1px solid #e5eaf2;
   background:#fff;
   box-shadow:0 1px 1px rgba(15,23,42,.03);
@@ -578,7 +578,7 @@ body.dark #integ-rows>.sheet-tip{
 #panel-tasks .tcheck{
   width:17px;
   height:17px;
-  border-radius:6px;
+  border-radius:var(--radius);
   border-color:#cbd3df;
 }
 #panel-tasks .tmeta{
@@ -712,7 +712,7 @@ body.dark #panel-tasks .colcap{
   position:relative;
   width:100%;
   height:100%;
-  border-radius:8px;
+  border-radius:var(--radius);
   overflow:hidden;
   background:
     radial-gradient(circle at 74% 18%,rgba(49,130,206,.30),transparent 27%),
@@ -733,8 +733,8 @@ body.dark #panel-tasks .colcap{
 }
 .inq-map-head span{
   display:block;
-  font-size:9px;
-  font-weight:800;
+  font-size:10px;
+  font-weight:700;
   letter-spacing:.08em;
   color:#6fb7d7;
 }
@@ -753,7 +753,7 @@ body.dark #panel-tasks .colcap{
   background:rgba(7,16,30,.58);
   color:#a9c3d9;
   font-size:11px;
-  font-weight:750;
+  font-weight:700;
   backdrop-filter:blur(8px);
 }
 .inq-map-svg{
@@ -786,14 +786,14 @@ body.dark #panel-tasks .colcap{
   justify-content:center;
   gap:8px;
   border:1px dashed rgba(96,117,139,.30);
-  border-radius:8px;
+  border-radius:var(--radius);
   background:rgba(255,255,255,.45);
   color:#5d7187;
   text-align:center;
 }
 .inq-map-loading{
   font-size:13px;
-  font-weight:750;
+  font-weight:700;
 }
 .inq-map-error b{
   color:#172033;
@@ -861,7 +861,7 @@ body.dark #panel-tasks .colcap{
 .inq-dest-label{
   fill:#dceeff;
   font-size:11px;
-  font-weight:750;
+  font-weight:700;
   paint-order:stroke;
   stroke:#07111f;
   stroke-width:4;
@@ -883,7 +883,7 @@ body.dark #panel-tasks .colcap{
 .inq-qingdao text{
   fill:#e9fbff;
   font-size:13px;
-  font-weight:850;
+  font-weight:700;
   paint-order:stroke;
   stroke:#07111f;
   stroke-width:5;
@@ -907,7 +907,7 @@ body.dark #panel-tasks .colcap{
   min-height:34px;
   padding:7px 10px;
   border:1px solid rgba(125,211,252,.14);
-  border-radius:8px;
+  border-radius:var(--radius);
   background:rgba(7,16,30,.54);
   backdrop-filter:blur(9px);
 }
@@ -930,7 +930,7 @@ body.dark #panel-tasks .colcap{
   width:260px;
   padding:12px;
   border:1px solid rgba(125,211,252,.26);
-  border-radius:8px;
+  border-radius:var(--radius);
   background:rgba(8,18,33,.92);
   box-shadow:0 18px 42px rgba(0,0,0,.32);
   color:#dce9f6;
@@ -939,7 +939,7 @@ body.dark #panel-tasks .colcap{
 }
 .inq-map-tip-title{
   font-size:13px;
-  font-weight:850;
+  font-weight:700;
   color:#fff;
 }
 .inq-map-tip-stats{
@@ -953,8 +953,8 @@ body.dark #panel-tasks .colcap{
   border-radius:999px;
   background:rgba(99,230,255,.10);
   color:#aeeeff;
-  font-size:10.5px;
-  font-weight:750;
+  font-size:11px;
+  font-weight:700;
 }
 .inq-map-tip-meta{
   margin-top:8px;
@@ -983,14 +983,14 @@ body.dark #panel-tasks .colcap{
 .inq-map-tip-row em{
   margin-top:1px;
   color:#8296aa;
-  font-size:10.5px;
+  font-size:11px;
   font-style:normal;
 }
 .inq-map-tip-more{
   margin-top:9px;
   color:#9fd8ff;
   font-size:11px;
-  font-weight:750;
+  font-weight:700;
 }
 @keyframes inqRouteDash{
   to{stroke-dashoffset:-34}
@@ -1082,7 +1082,7 @@ body.dark #panel-tasks .colcap{
 .inq-continent-label,
 .inq-map-ocean-label{
   font-size:13px;
-  font-weight:850;
+  font-weight:700;
   letter-spacing:.02em;
   pointer-events:none;
 }
@@ -1208,7 +1208,7 @@ body {
 .logo-icon {
   width: 32px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: #ff4d00;
   box-shadow: none;
 }
@@ -1304,7 +1304,7 @@ body {
   min-height: 32px;
   padding: 0 12px;
   border: 1px solid var(--border2);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   color: var(--text2);
@@ -1377,7 +1377,7 @@ body {
 .settings-panel,
 .settings-sidenav {
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
 }
@@ -1446,7 +1446,7 @@ input.cell-date,
   min-height: 32px;
   padding: 5px 11px;
   border: 1px solid var(--border2);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   color: var(--text1);
   font-size: 14px;
@@ -1561,7 +1561,7 @@ table.dt tbody tr:nth-child(even):hover {
 
 .badge {
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
 }
@@ -1589,7 +1589,7 @@ table.dt tbody tr:nth-child(even):hover {
 .banner,
 .sheet-tip {
   border: 1px solid #d9ecff;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f5fbff;
   box-shadow: none;
   color: var(--text2);
@@ -1602,7 +1602,7 @@ table.dt tbody tr:nth-child(even):hover {
 
 .modal {
   border: 1px solid var(--border2);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .16);
 }
@@ -1686,7 +1686,7 @@ table.dt tbody tr:nth-child(even):hover {
   min-width: 0;
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
 }
 
@@ -1743,7 +1743,7 @@ table.dt tbody tr:nth-child(even):hover {
   padding: 14px 16px;
   border: 1px solid #d9ecff;
   border-left: 3px solid var(--primary);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f5fbff;
   box-shadow: none;
 }
@@ -1799,7 +1799,7 @@ table.dt tbody tr:nth-child(even):hover {
 .aibtn {
   min-height: 24px;
   padding: 0 8px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
 }
 
@@ -1826,7 +1826,7 @@ table.dt tbody tr:nth-child(even):hover {
   padding: 10px 11px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--primary);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
 }
@@ -1850,7 +1850,7 @@ table.dt tbody tr:nth-child(even):hover {
 #panel-tasks .tcheck {
   width: 16px;
   height: 16px;
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 
@@ -1866,7 +1866,7 @@ table.dt tbody tr:nth-child(even):hover {
   margin-bottom: 12px !important;
   padding: 0 10px;
   border: 1px solid #d9ecff;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f5fbff;
 }
 
@@ -1887,7 +1887,7 @@ table.dt tbody tr:nth-child(even):hover {
 #panel-fix .track-cell,
 #panel-fix input.cell-date,
 #panel-fix .tagselect {
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
 }
 
@@ -1926,7 +1926,7 @@ table.dt td.editable:focus,
 .editable[data-kpi]:focus {
   background: #ffffff;
   border-color: var(--primary);
-  border-radius: 2px;
+  border-radius: var(--radius);
   box-shadow: inset 0 -2px 0 var(--primary);
 }
 
@@ -2060,7 +2060,7 @@ table.dt td.editable:focus,
   min-height: 22px;
   padding: 0 8px;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff !important;
   box-shadow: none;
   font-size: 12px;
@@ -2089,12 +2089,12 @@ table.dt td.editable:focus,
 }
 
 #selMenu {
-  border-radius: 2px;
+  border-radius: var(--radius);
   box-shadow: 0 8px 20px rgba(31, 35, 41, .14);
 }
 
 #selMenu .opt {
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .badge {
@@ -2103,7 +2103,7 @@ table.dt td.editable:focus,
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   line-height: 1;
 }
 
@@ -2160,7 +2160,7 @@ table.dt td.editable:focus,
   min-width: 42px;
   min-height: 24px;
   padding: 0 8px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   font-size: 13px;
 }
@@ -2171,7 +2171,7 @@ table.dt td.editable:focus,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .modal-head .x:hover {
@@ -2180,7 +2180,7 @@ table.dt td.editable:focus,
 }
 
 #toast {
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   box-shadow: 0 8px 20px rgba(31, 35, 41, .18) !important;
 }
 
@@ -2295,7 +2295,7 @@ table.dt td.editable:focus,
   margin-left: auto;
   padding: 2px 6px;
   border: 1px solid #b7e2d0;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f6fffb;
   color: var(--green);
   font-size: 12px;
@@ -2401,7 +2401,7 @@ table.dt td.editable:focus,
   gap: 0;
   padding: 0;
   border-color: var(--work-border);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   overflow: hidden;
@@ -2443,7 +2443,7 @@ table.dt td.editable:focus,
   margin-left: auto;
   padding: 2px 8px;
   border: 1px solid #d7e6ff;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f5f9ff;
   color: var(--work-blue);
   font-size: 12px;
@@ -2462,7 +2462,7 @@ table.dt td.editable:focus,
   min-width: 24px;
   height: 22px;
   padding: 0 7px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 500;
 }
@@ -2480,7 +2480,7 @@ table.dt td.editable:focus,
 #panel-test .btn-primary {
   height: 30px;
   padding: 0 12px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 13px;
   font-weight: 400;
 }
@@ -2641,7 +2641,7 @@ table.dt td.editable:focus,
   height: 28px;
   padding: 0 9px;
   border: 1px solid #d7e6ff;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   color: var(--work-blue);
   font-size: 12px;
@@ -2734,7 +2734,7 @@ table.dt td.editable:focus,
   min-height: 34px;
   padding: 0 12px;
   border: 1px solid #d7e6ff;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f5f9ff;
   color: #4e5969;
   font-size: 12px;
@@ -2751,7 +2751,7 @@ table.dt td.editable:focus,
 #panel-data .card,
 #panel-data .metric-card {
   border: 1px solid var(--report-border);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
 }
@@ -2935,14 +2935,14 @@ table.dt td.editable:focus,
 #panel-data table.dt .btn-mini {
   min-height: 28px;
   padding: 0 9px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
 }
 
 #panel-data .badge {
   min-height: 22px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
 }
@@ -3157,7 +3157,7 @@ table.dt td.editable:focus,
 #panel-deposit .page-head .btn-primary {
   min-height: 32px;
   padding: 0 12px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 13px;
   font-weight: 400;
   box-shadow: none;
@@ -3223,7 +3223,7 @@ table.dt td.editable:focus,
 
 #panel-review .rv-list .txt:focus {
   padding: 4px 6px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: inset 0 0 0 1px var(--report-blue, #1677ff);
 }
@@ -3234,7 +3234,7 @@ table.dt td.editable:focus,
   height: 24px;
   padding: 0 8px;
   border: 1px solid #cfe0ff;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f7fbff;
   color: var(--report-blue, #1677ff);
   font-size: 12px;
@@ -3260,7 +3260,7 @@ table.dt td.editable:focus,
 #panel-deposit > .card {
   padding: 0;
   border: 1px solid var(--report-border, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   overflow-x: auto;
@@ -3424,7 +3424,7 @@ table.dt td.editable:focus,
   width: 36px;
   height: 36px;
   border: 1px solid #e5e8ef;
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: #ffffff;
   color: #4e5969;
   box-shadow: 0 6px 18px rgba(31, 35, 41, .08);
@@ -3475,7 +3475,7 @@ table.dt td.editable:focus,
   max-width: calc(100vw - 24px);
   max-height: calc(100vh - 24px);
   border: 1px solid #e6eaf2;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: 0 24px 70px rgba(15, 23, 42, .14);
   opacity: 0;
@@ -3520,7 +3520,7 @@ table.dt td.editable:focus,
   width: 34px;
   height: 34px;
   border: 1px solid #d9e7ff;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: #f5f9ff;
   color: #2f6df6;
   flex-shrink: 0;
@@ -3552,7 +3552,7 @@ table.dt td.editable:focus,
   height: 30px;
   margin-left: auto;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: transparent;
   color: #687386;
   cursor: pointer;
@@ -3593,7 +3593,7 @@ table.dt td.editable:focus,
   flex: 1;
   padding: 0 12px;
   border: 1px solid #e8eef8;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: rgba(255, 255, 255, .92);
   color: #6b7280;
   font-size: 12px;
@@ -3606,7 +3606,7 @@ table.dt td.editable:focus,
   max-width: 220px;
   padding: 0 12px;
   border: 1px solid #e8eef8;
-  border-radius: 8px;
+  border-radius: var(--radius);
   color: #4b5563;
   background: rgba(255, 255, 255, .92);
   font-size: 12px;
@@ -3647,7 +3647,7 @@ table.dt td.editable:focus,
   width: min(560px, 100%);
   padding: 30px 34px;
   border: 1px solid #e6eaf2;
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: rgba(255, 255, 255, .94);
   box-shadow: 0 18px 48px rgba(30, 64, 175, .08);
   text-align: left;
@@ -3669,7 +3669,7 @@ table.dt td.editable:focus,
   height: 46px;
   margin-right: 14px;
   border: 1px solid #d9e7ff;
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: linear-gradient(180deg, #f5f9ff 0%, #eef5ff 100%);
   color: #2f6df6;
   font-size: 15px;
@@ -3690,7 +3690,7 @@ table.dt td.editable:focus,
   min-height: 0;
   flex: 1;
   border: 1px solid #e8eef8;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: #ffffff;
   overflow: hidden;
 }
@@ -3728,7 +3728,7 @@ table.dt td.editable:focus,
 .hermes-foot .btn-primary {
   min-height: 34px;
   padding: 0 14px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-size: 13px;
   font-weight: 500;
 }
@@ -3869,7 +3869,7 @@ body.dark .hermes-identity {
   margin: 0;
   padding: 0;
   border: 1px solid var(--report-border, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   overflow: hidden;
@@ -3924,7 +3924,7 @@ body.dark .hermes-identity {
 #panel-archive .badge,
 #panel-ga4 .badge {
   min-height: 22px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
 }
@@ -3956,7 +3956,7 @@ body.dark .hermes-identity {
   margin: 14px 20px 10px !important;
   padding: 9px 12px;
   border: 1px solid #dbeafe;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f7fbff;
   color: #4e5969;
   font-size: 12px;
@@ -4058,7 +4058,7 @@ body {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -4103,7 +4103,7 @@ body {
   min-height: 30px;
   padding: 0 10px;
   border: 0 !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   background: #f7f8fa !important;
   box-shadow: none !important;
 }
@@ -4132,7 +4132,7 @@ body {
 .acc-week,
 .rv-col {
   border-color: var(--ui-line) !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   box-shadow: none !important;
 }
 
@@ -4197,7 +4197,7 @@ table.dt td {
 
 .btn-primary,
 .btn-ai {
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   box-shadow: none !important;
   font-weight: 400 !important;
 }
@@ -4206,7 +4206,7 @@ table.dt td {
 .tagselect,
 .cache-tag,
 .grade-badge {
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   box-shadow: none !important;
   font-weight: 400 !important;
   letter-spacing: 0 !important;
@@ -4417,7 +4417,7 @@ body.dark .dim {
 .content.planning-composite #panel-review {
   margin: 0;
   border: 1px solid var(--ui-line, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff !important;
   overflow: hidden;
 }
@@ -4518,7 +4518,7 @@ body.dark .content.planning-composite #panel-review::before {
   display: block;
   margin: 0;
   border: 1px solid var(--ui-line, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
 }
 
@@ -4605,7 +4605,7 @@ body.dark .content.planning-composite #panel-review::before {
   display: none !important;
   margin: 0;
   border: 1px solid var(--ui-line, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff !important;
   box-shadow: none;
   overflow: hidden;
@@ -4646,7 +4646,7 @@ body.dark .content.planning-composite #panel-review::before {
 #panel-month-review .acc-week {
   margin: 0 0 12px;
   border: 1px solid var(--report-border, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   overflow: hidden;
@@ -4714,7 +4714,7 @@ body.dark .content.planning-composite #panel-review::before {
   margin: 0 0 12px;
   padding: 0;
   border: 1px solid #edf0f5;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
 }
 
@@ -4839,7 +4839,7 @@ body.dark .planning-tab.active {
   display: block;
   margin: 0;
   border: 1px solid var(--ui-line, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
 }
 
@@ -4912,7 +4912,7 @@ body.dark .planning-tab.active {
   display: none !important;
   margin: 0;
   border: 1px solid var(--ui-line, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff !important;
   box-shadow: none;
   overflow: hidden;
@@ -5635,7 +5635,7 @@ body.dark #panel-data .minitabs {
   justify-content: center;
   min-height: 22px;
   padding: 0 8px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
@@ -5647,7 +5647,7 @@ body.dark #panel-data .minitabs {
 #panel-keywords .kw-pg-size,
 #panel-archive .btn-mini {
   min-height: 28px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
 }
@@ -5750,7 +5750,7 @@ body.dark #panel-archive .subtab {
 #panel-inquiry table.dt .badge,
 #panel-inquiry table.dt .tagselect {
   min-height: 22px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
   white-space: nowrap;
@@ -5800,7 +5800,7 @@ body.dark #panel-archive .subtab {
 .inq-map-total {
   min-height: 28px;
   padding: 6px 12px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 500;
 }
@@ -5814,7 +5814,7 @@ body.dark #panel-archive .subtab {
 
 .inq-map-panel div {
   min-height: 34px;
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 .inq-map-panel b {
@@ -5823,7 +5823,7 @@ body.dark #panel-archive .subtab {
 }
 
 .inq-map-tip {
-  border-radius: 2px;
+  border-radius: var(--radius);
 }
 
 
@@ -5966,7 +5966,7 @@ body.dark #panel-archive .subtab {
 .rail-btn {
   width: 34px;
   height: 34px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   box-shadow: none;
 }
 
@@ -6205,7 +6205,7 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 .modal {
   width: min(560px, 100%) !important;
   border: 1px solid #dfe3eb !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   background: #ffffff !important;
   box-shadow: 0 12px 32px rgba(31, 35, 41, .16) !important;
 }
@@ -6230,7 +6230,7 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   color: #86909c !important;
   font-size: 18px;
   line-height: 1;
@@ -6261,7 +6261,7 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 .modal-foot button {
   min-height: 32px;
   padding: 0 13px;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   font-size: 13px;
   font-weight: 400;
   white-space: nowrap;
@@ -6298,7 +6298,7 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 .modal textarea {
   min-height: 34px;
   border: 1px solid #dfe3eb !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   background: #ffffff !important;
   color: #1f2329 !important;
   font-size: 13px !important;
@@ -6358,7 +6358,7 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 }
 
 .ai-chat-item .bubble {
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   box-shadow: none !important;
 }
 
@@ -6371,25 +6371,25 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 .ai-chat-item.user { justify-content: flex-end; }
 .ai-chat-item.user .bubble { max-width: 78%; padding: 11px 14px !important; }
 .ai-render p { margin: 0 0 9px; }
-.ai-render h2, .ai-render h3, .ai-render h4 { margin: 15px 0 7px; font-size: 13.5px; }
+.ai-render h2, .ai-render h3, .ai-render h4 { margin: 15px 0 7px; font-size: 14px; }
 .ai-render ul, .ai-render ol { margin: 0 0 9px; padding-left: 20px; }
 .ai-render li { margin-bottom: 4px; }
 /* AI 历史时间线 */
 .ai-timeline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 .ai-tl-label { font-size: 11px; color: var(--text3); margin-right: 4px; }
-.ai-tl-chip { border: 1px solid var(--border2); background: var(--bg2); border-radius: 14px; padding: 3px 10px; font-size: 11px; color: var(--text2); cursor: pointer; }
+.ai-tl-chip { border: 1px solid var(--border2); background: var(--bg2); border-radius: var(--radius); padding: 3px 10px; font-size: 11px; color: var(--text2); cursor: pointer; }
 .ai-tl-chip:hover { border-color: var(--primary); }
 .ai-tl-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 .ai-snap-note { font-size: 11px; margin-bottom: 8px; }
 /* AI 追问输入框：占满整行（原默认 ~20 列窄框），更舒展 */
 #aiChatInput { width: 100%; box-sizing: border-box; min-height: 76px !important; max-height: 168px; padding: 10px 12px !important; line-height: 1.6; }
 /* AI 拆解出的可采纳整改动作 */
-.ai-actions-list { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; background: var(--bg2); }
+.ai-actions-list { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 14px; background: var(--bg2); }
 .ai-actions-h { font-weight: 700; font-size: 12px; margin-bottom: 8px; }
 .ai-action-row { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-top: 1px solid var(--border); }
 .ai-action-row:first-of-type { border-top: 0; }
 .ai-action-main { flex: 1; min-width: 0; }
-.ai-action-t { font-size: 12.5px; color: var(--text1); font-weight: 600; }
+.ai-action-t { font-size: 13px; color: var(--text1); font-weight: 600; }
 .ai-action-d { font-size: 12px; color: var(--text2); margin-top: 2px; }
 .ai-action-e { font-size: 11px; margin-top: 2px; }
 /* SEO 富看板：两列网格 + 本周要点条 */
@@ -6403,11 +6403,11 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
 /* 询盘归因卡 */
 .attr-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 @media (max-width: 760px) { .attr-kpis { grid-template-columns: repeat(2, 1fr); } }
-.attr-kpi { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--bg2); }
+.attr-kpi { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; background: var(--bg2); }
 .attr-kpi.hl { border-color: rgba(123,84,224,.4); background: rgba(123,84,224,.06); }
-.attr-num { font-size: 22px; font-weight: 800; color: var(--text1); }
-.attr-lbl { font-size: 11.5px; color: var(--text3); margin-top: 2px; }
-.attr-warn { margin-top: 12px; padding: 9px 12px; border-radius: 8px; background: rgba(229,72,77,.08); border: 1px solid rgba(229,72,77,.22); color: #c93338; font-size: 12px; }
+.attr-num { font-size: 22px; font-weight: 700; color: var(--text1); }
+.attr-lbl { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.attr-warn { margin-top: 12px; padding: 9px 12px; border-radius: var(--radius); background: rgba(229,72,77,.08); border: 1px solid rgba(229,72,77,.22); color: #c93338; font-size: 12px; }
 .attr-ch-row { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 12px; }
 .attr-ch-t { color: var(--text3); }
 .attr-ch b { color: var(--text1); }
@@ -6438,7 +6438,7 @@ body.dark #panel-ga4 table.dt tbody tr:hover td {
   max-width: min(560px, calc(100vw - 32px)) !important;
   padding: 10px 14px !important;
   border: 1px solid #dfe3eb !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   background: #1f2329 !important;
   color: #ffffff !important;
   font-size: 13px !important;
@@ -6544,7 +6544,7 @@ body.dark .modal textarea {
 .aibtn {
   min-height: 30px !important;
   border: 1px solid #dfe3eb !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   background: #ffffff !important;
   color: #4e5969 !important;
   font-size: 12px !important;
@@ -6621,7 +6621,7 @@ body.dark .modal textarea {
   gap: 6px;
   padding: 0 10px !important;
   border: 1px solid #e5e8ef !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   background: #fbfcfe !important;
   line-height: 1.4 !important;
 }
@@ -6636,7 +6636,7 @@ body.dark .modal textarea {
   justify-content: center;
   gap: 4px;
   padding: 0 8px !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   font-size: 12px !important;
   font-weight: 400 !important;
   line-height: 1 !important;
@@ -6655,7 +6655,7 @@ input.cell-date {
   min-height: 30px !important;
   padding: 0 8px !important;
   border: 1px solid #dfe3eb !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   background: #ffffff !important;
   color: #1f2329 !important;
   font-size: 12px !important;
@@ -6873,7 +6873,7 @@ body.dark input.cell-date:focus {
   gap: 6px;
   padding: 26px 18px !important;
   border: 1px dashed #dfe3eb !important;
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   background: #fbfcfe !important;
   color: #86909c !important;
   font-size: 13px !important;
@@ -6898,7 +6898,7 @@ body.dark input.cell-date:focus {
 
 .sheet-tip,
 .banner {
-  border-radius: 2px !important;
+  border-radius: var(--radius) !important;
   box-shadow: none !important;
 }
 
@@ -7402,13 +7402,13 @@ body.dark .content.action-composite #panel-fix .ai-box {
 
 /* ============================================================
    数据看板优化 7.1 · 阶段1 视觉基线（追加覆盖：靠源顺序 + 必要处 !important）
-   ① 全站 radius=0（仅矩形框；状态点/甜甜圈/开关/头像等圆形不列入）
+   ① 全站 radius=var(--radius)（仅矩形框；状态点/甜甜圈/开关/头像等圆形不列入）
    ② 去彩色框线（中性化上轮加的琥珀/紫左条与询盘归因高亮框；语义涨跌chip/警示保留颜色）
    ③ 两级 TAB 层级：一级=下划线主级、二级=托盘内分段（视觉上从属含于一级）
    全部用主题变量，暗色模式安全。
    ============================================================ */
 
-/* ① 全站直角 —— 明确列举矩形框，避免误伤圆形元素 */
+/* ① 全站统一 radius=var(--radius) —— 明确列举矩形框，避免误伤圆形元素 */
 .card, .metric-card, .ai-box, .ai-render, .ai-item, .seo-hl, .seo-hl-chip,
 .attr-kpi, .attr-warn, .attr-ch, .badge, .b-red, .b-green, .b-amber, .b-purple, .b-blue, .b-gray,
 .btn-primary, .btn-ghost, .btn-ai, .btn-mini, .aibtn, .cache-tag,
@@ -7416,7 +7416,7 @@ body.dark .content.action-composite #panel-fix .ai-box {
 .dt, .dt th, .dt td, table, input, select, textarea, .chart-wrap,
 .tcard, .banner-red, .kw-pg, .cat-tab, .loopstep, .theme-btn,
 .modal, .box, .attr-body, .hero-card {
-  border-radius: 0 !important;
+  border-radius: var(--radius) !important;
 }
 
 /* ② 去彩色框线：中性化上轮加的左条 accent 与询盘归因高亮框；保留中性描边 */

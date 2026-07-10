@@ -37,7 +37,7 @@
 
 #panel-dashboard .card {
   border: 1px solid #e5e8ef;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   overflow: hidden;
@@ -100,7 +100,7 @@
   min-height: 58px;
   padding: 10px;
   border: 1px solid #eef1f5;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #fbfcfe;
 }
 
@@ -149,7 +149,7 @@
   padding: 0;
   border: 1px solid #e5e8ef;
   border-left: 0;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
 }

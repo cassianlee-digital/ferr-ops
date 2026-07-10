@@ -13,7 +13,7 @@
   min-height:32px;
   padding:0 14px;
   border:1px solid #1677ff;
-  border-radius:0;
+  border-radius:var(--radius);
   background:#1677ff;
   color:#fff;
   font-family:Arial;
@@ -32,7 +32,7 @@
   min-height:32px;
   padding:0 12px;
   border:1px solid transparent;
-  border-radius:0;
+  border-radius:var(--radius);
   background:transparent;
   color:#1677ff;
   font-family:Arial;
@@ -51,7 +51,7 @@
   min-height:32px;
   padding:0 10px;
   border:1px solid #cfe0ff;
-  border-radius:0;
+  border-radius:var(--radius);
   background:#f7fbff;
   color:#1677ff;
   font-family:Arial;
@@ -71,7 +71,7 @@
 .card{
   background:var(--bg2);
   border:1px solid var(--border);
-  border-radius:0;
+  border-radius:var(--radius);
   padding:16px 18px;
   box-shadow:none;
   transition:box-shadow .2s, transform .2s;
@@ -84,7 +84,7 @@
 table.dt{width:100%;table-layout:fixed;font-size:13px}
 table.dt th{
   padding:0 12px;
-  color:#4e5969;
+  color:var(--text2);
   font-weight:500;
   font-size:12px;
   line-height:1.5;
@@ -92,9 +92,9 @@ table.dt th{
   letter-spacing:normal;
   text-align:left;
   vertical-align:middle;
-  background:#f7f8fa;
-  border-bottom:1px solid #e5e6eb;
-  border-right:1px solid #e5e6eb;
+  background:var(--bg3);
+  border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border);
   white-space:nowrap;
 }
 table.dt th.ctr{text-align:center}
@@ -102,11 +102,11 @@ table.dt th.num{text-align:right}
 table.dt th:last-child{border-right:0}
 table.dt td{
   padding:10px 12px;
-  color:#1f2329;
+  color:var(--text1);
   font-size:13px;
   line-height:1.55;
   vertical-align:middle;
-  border-bottom:1px solid #edf0f5;
+  border-bottom:1px solid var(--ui-line-soft);
   white-space:normal;
   overflow-wrap:anywhere;
   word-break:break-word;
@@ -124,7 +124,7 @@ table.dt td.num{text-align:right}
   min-height:22px;
   padding:0 8px;
   border:1px solid transparent;
-  border-radius:0;
+  border-radius:var(--radius);
   font-size:12px;
   font-weight:400;
   line-height:1;

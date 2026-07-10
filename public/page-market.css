@@ -33,7 +33,7 @@
 #panel-market #brainStatus {
   min-height: 24px;
   padding: 0 8px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
 }
@@ -41,7 +41,7 @@
 #panel-market .page-head .btn-primary {
   min-height: 32px;
   padding: 0 12px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 13px;
   font-weight: 400;
   box-shadow: none;
@@ -54,7 +54,7 @@
   margin: 0 20px 14px;
   padding: 11px 12px;
   border: 1px solid #cfe0ff;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #f7fbff;
   box-shadow: none;
 }
@@ -91,7 +91,7 @@
   margin: 0 20px 14px;
   padding: 0;
   border: 1px solid var(--report-border, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   overflow: hidden;

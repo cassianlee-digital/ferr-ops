@@ -19,7 +19,7 @@
 #totalRows>div>div:first-child>div:first-child,
 #seoRows>div>div:first-child>div:first-child,
 #semRows>div>div:first-child>div:first-child{
-  font-weight:750!important;
+  font-weight:700!important;
   color:#202636;
 }
 
@@ -27,7 +27,7 @@
 #seoRows>div>div:first-child>div:last-child,
 #semRows>div>div:first-child>div:last-child{
   margin-top:2px;
-  font-size:10.5px!important;
+  font-size:11px!important;
 }
 
 #panel-kpi .gauge{
@@ -53,7 +53,7 @@
 #panel-data .page-head .btn-ghost {
   height: 32px;
   padding: 0 12px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   color: #4e5969;
   font-size: 13px;
@@ -109,7 +109,7 @@
   min-height: 24px;
   margin: 8px auto 0 !important;
   padding: 3px 10px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 500;
 }

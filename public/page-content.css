@@ -45,7 +45,7 @@
 #panel-deposit .badge,
 #panel-deposit .tagselect {
   min-height: 22px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
 }

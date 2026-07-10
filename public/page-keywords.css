@@ -84,7 +84,7 @@
 #panel-keywords .btn-ai {
   min-height: 32px;
   padding: 0 12px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 13px;
   font-weight: 400;
   box-shadow: none;
@@ -105,7 +105,7 @@
   margin: 0;
   padding: 0;
   border: 1px solid var(--report-border, #e5e6eb);
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
   overflow-x: auto;
@@ -165,7 +165,7 @@
 
 #panel-keywords td.editable {
   min-width: 90px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   outline: 0;
 }
 
@@ -173,7 +173,7 @@
 #panel-keywords .badge {
   min-height: 22px;
   padding: 0 8px;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 400;
   line-height: 22px;
@@ -196,7 +196,7 @@
   height: 28px;
   padding: 0 10px;
   border: 1px solid transparent;
-  border-radius: 2px;
+  border-radius: var(--radius);
   color: #4e5969;
   font-size: 12px;
   white-space: nowrap;
