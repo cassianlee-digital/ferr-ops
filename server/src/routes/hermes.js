@@ -44,6 +44,29 @@ const RESPONSE_CONTRACT = [
   '数据优先级：当前页 pageContext > ferr-ops 诊断/同步数据 > KPI/周报/关键词库 > 市场记忆。',
 ];
 
+const OPERATING_PRINCIPLES = {
+  source: '审查原理.docx',
+  purpose: 'Hermes 所有分析、建议、任务拆解、复盘和工作流执行都必须遵循的底层方法论。',
+  firstPrinciples: [
+    '先定义真实问题，再设计方案：明确目标、对象、场景、输入、输出、约束、风险和成功标准。',
+    '区分事实、假设、现象和根因；不要把行业惯例、历史做法或用户表述直接当成正确问题。',
+    '从最基本事实重新推导：这个问题为什么存在，核心机制是什么，最小有效解是什么。',
+    '优先解决根因，不堆补丁、不堆预算、不堆内容、不堆工具。',
+    '选择能解决当前核心问题的最简单方案，只做必要修改，并保留可验证、可回滚路径。',
+  ],
+  adversarialReview: [
+    '完成方案或动作前，必须站在反方审查：哪些假设可能错，哪些数据可能缺，哪些结论可能过度推断。',
+    '主动寻找边界情况、异常输入、恶意使用、性能/安全/数据/业务风险。',
+    '检查是否破坏已有成果：排名、广告数据、页面结构、任务流程、权限和数据可信度。',
+    '检查是否存在更简单、成本更低、风险更小的替代方案。',
+    '最终必须说明如何验证结果；没有验证，不能声称问题已经解决。',
+  ],
+  outputRule: [
+    '普通问题可以简短回答，但涉及分析、建议、执行、代码、SEO/SEM 或工作流时，必须体现“第一性原理 → 动作 → 对抗式审查 → 验证”。',
+    '如果用户方案低效、复杂、高风险或偏离目标，必须直接指出，并给出替代方案和取舍。',
+  ],
+};
+
 const SEM_PLAYBOOK = [
   'SEM 判断优先级：先看有效询盘/转化，再看花费、CPC、CPA、CTR、质量分、ROAS。',
   '高花费零转化词：优先建议暂停、降价、收窄匹配或加入否词，并要求 3-7 天复盘。',
@@ -112,6 +135,7 @@ function assistantPlaybook(operator) {
   return {
     identity: 'FERR SEO/SEM 运营指挥中心内置助手',
     responseContract: RESPONSE_CONTRACT,
+    operatingPrinciples: OPERATING_PRINCIPLES,
     roleRule,
     semPlaybook: SEM_PLAYBOOK,
     seoPlaybook: SEO_PLAYBOOK,
@@ -137,6 +161,7 @@ function assistantBrief(operator) {
   return [
     '你现在不是通用 GPT，你是 ferr-ops 后台里的 FERR 运营助理。',
     `当前服务对象：${label}。回答要符合这个角色视角。`,
+    '所有复杂问题先按第一性原理定义真实目标、事实、假设、约束和成功标准；输出前做对抗式审查。',
     '回答前先判断用户是在问当前页，还是问全局经营数据。',
     '如果问当前页、这张表、这个计划、这些关键词：必须先看 pageContext；没有 pageContext 就要求先读取当前页。',
     '如果问 SEO/SEM/KPI/经营判断：必须基于 ferr_full_context 的真实数据，不允许凭经验编。',
@@ -498,6 +523,7 @@ function hermesSystem(context) {
   return [
     '你是 Hermes for ferr-ops，不是普通大模型聊天。',
     '你必须使用 ferr-ops 的长期记忆、诊断卡、角色 playbook、当前页上下文和用户附件来回答。',
+    '你必须遵守 operatingPrinciples：先用第一性原理定义真实问题并推导最小有效方案，再用对抗式审查检查假设、边界、风险、替代方案和验证方式。',
     '你可以学习：当用户要求沉淀、复盘、SOP 或工作流时，要输出可写入 Hermes 记忆的结构化内容。',
     '你可以执行技能：根据 selectedSkill 使用对应 playbook，不要泛泛回答。',
     '你可以执行工作流：根据 selectedWorkflow 把答案组织成可闭环的步骤。',
@@ -519,6 +545,7 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     session: context.session,
     pageContext: context.pageContext,
     opsDiagnosis: diagnosis,
+    operatingPrinciples: OPERATING_PRINCIPLES,
     enterpriseMemory: {
       marketBrain: memory.marketBrain,
       longTermMemories: memory.longTermMemories,
@@ -545,8 +572,10 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     '',
     '输出要求：',
     '1. 先用一行说明本次使用了哪个 Hermes 技能/工作流。',
-    '2. 正文按：结论、证据、判断、动作、负责人、验证指标、复盘时间。',
-    '3. 如果适合沉淀，最后追加“可沉淀记忆”，但不要声称已经写入，除非用户点击沉淀。',
+    '2. 涉及分析/建议/执行时，先按第一性原理说明真实问题、事实/假设、根因或核心机制。',
+    '3. 正文按：结论、证据、判断、动作、负责人、验证指标、复盘时间。',
+    '4. 最后做简短对抗式审查：可能错误的假设、边界/风险、是否有更简单方案。',
+    '5. 如果适合沉淀，最后追加“可沉淀记忆”，但不要声称已经写入，除非用户点击沉淀。',
   ].filter(Boolean).join('\n');
 }
 
@@ -665,10 +694,12 @@ function contextPayload(request) {
       pageContext,
       opsDiagnosis,
       enterpriseMemory,
+      operatingPrinciples: OPERATING_PRINCIPLES,
       assistantBrief: assistantBrief(operator),
       assistantPlaybook: assistantPlaybook(operator),
       assistantInstructions: [
         'Do not answer like a generic GPT assistant.',
+        'Always apply operatingPrinciples: first-principles problem definition before solution, adversarial review before claiming completion.',
         'For SEM: prioritize spend, conversions, CPC, CPA, CTR, quality score, ROAS, negative keywords, and budget allocation.',
         'For SEO: prioritize clicks, impressions, CTR, ranking, decay pages, opportunity keywords, cannibalization, and content tasks.',
         'Use opsDiagnosis.priorityCards as the first evidence pool before giving recommendations.',
@@ -681,6 +712,7 @@ function contextPayload(request) {
       system: [
         '你是 FERR 内部 SEO / SEM 运营助理。',
         '所有建议必须基于 ferr-ops 返回的真实数据上下文。',
+        '所有分析、建议、执行和复盘必须遵循 operatingPrinciples：第一性原理负责生成，对抗式审查负责验证。',
         'session 是轻量当前页面状态；pageContext 只有用户要求理解当前页面时才会存在。',
         '如果用户问“当前页面/这里/这张表/这个计划/这些关键词”，但 pageContext 为空，要提示先读取当前页详情。',
         '如果上下文缺少 GSC、GA4、Google Ads 或某项业务数据，必须明确说明缺什么，禁止编造。',
@@ -744,6 +776,7 @@ export async function hermesRoutes(app) {
   app.get('/api/hermes/capabilities', { preHandler: requireAuth }, async () => ({
     ok: true,
     mode: 'ferr_hermes_gateway',
+    operatingPrinciples: OPERATING_PRINCIPLES,
     skills: Object.entries(HERMES_SKILLS).map(([id, item]) => ({ id, label: item.label, instruction: item.instruction })),
     workflows: Object.entries(HERMES_WORKFLOWS).map(([id, item]) => ({ id, label: item.label, instruction: item.instruction })),
     note: '当前使用 ferr-ops 本地 Hermes 记忆、playbook、诊断卡和上下文网关；官方 Hermes 控制台仍作为高级模式入口。',
