@@ -22,7 +22,53 @@
   function currentUser() { return window.ME || {}; }
   function roleLabel(role) { return ROLE_LABEL[role] || role || '未识别'; }
   function escapeText(s) { return window.esc ? window.esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-  function renderMarkdown(s) { return window.mdToHtml ? window.mdToHtml(s) : '<p>' + escapeText(s).replace(/\n/g, '<br>') + '</p>'; }
+  function renderMarkdown(s) {
+    const lines = String(s || '').split(/\n/);
+    let html = '';
+    let listOpen = false;
+    const closeList = () => {
+      if (listOpen) {
+        html += '</ul>';
+        listOpen = false;
+      }
+    };
+    const inline = (v) => escapeText(v).replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+    lines.forEach((raw) => {
+      const line = raw.trim();
+      if (!line) {
+        closeList();
+        return;
+      }
+      const heading = line.match(/^#{1,3}\s+(.+)$/) ||
+        line.match(/^【([^】]{2,16})】$/) ||
+        line.match(/^(判断|依据|下一步|风险|结论|建议|可沉淀记忆)$/);
+      if (heading) {
+        closeList();
+        html += '<h4>' + inline(heading[1]) + '</h4>';
+        return;
+      }
+      const bullet = line.match(/^[-*]\s+(.+)$/) || line.match(/^\d+[.)、]\s+(.+)$/);
+      if (bullet) {
+        if (!listOpen) {
+          html += '<ul>';
+          listOpen = true;
+        }
+        html += '<li>' + inline(bullet[1]) + '</li>';
+        return;
+      }
+      closeList();
+      html += '<p>' + inline(line) + '</p>';
+    });
+    closeList();
+    return html || '<p></p>';
+  }
+
+  function splitHermesResponse(text) {
+    const raw = String(text || '').trim();
+    const m = raw.match(/<hermes_basis>([\s\S]*?)<\/hermes_basis>\s*<hermes_answer>([\s\S]*?)<\/hermes_answer>/i);
+    if (m) return { basis: m[1].trim(), answer: m[2].trim() || raw };
+    return { basis: '', answer: raw };
+  }
   function toastSafe(text) { if (window.toast) window.toast(text); }
   function formatSize(bytes) {
     const n = Number(bytes) || 0;
@@ -394,11 +440,11 @@
       statusBox.classList.toggle('ok', connected);
       statusBox.classList.toggle('bad', configured && !connected);
     }
-    if (sub) sub.textContent = 'Hermes Gateway · 记忆 / 技能 / 工作流';
+    if (sub) sub.textContent = '记忆 / 技能 / 工作流';
     if (statusText) {
-      if (connected) statusText.textContent = '当前状态：官方 Hermes 可访问；当前面板走 Hermes Gateway';
-      else if (configured) statusText.textContent = '当前状态：官方 Hermes 已配置但连接失败；当前面板仍走本地 Hermes Gateway';
-      else statusText.textContent = '当前状态：未配置官方 Hermes；当前面板走本地 Hermes Gateway';
+      if (connected) statusText.textContent = '当前状态：Hermes 智能体可用';
+      else if (configured) statusText.textContent = '当前状态：Hermes 已配置但连接失败；小瑞仍可使用本地记忆与技能';
+      else statusText.textContent = '当前状态：未配置官方 Hermes；小瑞使用本地记忆与技能';
     }
     if (identity) identity.textContent = '身份：' + roleLabel(currentUser().role);
     if (detail) {
@@ -407,7 +453,7 @@
       if (lastHermesState.checkedAt) parts.push('检查时间：' + new Date(lastHermesState.checkedAt).toLocaleString());
       detail.textContent = parts.length
         ? parts.join(' · ')
-        : '当前入口走 Hermes Gateway：长期记忆、技能规则、工作流、当前页上下文和附件会共同参与判断。';
+        : '小瑞会结合长期记忆、技能规则、工作流、当前页上下文和附件一起判断。';
     }
     if (openBtn) {
       openBtn.disabled = !launchUrl;
@@ -457,6 +503,18 @@
     } else {
       bubble.textContent = message.content;
     }
+    if (message.basis) {
+      const details = document.createElement('details');
+      details.className = 'hermes-basis';
+      const summary = document.createElement('summary');
+      summary.innerHTML = '<i class="ti ti-route"></i> 判断依据';
+      const body = document.createElement('div');
+      body.className = 'hermes-basis-body ai-render';
+      body.innerHTML = renderMarkdown(message.basis);
+      details.appendChild(summary);
+      details.appendChild(body);
+      bubble.appendChild(details);
+    }
     if (message.attachments && message.attachments.length) {
       const files = document.createElement('div');
       files.className = 'hermes-msg-files';
@@ -468,7 +526,7 @@
       meta.className = 'hermes-msg-meta';
       const missing = (message.hermes.missingData || []).filter(Boolean);
       meta.textContent = [
-        'Hermes Gateway',
+        '小瑞已参考',
         message.hermes.skill && message.hermes.skill.label ? '技能：' + message.hermes.skill.label : '',
         message.hermes.workflow && message.hermes.workflow.label ? '工作流：' + message.hermes.workflow.label : '',
         message.hermes.usedMemory ? '已使用长期记忆' : '',
@@ -540,12 +598,13 @@
         skill: gatewayMode.skill,
         workflow: gatewayMode.workflow,
       });
-      messages[messages.length - 1] = { role: 'assistant', content: res.text || '没有返回内容。', hermes: res.hermes };
+      const parsed = splitHermesResponse(res.text || '');
+      messages[messages.length - 1] = { role: 'assistant', content: parsed.answer || '没有返回内容。', basis: parsed.basis, hermes: res.hermes };
     } catch (e) {
       const reason = e && e.message ? e.message : 'ai_failed';
       messages[messages.length - 1] = {
         role: 'assistant',
-        content: 'Hermes Gateway 暂时不可用。\n\n原因：' + reason + '\n\n请确认后端 AI 配置、Hermes 记忆上下文或模型视觉能力是否正常。',
+        content: '小瑞暂时不可用。\n\n原因：' + reason + '\n\n请确认后端 AI 配置、Hermes 记忆上下文或模型视觉能力是否正常。',
       };
     } finally {
       setSending(false);
@@ -632,7 +691,7 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeHermesPanel();
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.activeElement === byId('hermesInput')) {
+    if (e.key === 'Enter' && document.activeElement === byId('hermesInput') && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       sendHermesPrompt();
     }
