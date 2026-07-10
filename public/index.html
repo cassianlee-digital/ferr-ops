@@ -824,7 +824,10 @@
     </div>
     <div class="hermes-compose">
       <textarea id="hermesInput" rows="3" placeholder="直接问运营问题，例如：这页数据有哪些异常？帮我把结论改成整改动作。"></textarea>
+      <div class="hermes-attachments" id="hermesAttachments"></div>
       <div class="hermes-compose-tools">
+        <label class="btn-ghost hermes-upload-btn" for="hermesFiles"><i class="ti ti-paperclip"></i> 上传文件/截图</label>
+        <input id="hermesFiles" type="file" multiple accept="image/*,.csv,.txt,.md,.json,.pdf,.xls,.xlsx" style="display:none">
         <button class="btn-ghost" type="button" onclick="syncHermesPageDetail(true)"><i class="ti ti-file-search"></i> 读取当前页</button>
         <button class="btn-ghost" type="button" onclick="refreshHermesStatus(true)"><i class="ti ti-plug-connected"></i> 检查接入</button>
         <button class="btn-primary" type="button" id="hermesSendBtn" onclick="sendHermesPrompt()"><i class="ti ti-send"></i> 发送</button>

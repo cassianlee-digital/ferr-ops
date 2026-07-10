@@ -5,12 +5,18 @@
   const STORE_KEY = 'ferr:hermes-window';
   const ROLE_LABEL = { seo: 'SEO 李', sem: 'SEM 陈', manager: '主管', boss: '老板' };
   const MAX_HISTORY = 8;
+  const MAX_ATTACHMENTS = 5;
+  const MAX_TEXT_CHARS = 10000;
+  const MAX_IMAGE_SIDE = 1280;
+  const MAX_IMAGE_DATA_URL = 850000;
+  const IMAGE_QUALITY = 0.76;
 
   let lastSessionSentAt = 0;
   let sessionTimer = null;
   let statusChecked = false;
   let lastHermesState = null;
   let messages = [];
+  let attachments = [];
 
   function byId(id) { return document.getElementById(id); }
   function currentUser() { return window.ME || {}; }
@@ -18,6 +24,16 @@
   function escapeText(s) { return window.esc ? window.esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function renderMarkdown(s) { return window.mdToHtml ? window.mdToHtml(s) : '<p>' + escapeText(s).replace(/\n/g, '<br>') + '</p>'; }
   function toastSafe(text) { if (window.toast) window.toast(text); }
+  function formatSize(bytes) {
+    const n = Number(bytes) || 0;
+    if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + 'MB';
+    if (n >= 1024) return Math.round(n / 1024) + 'KB';
+    return n + 'B';
+  }
+  function extName(name) {
+    const m = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+    return m ? m[1] : '';
+  }
 
   function appendLaunchParams(url) {
     const me = currentUser();
@@ -119,6 +135,157 @@
       if (manual) toastSafe('读取当前页失败：' + (e.message || 'sync_failed'));
       return false;
     }
+  }
+
+  function isTextFile(file) {
+    const ext = extName(file.name);
+    return /^text\//.test(file.type || '') || ['csv', 'txt', 'md', 'json'].includes(ext);
+  }
+
+  function readTextFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || '').slice(0, MAX_TEXT_CHARS));
+      reader.onerror = () => reject(reader.error || new Error('read_failed'));
+      reader.readAsText(file);
+    });
+  }
+
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('image_load_failed'));
+      img.src = url;
+    });
+  }
+
+  async function readImageFile(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await loadImage(url);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      let scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(img.width || 1, img.height || 1));
+      let dataUrl = '';
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        canvas.width = Math.max(1, Math.round((img.width || 1) * scale));
+        canvas.height = Math.max(1, Math.round((img.height || 1) * scale));
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        dataUrl = canvas.toDataURL('image/jpeg', Math.max(0.56, IMAGE_QUALITY - attempt * 0.05));
+        if (dataUrl.length <= MAX_IMAGE_DATA_URL) return dataUrl;
+        scale *= 0.82;
+      }
+      throw new Error('图片压缩后仍超过大小限制');
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function unsupportedReason(file) {
+    const ext = extName(file.name).toUpperCase() || (file.type || 'unknown');
+    if (['PDF', 'XLS', 'XLSX'].includes(ext)) return ext + ' 内容解析未接入，本阶段不会把它当作已分析证据。';
+    return '暂不支持该文件类型。';
+  }
+
+  async function buildAttachment(file) {
+    const base = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      name: file.name || '未命名文件',
+      type: file.type || '',
+      size: file.size || 0,
+    };
+    if ((file.type || '').startsWith('image/')) {
+      return { ...base, kind: 'image', imageDataUrl: await readImageFile(file), note: '图片已作为视觉输入提供给模型。' };
+    }
+    if (isTextFile(file)) {
+      return { ...base, kind: 'text', textContent: await readTextFile(file), note: '文本内容已读取。' };
+    }
+    return { ...base, kind: 'unsupported', note: unsupportedReason(file) };
+  }
+
+  function attachmentRequestPayload(list) {
+    return list
+      .filter((item) => item.kind !== 'unsupported')
+      .map((item) => ({
+        name: item.name,
+        type: item.type,
+        size: item.size,
+        kind: item.kind,
+        textContent: item.kind === 'text' ? item.textContent : undefined,
+        imageDataUrl: item.kind === 'image' ? item.imageDataUrl : undefined,
+      }));
+  }
+
+  function attachmentPromptBlock(list) {
+    if (!list.length) return '';
+    const lines = ['[用户上传附件]'];
+    list.forEach((item) => {
+      lines.push(`- ${item.name}（${item.kind}，${formatSize(item.size)}）：${item.note || ''}`);
+      if (item.kind === 'image') {
+        lines.push('  图片已随请求发送。必须只在模型实际能读取图片时引用图片内容；若无法识别图片，要明确说明。');
+      }
+    });
+    return lines.join('\n').slice(0, 24000);
+  }
+
+  function renderAttachmentChips(container, list, options) {
+    if (!container) return;
+    container.innerHTML = '';
+    list.forEach((item, index) => {
+      const chip = document.createElement('div');
+      chip.className = 'hermes-file-chip ' + item.kind;
+      const icon = item.kind === 'image' ? 'photo' : (item.kind === 'text' ? 'file-text' : 'alert-triangle');
+      chip.innerHTML = '<i class="ti ti-' + icon + '"></i><span></span><small></small>';
+      chip.querySelector('span').textContent = item.name;
+      chip.querySelector('small').textContent = (item.kind === 'unsupported' ? '未解析' : formatSize(item.size));
+      if (options && options.removable) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'hermes-file-remove';
+        btn.dataset.index = String(index);
+        btn.innerHTML = '<i class="ti ti-x"></i>';
+        chip.appendChild(btn);
+      }
+      container.appendChild(chip);
+    });
+  }
+
+  function renderAttachments() {
+    renderAttachmentChips(byId('hermesAttachments'), attachments, { removable: true });
+  }
+
+  async function addHermesFiles(fileList) {
+    const files = [...(fileList || [])];
+    if (!files.length) return;
+    const room = MAX_ATTACHMENTS - attachments.length;
+    if (room <= 0) {
+      toastSafe('最多同时附加 ' + MAX_ATTACHMENTS + ' 个文件');
+      return;
+    }
+    const selected = files.slice(0, room);
+    if (files.length > room) toastSafe('已只保留前 ' + room + ' 个文件');
+    for (const file of selected) {
+      try {
+        attachments.push(await buildAttachment(file));
+      } catch (e) {
+        attachments.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+          name: file.name || '未命名文件',
+          type: file.type || '',
+          size: file.size || 0,
+          kind: 'unsupported',
+          note: '读取失败：' + (e.message || 'read_failed'),
+        });
+      }
+    }
+    renderAttachments();
+  }
+
+  function removeHermesAttachment(index) {
+    attachments.splice(Number(index), 1);
+    renderAttachments();
   }
 
   function saveWindowState() {
@@ -271,16 +438,18 @@
       .join('\n');
   }
 
-  function buildOpsPrompt(userPrompt) {
+  function buildOpsPrompt(userPrompt, attachedFiles) {
     const page = collectPageContext();
     const history = messageHistoryBlock();
     return [
       '你是 ferr-ops 内置运营助手，不是通用聊天机器人。',
       '必须基于后台真实数据、当前页面上下文和用户问题回答；缺少数据时直接说明缺少什么，不要编造 GSC、GA4、Google Ads 自动同步数据。',
+      '如果用户上传了附件，必须区分“后台真实数据”“当前页面数据”“用户上传附件”。不要把附件内容误写成已同步数据。',
       '输出尽量短，结构固定为：证据摘要、判断、建议动作、验证指标、风险。',
       '',
       history ? '[最近对话]\n' + history : '',
       '[当前页面上下文]\n' + JSON.stringify(page, null, 2).slice(0, 8000),
+      attachmentPromptBlock(attachedFiles || []),
       '',
       '[用户问题]\n' + String(userPrompt || '').slice(0, 4000),
     ].filter(Boolean).join('\n\n');
@@ -298,6 +467,12 @@
       bubble.innerHTML = '<div class="ai-render">' + renderMarkdown(message.content) + '</div>';
     } else {
       bubble.textContent = message.content;
+    }
+    if (message.attachments && message.attachments.length) {
+      const files = document.createElement('div');
+      files.className = 'hermes-msg-files';
+      renderAttachmentChips(files, message.attachments, { removable: false });
+      bubble.appendChild(files);
     }
     row.appendChild(bubble);
 
@@ -341,16 +516,20 @@
       return;
     }
     if (input) input.value = '';
-    const opsPrompt = buildOpsPrompt(prompt);
+    const attachedFiles = attachments.slice();
+    const opsPrompt = buildOpsPrompt(prompt, attachedFiles);
+    const requestAttachments = attachmentRequestPayload(attachedFiles);
+    attachments = [];
+    renderAttachments();
 
-    messages.push({ role: 'user', content: prompt });
+    messages.push({ role: 'user', content: prompt, attachments: attachedFiles });
     messages.push({ role: 'assistant', content: '', loading: true });
     renderMessages();
     setSending(true);
 
     try {
       await syncHermesSession(true);
-      const { text } = await window.API.post('/api/ai', { prompt: opsPrompt });
+      const { text } = await window.API.post('/api/ai', { prompt: opsPrompt, attachments: requestAttachments });
       messages[messages.length - 1] = { role: 'assistant', content: text || '没有返回内容。' };
     } catch (e) {
       const reason = e && e.message ? e.message : 'ai_failed';
@@ -455,6 +634,11 @@
       copyHermesMessage(copyBtn.dataset.index);
       return;
     }
+    const removeBtn = e.target.closest && e.target.closest('.hermes-file-remove');
+    if (removeBtn) {
+      removeHermesAttachment(removeBtn.dataset.index);
+      return;
+    }
     if (e.target.closest('.nav-item,.subtab,.planning-tab,.action-tab,.btn-primary,.btn-ghost,.btn-ai')) {
       scheduleSessionSync(500);
     }
@@ -462,6 +646,19 @@
 
   document.addEventListener('input', (e) => {
     if (e.target.closest('.panel.active')) scheduleSessionSync(900);
+  });
+
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'hermesFiles') {
+      addHermesFiles(e.target.files);
+      e.target.value = '';
+    }
+  });
+
+  document.addEventListener('paste', (e) => {
+    if (document.activeElement !== byId('hermesInput')) return;
+    const files = [...(e.clipboardData && e.clipboardData.files || [])].filter((file) => (file.type || '').startsWith('image/'));
+    if (files.length) addHermesFiles(files);
   });
 
   window.addEventListener('message', (event) => {
@@ -484,6 +681,7 @@
   window.sendHermesPrompt = sendHermesPrompt;
   window.askHermesStarter = askHermesStarter;
   window.clearHermesChat = clearHermesChat;
+  window.addHermesFiles = addHermesFiles;
 
   document.addEventListener('DOMContentLoaded', () => setHermesView(lastHermesState || {}));
 })();

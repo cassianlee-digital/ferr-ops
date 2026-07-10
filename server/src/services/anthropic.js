@@ -9,14 +9,14 @@ import { config } from '../config.js';
 const provider = () => (process.env.AI_PROVIDER || 'openrouter').toLowerCase();
 
 // 导出名保持 callAnthropic 不变，调用方（routes/ai.js、services/marketBrain.js）无需改动。
-export async function callAnthropic(system, userPrompt) {
+export async function callAnthropic(system, userPrompt, options = {}) {
   return provider() === 'anthropic'
-    ? callAnthropicNative(system, userPrompt)
-    : callOpenRouter(system, userPrompt);
+    ? callAnthropicNative(system, userPrompt, options)
+    : callOpenRouter(system, userPrompt, options);
 }
 
 // ---- OpenRouter（OpenAI 兼容）----
-async function callOpenRouter(system, userPrompt) {
+async function callOpenRouter(system, userPrompt, options = {}) {
   const apiKey = process.env.OPENROUTER_API_KEY || '';
   const model = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
   const maxTokens = Number(process.env.OPENROUTER_MAX_TOKENS || process.env.ANTHROPIC_MAX_TOKENS || 4000);
@@ -36,7 +36,7 @@ async function callOpenRouter(system, userPrompt) {
       max_tokens: maxTokens,
       messages: [
         { role: 'system', content: system },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: openRouterUserContent(userPrompt, options.attachments) },
       ],
     }),
   });
@@ -52,7 +52,7 @@ async function callOpenRouter(system, userPrompt) {
 }
 
 // ---- Anthropic 原生 ----
-async function callAnthropicNative(system, userPrompt) {
+async function callAnthropicNative(system, userPrompt, options = {}) {
   if (!config.anthropic.apiKey) {
     const e = new Error('ANTHROPIC_API_KEY 未配置');
     e.code = 'NO_KEY';
@@ -69,7 +69,7 @@ async function callAnthropicNative(system, userPrompt) {
       model: config.anthropic.model,
       max_tokens: config.anthropic.maxTokens,
       system,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [{ role: 'user', content: anthropicUserContent(userPrompt, options.attachments) }],
     }),
   });
   if (!res.ok) {
@@ -81,4 +81,39 @@ async function callAnthropicNative(system, userPrompt) {
   }
   const data = await res.json();
   return (data.content || []).map((b) => (b.type === 'text' ? b.text : '')).join('\n').trim();
+}
+
+function imageAttachments(attachments) {
+  return (Array.isArray(attachments) ? attachments : []).filter((item) => item && item.kind === 'image' && item.imageDataUrl);
+}
+
+function openRouterUserContent(userPrompt, attachments) {
+  const images = imageAttachments(attachments);
+  if (!images.length) return userPrompt;
+  return [
+    { type: 'text', text: userPrompt },
+    ...images.map((item) => ({
+      type: 'image_url',
+      image_url: { url: item.imageDataUrl },
+    })),
+  ];
+}
+
+function anthropicUserContent(userPrompt, attachments) {
+  const images = imageAttachments(attachments);
+  if (!images.length) return userPrompt;
+  return [
+    { type: 'text', text: userPrompt },
+    ...images.map((item) => {
+      const m = String(item.imageDataUrl).match(/^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/i);
+      return {
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: m ? m[1].toLowerCase() : 'image/jpeg',
+          data: m ? m[2] : '',
+        },
+      };
+    }).filter((item) => item.source.data),
+  ];
 }

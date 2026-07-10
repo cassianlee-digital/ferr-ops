@@ -3786,6 +3786,13 @@ table.dt td.editable:focus,
   max-width: 86%;
 }
 
+.hermes-msg-files {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
 .hermes-copy {
   display: inline-flex;
   align-items: center;
@@ -3850,12 +3857,83 @@ table.dt td.editable:focus,
   box-shadow: 0 0 0 3px rgba(47, 109, 246, .10);
 }
 
+.hermes-attachments {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.hermes-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(240px, 100%);
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid #dfe6f2;
+  border-radius: var(--radius);
+  background: #f8fbff;
+  color: #334155;
+  font-size: 12px;
+}
+
+.hermes-file-chip.image {
+  border-color: #dbeafe;
+  background: #eff6ff;
+}
+
+.hermes-file-chip.text {
+  border-color: #dcfce7;
+  background: #f0fdf4;
+}
+
+.hermes-file-chip.unsupported {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.hermes-file-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hermes-file-chip small {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.hermes-file-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.hermes-file-remove:hover {
+  background: rgba(15, 23, 42, .08);
+  color: #0f172a;
+}
+
 .hermes-compose-tools {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 10px;
   flex-wrap: wrap;
+}
+
+.hermes-upload-btn {
+  cursor: pointer;
 }
 
 .hermes-compose-tools .btn-primary {
@@ -3923,7 +4001,8 @@ body.dark .hermes-welcome,
 body.dark .hermes-msg-bubble,
 body.dark .hermes-agent-note,
 body.dark .hermes-compose,
-body.dark .hermes-copy {
+body.dark .hermes-copy,
+body.dark .hermes-file-chip {
   border-color: #273142;
   background: #111827;
 }
@@ -3944,6 +4023,11 @@ body.dark .hermes-compose textarea {
   border-color: #273142;
   background: #0f172a;
   color: #cbd5e1;
+}
+
+body.dark .hermes-file-chip small,
+body.dark .hermes-file-remove {
+  color: #94a3b8;
 }
 
 @media (max-width: 760px) {

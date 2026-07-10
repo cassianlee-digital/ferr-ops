@@ -21,7 +21,7 @@ async function main() {
 
   const app = Fastify({
     logger: { level: config.env === 'production' ? 'info' : 'debug' },
-    bodyLimit: 1_000_000,
+    bodyLimit: 2_500_000,
     trustProxy: true, // 位于 Caddy 反代之后
   });
 
