@@ -25,16 +25,12 @@ function reportWeekStart(now = new Date()) {
 }
 
 function keyFromWeekStart(start) {
+  // 周归属于「本周周一所在的月」，周序 = ceil(周一日期/7)。
+  // 不做「第5周→次月第1周」进位:那会让上月末的周(周一在29-31)与次月真正的第1周撞成同一 key。
   const d = new Date(start);
-  let year = d.getFullYear();
-  let month = d.getMonth() + 1;
-  let week = Math.ceil(d.getDate() / 7);
-  if (week > 4) {
-    d.setMonth(d.getMonth() + 1, 1);
-    year = d.getFullYear();
-    month = d.getMonth() + 1;
-    week = 1;
-  }
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const week = Math.ceil(d.getDate() / 7);
   return `${year}-${month}-${week}`;
 }
 
@@ -50,13 +46,7 @@ function curMonthKey() {
 function parseWeekKey(key) {
   const p = String(key || '').split('-').map(Number);
   if (p.length < 3 || !p[0] || !p[1] || !p[2]) return null;
-  let [year, month, week] = p;
-  if (week > 4) {
-    const d = new Date(year, month, 1);
-    year = d.getFullYear();
-    month = d.getMonth() + 1;
-    week = 1;
-  }
+  const [year, month, week] = p;
   return { year, month, week, monthKey: `${year}-${month}` };
 }
 
