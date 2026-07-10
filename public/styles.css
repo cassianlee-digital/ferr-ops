@@ -106,7 +106,7 @@ table.dt tbody tr:nth-child(even):hover{background:#f5f7fb}
   padding:16px 18px;
   background:#fff;
 }
-.metric-num{font-size:26px;font-weight:700;letter-spacing:0}
+.metric-num{font-size:24px;font-weight:700;letter-spacing:0}
 .metric-lbl{color:#748096}
 
 

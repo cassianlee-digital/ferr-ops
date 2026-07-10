@@ -311,7 +311,7 @@ body.dark #panel-data .minitabs .minitab {
 
 .sem-stat { background: var(--bg2); padding: 12px 14px; }
 
-.sem-stat-n { font-size: 19px; font-weight: 700; color: var(--text1); }
+.sem-stat-n { font-size: 20px; font-weight: 700; color: var(--text1); }
 
 .sem-stat-l { font-size: 12px; color: var(--text3); margin-top: 3px; }
 
