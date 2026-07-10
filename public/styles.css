@@ -7302,6 +7302,24 @@ body.dark .b-red {
   color: #fca5a5 !important;
 }
 
+body.dark .b-purple {
+  background: #0f172a !important;
+  border-color: #6d28d9 !important;
+  color: #c4b5fd !important;
+}
+
+body.dark .tagselect {
+  background: #0f172a !important;
+  border-color: #166534 !important;
+  color: #86efac !important;
+}
+
+body.dark .cache-tag {
+  background: #0f172a !important;
+  border-color: #115e59 !important;
+  color: #5eead4 !important;
+}
+
 @media (max-width: 760px) {
   .sheet-tip,
   .banner {
