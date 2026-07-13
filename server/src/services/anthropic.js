@@ -18,7 +18,11 @@ export async function callAnthropic(system, userPrompt, options = {}) {
 // ---- OpenRouter（OpenAI 兼容）----
 async function callOpenRouter(system, userPrompt, options = {}) {
   const apiKey = process.env.OPENROUTER_API_KEY || '';
-  const model = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
+  const hasImages = imageAttachments(options.attachments).length > 0;
+  const textModel = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash';
+  const model = hasImages
+    ? (process.env.OPENROUTER_VISION_MODEL || 'openai/gpt-4o-mini')
+    : textModel;
   const maxTokens = Number(process.env.OPENROUTER_MAX_TOKENS || process.env.ANTHROPIC_MAX_TOKENS || 4000);
   if (!apiKey) {
     const e = new Error('OPENROUTER_API_KEY 未配置');
@@ -42,13 +46,25 @@ async function callOpenRouter(system, userPrompt, options = {}) {
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    const e = new Error('openrouter_http_' + res.status);
+    const e = new Error(openRouterErrorMessage(res.status, detail, model, hasImages));
     e.status = res.status;
+    e.code = res.status === 404 ? 'OPENROUTER_MODEL_NOT_FOUND' : 'OPENROUTER_HTTP_ERROR';
     e.detail = detail;
+    e.model = model;
     throw e;
   }
   const data = await res.json();
   return (data.choices?.[0]?.message?.content || '').trim();
+}
+
+function openRouterErrorMessage(status, detail, model, hasImages) {
+  if (status === 404) {
+    return hasImages
+      ? `OpenRouter 视觉模型不可用或不支持图片：${model}。请配置 OPENROUTER_VISION_MODEL 为可识别图片的模型。`
+      : `OpenRouter 模型不可用：${model}。请检查 OPENROUTER_MODEL。`;
+  }
+  const msg = String(detail || '').slice(0, 220).replace(/\s+/g, ' ').trim();
+  return `openrouter_http_${status}${msg ? '：' + msg : ''}`;
 }
 
 // ---- Anthropic 原生 ----

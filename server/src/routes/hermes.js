@@ -12,6 +12,8 @@ import * as kwRepo from '../db/repositories/keywords.js';
 import * as marketResearchRepo from '../db/repositories/marketResearch.js';
 import * as hermesMemoryRepo from '../db/repositories/hermesMemories.js';
 import * as hermesConversationRepo from '../db/repositories/hermesConversations.js';
+import * as googleRepo from '../db/repositories/googleSync.js';
+import { resolveProject } from '../sync/googleClient.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -215,6 +217,44 @@ function freshnessFromDate(date) {
   return 'stale';
 }
 
+function localIsoDate(offsetDays = 0) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + offsetDays);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function requestedRangeFromText(text) {
+  const raw = String(text || '');
+  if (/昨天|昨日|yesterday/i.test(raw)) {
+    const date = localIsoDate(-1);
+    return { label: '昨天', start_date: date, end_date: date };
+  }
+  if (/今天|今日|today/i.test(raw)) {
+    const date = localIsoDate(0);
+    return { label: '今天', start_date: date, end_date: date };
+  }
+  if (/近\s*7\s*天|过去\s*7\s*天|最近\s*7\s*天|last\s*7\s*days/i.test(raw)) {
+    return { label: '近7天', start_date: localIsoDate(-6), end_date: localIsoDate(0) };
+  }
+  return { label: '近30天', start_date: localIsoDate(-29), end_date: localIsoDate(0) };
+}
+
+function moneyMicros(value) {
+  return (Number(value || 0) / 1e6).toFixed(2);
+}
+
+function hasAdsTotals(t) {
+  return Boolean(Number(t?.costMicros || 0) || Number(t?.impressions || 0) || Number(t?.clicks || 0) || Number(t?.conversions || 0));
+}
+
+function hasGscTotals(t) {
+  return Boolean(Number(t?.clicks || 0) || Number(t?.impressions || 0));
+}
+
 function makeEvidence({ source, title, metric, date, value, detail }) {
   return {
     id: evidenceId(source, title),
@@ -252,9 +292,65 @@ function makeCard({ area, severity = 'medium', title, evidence, judgment, action
   };
 }
 
-function buildOpsDiagnosis(operator) {
+function buildOpsDiagnosis(operator, contextText = '') {
   const cards = [];
   const missing = [];
+  let hasAdsSyncEvidence = false;
+  let hasGscSyncEvidence = false;
+
+  try {
+    const project = resolveProject({});
+    const range = requestedRangeFromText(contextText);
+    const ads = googleRepo.adsSummary({ ...range, ads_customer_id: project.ads_customer_id });
+    const t = ads?.totals || {};
+    hasAdsSyncEvidence = hasAdsTotals(t);
+    cards.push(makeCard({
+      area: 'sem',
+      severity: hasAdsSyncEvidence ? 'medium' : 'high',
+      title: `Ads 同步数据：${range.label}`,
+      evidence: `range=${range.start_date}~${range.end_date}, status=${hasAdsSyncEvidence ? 'has_data' : 'no_synced_rows'}, cost=${moneyMicros(t.costMicros)}, impressions=${t.impressions || 0}, clicks=${t.clicks || 0}, conversions=${Number(t.conversions || 0).toFixed(1)}, ctr=${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'}`,
+      evidenceMeta: { metric: 'google_ads_synced_summary', date: range.end_date, value: `status=${hasAdsSyncEvidence ? 'has_data' : 'no_synced_rows'}; cost=${moneyMicros(t.costMicros)}; clicks=${t.clicks || 0}; conversions=${Number(t.conversions || 0).toFixed(1)}` },
+      judgment: hasAdsSyncEvidence
+        ? '系统已经有该范围的 Google Ads 同步数据，应基于这组数据分析 SEM，而不是只看 KPI 目标表或人工周报。'
+        : '该范围在本地同步表中没有 Ads 明细，不能声称已经看到了真实投放表现；应检查同步任务、授权或 Ads 后台当天是否有投放。',
+      action: hasAdsSyncEvidence
+        ? '按系列、关键词、花费、点击和转化继续拆解浪费点或放量机会。'
+        : '先核对 Google Ads 同步状态和该日期是否写入 google_ads_campaign_daily / keyword_daily，再分析运营动作。',
+      owner: 'SEM',
+      verifyMetric: 'Google Ads synced cost/clicks/conversions',
+      reviewWindow: '当天或同步完成后复核',
+      source: 'google_ads.sync',
+    }));
+  } catch {
+    missing.push('google_ads_sync');
+  }
+
+  try {
+    const project = resolveProject({});
+    const range = requestedRangeFromText(contextText);
+    const gsc = googleRepo.gscSummary({ ...range, gsc_site_url: project.gsc_site_url });
+    const t = gsc?.totals || {};
+    hasGscSyncEvidence = hasGscTotals(t);
+    cards.push(makeCard({
+      area: 'seo',
+      severity: hasGscSyncEvidence ? 'medium' : 'high',
+      title: `GSC 同步数据：${range.label}`,
+      evidence: `range=${range.start_date}~${range.end_date}, status=${hasGscSyncEvidence ? 'has_data' : 'no_synced_rows'}, clicks=${t.clicks || 0}, impressions=${t.impressions || 0}, ctr=${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'}, position=${t.position != null ? t.position.toFixed(1) : '-'}`,
+      evidenceMeta: { metric: 'gsc_synced_summary', date: range.end_date, value: `status=${hasGscSyncEvidence ? 'has_data' : 'no_synced_rows'}; clicks=${t.clicks || 0}; impressions=${t.impressions || 0}` },
+      judgment: hasGscSyncEvidence
+        ? '系统已经有该范围的 GSC 同步数据，可以基于点击、展现、CTR 和排名判断 SEO。'
+        : '该范围在本地同步表中没有 GSC 数据；GSC 通常有延迟，不能把 0 当作真实搜索表现。',
+      action: hasGscSyncEvidence
+        ? '继续按页面、查询词和 CTR 拆 SEO 异常。'
+        : '先看 GSC 同步状态、授权和数据延迟，再下 SEO 结论。',
+      owner: 'SEO',
+      verifyMetric: 'GSC synced clicks/impressions/CTR/position',
+      reviewWindow: '同步完成后复核',
+      source: 'gsc.sync',
+    }));
+  } catch {
+    missing.push('gsc_sync');
+  }
 
   try {
     const rows = kpiRepo.list();
@@ -337,10 +433,10 @@ function buildOpsDiagnosis(operator) {
         }));
       }
     } else {
-      missing.push('SEM weekly report');
+      if (!hasAdsSyncEvidence) missing.push('sem_weeks');
     }
   } catch {
-    missing.push('SEM weekly report');
+    if (!hasAdsSyncEvidence) missing.push('sem_weeks');
   }
 
   try {
@@ -377,10 +473,10 @@ function buildOpsDiagnosis(operator) {
         source: 'seo_weeks.latest',
       }));
     } else {
-      missing.push('SEO weekly report');
+      if (!hasGscSyncEvidence) missing.push('seo_weeks');
     }
   } catch {
-    missing.push('SEO weekly report');
+    if (!hasGscSyncEvidence) missing.push('seo_weeks');
   }
 
   try {
@@ -702,11 +798,23 @@ function dataGapTaskFor(name) {
       content: '补录本周 SEM 周报指标：花费、点击、转化、CPC、CTR、质量分、转化成本',
       note: '来源：Hermes 缺失数据 sem_weeks。未接入 Google Ads 同步前，先用人工周报维持判断。',
     },
+    google_ads_sync: {
+      dept: 'SEM',
+      owner: '陈',
+      content: '检查 Google Ads 同步链路，确认授权、同步任务和昨日数据是否写入系统',
+      note: '来源：Hermes 缺失数据 google_ads_sync。没有 Ads 同步证据时，不能分析真实投放表现。',
+    },
     seo_weeks: {
       dept: 'SEO',
       owner: '李',
       content: '补录本周 SEO 周报指标：点击、展现、排名、Top10 占比、收录页数',
       note: '来源：Hermes 缺失数据 seo_weeks。未接入 GSC 同步前，先用人工周报维持判断。',
+    },
+    gsc_sync: {
+      dept: 'SEO',
+      owner: '李',
+      content: '检查 GSC 同步链路，确认授权、数据延迟和指定日期是否写入系统',
+      note: '来源：Hermes 缺失数据 gsc_sync。没有 GSC 同步证据时，不能分析真实自然搜索表现。',
     },
     keywords: {
       dept: '公司',
@@ -1060,11 +1168,12 @@ function pageDetailPayload(request) {
 
 function contextPayload(request) {
   try {
-    const context = buildContext({ message: request.body?.message || request.query?.message || '' });
+    const message = request.body?.message || request.query?.message || '';
+    const context = buildContext({ message });
     const operator = resolveOperator(request);
     const session = latestSession(operator);
     const pageContext = latestPageContext(operator);
-    const opsDiagnosis = buildOpsDiagnosis(operator);
+    const opsDiagnosis = buildOpsDiagnosis(operator, message);
     const enterpriseMemory = buildEnterpriseMemory();
     return {
       ok: true,
