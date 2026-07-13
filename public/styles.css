@@ -3766,6 +3766,56 @@ table.dt td.editable:focus,
   cursor: pointer;
 }
 
+.hermes-brief {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #cfe0ff;
+  border-radius: var(--radius);
+  background: #f7fbff;
+  color: #172033;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hermes-brief:hover {
+  border-color: #8fb3ff;
+  background: #f2f7ff;
+}
+
+.hermes-brief span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hermes-brief span i {
+  color: #2f6df6;
+}
+
+.hermes-brief small {
+  grid-column: 1 / 2;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hermes-brief > i {
+  grid-column: 2 / 3;
+  grid-row: 1 / span 2;
+  color: #2f6df6;
+}
+
+.hermes-welcome.compact .hermes-brief {
+  display: none;
+}
+
 .hermes-quick {
   display: flex;
   align-items: center;
@@ -4336,6 +4386,7 @@ body.dark .hermes-identity {
 body.dark .hermes-welcome,
 body.dark .hermes-last,
 body.dark .hermes-last-open,
+body.dark .hermes-brief,
 body.dark .hermes-history,
 body.dark .hermes-history-head,
 body.dark .hermes-mode summary,
@@ -4354,6 +4405,7 @@ body.dark .hermes-file-chip {
 
 body.dark .hermes-welcome-title,
 body.dark .hermes-last strong,
+body.dark .hermes-brief span,
 body.dark .hermes-history-head strong,
 body.dark .hermes-history-title,
 body.dark .hermes-msg-bubble,
@@ -4363,6 +4415,7 @@ body.dark .hermes-compose textarea {
 
 body.dark .hermes-welcome p,
 body.dark .hermes-last span,
+body.dark .hermes-brief small,
 body.dark .hermes-history-row small,
 body.dark .hermes-history-empty,
 body.dark .hermes-mode-menu label,

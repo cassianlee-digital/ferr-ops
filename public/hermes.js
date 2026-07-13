@@ -615,6 +615,38 @@
     }
   }
 
+  async function loadHermesMorningBrief() {
+    if (!window.API) return;
+    closeHermesMenus();
+    messages.push({ role: 'user', content: '生成今日早报' });
+    messages.push({ role: 'assistant', content: '', loading: true });
+    renderMessages();
+    setSending(true);
+    try {
+      await syncHermesSession(true);
+      const res = await window.API.post('/api/hermes/morning-brief', {
+        conversationId: activeConversationId,
+      });
+      if (res.conversation && res.conversation.id) activeConversationId = res.conversation.id;
+      const parsed = splitHermesResponse(res.text || '');
+      messages[messages.length - 1] = {
+        role: 'assistant',
+        content: parsed.answer || '没有返回今日早报。',
+        basis: parsed.basis,
+        hermes: res.hermes,
+      };
+      if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
+    } catch (e) {
+      messages[messages.length - 1] = {
+        role: 'assistant',
+        content: '今日早报生成失败。\n\n原因：' + (e.message || 'morning_brief_failed') + '\n\n请确认后端 AI 配置和 Hermes 上下文是否正常。',
+      };
+    } finally {
+      setSending(false);
+      renderMessages();
+    }
+  }
+
   async function loadHermesHistory(archived) {
     if (!window.API) return;
     const panel = byId('hermesHistory');
@@ -784,8 +816,10 @@
 
   function setSending(isSending) {
     const btn = byId('hermesSendBtn');
+    const briefBtn = byId('hermesBriefBtn');
     const input = byId('hermesInput');
     if (btn) btn.disabled = !!isSending;
+    if (briefBtn) briefBtn.disabled = !!isSending;
     if (input) input.disabled = !!isSending;
   }
 
@@ -1003,6 +1037,7 @@
   window.askHermesStarter = askHermesStarter;
   window.clearHermesChat = clearHermesChat;
   window.addHermesFiles = addHermesFiles;
+  window.loadHermesMorningBrief = loadHermesMorningBrief;
   window.loadHermesLatest = loadHermesLatest;
   window.toggleHermesHistory = toggleHermesHistory;
   window.archiveHermesConversation = archiveHermesConversation;

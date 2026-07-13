@@ -414,6 +414,15 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function beijingDayKey() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
 export function buildDailyLearningMemory(operator) {
   const diagnosis = buildOpsDiagnosis(operator);
   const enterpriseMemory = buildEnterpriseMemory();
@@ -711,6 +720,47 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
   ].filter(Boolean).join('\n');
 }
 
+function morningBriefPrompt(context) {
+  const diagnosis = context.opsDiagnosis || {};
+  const memory = context.enterpriseMemory || {};
+  const missing = [
+    ...(diagnosis.missingData || []),
+    ...(memory.missingData || []),
+  ];
+  const payload = {
+    date: beijingDayKey(),
+    operator: context.operator,
+    session: context.session,
+    priorityCards: (diagnosis.priorityCards || []).slice(0, 8),
+    missingData: [...new Set(missing)],
+    enterpriseMemory: {
+      marketBrain: memory.marketBrain,
+      longTermMemories: memory.longTermMemories,
+    },
+    backendContext: trimText(context.context, 12000),
+  };
+
+  return [
+    '[任务]',
+    '生成今天的 Hermes 今日早报。它不是普通总结，而是当天运营开工前的判断简报。',
+    '',
+    '[要求]',
+    '1. 按当前角色过滤重点：SEO 账号优先 SEO，SEM 账号优先 SEM，主管/老板看公司整体和跨部门风险。',
+    '2. 必须先给今日最重要判断，再给证据、风险、今天动作、验证指标。',
+    '3. 必须引用 payload 中的真实证据；缺少 GSC、GA4、Google Ads 或周报时直接说明，不得编造。',
+    '4. 不要写空泛建议，例如“持续优化”“加强关注”。每个动作必须可执行、可复盘。',
+    '5. 简报要慎重，宁可说数据不足，也不要做没有证据的判断。',
+    '',
+    '[Hermes 上下文]',
+    JSON.stringify(payload, null, 2).slice(0, 26000),
+    '',
+    '输出要求：',
+    '严格按下面两个 XML 风格标签输出，标签外不要写任何内容：',
+    '<hermes_basis>2-5 条早报判断依据摘要：引用了哪些真实数据、缺什么、为什么这样排优先级。</hermes_basis>',
+    '<hermes_answer>面向用户的今日早报。建议结构：今日判断、关键证据、今天先做、风险提醒、复盘指标。</hermes_answer>',
+  ].join('\n');
+}
+
 function sanitizeSession(body) {
   const panels = Array.isArray(body?.panels) ? body.panels : [];
   return {
@@ -916,6 +966,82 @@ export async function hermesRoutes(app) {
     workflows: Object.entries(HERMES_WORKFLOWS).map(([id, item]) => ({ id, label: item.label, instruction: item.instruction })),
     note: '当前使用 ferr-ops 本地 Hermes 记忆、playbook、诊断卡和上下文网关；官方 Hermes 控制台仍作为高级模式入口。',
   }));
+
+  app.post('/api/hermes/morning-brief', editor, async (request, reply) => {
+    const userId = currentUserId(request);
+    if (!userId) return reply.code(401).send({ error: 'unauthorized' });
+    const context = contextPayload(request);
+    if (!context.ok) return reply.code(500).send({ error: context.error || 'hermes_context_failed', detail: context.detail || '' });
+
+    const role = context.operator?.role || resolveOperator(request).role;
+    const day = beijingDayKey();
+    const requestedConversationId = Number(request.body?.conversationId || 0);
+    const existingConversation = requestedConversationId
+      ? hermesConversationRepo.getForUser(requestedConversationId, userId)
+      : null;
+    const activeConversation = existingConversation?.state === 'active' ? existingConversation : null;
+
+    try {
+      const text = await callAnthropic(
+        hermesSystem(context),
+        morningBriefPrompt(context),
+      );
+      const parsed = splitHermesText(text);
+      const missing = [
+        ...(context.opsDiagnosis?.missingData || []),
+        ...(context.enterpriseMemory?.missingData || []),
+      ];
+      const hermes = {
+        mode: 'ferr_hermes_morning_brief',
+        skill: { id: 'auto', label: '今日早报' },
+        workflow: { id: 'diagnose_to_action', label: '诊断到动作' },
+        usedMemory: Boolean(context.enterpriseMemory?.longTermMemories?.length),
+        usedPageContext: Boolean(context.pageContext),
+        missingData: [...new Set(missing)],
+      };
+      const memory = hermesMemoryRepo.upsertBySourceTitle({
+        kind: 'learning',
+        title: `今日早报 ${day} ${role}`,
+        content: parsed.answer || text,
+        evidence: parsed.basis,
+        source: `hermes_morning_brief:${role}`,
+        importance: 5,
+      });
+      const now = new Date().toISOString();
+      const additions = [
+        { role: 'user', content: '生成今日早报', at: now },
+        { role: 'assistant', content: parsed.answer || text, basis: parsed.basis, hermes, at: now },
+      ];
+      const conversation = activeConversation
+        ? hermesConversationRepo.appendForUser(activeConversation.id, userId, additions, { skill: 'auto', workflow: 'diagnose_to_action' })
+        : hermesConversationRepo.createForUser({
+          user_id: userId,
+          role,
+          title: `今日早报 ${day}`,
+          messages: additions,
+          skill: 'auto',
+          workflow: 'diagnose_to_action',
+        });
+
+      return {
+        text,
+        hermes,
+        briefing: { day, role, memoryId: memory?.id || null },
+        conversation: conversation ? {
+          id: conversation.id,
+          title: conversation.title,
+          state: conversation.state,
+          updated_at: conversation.updated_at,
+        } : null,
+      };
+    } catch (e) {
+      request.log.error({ err: e.message, status: e.status }, 'hermes morning brief failed');
+      return reply.code(e.code === 'NO_KEY' ? 503 : 502).send({
+        error: e.code === 'NO_KEY' ? 'ai_unconfigured' : (e.message || 'hermes_morning_brief_failed'),
+        detail: trimText(e.detail, 400),
+      });
+    }
+  });
 
   app.get('/api/hermes/conversations', { preHandler: requireAuth }, async (request) => {
     const userId = currentUserId(request);
