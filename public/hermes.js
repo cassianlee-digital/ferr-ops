@@ -745,6 +745,60 @@
     ].filter(Boolean).join(' · ');
   }
 
+  function evidenceCopyText(item) {
+    return [
+      evidenceLine(item),
+      item.detail || '',
+    ].filter(Boolean).join('\n');
+  }
+
+  function evidenceTarget(source) {
+    const key = String(source || '');
+    if (key.startsWith('kpi_')) return { tab: 'kpi', label: 'KPI 考核' };
+    if (key.startsWith('inquiries')) return { tab: 'inquiry', label: '询盘评级' };
+    if (key.startsWith('sem_')) return { tab: 'data', sub: 'data-sem', label: '数据看板 · SEM' };
+    if (key.startsWith('seo_')) return { tab: 'data', sub: 'data-seo', label: '数据看板 · SEO' };
+    if (key === 'keywords') return { tab: 'keywords', label: '关键词库' };
+    return null;
+  }
+
+  async function copyText(text, okMessage) {
+    const value = String(text || '');
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toastSafe(okMessage || '已复制');
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = value;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toastSafe(okMessage || '已复制'); } catch { toastSafe('复制失败，请手动选择文本'); }
+      ta.remove();
+    }
+  }
+
+  function openEvidenceSource(source) {
+    const target = evidenceTarget(source);
+    if (!target) {
+      toastSafe('这条证据暂时没有可跳转的来源模块');
+      return;
+    }
+    if (typeof window.go === 'function') window.go(target.tab);
+    setTimeout(() => {
+      if (target.sub) {
+        const panel = document.getElementById('panel-' + target.tab);
+        const sub = panel && panel.querySelector('.subtab[data-sub="' + target.sub + '"]');
+        if (sub) sub.click();
+      }
+      const panel = document.getElementById('panel-' + target.tab);
+      if (panel) panel.scrollIntoView({ block: 'start' });
+      toastSafe('已打开来源：' + target.label);
+    }, 40);
+  }
+
   function appendHermesEvidenceAudit(bubble, hermes) {
     const audit = hermes && hermes.evidenceAudit;
     if (!audit) return;
@@ -777,6 +831,24 @@
         detail.textContent = item.detail || '';
         row.appendChild(main);
         if (detail.textContent) row.appendChild(detail);
+        const actions = document.createElement('div');
+        actions.className = 'hermes-evidence-actions';
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'hermes-evidence-copy';
+        copy.dataset.evidence = evidenceCopyText(item);
+        copy.innerHTML = '<i class="ti ti-copy"></i><span>复制</span>';
+        actions.appendChild(copy);
+        const target = evidenceTarget(item.source);
+        if (target) {
+          const source = document.createElement('button');
+          source.type = 'button';
+          source.className = 'hermes-evidence-source';
+          source.dataset.source = item.source || '';
+          source.innerHTML = '<i class="ti ti-external-link"></i><span>来源</span>';
+          actions.appendChild(source);
+        }
+        row.appendChild(actions);
         body.appendChild(row);
       });
     } else {
@@ -966,19 +1038,7 @@
   async function copyHermesMessage(index) {
     const item = messages[Number(index)];
     if (!item || !item.content) return;
-    try {
-      await navigator.clipboard.writeText(item.content);
-      toastSafe('已复制');
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = item.content;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); toastSafe('已复制'); } catch { toastSafe('复制失败，请手动选择文本'); }
-      ta.remove();
-    }
+    await copyText(item.content, '已复制');
   }
 
   function openHermesPanel() {
@@ -1044,6 +1104,16 @@
     const copyBtn = e.target.closest && e.target.closest('.hermes-copy');
     if (copyBtn) {
       copyHermesMessage(copyBtn.dataset.index);
+      return;
+    }
+    const evidenceCopyBtn = e.target.closest && e.target.closest('.hermes-evidence-copy');
+    if (evidenceCopyBtn) {
+      copyText(evidenceCopyBtn.dataset.evidence, '已复制证据');
+      return;
+    }
+    const evidenceSourceBtn = e.target.closest && e.target.closest('.hermes-evidence-source');
+    if (evidenceSourceBtn) {
+      openEvidenceSource(evidenceSourceBtn.dataset.source);
       return;
     }
     const feedbackBtn = e.target.closest && e.target.closest('.hermes-feedback');

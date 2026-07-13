@@ -4162,6 +4162,32 @@ table.dt td.editable:focus,
   color: #b45309;
 }
 
+.hermes-evidence-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.hermes-evidence-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 7px;
+  border: 1px solid #dbe5f5;
+  border-radius: var(--radius);
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.hermes-evidence-actions button:hover {
+  border-color: #9bbcff;
+  color: #2159d6;
+}
+
 .hermes-copy {
   display: inline-flex;
   align-items: center;
@@ -4596,6 +4622,17 @@ body.dark .hermes-evidence-warn,
 body.dark .hermes-evidence-missing {
   background: #2a1908;
   color: #fdba74;
+}
+
+body.dark .hermes-evidence-actions button {
+  border-color: #273142;
+  background: #111827;
+  color: #cbd5e1;
+}
+
+body.dark .hermes-evidence-actions button:hover {
+  border-color: #3b82f6;
+  color: #93c5fd;
 }
 
 body.dark .hermes-select {
