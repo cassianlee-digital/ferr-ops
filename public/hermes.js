@@ -72,8 +72,11 @@
   function splitHermesResponse(text) {
     const raw = String(text || '').trim();
     const m = raw.match(/<hermes_basis>([\s\S]*?)<\/hermes_basis>\s*<hermes_answer>([\s\S]*?)<\/hermes_answer>/i);
-    if (m) return { basis: m[1].trim(), answer: m[2].trim() || raw };
-    return { basis: '', answer: raw };
+    const clean = (value) => String(value || '')
+      .replace(/<\/?hermes_(basis|answer)>/gi, '')
+      .trim();
+    if (m) return { basis: clean(m[1]), answer: clean(m[2]) || clean(raw) };
+    return { basis: '', answer: clean(raw) };
   }
   function toastSafe(text) { if (window.toast) window.toast(text); }
   function formatSize(bytes) {

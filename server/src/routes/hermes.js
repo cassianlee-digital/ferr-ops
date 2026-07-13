@@ -607,8 +607,9 @@ function chatHistoryBlock(history) {
 function splitHermesText(text) {
   const raw = String(text || '').trim();
   const m = raw.match(/<hermes_basis>([\s\S]*?)<\/hermes_basis>\s*<hermes_answer>([\s\S]*?)<\/hermes_answer>/i);
-  if (!m) return { basis: '', answer: raw };
-  return { basis: m[1].trim(), answer: m[2].trim() || raw };
+  const clean = (value) => String(value || '').replace(/<\/?hermes_(basis|answer)>/gi, '').trim();
+  if (!m) return { basis: '', answer: clean(raw) };
+  return { basis: clean(m[1]), answer: clean(m[2]) || clean(raw) };
 }
 
 function auditHermesAnswer(parsed, context) {
@@ -668,12 +669,13 @@ function guardHermesAnswer(parsed, audit, options = {}) {
 }
 
 function composeHermesText(parsed) {
+  const clean = (value) => String(value || '').replace(/<\/?hermes_(basis|answer)>/gi, '').trim();
   return [
     '<hermes_basis>',
-    String(parsed?.basis || '').trim(),
+    clean(parsed?.basis),
     '</hermes_basis>',
     '<hermes_answer>',
-    String(parsed?.answer || '').trim(),
+    clean(parsed?.answer),
     '</hermes_answer>',
   ].join('\n');
 }
@@ -1058,7 +1060,7 @@ function pageDetailPayload(request) {
 
 function contextPayload(request) {
   try {
-    const context = buildContext();
+    const context = buildContext({ message: request.body?.message || request.query?.message || '' });
     const operator = resolveOperator(request);
     const session = latestSession(operator);
     const pageContext = latestPageContext(operator);

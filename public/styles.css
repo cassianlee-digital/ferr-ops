@@ -6276,6 +6276,7 @@ body.dark .btn-ai,
 body.dark .btn-mini,
 body.dark .trange,
 body.dark .tgran,
+body.dark .tauto-btn,
 body.dark .cat-tab,
 body.dark .kw-pg,
 body.dark .kw-pg-size,
@@ -7609,6 +7610,23 @@ body.dark .modal textarea {
   padding: 0 11px !important;
 }
 
+.tauto-btn {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid #dfe3eb;
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #4e5969;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tauto-btn:hover {
+  border-color: #91caff;
+  background: #f5f9ff;
+  color: #1677ff;
+}
+
 
 
 .btn-mini,
@@ -7759,6 +7777,7 @@ body.dark input.cell-date {
 
 body.dark .trange:hover,
 body.dark .tgran:hover,
+body.dark .tauto-btn:hover,
 body.dark .cat-tab:hover,
 body.dark .kw-pg:hover:not(:disabled),
 body.dark .kw-pg-size:hover,

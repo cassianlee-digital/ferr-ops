@@ -8,6 +8,16 @@ import * as googleRepo from '../db/repositories/googleSync.js';
 import { resolveProject } from '../sync/googleClient.js';
 
 // 最近 N 天窗口（GSC 有 ~2 天延迟，end 取昨天）+ 上一等长窗口（供环比/衰退）。
+function localIsoDate(offsetDays = 0) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + offsetDays);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function recentWindows(days = 30) {
   const day = 86400000;
   const end = new Date(Date.now() - day);
@@ -20,6 +30,56 @@ function recentWindows(days = 30) {
     prev: { start_date: iso(prevStart), end_date: iso(prevEnd) },
     days,
   };
+}
+
+function requestedRangeFromText(text) {
+  const raw = String(text || '');
+  if (/昨天|昨日|yesterday/i.test(raw)) {
+    const date = localIsoDate(-1);
+    return { label: '昨天', start_date: date, end_date: date };
+  }
+  if (/今天|今日|today/i.test(raw)) {
+    const date = localIsoDate(0);
+    return { label: '今天', start_date: date, end_date: date };
+  }
+  if (/近\s*7\s*天|过去\s*7\s*天|最近\s*7\s*天|last\s*7\s*days/i.test(raw)) {
+    return { label: '近7天', start_date: localIsoDate(-6), end_date: localIsoDate(0) };
+  }
+  return null;
+}
+
+function appendRequestedRangeContext(lines, text) {
+  const range = requestedRangeFromText(text);
+  if (!range) return;
+  let project;
+  try { project = resolveProject({}); } catch (e) { return; }
+  const m6 = (v) => (v == null ? '-' : (Number(v || 0) / 1e6).toFixed(2));
+
+  try {
+    const a = googleRepo.adsSummary({ ...range, ads_customer_id: project.ads_customer_id });
+    const t = a?.totals || {};
+    const hasData = Boolean(Number(t.costMicros || 0) || Number(t.impressions || 0) || Number(t.clicks || 0) || Number(t.conversions || 0));
+    lines.push(
+      `【用户指定范围·Ads·${range.label} ${range.start_date}~${range.end_date}】` +
+        `状态${hasData ? '有同步数据' : '无同步数据'}；花费${m6(t.costMicros)} 点击${t.clicks || 0} 展现${t.impressions || 0} 转化${Number(t.conversions || 0).toFixed(1)} ` +
+        `CTR${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'} CPC${m6(t.averageCpcMicros)} 每转化成本${m6(t.costPerConversionMicros)}。`
+    );
+  } catch (e) {
+    lines.push(`【用户指定范围·Ads·${range.label} ${range.start_date}~${range.end_date}】读取失败：${e.message || 'ads_context_failed'}`);
+  }
+
+  try {
+    const g = googleRepo.gscSummary({ ...range, gsc_site_url: project.gsc_site_url });
+    const t = g?.totals || {};
+    const hasData = Boolean(Number(t.clicks || 0) || Number(t.impressions || 0));
+    lines.push(
+      `【用户指定范围·GSC·${range.label} ${range.start_date}~${range.end_date}】` +
+        `状态${hasData ? '有同步数据' : '无同步数据'}；点击${t.clicks || 0} 展现${t.impressions || 0} ` +
+        `CTR${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'} 均排名${t.position != null ? t.position.toFixed(1) : '-'}。`
+    );
+  } catch (e) {
+    lines.push(`【用户指定范围·GSC·${range.label} ${range.start_date}~${range.end_date}】读取失败：${e.message || 'gsc_context_failed'}`);
+  }
 }
 
 // 把已同步的真实 GSC/Ads 汇总 + 诊断 findings 注入上下文（无数据/未授权则静默跳过）。
@@ -69,7 +129,7 @@ const MARKET =
   '目标客户=欧美来图定制工厂/中间商；欧洲毛利高最在意资质，东南亚/巴西薄难成交；' +
   '现仅 SMETA 验厂、缺欧洲认证是短板；客户索要频率 catalog>材质证书>检测报告>案例>工厂视频。';
 
-export function buildContext() {
+export function buildContext(options = {}) {
   const rows = kpiRepo.list();
   const fmt = (r) => `${r.name} 目标${r.target}(实际${r.actual})`;
   const lines = [];
@@ -101,6 +161,7 @@ export function buildContext() {
   if (high.length) lines.push('【高价值词】' + high.map((k) => k.keyword).join('、'));
 
   appendSyncedContext(lines); // 注入真实 GSC/Ads 同步汇总 + 诊断 findings
+  appendRequestedRangeContext(lines, options.message); // 用户问昨天/今天/近7天时，追加对应范围真实同步摘要
 
   lines.push('【市场】' + MARKET);
   return lines.join('\n');

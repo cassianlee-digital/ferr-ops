@@ -6,7 +6,7 @@
    注：底部 [data-time] forEach 在脚本加载时渲染时间条——时间条在 body(行 ~承载面板) 已先于本脚本解析，安全。 */
 
 /* ---------- per-page inline time filter ---------- */
-const RANGES=['近7天','近30天','近90天','近一年','自定义']; // C-2a 三框预设 + C组「可查看近一年」 + 6.23 文档 26「自定义」
+const RANGES=['今天','昨天','近7天','近30天','近90天','近一年','自定义']; // C-2a 三框预设 + C组「可查看近一年」 + 6.23 文档 26「自定义」
 // 6.23 文档 26：自定义区间持久化（YYYY-MM-DD 范围）
 window._customRange=null;
 try{ const cr=JSON.parse(localStorage.getItem('ferr:customRange')||'null');
@@ -24,11 +24,12 @@ function resolveRange(label){
   const back=n=>{ const d=new Date(today); d.setDate(d.getDate()-n); return d; };
   const r=(s,e)=>({start_date:formatLocalDate(s),end_date:formatLocalDate(e),period_label:label});
   switch(label){
+    case '今天':   return r(today,today);
+    case '昨天':   { const y=back(1); return r(y,y); }
     case '近7天':  return r(back(6),today);
     case '近30天': return r(back(29),today);
     case '近90天': return r(back(89),today);
     case '近一年': return r(back(364),today);
-    case '昨天':   { const y=back(1); return r(y,y); }
     case '上周':   { const day=(today.getDay()+6)%7; const thisMon=back(day); const lastMon=new Date(thisMon); lastMon.setDate(thisMon.getDate()-7); const lastSun=new Date(lastMon); lastSun.setDate(lastMon.getDate()+6); return r(lastMon,lastSun); }
     case '上半月': { const first=new Date(today.getFullYear(),today.getMonth(),1); const mid=new Date(today.getFullYear(),today.getMonth(),15); return r(first,mid); }
     case '近1月':  return r(back(29),today);
@@ -47,6 +48,34 @@ let _range=resolveRange(window._timeRange); // BUG-31 B-1：跟随持久化值�
 function getCurrentRange(){ return _range; }
 function withRange(path,range){ range=range||_range; if(!range||!range.start_date||!range.end_date) return path; const sep=path.includes('?')?'&':'?'; return path+sep+'start_date='+encodeURIComponent(range.start_date)+'&end_date='+encodeURIComponent(range.end_date); }
 function rangeText(r){ return (r&&r.start_date)?(r.start_date+' ~ '+r.end_date):'—'; }
+function refreshRangeConsumers(){
+  document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
+  loadInquiries();                 // 1e-a：询盘真实按区间重拉
+  loadSeoChartRange();             // 1e-b：SEO 看板按区间重拉 GSC
+  if(typeof loadSeoBoardFull==='function') loadSeoBoardFull(); // SEO 富看板按区间重拉
+  if(typeof loadSemBoardAds==='function') loadSemBoardAds(); // SEM 看板按区间重拉 Ads
+  if(typeof loadSemBoardFull==='function') loadSemBoardFull(); // SEM 富看板按区间重拉
+  if(typeof loadAttribution==='function') loadAttribution(); // 询盘归因按区间重算
+  if(typeof loadDiagnostics==='function') loadDiagnostics(); // 诊断按区间重算
+  if(typeof loadGa4==='function') loadGa4(); // 阶段5：GA4 按区间重算
+  if(typeof loadDataFreshness==='function') loadDataFreshness(); // 阶段5：数据新鲜度条按区间重算
+}
+function applyTimeRange(label){
+  const nr=resolveRange(label);
+  if(!nr){
+    if(label==='自定义') openCustomRange();
+    else toast('该预设尚未实现，未改变筛选');
+    return false;
+  }
+  window._timeRange=label;
+  _range=nr;
+  try{ localStorage.setItem('ferr:timeRange',label); }catch(e){}
+  document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent.trim()===label));
+  document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
+  refreshRangeConsumers();
+  toast('时间范围：'+_range.period_label);
+  return true;
+}
 /* C-2a 三框：框1 预设(7/30/90) + 框2 自动日期(只读) + 框3 粒度(按所在面板 data-gran 白名单动态给) */
 function renderTimebar(bar){
   const grans=(bar.dataset.gran||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -58,37 +87,19 @@ function renderTimebar(bar){
     :'';
   bar.innerHTML='<span class="tlabel"><i class="ti ti-calendar-stats"></i> 时间</span>'
     +RANGES.map(r=>`<button type="button" class="trange${r===window._timeRange?' active':''}">${r}</button>`).join('')
-    +`<span class="tauto" data-tauto><i class="ti ti-calendar"></i> ${rangeText(_range)}</span>`
+    +`<button type="button" class="tauto tauto-btn" data-tauto title="选择具体日期范围"><i class="ti ti-calendar"></i> ${rangeText(_range)}</button>`
     +granHtml;
 }
 document.querySelectorAll('[data-time]').forEach(bar=>{
   renderTimebar(bar);
   bar.addEventListener('click',e=>{
+    const dateBtn=e.target.closest('.tauto-btn');
+    if(dateBtn){ openCustomRange(); return; }
     const btn=e.target.closest('.trange'); if(!btn)return;
     const rg=btn.textContent.trim();
     // 6.23 文档 26：点「自定义」打开日期弹框；保存后再应用。先把按钮态切回原 active（用户取消时不抖动）
     if(rg==='自定义'&&!window._customRange){ openCustomRange(); return; }
-    document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent===btn.textContent));
-    window._timeRange=rg;
-    const nr=resolveRange(rg);
-    if(!nr){
-      if(rg==='自定义'){ openCustomRange(); return; } // 兜底：自定义但没区间 → 弹框
-      toast('该预设尚未实现，未改变筛选'); return;
-    }
-    _range=nr;
-    try{ localStorage.setItem('ferr:timeRange',rg); }catch(e){} // BUG-31 B-1
-    document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
-    document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
-    loadInquiries();                 // 1e-a：询盘真实按区间重拉
-    loadSeoChartRange();             // 1e-b：SEO 看板按区间重拉 GSC
-    if(typeof loadSeoBoardFull==='function') loadSeoBoardFull(); // SEO 富看板按区间重拉
-    if(typeof loadSemBoardAds==='function') loadSemBoardAds(); // SEM 看板按区间重拉 Ads
-    if(typeof loadSemBoardFull==='function') loadSemBoardFull(); // SEM 富看板按区间重拉
-    if(typeof loadAttribution==='function') loadAttribution(); // 询盘归因按区间重算
-    if(typeof loadDiagnostics==='function') loadDiagnostics(); // 诊断按区间重算
-    if(typeof loadGa4==='function') loadGa4(); // 阶段5：GA4 按区间重算
-    if(typeof loadDataFreshness==='function') loadDataFreshness(); // 阶段5：数据新鲜度条按区间重算
-    toast('时间范围：'+_range.period_label);
+    applyTimeRange(rg);
   });
   bar.addEventListener('change',e=>{
     const sel=e.target.closest('.tgran'); if(!sel)return;
@@ -125,16 +136,8 @@ function submitCustomRange(){
   try{ localStorage.setItem('ferr:timeRange','自定义'); }catch(err){}
   _range=resolveRange('自定义');
   // 同步 UI：所有时间条按钮态 + 自动日期框
-  document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent==='自定义'));
+  document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent.trim()==='自定义'));
   document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
-  document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
-  loadInquiries(); loadSeoChartRange();
-  if(typeof loadSeoBoardFull==='function') loadSeoBoardFull();
-  if(typeof loadSemBoardAds==='function') loadSemBoardAds();
-  if(typeof loadSemBoardFull==='function') loadSemBoardFull();
-  if(typeof loadAttribution==='function') loadAttribution();
-  if(typeof loadDiagnostics==='function') loadDiagnostics();
-  if(typeof loadGa4==='function') loadGa4();
-  if(typeof loadDataFreshness==='function') loadDataFreshness();
+  refreshRangeConsumers();
   closeModal('customRangeMask'); toast('已应用：'+_range.period_label);
 }
