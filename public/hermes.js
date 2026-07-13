@@ -799,6 +799,39 @@
     }, 40);
   }
 
+  function encodeTask(task) {
+    try { return JSON.stringify(task || {}); } catch { return '{}'; }
+  }
+
+  async function createDataGapTask(taskJson, button) {
+    if (!window.API) return;
+    let task = {};
+    try { task = JSON.parse(taskJson || '{}'); } catch {}
+    const content = String(task.content || '').trim();
+    if (!content) {
+      toastSafe('补数任务内容为空');
+      return;
+    }
+    if (button) button.disabled = true;
+    try {
+      const body = {
+        kind: 'task',
+        dept: task.dept || '公司',
+        content,
+        owner: task.owner || '',
+        status: task.status || '待办',
+        task_date: task.task_date || '',
+        note: task.note || '',
+      };
+      await window.API.post('/api/loop-items', body);
+      if (typeof window.loadClosedLoop === 'function') await window.loadClosedLoop();
+      toastSafe('已加入日计划：' + content.slice(0, 28));
+    } catch (e) {
+      if (button) button.disabled = false;
+      toastSafe(e && e.status === 403 ? '无权新增任务' : '补数任务入库失败：' + ((e && e.message) || 'save_failed'));
+    }
+  }
+
   function appendHermesEvidenceAudit(bubble, hermes) {
     const audit = hermes && hermes.evidenceAudit;
     if (!audit) return;
@@ -870,6 +903,31 @@
       miss.className = 'hermes-evidence-missing';
       miss.textContent = '缺失数据：' + missing.slice(0, 6).join('、');
       body.appendChild(miss);
+    }
+
+    const tasks = Array.isArray(hermes.dataGapTasks) ? hermes.dataGapTasks : [];
+    if (tasks.length) {
+      const taskBox = document.createElement('div');
+      taskBox.className = 'hermes-gap-tasks';
+      const title = document.createElement('div');
+      title.className = 'hermes-gap-title';
+      title.textContent = '建议补数任务';
+      taskBox.appendChild(title);
+      tasks.slice(0, 4).forEach((task) => {
+        const row = document.createElement('div');
+        row.className = 'hermes-gap-task';
+        const main = document.createElement('span');
+        main.textContent = task.content || task.key || '';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'hermes-gap-add';
+        btn.dataset.task = encodeTask(task);
+        btn.innerHTML = '<i class="ti ti-plus"></i><span>加入日计划</span>';
+        row.appendChild(main);
+        row.appendChild(btn);
+        taskBox.appendChild(row);
+      });
+      body.appendChild(taskBox);
     }
 
     details.appendChild(body);
@@ -1114,6 +1172,11 @@
     const evidenceSourceBtn = e.target.closest && e.target.closest('.hermes-evidence-source');
     if (evidenceSourceBtn) {
       openEvidenceSource(evidenceSourceBtn.dataset.source);
+      return;
+    }
+    const gapAddBtn = e.target.closest && e.target.closest('.hermes-gap-add');
+    if (gapAddBtn) {
+      createDataGapTask(gapAddBtn.dataset.task, gapAddBtn);
       return;
     }
     const feedbackBtn = e.target.closest && e.target.closest('.hermes-feedback');

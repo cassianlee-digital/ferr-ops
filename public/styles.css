@@ -4188,6 +4188,53 @@ table.dt td.editable:focus,
   color: #2159d6;
 }
 
+.hermes-gap-tasks {
+  display: grid;
+  gap: 7px;
+  padding-top: 2px;
+}
+
+.hermes-gap-title {
+  color: #334155;
+  font-weight: 700;
+}
+
+.hermes-gap-task {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #e7edf6;
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.hermes-gap-task span {
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.hermes-gap-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid #bbd0ff;
+  border-radius: var(--radius);
+  background: #eef5ff;
+  color: #2159d6;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hermes-gap-add:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
 .hermes-copy {
   display: inline-flex;
   align-items: center;
@@ -4632,6 +4679,21 @@ body.dark .hermes-evidence-actions button {
 
 body.dark .hermes-evidence-actions button:hover {
   border-color: #3b82f6;
+  color: #93c5fd;
+}
+
+body.dark .hermes-gap-title {
+  color: #cbd5e1;
+}
+
+body.dark .hermes-gap-task {
+  border-color: #273142;
+  background: #0f172a;
+}
+
+body.dark .hermes-gap-add {
+  border-color: #1d4ed8;
+  background: #172033;
   color: #93c5fd;
 }
 

@@ -678,6 +678,76 @@ function composeHermesText(parsed) {
   ].join('\n');
 }
 
+function dataGapTaskFor(name) {
+  const key = String(name || '').trim();
+  if (!key) return null;
+  const map = {
+    kpi_targets: {
+      dept: '公司',
+      owner: '',
+      content: '补齐 KPI 目标配置，确保 Hermes 能判断月度达标风险',
+      note: '来源：Hermes 缺失数据 kpi_targets。补齐后再生成 KPI/经营判断。',
+    },
+    inquiries: {
+      dept: '公司',
+      owner: '',
+      content: '补录或校验询盘数据，至少包含总量、有效询盘和 A/B/C 等级',
+      note: '来源：Hermes 缺失数据 inquiries。没有询盘质量，SEO/SEM 建议无法验证业务结果。',
+    },
+    sem_weeks: {
+      dept: 'SEM',
+      owner: '陈',
+      content: '补录本周 SEM 周报指标：花费、点击、转化、CPC、CTR、质量分、转化成本',
+      note: '来源：Hermes 缺失数据 sem_weeks。未接入 Google Ads 同步前，先用人工周报维持判断。',
+    },
+    seo_weeks: {
+      dept: 'SEO',
+      owner: '李',
+      content: '补录本周 SEO 周报指标：点击、展现、排名、Top10 占比、收录页数',
+      note: '来源：Hermes 缺失数据 seo_weeks。未接入 GSC 同步前，先用人工周报维持判断。',
+    },
+    keywords: {
+      dept: '公司',
+      owner: '',
+      content: '补齐关键词库，区分 SEO 机会词、SEM 投放词和否词',
+      note: '来源：Hermes 缺失数据 keywords。没有关键词资产，建议无法落到具体词。',
+    },
+    market_research: {
+      dept: '公司',
+      owner: '',
+      content: '补齐市场分析和客户事实，作为 Hermes 判断客户意图的事实地基',
+      note: '来源：Hermes 缺失数据 market_research。避免使用通用营销假设替代公司事实。',
+    },
+    hermes_memories: {
+      dept: '公司',
+      owner: '',
+      content: '沉淀一条已验证的 Hermes 运营记忆，说明事实、证据和适用场景',
+      note: '来源：Hermes 缺失数据 hermes_memories。长期记忆不足会让回答更像通用模型。',
+    },
+  };
+  const fallback = {
+    dept: '公司',
+    owner: '',
+    content: `补齐 ${key} 数据，避免 Hermes 在该范围内凭经验判断`,
+    note: `来源：Hermes 缺失数据 ${key}。补齐后重新生成诊断。`,
+  };
+  const task = map[key] || fallback;
+  return {
+    key,
+    kind: 'task',
+    status: '待办',
+    task_date: beijingDayKey(),
+    ...task,
+  };
+}
+
+function buildDataGapTasks(missing) {
+  return [...new Set((missing || []).filter(Boolean))]
+    .map(dataGapTaskFor)
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
 function currentUserId(request) {
   return Number(request.user?.id || 0);
 }
@@ -1128,13 +1198,15 @@ export async function hermesRoutes(app) {
         ...(context.opsDiagnosis?.missingData || []),
         ...(context.enterpriseMemory?.missingData || []),
       ];
+      const missingData = [...new Set(missing)];
       const hermes = {
         mode: 'ferr_hermes_morning_brief',
         skill: { id: 'auto', label: '今日早报' },
         workflow: { id: 'diagnose_to_action', label: '诊断到动作' },
         usedMemory: Boolean(context.enterpriseMemory?.longTermMemories?.length),
         usedPageContext: Boolean(context.pageContext),
-        missingData: [...new Set(missing)],
+        missingData,
+        dataGapTasks: buildDataGapTasks(missingData),
         evidenceAudit: audit,
       };
       const memory = hermesMemoryRepo.upsertBySourceTitle({
@@ -1284,6 +1356,8 @@ export async function hermesRoutes(app) {
         ],
         evidenceAudit: audit,
       };
+      hermes.missingData = [...new Set(hermes.missingData)];
+      hermes.dataGapTasks = buildDataGapTasks(hermes.missingData);
       const now = new Date().toISOString();
       const additions = [
         { role: 'user', content: message, attachments: publicAttachmentSummary(attachments), at: now },
