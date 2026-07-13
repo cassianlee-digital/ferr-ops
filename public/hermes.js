@@ -20,6 +20,9 @@
   let activeConversationId = null;
   let historyVisible = false;
   let dataGapTaskKeys = new Set();
+  let dataGapTaskItems = new Map();
+  let currentHermesMissingData = new Set();
+  let dataGapStatusLoaded = false;
 
   function byId(id) { return document.getElementById(id); }
   function currentUser() { return window.ME || {}; }
@@ -819,18 +822,71 @@
     button.innerHTML = '<i class="ti ti-check"></i><span>已加入</span>';
   }
 
+  function gapTaskState(task) {
+    const key = dataGapTaskKey(task);
+    const existing = dataGapTaskItems.get(key);
+    if (dataGapStatusLoaded && task && task.key && !currentHermesMissingData.has(task.key)) return 'resolved';
+    if (existing && (existing.state === 'done' || existing.status === 'done')) return 'done_still_missing';
+    if (existing) return 'added';
+    return 'missing';
+  }
+
+  function gapTaskStateText(state) {
+    return {
+      resolved: '数据已补齐',
+      done_still_missing: '任务完成 · 数据仍缺',
+      added: '已加入日计划',
+      missing: '待补数',
+    }[state] || '待补数';
+  }
+
+  function setGapButtonState(button, state) {
+    if (!button) return;
+    button.classList.remove('added', 'resolved', 'warn');
+    if (state === 'resolved') {
+      button.disabled = true;
+      button.classList.add('resolved');
+      button.innerHTML = '<i class="ti ti-checks"></i><span>已补齐</span>';
+    } else if (state === 'done_still_missing') {
+      button.disabled = true;
+      button.classList.add('warn');
+      button.innerHTML = '<i class="ti ti-alert-triangle"></i><span>仍缺</span>';
+    } else if (state === 'added') {
+      markGapButtonAdded(button);
+    } else {
+      button.disabled = false;
+      button.innerHTML = '<i class="ti ti-plus"></i><span>加入日计划</span>';
+    }
+  }
+
   function applyGapTaskButtonStates() {
     document.querySelectorAll('.hermes-gap-add').forEach((btn) => {
       const key = btn.dataset.key || '';
-      if (key && dataGapTaskKeys.has(key)) markGapButtonAdded(btn);
+      if (!key) return;
+      let task = {};
+      try { task = JSON.parse(btn.dataset.task || '{}'); } catch {}
+      setGapButtonState(btn, gapTaskState(task));
+      const row = btn.closest('.hermes-gap-task');
+      const badge = row && row.querySelector('.hermes-gap-state');
+      if (badge) badge.textContent = gapTaskStateText(gapTaskState(task));
     });
   }
 
   async function refreshDataGapTaskKeys() {
     if (!window.API) return dataGapTaskKeys;
     try {
-      const res = await window.API.get('/api/loop-items?kind=task');
-      dataGapTaskKeys = new Set(((res && res.items) || []).map((item) => dataGapTaskKey(item)));
+      const [taskRes, contextRes] = await Promise.all([
+        window.API.get('/api/loop-items?kind=task'),
+        window.API.get('/api/hermes/context'),
+      ]);
+      const items = (taskRes && taskRes.items) || [];
+      dataGapTaskItems = new Map(items.map((item) => [dataGapTaskKey(item), item]));
+      dataGapTaskKeys = new Set(dataGapTaskItems.keys());
+      currentHermesMissingData = new Set([
+        ...(((contextRes && contextRes.opsDiagnosis && contextRes.opsDiagnosis.missingData) || [])),
+        ...(((contextRes && contextRes.enterpriseMemory && contextRes.enterpriseMemory.missingData) || [])),
+      ].filter(Boolean));
+      dataGapStatusLoaded = true;
       applyGapTaskButtonStates();
     } catch {}
     return dataGapTaskKeys;
@@ -865,6 +921,7 @@
       };
       await window.API.post('/api/loop-items', body);
       dataGapTaskKeys.add(dataGapTaskKey(body));
+      dataGapTaskItems.set(dataGapTaskKey(body), body);
       applyGapTaskButtonStates();
       if (typeof window.loadClosedLoop === 'function') await window.loadClosedLoop();
       toastSafe('已加入日计划：' + content.slice(0, 28));
@@ -960,14 +1017,21 @@
         row.className = 'hermes-gap-task';
         const main = document.createElement('span');
         main.textContent = task.content || task.key || '';
+        const state = gapTaskState(task);
+        const meta = document.createElement('small');
+        meta.className = 'hermes-gap-state';
+        meta.textContent = gapTaskStateText(state);
+        const text = document.createElement('div');
+        text.className = 'hermes-gap-task-text';
+        text.appendChild(main);
+        text.appendChild(meta);
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'hermes-gap-add';
         btn.dataset.key = dataGapTaskKey(task);
         btn.dataset.task = encodeTask(task);
-        if (dataGapTaskKeys.has(btn.dataset.key)) markGapButtonAdded(btn);
-        else btn.innerHTML = '<i class="ti ti-plus"></i><span>加入日计划</span>';
-        row.appendChild(main);
+        setGapButtonState(btn, state);
+        row.appendChild(text);
         row.appendChild(btn);
         taskBox.appendChild(row);
       });

@@ -4210,9 +4210,21 @@ table.dt td.editable:focus,
   background: #ffffff;
 }
 
-.hermes-gap-task span {
+.hermes-gap-task-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hermes-gap-task-text span {
   min-width: 0;
   line-height: 1.5;
+}
+
+.hermes-gap-state {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .hermes-gap-add {
@@ -4239,6 +4251,18 @@ table.dt td.editable:focus,
   border-color: #bbf7d0;
   background: #f0fdf4;
   color: #16884a;
+}
+
+.hermes-gap-add.resolved {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.hermes-gap-add.warn {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #b45309;
 }
 
 .hermes-copy {
@@ -4707,6 +4731,22 @@ body.dark .hermes-gap-add.added {
   border-color: #166534;
   background: #052e1a;
   color: #86efac;
+}
+
+body.dark .hermes-gap-state {
+  color: #94a3b8;
+}
+
+body.dark .hermes-gap-add.resolved {
+  border-color: #1d4ed8;
+  background: #0f1f3d;
+  color: #93c5fd;
+}
+
+body.dark .hermes-gap-add.warn {
+  border-color: #92400e;
+  background: #2a1908;
+  color: #fdba74;
 }
 
 body.dark .hermes-select {
