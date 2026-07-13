@@ -4235,6 +4235,12 @@ table.dt td.editable:focus,
   cursor: default;
 }
 
+.hermes-gap-add.added {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #16884a;
+}
+
 .hermes-copy {
   display: inline-flex;
   align-items: center;
@@ -4695,6 +4701,12 @@ body.dark .hermes-gap-add {
   border-color: #1d4ed8;
   background: #172033;
   color: #93c5fd;
+}
+
+body.dark .hermes-gap-add.added {
+  border-color: #166534;
+  background: #052e1a;
+  color: #86efac;
 }
 
 body.dark .hermes-select {

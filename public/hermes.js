@@ -19,6 +19,7 @@
   let attachments = [];
   let activeConversationId = null;
   let historyVisible = false;
+  let dataGapTaskKeys = new Set();
 
   function byId(id) { return document.getElementById(id); }
   function currentUser() { return window.ME || {}; }
@@ -803,6 +804,38 @@
     try { return JSON.stringify(task || {}); } catch { return '{}'; }
   }
 
+  function dataGapTaskKey(task) {
+    return [
+      task && task.dept || '公司',
+      task && task.task_date || '',
+      String(task && task.content || '').trim(),
+    ].join('|');
+  }
+
+  function markGapButtonAdded(button) {
+    if (!button) return;
+    button.disabled = true;
+    button.classList.add('added');
+    button.innerHTML = '<i class="ti ti-check"></i><span>已加入</span>';
+  }
+
+  function applyGapTaskButtonStates() {
+    document.querySelectorAll('.hermes-gap-add').forEach((btn) => {
+      const key = btn.dataset.key || '';
+      if (key && dataGapTaskKeys.has(key)) markGapButtonAdded(btn);
+    });
+  }
+
+  async function refreshDataGapTaskKeys() {
+    if (!window.API) return dataGapTaskKeys;
+    try {
+      const res = await window.API.get('/api/loop-items?kind=task');
+      dataGapTaskKeys = new Set(((res && res.items) || []).map((item) => dataGapTaskKey(item)));
+      applyGapTaskButtonStates();
+    } catch {}
+    return dataGapTaskKeys;
+  }
+
   async function createDataGapTask(taskJson, button) {
     if (!window.API) return;
     let task = {};
@@ -810,6 +843,13 @@
     const content = String(task.content || '').trim();
     if (!content) {
       toastSafe('补数任务内容为空');
+      return;
+    }
+    const key = dataGapTaskKey(task);
+    await refreshDataGapTaskKeys();
+    if (dataGapTaskKeys.has(key)) {
+      markGapButtonAdded(button);
+      toastSafe('这条补数任务今天已在日计划中');
       return;
     }
     if (button) button.disabled = true;
@@ -824,6 +864,8 @@
         note: task.note || '',
       };
       await window.API.post('/api/loop-items', body);
+      dataGapTaskKeys.add(dataGapTaskKey(body));
+      applyGapTaskButtonStates();
       if (typeof window.loadClosedLoop === 'function') await window.loadClosedLoop();
       toastSafe('已加入日计划：' + content.slice(0, 28));
     } catch (e) {
@@ -921,8 +963,10 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'hermes-gap-add';
+        btn.dataset.key = dataGapTaskKey(task);
         btn.dataset.task = encodeTask(task);
-        btn.innerHTML = '<i class="ti ti-plus"></i><span>加入日计划</span>';
+        if (dataGapTaskKeys.has(btn.dataset.key)) markGapButtonAdded(btn);
+        else btn.innerHTML = '<i class="ti ti-plus"></i><span>加入日计划</span>';
         row.appendChild(main);
         row.appendChild(btn);
         taskBox.appendChild(row);
@@ -1021,6 +1065,9 @@
     const last = byId('hermesLast');
     if (last && messages.length) last.hidden = true;
     setConversationControls();
+    if (messages.some((message) => message.hermes && Array.isArray(message.hermes.dataGapTasks) && message.hermes.dataGapTasks.length)) {
+      refreshDataGapTaskKeys();
+    }
     setTimeout(() => { log.scrollTop = log.scrollHeight; }, 20);
   }
 
@@ -1107,6 +1154,7 @@
     if (panel) panel.classList.add('show');
     if (!statusChecked) refreshHermesStatus(false);
     if (!messages.length) loadHermesLatest(false);
+    refreshDataGapTaskKeys();
   }
 
   function closeHermesPanel() {
