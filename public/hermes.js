@@ -669,6 +669,24 @@
     }
   }
 
+  async function sendHermesFeedback(index, result) {
+    if (!window.API || !activeConversationId) {
+      toastSafe('需要先发送或打开一段已保存对话');
+      return;
+    }
+    const label = { adopted: '有用', generic: '太泛', wrong: '不准' }[result] || '反馈';
+    try {
+      await window.API.post('/api/hermes/conversations/' + encodeURIComponent(activeConversationId) + '/feedback', {
+        messageIndex: Number(index),
+        result,
+      });
+      if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
+      toastSafe('已记录反馈：' + label);
+    } catch (e) {
+      toastSafe(e.status === 403 ? '无权沉淀 AI 反馈' : '反馈失败：' + (e.message || 'feedback_failed'));
+    }
+  }
+
   function renderMessageItem(message, index) {
     const row = document.createElement('div');
     row.className = 'hermes-msg ' + (message.role === 'user' ? 'user' : 'assistant');
@@ -725,6 +743,21 @@
       copy.dataset.index = String(index);
       copy.innerHTML = '<i class="ti ti-copy"></i> 复制';
       tools.appendChild(copy);
+      if (message.role === 'assistant') {
+        [
+          ['adopted', '有用'],
+          ['generic', '太泛'],
+          ['wrong', '不准'],
+        ].forEach(([result, label]) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'hermes-feedback';
+          btn.dataset.index = String(index);
+          btn.dataset.result = result;
+          btn.textContent = label;
+          tools.appendChild(btn);
+        });
+      }
       row.appendChild(tools);
     }
     return row;
@@ -893,6 +926,11 @@
       copyHermesMessage(copyBtn.dataset.index);
       return;
     }
+    const feedbackBtn = e.target.closest && e.target.closest('.hermes-feedback');
+    if (feedbackBtn) {
+      sendHermesFeedback(feedbackBtn.dataset.index, feedbackBtn.dataset.result);
+      return;
+    }
     const removeBtn = e.target.closest && e.target.closest('.hermes-file-remove');
     if (removeBtn) {
       removeHermesAttachment(removeBtn.dataset.index);
@@ -960,6 +998,7 @@
   window.toggleHermesHistory = toggleHermesHistory;
   window.archiveHermesConversation = archiveHermesConversation;
   window.learnHermesConversation = learnHermesConversation;
+  window.sendHermesFeedback = sendHermesFeedback;
 
   document.addEventListener('DOMContentLoaded', () => {
     setHermesView(lastHermesState || {});

@@ -3907,6 +3907,7 @@ table.dt td.editable:focus,
 
 .hermes-msg-tools {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   max-width: 86%;
 }
@@ -4024,6 +4025,23 @@ table.dt td.editable:focus,
 .hermes-copy:hover {
   border-color: #9bbcff;
   color: #2159d6;
+}
+
+.hermes-feedback {
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid #e5eaf3;
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.hermes-feedback:hover {
+  border-color: #9bbcff;
+  color: #2159d6;
+  background: #f8fbff;
 }
 
 .hermes-agent-note {
@@ -4237,6 +4255,7 @@ body.dark .hermes-msg-bubble,
 body.dark .hermes-agent-note,
 body.dark .hermes-compose,
 body.dark .hermes-copy,
+body.dark .hermes-feedback,
 body.dark .hermes-file-chip {
   border-color: #273142;
   background: #111827;

@@ -597,6 +597,54 @@ function conversationLearningPayload(conversation, note = '') {
   };
 }
 
+function conversationFeedbackPayload(conversation, input = {}) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  const index = Number(input.messageIndex);
+  const assistant = Number.isInteger(index) ? messages[index] : null;
+  if (!assistant || assistant.role !== 'assistant') return null;
+
+  const previousUser = messages
+    .slice(0, index)
+    .reverse()
+    .find((m) => m.role === 'user');
+  const result = ['adopted', 'generic', 'wrong'].includes(input.result) ? input.result : 'adopted';
+  const label = {
+    adopted: '有用',
+    generic: '太泛',
+    wrong: '不准',
+  }[result];
+  const kind = result === 'wrong' ? 'risk' : (result === 'generic' ? 'preference' : 'learning');
+  const importance = result === 'adopted' ? 3 : 4;
+  const rule = {
+    adopted: '这类回答方式后续可以复用：保留其问题拆解、证据组织和动作表达方式。',
+    generic: '后续遇到类似问题时不要泛泛回答，必须补充具体数据证据、判断边界、负责人和验证指标。',
+    wrong: '后续遇到类似问题时先复核事实与假设，避免沿用这次被标记为不准的判断路径。',
+  }[result];
+
+  return {
+    kind,
+    title: `回答反馈：${label} #${conversation.id}-${index}`,
+    content: [
+      '反馈结果：' + label,
+      '适用场景：' + (conversation.title || 'Hermes 对话反馈'),
+      previousUser ? '用户问题：' + trimText(previousUser.content, 1200) : '',
+      '',
+      '后续规则：',
+      rule,
+      '',
+      '被反馈回答摘要：',
+      trimText(assistant.content, 1600),
+    ].filter(Boolean).join('\n'),
+    evidence: [
+      `来源：Hermes 对话 #${conversation.id} 第 ${index + 1} 条回答`,
+      conversation.role ? `角色：${conversation.role}` : '',
+      assistant.basis ? '原判断依据：' + trimText(assistant.basis, 1200) : '',
+    ].filter(Boolean).join('\n'),
+    source: `hermes_feedback:${conversation.id}:${index}:${result}`,
+    importance,
+  };
+}
+
 function hermesSystem(context) {
   const operator = context.operator;
   return [
@@ -918,6 +966,16 @@ export async function hermesRoutes(app) {
     if (!payload) return reply.code(400).send({ error: 'conversation_not_learnable' });
     const item = hermesMemoryRepo.upsertBySourceTitle(payload);
     if (!item) return reply.code(400).send({ error: 'memory_save_failed' });
+    return { item };
+  });
+
+  app.post('/api/hermes/conversations/:id/feedback', editor, async (request, reply) => {
+    const conversation = hermesConversationRepo.getForUser(Number(request.params.id), currentUserId(request));
+    if (!conversation) return reply.code(404).send({ error: 'not_found' });
+    const payload = conversationFeedbackPayload(conversation, request.body || {});
+    if (!payload) return reply.code(400).send({ error: 'feedback_target_required' });
+    const item = hermesMemoryRepo.upsertBySourceTitle(payload);
+    if (!item) return reply.code(400).send({ error: 'feedback_save_failed' });
     return { item };
   });
 
