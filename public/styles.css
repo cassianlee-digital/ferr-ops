@@ -4265,6 +4265,42 @@ table.dt td.editable:focus,
   color: #b45309;
 }
 
+.hermes-gap-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.hermes-gap-refresh[hidden] {
+  display: none;
+}
+
+.hermes-gap-refresh-note {
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.hermes-gap-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid #93c5fd;
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #2159d6;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 .hermes-copy {
   display: inline-flex;
   align-items: center;
@@ -4747,6 +4783,18 @@ body.dark .hermes-gap-add.warn {
   border-color: #92400e;
   background: #2a1908;
   color: #fdba74;
+}
+
+body.dark .hermes-gap-refresh {
+  border-color: #1d4ed8;
+  background: #0f1f3d;
+  color: #93c5fd;
+}
+
+body.dark .hermes-gap-refresh-btn {
+  border-color: #3b82f6;
+  background: #111827;
+  color: #93c5fd;
 }
 
 body.dark .hermes-select {

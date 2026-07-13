@@ -870,6 +870,18 @@
       const badge = row && row.querySelector('.hermes-gap-state');
       if (badge) badge.textContent = gapTaskStateText(gapTaskState(task));
     });
+    document.querySelectorAll('.hermes-gap-refresh').forEach((box) => {
+      let tasks = [];
+      try { tasks = JSON.parse(box.dataset.tasks || '[]'); } catch {}
+      const resolved = tasks.filter((task) => gapTaskState(task) === 'resolved');
+      const note = box.querySelector('.hermes-gap-refresh-note');
+      if (resolved.length) {
+        box.hidden = false;
+        if (note) note.textContent = '已补齐 ' + resolved.length + ' 个数据缺口，可基于最新数据重新判断。';
+      } else {
+        box.hidden = true;
+      }
+    });
   }
 
   async function refreshDataGapTaskKeys() {
@@ -1035,6 +1047,19 @@
         row.appendChild(btn);
         taskBox.appendChild(row);
       });
+      const refresh = document.createElement('div');
+      refresh.className = 'hermes-gap-refresh';
+      refresh.dataset.tasks = encodeTask(tasks.slice(0, 4));
+      refresh.hidden = true;
+      const note = document.createElement('span');
+      note.className = 'hermes-gap-refresh-note';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hermes-gap-refresh-btn';
+      btn.innerHTML = '<i class="ti ti-refresh"></i><span>重新生成诊断</span>';
+      refresh.appendChild(note);
+      refresh.appendChild(btn);
+      taskBox.appendChild(refresh);
       body.appendChild(taskBox);
     }
 
@@ -1289,6 +1314,11 @@
     const gapAddBtn = e.target.closest && e.target.closest('.hermes-gap-add');
     if (gapAddBtn) {
       createDataGapTask(gapAddBtn.dataset.task, gapAddBtn);
+      return;
+    }
+    const gapRefreshBtn = e.target.closest && e.target.closest('.hermes-gap-refresh-btn');
+    if (gapRefreshBtn) {
+      sendHermesPrompt('我已经补齐了部分缺失数据。请基于最新 ferr-ops 后台数据重新生成一次运营诊断，必须引用新的证据编号，并明确哪些缺口仍未补齐。');
       return;
     }
     const feedbackBtn = e.target.closest && e.target.closest('.hermes-feedback');
