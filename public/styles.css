@@ -3712,6 +3712,60 @@ table.dt td.editable:focus,
   margin-top: 10px;
 }
 
+.hermes-last {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: var(--radius);
+  background: #f8fbff;
+}
+
+.hermes-last[hidden],
+.hermes-history[hidden] {
+  display: none;
+}
+
+.hermes-last > i {
+  color: #2f6df6;
+  font-size: 18px;
+}
+
+.hermes-last strong,
+.hermes-last span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hermes-last strong {
+  color: #172033;
+  font-size: 13px;
+}
+
+.hermes-last span {
+  margin-top: 2px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.hermes-last-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #cfe0ff;
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #2f6df6;
+  cursor: pointer;
+}
+
 .hermes-quick {
   display: flex;
   align-items: center;
@@ -3744,6 +3798,78 @@ table.dt td.editable:focus,
   min-height: 180px;
   overflow-y: auto;
   padding: 2px 2px 6px;
+}
+
+.hermes-history {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid #e5eaf3;
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.hermes-history-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #edf1f7;
+  background: #ffffff;
+}
+
+.hermes-history-head strong {
+  color: #172033;
+  font-size: 13px;
+}
+
+.hermes-history-switch {
+  border: 0;
+  background: transparent;
+  color: #2f6df6;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.hermes-history-row {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #f0f4fa;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hermes-history-row:hover {
+  background: #f8fbff;
+}
+
+.hermes-history-title,
+.hermes-history-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hermes-history-title {
+  color: #293142;
+  font-size: 13px;
+}
+
+.hermes-history-row small,
+.hermes-history-empty {
+  color: #667085;
+  font-size: 12px;
+}
+
+.hermes-history-empty {
+  padding: 14px 12px;
 }
 
 .hermes-msg {
@@ -4103,6 +4229,10 @@ body.dark .hermes-identity {
 }
 
 body.dark .hermes-welcome,
+body.dark .hermes-last,
+body.dark .hermes-last-open,
+body.dark .hermes-history,
+body.dark .hermes-history-head,
 body.dark .hermes-msg-bubble,
 body.dark .hermes-agent-note,
 body.dark .hermes-compose,
@@ -4113,21 +4243,32 @@ body.dark .hermes-file-chip {
 }
 
 body.dark .hermes-welcome-title,
+body.dark .hermes-last strong,
+body.dark .hermes-history-head strong,
+body.dark .hermes-history-title,
 body.dark .hermes-msg-bubble,
 body.dark .hermes-compose textarea {
   color: #e5e7eb;
 }
 
 body.dark .hermes-welcome p,
+body.dark .hermes-last span,
+body.dark .hermes-history-row small,
+body.dark .hermes-history-empty,
 body.dark .hermes-agent-note {
   color: #94a3b8;
 }
 
 body.dark .hermes-quick,
+body.dark .hermes-history-row,
 body.dark .hermes-compose textarea {
   border-color: #273142;
   background: #0f172a;
   color: #cbd5e1;
+}
+
+body.dark .hermes-history-row:hover {
+  background: #111827;
 }
 
 body.dark .hermes-file-chip small,

@@ -17,6 +17,8 @@
   let lastHermesState = null;
   let messages = [];
   let attachments = [];
+  let activeConversationId = null;
+  let historyVisible = false;
 
   function byId(id) { return document.getElementById(id); }
   function currentUser() { return window.ME || {}; }
@@ -490,6 +492,166 @@
     };
   }
 
+  function formatConversationTime(value) {
+    if (!value) return '';
+    try { return new Date(value).toLocaleString(); } catch { return String(value); }
+  }
+
+  function setConversationControls() {
+    const archiveBtn = byId('hermesArchiveBtn');
+    if (archiveBtn) archiveBtn.disabled = !activeConversationId;
+  }
+
+  function renderLastConversation(conversation) {
+    const box = byId('hermesLast');
+    if (!box) return;
+    box.innerHTML = '';
+    if (!conversation || conversation.id === activeConversationId || messages.length) {
+      box.hidden = true;
+      return;
+    }
+    const icon = document.createElement('i');
+    icon.className = 'ti ti-history';
+    const text = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = conversation.title || '上次对话';
+    const meta = document.createElement('span');
+    meta.textContent = formatConversationTime(conversation.updated_at);
+    text.appendChild(title);
+    text.appendChild(meta);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'hermes-last-open';
+    btn.dataset.id = String(conversation.id);
+    btn.innerHTML = '<i class="ti ti-arrow-right"></i>';
+    box.appendChild(icon);
+    box.appendChild(text);
+    box.appendChild(btn);
+    box.hidden = false;
+  }
+
+  function renderHistoryList(items, archived) {
+    const panel = byId('hermesHistory');
+    if (!panel) return;
+    panel.innerHTML = '';
+    const head = document.createElement('div');
+    head.className = 'hermes-history-head';
+    const title = document.createElement('strong');
+    title.textContent = archived ? '已归档对话' : '历史记录';
+    const switchBtn = document.createElement('button');
+    switchBtn.type = 'button';
+    switchBtn.className = 'hermes-history-switch';
+    switchBtn.dataset.archived = archived ? '0' : '1';
+    switchBtn.textContent = archived ? '看活跃' : '看归档';
+    head.appendChild(title);
+    head.appendChild(switchBtn);
+    panel.appendChild(head);
+
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'hermes-history-empty';
+      empty.textContent = archived ? '暂无归档对话。' : '暂无历史对话。';
+      panel.appendChild(empty);
+      return;
+    }
+
+    items.forEach((item) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'hermes-history-row';
+      row.dataset.id = String(item.id);
+      const main = document.createElement('span');
+      main.className = 'hermes-history-title';
+      main.textContent = item.title || '新对话';
+      const meta = document.createElement('small');
+      meta.textContent = [formatConversationTime(item.updated_at), item.message_count ? item.message_count + ' 条' : ''].filter(Boolean).join(' · ');
+      row.appendChild(main);
+      row.appendChild(meta);
+      panel.appendChild(row);
+    });
+  }
+
+  async function loadHermesLatest(openNow) {
+    if (!window.API) return;
+    try {
+      const res = await window.API.get('/api/hermes/conversations/latest');
+      const conversation = res && res.conversation;
+      renderLastConversation(conversation);
+      if (openNow) {
+        if (conversation && conversation.id) await loadHermesConversation(conversation.id);
+        else toastSafe('还没有可继续的对话');
+      }
+    } catch (e) {
+      if (openNow) toastSafe('读取上次对话失败：' + (e.message || 'history_failed'));
+    }
+  }
+
+  async function loadHermesConversation(id) {
+    if (!window.API || !id) return;
+    try {
+      const res = await window.API.get('/api/hermes/conversations/' + encodeURIComponent(id));
+      const conversation = res && res.conversation;
+      if (!conversation) return;
+      activeConversationId = conversation.id;
+      messages = Array.isArray(conversation.messages) ? conversation.messages : [];
+      const skill = byId('hermesSkill');
+      const workflow = byId('hermesWorkflow');
+      if (skill && conversation.skill) skill.value = conversation.skill;
+      if (workflow && conversation.workflow) workflow.value = conversation.workflow;
+      historyVisible = false;
+      const panel = byId('hermesHistory');
+      if (panel) panel.hidden = true;
+      renderMessages();
+    } catch (e) {
+      toastSafe('读取历史对话失败：' + (e.message || 'history_failed'));
+    }
+  }
+
+  async function loadHermesHistory(archived) {
+    if (!window.API) return;
+    const panel = byId('hermesHistory');
+    if (panel) panel.hidden = false;
+    historyVisible = true;
+    try {
+      const res = await window.API.get('/api/hermes/conversations?archived=' + (archived ? '1' : '0'));
+      renderHistoryList((res && res.items) || [], archived);
+    } catch (e) {
+      if (panel) {
+        panel.innerHTML = '';
+        const empty = document.createElement('div');
+        empty.className = 'hermes-history-empty';
+        empty.textContent = '历史记录读取失败：' + (e.message || 'history_failed');
+        panel.appendChild(empty);
+      }
+    }
+  }
+
+  function toggleHermesHistory() {
+    const panel = byId('hermesHistory');
+    if (!panel) return;
+    if (historyVisible && !panel.hidden) {
+      panel.hidden = true;
+      historyVisible = false;
+      return;
+    }
+    loadHermesHistory(false);
+  }
+
+  async function archiveHermesConversation() {
+    if (!window.API || !activeConversationId) return;
+    try {
+      await window.API.post('/api/hermes/conversations/' + encodeURIComponent(activeConversationId) + '/archive', {});
+      activeConversationId = null;
+      messages = [];
+      renderMessages();
+      await loadHermesLatest(false);
+      if (historyVisible) await loadHermesHistory(false);
+      toastSafe('当前对话已归档');
+    } catch (e) {
+      toastSafe('归档失败：' + (e.message || 'archive_failed'));
+    }
+  }
+
   function renderMessageItem(message, index) {
     const row = document.createElement('div');
     row.className = 'hermes-msg ' + (message.role === 'user' ? 'user' : 'assistant');
@@ -558,6 +720,9 @@
     log.innerHTML = '';
     messages.forEach((message, index) => log.appendChild(renderMessageItem(message, index)));
     if (welcome) welcome.classList.toggle('compact', messages.length > 0);
+    const last = byId('hermesLast');
+    if (last && messages.length) last.hidden = true;
+    setConversationControls();
     setTimeout(() => { log.scrollTop = log.scrollHeight; }, 20);
   }
 
@@ -597,7 +762,9 @@
         attachments: requestAttachments,
         skill: gatewayMode.skill,
         workflow: gatewayMode.workflow,
+        conversationId: activeConversationId,
       });
+      if (res.conversation && res.conversation.id) activeConversationId = res.conversation.id;
       const parsed = splitHermesResponse(res.text || '');
       messages[messages.length - 1] = { role: 'assistant', content: parsed.answer || '没有返回内容。', basis: parsed.basis, hermes: res.hermes };
     } catch (e) {
@@ -617,8 +784,13 @@
   }
 
   function clearHermesChat() {
+    activeConversationId = null;
     messages = [];
+    historyVisible = false;
+    const panel = byId('hermesHistory');
+    if (panel) panel.hidden = true;
     renderMessages();
+    loadHermesLatest(false);
   }
 
   async function copyHermesMessage(index) {
@@ -646,6 +818,7 @@
     syncHermesSession(true);
     if (panel) panel.classList.add('show');
     if (!statusChecked) refreshHermesStatus(false);
+    if (!messages.length) loadHermesLatest(false);
   }
 
   function closeHermesPanel() {
@@ -708,6 +881,21 @@
       removeHermesAttachment(removeBtn.dataset.index);
       return;
     }
+    const lastBtn = e.target.closest && e.target.closest('.hermes-last-open');
+    if (lastBtn) {
+      loadHermesConversation(lastBtn.dataset.id);
+      return;
+    }
+    const historySwitch = e.target.closest && e.target.closest('.hermes-history-switch');
+    if (historySwitch) {
+      loadHermesHistory(historySwitch.dataset.archived === '1');
+      return;
+    }
+    const historyRow = e.target.closest && e.target.closest('.hermes-history-row');
+    if (historyRow) {
+      loadHermesConversation(historyRow.dataset.id);
+      return;
+    }
     if (e.target.closest('.nav-item,.subtab,.planning-tab,.action-tab,.btn-primary,.btn-ghost,.btn-ai')) {
       scheduleSessionSync(500);
     }
@@ -751,6 +939,12 @@
   window.askHermesStarter = askHermesStarter;
   window.clearHermesChat = clearHermesChat;
   window.addHermesFiles = addHermesFiles;
+  window.loadHermesLatest = loadHermesLatest;
+  window.toggleHermesHistory = toggleHermesHistory;
+  window.archiveHermesConversation = archiveHermesConversation;
 
-  document.addEventListener('DOMContentLoaded', () => setHermesView(lastHermesState || {}));
+  document.addEventListener('DOMContentLoaded', () => {
+    setHermesView(lastHermesState || {});
+    setConversationControls();
+  });
 })();

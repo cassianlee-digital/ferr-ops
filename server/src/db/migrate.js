@@ -9,7 +9,7 @@ const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
-  'content_assets', 'hermes_memories',
+  'content_assets', 'hermes_memories', 'hermes_conversations',
   'sop_definitions', 'sop_completions',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
@@ -412,6 +412,22 @@ CREATE TABLE IF NOT EXISTS hermes_memories (
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_hermes_memories_active_kind ON hermes_memories(active, kind, importance);
+
+CREATE TABLE IF NOT EXISTS hermes_conversations (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(id),
+  role        TEXT NOT NULL,
+  title       TEXT NOT NULL DEFAULT '新对话',
+  messages    TEXT NOT NULL DEFAULT '[]',
+  skill       TEXT,
+  workflow    TEXT,
+  state       TEXT NOT NULL DEFAULT 'active' CHECK (state IN ('active','archived')),
+  archived_at TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_hermes_conversations_user_state_updated
+  ON hermes_conversations(user_id, state, updated_at);
 
 CREATE TABLE IF NOT EXISTS sop_definitions (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,

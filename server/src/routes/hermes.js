@@ -11,6 +11,7 @@ import * as semRepo from '../db/repositories/semWeeks.js';
 import * as kwRepo from '../db/repositories/keywords.js';
 import * as marketResearchRepo from '../db/repositories/marketResearch.js';
 import * as hermesMemoryRepo from '../db/repositories/hermesMemories.js';
+import * as hermesConversationRepo from '../db/repositories/hermesConversations.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -532,6 +533,30 @@ function chatHistoryBlock(history) {
     .join('\n');
 }
 
+function splitHermesText(text) {
+  const raw = String(text || '').trim();
+  const m = raw.match(/<hermes_basis>([\s\S]*?)<\/hermes_basis>\s*<hermes_answer>([\s\S]*?)<\/hermes_answer>/i);
+  if (!m) return { basis: '', answer: raw };
+  return { basis: m[1].trim(), answer: m[2].trim() || raw };
+}
+
+function currentUserId(request) {
+  return Number(request.user?.id || 0);
+}
+
+function publicAttachmentSummary(attachments) {
+  return (attachments || []).slice(0, 5).map((item) => ({
+    name: item.name,
+    type: item.type,
+    size: item.size,
+    kind: item.kind,
+  }));
+}
+
+function conversationTitle(message) {
+  return trimText(message, 40) || '新对话';
+}
+
 function hermesSystem(context) {
   const operator = context.operator;
   return [
@@ -804,14 +829,63 @@ export async function hermesRoutes(app) {
     note: '当前使用 ferr-ops 本地 Hermes 记忆、playbook、诊断卡和上下文网关；官方 Hermes 控制台仍作为高级模式入口。',
   }));
 
+  app.get('/api/hermes/conversations', { preHandler: requireAuth }, async (request) => {
+    const userId = currentUserId(request);
+    return {
+      items: hermesConversationRepo.listForUser(userId, {
+        archived: request.query?.archived === '1' || request.query?.archived === 'true',
+        limit: request.query?.limit,
+      }),
+    };
+  });
+
+  app.get('/api/hermes/conversations/latest', { preHandler: requireAuth }, async (request) => ({
+    conversation: hermesConversationRepo.latestForUser(currentUserId(request)),
+  }));
+
+  app.get('/api/hermes/conversations/:id', { preHandler: requireAuth }, async (request, reply) => {
+    const item = hermesConversationRepo.getForUser(Number(request.params.id), currentUserId(request));
+    if (!item) return reply.code(404).send({ error: 'not_found' });
+    return { conversation: item };
+  });
+
+  app.post('/api/hermes/conversations', { preHandler: requireAuth }, async (request, reply) => {
+    const userId = currentUserId(request);
+    if (!userId) return reply.code(401).send({ error: 'unauthorized' });
+    const operator = resolveOperator(request);
+    const item = hermesConversationRepo.createForUser({
+      user_id: userId,
+      role: operator.role,
+      title: trimText(request.body?.title, 40) || '新对话',
+      skill: safeChoice(request.body?.skill, HERMES_SKILLS, 'auto'),
+      workflow: safeChoice(request.body?.workflow, HERMES_WORKFLOWS, 'answer'),
+      messages: [],
+    });
+    reply.code(201);
+    return { conversation: item };
+  });
+
+  app.post('/api/hermes/conversations/:id/archive', { preHandler: requireAuth }, async (request, reply) => {
+    const item = hermesConversationRepo.archiveForUser(Number(request.params.id), currentUserId(request));
+    if (!item) return reply.code(404).send({ error: 'not_found' });
+    return { conversation: item };
+  });
+
   app.post('/api/hermes/chat', { preHandler: requireAuth }, async (request, reply) => {
     const message = trimText(request.body?.message, 5000);
     if (!message) return reply.code(400).send({ error: 'message_required' });
+    const userId = currentUserId(request);
+    if (!userId) return reply.code(401).send({ error: 'unauthorized' });
 
     const skillKey = safeChoice(request.body?.skill, HERMES_SKILLS, 'auto');
     const workflowKey = safeChoice(request.body?.workflow, HERMES_WORKFLOWS, 'answer');
     const attachments = cleanAiAttachments(request.body?.attachments);
-    const history = chatHistoryBlock(request.body?.history);
+    const requestedConversationId = Number(request.body?.conversationId || 0);
+    const existingConversation = requestedConversationId
+      ? hermesConversationRepo.getForUser(requestedConversationId, userId)
+      : null;
+    const activeConversation = existingConversation?.state === 'active' ? existingConversation : null;
+    const history = chatHistoryBlock(activeConversation?.messages || request.body?.history);
     const context = contextPayload(request);
 
     if (!context.ok) return reply.code(500).send({ error: context.error || 'hermes_context_failed', detail: context.detail || '' });
@@ -822,19 +896,42 @@ export async function hermesRoutes(app) {
         hermesChatPrompt({ context, message, history, attachments, skillKey, workflowKey }),
         { attachments },
       );
+      const parsed = splitHermesText(text);
+      const hermes = {
+        mode: 'ferr_hermes_gateway',
+        skill: { id: skillKey, label: HERMES_SKILLS[skillKey].label },
+        workflow: { id: workflowKey, label: HERMES_WORKFLOWS[workflowKey].label },
+        usedMemory: Boolean(context.enterpriseMemory?.longTermMemories?.length),
+        usedPageContext: Boolean(context.pageContext),
+        missingData: [
+          ...(context.opsDiagnosis?.missingData || []),
+          ...(context.enterpriseMemory?.missingData || []),
+        ],
+      };
+      const now = new Date().toISOString();
+      const additions = [
+        { role: 'user', content: message, attachments: publicAttachmentSummary(attachments), at: now },
+        { role: 'assistant', content: parsed.answer || text, basis: parsed.basis, hermes, at: now },
+      ];
+      const conversation = activeConversation
+        ? hermesConversationRepo.appendForUser(activeConversation.id, userId, additions, { skill: skillKey, workflow: workflowKey })
+        : hermesConversationRepo.createForUser({
+          user_id: userId,
+          role: resolveOperator(request).role,
+          title: conversationTitle(message),
+          messages: additions,
+          skill: skillKey,
+          workflow: workflowKey,
+        });
       return {
         text,
-        hermes: {
-          mode: 'ferr_hermes_gateway',
-          skill: { id: skillKey, label: HERMES_SKILLS[skillKey].label },
-          workflow: { id: workflowKey, label: HERMES_WORKFLOWS[workflowKey].label },
-          usedMemory: Boolean(context.enterpriseMemory?.longTermMemories?.length),
-          usedPageContext: Boolean(context.pageContext),
-          missingData: [
-            ...(context.opsDiagnosis?.missingData || []),
-            ...(context.enterpriseMemory?.missingData || []),
-          ],
-        },
+        hermes,
+        conversation: conversation ? {
+          id: conversation.id,
+          title: conversation.title,
+          state: conversation.state,
+          updated_at: conversation.updated_at,
+        } : null,
       };
     } catch (e) {
       request.log.error({ err: e.message, status: e.status }, 'hermes chat failed');
