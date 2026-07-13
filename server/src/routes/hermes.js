@@ -633,6 +633,51 @@ function auditHermesAnswer(parsed, context) {
   };
 }
 
+function needsEvidenceGuard(parsed, forceEvidence = false) {
+  if (forceEvidence) return true;
+  const raw = [parsed?.basis, parsed?.answer].filter(Boolean).join('\n');
+  return /(SEO|SEM|KPI|询盘|关键词|周报|转化|点击|花费|排名|数据|证据|建议|判断|动作|优化|复盘|整改)/i.test(raw);
+}
+
+function evidenceGuardMessage(audit, parsed, forceEvidence = false) {
+  if (!audit) return '';
+  if (!needsEvidenceGuard(parsed, forceEvidence)) return '';
+  if (audit.status === 'partial') {
+    return '证据校验：部分证据编号无法匹配，未匹配内容不能作为事实；请只执行证据核验中已匹配证据支持的动作。';
+  }
+  if (audit.status === 'weak') {
+    return '证据校验：这条回答没有引用可匹配的公司数据证据，只能作为待验证建议；执行前请先补充或打开证据来源核对。';
+  }
+  if (audit.status === 'no_evidence_pool') {
+    return '证据校验：当前没有可用证据池，不能把这条回答当作已验证结论；请先补录 KPI、周报、询盘或关键词等数据。';
+  }
+  return '';
+}
+
+function guardHermesAnswer(parsed, audit, options = {}) {
+  const message = evidenceGuardMessage(audit, parsed, options.forceEvidence);
+  if (!message) return parsed;
+  audit.guardApplied = true;
+  audit.guardMessage = message;
+  const answer = String(parsed?.answer || '').trim();
+  const basis = String(parsed?.basis || '').trim();
+  return {
+    basis: [basis, message].filter(Boolean).join('\n'),
+    answer: answer.includes(message) ? answer : [answer, message].filter(Boolean).join('\n\n'),
+  };
+}
+
+function composeHermesText(parsed) {
+  return [
+    '<hermes_basis>',
+    String(parsed?.basis || '').trim(),
+    '</hermes_basis>',
+    '<hermes_answer>',
+    String(parsed?.answer || '').trim(),
+    '</hermes_answer>',
+  ].join('\n');
+}
+
 function currentUserId(request) {
   return Number(request.user?.id || 0);
 }
@@ -1075,8 +1120,10 @@ export async function hermesRoutes(app) {
         hermesSystem(context),
         morningBriefPrompt(context),
       );
-      const parsed = splitHermesText(text);
+      let parsed = splitHermesText(text);
       const audit = auditHermesAnswer(parsed, context);
+      parsed = guardHermesAnswer(parsed, audit, { forceEvidence: true });
+      const responseText = composeHermesText(parsed);
       const missing = [
         ...(context.opsDiagnosis?.missingData || []),
         ...(context.enterpriseMemory?.missingData || []),
@@ -1115,7 +1162,7 @@ export async function hermesRoutes(app) {
         });
 
       return {
-        text,
+        text: responseText,
         hermes,
         briefing: { day, role, memoryId: memory?.id || null },
         conversation: conversation ? {
@@ -1221,8 +1268,10 @@ export async function hermesRoutes(app) {
         hermesChatPrompt({ context, message, history, attachments, skillKey, workflowKey }),
         { attachments },
       );
-      const parsed = splitHermesText(text);
+      let parsed = splitHermesText(text);
       const audit = auditHermesAnswer(parsed, context);
+      parsed = guardHermesAnswer(parsed, audit);
+      const responseText = composeHermesText(parsed);
       const hermes = {
         mode: 'ferr_hermes_gateway',
         skill: { id: skillKey, label: HERMES_SKILLS[skillKey].label },
@@ -1251,7 +1300,7 @@ export async function hermesRoutes(app) {
           workflow: workflowKey,
         });
       return {
-        text,
+        text: responseText,
         hermes,
         conversation: conversation ? {
           id: conversation.id,
