@@ -3443,6 +3443,13 @@ table.dt td.editable:focus,
   font-size: 18px;
 }
 
+.rail-btn img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  display: block;
+}
+
 .rail-agent {
   border-color: #bfdbff;
   background: #f7fbff;
@@ -3526,8 +3533,11 @@ table.dt td.editable:focus,
   flex-shrink: 0;
 }
 
-.hermes-avatar i {
-  font-size: 18px;
+.hermes-avatar img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  display: block;
 }
 
 .hermes-title {
@@ -3663,6 +3673,10 @@ table.dt td.editable:focus,
   padding: 10px 12px;
 }
 
+.hermes-welcome.compact .hermes-welcome-main {
+  display: none;
+}
+
 .hermes-welcome-main {
   display: flex;
   gap: 12px;
@@ -3673,13 +3687,19 @@ table.dt td.editable:focus,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #d9e7ff;
+  width: 118px;
+  height: 118px;
+  border: 1px solid #e6eefb;
   border-radius: var(--radius);
-  background: #f5f9ff;
-  color: #2f6df6;
+  background: #ffffff;
   flex-shrink: 0;
+}
+
+.hermes-mark img {
+  width: 108px;
+  height: 108px;
+  object-fit: contain;
+  display: block;
 }
 
 .hermes-welcome-title {
