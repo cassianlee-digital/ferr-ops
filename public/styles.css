@@ -4078,6 +4078,90 @@ table.dt td.editable:focus,
   font-size: 12px;
 }
 
+.hermes-evidence {
+  margin-top: 10px;
+  border: 1px solid #dbe5f5;
+  border-radius: var(--radius);
+  background: #f8fbff;
+}
+
+.hermes-evidence summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  color: #334155;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hermes-evidence summary::-webkit-details-marker {
+  display: none;
+}
+
+.hermes-evidence summary strong {
+  font-size: 12px;
+}
+
+.hermes-evidence-status {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3152b7;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hermes-evidence-status.supported {
+  background: #ecfdf3;
+  color: #16884a;
+}
+
+.hermes-evidence-status.partial,
+.hermes-evidence-status.weak,
+.hermes-evidence-status.no_evidence_pool {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.hermes-evidence-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.hermes-evidence-row {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #e7edf6;
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.hermes-evidence-row strong {
+  color: #1e293b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.hermes-evidence-row span,
+.hermes-evidence-empty,
+.hermes-evidence-warn,
+.hermes-evidence-missing {
+  line-height: 1.55;
+}
+
+.hermes-evidence-warn,
+.hermes-evidence-missing {
+  color: #b45309;
+}
+
 .hermes-copy {
   display: inline-flex;
   align-items: center;
@@ -4480,14 +4564,38 @@ body.dark .hermes-msg .ai-render strong {
 }
 
 body.dark .hermes-msg .ai-render li,
-body.dark .hermes-basis {
+body.dark .hermes-basis,
+body.dark .hermes-evidence,
+body.dark .hermes-evidence-row {
   border-color: #273142;
   background: #0f172a;
 }
 
 body.dark .hermes-basis summary,
-body.dark .hermes-basis-body {
+body.dark .hermes-basis-body,
+body.dark .hermes-evidence summary,
+body.dark .hermes-evidence-body,
+body.dark .hermes-evidence-row strong {
   color: #cbd5e1;
+}
+
+body.dark .hermes-evidence-status {
+  background: #172033;
+  color: #93c5fd;
+}
+
+body.dark .hermes-evidence-status.supported {
+  background: #052e1a;
+  color: #86efac;
+}
+
+body.dark .hermes-evidence-status.partial,
+body.dark .hermes-evidence-status.weak,
+body.dark .hermes-evidence-status.no_evidence_pool,
+body.dark .hermes-evidence-warn,
+body.dark .hermes-evidence-missing {
+  background: #2a1908;
+  color: #fdba74;
 }
 
 body.dark .hermes-select {

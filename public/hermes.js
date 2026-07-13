@@ -725,6 +725,85 @@
     }
   }
 
+  function evidenceStatusLabel(status) {
+    return {
+      supported: '已引用证据',
+      partial: '部分证据需核对',
+      weak: '未引用证据',
+      no_evidence_pool: '暂无证据池',
+    }[status] || '待核验';
+  }
+
+  function evidenceLine(item) {
+    return [
+      item.id,
+      item.source ? 'source=' + item.source : '',
+      item.metric ? 'metric=' + item.metric : '',
+      item.date ? 'date=' + item.date : '',
+      item.freshness ? 'freshness=' + item.freshness : '',
+      item.value ? 'value=' + item.value : '',
+    ].filter(Boolean).join(' · ');
+  }
+
+  function appendHermesEvidenceAudit(bubble, hermes) {
+    const audit = hermes && hermes.evidenceAudit;
+    if (!audit) return;
+
+    const evidence = Array.isArray(audit.evidence) ? audit.evidence : [];
+    const unknown = Array.isArray(audit.unknownEvidenceIds) ? audit.unknownEvidenceIds : [];
+    const missing = Array.isArray(hermes.missingData) ? hermes.missingData.filter(Boolean) : [];
+    const details = document.createElement('details');
+    details.className = 'hermes-evidence';
+    details.open = audit.status === 'weak' || audit.status === 'partial';
+
+    const summary = document.createElement('summary');
+    const status = document.createElement('span');
+    status.className = 'hermes-evidence-status ' + (audit.status || 'unknown');
+    status.textContent = evidenceStatusLabel(audit.status);
+    summary.innerHTML = '<i class="ti ti-shield-check"></i><strong>证据核验</strong>';
+    summary.appendChild(status);
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'hermes-evidence-body';
+
+    if (evidence.length) {
+      evidence.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'hermes-evidence-row';
+        const main = document.createElement('strong');
+        main.textContent = evidenceLine(item);
+        const detail = document.createElement('span');
+        detail.textContent = item.detail || '';
+        row.appendChild(main);
+        if (detail.textContent) row.appendChild(detail);
+        body.appendChild(row);
+      });
+    } else {
+      const empty = document.createElement('div');
+      empty.className = 'hermes-evidence-empty';
+      empty.textContent = audit.evidencePoolSize ? '这条回答没有引用可匹配的证据编号，结论应按待验证处理。' : '当前没有可用证据池，不能把回答当成已验证结论。';
+      body.appendChild(empty);
+    }
+
+    if (unknown.length) {
+      const warn = document.createElement('div');
+      warn.className = 'hermes-evidence-warn';
+      warn.textContent = '未知证据编号：' + unknown.slice(0, 5).join('、');
+      body.appendChild(warn);
+    }
+
+    if (missing.length) {
+      const miss = document.createElement('div');
+      miss.className = 'hermes-evidence-missing';
+      miss.textContent = '缺失数据：' + missing.slice(0, 6).join('、');
+      body.appendChild(miss);
+    }
+
+    details.appendChild(body);
+    bubble.appendChild(details);
+  }
+
   function renderMessageItem(message, index) {
     const row = document.createElement('div');
     row.className = 'hermes-msg ' + (message.role === 'user' ? 'user' : 'assistant');
@@ -756,6 +835,7 @@
       renderAttachmentChips(files, message.attachments, { removable: false });
       bubble.appendChild(files);
     }
+    appendHermesEvidenceAudit(bubble, message.hermes);
     if (message.hermes) {
       const meta = document.createElement('div');
       meta.className = 'hermes-msg-meta';

@@ -611,6 +611,28 @@ function splitHermesText(text) {
   return { basis: m[1].trim(), answer: m[2].trim() || raw };
 }
 
+function auditHermesAnswer(parsed, context) {
+  const pack = Array.isArray(context?.opsDiagnosis?.evidencePack) ? context.opsDiagnosis.evidencePack : [];
+  const byId = new Map(pack.map((item) => [item.id, item]));
+  const raw = [parsed?.basis, parsed?.answer].filter(Boolean).join('\n');
+  const evidenceIds = [...new Set((raw.match(/\[EV-[a-z0-9-]+\]/gi) || []).map((id) => id.slice(1, -1)))];
+  const evidence = evidenceIds.map((id) => byId.get(id)).filter(Boolean).slice(0, 8);
+  const unknownEvidenceIds = evidenceIds.filter((id) => !byId.has(id));
+  const status = !pack.length
+    ? 'no_evidence_pool'
+    : evidence.length
+      ? (unknownEvidenceIds.length ? 'partial' : 'supported')
+      : 'weak';
+  return {
+    status,
+    evidence,
+    evidenceIds,
+    unknownEvidenceIds,
+    evidencePoolSize: pack.length,
+    checkedAt: new Date().toISOString(),
+  };
+}
+
 function currentUserId(request) {
   return Number(request.user?.id || 0);
 }
@@ -1054,6 +1076,7 @@ export async function hermesRoutes(app) {
         morningBriefPrompt(context),
       );
       const parsed = splitHermesText(text);
+      const audit = auditHermesAnswer(parsed, context);
       const missing = [
         ...(context.opsDiagnosis?.missingData || []),
         ...(context.enterpriseMemory?.missingData || []),
@@ -1065,6 +1088,7 @@ export async function hermesRoutes(app) {
         usedMemory: Boolean(context.enterpriseMemory?.longTermMemories?.length),
         usedPageContext: Boolean(context.pageContext),
         missingData: [...new Set(missing)],
+        evidenceAudit: audit,
       };
       const memory = hermesMemoryRepo.upsertBySourceTitle({
         kind: 'learning',
@@ -1198,6 +1222,7 @@ export async function hermesRoutes(app) {
         { attachments },
       );
       const parsed = splitHermesText(text);
+      const audit = auditHermesAnswer(parsed, context);
       const hermes = {
         mode: 'ferr_hermes_gateway',
         skill: { id: skillKey, label: HERMES_SKILLS[skillKey].label },
@@ -1208,6 +1233,7 @@ export async function hermesRoutes(app) {
           ...(context.opsDiagnosis?.missingData || []),
           ...(context.enterpriseMemory?.missingData || []),
         ],
+        evidenceAudit: audit,
       };
       const now = new Date().toISOString();
       const additions = [
