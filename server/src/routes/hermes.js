@@ -197,8 +197,59 @@ function kpiDirection(name) {
   return 'higher';
 }
 
-function makeCard({ area, severity = 'medium', title, evidence, judgment, action, owner, verifyMetric, reviewWindow, source }) {
-  return { area, severity, title, evidence, judgment, action, owner, verifyMetric, reviewWindow, source };
+function evidenceId(source, title) {
+  const base = String(source || 'source') + '-' + String(title || 'evidence');
+  const slug = String(source || 'source').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'source';
+  let hash = 0;
+  for (const ch of base) hash = ((hash * 31) + ch.charCodeAt(0)) >>> 0;
+  return `EV-${slug.slice(0, 32)}-${hash.toString(36)}`;
+}
+
+function freshnessFromDate(date) {
+  if (!date) return 'unknown';
+  const d = new Date(String(date).slice(0, 10) + 'T00:00:00Z');
+  if (Number.isNaN(d.getTime())) return 'unknown';
+  const ageDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (ageDays <= 14) return 'fresh';
+  if (ageDays <= 45) return 'aging';
+  return 'stale';
+}
+
+function makeEvidence({ source, title, metric, date, value, detail }) {
+  return {
+    id: evidenceId(source, title),
+    source: source || 'unknown',
+    metric: metric || '',
+    date: date || '',
+    freshness: freshnessFromDate(date),
+    value: value == null ? '' : String(value),
+    detail: detail || '',
+  };
+}
+
+function makeCard({ area, severity = 'medium', title, evidence, judgment, action, owner, verifyMetric, reviewWindow, source, evidenceMeta = {} }) {
+  const evidenceItem = makeEvidence({
+    source,
+    title,
+    metric: evidenceMeta.metric || verifyMetric,
+    date: evidenceMeta.date || '',
+    value: evidenceMeta.value,
+    detail: evidence,
+  });
+  return {
+    area,
+    severity,
+    title,
+    evidence: `[${evidenceItem.id}] ${evidence}`,
+    evidenceRefs: [evidenceItem.id],
+    evidencePack: [evidenceItem],
+    judgment,
+    action,
+    owner,
+    verifyMetric,
+    reviewWindow,
+    source,
+  };
 }
 
 function buildOpsDiagnosis(operator) {
@@ -220,6 +271,7 @@ function buildOpsDiagnosis(operator) {
         severity: gap / Math.max(Math.abs(target), 1) >= 0.3 ? 'high' : 'medium',
         title: `${row.name} 未达标`,
         evidence: `KPI ${row.name}: target=${row.target}, actual=${row.actual}`,
+        evidenceMeta: { metric: row.name, value: `target=${row.target}; actual=${row.actual}` },
         judgment: direction === 'lower' ? '该指标越低越好，当前实际值高于目标。' : '该指标越高越好，当前实际值低于目标。',
         action: '优先定位影响该 KPI 的页面、关键词、计划或询盘来源，并拆成 1-2 个本周可执行动作。',
         owner: row.grp === 'seo' ? 'SEO' : row.grp === 'sem' ? 'SEM' : '主管/老板',
@@ -239,6 +291,7 @@ function buildOpsDiagnosis(operator) {
       severity: s.valid > 0 ? 'medium' : 'high',
       title: '询盘质量基线',
       evidence: `total=${s.total}, valid=${s.valid}, A=${s.a}, B=${s.b}, C=${s.c}, validRate=${s.rate}%, ARatio=${s.aRatio}%`,
+      evidenceMeta: { metric: 'inquiry_quality', value: `total=${s.total}; valid=${s.valid}; validRate=${s.rate}%; ARatio=${s.aRatio}%` },
       judgment: s.valid > 0 ? '已有有效询盘，可用来校验 SEO/SEM 动作是否带来真实业务结果。' : '当前缺少有效询盘，投放和内容建议都需要先验证线索质量。',
       action: '所有 SEO/SEM 优化动作都要绑定有效询盘或 A/B 级询盘变化，不只看流量或点击。',
       owner: '主管/SEO/SEM',
@@ -259,6 +312,7 @@ function buildOpsDiagnosis(operator) {
           severity: 'high',
           title: 'SEM 有花费但无转化',
           evidence: `week=${sem.week_date}, cost=${sem.cost}, clicks=${sem.clicks}, conversions=${sem.conversions}`,
+          evidenceMeta: { metric: 'sem_cost_without_conversion', date: sem.week_date, value: `cost=${sem.cost}; clicks=${sem.clicks}; conversions=${sem.conversions}` },
           judgment: '已产生点击成本但没有转化，优先怀疑关键词意图、匹配方式、落地页或询盘入口。',
           action: '先暂停或降价高花费低转化词；检查搜索词并补否词；同步检查落地页和表单。',
           owner: 'SEM',
@@ -273,6 +327,7 @@ function buildOpsDiagnosis(operator) {
           severity: 'medium',
           title: 'SEM 周报关键指标',
           evidence: `week=${sem.week_date}, CPC=${sem.cpc}, CTR=${sem.ctr}, quality_score=${sem.quality_score}, ROAS=${sem.roas}, cost_per_conv=${sem.cost_per_conv}`,
+          evidenceMeta: { metric: 'sem_weekly_metrics', date: sem.week_date, value: `CPC=${sem.cpc}; CTR=${sem.ctr}; quality_score=${sem.quality_score}; ROAS=${sem.roas}; cost_per_conv=${sem.cost_per_conv}` },
           judgment: '这组指标应用来判断是流量质量问题、创意相关性问题，还是转化链路问题。',
           action: '按 CPC/CTR/质量分/转化成本拆分计划和关键词，优先处理高成本低转化组合。',
           owner: 'SEM',
@@ -299,6 +354,7 @@ function buildOpsDiagnosis(operator) {
           severity: 'high',
           title: 'SEO 点击下滑',
           evidence: `latest=${latest.week_date} clicks=${latest.clicks}; prev=${prev.week_date} clicks=${prev.clicks}`,
+          evidenceMeta: { metric: 'seo_clicks_decline', date: latest.week_date, value: `latest=${latest.clicks}; prev=${prev.clicks}` },
           judgment: '自然点击较上期下降，需要优先排查衰退页面、机会词和标题 CTR。',
           action: '找点击下滑页面；优先改展现高 CTR 低页面标题/描述；给排名 11-20 机会词补内容和内链。',
           owner: 'SEO',
@@ -312,6 +368,7 @@ function buildOpsDiagnosis(operator) {
         severity: 'medium',
         title: 'SEO 周报关键指标',
         evidence: `week=${latest.week_date}, clicks=${latest.clicks}, impressions=${latest.impressions}, avg_position=${latest.avg_position}, top10_ratio=${latest.top10_ratio}, coverage=${latest.coverage}, indexed_pages=${latest.indexed_pages}`,
+        evidenceMeta: { metric: 'seo_weekly_metrics', date: latest.week_date, value: `clicks=${latest.clicks}; impressions=${latest.impressions}; avg_position=${latest.avg_position}; top10_ratio=${latest.top10_ratio}; indexed_pages=${latest.indexed_pages}` },
         judgment: '这组指标应用来判断是排名问题、CTR 问题、收录问题，还是关键词覆盖不足。',
         action: '按展现高低、排名区间和页面类型拆 SEO 任务，不要只写泛泛内容建议。',
         owner: 'SEO',
@@ -335,6 +392,7 @@ function buildOpsDiagnosis(operator) {
         severity: 'medium',
         title: '关键词库可用于落地动作',
         evidence: `sem=${semKeywords.join(', ') || '-'}; seo=${seoKeywords.join(', ') || '-'}`,
+        evidenceMeta: { metric: 'keyword_pool', value: `sem=${semKeywords.length}; seo=${seoKeywords.length}` },
         judgment: '关键词库能把建议落到具体词，但是否浪费/机会仍需结合 Ads/GSC 明细。',
         action: '让 Hermes 输出建议时必须引用具体关键词，并说明要暂停、扩展、否定、改内容还是改落地页。',
         owner: 'SEO/SEM',
@@ -347,12 +405,16 @@ function buildOpsDiagnosis(operator) {
     missing.push('keywords');
   }
 
+  const priorityCards = cards.slice(0, 10);
+  const evidencePack = priorityCards.flatMap((card) => card.evidencePack || []);
+
   return {
     generatedAt: new Date().toISOString(),
     role: operator.role,
-    priorityCards: cards.slice(0, 10),
+    priorityCards,
+    evidencePack,
     missingData: [...new Set(missing)],
-    usage: 'Use priorityCards as the first evidence pool. Do not replace them with generic marketing advice.',
+    usage: 'Use evidencePack ids as citation anchors. Do not make claims that are not supported by an evidence id or explicit missingData.',
   };
 }
 
@@ -683,6 +745,7 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     session: context.session,
     pageContext: context.pageContext,
     opsDiagnosis: diagnosis,
+    evidencePack: diagnosis.evidencePack || [],
     operatingPrinciples: OPERATING_PRINCIPLES,
     responseStyle: RESPONSE_STYLE,
     enterpriseMemory: {
@@ -717,6 +780,7 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     '3. 简单问题用短段落；复杂运营问题才使用少量标题：判断、依据、下一步、风险。',
     '4. 如果用户方案有问题，直接指出问题、后果、替代方案和取舍。',
     '5. 如果适合沉淀，最终回答里可追加“可沉淀记忆”，但不要声称已经写入，除非用户点击沉淀。',
+    '6. 运营判断必须引用 evidencePack 里的证据编号，例如 [EV-...]；没有证据编号支撑的内容只能写成假设、风险或缺失数据。',
   ].filter(Boolean).join('\n');
 }
 
@@ -732,6 +796,7 @@ function morningBriefPrompt(context) {
     operator: context.operator,
     session: context.session,
     priorityCards: (diagnosis.priorityCards || []).slice(0, 8),
+    evidencePack: (diagnosis.evidencePack || []).slice(0, 12),
     missingData: [...new Set(missing)],
     enterpriseMemory: {
       marketBrain: memory.marketBrain,
@@ -750,6 +815,7 @@ function morningBriefPrompt(context) {
     '3. 必须引用 payload 中的真实证据；缺少 GSC、GA4、Google Ads 或周报时直接说明，不得编造。',
     '4. 不要写空泛建议，例如“持续优化”“加强关注”。每个动作必须可执行、可复盘。',
     '5. 简报要慎重，宁可说数据不足，也不要做没有证据的判断。',
+    '6. 每个关键判断都要引用 evidencePack 的 [EV-...] 编号；没有编号支撑时必须标成待验证。',
     '',
     '[Hermes 上下文]',
     JSON.stringify(payload, null, 2).slice(0, 26000),
@@ -886,7 +952,8 @@ function contextPayload(request) {
         'Do not expose internal field names such as assistantPlaybook, operatingPrinciples, opsDiagnosis, priorityCards, pageContext, or responseContract.',
         'For SEM: prioritize spend, conversions, CPC, CPA, CTR, quality score, ROAS, negative keywords, and budget allocation.',
         'For SEO: prioritize clicks, impressions, CTR, ranking, decay pages, opportunity keywords, cannibalization, and content tasks.',
-        'Use opsDiagnosis.priorityCards as the first evidence pool before giving recommendations.',
+        'Use opsDiagnosis.evidencePack ids as citation anchors before giving recommendations.',
+        'Unsupported claims must be labeled as assumptions, risks, or missing data.',
         'Use enterpriseMemory.marketBrain and enterpriseMemory.longTermMemories as FERR company/customer background.',
         'Market Analysis is first-party business research. Treat it as higher priority than generic web/LLM knowledge.',
         'The system can persist a daily learning memory via /api/hermes/memories/daily-learning so future analysis becomes more company-specific.',
