@@ -499,7 +499,9 @@
 
   function setConversationControls() {
     const archiveBtn = byId('hermesArchiveBtn');
+    const learnBtn = byId('hermesLearnConversationBtn');
     if (archiveBtn) archiveBtn.disabled = !activeConversationId;
+    if (learnBtn) learnBtn.disabled = !activeConversationId;
   }
 
   function renderLastConversation(conversation) {
@@ -649,6 +651,21 @@
       toastSafe('当前对话已归档');
     } catch (e) {
       toastSafe('归档失败：' + (e.message || 'archive_failed'));
+    }
+  }
+
+  async function learnHermesConversation() {
+    if (!window.API || !activeConversationId) return;
+    const btn = byId('hermesLearnConversationBtn');
+    if (btn) btn.disabled = true;
+    try {
+      await window.API.post('/api/hermes/conversations/' + encodeURIComponent(activeConversationId) + '/learn', {});
+      if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
+      toastSafe('当前对话已沉淀到 Hermes 记忆');
+    } catch (e) {
+      toastSafe(e.status === 403 ? '无权沉淀 AI 记忆' : '沉淀失败：' + (e.message || 'learn_failed'));
+    } finally {
+      setConversationControls();
     }
   }
 
@@ -942,6 +959,7 @@
   window.loadHermesLatest = loadHermesLatest;
   window.toggleHermesHistory = toggleHermesHistory;
   window.archiveHermesConversation = archiveHermesConversation;
+  window.learnHermesConversation = learnHermesConversation;
 
   document.addEventListener('DOMContentLoaded', () => {
     setHermesView(lastHermesState || {});

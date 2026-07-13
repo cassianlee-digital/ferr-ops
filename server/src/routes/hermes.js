@@ -557,6 +557,46 @@ function conversationTitle(message) {
   return trimText(message, 40) || '新对话';
 }
 
+function memorySection(text) {
+  const raw = String(text || '').trim();
+  const m = raw.match(/可沉淀记忆[：:\s]*([\s\S]*)$/);
+  return trimText(m ? m[1] : raw, 3000);
+}
+
+function conversationLearningPayload(conversation, note = '') {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+  const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+  if (!lastUser || !lastAssistant) return null;
+
+  const reusable = memorySection(lastAssistant.content);
+  const content = [
+    '适用场景：' + (conversation.title || 'Hermes 对话沉淀'),
+    '用户问题：' + trimText(lastUser.content, 1200),
+    '',
+    '可复用判断/规则：',
+    reusable || trimText(lastAssistant.content, 1800),
+  ];
+  if (note) content.push('', '人工补充：' + trimText(note, 800));
+
+  const evidence = [
+    `来源：Hermes 对话 #${conversation.id}`,
+    conversation.role ? `角色：${conversation.role}` : '',
+    conversation.skill ? `技能：${conversation.skill}` : '',
+    conversation.workflow ? `工作流：${conversation.workflow}` : '',
+    lastAssistant.basis ? '判断依据：' + trimText(lastAssistant.basis, 1200) : '',
+  ].filter(Boolean).join('\n');
+
+  return {
+    kind: 'learning',
+    title: '对话沉淀：' + conversationTitle(conversation.title),
+    content: content.join('\n'),
+    evidence,
+    source: 'hermes_conversation:' + conversation.id,
+    importance: 4,
+  };
+}
+
 function hermesSystem(context) {
   const operator = context.operator;
   return [
@@ -869,6 +909,16 @@ export async function hermesRoutes(app) {
     const item = hermesConversationRepo.archiveForUser(Number(request.params.id), currentUserId(request));
     if (!item) return reply.code(404).send({ error: 'not_found' });
     return { conversation: item };
+  });
+
+  app.post('/api/hermes/conversations/:id/learn', editor, async (request, reply) => {
+    const conversation = hermesConversationRepo.getForUser(Number(request.params.id), currentUserId(request));
+    if (!conversation) return reply.code(404).send({ error: 'not_found' });
+    const payload = conversationLearningPayload(conversation, request.body?.note);
+    if (!payload) return reply.code(400).send({ error: 'conversation_not_learnable' });
+    const item = hermesMemoryRepo.upsertBySourceTitle(payload);
+    if (!item) return reply.code(400).send({ error: 'memory_save_failed' });
+    return { item };
   });
 
   app.post('/api/hermes/chat', { preHandler: requireAuth }, async (request, reply) => {
