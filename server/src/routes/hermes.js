@@ -875,6 +875,34 @@ function conversationTitle(message) {
   return trimText(message, 40) || '新对话';
 }
 
+function extractAutoPreferenceMemory(message) {
+  const raw = trimText(message, 500);
+  if (!raw) return null;
+  if (!/(以后|今后|从现在开始|记住|下次|以后都)/.test(raw)) return null;
+  if (!/(叫你|喊你|称呼你|你叫|你的名字|称为|叫做)/.test(raw)) return null;
+
+  const patterns = [
+    /(?:以后|今后|从现在开始|以后都|下次).*?(?:叫你|喊你|称呼你)(?:为|做|作)?[“"']?([\u4e00-\u9fa5A-Za-z0-9_-]{1,20})[”"']?/,
+    /(?:记住).*?(?:你叫|你的名字是|称为|叫做)[“"']?([\u4e00-\u9fa5A-Za-z0-9_-]{1,20})[”"']?/,
+    /(?:以后|今后|从现在开始).*?(?:你叫|你的名字是|称为|叫做)[“"']?([\u4e00-\u9fa5A-Za-z0-9_-]{1,20})[”"']?/,
+  ];
+  const blocked = new Set(['什么', '谁', '可以吗', '吗', '行吗', '名字']);
+  for (const pattern of patterns) {
+    const m = raw.match(pattern);
+    const alias = trimText(m?.[1] || '', 20).replace(/[，。！？,.!?].*$/, '');
+    if (!alias || blocked.has(alias)) continue;
+    return {
+      kind: 'preference',
+      title: '称呼偏好：Hermes 名称',
+      content: `用户希望在 ferr-ops 后台对话中把 Hermes 称呼为“${alias}”；新对话也应识别“${alias}”指 Hermes 智能体，并自然回应这个称呼。`,
+      evidence: `用户原话：${raw}`,
+      source: 'hermes_auto_preference:assistant_alias',
+      importance: 5,
+    };
+  }
+  return null;
+}
+
 function memorySection(text) {
   const raw = String(text || '').trim();
   const m = raw.match(/可沉淀记忆[：:\s]*([\s\S]*)$/);
@@ -1484,9 +1512,12 @@ export async function hermesRoutes(app) {
           skill: skillKey,
           workflow: workflowKey,
         });
+      const autoMemoryPayload = extractAutoPreferenceMemory(message);
+      const autoMemory = autoMemoryPayload ? hermesMemoryRepo.upsertBySourceTitle(autoMemoryPayload) : null;
       return {
         text: responseText,
         hermes,
+        memory: autoMemory ? { id: autoMemory.id, kind: autoMemory.kind, title: autoMemory.title } : null,
         conversation: conversation ? {
           id: conversation.id,
           title: conversation.title,

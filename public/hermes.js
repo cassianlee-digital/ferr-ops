@@ -1206,6 +1206,10 @@
       if (res.conversation && res.conversation.id) activeConversationId = res.conversation.id;
       const parsed = splitHermesResponse(res.text || '');
       messages[messages.length - 1] = { role: 'assistant', content: parsed.answer || '没有返回内容。', basis: parsed.basis, hermes: res.hermes };
+      if (res.memory) {
+        if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
+        toastSafe('已记住：' + (res.memory.title || '长期偏好'));
+      }
     } catch (e) {
       const reason = e && e.message ? e.message : 'ai_failed';
       messages[messages.length - 1] = {
