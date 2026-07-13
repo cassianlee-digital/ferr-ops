@@ -827,34 +827,48 @@
       <textarea id="hermesInput" rows="3" placeholder="直接问运营问题，例如：这页数据有哪些异常？帮我把结论改成整改动作。"></textarea>
       <div class="hermes-attachments" id="hermesAttachments"></div>
       <div class="hermes-compose-tools">
-        <label class="btn-ghost hermes-upload-btn" for="hermesFiles"><i class="ti ti-paperclip"></i> 上传文件/截图</label>
+        <label class="btn-ghost hermes-upload-btn" for="hermesFiles" title="上传文件或截图"><i class="ti ti-paperclip"></i> 附件</label>
         <input id="hermesFiles" type="file" multiple accept="image/*,.csv,.txt,.md,.json,.pdf,.xls,.xlsx" style="display:none">
-        <select id="hermesSkill" class="hermes-select" title="Hermes 技能">
-          <option value="auto">自动判断</option>
-          <option value="seo_diagnosis">SEO 诊断</option>
-          <option value="sem_waste">SEM 浪费排查</option>
-          <option value="weekly_review">周报复盘</option>
-          <option value="sop_draft">SOP 草稿</option>
-        </select>
-        <select id="hermesWorkflow" class="hermes-select" title="Hermes 工作流">
-          <option value="answer">直接回答</option>
-          <option value="diagnose_to_action">诊断到动作</option>
-          <option value="learn_to_memory">学习沉淀</option>
-        </select>
         <button class="btn-ghost" type="button" onclick="syncHermesPageDetail(true)"><i class="ti ti-file-search"></i> 读取当前页</button>
-        <button class="btn-ghost" type="button" onclick="refreshHermesStatus(true)"><i class="ti ti-plug-connected"></i> 检查接入</button>
+        <details class="hermes-mode">
+          <summary><i class="ti ti-adjustments-horizontal"></i> 模式</summary>
+          <div class="hermes-mode-menu">
+            <label>技能
+              <select id="hermesSkill" class="hermes-select" title="Hermes 技能">
+                <option value="auto">自动判断</option>
+                <option value="seo_diagnosis">SEO 诊断</option>
+                <option value="sem_waste">SEM 浪费排查</option>
+                <option value="weekly_review">周报复盘</option>
+                <option value="sop_draft">SOP 草稿</option>
+              </select>
+            </label>
+            <label>工作流
+              <select id="hermesWorkflow" class="hermes-select" title="Hermes 工作流">
+                <option value="answer">直接回答</option>
+                <option value="diagnose_to_action">诊断到动作</option>
+                <option value="learn_to_memory">学习沉淀</option>
+              </select>
+            </label>
+          </div>
+        </details>
         <button class="btn-primary" type="button" id="hermesSendBtn" onclick="sendHermesPrompt()"><i class="ti ti-send"></i> 发送</button>
       </div>
     </div>
   </div>
   <div class="hermes-foot">
-    <button class="btn-ghost" type="button" onclick="resetHermesWindow()">重置窗口</button>
     <button class="btn-ghost" type="button" onclick="clearHermesChat()">新对话</button>
-    <button class="btn-ghost" type="button" onclick="loadHermesLatest(true)">上次聊到</button>
     <button class="btn-ghost" type="button" onclick="toggleHermesHistory()">历史记录</button>
-    <button class="btn-ghost" type="button" id="hermesLearnConversationBtn" onclick="learnHermesConversation()" disabled>沉淀当前</button>
-    <button class="btn-ghost" type="button" id="hermesArchiveBtn" onclick="archiveHermesConversation()" disabled>归档当前</button>
-    <button class="btn-primary" type="button" id="hermesOpenBtn" onclick="openHermesAgent()" disabled>高级模式：打开 Hermes</button>
+    <details class="hermes-more">
+      <summary>更多</summary>
+      <div class="hermes-menu">
+        <button type="button" onclick="loadHermesLatest(true)"><i class="ti ti-history"></i> 上次聊到</button>
+        <button type="button" id="hermesLearnConversationBtn" onclick="learnHermesConversation()" disabled><i class="ti ti-brain"></i> 沉淀当前</button>
+        <button type="button" id="hermesArchiveBtn" onclick="archiveHermesConversation()" disabled><i class="ti ti-archive"></i> 归档当前</button>
+        <button type="button" onclick="refreshHermesStatus(true)"><i class="ti ti-plug-connected"></i> 检查接入</button>
+        <button type="button" onclick="resetHermesWindow()"><i class="ti ti-window"></i> 重置窗口</button>
+        <button type="button" id="hermesOpenBtn" onclick="openHermesAgent()" disabled><i class="ti ti-external-link"></i> 高级模式</button>
+      </div>
+    </details>
   </div>
 </section>
 

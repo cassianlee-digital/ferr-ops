@@ -504,6 +504,12 @@
     if (learnBtn) learnBtn.disabled = !activeConversationId;
   }
 
+  function closeHermesMenus() {
+    document.querySelectorAll('.hermes-mode[open],.hermes-more[open]').forEach((el) => {
+      el.removeAttribute('open');
+    });
+  }
+
   function renderLastConversation(conversation) {
     const box = byId('hermesLast');
     if (!box) return;
@@ -930,6 +936,9 @@
     if (feedbackBtn) {
       sendHermesFeedback(feedbackBtn.dataset.index, feedbackBtn.dataset.result);
       return;
+    }
+    if (e.target.closest && e.target.closest('.hermes-menu button')) {
+      setTimeout(closeHermesMenus, 0);
     }
     const removeBtn = e.target.closest && e.target.closest('.hermes-file-remove');
     if (removeBtn) {

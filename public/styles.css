@@ -4161,7 +4161,7 @@ table.dt td.editable:focus,
   align-items: center;
   gap: 8px;
   margin-top: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .hermes-upload-btn {
@@ -4170,7 +4170,7 @@ table.dt td.editable:focus,
 
 .hermes-select {
   min-height: 34px;
-  max-width: 160px;
+  width: 100%;
   border: 1px solid #dfe6f2;
   border-radius: var(--radius);
   background: #ffffff;
@@ -4183,6 +4183,98 @@ table.dt td.editable:focus,
 .hermes-select:focus {
   border-color: #2f6df6;
   box-shadow: 0 0 0 3px rgba(47, 109, 246, .10);
+}
+
+.hermes-mode,
+.hermes-more {
+  position: relative;
+}
+
+.hermes-mode summary,
+.hermes-more summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #dfe6f2;
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hermes-mode summary::-webkit-details-marker,
+.hermes-more summary::-webkit-details-marker {
+  display: none;
+}
+
+.hermes-mode[open] summary,
+.hermes-more[open] summary,
+.hermes-mode summary:hover,
+.hermes-more summary:hover {
+  border-color: #9bbcff;
+  color: #2159d6;
+}
+
+.hermes-mode-menu,
+.hermes-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 4;
+  min-width: 220px;
+  padding: 10px;
+  border: 1px solid #dfe6f2;
+  border-radius: var(--radius);
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .12);
+}
+
+.hermes-mode-menu {
+  display: grid;
+  gap: 10px;
+}
+
+.hermes-mode-menu label {
+  display: grid;
+  gap: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.hermes-menu {
+  display: grid;
+  gap: 4px;
+}
+
+.hermes-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: #334155;
+  padding: 0 9px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hermes-menu button:hover:not(:disabled) {
+  background: #f5f8ff;
+  color: #2159d6;
+}
+
+.hermes-menu button:disabled {
+  color: #a8b1c1;
+  cursor: not-allowed;
 }
 
 .hermes-compose-tools .btn-primary {
@@ -4199,7 +4291,8 @@ table.dt td.editable:focus,
 }
 
 .hermes-foot .btn-ghost,
-.hermes-foot .btn-primary {
+.hermes-foot .btn-primary,
+.hermes-foot .hermes-more summary {
   min-height: 34px;
   padding: 0 14px;
   border-radius: var(--radius);
@@ -4216,12 +4309,6 @@ table.dt td.editable:focus,
 .hermes-foot .btn-ghost:hover {
   border-color: #9bbcff;
   color: #2159d6;
-}
-
-.hermes-foot .btn-primary {
-  border-color: #2f6df6;
-  background: #2f6df6;
-  box-shadow: 0 8px 18px rgba(47, 109, 246, .22);
 }
 
 body.dark .right-rail .rail-btn,
@@ -4251,6 +4338,10 @@ body.dark .hermes-last,
 body.dark .hermes-last-open,
 body.dark .hermes-history,
 body.dark .hermes-history-head,
+body.dark .hermes-mode summary,
+body.dark .hermes-more summary,
+body.dark .hermes-mode-menu,
+body.dark .hermes-menu,
 body.dark .hermes-msg-bubble,
 body.dark .hermes-agent-note,
 body.dark .hermes-compose,
@@ -4274,6 +4365,7 @@ body.dark .hermes-welcome p,
 body.dark .hermes-last span,
 body.dark .hermes-history-row small,
 body.dark .hermes-history-empty,
+body.dark .hermes-mode-menu label,
 body.dark .hermes-agent-note {
   color: #94a3b8;
 }
@@ -4288,6 +4380,19 @@ body.dark .hermes-compose textarea {
 
 body.dark .hermes-history-row:hover {
   background: #111827;
+}
+
+body.dark .hermes-menu button {
+  color: #cbd5e1;
+}
+
+body.dark .hermes-menu button:hover:not(:disabled) {
+  background: #172033;
+  color: #93c5fd;
+}
+
+body.dark .hermes-menu button:disabled {
+  color: #64748b;
 }
 
 body.dark .hermes-file-chip small,
@@ -4348,6 +4453,16 @@ body.dark .hermes-select {
 
   .hermes-compose-tools .btn-primary {
     margin-left: 0;
+  }
+
+  .hermes-compose-tools {
+    flex-wrap: wrap;
+  }
+
+  .hermes-mode-menu,
+  .hermes-menu {
+    right: auto;
+    left: 0;
   }
 
   .hermes-identity {
