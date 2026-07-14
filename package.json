@@ -1,0 +1,13 @@
+{
+  "name": "ferr-ops-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ferr-ops 前端构建（渐进 ES 模块化 · esbuild 打包为 IIFE，兼容现有全局脚本）",
+  "scripts": {
+    "build:web": "esbuild public/src/main.js --bundle --format=iife --outfile=public/dist/bundle.js --legal-comments=none",
+    "watch:web": "esbuild public/src/main.js --bundle --format=iife --outfile=public/dist/bundle.js --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

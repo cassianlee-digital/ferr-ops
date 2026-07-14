@@ -1005,10 +1005,9 @@
 <!-- 阶段2 拆分：Google 接入/数据源状态 + GA4 看板。仅定义函数（loadGa4/loadIntegrations 等），
      依赖 esc()/toast()（下方内联）在调用时（window load）才解析；window load 初始化在内联脚本末尾。 -->
 <script src="/google-projects.js"></script>
-<script src="/ga4-view.js"></script>
-<script src="/market-brain.js"></script>
+<!-- 渐进 ES 模块化包（esbuild IIFE）：ga4-view / market-brain / neg-ads。源在 public/src/*.js；改这三块后需 `npm run build:web` 重打包 -->
+<script src="/dist/bundle.js"></script>
 <script src="/inquiry-globe.js"></script>
-<script src="/neg-ads.js"></script>
 <script src="/weekly-review.js"></script>
 <script src="/keywords.js"></script>
 <script src="/sop.js"></script>
@@ -1152,12 +1151,12 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
    — 整改/任务卡(submitTask/taskDel)/沉淀/计划/测试/loadClosedLoop + 内容资产(loadContent/addContent) + AI三连(aiAct/loopBack/applyAiDoneStates) */
 
 /* 询盘 3D 地球仪已拆分至 /inquiry-globe.js（阶段4-A）— renderGlobe()/COUNTRY_GEO/aggInqByCountry 等 */
-/* GA4 流量看板已拆分至 /ga4-view.js（阶段2）— loadGa4() */
+/* GA4 流量看板：ES 模块 public/src/ga4-view.js（打包进 /dist/bundle.js）— loadGa4() */
 
 /* 询盘录入已拆分至 /inquiries.js（阶段4-B）
    — openInquiry/submitInquiry / openTrack/submitTrack / inqRowHtml / renderInqList / 月分组 / 删除归档 / refreshInqStats */
 
-/* 否词库 / 广告创意库 录入已拆分至 /neg-ads.js（阶段4-A）— addNeg/addAd/negRowHtml/adRowHtml 等 */
+/* 否词库 / 广告创意库 录入：ES 模块 public/src/neg-ads.js（打包进 /dist/bundle.js）— addNeg/addAd/negRowHtml/adRowHtml 等 */
 
 /* ================= SEM 层级展开/收起 ================= */
 function toggleHier(row){
@@ -1348,7 +1347,7 @@ async function submitPwd(){
 /* Google 接入 / 数据源状态卡已拆分至 /google-projects.js（阶段2）
    — INTEG_LABEL / DS_* / dsStatusMeta / dsRow / loadDataSourcesStatus / loadIntegrations / saveIntegration */
 
-/* 市场分析 + AI 记忆体已拆分至 /market-brain.js（阶段3）
+/* 市场分析 + AI 记忆体：ES 模块 public/src/market-brain.js（打包进 /dist/bundle.js）
    — renderMarket / loadMarket / 市场单元格 focusout 保存 / loadBrain / refreshBrain */
 
 /* 复盘周报已拆分至 /weekly-review.js（阶段4-A）
