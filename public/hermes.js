@@ -438,7 +438,6 @@
     lastHermesState = state || {};
     const statusBox = byId('hermesStatusBox');
     const statusText = byId('hermesStatusText');
-    const sub = byId('hermesSub');
     const detail = byId('hermesDetail');
     const openBtn = byId('hermesOpenBtn');
     const connected = !!lastHermesState.connected;
@@ -450,7 +449,6 @@
       statusBox.classList.toggle('ok', connected);
       statusBox.classList.toggle('bad', !connected);
     }
-    if (sub) sub.textContent = '记忆 / 技能 / 工作流';
     if (statusText) {
       if (connected) statusLabel = '当前状态：Hermes 智能体可用';
       else if (configured) statusLabel = '当前状态：Hermes 已配置但连接失败；小瑞仍可使用本地记忆与技能';

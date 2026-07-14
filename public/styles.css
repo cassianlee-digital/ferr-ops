@@ -3520,37 +3520,13 @@ table.dt td.editable:focus,
   user-select: none;
 }
 
-.hermes-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid #d9e7ff;
-  border-radius: var(--radius);
-  background: #f5f9ff;
-  color: #2f6df6;
-  flex-shrink: 0;
-}
-
-.hermes-avatar img {
-  width: 30px;
-  height: 30px;
-  object-fit: contain;
-  display: block;
-}
-
-.hermes-title {
-  color: #172033;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.hermes-title-row {
+.hermes-head-status {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 .hermes-status-dot {
@@ -3583,13 +3559,6 @@ table.dt td.editable:focus,
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-.hermes-sub {
-  margin-top: 2px;
-  color: #7b8494;
-  font-size: 12px;
-  line-height: 1.4;
 }
 
 .hermes-close {
@@ -4612,14 +4581,6 @@ body.dark .hermes-head,
 body.dark .hermes-foot {
   border-color: #273142;
   background: #0f172a;
-}
-
-body.dark .hermes-title {
-  color: #e5e7eb;
-}
-
-body.dark .hermes-sub {
-  color: #94a3b8;
 }
 
 body.dark .hermes-welcome,
