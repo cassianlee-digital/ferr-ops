@@ -441,22 +441,23 @@
     const sub = byId('hermesSub');
     const detail = byId('hermesDetail');
     const openBtn = byId('hermesOpenBtn');
-    const identity = byId('hermesIdentity');
     const connected = !!lastHermesState.connected;
     const configured = !!lastHermesState.configured;
     const launchUrl = connected && lastHermesState.url ? appendLaunchParams(lastHermesState.url) : '';
+    let statusLabel = '当前状态：尚未检查智能体服务器';
 
     if (statusBox) {
       statusBox.classList.toggle('ok', connected);
-      statusBox.classList.toggle('bad', configured && !connected);
+      statusBox.classList.toggle('bad', !connected);
     }
     if (sub) sub.textContent = '记忆 / 技能 / 工作流';
     if (statusText) {
-      if (connected) statusText.textContent = '当前状态：Hermes 智能体可用';
-      else if (configured) statusText.textContent = '当前状态：Hermes 已配置但连接失败；小瑞仍可使用本地记忆与技能';
-      else statusText.textContent = '当前状态：未配置官方 Hermes；小瑞使用本地记忆与技能';
+      if (connected) statusLabel = '当前状态：Hermes 智能体可用';
+      else if (configured) statusLabel = '当前状态：Hermes 已配置但连接失败；小瑞仍可使用本地记忆与技能';
+      else statusLabel = '当前状态：未配置官方 Hermes；小瑞使用本地记忆与技能';
+      statusText.textContent = statusLabel;
     }
-    if (identity) identity.textContent = '身份：' + roleLabel(currentUser().role);
+    if (statusBox) statusBox.title = statusLabel;
     if (detail) {
       const parts = [];
       if (lastHermesState.error) parts.push('官方 Hermes：' + lastHermesState.error);
@@ -472,8 +473,14 @@
   }
 
   async function refreshHermesStatus(manual) {
+    const statusBox = byId('hermesStatusBox');
     const statusText = byId('hermesStatusText');
-    if (statusText) statusText.textContent = '当前状态：正在检查官方 Hermes 连接…';
+    const checkingText = '当前状态：正在检查官方 Hermes 连接…';
+    if (statusBox) {
+      statusBox.classList.remove('ok', 'bad');
+      statusBox.title = checkingText;
+    }
+    if (statusText) statusText.textContent = checkingText;
     try {
       const state = await window.API.get('/api/hermes/status');
       statusChecked = true;
@@ -558,9 +565,10 @@
     icon.className = 'ti ti-history';
     const text = document.createElement('div');
     const title = document.createElement('strong');
-    title.textContent = conversation.title || '上次对话';
+    title.textContent = '上次聊到';
     const meta = document.createElement('span');
-    meta.textContent = formatConversationTime(conversation.updated_at);
+    const timeText = formatConversationTime(conversation.updated_at);
+    meta.textContent = (conversation.title || '上次对话') + (timeText ? ' · ' + timeText : '');
     text.appendChild(title);
     text.appendChild(meta);
     const btn = document.createElement('button');

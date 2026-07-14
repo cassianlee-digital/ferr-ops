@@ -786,29 +786,27 @@
   <div class="hermes-head" id="hermesDragHandle">
     <div class="hermes-avatar"><img src="/hermes-agent-avatar.png" alt="Hermes Agent"></div>
     <div>
-      <div class="hermes-title">Hermes 智能体</div>
+      <div class="hermes-title-row">
+        <div class="hermes-title">Hermes 智能体</div>
+        <span class="hermes-status-dot" id="hermesStatusBox" title="尚未检查智能体服务器">
+          <span class="sr-only" id="hermesStatusText">当前状态：尚未检查智能体服务器</span>
+        </span>
+      </div>
       <div class="hermes-sub" id="hermesSub">运营管家入口 · 正在等待配置</div>
     </div>
     <button class="hermes-close" type="button" onclick="toggleHermesMaximize()" title="最大化/还原"><i class="ti ti-arrows-maximize"></i></button>
     <button class="hermes-close" type="button" onclick="closeHermesPanel()" title="关闭"><i class="ti ti-x"></i></button>
   </div>
   <div class="hermes-body">
-    <div class="hermes-toolbar">
-      <div class="hermes-status" id="hermesStatusBox">
-        <span class="hermes-dot" id="hermesDot"></span>
-        <span id="hermesStatusText">当前状态：尚未检查智能体服务器</span>
-      </div>
-      <div class="hermes-identity" id="hermesIdentity">身份：—</div>
-    </div>
     <div class="hermes-workspace">
       <div class="hermes-welcome" id="hermesWelcome">
         <div class="hermes-welcome-main">
           <div class="hermes-mark"><img src="/hermes-agent-avatar.png" alt="Hermes Agent"></div>
-          <div>
+          <div class="hermes-welcome-copy">
+            <div class="hermes-welcome-title">您好，欢迎使用小瑞</div>
             <p>您好，我是小瑞，希望今天能帮到您。可以直接问我 SEO、SEM、询盘、复盘或当前页面里的具体问题。</p>
           </div>
         </div>
-        <div class="hermes-last" id="hermesLast" hidden></div>
         <button type="button" class="hermes-brief" id="hermesBriefBtn" onclick="loadHermesMorningBrief()">
           <span><i class="ti ti-sun"></i> 今日早报</span>
           <small>查看今天的运营判断、优先动作和复盘指标</small>
@@ -829,6 +827,7 @@
       </div>
     </div>
     <div class="hermes-compose">
+      <div class="hermes-last" id="hermesLast" hidden></div>
       <textarea id="hermesInput" rows="3" placeholder="直接问运营问题，例如：这页数据有哪些异常？帮我把结论改成整改动作。"></textarea>
       <div class="hermes-attachments" id="hermesAttachments"></div>
       <div class="hermes-compose-tools">
