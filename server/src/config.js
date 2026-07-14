@@ -78,6 +78,7 @@ export const config = {
     dailyHourUtc: Number(process.env.SYNC_DAILY_HOUR_UTC ?? 5),              // 每天 UTC 几点跑（默认 5 点≈北京 13 点）
     catchUpOnStart: process.env.SYNC_CATCHUP_ON_START !== 'false',          // 启动后若近期无成功同步则补跑一次
     startDelayMs: Number(process.env.SYNC_START_DELAY_MS ?? 60_000),        // 启动补跑前的延时（等服务稳定）
-    staleHours: Number(process.env.SYNC_STALE_HOURS ?? 20),                 // 最近成功同步超过此小时数才视为“过期”需补跑
+    staleHours: Number(process.env.SYNC_STALE_HOURS ?? 12),                 // 最近成功同步超过此小时数才视为“过期”需补跑（默认半天）
+    checkIntervalHours: Number(process.env.SYNC_CHECK_INTERVAL_HOURS ?? 6), // 周期性检查新鲜度的间隔（只读时间戳，过期才真同步）
   },
 };

@@ -111,6 +111,20 @@ export function startSyncScheduler(log) {
   };
   schedule();
 
+  // 周期性自愈：每 checkIntervalHours 小时只读时间戳检查一次，数据过期（> staleHours）才真同步。
+  // 这样无论几点看、进程重启多少次，数据都能在约半天内自动保持最新，无需手动「立即同步」。
+  if (config.sync.enabled && config.sync.checkIntervalHours > 0) {
+    const intervalMs = config.sync.checkIntervalHours * 3600_000;
+    setInterval(async () => {
+      try {
+        if (needCatchUp(log)) await runAll(log, '新鲜度自愈');
+      } catch (e) {
+        log.error({ err: e.message || String(e) }, '[sync] 新鲜度自愈检查失败');
+      }
+    }, intervalMs).unref?.();
+    log.info(`[sync] 已启用新鲜度自愈：每 ${config.sync.checkIntervalHours}h 检查，超过 ${config.sync.staleHours}h 未更新则自动同步`);
+  }
+
   if (config.sync.catchUpOnStart || config.hermes.dailyLearningAuto) {
     setTimeout(async () => {
       try {
