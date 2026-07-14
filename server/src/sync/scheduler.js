@@ -7,7 +7,7 @@ import * as repo from '../db/repositories/googleSync.js';
 import { syncGsc } from './gsc.js';
 import { syncGa4 } from './ga4.js';
 import { syncAds } from './ads.js';
-import { buildDailyLearningMemory } from '../routes/hermes.js';
+import { buildDailyLearningMemory } from '../services/hermesBrain.js';
 
 const SYNCERS = { gsc: syncGsc, ga4: syncGa4, ads: syncAds };
 let running = false;
