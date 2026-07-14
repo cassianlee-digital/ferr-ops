@@ -159,6 +159,7 @@ function assistantPlaybook(operator) {
       '引用数字时说明来源：当前页、KPI、周报、GSC、Ads、询盘或市场记忆。',
       '如果 GSC/GA4/Ads 未接入或为空，必须明说，不能假装有数据。',
       '如果只有全局上下文，没有当前页，要标注“基于全局数据，不是当前页表格”。',
+      '根据 evidencePack 的 dataRole 判断证据边界：target_only 只能说明目标差距，不能证明真实表现；manual_weekly_report 必须标注人工周报口径；data_gap 只能支持“缺数据/先核验同步”的判断；keyword_registry 只能支持具体词存在，不能证明词的效果。',
     ],
     actionTemplate: {
       title: '动作标题',
@@ -217,6 +218,18 @@ function freshnessFromDate(date) {
   return 'stale';
 }
 
+function evidenceDataRole(source, value) {
+  const sourceKey = String(source || '').toLowerCase();
+  const valueText = String(value || '').toLowerCase();
+  if (valueText.includes('no_synced_rows')) return 'data_gap';
+  if (sourceKey === 'kpi_targets') return 'target_only';
+  if (sourceKey === 'sem_weeks.latest' || sourceKey === 'seo_weeks.latest' || sourceKey === 'seo_weeks.latesttwo') return 'manual_weekly_report';
+  if (sourceKey === 'keywords') return 'keyword_registry';
+  if (sourceKey === 'inquiries.stats') return 'crm_observation';
+  if (sourceKey.endsWith('.sync')) return 'synced_observation';
+  return 'operational_observation';
+}
+
 function localIsoDate(offsetDays = 0) {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -259,6 +272,7 @@ function makeEvidence({ source, title, metric, date, value, detail }) {
   return {
     id: evidenceId(source, title),
     source: source || 'unknown',
+    dataRole: evidenceDataRole(source, value),
     metric: metric || '',
     date: date || '',
     freshness: freshnessFromDate(date),

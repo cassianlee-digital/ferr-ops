@@ -780,9 +780,19 @@
   }
 
   function evidenceLine(item) {
+    const roleLabel = {
+      synced_observation: '同步观测',
+      crm_observation: 'CRM观测',
+      manual_weekly_report: '人工周报',
+      target_only: '目标值',
+      keyword_registry: '关键词库',
+      data_gap: '数据缺口',
+      operational_observation: '运营观测',
+    }[item.dataRole] || item.dataRole || '';
     return [
       item.id,
       item.source ? 'source=' + item.source : '',
+      roleLabel ? '性质=' + roleLabel : '',
       item.metric ? 'metric=' + item.metric : '',
       item.date ? 'date=' + item.date : '',
       item.freshness ? 'freshness=' + item.freshness : '',
