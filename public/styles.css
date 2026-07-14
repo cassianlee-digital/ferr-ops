@@ -4689,6 +4689,44 @@ body.dark .hermes-msg .ai-render strong {
   color: #f8fafc;
 }
 
+.hermes-closure {
+  margin-top: 10px;
+  border: 1px solid #fed7aa;
+  border-radius: var(--radius);
+  background: #fffaf3;
+}
+
+.hermes-closure summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #9a3412;
+}
+
+.hermes-closure summary::-webkit-details-marker {
+  display: none;
+}
+
+.hermes-closure-status {
+  margin-left: auto;
+  color: #c2410c;
+  font-size: 11px;
+}
+
+.hermes-closure-body {
+  padding: 0 10px 10px;
+  color: #7c2d12;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.hermes-closure-body ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
 body.dark .hermes-msg .ai-render li,
 body.dark .hermes-basis,
 body.dark .hermes-evidence,
@@ -4708,6 +4746,16 @@ body.dark .hermes-evidence-row strong {
 body.dark .hermes-evidence-status {
   background: #172033;
   color: #93c5fd;
+}
+
+body.dark .hermes-closure {
+  border-color: #92400e;
+  background: #2a1908;
+}
+
+body.dark .hermes-closure summary,
+body.dark .hermes-closure-body {
+  color: #fdba74;
 }
 
 body.dark .hermes-evidence-status.supported {

@@ -10,6 +10,8 @@ import * as seoRepo from '../db/repositories/seoWeeks.js';
 import * as semRepo from '../db/repositories/semWeeks.js';
 import * as kwRepo from '../db/repositories/keywords.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
+import * as loopItemsRepo from '../db/repositories/loopItems.js';
+import * as weeklyReportsRepo from '../db/repositories/weeklyReports.js';
 import { resolveProject } from '../sync/googleClient.js';
 
 function numericValue(value) {
@@ -355,11 +357,135 @@ function safeJson(value) {
   try { return value ? JSON.parse(value) : null; } catch { return null; }
 }
 
+const COMPLETED_ACTION_STATUSES = new Set([
+  'done', 'completed', 'closed', 'verified', '已完成', '完成', '已验证', '已关闭',
+]);
+
+function beijingDateKey() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
+
+function normalizedMemoryTopic(title) {
+  return String(title || '').toLowerCase()
+    .replace(/[\s\-_:：/\\]+/g, '')
+    .replace(/[^\p{L}\p{N}]/gu, '').slice(0, 80);
+}
+
+function actionStatus(row) {
+  return String(row?.status || '').trim().toLowerCase();
+}
+
+function actionLabel(row) {
+  return String(row?.content || row?.title || `动作 #${row?.id || ''}`).trim();
+}
+
+function reportHasContent(report) {
+  return ['summary', 'problems', 'analysis', 'next_plan'].some((field) => {
+    const value = report?.[field];
+    return Array.isArray(value) ? value.length > 0 : Boolean(String(value || '').trim());
+  });
+}
+
+function recentReportCutoff(today) {
+  const date = new Date(`${today}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return today;
+  date.setUTCDate(date.getUTCDate() - 14);
+  return date.toISOString().slice(0, 10);
+}
+
+export function buildClosureAudit({ memories = [], actions = [], reports = [], today = beijingDateKey() } = {}) {
+  const memoryGroups = new Map();
+  for (const memory of Array.isArray(memories) ? memories : []) {
+    const source = String(memory?.source || '');
+    if (/^hermes_(daily_learning|morning_brief)/i.test(source)) continue;
+    const topic = normalizedMemoryTopic(memory?.title);
+    if (!topic) continue;
+    const group = memoryGroups.get(topic) || [];
+    group.push(memory);
+    memoryGroups.set(topic, group);
+  }
+
+  const memoryConflicts = [];
+  for (const [topic, group] of memoryGroups) {
+    const contents = new Set(group.map((memory) => String(memory?.content || '').trim()).filter(Boolean));
+    if (group.length < 2 || contents.size < 2) continue;
+    memoryConflicts.push({
+      topic,
+      memoryIds: group.map((memory) => memory.id).filter(Boolean),
+      titles: group.map((memory) => String(memory.title || '').trim()).filter(Boolean),
+      reason: '同一主题存在多条内容不同的活动记忆，需要确认哪一条仍然有效。',
+    });
+  }
+
+  const actionRows = (Array.isArray(actions) ? actions : []).filter((row) => row?.state !== 'deleted');
+  const completedActions = actionRows.filter((row) => COMPLETED_ACTION_STATUSES.has(actionStatus(row)));
+  const archivedActions = actionRows.filter((row) => row?.state === 'archived');
+  const openActions = actionRows.filter((row) => row?.state !== 'archived' && !COMPLETED_ACTION_STATUSES.has(actionStatus(row)));
+  const overdueActions = openActions.filter((row) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(String(row?.task_date || '')) && row.task_date < today
+  ).slice(0, 10).map((row) => ({
+    id: row.id, content: actionLabel(row), taskDate: row.task_date, status: row.status || '未完成',
+  }));
+  const verificationCandidates = [
+    ...completedActions,
+    ...archivedActions.filter((row) => ['task', 'plan', 'test'].includes(String(row?.kind || '').toLowerCase())),
+  ];
+  const unverifiedActions = verificationCandidates.filter((row) =>
+    !String(row?.metric || '').trim() || (!String(row?.conclusion || '').trim() && !String(row?.analysis || '').trim())
+  ).slice(0, 10).map((row) => ({
+    id: row.id,
+    content: actionLabel(row),
+    state: row.state || 'active',
+    missing: [
+      !String(row?.metric || '').trim() ? '验证指标' : '',
+      !String(row?.conclusion || '').trim() && !String(row?.analysis || '').trim() ? '执行结果/结论' : '',
+    ].filter(Boolean),
+  }));
+
+  const reportRows = Array.isArray(reports) ? reports : [];
+  const cutoff = recentReportCutoff(today);
+  const reviewGaps = reportRows.filter((report) => {
+    const weekKey = String(report?.week_key || '');
+    if (!reportHasContent(report)) return /^\d{4}-\d{2}-\d{2}$/.test(weekKey) && weekKey >= cutoff;
+    const hasAnalysis = Array.isArray(report.analysis) ? report.analysis.length > 0 : Boolean(String(report.analysis || '').trim());
+    const hasNextPlan = Array.isArray(report.next_plan) ? report.next_plan.length > 0 : Boolean(String(report.next_plan || '').trim());
+    return !hasAnalysis || !hasNextPlan;
+  }).slice(0, 10).map((report) => ({
+      weekKey: report.week_key,
+      dept: report.dept,
+      missing: [
+        !reportHasContent(report) ? '周报内容' : '',
+        (Array.isArray(report.analysis) ? report.analysis.length === 0 : !String(report.analysis || '').trim()) ? '分析结论' : '',
+        (Array.isArray(report.next_plan) ? report.next_plan.length === 0 : !String(report.next_plan || '').trim()) ? '下一步计划' : '',
+    ].filter(Boolean),
+  }));
+
+  const issueCount = memoryConflicts.length + overdueActions.length + unverifiedActions.length + reviewGaps.length;
+  const hasRecords = memoryGroups.size > 0 || actionRows.length > 0 || reportRows.length > 0;
+  return {
+    generatedAt: new Date().toISOString(),
+    status: !hasRecords ? 'no_data' : issueCount ? 'blocked' : 'clear',
+    issueCount,
+    memoryConflicts: memoryConflicts.slice(0, 8),
+    actionSummary: {
+      total: actionRows.length, open: openActions.length, archived: archivedActions.length, completed: completedActions.length,
+      overdue: overdueActions.length, unverified: unverifiedActions.length,
+    },
+    overdueActions,
+    unverifiedActions,
+    reviewGaps,
+  };
+}
+
 export function buildEnterpriseMemory() {
   let brainState = null;
   let marketSummary = '';
   let marketRows = [];
   let longTermMemories = [];
+  let actions = [];
+  let reports = [];
   const missing = [];
 
   try {
@@ -385,6 +511,18 @@ export function buildEnterpriseMemory() {
     missing.push('hermes_memories');
   }
 
+  try {
+    actions = loopItemsRepo.list(null, { view: 'all' });
+  } catch {
+    missing.push('loop_items');
+  }
+
+  try {
+    reports = weeklyReportsRepo.list();
+  } catch {
+    missing.push('weekly_reports');
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     purpose: 'Long-lived enterprise memory for Hermes. Use this before generic marketing assumptions.',
@@ -401,6 +539,7 @@ export function buildEnterpriseMemory() {
       instruction: 'Use market research rows as customer/ICP evidence. Do not quote rows not present in this payload.',
     },
     longTermMemories,
+    closureAudit: buildClosureAudit({ memories: longTermMemories, actions, reports }),
     missingData: missing,
   };
 }

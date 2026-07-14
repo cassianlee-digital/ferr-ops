@@ -1139,6 +1139,39 @@
     bubble.appendChild(details);
   }
 
+  function appendHermesClosureAudit(bubble, hermes) {
+    const audit = hermes && hermes.closureAudit;
+    if (!audit || audit.status === 'no_data' || !audit.issueCount) return;
+
+    const details = document.createElement('details');
+    details.className = 'hermes-closure';
+    details.open = true;
+    const summary = document.createElement('summary');
+    summary.innerHTML = '<i class="ti ti-git-merge"></i><strong>闭环审查</strong>';
+    const status = document.createElement('span');
+    status.className = 'hermes-closure-status';
+    status.textContent = `待处理 ${audit.issueCount} 项`;
+    summary.appendChild(status);
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'hermes-closure-body';
+    const items = [];
+    (audit.memoryConflicts || []).slice(0, 3).forEach((item) => items.push(`记忆冲突：${(item.titles || []).join(' / ')}`));
+    (audit.overdueActions || []).slice(0, 3).forEach((item) => items.push(`逾期动作：${item.content}（${item.taskDate}）`));
+    (audit.unverifiedActions || []).slice(0, 3).forEach((item) => items.push(`${item.state === 'archived' ? '归档但未验证' : '执行未复盘'}：${item.content}，缺少${(item.missing || []).join('、')}`));
+    (audit.reviewGaps || []).slice(0, 3).forEach((item) => items.push(`周报缺口：${item.weekKey || ''} ${item.dept || ''}，缺少${(item.missing || []).join('、')}`));
+    const list = document.createElement('ul');
+    items.slice(0, 8).forEach((text) => {
+      const item = document.createElement('li');
+      item.textContent = text;
+      list.appendChild(item);
+    });
+    body.appendChild(list);
+    details.appendChild(body);
+    bubble.appendChild(details);
+  }
+
   function renderMessageItem(message, index) {
     const row = document.createElement('div');
     row.className = 'hermes-msg ' + (message.role === 'user' ? 'user' : 'assistant');
@@ -1171,6 +1204,7 @@
       bubble.appendChild(files);
     }
     appendHermesEvidenceAudit(bubble, message.hermes);
+    appendHermesClosureAudit(bubble, message.hermes);
     if (message.hermes) {
       const meta = document.createElement('div');
       meta.className = 'hermes-msg-meta';

@@ -943,6 +943,7 @@ function contextPayload(request, options = {}) {
       pageContext,
       opsDiagnosis,
       enterpriseMemory,
+      closureAudit: enterpriseMemory.closureAudit,
       dataRefresh: options.dataRefresh || null,
       operatingPrinciples: OPERATING_PRINCIPLES,
       responseStyle: RESPONSE_STYLE,
@@ -958,6 +959,7 @@ function contextPayload(request, options = {}) {
         'If dataRefresh exists, report the requested range and sync result accurately; synced with rowsWritten=0 means no rows were written, not that business data exists.',
         'Unsupported claims must be labeled as assumptions, risks, or missing data.',
         'Use enterpriseMemory.marketBrain and enterpriseMemory.longTermMemories as FERR company/customer background.',
+        'Use closureAudit as a read-only control report: do not silently choose between conflicting memories, do not call an action closed without a result and verification metric, and surface overdue actions or missing review sections when relevant.',
         'Market Analysis is first-party business research. Treat it as higher priority than generic web/LLM knowledge.',
         'The system can persist a daily learning memory via /api/hermes/memories/daily-learning so future analysis becomes more company-specific.',
         'Every action must include evidence, judgment, concrete action, owner, verification metric, and review window.',
@@ -1075,6 +1077,7 @@ export async function hermesRoutes(app) {
         missingData,
         dataGapTasks: buildDataGapTasks(missingData),
         evidenceAudit: audit,
+        closureAudit: context.closureAudit || context.enterpriseMemory?.closureAudit || null,
       };
       const memory = hermesMemoryRepo.upsertBySourceTitle({
         kind: 'learning',
@@ -1224,6 +1227,7 @@ export async function hermesRoutes(app) {
         ],
         dataRefresh: context.dataRefresh || null,
         evidenceAudit: audit,
+        closureAudit: context.closureAudit || context.enterpriseMemory?.closureAudit || null,
       };
       hermes.missingData = [...new Set(hermes.missingData)];
       hermes.dataGapTasks = buildDataGapTasks(hermes.missingData);
