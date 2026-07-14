@@ -6,7 +6,7 @@ import * as inqRepo from '../db/repositories/inquiries.js';
 import { seoWow } from './derive.js';
 
 // 单指标达成率：反向(i)指标越小越好
-function ratio(k) {
+export function ratio(k) {
   if (k.mode === 'i') {
     if (!k.actual) return 1;
     return Math.min(k.target / k.actual, 1);
@@ -15,7 +15,7 @@ function ratio(k) {
   return Math.min(k.actual / k.target, 1);
 }
 
-function blockRate(rows) {
+export function blockRate(rows) {
   const wsum = rows.reduce((s, k) => s + k.weight, 0);
   if (!wsum) return 0;
   return rows.reduce((s, k) => s + ratio(k) * k.weight, 0) / wsum;

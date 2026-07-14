@@ -2,17 +2,7 @@
 import { requireAuth } from '../auth/middleware.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
 import { normalizeRange, resolveProject } from '../sync/googleClient.js';
-
-function prevRange(range) {
-  const day = 86400000;
-  const s = new Date(range.start_date + 'T00:00:00Z');
-  const e = new Date(range.end_date + 'T00:00:00Z');
-  const len = Math.round((e - s) / day) + 1;
-  const prevEnd = new Date(s.getTime() - day);
-  const prevStart = new Date(prevEnd.getTime() - (len - 1) * day);
-  const iso = (d) => d.toISOString().slice(0, 10);
-  return { start_date: iso(prevStart), end_date: iso(prevEnd) };
-}
+import { previousRange } from '../lib/parseDateRange.js';
 
 export async function diagnosticsRoutes(app) {
   app.get('/api/diagnostics', { preHandler: requireAuth }, async (request, reply) => {
@@ -21,7 +11,7 @@ export async function diagnosticsRoutes(app) {
       const range = normalizeRange(request.query || {});
       const gsc = { ...range, gsc_site_url: project.gsc_site_url };
       const ads = { ...range, ads_customer_id: project.ads_customer_id };
-      const prev = prevRange(range);
+      const prev = previousRange(range);
 
       const opportunities = googleRepo.gscOpportunities(gsc);
       const cannibalization = googleRepo.gscCannibalization(gsc);
