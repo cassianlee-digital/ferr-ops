@@ -710,9 +710,9 @@ function splitHermesText(text) {
 
 function auditHermesAnswer(parsed, context) {
   const pack = Array.isArray(context?.opsDiagnosis?.evidencePack) ? context.opsDiagnosis.evidencePack : [];
-  const byId = new Map(pack.map((item) => [item.id, item]));
+  const byId = new Map(pack.map((item) => [String(item.id || '').toUpperCase(), item]));
   const raw = [parsed?.basis, parsed?.answer].filter(Boolean).join('\n');
-  const evidenceIds = [...new Set((raw.match(/\[EV-[a-z0-9-]+\]/gi) || []).map((id) => id.slice(1, -1)))];
+  const evidenceIds = [...new Set((raw.match(/\[EV-[a-z0-9-]+\]/gi) || []).map((id) => id.slice(1, -1).toUpperCase()))];
   const evidence = evidenceIds.map((id) => byId.get(id)).filter(Boolean).slice(0, 8);
   const unknownEvidenceIds = evidenceIds.filter((id) => !byId.has(id));
   const status = !pack.length
@@ -725,15 +725,94 @@ function auditHermesAnswer(parsed, context) {
     evidence,
     evidenceIds,
     unknownEvidenceIds,
+    knownEvidenceIds: pack.map((item) => String(item.id || '').toUpperCase()).filter(Boolean),
     evidencePoolSize: pack.length,
     checkedAt: new Date().toISOString(),
   };
 }
 
+function evidenceRefs(value) {
+  return [...new Set((String(value || '').match(/\[EV-[a-z0-9-]+\]/gi) || []).map((id) => id.slice(1, -1).toUpperCase()))];
+}
+
+function normalizeClaimLine(value) {
+  return String(value || '')
+    .replace(/<\/?[^>]+>/g, '')
+    .replace(/\[EV-[a-z0-9-]+\]/gi, '')
+    .replace(/^[\s>*-]*(?:\d+[.)、]\s*)?/, '')
+    .replace(/\*\*/g, '')
+    .trim();
+}
+
+function isStructuralAnswerLine(line) {
+  const clean = normalizeClaimLine(line).replace(/[：:]\s*$/, '');
+  if (!clean) return true;
+  if (/^(待验证|假设|缺失数据|不确定|需补充|证据不足|证据校验)/.test(clean)) return true;
+  if (/^(判断|依据|下一步|结论|建议|今日判断|关键证据|今天先做|复盘指标|可沉淀记忆|风险)$/.test(clean)) return true;
+  return clean.length <= 16 && /^(判断|依据|下一步|结论|建议|今日判断|关键证据|今天先做|复盘指标|可沉淀记忆)$/i.test(clean);
+}
+
+function lineNeedsEvidence(line) {
+  if (isStructuralAnswerLine(line)) return false;
+  const clean = normalizeClaimLine(line);
+  return /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i.test(clean);
+}
+
+function formatPendingClaim(line) {
+  return `- ${normalizeClaimLine(line).replace(/^[-•]\s*/, '')}`;
+}
+
+function enforceEvidenceProtocol(parsed, audit, options = {}) {
+  if (!audit || !needsEvidenceGuard(parsed, options.forceEvidence)) return parsed;
+  const knownIds = new Set(audit.knownEvidenceIds || []);
+  if (!knownIds.size) return parsed;
+
+  const unsupported = [];
+  const supported = [];
+  const lines = String(parsed?.answer || '').split('\n');
+  const answerLines = lines.filter((line) => {
+    if (!lineNeedsEvidence(line)) return true;
+    const ids = evidenceRefs(line);
+    const hasKnownEvidence = ids.some((id) => knownIds.has(id));
+    if (hasKnownEvidence) {
+      supported.push(line);
+      return true;
+    }
+    unsupported.push(line);
+    return false;
+  });
+
+  if (!unsupported.length) {
+    audit.claimAuditStatus = 'passed';
+    audit.supportedClaimCount = supported.length;
+    return parsed;
+  }
+
+  audit.guardApplied = true;
+  audit.claimAuditStatus = 'downgraded';
+  audit.unsupportedClaims = unsupported.map(normalizeClaimLine).filter(Boolean);
+  if (!audit.unsupportedClaims.length) {
+    audit.claimAuditStatus = 'passed';
+    audit.supportedClaimCount = supported.length;
+    return parsed;
+  }
+  audit.supportedClaimCount = supported.length;
+  audit.guardMessage = `强证据协议：已将 ${audit.unsupportedClaims.length} 条未绑定有效证据编号的判断或动作降级为待验证。`;
+  if (audit.status === 'supported') audit.status = 'partial';
+
+  const pendingLines = audit.unsupportedClaims.map(formatPendingClaim).join('\n');
+  const keptAnswer = answerLines.join('\n').trim();
+  const answer = keptAnswer
+    ? `${keptAnswer}\n\n待验证：\n${pendingLines}\n\n这些内容需要补充或核对公司数据后再执行。`
+    : `证据不足，以下判断不能作为已验证结论执行。\n\n待验证：\n${pendingLines}\n\n这些内容需要补充或核对公司数据后再执行。`;
+  const basis = [String(parsed?.basis || '').trim(), audit.guardMessage].filter(Boolean).join('\n');
+  return { basis, answer };
+}
+
 function needsEvidenceGuard(parsed, forceEvidence = false) {
   if (forceEvidence) return true;
   const raw = [parsed?.basis, parsed?.answer].filter(Boolean).join('\n');
-  return /(SEO|SEM|KPI|询盘|关键词|周报|转化|点击|花费|排名|数据|证据|建议|判断|动作|优化|复盘|整改)/i.test(raw);
+  return /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i.test(raw);
 }
 
 function evidenceGuardMessage(audit, parsed, forceEvidence = false) {
@@ -752,6 +831,9 @@ function evidenceGuardMessage(audit, parsed, forceEvidence = false) {
 }
 
 function guardHermesAnswer(parsed, audit, options = {}) {
+  const enforced = enforceEvidenceProtocol(parsed, audit, options);
+  if (enforced !== parsed) return enforced;
+
   const message = evidenceGuardMessage(audit, parsed, options.forceEvidence);
   if (!message) return parsed;
   audit.guardApplied = true;
@@ -1056,6 +1138,7 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     '4. 如果用户方案有问题，直接指出问题、后果、替代方案和取舍。',
     '5. 如果适合沉淀，最终回答里可追加“可沉淀记忆”，但不要声称已经写入，除非用户点击沉淀。',
     '6. 运营判断必须引用 evidencePack 里的证据编号，例如 [EV-...]；没有证据编号支撑的内容只能写成假设、风险或缺失数据。',
+    '7. 每条运营判断、建议或动作必须在同一句/同一条里绑定有效 [EV-...]；无法绑定证据的内容统一放进“待验证”，不得混在已验证结论里。',
   ].filter(Boolean).join('\n');
 }
 
@@ -1091,6 +1174,7 @@ function morningBriefPrompt(context) {
     '4. 不要写空泛建议，例如“持续优化”“加强关注”。每个动作必须可执行、可复盘。',
     '5. 简报要慎重，宁可说数据不足，也不要做没有证据的判断。',
     '6. 每个关键判断都要引用 evidencePack 的 [EV-...] 编号；没有编号支撑时必须标成待验证。',
+    '7. 每条今日动作必须能追溯到同一句/同一条里的有效 [EV-...]；无法追溯的动作只能放入“待验证”。',
     '',
     '[Hermes 上下文]',
     JSON.stringify(payload, null, 2).slice(0, 26000),
