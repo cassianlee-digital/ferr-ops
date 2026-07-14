@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { db } from '../connection.js';
-import { encrypt, decrypt } from '../../services/crypto.js';
+import { encrypt, decryptSafe } from '../../services/crypto.js';
 
 export const PROVIDERS = ['gsc', 'ga4', 'ads'];
 
@@ -25,8 +25,13 @@ export function consumeState(state) {
 
 export function saveToken(provider, token) {
   assertProvider(provider);
-  const current = getToken(provider);
-  const refreshToken = token.refresh_token || current?.refresh_token || '';
+  // 用非抛错读取旧行：Google 刷新授权不返回 refresh_token，需保留旧的；scope/token_type 是明文列。
+  // 关键：即便旧密文因密钥变更解不开，也不能让重新授权（写新 token）被堵死。
+  const prev = db
+    .prepare('SELECT refresh_token_enc, scope, token_type FROM google_oauth_tokens WHERE provider = ?')
+    .get(provider);
+  const prevRefresh = prev ? decryptSafe(prev.refresh_token_enc).value : '';
+  const refreshToken = token.refresh_token || prevRefresh || '';
   db.prepare(
     `INSERT INTO google_oauth_tokens
      (provider, access_token_enc, refresh_token_enc, scope, token_type, expiry_date_ms, updated_at)
@@ -42,8 +47,8 @@ export function saveToken(provider, token) {
     provider,
     access_token_enc: encrypt(token.access_token || ''),
     refresh_token_enc: encrypt(refreshToken),
-    scope: token.scope || current?.scope || '',
-    token_type: token.token_type || current?.token_type || 'Bearer',
+    scope: token.scope || prev?.scope || '',
+    token_type: token.token_type || prev?.token_type || 'Bearer',
     expiry_date_ms: token.expiry_date_ms || (token.expires_in ? Date.now() + Number(token.expires_in) * 1000 : null),
   });
 }
@@ -52,10 +57,18 @@ export function getToken(provider) {
   assertProvider(provider);
   const row = db.prepare('SELECT * FROM google_oauth_tokens WHERE provider = ?').get(provider);
   if (!row) return null;
+  const acc = decryptSafe(row.access_token_enc);
+  const ref = decryptSafe(row.refresh_token_enc);
+  // 密文存在却解不开 → 显式抛错，把「解密失败」暴露为真实原因，而非伪装成「未授权」。
+  if (!acc.ok || !ref.ok) {
+    const e = new Error('google_credential_decrypt_failed');
+    e.reason = ref.error || acc.error || '凭据解密失败';
+    throw e;
+  }
   return {
     provider: row.provider,
-    access_token: decrypt(row.access_token_enc),
-    refresh_token: decrypt(row.refresh_token_enc),
+    access_token: acc.value,
+    refresh_token: ref.value,
     scope: row.scope,
     token_type: row.token_type,
     expiry_date_ms: row.expiry_date_ms,
@@ -71,10 +84,15 @@ export function deleteToken(provider) {
 export function tokenStatus() {
   const rows = db.prepare('SELECT provider, refresh_token_enc, scope, expiry_date_ms, updated_at FROM google_oauth_tokens').all();
   const out = {};
-  for (const p of PROVIDERS) out[p] = { authorized: false, scope: '', expiresAt: null, updatedAt: null };
+  for (const p of PROVIDERS) out[p] = { authorized: false, credentialError: null, scope: '', expiresAt: null, updatedAt: null };
   for (const row of rows) {
+    // authorized 以「密文存在且能解开」为准，而非仅看密文是否存在——
+    // 否则密钥变更后仍显示已授权，同步却神秘失败。解不开时把原因放进 credentialError 供前端展示。
+    const hasCipher = !!row.refresh_token_enc;
+    const ref = decryptSafe(row.refresh_token_enc);
     out[row.provider] = {
-      authorized: !!row.refresh_token_enc,
+      authorized: hasCipher && ref.ok,
+      credentialError: hasCipher && !ref.ok ? (ref.error || '凭据解密失败') : null,
       scope: row.scope || '',
       expiresAt: row.expiry_date_ms ? new Date(row.expiry_date_ms).toISOString() : null,
       updatedAt: row.updated_at,

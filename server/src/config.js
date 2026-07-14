@@ -45,8 +45,10 @@ export const config = {
     boss: process.env.SEED_BOSS_PASSWORD || '',
   },
 
-  // 设置页密钥 AES 加密用的主密钥（默认从 JWT_SECRET 派生，无需额外配置）
+  // 数据加密主密钥（Google 凭据 / 第三方密钥的 AES）。优先独立的 SETTINGS_SECRET；
+  // 未设时回退 JWT_SECRET（兼容既有密文）。settingsSecretExplicit 标记是否已真正解耦。
   settingsSecret: process.env.SETTINGS_SECRET || process.env.JWT_SECRET || 'dev-settings-key',
+  settingsSecretExplicit: !!process.env.SETTINGS_SECRET,
 
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -82,3 +84,11 @@ export const config = {
     checkIntervalHours: Number(process.env.SYNC_CHECK_INTERVAL_HOURS ?? 6), // 周期性检查新鲜度的间隔（只读时间戳，过期才真同步）
   },
 };
+
+// 密钥解耦提醒：未设独立 SETTINGS_SECRET 时，数据加密密钥实际派生自 JWT_SECRET，
+// 轮换 JWT_SECRET 会导致已存的 Google 凭据 / 第三方密钥无法解密。建议设置独立 SETTINGS_SECRET 以解耦。
+if (!config.settingsSecretExplicit) {
+  console.warn(
+    '[config] 未设置 SETTINGS_SECRET：数据加密密钥当前派生自 JWT_SECRET，轮换 JWT_SECRET 会使已存凭据无法解密。建议在 .env 设置独立的 SETTINGS_SECRET。'
+  );
+}

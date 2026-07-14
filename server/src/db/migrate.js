@@ -1,8 +1,14 @@
-// 建表迁移。带 schema 版本：升级到 V7 时一次性清库重建（符合「清空所有数据，从0录入」）。
-// 直接运行：node src/db/migrate.js
-import { pathToFileURL } from 'node:url';
+// 建表迁移（前向、幂等、永不清库）。启动路径只会 CREATE IF NOT EXISTS + 补列。
+// 清库重建是显式独立操作：`CONFIRM_RESET=1 node src/db/migrate.js --reset`（会先自动备份）。
+// 普通运行：node src/db/migrate.js
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { resolve, dirname } from 'node:path';
+import { mkdirSync } from 'node:fs';
 import { db } from './connection.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// schema 版本仅作记录与未来增量迁移的挂钩点；不再触发任何自动清库。
 const SCHEMA_VERSION = '7';
 
 const ALL_TABLES = [
@@ -454,19 +460,9 @@ CREATE INDEX IF NOT EXISTS idx_sop_comp_period ON sop_completions(period_key);
 
 export function migrate() {
   db.exec(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);`);
-  const row = db.prepare(`SELECT value FROM meta WHERE key='schema_version'`).get();
-  const current = row?.value;
 
-  if (current !== SCHEMA_VERSION) {
-    // 升级到 V7：一次性清库重建（符合「清空所有数据」决策）。仅在版本不匹配时执行一次。
-    db.pragma('foreign_keys = OFF');
-    const drop = db.transaction(() => {
-      for (const t of ALL_TABLES) db.exec(`DROP TABLE IF EXISTS ${t};`);
-    });
-    drop();
-    db.pragma('foreign_keys = ON');
-  }
-
+  // 前向迁移：只建表/补列，绝不 DROP。历史上这里会在「版本对不上」时清空全库，
+  // 那是「改一次版本号就抹掉生产真实数据」的地雷，已移除。清库改为显式的 dropAllTables()。
   db.exec(SCHEMA);
 
   // 幂等加列：对已存在的旧库补充新增字段（不升版本、不清库，避免数据丢失）。
@@ -570,9 +566,46 @@ function ensureColumns(table, cols) {
   }
 }
 
+// 【危险·显式】清库重建：DROP 全部业务表并清掉版本记录。仅供 --reset 流程调用，
+// app 启动路径（seed→migrate）永不触及此函数。
+export function dropAllTables() {
+  db.pragma('foreign_keys = OFF');
+  const drop = db.transaction(() => {
+    for (const t of ALL_TABLES) db.exec(`DROP TABLE IF EXISTS ${t};`);
+    db.exec(`DELETE FROM meta WHERE key='schema_version';`);
+  });
+  drop();
+  db.pragma('foreign_keys = ON');
+}
+
 // 跨平台入口判断：Windows 下 process.argv[1] 是反斜杠/含空格的路径，
 // 直接拼 `file://` 与 import.meta.url 永远不相等，故用 pathToFileURL 归一化。
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  migrate();
-  console.log('[migrate] schema V' + SCHEMA_VERSION + ' 已就绪');
+  if (process.argv.includes('--reset')) {
+    // 显式清库重建：需 CONFIRM_RESET=1 双重确认，且先自动在线备份，绝不可被误触发。
+    if (process.env.CONFIRM_RESET !== '1') {
+      console.error('[migrate] 已拒绝清库：--reset 必须同时设置环境变量 CONFIRM_RESET=1 以确认。');
+      console.error('[migrate] 该操作会 DROP 全部业务表并按最新 schema 重建，除自动备份外数据不可恢复。');
+      process.exit(1);
+    }
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupDir = resolve(__dirname, '../../../backup');
+    mkdirSync(backupDir, { recursive: true });
+    const out = resolve(backupDir, `ferr-before-reset-${stamp}.sqlite`);
+    db.backup(out)
+      .then(() => {
+        console.log('[migrate] 清库前已备份 ->', out);
+        dropAllTables();
+        migrate();
+        console.log('[migrate] 清库重建完成，schema V' + SCHEMA_VERSION);
+        process.exit(0);
+      })
+      .catch((e) => {
+        console.error('[migrate] 备份失败，已中止清库（未做任何改动）：', e.message);
+        process.exit(1);
+      });
+  } else {
+    migrate();
+    console.log('[migrate] schema V' + SCHEMA_VERSION + ' 已就绪（前向迁移，未清库）');
+  }
 }

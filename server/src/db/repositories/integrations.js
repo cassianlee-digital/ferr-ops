@@ -1,6 +1,6 @@
 // 第三方集成密钥数据访问层（密钥 AES 加密存储，永不明文返回前端）。
 import { db } from '../connection.js';
-import { encrypt, decrypt } from '../../services/crypto.js';
+import { encrypt, decrypt, decryptSafe } from '../../services/crypto.js';
 
 export const PROVIDERS = ['gsc', 'ga4', 'ads'];
 
@@ -23,9 +23,16 @@ export function getSecret(provider) {
 export function status() {
   const rows = db.prepare('SELECT provider, secret_enc, updated_at FROM integrations').all();
   const map = {};
-  for (const p of PROVIDERS) map[p] = { configured: false, updated_at: null };
+  for (const p of PROVIDERS) map[p] = { configured: false, credentialError: null, updated_at: null };
   for (const r of rows) {
-    map[r.provider] = { configured: !!r.secret_enc, updated_at: r.updated_at };
+    // 与 token 状态同款：密文存在却解不开时暴露原因，避免「显示已配置、用起来却失败」的静默矛盾。
+    const hasCipher = !!r.secret_enc;
+    const dec = decryptSafe(r.secret_enc);
+    map[r.provider] = {
+      configured: hasCipher && dec.ok,
+      credentialError: hasCipher && !dec.ok ? (dec.error || '密钥解密失败') : null,
+      updated_at: r.updated_at,
+    };
   }
   return map;
 }
