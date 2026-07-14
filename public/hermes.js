@@ -19,6 +19,7 @@
   let attachments = [];
   let activeConversationId = null;
   let historyVisible = false;
+  let deepThinking = false;
   let dataGapTaskKeys = new Set();
   let dataGapTaskItems = new Map();
   let currentHermesMissingData = new Set();
@@ -493,10 +494,27 @@
   }
 
   function selectedGatewayMode() {
+    if (deepThinking) return { skill: 'auto', workflow: 'diagnose_to_action' };
     return {
       skill: (byId('hermesSkill') && byId('hermesSkill').value) || 'auto',
       workflow: (byId('hermesWorkflow') && byId('hermesWorkflow').value) || 'answer',
     };
+  }
+
+  function renderDeepThinkingButton() {
+    const btn = byId('hermesDeepBtn');
+    if (!btn) return;
+    btn.classList.toggle('active', deepThinking);
+    btn.setAttribute('aria-pressed', deepThinking ? 'true' : 'false');
+    btn.title = deepThinking
+      ? '深度思考已开启：小瑞会做更深入的证据分析和风险审查'
+      : '重要问题开启后，小瑞会做更深入的证据分析和风险审查';
+  }
+
+  function toggleHermesDeepThinking() {
+    deepThinking = !deepThinking;
+    renderDeepThinkingButton();
+    toastSafe(deepThinking ? '深度思考已开启' : '深度思考已关闭');
   }
 
   function formatConversationTime(value) {
@@ -609,10 +627,8 @@
       if (!conversation) return;
       activeConversationId = conversation.id;
       messages = Array.isArray(conversation.messages) ? conversation.messages : [];
-      const skill = byId('hermesSkill');
-      const workflow = byId('hermesWorkflow');
-      if (skill && conversation.skill) skill.value = conversation.skill;
-      if (workflow && conversation.workflow) workflow.value = conversation.workflow;
+      deepThinking = conversation.workflow === 'diagnose_to_action';
+      renderDeepThinkingButton();
       historyVisible = false;
       const panel = byId('hermesHistory');
       if (panel) panel.hidden = true;
@@ -1230,6 +1246,8 @@
     activeConversationId = null;
     messages = [];
     historyVisible = false;
+    deepThinking = false;
+    renderDeepThinkingButton();
     const panel = byId('hermesHistory');
     if (panel) panel.hidden = true;
     renderMessages();
@@ -1393,6 +1411,7 @@
   window.createHermesDailyLearning = createHermesDailyLearning;
   window.resetHermesWindow = resetHermesWindow;
   window.toggleHermesMaximize = toggleHermesMaximize;
+  window.toggleHermesDeepThinking = toggleHermesDeepThinking;
   window.syncHermesSession = syncHermesSession;
   window.syncHermesPageDetail = syncHermesPageDetail;
   window.sendHermesPrompt = sendHermesPrompt;
@@ -1409,5 +1428,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     setHermesView(lastHermesState || {});
     setConversationControls();
+    renderDeepThinkingButton();
   });
 })();

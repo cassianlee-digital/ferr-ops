@@ -4478,6 +4478,12 @@ table.dt td.editable:focus,
   box-shadow: 0 0 0 3px rgba(47, 109, 246, .10);
 }
 
+.hermes-deep.active {
+  border-color: #2f6df6;
+  background: #eef4ff;
+  color: #2159d6;
+}
+
 .hermes-mode,
 .hermes-more {
   position: relative;
@@ -4664,6 +4670,12 @@ body.dark .hermes-history-empty,
 body.dark .hermes-mode-menu label,
 body.dark .hermes-agent-note {
   color: #94a3b8;
+}
+
+body.dark .hermes-deep.active {
+  border-color: #3b82f6;
+  background: #0f1f3d;
+  color: #93c5fd;
 }
 
 body.dark .hermes-quick,
