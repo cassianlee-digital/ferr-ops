@@ -24,6 +24,8 @@
   let dataGapTaskItems = new Map();
   let currentHermesMissingData = new Set();
   let dataGapStatusLoaded = false;
+  let closureEditorItems = new Map();
+  let closureEditorSeq = 0;
 
   function byId(id) { return document.getElementById(id); }
   function currentUser() { return window.ME || {}; }
@@ -1156,20 +1158,145 @@
 
     const body = document.createElement('div');
     body.className = 'hermes-closure-body';
-    const items = [];
-    (audit.memoryConflicts || []).slice(0, 3).forEach((item) => items.push(`记忆冲突：${(item.titles || []).join(' / ')}`));
-    (audit.overdueActions || []).slice(0, 3).forEach((item) => items.push(`逾期动作：${item.content}（${item.taskDate}）`));
-    (audit.unverifiedActions || []).slice(0, 3).forEach((item) => items.push(`${item.state === 'archived' ? '归档但未验证' : '执行未复盘'}：${item.content}，缺少${(item.missing || []).join('、')}`));
-    (audit.reviewGaps || []).slice(0, 3).forEach((item) => items.push(`周报缺口：${item.weekKey || ''} ${item.dept || ''}，缺少${(item.missing || []).join('、')}`));
+    const rows = [];
+    const addRow = (text, type, data) => {
+      const row = document.createElement('div');
+      row.className = 'hermes-closure-row';
+      const label = document.createElement('span');
+      label.textContent = text;
+      row.appendChild(label);
+      if (type) {
+        const key = String(++closureEditorSeq);
+        closureEditorItems.set(key, { type, ...data });
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'hermes-closure-action';
+        button.dataset.key = key;
+        button.innerHTML = '<i class="ti ti-edit"></i><span>处理</span>';
+        row.appendChild(button);
+      }
+      rows.push(row);
+    };
+    (audit.memoryConflicts || []).slice(0, 3).forEach((item) => addRow(`记忆冲突：${(item.titles || []).join(' / ')}`, '', {}));
+    (audit.overdueActions || []).slice(0, 3).forEach((item) => addRow(`逾期动作：${item.content}（${item.taskDate}）`, 'action', { item, overdue: true }));
+    (audit.unverifiedActions || []).slice(0, 3).forEach((item) => addRow(`${item.state === 'archived' ? '归档但未验证' : '执行未复盘'}：${item.content}，缺少${(item.missing || []).join('、')}`, 'action', { item }));
+    (audit.reviewGaps || []).slice(0, 3).forEach((item) => addRow(`周报缺口：${item.weekKey || ''} ${item.dept || ''}，缺少${(item.missing || []).join('、')}`, 'report', { item }));
     const list = document.createElement('ul');
-    items.slice(0, 8).forEach((text) => {
-      const item = document.createElement('li');
-      item.textContent = text;
-      list.appendChild(item);
-    });
+    rows.slice(0, 8).forEach((row) => { const item = document.createElement('li'); item.appendChild(row); list.appendChild(item); });
     body.appendChild(list);
     details.appendChild(body);
     bubble.appendChild(details);
+  }
+
+  function closureField(label, type, value, multiline) {
+    const wrap = document.createElement('label');
+    wrap.className = 'hermes-closure-field';
+    const title = document.createElement('span');
+    title.textContent = label;
+    const input = document.createElement(multiline ? 'textarea' : 'input');
+    input.dataset.field = type;
+    input.value = value || '';
+    input.required = true;
+    input.rows = multiline ? 4 : undefined;
+    wrap.appendChild(title);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  function closureFieldLabel(field) {
+    return { summary: '周报内容', analysis: '分析结论', next_plan: '下一步计划', metric: '验证指标', conclusion: '执行结果/结论' }[field] || field;
+  }
+
+  function closeClosureEditor(editor) {
+    if (editor) editor.remove();
+  }
+
+  async function refreshClosureAuditView() {
+    try {
+      const context = await window.API.get('/api/hermes/context');
+      const current = [...messages].reverse().find((message) => message.role === 'assistant' && message.hermes);
+      if (current) current.hermes.closureAudit = context.closureAudit || context.enterpriseMemory?.closureAudit || null;
+      renderMessages();
+    } catch (e) {
+      toastSafe('闭环审查刷新失败：' + (e.message || 'unknown_error'));
+    }
+  }
+
+  function openClosureEditor(type, data) {
+    const item = data.item || {};
+    const editor = document.createElement('div');
+    editor.className = 'hermes-closure-editor';
+    const card = document.createElement('div');
+    card.className = 'hermes-closure-card';
+    const head = document.createElement('div');
+    head.className = 'hermes-closure-editor-head';
+    const title = document.createElement('strong');
+    title.textContent = type === 'report' ? '补充周报闭环' : '补充动作结果';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'hermes-closure-editor-close';
+    close.innerHTML = '<i class="ti ti-x"></i>';
+    close.title = '关闭';
+    close.addEventListener('click', () => closeClosureEditor(editor));
+    head.appendChild(title);
+    head.appendChild(close);
+    card.appendChild(head);
+
+    const description = document.createElement('p');
+    description.className = 'hermes-closure-editor-desc';
+    description.textContent = item.content || `${item.weekKey || ''} ${item.dept || ''}`;
+    card.appendChild(description);
+    const fields = type === 'report' ? (item.fields || []) : (item.fields || ['metric', 'conclusion']);
+    fields.forEach((field) => card.appendChild(closureField(closureFieldLabel(field), field, '', field !== 'metric')));
+
+    const foot = document.createElement('div');
+    foot.className = 'hermes-closure-editor-foot';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn-ghost';
+    cancel.textContent = '取消';
+    cancel.addEventListener('click', () => closeClosureEditor(editor));
+    const save = document.createElement('button');
+    save.type = 'button';
+    save.className = 'btn-primary';
+    save.innerHTML = '<i class="ti ti-device-floppy"></i><span>保存并复核</span>';
+    save.addEventListener('click', async () => {
+      const values = {};
+      let valid = true;
+      card.querySelectorAll('[data-field]').forEach((input) => {
+        values[input.dataset.field] = String(input.value || '').trim();
+        if (input.required && !values[input.dataset.field]) valid = false;
+      });
+      if (!valid) { toastSafe('请先补全闭环字段'); return; }
+      save.disabled = true;
+      try {
+        if (type === 'action') {
+          const payload = {};
+          if (Object.prototype.hasOwnProperty.call(values, 'metric')) payload.metric = values.metric;
+          if (Object.prototype.hasOwnProperty.call(values, 'conclusion')) payload.conclusion = values.conclusion;
+          if (data.overdue) { payload.status = 'done'; payload.state = 'done'; }
+          await window.API.patch('/api/loop-items/' + encodeURIComponent(item.id), payload);
+        } else {
+          await Promise.all(Object.entries(values).map(([field, value]) => window.API.put('/api/weekly-reports', {
+            week_key: item.weekKey, dept: item.dept, field, items: [value],
+          })));
+        }
+        closeClosureEditor(editor);
+        toastSafe('闭环内容已保存，正在重新审查');
+        await refreshClosureAuditView();
+      } catch (e) {
+        save.disabled = false;
+        toastSafe('闭环保存失败：' + (e.message || 'save_failed'));
+      }
+    });
+    foot.appendChild(cancel);
+    foot.appendChild(save);
+    card.appendChild(foot);
+    editor.appendChild(card);
+    editor.addEventListener('click', (event) => { if (event.target === editor) closeClosureEditor(editor); });
+    document.body.appendChild(editor);
+    const first = card.querySelector('[data-field]');
+    if (first) first.focus();
   }
 
   function renderMessageItem(message, index) {
@@ -1263,6 +1390,7 @@
     const log = byId('hermesChatLog');
     const welcome = byId('hermesWelcome');
     if (!log) return;
+    closureEditorItems = new Map();
     log.innerHTML = '';
     messages.forEach((message, index) => log.appendChild(renderMessageItem(message, index)));
     if (welcome) welcome.classList.toggle('compact', messages.length > 0);
@@ -1441,6 +1569,12 @@
     const gapRefreshBtn = e.target.closest && e.target.closest('.hermes-gap-refresh-btn');
     if (gapRefreshBtn) {
       sendHermesPrompt('我已经补齐了部分缺失数据。请基于最新 ferr-ops 后台数据重新生成一次运营诊断，必须引用新的证据编号，并明确哪些缺口仍未补齐。');
+      return;
+    }
+    const closureActionBtn = e.target.closest && e.target.closest('.hermes-closure-action');
+    if (closureActionBtn) {
+      const item = closureEditorItems.get(closureActionBtn.dataset.key);
+      if (item) openClosureEditor(item.type, item);
       return;
     }
     const feedbackBtn = e.target.closest && e.target.closest('.hermes-feedback');

@@ -438,6 +438,10 @@ export function buildClosureAudit({ memories = [], actions = [], reports = [], t
     id: row.id,
     content: actionLabel(row),
     state: row.state || 'active',
+    fields: [
+      !String(row?.metric || '').trim() ? 'metric' : '',
+      !String(row?.conclusion || '').trim() && !String(row?.analysis || '').trim() ? 'conclusion' : '',
+    ].filter(Boolean),
     missing: [
       !String(row?.metric || '').trim() ? '验证指标' : '',
       !String(row?.conclusion || '').trim() && !String(row?.analysis || '').trim() ? '执行结果/结论' : '',
@@ -453,12 +457,17 @@ export function buildClosureAudit({ memories = [], actions = [], reports = [], t
     const hasNextPlan = Array.isArray(report.next_plan) ? report.next_plan.length > 0 : Boolean(String(report.next_plan || '').trim());
     return !hasAnalysis || !hasNextPlan;
   }).slice(0, 10).map((report) => ({
-      weekKey: report.week_key,
-      dept: report.dept,
-      missing: [
-        !reportHasContent(report) ? '周报内容' : '',
-        (Array.isArray(report.analysis) ? report.analysis.length === 0 : !String(report.analysis || '').trim()) ? '分析结论' : '',
-        (Array.isArray(report.next_plan) ? report.next_plan.length === 0 : !String(report.next_plan || '').trim()) ? '下一步计划' : '',
+    weekKey: report.week_key,
+    dept: report.dept,
+    fields: [
+      !reportHasContent(report) ? 'summary' : '',
+      (Array.isArray(report.analysis) ? report.analysis.length === 0 : !String(report.analysis || '').trim()) ? 'analysis' : '',
+      (Array.isArray(report.next_plan) ? report.next_plan.length === 0 : !String(report.next_plan || '').trim()) ? 'next_plan' : '',
+    ].filter(Boolean),
+    missing: [
+      !reportHasContent(report) ? '周报内容' : '',
+      (Array.isArray(report.analysis) ? report.analysis.length === 0 : !String(report.analysis || '').trim()) ? '分析结论' : '',
+      (Array.isArray(report.next_plan) ? report.next_plan.length === 0 : !String(report.next_plan || '').trim()) ? '下一步计划' : '',
     ].filter(Boolean),
   }));
 
