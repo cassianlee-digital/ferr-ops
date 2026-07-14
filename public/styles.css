@@ -3662,6 +3662,18 @@ table.dt td.editable:focus,
   overflow: hidden;
 }
 
+.hermes-workspace.history-open .hermes-welcome,
+.hermes-workspace.history-open .hermes-chat-log,
+.hermes-workspace.history-open .hermes-agent-note {
+  display: none;
+}
+
+.hermes-workspace.history-open .hermes-history {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+}
+
 .hermes-welcome {
   border: 1px solid #e8eef8;
   border-radius: var(--radius);
@@ -4479,8 +4491,13 @@ table.dt td.editable:focus,
 }
 
 .hermes-deep.active {
-  border-color: #2f6df6;
-  background: #eef4ff;
+  border-color: #2f6df6 !important;
+  background: #eef4ff !important;
+  color: #2159d6 !important;
+  box-shadow: 0 0 0 3px rgba(47, 109, 246, .10);
+}
+
+.hermes-deep.active i {
   color: #2159d6;
 }
 
@@ -4673,8 +4690,12 @@ body.dark .hermes-agent-note {
 }
 
 body.dark .hermes-deep.active {
-  border-color: #3b82f6;
-  background: #0f1f3d;
+  border-color: #3b82f6 !important;
+  background: #0f1f3d !important;
+  color: #93c5fd !important;
+}
+
+body.dark .hermes-deep.active i {
   color: #93c5fd;
 }
 

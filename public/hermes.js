@@ -506,9 +506,20 @@
     if (!btn) return;
     btn.classList.toggle('active', deepThinking);
     btn.setAttribute('aria-pressed', deepThinking ? 'true' : 'false');
+    btn.replaceChildren();
+    const icon = document.createElement('i');
+    icon.className = 'ti ti-brain';
+    btn.appendChild(icon);
+    btn.appendChild(document.createTextNode(deepThinking ? ' 深度思考：开' : ' 深度思考'));
     btn.title = deepThinking
       ? '深度思考已开启：小瑞会做更深入的证据分析和风险审查'
       : '重要问题开启后，小瑞会做更深入的证据分析和风险审查';
+  }
+
+  function setHermesHistoryMode(active) {
+    const panel = byId('hermesHistory');
+    const workspace = panel && panel.closest('.hermes-workspace');
+    if (workspace) workspace.classList.toggle('history-open', Boolean(active));
   }
 
   function toggleHermesDeepThinking() {
@@ -632,6 +643,7 @@
       historyVisible = false;
       const panel = byId('hermesHistory');
       if (panel) panel.hidden = true;
+      setHermesHistoryMode(false);
       renderMessages();
     } catch (e) {
       toastSafe('读取历史对话失败：' + (e.message || 'history_failed'));
@@ -674,6 +686,7 @@
     if (!window.API) return;
     const panel = byId('hermesHistory');
     if (panel) panel.hidden = false;
+    setHermesHistoryMode(true);
     historyVisible = true;
     try {
       const res = await window.API.get('/api/hermes/conversations?archived=' + (archived ? '1' : '0'));
@@ -695,6 +708,7 @@
     if (historyVisible && !panel.hidden) {
       panel.hidden = true;
       historyVisible = false;
+      setHermesHistoryMode(false);
       return;
     }
     loadHermesHistory(false);
@@ -1250,6 +1264,7 @@
     renderDeepThinkingButton();
     const panel = byId('hermesHistory');
     if (panel) panel.hidden = true;
+    setHermesHistoryMode(false);
     renderMessages();
     loadHermesLatest(false);
   }
