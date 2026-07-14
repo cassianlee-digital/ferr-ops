@@ -63,7 +63,7 @@ function localIsoDate(offsetDays = 0) {
   return `${y}-${m}-${day}`;
 }
 
-function requestedRangeFromText(text) {
+export function requestedRangeFromText(text) {
   const raw = String(text || '');
   if (/昨天|昨日|yesterday/i.test(raw)) {
     const date = localIsoDate(-1);

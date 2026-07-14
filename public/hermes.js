@@ -1174,12 +1174,21 @@
       const meta = document.createElement('div');
       meta.className = 'hermes-msg-meta';
       const missing = (message.hermes.missingData || []).filter(Boolean);
+      const refresh = message.hermes.dataRefresh;
+      const refreshText = refresh && Array.isArray(refresh.providers)
+        ? refresh.providers.map((item) => {
+          const label = item.provider === 'ads' ? 'Ads' : 'GSC';
+          if (item.status !== 'synced') return `${label}同步失败${item.error ? '：' + item.error : ''}`;
+          return item.rowsWritten > 0 ? `${label}写入${item.rowsWritten}行` : `${label}同步完成但无新数据`;
+        }).join('、')
+        : '';
       meta.textContent = [
         '小瑞已参考',
         message.hermes.skill && message.hermes.skill.label ? '技能：' + message.hermes.skill.label : '',
         message.hermes.workflow && message.hermes.workflow.label ? '工作流：' + message.hermes.workflow.label : '',
         message.hermes.usedMemory ? '已使用长期记忆' : '',
         message.hermes.usedPageContext ? '已使用当前页' : '',
+        refreshText ? '数据抓取：' + refreshText : '',
         missing.length ? '缺失：' + missing.slice(0, 3).join('、') : '',
       ].filter(Boolean).join(' · ');
       bubble.appendChild(meta);

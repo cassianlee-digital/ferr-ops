@@ -6,7 +6,9 @@ import { attachmentPromptBlock, cleanAiAttachments } from '../services/aiAttachm
 import * as marketBrain from '../services/marketBrain.js';
 import * as hermesMemoryRepo from '../db/repositories/hermesMemories.js';
 import * as hermesConversationRepo from '../db/repositories/hermesConversations.js';
-import { buildOpsDiagnosis, buildEnterpriseMemory, buildDailyLearningMemory } from '../services/hermesBrain.js';
+import { buildOpsDiagnosis, buildEnterpriseMemory, buildDailyLearningMemory, requestedRangeFromText } from '../services/hermesBrain.js';
+import { syncAds } from '../sync/ads.js';
+import { syncGsc } from '../sync/gsc.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -40,6 +42,9 @@ const RESPONSE_CONTRACT = [
   '数据优先级：当前页 pageContext > ferr-ops 诊断/同步数据 > KPI/周报/关键词库 > 市场记忆。',
   '不要在正文暴露内部字段名或流程名，例如 assistantPlaybook、operatingPrinciples、opsDiagnosis、priorityCards、pageContext、responseContract。',
 ];
+
+const hermesRefreshCache = new Map();
+const HERMES_REFRESH_TTL_MS = 60 * 1000;
 
 const OPERATING_PRINCIPLES = {
   source: '审查原理.docx',
@@ -851,7 +856,45 @@ function pageDetailPayload(request) {
   };
 }
 
-function contextPayload(request) {
+function refreshProvidersForMessage(message) {
+  const raw = String(message || '');
+  if (!/(昨天|昨日|今天|今日|近\s*7\s*天|过去\s*7\s*天|最近\s*7\s*天|yesterday|today|last\s*7\s*days)/i.test(raw)) return [];
+  const wantsAds = /(SEM|广告|Ads|花费|点击|转化|投放|CPC|CPA|ROAS)/i.test(raw);
+  const wantsGsc = /(SEO|GSC|自然|排名|收录|展现|流量|CTR)/i.test(raw);
+  if (!wantsAds && !wantsGsc && !/(数据|指标|报表|表现|效果|异常|分析|趋势|运营)/i.test(raw)) return [];
+  if (wantsAds && !wantsGsc) return ['ads'];
+  if (wantsGsc && !wantsAds) return ['gsc'];
+  return ['ads', 'gsc'];
+}
+
+async function refreshHermesProvider(provider, range) {
+  const key = `${provider}:${range.start_date}:${range.end_date}`;
+  const cached = hermesRefreshCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.result;
+
+  const syncer = provider === 'ads' ? syncAds : syncGsc;
+  const result = syncer(range)
+    .then((data) => ({ provider, status: 'synced', rowsWritten: Number(data.rowsWritten || 0), range }))
+    .catch((error) => ({
+      provider,
+      status: 'failed',
+      error: String(error?.message || 'sync_failed'),
+      missing: Array.isArray(error?.missing) ? error.missing : [],
+      range,
+    }));
+  hermesRefreshCache.set(key, { expiresAt: Date.now() + HERMES_REFRESH_TTL_MS, result });
+  return result;
+}
+
+async function refreshHermesRequestedData(message) {
+  const providers = refreshProvidersForMessage(message);
+  if (!providers.length) return null;
+  const range = requestedRangeFromText(message);
+  const results = await Promise.all(providers.map((provider) => refreshHermesProvider(provider, range)));
+  return { requestedRange: range, providers: results };
+}
+
+function contextPayload(request, options = {}) {
   try {
     const message = request.body?.message || request.query?.message || '';
     const context = buildContext({ message });
@@ -875,6 +918,7 @@ function contextPayload(request) {
       pageContext,
       opsDiagnosis,
       enterpriseMemory,
+      dataRefresh: options.dataRefresh || null,
       operatingPrinciples: OPERATING_PRINCIPLES,
       responseStyle: RESPONSE_STYLE,
       assistantBrief: assistantBrief(operator),
@@ -886,6 +930,7 @@ function contextPayload(request) {
         'For SEM: prioritize spend, conversions, CPC, CPA, CTR, quality score, ROAS, negative keywords, and budget allocation.',
         'For SEO: prioritize clicks, impressions, CTR, ranking, decay pages, opportunity keywords, cannibalization, and content tasks.',
         'Use opsDiagnosis.evidencePack ids as citation anchors before giving recommendations.',
+        'If dataRefresh exists, report the requested range and sync result accurately; synced with rowsWritten=0 means no rows were written, not that business data exists.',
         'Unsupported claims must be labeled as assumptions, risks, or missing data.',
         'Use enterpriseMemory.marketBrain and enterpriseMemory.longTermMemories as FERR company/customer background.',
         'Market Analysis is first-party business research. Treat it as higher priority than generic web/LLM knowledge.',
@@ -900,6 +945,7 @@ function contextPayload(request) {
         'session 是轻量当前页面状态；pageContext 只有用户要求理解当前页面时才会存在。',
         '如果用户问“当前页面/这里/这张表/这个计划/这些关键词”，但 pageContext 为空，要提示先读取当前页详情。',
         '如果上下文缺少 GSC、GA4、Google Ads 或某项业务数据，必须明确说明缺什么，禁止编造。',
+        '如果 dataRefresh 显示同步完成但写入 0 行，只能说已尝试同步且当前没有可用明细，不能说已经抓到数据。',
         '输出建议时按「证据、判断、动作、验证指标」组织。',
         `当前对话对象：${operator.persona.label}。`,
         `关注重点：${operator.persona.focus}`,
@@ -1126,7 +1172,8 @@ export async function hermesRoutes(app) {
       : null;
     const activeConversation = existingConversation?.state === 'active' ? existingConversation : null;
     const history = chatHistoryBlock(activeConversation?.messages || request.body?.history);
-    const context = contextPayload(request);
+    const dataRefresh = await refreshHermesRequestedData(message);
+    const context = contextPayload(request, { dataRefresh });
 
     if (!context.ok) return reply.code(500).send({ error: context.error || 'hermes_context_failed', detail: context.detail || '' });
 
@@ -1150,6 +1197,7 @@ export async function hermesRoutes(app) {
           ...(context.opsDiagnosis?.missingData || []),
           ...(context.enterpriseMemory?.missingData || []),
         ],
+        dataRefresh: context.dataRefresh || null,
         evidenceAudit: audit,
       };
       hermes.missingData = [...new Set(hermes.missingData)];
