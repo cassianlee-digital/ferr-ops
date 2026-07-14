@@ -768,7 +768,9 @@
     }
   }
 
-  function evidenceStatusLabel(status) {
+  function evidenceStatusLabel(status, audit) {
+    if (audit && audit.claimAuditStatus === 'downgraded') return '结论待验证';
+    if (audit && audit.claimAuditStatus === 'passed' && status === 'supported') return '证据通过';
     return {
       supported: '已引用证据',
       partial: '部分证据需核对',
@@ -991,18 +993,38 @@
     const missing = Array.isArray(hermes.missingData) ? hermes.missingData.filter(Boolean) : [];
     const details = document.createElement('details');
     details.className = 'hermes-evidence';
-    details.open = audit.status === 'weak' || audit.status === 'partial';
+    details.open = audit.status === 'weak' || audit.status === 'partial' || audit.claimAuditStatus === 'downgraded';
 
     const summary = document.createElement('summary');
     const status = document.createElement('span');
     status.className = 'hermes-evidence-status ' + (audit.status || 'unknown');
-    status.textContent = evidenceStatusLabel(audit.status);
+    status.textContent = evidenceStatusLabel(audit.status, audit);
     summary.innerHTML = '<i class="ti ti-shield-check"></i><strong>证据核验</strong>';
     summary.appendChild(status);
     details.appendChild(summary);
 
     const body = document.createElement('div');
     body.className = 'hermes-evidence-body';
+
+    const unsupportedClaims = Array.isArray(audit.unsupportedClaims) ? audit.unsupportedClaims.filter(Boolean) : [];
+    if (audit.claimAuditStatus === 'downgraded' && unsupportedClaims.length) {
+      const claimAudit = document.createElement('div');
+      claimAudit.className = 'hermes-claim-audit downgraded';
+      const title = document.createElement('strong');
+      title.textContent = `已降级 ${unsupportedClaims.length} 条未绑定证据的判断或动作`;
+      claimAudit.appendChild(title);
+      const list = document.createElement('ul');
+      unsupportedClaims.slice(0, 6).forEach((claim) => {
+        const item = document.createElement('li');
+        item.textContent = claim;
+        list.appendChild(item);
+      });
+      claimAudit.appendChild(list);
+      const note = document.createElement('span');
+      note.textContent = '补充并核对公司数据后，才能作为执行依据。';
+      claimAudit.appendChild(note);
+      body.appendChild(claimAudit);
+    }
 
     if (evidence.length) {
       evidence.forEach((item) => {

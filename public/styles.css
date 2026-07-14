@@ -4091,6 +4091,26 @@ table.dt td.editable:focus,
   font-size: 12px;
 }
 
+.hermes-claim-audit {
+  display: grid;
+  gap: 5px;
+  padding: 8px 10px;
+  border: 1px solid #fed7aa;
+  border-radius: var(--radius);
+  background: #fff7ed;
+  color: #9a3412;
+  line-height: 1.5;
+}
+
+.hermes-claim-audit ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.hermes-claim-audit span {
+  color: #b45309;
+}
+
 .hermes-evidence-row {
   display: grid;
   gap: 4px;
@@ -4701,6 +4721,16 @@ body.dark .hermes-evidence-status.no_evidence_pool,
 body.dark .hermes-evidence-warn,
 body.dark .hermes-evidence-missing {
   background: #2a1908;
+  color: #fdba74;
+}
+
+body.dark .hermes-claim-audit {
+  border-color: #92400e;
+  background: #2a1908;
+  color: #fdba74;
+}
+
+body.dark .hermes-claim-audit span {
   color: #fdba74;
 }
 
