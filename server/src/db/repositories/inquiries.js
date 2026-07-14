@@ -1,5 +1,6 @@
 // 询盘数据访问层。SQL 集中于此，便于将来替换为 PostgreSQL。
 import { db } from '../connection.js';
+import { updateById } from '../updateHelper.js';
 
 // range 可选：{ start_date, end_date }(YYYY-MM-DD)。提供则按 date 区间过滤(参数化)；不提供返回全量。
 // P3：默认排除已归档（state='archived'）；归档项只在归档页通过 listArchived() 取。
@@ -67,10 +68,7 @@ export function update(id, fields) {
   // original_grade 显式不在 allowed：服务端硬阻止前端改写「最初等级」，确保上调标红判定可靠
   const allowed = ['date', 'country', 'region', 'channel', 'source', 'product', 'grade', 'note',
     'customer_name', 'tracking_feedback'];
-  const keys = Object.keys(fields).filter((k) => allowed.includes(k));
-  if (!keys.length) return get(id);
-  const set = keys.map((k) => `${k} = @${k}`).join(', ');
-  db.prepare(`UPDATE inquiries SET ${set} WHERE id = @id`).run({ ...fields, id });
+  updateById('inquiries', id, fields, allowed);
   return get(id);
 }
 

@@ -1,5 +1,6 @@
 // 内容资产数据访问层。
 import { db } from '../connection.js';
+import { updateById } from '../updateHelper.js';
 const FIELDS = ['name', 'problem', 'type', 'priority', 'owner', 'status', 'add_date', 'note'];
 
 export function list() {
@@ -22,9 +23,7 @@ export function create(rec) {
   return get(info.lastInsertRowid);
 }
 export function update(id, fields) {
-  const keys = Object.keys(fields).filter((k) => FIELDS.includes(k));
-  if (!keys.length) return get(id);
-  db.prepare(`UPDATE content_assets SET ${keys.map((k) => `${k}=@${k}`).join(', ')} WHERE id=@id`).run({ ...fields, id });
+  updateById('content_assets', id, fields, FIELDS);
   return get(id);
 }
 export function remove(id) {

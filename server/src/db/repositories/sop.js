@@ -1,5 +1,6 @@
 // SOP 引擎数据访问层（定义 + 完成记录）。
 import { db } from '../connection.js';
+import { updateById } from '../updateHelper.js';
 
 /* ===== sop_definitions ===== */
 
@@ -24,10 +25,7 @@ export function createDef(rec) {
 
 export function updateDef(id, fields) {
   const allowed = ['dept', 'freq', 'title', 'content', 'time_hint', 'active'];
-  const keys = Object.keys(fields).filter((k) => allowed.includes(k));
-  if (!keys.length) return getDef(id);
-  db.prepare(`UPDATE sop_definitions SET ${keys.map((k) => `${k}=@${k}`).join(', ')} WHERE id=@id`)
-    .run({ ...fields, id });
+  updateById('sop_definitions', id, fields, allowed);
   return getDef(id);
 }
 

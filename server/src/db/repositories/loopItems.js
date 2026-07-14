@@ -1,5 +1,6 @@
 // 闭环条目数据访问层（plan/test/deposit/task）+ 归档地基（state/archived/deleted）。
 import { db } from '../connection.js';
+import { updateById } from '../updateHelper.js';
 
 /**
  * 列表查询。opts:
@@ -44,10 +45,7 @@ export function update(id, fields) {
     'task_date', 'task_hour', 'note',
     'state', 'archived_at', 'deleted_at', 'archive_kind',
     'urgent'];
-  const keys = Object.keys(fields).filter((k) => allowed.includes(k));
-  if (!keys.length) return get(id);
-  db.prepare(`UPDATE loop_items SET ${keys.map((k) => `${k}=@${k}`).join(', ')} WHERE id=@id`)
-    .run({ ...fields, id });
+  updateById('loop_items', id, fields, allowed);
   return get(id);
 }
 

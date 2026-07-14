@@ -1,5 +1,6 @@
 // 整改清单数据访问层 + 归档地基（state/archived/deleted）。
 import { db } from '../connection.js';
+import { updateById } from '../updateHelper.js';
 
 /**
  * 列表查询。opts.view: 'active'(默认) | 'archived' | 'deleted' | 'all'
@@ -37,10 +38,7 @@ export function create(rec) {
 export function update(id, fields) {
   const allowed = ['title', 'dept', 'detail', 'evidence', 'owner', 'due_date', 'status', 'source',
     'state', 'archived_at', 'deleted_at', 'archive_kind'];
-  const keys = Object.keys(fields).filter((k) => allowed.includes(k));
-  if (!keys.length) return get(id);
-  db.prepare(`UPDATE fixes SET ${keys.map((k) => `${k}=@${k}`).join(', ')} WHERE id=@id`)
-    .run({ ...fields, id });
+  updateById('fixes', id, fields, allowed);
   return get(id);
 }
 

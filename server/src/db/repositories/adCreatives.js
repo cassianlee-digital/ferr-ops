@@ -1,5 +1,6 @@
 // 广告创意库数据访问层。
 import { db } from '../connection.js';
+import { updateById } from '../updateHelper.js';
 
 export function list() {
   return db.prepare('SELECT * FROM ad_creatives ORDER BY id ASC').all();
@@ -17,10 +18,7 @@ export function create(rec) {
 
 export function update(id, fields) {
   const allowed = ['title', 'description', 'ctr', 'ab_conclusion', 'status'];
-  const keys = Object.keys(fields).filter((k) => allowed.includes(k));
-  if (!keys.length) return get(id);
-  db.prepare(`UPDATE ad_creatives SET ${keys.map((k) => `${k}=@${k}`).join(', ')} WHERE id=@id`)
-    .run({ ...fields, id });
+  updateById('ad_creatives', id, fields, allowed);
   return get(id);
 }
 
