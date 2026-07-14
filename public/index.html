@@ -6,7 +6,8 @@
 <title>费尔瑞 FERR · 运营指挥中心 V3</title>
 <link rel="icon" type="image/png" href="/ferr-logo.png?v=20260630">
 <link rel="apple-touch-icon" href="/ferr-logo.png?v=20260630">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<!-- Tabler 图标字体本地托管（原 jsdelivr 2.47.0），避免国内 CDN 被墙导致图标全部失效 -->
+<link rel="stylesheet" href="/vendor/tabler-icons.min.css">
 <link rel="stylesheet" href="/base.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/page-fixes.css">
@@ -994,9 +995,10 @@
 
 <div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#191c24;color:#fff;padding:11px 18px;border-radius:10px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:transform .3s;z-index:100;max-width:90%"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
+<!-- 图表库本地托管（原 jsdelivr，改本地避免国内 CDN 被墙 + 供应链风险）。版本：chart.js 4.4.1 / echarts 5.4.3 / echarts-gl 2.0.9 -->
+<script src="/vendor/chart.umd.min.js"></script>
+<script src="/vendor/echarts.min.js"></script>
+<script src="/vendor/echarts-gl.min.js"></script>
 <script src="/api.js"></script>
 <script src="/hermes.js"></script>
 <script src="/hermes-memory.js"></script>

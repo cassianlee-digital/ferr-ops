@@ -3,3 +3,8 @@
 *.png binary
 *.jpg binary
 *.ico binary
+# 本地托管的 Web 字体：强制二进制，避免换行归一化损坏字体文件
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
