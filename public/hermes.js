@@ -1017,11 +1017,12 @@
     body.className = 'hermes-evidence-body';
 
     const unsupportedClaims = Array.isArray(audit.unsupportedClaims) ? audit.unsupportedClaims.filter(Boolean) : [];
+    const bindingIssueCount = Array.isArray(audit.evidenceBindingIssues) ? audit.evidenceBindingIssues.length : 0;
     if (audit.claimAuditStatus === 'downgraded' && unsupportedClaims.length) {
       const claimAudit = document.createElement('div');
       claimAudit.className = 'hermes-claim-audit downgraded';
       const title = document.createElement('strong');
-      title.textContent = `已降级 ${unsupportedClaims.length} 条未绑定证据的判断或动作`;
+      title.textContent = `已降级 ${unsupportedClaims.length} 条判断或动作${bindingIssueCount ? `，其中 ${bindingIssueCount} 条证据性质不匹配` : ''}`;
       claimAudit.appendChild(title);
       const list = document.createElement('ul');
       unsupportedClaims.slice(0, 6).forEach((claim) => {

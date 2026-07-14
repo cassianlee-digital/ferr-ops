@@ -336,6 +336,24 @@ function lineNeedsEvidence(line) {
   return /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i.test(clean);
 }
 
+function evidenceSupportsClaim(line, evidence) {
+  const clean = normalizeClaimLine(line);
+  const role = String(evidence?.dataRole || '');
+  if (role === 'data_gap') {
+    return /(缺失|没有|无|未接入|未同步|抓取不到|核对|检查|排查|同步|数据不足|不能判断)/.test(clean)
+      && !/(提高|降低|暂停|加预算|减预算|放量|效果|转化率|真实表现|实际表现|为\s*0|=\s*0)/i.test(clean);
+  }
+  if (role === 'target_only') {
+    return /(KPI|目标|未达标|差距|达标)/i.test(clean)
+      && !/(真实|实际|当前表现|投放表现|花费|点击|转化|流量|排名|收录|CTR|CPC|ROAS|为\s*0|=\s*0)/i.test(clean);
+  }
+  if (role === 'keyword_registry') {
+    return /(关键词|关键字|词库|否词)/.test(clean)
+      && !/(点击|花费|转化|CTR|CPC|CPA|ROAS|排名|效果|表现|机会|浪费)/i.test(clean);
+  }
+  return true;
+}
+
 function formatPendingClaim(line) {
   return `- ${normalizeClaimLine(line).replace(/^[-•]\s*/, '')}`;
 }
@@ -347,16 +365,22 @@ function enforceEvidenceProtocol(parsed, audit, options = {}) {
 
   const unsupported = [];
   const supported = [];
+  const bindingIssues = [];
+  const evidenceById = new Map((audit.evidence || []).map((item) => [String(item.id || '').toUpperCase(), item]));
   const lines = String(parsed?.answer || '').split('\n');
   const answerLines = lines.filter((line) => {
     if (!lineNeedsEvidence(line)) return true;
     const ids = evidenceRefs(line);
-    const hasKnownEvidence = ids.some((id) => knownIds.has(id));
-    if (hasKnownEvidence) {
+    const citedEvidence = ids.filter((id) => knownIds.has(id)).map((id) => evidenceById.get(id)).filter(Boolean);
+    const hasSupportedEvidence = citedEvidence.some((item) => evidenceSupportsClaim(line, item));
+    if (hasSupportedEvidence) {
       supported.push(line);
       return true;
     }
     unsupported.push(line);
+    if (citedEvidence.length) {
+      bindingIssues.push({ claim: normalizeClaimLine(line), evidenceIds: citedEvidence.map((item) => item.id), reason: '证据性质与结论不匹配' });
+    }
     return false;
   });
 
@@ -369,13 +393,14 @@ function enforceEvidenceProtocol(parsed, audit, options = {}) {
   audit.guardApplied = true;
   audit.claimAuditStatus = 'downgraded';
   audit.unsupportedClaims = unsupported.map(normalizeClaimLine).filter(Boolean);
+  audit.evidenceBindingIssues = bindingIssues;
   if (!audit.unsupportedClaims.length) {
     audit.claimAuditStatus = 'passed';
     audit.supportedClaimCount = supported.length;
     return parsed;
   }
   audit.supportedClaimCount = supported.length;
-  audit.guardMessage = `强证据协议：已将 ${audit.unsupportedClaims.length} 条未绑定有效证据编号的判断或动作降级为待验证。`;
+  audit.guardMessage = `强证据协议：已将 ${audit.unsupportedClaims.length} 条未被证据内容支持的判断或动作降级为待验证。`;
   if (audit.status === 'supported') audit.status = 'partial';
 
   const pendingLines = audit.unsupportedClaims.map(formatPendingClaim).join('\n');
