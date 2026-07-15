@@ -763,6 +763,503 @@
     }
   });
 
+  // public/src/timerange.js
+  var timerange_exports = {};
+  __export(timerange_exports, {
+    applyTimeRange: () => applyTimeRange,
+    formatLocalDate: () => formatLocalDate,
+    getCurrentRange: () => getCurrentRange,
+    openCustomRange: () => openCustomRange,
+    rangeText: () => rangeText,
+    refreshRangeConsumers: () => refreshRangeConsumers,
+    renderTimebar: () => renderTimebar,
+    resolveRange: () => resolveRange,
+    submitCustomRange: () => submitCustomRange,
+    withRange: () => withRange2,
+    ymd: () => ymd
+  });
+  var RANGES = ["\u4ECA\u5929", "\u6628\u5929", "\u8FD17\u5929", "\u8FD130\u5929", "\u8FD190\u5929", "\u8FD1\u4E00\u5E74", "\u81EA\u5B9A\u4E49"];
+  window._customRange = null;
+  try {
+    const cr = JSON.parse(localStorage.getItem("ferr:customRange") || "null");
+    if (cr && /^\d{4}-\d{2}-\d{2}$/.test(cr.start_date) && /^\d{4}-\d{2}-\d{2}$/.test(cr.end_date) && cr.start_date <= cr.end_date) window._customRange = cr;
+  } catch (e) {
+  }
+  try {
+    const t = localStorage.getItem("ferr:timeRange");
+    window._timeRange = RANGES.includes(t) ? t : "\u8FD130\u5929";
+  } catch (e) {
+    window._timeRange = "\u8FD130\u5929";
+  }
+  try {
+    const g = localStorage.getItem("ferr:gran");
+    window._gran = ["day", "week", "month"].includes(g) ? g : "week";
+  } catch (e) {
+    window._gran = "week";
+  }
+  var GRAN_LABEL = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" };
+  function formatLocalDate(d) {
+    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+  function ymd(v) {
+    v = String(v == null ? "" : v).trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
+  }
+  function resolveRange(label) {
+    const today = /* @__PURE__ */ new Date();
+    today.setHours(0, 0, 0, 0);
+    const back = (n) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - n);
+      return d;
+    };
+    const r = (s, e) => ({ start_date: formatLocalDate(s), end_date: formatLocalDate(e), period_label: label });
+    switch (label) {
+      case "\u4ECA\u5929":
+        return r(today, today);
+      case "\u6628\u5929": {
+        const y = back(1);
+        return r(y, y);
+      }
+      case "\u8FD17\u5929":
+        return r(back(6), today);
+      case "\u8FD130\u5929":
+        return r(back(29), today);
+      case "\u8FD190\u5929":
+        return r(back(89), today);
+      case "\u8FD1\u4E00\u5E74":
+        return r(back(364), today);
+      case "\u4E0A\u5468": {
+        const day = (today.getDay() + 6) % 7;
+        const thisMon = back(day);
+        const lastMon = new Date(thisMon);
+        lastMon.setDate(thisMon.getDate() - 7);
+        const lastSun = new Date(lastMon);
+        lastSun.setDate(lastMon.getDate() + 6);
+        return r(lastMon, lastSun);
+      }
+      case "\u4E0A\u534A\u6708": {
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        const mid = new Date(today.getFullYear(), today.getMonth(), 15);
+        return r(first, mid);
+      }
+      case "\u8FD11\u6708":
+        return r(back(29), today);
+      case "\u8FD13\u6708":
+        return r(back(89), today);
+      case "\u8FD1\u534A\u5E74":
+        return r(back(179), today);
+      case "\u8FD11\u5E74":
+        return r(back(364), today);
+      case "\u81EA\u5B9A\u4E49": {
+        const cr = window._customRange;
+        if (!cr) return null;
+        return { start_date: cr.start_date, end_date: cr.end_date, period_label: "\u81EA\u5B9A\u4E49 " + cr.start_date + "~" + cr.end_date };
+      }
+      default:
+        return r(back(29), today);
+    }
+  }
+  var _range = resolveRange(window._timeRange);
+  function getCurrentRange() {
+    return _range;
+  }
+  function withRange2(path, range) {
+    range = range || _range;
+    if (!range || !range.start_date || !range.end_date) return path;
+    const sep = path.includes("?") ? "&" : "?";
+    return path + sep + "start_date=" + encodeURIComponent(range.start_date) + "&end_date=" + encodeURIComponent(range.end_date);
+  }
+  function rangeText(r) {
+    return r && r.start_date ? r.start_date + " ~ " + r.end_date : "\u2014";
+  }
+  function refreshRangeConsumers() {
+    document.dispatchEvent(new CustomEvent("timerange", { detail: { range: _range } }));
+    loadInquiries();
+    loadSeoChartRange();
+    if (typeof loadSeoBoardFull === "function") loadSeoBoardFull();
+    if (typeof loadSemBoardAds === "function") loadSemBoardAds();
+    if (typeof loadSemBoardFull === "function") loadSemBoardFull();
+    if (typeof loadAttribution === "function") loadAttribution();
+    if (typeof loadDiagnostics === "function") loadDiagnostics();
+    if (typeof loadGa4 === "function") loadGa4();
+    if (typeof loadDataFreshness === "function") loadDataFreshness();
+  }
+  function applyTimeRange(label) {
+    const nr = resolveRange(label);
+    if (!nr) {
+      if (label === "\u81EA\u5B9A\u4E49") openCustomRange();
+      else toast("\u8BE5\u9884\u8BBE\u5C1A\u672A\u5B9E\u73B0\uFF0C\u672A\u6539\u53D8\u7B5B\u9009");
+      return false;
+    }
+    window._timeRange = label;
+    _range = nr;
+    try {
+      localStorage.setItem("ferr:timeRange", label);
+    } catch (e) {
+    }
+    document.querySelectorAll("[data-time] .trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === label));
+    document.querySelectorAll("[data-tauto]").forEach((el) => el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(_range));
+    refreshRangeConsumers();
+    toast("\u65F6\u95F4\u8303\u56F4\uFF1A" + _range.period_label);
+    return true;
+  }
+  function renderTimebar(bar) {
+    const grans = (bar.dataset.gran || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const onlyWeekly = grans.includes("week") && !grans.includes("day");
+    const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${g}"${g === window._gran ? " selected" : ""}>${GRAN_LABEL[g] || g}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
+    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === window._timeRange ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(_range)}</button>` + granHtml;
+  }
+  document.querySelectorAll("[data-time]").forEach((bar) => {
+    renderTimebar(bar);
+    bar.addEventListener("click", (e) => {
+      const dateBtn = e.target.closest(".tauto-btn");
+      if (dateBtn) {
+        openCustomRange();
+        return;
+      }
+      const btn = e.target.closest(".trange");
+      if (!btn) return;
+      const rg = btn.textContent.trim();
+      if (rg === "\u81EA\u5B9A\u4E49" && !window._customRange) {
+        openCustomRange();
+        return;
+      }
+      applyTimeRange(rg);
+    });
+    bar.addEventListener("change", (e) => {
+      const sel = e.target.closest(".tgran");
+      if (!sel) return;
+      window._gran = sel.value;
+      try {
+        localStorage.setItem("ferr:gran", sel.value);
+      } catch (e2) {
+      }
+      document.querySelectorAll("[data-time] .tgran").forEach((s) => {
+        if ([...s.options].some((o) => o.value === sel.value)) s.value = sel.value;
+      });
+      document.dispatchEvent(new CustomEvent("granularity", { detail: { gran: window._gran } }));
+      rebuildSeoChart();
+      toast("\u7C92\u5EA6\uFF1A" + (GRAN_LABEL[window._gran] || window._gran));
+    });
+  });
+  function openCustomRange() {
+    const cr = window._customRange || {};
+    const today = formatLocalDate(/* @__PURE__ */ new Date());
+    const back = (n) => {
+      const d = /* @__PURE__ */ new Date();
+      d.setDate(d.getDate() - n);
+      return formatLocalDate(d);
+    };
+    document.getElementById("cr-start").value = cr.start_date || back(29);
+    document.getElementById("cr-end").value = cr.end_date || today;
+    openModal("customRangeMask");
+    setTimeout(() => document.getElementById("cr-start").focus(), 50);
+  }
+  function submitCustomRange() {
+    const s = document.getElementById("cr-start").value;
+    const e = document.getElementById("cr-end").value;
+    if (!s || !e) {
+      toast("\u8BF7\u9009\u62E9\u5F00\u59CB\u548C\u7ED3\u675F\u65E5\u671F");
+      return;
+    }
+    if (s > e) {
+      toast("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
+      return;
+    }
+    const days = Math.floor((/* @__PURE__ */ new Date(e + "T00:00") - /* @__PURE__ */ new Date(s + "T00:00")) / 864e5);
+    if (days > 365) {
+      toast("\u533A\u95F4\u6700\u957F 1 \u5E74");
+      return;
+    }
+    window._customRange = { start_date: s, end_date: e };
+    try {
+      localStorage.setItem("ferr:customRange", JSON.stringify(window._customRange));
+    } catch (err) {
+    }
+    window._timeRange = "\u81EA\u5B9A\u4E49";
+    try {
+      localStorage.setItem("ferr:timeRange", "\u81EA\u5B9A\u4E49");
+    } catch (err) {
+    }
+    _range = resolveRange("\u81EA\u5B9A\u4E49");
+    document.querySelectorAll("[data-time] .trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === "\u81EA\u5B9A\u4E49"));
+    document.querySelectorAll("[data-tauto]").forEach((el) => el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(_range));
+    refreshRangeConsumers();
+    closeModal("customRangeMask");
+    toast("\u5DF2\u5E94\u7528\uFF1A" + _range.period_label);
+  }
+
+  // public/src/sop.js
+  var sop_exports = {};
+  __export(sop_exports, {
+    buildSopOverdueList: () => buildSopOverdueList,
+    isOverduePeriodFirstDay: () => isOverduePeriodFirstDay,
+    isSopWritable: () => isSopWritable,
+    loadSops: () => loadSops,
+    loadUrgent: () => loadUrgent,
+    openSopModal: () => openSopModal,
+    refreshNavTaskDot: () => refreshNavTaskDot,
+    renderSopCards: () => renderSopCards,
+    renderSopOverdueBanner: () => renderSopOverdueBanner,
+    renderSopSettingsTable: () => renderSopSettingsTable,
+    renderUrgentBanner: () => renderUrgentBanner,
+    sopCardEl: () => sopCardEl,
+    sopPeriodKey: () => sopPeriodKey,
+    submitSop: () => submitSop,
+    updateSopCounts: () => updateSopCounts
+  });
+  function sopPeriodKey(freq) {
+    const d = /* @__PURE__ */ new Date();
+    d.setHours(0, 0, 0, 0);
+    if (freq === "monthly") {
+      const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0");
+      return y + "-" + m;
+    }
+    if (freq === "weekly") {
+      const tmp = new Date(d);
+      tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7));
+      const yearStart = new Date(tmp.getFullYear(), 0, 1);
+      const week = Math.ceil(((tmp - yearStart) / 864e5 + 1) / 7);
+      return tmp.getFullYear() + "-W" + String(week).padStart(2, "0");
+    }
+    return formatLocalDate(d);
+  }
+  window._sops = [];
+  window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
+  var DEPT_BADGE = { SEM: "b-purple", SEO: "b-blue", "\u516C\u53F8": "b-red" };
+  var FREQ_LABEL = { daily: "\u6BCF\u65E5\u5FC5\u505A", weekly: "\u6BCF\u5468\u5FC5\u505A", monthly: "\u6BCF\u6708\u5FC5\u505A" };
+  var FREQ_ICON = { daily: "ti-repeat", weekly: "ti-calendar-week", monthly: "ti-calendar-month" };
+  async function loadSops() {
+    try {
+      const { items } = await API.get("/api/sop");
+      window._sops = items || [];
+    } catch (e) {
+      window._sops = [];
+      if (e && e.message !== "unauthorized") toast("SOP \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || ""));
+    }
+    try {
+      const q = "daily=" + encodeURIComponent(sopPeriodKey("daily")) + "&weekly=" + encodeURIComponent(sopPeriodKey("weekly")) + "&monthly=" + encodeURIComponent(sopPeriodKey("monthly"));
+      const { items } = await API.get("/api/sop/completions?" + q);
+      window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
+      const keyToFreq = { [sopPeriodKey("daily")]: "daily", [sopPeriodKey("weekly")]: "weekly", [sopPeriodKey("monthly")]: "monthly" };
+      (items || []).forEach((c) => {
+        const f = keyToFreq[c.period_key];
+        if (f) window._sopDone[f].add(c.sop_id);
+      });
+    } catch (e) {
+    }
+    renderSopCards();
+    renderSopSettingsTable();
+    updateSopCounts();
+    renderSopOverdueBanner();
+    refreshNavTaskDot();
+  }
+  function renderSopCards() {
+    ["SEM", "SEO", "\u516C\u53F8"].forEach((dept) => {
+      const anchor = document.getElementById(dept === "\u516C\u53F8" ? "sop-company" : "sop-" + dept.toLowerCase());
+      if (!anchor) return;
+      const list = window._sops.filter((s) => s.dept === dept);
+      anchor.innerHTML = '<div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>';
+      if (!list.length) {
+        anchor.insertAdjacentHTML("beforeend", '<div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">\u6682\u65E0 SOP\uFF0C\u53BB\u300C\u8BBE\u7F6E \xB7 SOP \u8BBE\u7F6E\u300D\u6DFB\u52A0</div>');
+        return;
+      }
+      ["daily", "weekly", "monthly"].forEach((freq) => {
+        const subset = list.filter((s) => s.freq === freq);
+        if (!subset.length) return;
+        anchor.insertAdjacentHTML("beforeend", `<div class="freq-cap"><i class="ti ${FREQ_ICON[freq]}"></i> ${FREQ_LABEL[freq]}</div>`);
+        subset.forEach((s) => anchor.appendChild(sopCardEl(s)));
+      });
+    });
+  }
+  function sopCardEl(s) {
+    const done = window._sopDone[s.freq] && window._sopDone[s.freq].has(s.id);
+    const card = document.createElement("div");
+    card.className = "tcard must" + (done ? " done" : "");
+    card.dataset.sopId = s.id;
+    card.dataset.sopFreq = s.freq;
+    const badge2 = DEPT_BADGE[s.dept] || "b-gray";
+    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : done ? '<span class="tdue">\u5DF2\u5B8C\u6210</span>' : "";
+    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" onclick="chk(this)">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc(s.title)}</div><div class="tmeta"><span class="badge ${badge2}">${esc(s.dept)}</span>${due}</div>`;
+    return card;
+  }
+  function updateSopCounts() {
+    [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
+      const el = document.getElementById("kcount-" + key);
+      if (!el) return;
+      const sopN = window._sops.filter((s) => s.dept === dept).length;
+      const addCol = document.getElementById("newtask-" + key);
+      const addN = addCol ? addCol.querySelectorAll(".tcard").length : 0;
+      el.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
+    });
+  }
+  function isSopWritable() {
+    const r = (window.ME || {}).role;
+    return r === "manager" || r === "boss";
+  }
+  function renderSopSettingsTable() {
+    const tb = document.getElementById("tb-sop");
+    if (!tb) return;
+    const addBtn = document.getElementById("sop-add-btn");
+    const writable = isSopWritable();
+    if (addBtn) addBtn.style.display = writable ? "" : "none";
+    tb.innerHTML = "";
+    const list = window._sops;
+    if (!list.length) {
+      const e2 = document.getElementById("sop-empty");
+      if (e2) e2.style.display = "block";
+      return;
+    }
+    const e = document.getElementById("sop-empty");
+    if (e) e.style.display = "none";
+    list.forEach((s) => {
+      const tr = document.createElement("tr");
+      tr.dataset.sopId = s.id;
+      const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del" style="color:var(--primary)"><i class="ti ti-trash"></i></button>` : '<span class="dim" style="font-size:11px">\u53EA\u8BFB</span>';
+      tr.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.title)}</td><td class="dim" style="font-size:11px">${esc(s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+  var _sopEditing = null;
+  function openSopModal(sop) {
+    if (!isSopWritable()) {
+      toast("\u4EC5\u7ECF\u7406 / \u8001\u677F\u53EF\u7F16\u8F91 SOP");
+      return;
+    }
+    _sopEditing = sop || null;
+    document.getElementById("sop-mod-title").textContent = sop ? "\u7F16\u8F91 SOP" : "\u65B0\u589E SOP";
+    document.getElementById("sop-dept").value = sop ? sop.dept : "SEM";
+    document.getElementById("sop-freq").value = sop ? sop.freq : "daily";
+    document.getElementById("sop-title").value = sop ? sop.title : "";
+    document.getElementById("sop-content").value = sop ? sop.content || "" : "";
+    document.getElementById("sop-time").value = sop ? sop.time_hint || "" : "";
+    openModal("sopMask");
+    setTimeout(() => document.getElementById("sop-title").focus(), 50);
+  }
+  async function submitSop() {
+    const dept = document.getElementById("sop-dept").value;
+    const freq = document.getElementById("sop-freq").value;
+    const title = document.getElementById("sop-title").value.trim();
+    const content = document.getElementById("sop-content").value.trim();
+    const time_hint = document.getElementById("sop-time").value.trim();
+    if (!title) {
+      toast("\u8BF7\u586B\u5199\u6807\u9898");
+      return;
+    }
+    try {
+      if (_sopEditing) {
+        await API.patch("/api/sop/" + _sopEditing.id, { dept, freq, title, content, time_hint });
+        toast("\u5DF2\u66F4\u65B0 SOP");
+      } else {
+        await API.post("/api/sop", { dept, freq, title, content, time_hint });
+        toast("\u5DF2\u65B0\u589E SOP");
+      }
+      closeModal("sopMask");
+      await loadSops();
+    } catch (e) {
+      toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || ""));
+    }
+  }
+  document.addEventListener("click", async (e) => {
+    const edit = e.target.closest(".sop-edit");
+    const del = e.target.closest(".sop-del");
+    if (!edit && !del) return;
+    const tr = (edit || del).closest("tr");
+    const id = tr && tr.dataset.sopId;
+    if (!id) return;
+    if (edit) {
+      const s = window._sops.find((x) => String(x.id) === String(id));
+      if (s) openSopModal(s);
+      return;
+    }
+    if (del) {
+      if (!inlineConfirm(del, "\u786E\u8BA4\u505C\u7528")) return;
+      try {
+        await API.del("/api/sop/" + id);
+        toast("\u5DF2\u505C\u7528");
+        await loadSops();
+      } catch (err) {
+        toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u64CD\u4F5C\u5931\u8D25");
+      }
+    }
+  });
+  function isOverduePeriodFirstDay(freq) {
+    const now = /* @__PURE__ */ new Date();
+    const h = now.getHours();
+    if (h < 8) return false;
+    if (freq === "daily") return true;
+    if (freq === "weekly") return now.getDay() === 1;
+    if (freq === "monthly") return now.getDate() === 1;
+    return false;
+  }
+  function buildSopOverdueList() {
+    const today = formatLocalDate(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^\d{4}\./, "");
+    const lines = [];
+    ["daily", "weekly", "monthly"].forEach((freq) => {
+      if (!isOverduePeriodFirstDay(freq)) return;
+      (window._sops || []).forEach((s) => {
+        if (s.freq !== freq) return;
+        const done = window._sopDone[freq] && window._sopDone[freq].has(s.id);
+        if (done) return;
+        lines.push(esc(s.dept) + "-" + today + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
+      });
+    });
+    return lines;
+  }
+  function renderSopOverdueBanner() {
+    const box = document.getElementById("sop-overdue-banner");
+    const list = document.getElementById("sop-overdue-list");
+    if (!box || !list) return;
+    const lines = buildSopOverdueList();
+    if (!lines.length) {
+      box.style.display = "none";
+      list.innerHTML = "";
+      return;
+    }
+    box.style.display = "flex";
+    list.innerHTML = lines.map((l) => "<div>" + l + "</div>").join("");
+  }
+  window._urgentTasks = [];
+  async function loadUrgent() {
+    try {
+      const { items } = await API.get("/api/loop-items?urgent=1");
+      window._urgentTasks = (items || []).filter((it) => {
+        const st = it.state || "";
+        const ss = it.status || "";
+        return st !== "done" && ss !== "done";
+      });
+    } catch (e) {
+      window._urgentTasks = [];
+    }
+    renderUrgentBanner();
+    refreshNavTaskDot();
+  }
+  function renderUrgentBanner() {
+    const box = document.getElementById("urgent-banner");
+    const list = document.getElementById("urgent-list");
+    if (!box || !list) return;
+    const arr = window._urgentTasks || [];
+    if (!arr.length) {
+      box.style.display = "none";
+      list.innerHTML = "";
+      return;
+    }
+    box.style.display = "flex";
+    list.innerHTML = arr.map((it) => {
+      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc(it.task_date) + "\uFF09" : "";
+      return "<div>" + esc(it.content || "") + due + "</div>";
+    }).join("");
+  }
+  function refreshNavTaskDot() {
+    const dot = document.getElementById("nav-tasks-dot");
+    if (!dot) return;
+    const overdue = buildSopOverdueList().length > 0;
+    const urgent = (window._urgentTasks || []).length > 0;
+    dot.style.display = overdue || urgent ? "" : "none";
+  }
+
   // public/src/main.js
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports);
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports);
 })();

@@ -1,11 +1,18 @@
-/* SOP 引擎（拆分自 index.html · 阶段4-A）
-   经典 script + window 全局兼容。依赖（运行时解析，均在 index.html 内联或其他模块）：
-   formatLocalDate()、window.API、esc()、toast()、chk()、openModal()/closeModal()、inlineConfirm()（keywords.js）。
-   loadSops()/loadUrgent() 由 window load 初始化调用；refreshNavTaskDot/updateSopCounts/renderSopOverdueBanner 亦被 chk()/路由 在运行时调用。 */
+/* SOP 引擎（ES 模块 · esbuild 打包为 IIFE）。
+   显式模块依赖：formatLocalDate 来自 ./timerange.js —— 不再靠全局碰运气，依赖在编译期可见。
+   运行时仍依赖的全局（尚未迁移的经典脚本/内联提供，调用时解析）：
+   API、esc()、toast()、chk()（内联；sopCardEl 生成的内联 onclick 会调用）、openModal()/closeModal()、
+   inlineConfirm()（keywords.js）、window.ME。
+   必须挂 window（main.js 统一处理）：
+     - openSopModal/submitSop —— 内联 onclick 调用；
+     - loadSops/loadUrgent/sopPeriodKey/updateSopCounts/renderSopOverdueBanner/refreshNavTaskDot —— index.html、closed-loop.js 真实调用；
+     - 其余保持原有全局暴露面，零行为差异。
+   DEPT_BADGE/FREQ_LABEL/FREQ_ICON/_sopEditing 无外部引用，收进模块作用域。 */
+import { formatLocalDate } from './timerange.js';
 
 /* ===== SOP 引擎 Step B：周期 key / 加载 / 渲染 / 设置页 CRUD ===== */
 // period_key 按本地时间算，daily=YYYY-MM-DD / weekly=YYYY-Www / monthly=YYYY-MM
-function sopPeriodKey(freq){
+export function sopPeriodKey(freq){
   const d=new Date(); d.setHours(0,0,0,0);
   if(freq==='monthly'){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'); return y+'-'+m; }
   if(freq==='weekly'){
@@ -21,7 +28,7 @@ window._sops=[]; window._sopDone={daily:new Set(),weekly:new Set(),monthly:new S
 const DEPT_BADGE={SEM:'b-purple',SEO:'b-blue','公司':'b-red'};
 const FREQ_LABEL={daily:'每日必做',weekly:'每周必做',monthly:'每月必做'};
 const FREQ_ICON={daily:'ti-repeat',weekly:'ti-calendar-week',monthly:'ti-calendar-month'};
-async function loadSops(){
+export async function loadSops(){
   try{ const {items}=await API.get('/api/sop'); window._sops=items||[]; }
   catch(e){ window._sops=[]; if(e&&e.message!=='unauthorized')toast('SOP 加载失败：'+(e.message||'')); }
   try{
@@ -39,7 +46,7 @@ async function loadSops(){
   renderSopOverdueBanner(); // Step C：SOP 未做提示
   refreshNavTaskDot();      // Step C：侧栏红感叹号
 }
-function renderSopCards(){
+export function renderSopCards(){
   ['SEM','SEO','公司'].forEach(dept=>{
     const anchor=document.getElementById(dept==='公司'?'sop-company':('sop-'+dept.toLowerCase()));
     if(!anchor)return;
@@ -58,7 +65,7 @@ function renderSopCards(){
     });
   });
 }
-function sopCardEl(s){
+export function sopCardEl(s){
   const done=window._sopDone[s.freq]&&window._sopDone[s.freq].has(s.id);
   const card=document.createElement('div');
   card.className='tcard must'+(done?' done':'');
@@ -68,7 +75,7 @@ function sopCardEl(s){
   card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(s.title)}</div><div class="tmeta"><span class="badge ${badge}">${esc(s.dept)}</span>${due}</div>`;
   return card;
 }
-function updateSopCounts(){
+export function updateSopCounts(){
   // SEM/SEO：SOP N · 新增 M；公司：SOP N · 派发 M（容器 id 用 newtask-company / kcount-company）
   [['SEM','sem','新增'],['SEO','seo','新增'],['公司','company','派发']].forEach(([dept,key,verb])=>{
     const el=document.getElementById('kcount-'+key); if(!el)return;
@@ -80,8 +87,8 @@ function updateSopCounts(){
 }
 
 /* SOP 设置页：列表 + 弹框 + CRUD（仅 manager/boss 可写，其他只读） */
-function isSopWritable(){ const r=(window.ME||{}).role; return r==='manager'||r==='boss'; }
-function renderSopSettingsTable(){
+export function isSopWritable(){ const r=(window.ME||{}).role; return r==='manager'||r==='boss'; }
+export function renderSopSettingsTable(){
   const tb=document.getElementById('tb-sop'); if(!tb)return;
   const addBtn=document.getElementById('sop-add-btn');
   const writable=isSopWritable();
@@ -100,7 +107,7 @@ function renderSopSettingsTable(){
   });
 }
 let _sopEditing=null;
-function openSopModal(sop){
+export function openSopModal(sop){
   if(!isSopWritable()){ toast('仅经理 / 老板可编辑 SOP'); return; }
   _sopEditing=sop||null;
   document.getElementById('sop-mod-title').textContent=sop?'编辑 SOP':'新增 SOP';
@@ -111,7 +118,7 @@ function openSopModal(sop){
   document.getElementById('sop-time').value=sop?(sop.time_hint||''):'';
   openModal('sopMask'); setTimeout(()=>document.getElementById('sop-title').focus(),50);
 }
-async function submitSop(){
+export async function submitSop(){
   const dept=document.getElementById('sop-dept').value;
   const freq=document.getElementById('sop-freq').value;
   const title=document.getElementById('sop-title').value.trim();
@@ -138,7 +145,7 @@ document.addEventListener('click',async e=>{
 
 /* ===== Step C：未做 SOP 提示 banner + 公司新派 banner + 侧栏红点 ===== */
 /* 未做 SOP banner：只在周期首日 08:00 后展示一天（避免天天弹）。daily=每天 08:00 起；weekly=周一 08:00 起；monthly=1 号 08:00 起。 */
-function isOverduePeriodFirstDay(freq){
+export function isOverduePeriodFirstDay(freq){
   const now=new Date(); const h=now.getHours();
   if(h<8)return false; // 早 8 点前不催
   if(freq==='daily')return true; // 每天都是首日
@@ -146,7 +153,7 @@ function isOverduePeriodFirstDay(freq){
   if(freq==='monthly')return now.getDate()===1; // 1 号
   return false;
 }
-function buildSopOverdueList(){
+export function buildSopOverdueList(){
   const today=formatLocalDate(new Date()).replace(/-/g,'.').replace(/^\d{4}\./,''); // MM.DD
   const lines=[];
   ['daily','weekly','monthly'].forEach(freq=>{
@@ -160,7 +167,7 @@ function buildSopOverdueList(){
   });
   return lines;
 }
-function renderSopOverdueBanner(){
+export function renderSopOverdueBanner(){
   const box=document.getElementById('sop-overdue-banner');
   const list=document.getElementById('sop-overdue-list');
   if(!box||!list)return;
@@ -172,7 +179,7 @@ function renderSopOverdueBanner(){
 
 /* 公司新派 urgent banner：拉 loop_items?urgent=1（active 视图自动排除 archived/deleted）+ 完成则消失 */
 window._urgentTasks=[];
-async function loadUrgent(){
+export async function loadUrgent(){
   try{
     const {items}=await API.get('/api/loop-items?urgent=1');
     // 仅显示未完成的（state!=='done' 且 status!=='done'）；done 的 banner 自然消失
@@ -181,7 +188,7 @@ async function loadUrgent(){
   renderUrgentBanner();
   refreshNavTaskDot();
 }
-function renderUrgentBanner(){
+export function renderUrgentBanner(){
   const box=document.getElementById('urgent-banner');
   const list=document.getElementById('urgent-list');
   if(!box||!list)return;
@@ -195,7 +202,7 @@ function renderUrgentBanner(){
 }
 
 /* 侧栏「任务看板」红感叹号：未做 SOP 列表非空 OR 有 urgent 未完成 → 显示 */
-function refreshNavTaskDot(){
+export function refreshNavTaskDot(){
   const dot=document.getElementById('nav-tasks-dot'); if(!dot)return;
   const overdue=buildSopOverdueList().length>0;
   const urgent=(window._urgentTasks||[]).length>0;

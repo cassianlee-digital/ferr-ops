@@ -1004,16 +1004,14 @@
 <script src="/hermes-memory.js"></script>
 <!-- 阶段2 拆分：Google 接入/数据源状态 + GA4 看板。仅定义函数（loadGa4/loadIntegrations 等），
      依赖 esc()/toast()（下方内联）在调用时（window load）才解析；window load 初始化在内联脚本末尾。 -->
-<!-- 渐进 ES 模块化包（esbuild IIFE）：ga4-view / market-brain / neg-ads / kpi-view / tagselect / google-projects / archive。源在 public/src/*.js；改这些后需 `npm run build:web` 重打包 -->
+<!-- 渐进 ES 模块化包（esbuild IIFE）：ga4-view / market-brain / neg-ads / kpi-view / tagselect / google-projects / archive / timerange / sop。源在 public/src/*.js；改这些后需 `npm run build:web` 重打包 -->
 <script src="/dist/bundle.js"></script>
 <script src="/inquiry-globe.js"></script>
 <script src="/weekly-review.js"></script>
 <script src="/keywords.js"></script>
-<script src="/sop.js"></script>
 <script src="/inquiries.js"></script>
 <script src="/charts.js"></script>
 <script src="/kpi.js"></script>
-<script src="/timerange.js"></script>
 <script src="/closed-loop.js"></script>
 <script src="/ai.js"></script>
 <script>
