@@ -70,7 +70,8 @@ export async function syncAds(input = {}) {
     err.missing = pc.missing;
     throw err;
   }
-  const range = normalizeRange(input);
+  // Google Ads exposes current-day metrics; manual and scheduled syncs should include today.
+  const range = normalizeRange(input, { includeToday: true });
   const runId = repo.beginProjectRun('ads', project.id, range.start_date, range.end_date);
   try {
     const campaignQuery = `

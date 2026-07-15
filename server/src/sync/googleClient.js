@@ -143,9 +143,9 @@ async function parseGoogleResponse(res) {
   return json;
 }
 
-export function defaultRange(days = 7) {
+export function defaultRange(days = 7, { includeToday = false } = {}) {
   const end = new Date();
-  end.setUTCDate(end.getUTCDate() - 1);
+  if (!includeToday) end.setUTCDate(end.getUTCDate() - 1);
   const start = new Date(end);
   start.setUTCDate(start.getUTCDate() - (days - 1));
   return {
@@ -154,8 +154,8 @@ export function defaultRange(days = 7) {
   };
 }
 
-export function normalizeRange(input = {}) {
-  const fallback = defaultRange();
+export function normalizeRange(input = {}, options = {}) {
+  const fallback = defaultRange(7, options);
   const start = String(input.start_date || input.startDate || fallback.start_date).slice(0, 10);
   const end = String(input.end_date || input.endDate || fallback.end_date).slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end) {
