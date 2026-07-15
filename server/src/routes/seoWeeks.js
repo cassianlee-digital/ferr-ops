@@ -1,6 +1,6 @@
 // SEO weekly report API. SEO role can write; signed-in users can read.
 import * as repo from '../db/repositories/seoWeeks.js';
-import { requireAuth, onlySeo } from '../auth/middleware.js';
+import { requireAuth, editor } from '../auth/middleware.js';
 import { recomputeActuals, computeScores } from '../services/kpi.js';
 import { parseDateRange } from '../lib/parseDateRange.js';
 
@@ -13,7 +13,7 @@ export async function seoWeeksRoutes(app) {
     return { items: repo.list(range) };
   });
 
-  app.post('/api/seo-weeks', onlySeo, async (request, reply) => {
+  app.post('/api/seo-weeks', editor, async (request, reply) => {
     const body = request.body || {};
     const rec = {
       week_date: String(body.week_date || new Date().toISOString().slice(0, 10)),

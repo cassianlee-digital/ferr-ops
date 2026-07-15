@@ -1,6 +1,6 @@
 // 整改清单 API（FR-6/10）+ 归档地基（state/archived/deleted）。写入限李/陈（闭环看板为运营共用）。
 import * as repo from '../db/repositories/fixes.js';
-import { requireAuth, seoOrSem } from '../auth/middleware.js';
+import { requireAuth, editor } from '../auth/middleware.js';
 
 const ARCHIVE_KINDS = ['sem', 'seo', 'company'];
 const s = (v, n = 300) => (v == null ? null : String(v).slice(0, n));
@@ -17,7 +17,7 @@ export async function fixesRoutes(app) {
     items: repo.list({ view: resolveView(request.query) }),
   }));
 
-  app.post('/api/fixes', seoOrSem, async (request, reply) => {
+  app.post('/api/fixes', editor, async (request, reply) => {
     const b = request.body || {};
     if (!b.title) return reply.code(400).send({ error: 'title_required' });
     const item = repo.create({
@@ -34,11 +34,11 @@ export async function fixesRoutes(app) {
     return { item };
   });
 
-  app.patch('/api/fixes/:id', seoOrSem, async (request) => ({
+  app.patch('/api/fixes/:id', editor, async (request) => ({
     item: repo.update(Number(request.params.id), request.body || {}),
   }));
 
-  app.post('/api/fixes/:id/archive', seoOrSem, async (request, reply) => {
+  app.post('/api/fixes/:id/archive', editor, async (request, reply) => {
     const id = Number(request.params.id);
     const ak = s(request.body?.archive_kind, 20);
     const kind = ARCHIVE_KINDS.includes(ak) ? ak : null;
@@ -47,14 +47,14 @@ export async function fixesRoutes(app) {
     return { item };
   });
 
-  app.post('/api/fixes/:id/restore', seoOrSem, async (request, reply) => {
+  app.post('/api/fixes/:id/restore', editor, async (request, reply) => {
     const item = repo.restore(Number(request.params.id));
     if (!item) return reply.code(404).send({ error: 'not_found' });
     return { item };
   });
 
   // 新增：DELETE 默认软删；?hard=1 物理删
-  app.delete('/api/fixes/:id', seoOrSem, async (request) => {
+  app.delete('/api/fixes/:id', editor, async (request) => {
     const id = Number(request.params.id);
     if (request.query?.hard === '1') {
       repo.hardDelete(id);

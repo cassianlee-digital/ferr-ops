@@ -1,13 +1,13 @@
 // 排名快照 API（FR-8）。写入限李(seo)。
 import * as repo from '../db/repositories/rankSnapshots.js';
-import { requireAuth, onlySeo } from '../auth/middleware.js';
+import { requireAuth, editor } from '../auth/middleware.js';
 
 export async function rankSnapshotsRoutes(app) {
   app.get('/api/rank-snapshots', { preHandler: requireAuth }, async () => ({
     snapshots: repo.listGrouped(),
   }));
 
-  app.post('/api/rank-snapshots', onlySeo, async (request, reply) => {
+  app.post('/api/rank-snapshots', editor, async (request, reply) => {
     const b = request.body || {};
     const date = String(b.snapshot_date || new Date().toISOString().slice(0, 10));
     const items = Array.isArray(b.items) ? b.items.filter((i) => i && i.keyword) : [];

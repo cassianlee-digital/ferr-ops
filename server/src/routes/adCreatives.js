@@ -1,13 +1,13 @@
 // 广告创意库 API（FR-7）。写入限陈(sem)。
 import * as repo from '../db/repositories/adCreatives.js';
-import { requireAuth, onlySem } from '../auth/middleware.js';
+import { requireAuth, editor } from '../auth/middleware.js';
 
 const s = (v, n = 300) => (v == null ? null : String(v).slice(0, n));
 
 export async function adCreativesRoutes(app) {
   app.get('/api/ad-creatives', { preHandler: requireAuth }, async () => ({ items: repo.list() }));
 
-  app.post('/api/ad-creatives', onlySem, async (request, reply) => {
+  app.post('/api/ad-creatives', editor, async (request, reply) => {
     const b = request.body || {};
     if (!b.title) return reply.code(400).send({ error: 'title_required' });
     const item = repo.create({
@@ -21,7 +21,7 @@ export async function adCreativesRoutes(app) {
     return { item };
   });
 
-  app.patch('/api/ad-creatives/:id', onlySem, async (request) => ({
+  app.patch('/api/ad-creatives/:id', editor, async (request) => ({
     item: repo.update(Number(request.params.id), request.body || {}),
   }));
 }

@@ -1,13 +1,13 @@
 // 否词库 API（FR-7）。写入限陈(sem)。
 import * as repo from '../db/repositories/negKeywords.js';
-import { requireAuth, onlySem } from '../auth/middleware.js';
+import { requireAuth, editor } from '../auth/middleware.js';
 
 const s = (v, n = 200) => (v == null ? null : String(v).slice(0, n));
 
 export async function negKeywordsRoutes(app) {
   app.get('/api/neg-keywords', { preHandler: requireAuth }, async () => ({ items: repo.list() }));
 
-  app.post('/api/neg-keywords', onlySem, async (request, reply) => {
+  app.post('/api/neg-keywords', editor, async (request, reply) => {
     const b = request.body || {};
     if (!b.word) return reply.code(400).send({ error: 'word_required' });
     const item = repo.create({
@@ -22,7 +22,7 @@ export async function negKeywordsRoutes(app) {
     return { item };
   });
 
-  app.patch('/api/neg-keywords/:id', onlySem, async (request) => ({
+  app.patch('/api/neg-keywords/:id', editor, async (request) => ({
     item: repo.update(Number(request.params.id), request.body || {}),
   }));
 }

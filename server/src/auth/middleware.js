@@ -25,17 +25,11 @@ export function roles(...allowed) {
 // 登录态可读（任何已登录角色都能读）
 export const readAuth = { preHandler: requireAuth };
 
-// V7 权限矩阵（角色：seo 李 / sem 陈 / manager / boss；已移除 sales）
-//  - 业务编辑（询盘/周报/否词/创意/排名/关键词/整改/闭环/市场/资产…）：四个角色都可
-//  - KPI 目标修改：仅 manager / boss
-export const editor = { preHandler: roles('seo', 'sem', 'manager', 'boss') }; // 任意登录角色可编辑业务数据
+// V7 权限矩阵（角色：seo 李 / sem 陈 / manager / boss；已移除 sales）。
+// 只有这两档，别再加化名：曾有 onlySeo/onlySem/seoOrSem/onlyBoss 四个别名全部指向下面两个，
+// 路由写着 onlySem 实际却放行全部角色，读代码的人会误判「已限权」。要按角色收窄就直接写 roles(...)。
+export const editor = { preHandler: roles('seo', 'sem', 'manager', 'boss') }; // 业务数据编辑：四个角色都可
 export const onlyManagerBoss = { preHandler: roles('manager', 'boss') };      // KPI 目标 / 系统设置
-
-// 兼容旧引用（统一指向 editor / onlyManagerBoss），避免散落改动遗漏
-export const onlySeo = editor;
-export const onlySem = editor;
-export const seoOrSem = editor;
-export const onlyBoss = onlyManagerBoss;
 
 export const cookieOpts = {
   httpOnly: true,

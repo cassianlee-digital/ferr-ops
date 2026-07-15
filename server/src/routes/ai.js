@@ -1,4 +1,4 @@
-import { requireAuth, seoOrSem } from '../auth/middleware.js';
+import { requireAuth, editor } from '../auth/middleware.js';
 import { buildContext } from '../services/aiContext.js';
 import { callAnthropic } from '../services/anthropic.js';
 import { attachmentPromptBlock, cleanAiAttachments } from '../services/aiAttachments.js';
@@ -138,13 +138,13 @@ export async function aiRoutes(app) {
     }
   });
 
-  app.post('/api/ai/analyses/:id/action', seoOrSem, async (request, reply) => {
+  app.post('/api/ai/analyses/:id/action', editor, async (request, reply) => {
     const row = analyses.setAction(Number(request.params.id), s(request.body?.action, 40));
     if (!row) return reply.code(404).send({ error: 'not_found' });
     return { item: row };
   });
 
-  app.post('/api/ai/analyses/:id/archive', seoOrSem, async (request, reply) => {
+  app.post('/api/ai/analyses/:id/archive', editor, async (request, reply) => {
     const row = analyses.archive(Number(request.params.id));
     if (!row) return reply.code(404).send({ error: 'not_found' });
     return { item: row };
