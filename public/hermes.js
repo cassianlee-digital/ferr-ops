@@ -1402,6 +1402,9 @@
           return item.rowsWritten > 0 ? `${label}写入${item.rowsWritten}行` : `${label}同步完成但无新数据`;
         }).join('、')
         : '';
+      const refreshActionText = refresh && Array.isArray(refresh.providers)
+        ? refresh.providers.map((item) => item.actionId ? `动作#${item.actionId}` : '').filter(Boolean).join(' · ')
+        : '';
       meta.textContent = [
         '小瑞已参考',
         message.hermes.skill && message.hermes.skill.label ? '技能：' + message.hermes.skill.label : '',
@@ -1409,6 +1412,7 @@
         message.hermes.usedMemory ? '已使用长期记忆' : '',
         message.hermes.usedPageContext ? '已使用当前页' : '',
         refreshText ? '数据抓取：' + refreshText : '',
+        refreshActionText ? '动作记录：' + refreshActionText : '',
         missing.length ? '缺失：' + missing.slice(0, 3).join('、') : '',
       ].filter(Boolean).join(' · ');
       bubble.appendChild(meta);

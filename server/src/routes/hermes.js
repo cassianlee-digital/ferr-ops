@@ -7,8 +7,7 @@ import * as marketBrain from '../services/marketBrain.js';
 import * as hermesMemoryRepo from '../db/repositories/hermesMemories.js';
 import * as hermesConversationRepo from '../db/repositories/hermesConversations.js';
 import { buildOpsDiagnosis, buildEnterpriseMemory, buildDailyLearningMemory, requestedRangeFromText } from '../services/hermesBrain.js';
-import { syncAds } from '../sync/ads.js';
-import { syncGsc } from '../sync/gsc.js';
+import { executeTrustedReadAction } from '../services/hermesActions.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -892,17 +891,23 @@ function refreshProvidersForMessage(message) {
   return ['ads', 'gsc'];
 }
 
-async function refreshHermesProvider(provider, range) {
+async function refreshHermesProvider(provider, range, userId) {
   const key = `${provider}:${range.start_date}:${range.end_date}`;
   const cached = hermesRefreshCache.get(key);
   if (cached && cached.expiresAt > Date.now()) return cached.result;
 
-  const syncer = provider === 'ads' ? syncAds : syncGsc;
-  const result = syncer(range)
-    .then((data) => ({ provider, status: 'synced', rowsWritten: Number(data.rowsWritten || 0), range }))
+  const actionType = provider === 'ads' ? 'sync_ads' : 'sync_gsc';
+  const result = executeTrustedReadAction({
+    userId,
+    actionType,
+    title: `Hermes 自动刷新 ${provider.toUpperCase()} 数据`,
+    input: range,
+  })
+    .then((data) => ({ provider, status: 'synced', actionId: data.id, rowsWritten: Number(data.result?.rowsWritten || 0), range }))
     .catch((error) => ({
       provider,
       status: 'failed',
+      actionId: error.actionId || null,
       error: String(error?.message || 'sync_failed'),
       missing: Array.isArray(error?.missing) ? error.missing : [],
       range,
@@ -911,11 +916,11 @@ async function refreshHermesProvider(provider, range) {
   return result;
 }
 
-async function refreshHermesRequestedData(message) {
+async function refreshHermesRequestedData(message, userId) {
   const providers = refreshProvidersForMessage(message);
   if (!providers.length) return null;
   const range = requestedRangeFromText(message);
-  const results = await Promise.all(providers.map((provider) => refreshHermesProvider(provider, range)));
+  const results = await Promise.all(providers.map((provider) => refreshHermesProvider(provider, range, userId)));
   return { requestedRange: range, providers: results };
 }
 
@@ -1200,7 +1205,7 @@ export async function hermesRoutes(app) {
       : null;
     const activeConversation = existingConversation?.state === 'active' ? existingConversation : null;
     const history = chatHistoryBlock(activeConversation?.messages || request.body?.history);
-    const dataRefresh = await refreshHermesRequestedData(message);
+    const dataRefresh = await refreshHermesRequestedData(message, userId);
     const context = contextPayload(request, { dataRefresh });
 
     if (!context.ok) return reply.code(500).send({ error: context.error || 'hermes_context_failed', detail: context.detail || '' });

@@ -9,14 +9,14 @@ import { db } from './connection.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // schema 版本仅作记录与未来增量迁移的挂钩点；不再触发任何自动清库。
-const SCHEMA_VERSION = '7';
+const SCHEMA_VERSION = '8';
 
 const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions',
+  'sop_definitions', 'sop_completions', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily',
@@ -434,6 +434,33 @@ CREATE TABLE IF NOT EXISTS hermes_conversations (
 );
 CREATE INDEX IF NOT EXISTS idx_hermes_conversations_user_state_updated
   ON hermes_conversations(user_id, state, updated_at);
+
+CREATE TABLE IF NOT EXISTS hermes_action_runs (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id           INTEGER NOT NULL REFERENCES users(id),
+  loop_item_id      INTEGER REFERENCES loop_items(id),
+  action_type       TEXT NOT NULL,
+  title             TEXT NOT NULL,
+  input_json        TEXT NOT NULL DEFAULT '{}',
+  status            TEXT NOT NULL DEFAULT 'proposed'
+                    CHECK (status IN ('proposed','approved','running','succeeded','failed','cancelled','verified')),
+  result_json       TEXT,
+  verification_json TEXT,
+  error             TEXT,
+  approved_by       INTEGER REFERENCES users(id),
+  verified_by       INTEGER REFERENCES users(id),
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  approved_at       TEXT,
+  started_at        TEXT,
+  finished_at       TEXT,
+  verified_at       TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_status_created
+  ON hermes_action_runs(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_user_created
+  ON hermes_action_runs(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_loop_item
+  ON hermes_action_runs(loop_item_id);
 
 CREATE TABLE IF NOT EXISTS sop_definitions (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
