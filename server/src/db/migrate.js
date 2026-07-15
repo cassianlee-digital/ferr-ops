@@ -9,7 +9,7 @@ import { db } from './connection.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // schema 版本仅作记录与未来增量迁移的挂钩点；不再触发任何自动清库。
-const SCHEMA_VERSION = '8';
+const SCHEMA_VERSION = '9';
 
 const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
@@ -447,6 +447,8 @@ CREATE TABLE IF NOT EXISTS hermes_action_runs (
   result_json       TEXT,
   verification_json TEXT,
   error             TEXT,
+  idempotency_key   TEXT,
+  attempt_count     INTEGER NOT NULL DEFAULT 0,
   approved_by       INTEGER REFERENCES users(id),
   verified_by       INTEGER REFERENCES users(id),
   created_at        TEXT NOT NULL DEFAULT (datetime('now')),
@@ -461,7 +463,6 @@ CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_user_created
   ON hermes_action_runs(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_loop_item
   ON hermes_action_runs(loop_item_id);
-
 CREATE TABLE IF NOT EXISTS sop_definitions (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   dept       TEXT NOT NULL,                                -- SEM / SEO / 公司
@@ -530,9 +531,15 @@ export function migrate() {
     ['is_default', 'INTEGER NOT NULL DEFAULT 0'], ['active', 'INTEGER NOT NULL DEFAULT 1'],
     ['updated_at', 'TEXT'],
   ]);
+  ensureColumns('hermes_action_runs', [
+    ['idempotency_key', 'TEXT'], ['attempt_count', 'INTEGER NOT NULL DEFAULT 0'],
+  ]);
   // 索引：旧库 db.exec(SCHEMA) 已建表，索引语句 IF NOT EXISTS 幂等，重复 exec 无害
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind)'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_fixes_state ON fixes(state)'); } catch (e) {}
+  try {
+    db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_hermes_action_runs_idempotency ON hermes_action_runs(idempotency_key) WHERE idempotency_key IS NOT NULL');
+  } catch (e) {}
 
   // 周报 week_key 从「年-月-第几周」升级为「本周周一日期 YYYY-MM-DD」，根治相邻周撞 key。幂等。
   try { migrateWeeklyKeysToMonday(); } catch (e) {}

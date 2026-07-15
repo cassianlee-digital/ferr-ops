@@ -6,6 +6,7 @@ import { syncGsc } from '../sync/gsc.js';
 
 const MAX_TITLE = 200;
 const MAX_NOTE = 1000;
+const MAX_IDEMPOTENCY_KEY = 160;
 
 const ACTION_EXECUTORS = Object.freeze({
   create_task: async (input) => {
@@ -31,6 +32,11 @@ export const SUPPORTED_ACTIONS = Object.freeze(Object.keys(ACTION_EXECUTORS));
 
 function text(value, max) {
   return value == null ? '' : String(value).trim().slice(0, max);
+}
+
+function normalizeIdempotencyKey(value) {
+  const key = text(value, MAX_IDEMPOTENCY_KEY);
+  return key || null;
 }
 
 function badAction(message, status = 400) {
@@ -72,7 +78,7 @@ function publicSyncResult(result) {
   };
 }
 
-export function proposeAction({ userId, loopItemId = null, actionType, title, input = {} }) {
+export function proposeAction({ userId, loopItemId = null, actionType, title, input = {}, idempotencyKey = null }) {
   if (!SUPPORTED_ACTIONS.includes(actionType)) throw badAction('action_type_not_supported');
   const linkedLoopItemId = loopItemId == null || loopItemId === '' ? null : Number(loopItemId);
   if (linkedLoopItemId != null && (!Number.isInteger(linkedLoopItemId) || linkedLoopItemId < 1)) {
@@ -83,16 +89,26 @@ export function proposeAction({ userId, loopItemId = null, actionType, title, in
   }
   const normalizedInput = normalizeInput(actionType, input);
   const safeTitle = text(title, MAX_TITLE) || actionType;
+  const safeIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+  const existing = safeIdempotencyKey ? actionRepo.getByIdempotencyKey(safeIdempotencyKey) : null;
+  if (existing) {
+    if (existing.action_type !== actionType || JSON.stringify(existing.input || {}) !== JSON.stringify(normalizedInput)) {
+      throw badAction('action_idempotency_conflict', 409);
+    }
+    return existing;
+  }
   return actionRepo.create({
     userId,
     loopItemId: linkedLoopItemId,
     actionType,
     title: safeTitle,
     input: normalizedInput,
+    idempotencyKey: safeIdempotencyKey,
   });
 }
 
 export async function executeAction(id, actorId) {
+  actionRepo.recoverStaleRunning();
   const current = actionRepo.get(id);
   if (!current) throw badAction('action_not_found', 404);
   if (current.status !== 'approved') throw badAction('action_not_approved', 409);
@@ -113,8 +129,18 @@ export async function executeTrustedReadAction({ userId, actionType, title, inpu
   if (!['sync_gsc', 'sync_ga4', 'sync_ads'].includes(actionType)) {
     throw badAction('trusted_action_not_allowed');
   }
-  const proposed = proposeAction({ userId, actionType, title, input });
-  const approved = actionRepo.approve(proposed.id, userId);
+  const idempotencyKey = `trusted:${userId}:${actionType}:${input.project_id || 'default'}:${input.start_date || ''}:${input.end_date || ''}`;
+  const proposed = proposeAction({ userId, actionType, title, input, idempotencyKey });
+  if (['succeeded', 'verified'].includes(proposed.status)) return proposed;
+  const approved = proposed.status === 'approved'
+    ? proposed
+    : proposed.status === 'failed'
+      ? actionRepo.retry(proposed.id, userId)
+      : proposed.status === 'proposed'
+        ? actionRepo.approve(proposed.id, userId)
+        : null;
+  if (proposed.status === 'running') throw badAction('action_already_running', 409);
+  if (proposed.status === 'cancelled') throw badAction('action_cancelled', 409);
   if (!approved) throw badAction('trusted_action_approval_failed', 500);
   try {
     return await executeAction(approved.id, userId);
@@ -147,6 +173,12 @@ export function verifyAction(id, verifiedBy, verification = {}) {
 export function cancelAction(id) {
   const result = actionRepo.cancel(id);
   if (!result) throw badAction('action_not_cancellable', 409);
+  return result;
+}
+
+export function retryAction(id, approvedBy) {
+  const result = actionRepo.retry(id, approvedBy);
+  if (!result) throw badAction('action_not_retryable', 409);
   return result;
 }
 

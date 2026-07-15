@@ -6,6 +6,7 @@ import {
   cancelAction,
   executeAction,
   proposeAction,
+  retryAction,
   verifyAction,
 } from '../services/hermesActions.js';
 
@@ -57,6 +58,7 @@ export async function hermesActionsRoutes(app) {
         actionType: body.action_type,
         title: body.title,
         input: body.input,
+        idempotencyKey: body.idempotency_key,
       });
       return reply.code(201).send({ action });
     } catch (error) {
@@ -77,6 +79,16 @@ export async function hermesActionsRoutes(app) {
     if (!id) return reply.code(400).send({ error: 'bad_action_id' });
     try {
       return { action: await executeAction(id, userId(request)) };
+    } catch (error) {
+      return sendError(reply, error);
+    }
+  });
+
+  app.post('/api/hermes/actions/:id/retry', onlyManagerBoss, async (request, reply) => {
+    const id = actionId(request);
+    if (!id) return reply.code(400).send({ error: 'bad_action_id' });
+    try {
+      return { action: retryAction(id, userId(request)) };
     } catch (error) {
       return sendError(reply, error);
     }

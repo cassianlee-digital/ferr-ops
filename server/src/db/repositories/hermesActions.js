@@ -13,19 +13,25 @@ function decode(row) {
   return out;
 }
 
-export function create({ userId, loopItemId = null, actionType, title, input = {} }) {
+export function create({ userId, loopItemId = null, actionType, title, input = {}, idempotencyKey = null }) {
   const info = db.prepare(
     `INSERT INTO hermes_action_runs
-      (user_id, loop_item_id, action_type, title, input_json)
-     VALUES (@userId, @loopItemId, @actionType, @title, @inputJson)`
+      (user_id, loop_item_id, action_type, title, input_json, idempotency_key)
+     VALUES (@userId, @loopItemId, @actionType, @title, @inputJson, @idempotencyKey)`
   ).run({
     userId,
     loopItemId,
     actionType,
     title,
     inputJson: JSON.stringify(input),
+    idempotencyKey,
   });
   return get(info.lastInsertRowid);
+}
+
+export function getByIdempotencyKey(idempotencyKey) {
+  if (!idempotencyKey) return null;
+  return decode(db.prepare('SELECT * FROM hermes_action_runs WHERE idempotency_key = ?').get(idempotencyKey));
 }
 
 export function get(id) {
@@ -33,6 +39,7 @@ export function get(id) {
 }
 
 export function list({ userId = null, status = null, limit = 50 } = {}) {
+  recoverStaleRunning();
   const where = [];
   const params = { limit: Math.min(Math.max(Number(limit) || 50, 1), 200) };
   if (userId != null) { where.push('user_id = @userId'); params.userId = userId; }
@@ -54,7 +61,8 @@ export function approve(id, approvedBy) {
 export function claim(id) {
   const info = db.prepare(
     `UPDATE hermes_action_runs
-        SET status = 'running', started_at = datetime('now'), error = NULL
+        SET status = 'running', started_at = datetime('now'), error = NULL,
+            attempt_count = COALESCE(attempt_count, 0) + 1
       WHERE id = @id AND status = 'approved'`
   ).run({ id });
   return info.changes ? get(id) : null;
@@ -80,6 +88,28 @@ export function fail(id, error, result = null) {
     error: String(error || 'action_failed').slice(0, 1000),
   });
   return get(id);
+}
+
+export function retry(id, approvedBy) {
+  const info = db.prepare(
+    `UPDATE hermes_action_runs
+        SET status = 'approved', approved_by = @approvedBy, approved_at = datetime('now'),
+            started_at = NULL, finished_at = NULL, error = NULL, result_json = NULL,
+            verification_json = NULL, verified_by = NULL, verified_at = NULL
+      WHERE id = @id AND status = 'failed'`
+  ).run({ id, approvedBy });
+  return info.changes ? get(id) : null;
+}
+
+export function recoverStaleRunning(maxAgeMinutes = 15) {
+  const minutes = Math.max(1, Math.min(Number(maxAgeMinutes) || 15, 1440));
+  return db.prepare(
+    `UPDATE hermes_action_runs
+        SET status = 'failed', error = 'action_timeout_recovered', finished_at = datetime('now')
+      WHERE status = 'running'
+        AND started_at IS NOT NULL
+        AND started_at <= datetime('now', ?)`
+  ).run(`-${minutes} minutes`).changes;
 }
 
 export function verify(id, verifiedBy, verification = {}) {
