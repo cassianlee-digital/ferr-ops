@@ -415,6 +415,15 @@ export function buildClosureAudit({ memories = [], actions = [], reports = [], t
       topic,
       memoryIds: group.map((memory) => memory.id).filter(Boolean),
       titles: group.map((memory) => String(memory.title || '').trim()).filter(Boolean),
+      candidates: group.map((memory) => ({
+        id: memory.id,
+        title: String(memory.title || '').trim(),
+        content: String(memory.content || '').trim(),
+        evidence: String(memory.evidence || '').trim(),
+        source: String(memory.source || '').trim(),
+        updatedAt: memory.updated_at || memory.created_at || '',
+        importance: memory.importance,
+      })),
       reason: '同一主题存在多条内容不同的活动记忆，需要确认哪一条仍然有效。',
     });
   }

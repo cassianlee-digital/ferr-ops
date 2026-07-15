@@ -1177,7 +1177,7 @@
       }
       rows.push(row);
     };
-    (audit.memoryConflicts || []).slice(0, 3).forEach((item) => addRow(`记忆冲突：${(item.titles || []).join(' / ')}`, '', {}));
+    (audit.memoryConflicts || []).slice(0, 3).forEach((item) => addRow(`记忆冲突：${(item.titles || []).join(' / ')}`, 'memory', { item }));
     (audit.overdueActions || []).slice(0, 3).forEach((item) => addRow(`逾期动作：${item.content}（${item.taskDate}）`, 'action', { item, overdue: true }));
     (audit.unverifiedActions || []).slice(0, 3).forEach((item) => addRow(`${item.state === 'archived' ? '归档但未验证' : '执行未复盘'}：${item.content}，缺少${(item.missing || []).join('、')}`, 'action', { item }));
     (audit.reviewGaps || []).slice(0, 3).forEach((item) => addRow(`周报缺口：${item.weekKey || ''} ${item.dept || ''}，缺少${(item.missing || []).join('、')}`, 'report', { item }));
@@ -1207,6 +1207,29 @@
     return { summary: '周报内容', analysis: '分析结论', next_plan: '下一步计划', metric: '验证指标', conclusion: '执行结果/结论' }[field] || field;
   }
 
+  function appendMemoryCandidates(card, item) {
+    const group = document.createElement('div');
+    group.className = 'hermes-memory-candidates';
+    (item.candidates || []).forEach((candidate, index) => {
+      const label = document.createElement('label');
+      label.className = 'hermes-memory-candidate';
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'hermes-memory-choice';
+      radio.value = String(candidate.id);
+      radio.required = index === 0;
+      const content = document.createElement('span');
+      const title = document.createElement('strong');
+      title.textContent = candidate.title || `版本 ${index + 1}`;
+      const detail = document.createElement('span');
+      detail.textContent = [candidate.content, candidate.source, candidate.updatedAt].filter(Boolean).join(' · ');
+      content.append(title, detail);
+      label.append(radio, content);
+      group.appendChild(label);
+    });
+    card.appendChild(group);
+  }
+
   function closeClosureEditor(editor) {
     if (editor) editor.remove();
   }
@@ -1231,7 +1254,7 @@
     const head = document.createElement('div');
     head.className = 'hermes-closure-editor-head';
     const title = document.createElement('strong');
-    title.textContent = type === 'report' ? '补充周报闭环' : '补充动作结果';
+    title.textContent = type === 'report' ? '补充周报闭环' : (type === 'memory' ? '确认长期记忆' : '补充动作结果');
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'hermes-closure-editor-close';
@@ -1244,10 +1267,14 @@
 
     const description = document.createElement('p');
     description.className = 'hermes-closure-editor-desc';
-    description.textContent = item.content || `${item.weekKey || ''} ${item.dept || ''}`;
+    description.textContent = type === 'memory' ? '请选择仍然有效的版本，其他版本将被停用。' : (item.content || `${item.weekKey || ''} ${item.dept || ''}`);
     card.appendChild(description);
-    const fields = type === 'report' ? (item.fields || []) : (item.fields || ['metric', 'conclusion']);
-    fields.forEach((field) => card.appendChild(closureField(closureFieldLabel(field), field, '', field !== 'metric')));
+    if (type === 'memory') {
+      appendMemoryCandidates(card, item);
+    } else {
+      const fields = type === 'report' ? (item.fields || []) : (item.fields || ['metric', 'conclusion']);
+      fields.forEach((field) => card.appendChild(closureField(closureFieldLabel(field), field, '', field !== 'metric')));
+    }
 
     const foot = document.createElement('div');
     foot.className = 'hermes-closure-editor-foot';
@@ -1270,7 +1297,14 @@
       if (!valid) { toastSafe('请先补全闭环字段'); return; }
       save.disabled = true;
       try {
-        if (type === 'action') {
+        if (type === 'memory') {
+          const selected = card.querySelector('input[name="hermes-memory-choice"]:checked');
+          if (!selected) { save.disabled = false; toastSafe('请选择要保留的记忆版本'); return; }
+          const keepId = Number(selected.value);
+          await Promise.all((item.memoryIds || []).filter((id) => Number(id) !== keepId).map((id) =>
+            window.API.del('/api/hermes/memories/' + encodeURIComponent(id))
+          ));
+        } else if (type === 'action') {
           const payload = {};
           if (Object.prototype.hasOwnProperty.call(values, 'metric')) payload.metric = values.metric;
           if (Object.prototype.hasOwnProperty.call(values, 'conclusion')) payload.conclusion = values.conclusion;

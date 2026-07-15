@@ -4831,6 +4831,41 @@ body.dark .hermes-msg .ai-render strong {
   border-bottom: 0;
 }
 
+.hermes-memory-candidates {
+  display: grid;
+  gap: 8px;
+  padding: 10px 16px 0;
+}
+
+.hermes-memory-candidate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #dbe5f5;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.hermes-memory-candidate:has(input:checked) {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.hermes-memory-candidate span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hermes-memory-candidate span span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 body.dark .hermes-msg .ai-render li,
 body.dark .hermes-basis,
 body.dark .hermes-evidence,
@@ -4893,6 +4928,20 @@ body.dark .hermes-closure-field textarea {
   border-color: #475569;
   background: #111827;
   color: #e2e8f0;
+}
+
+body.dark .hermes-memory-candidate {
+  border-color: #475569;
+  background: #111827;
+}
+
+body.dark .hermes-memory-candidate:has(input:checked) {
+  border-color: #3b82f6;
+  background: #0f1f3d;
+}
+
+body.dark .hermes-memory-candidate span span {
+  color: #94a3b8;
 }
 
 body.dark .hermes-evidence-status.supported {
