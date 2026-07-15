@@ -27,6 +27,7 @@
   let dataGapStatusLoaded = false;
   let closureEditorItems = new Map();
   let closureEditorSeq = 0;
+  let hermesActionItems = [];
 
   function byId(id) { return document.getElementById(id); }
   function currentUser() { return window.ME || {}; }
@@ -709,6 +710,7 @@
         content: '今日早报生成失败。\n\n原因：' + (e.message || 'morning_brief_failed') + '\n\n请确认后端 AI 配置和 Hermes 上下文是否正常。',
       };
     } finally {
+      await loadHermesActions();
       setSending(false);
       renderMessages();
     }
@@ -903,6 +905,9 @@
     const key = dataGapTaskKey(task);
     const existing = dataGapTaskItems.get(key);
     if (dataGapStatusLoaded && task && task.key && !currentHermesMissingData.has(task.key)) return 'resolved';
+    if (existing && existing.action_status === 'failed') return 'action_failed';
+    if (existing && existing.action_status === 'running') return 'action_running';
+    if (existing && ['proposed', 'approved'].includes(existing.action_status)) return 'pending_approval';
     if (existing && (existing.state === 'done' || existing.status === 'done')) return 'done_still_missing';
     if (existing) return 'added';
     return 'missing';
@@ -912,6 +917,9 @@
     return {
       resolved: '数据已补齐',
       done_still_missing: '任务完成 · 数据仍缺',
+      pending_approval: '等待审批',
+      action_running: '执行中',
+      action_failed: '执行失败 · 请看动作台',
       added: '已加入日计划',
       missing: '待补数',
     }[state] || '待补数';
@@ -919,7 +927,7 @@
 
   function setGapButtonState(button, state) {
     if (!button) return;
-    button.classList.remove('added', 'resolved', 'warn');
+    button.classList.remove('added', 'resolved', 'warn', 'pending');
     if (state === 'resolved') {
       button.disabled = true;
       button.classList.add('resolved');
@@ -928,6 +936,18 @@
       button.disabled = true;
       button.classList.add('warn');
       button.innerHTML = '<i class="ti ti-alert-triangle"></i><span>仍缺</span>';
+    } else if (state === 'pending_approval') {
+      button.disabled = true;
+      button.classList.add('pending');
+      button.innerHTML = '<i class="ti ti-clock"></i><span>等待审批</span>';
+    } else if (state === 'action_running') {
+      button.disabled = true;
+      button.classList.add('pending');
+      button.innerHTML = '<i class="ti ti-loader-2"></i><span>执行中</span>';
+    } else if (state === 'action_failed') {
+      button.disabled = true;
+      button.classList.add('warn');
+      button.innerHTML = '<i class="ti ti-alert-triangle"></i><span>动作失败</span>';
     } else if (state === 'added') {
       markGapButtonAdded(button);
     } else {
@@ -968,8 +988,22 @@
         window.API.get('/api/loop-items?kind=task'),
         window.API.get('/api/hermes/context'),
       ]);
+      let actionRes = null;
+      try { actionRes = await window.API.get('/api/hermes/actions'); } catch {}
       const items = (taskRes && taskRes.items) || [];
       dataGapTaskItems = new Map(items.map((item) => [dataGapTaskKey(item), item]));
+      (actionRes && actionRes.actions || [])
+        .filter((action) => action.action_type === 'create_task' && action.input)
+        .forEach((action) => {
+          const key = dataGapTaskKey(action.input);
+          const current = dataGapTaskItems.get(key) || {};
+          dataGapTaskItems.set(key, {
+            ...current,
+            ...action.input,
+            action_id: action.id,
+            action_status: action.status,
+          });
+        });
       dataGapTaskKeys = new Set(dataGapTaskItems.keys());
       currentHermesMissingData = new Set([
         ...(((contextRes && contextRes.opsDiagnosis && contextRes.opsDiagnosis.missingData) || [])),
@@ -1008,15 +1042,131 @@
         task_date: task.task_date || '',
         note: task.note || '',
       };
-      await window.API.post('/api/loop-items', body);
+      const actionRes = await window.API.post('/api/hermes/actions', {
+        action_type: 'create_task',
+        title: '补齐 Hermes 数据缺口任务',
+        input: body,
+        idempotency_key: 'gap:' + key,
+      });
+      const action = actionRes && actionRes.action;
       dataGapTaskKeys.add(dataGapTaskKey(body));
-      dataGapTaskItems.set(dataGapTaskKey(body), body);
+      dataGapTaskItems.set(dataGapTaskKey(body), {
+        ...body,
+        action_id: action && action.id,
+        action_status: action && action.status,
+      });
       applyGapTaskButtonStates();
-      if (typeof window.loadClosedLoop === 'function') await window.loadClosedLoop();
-      toastSafe('已加入日计划：' + content.slice(0, 28));
+      await loadHermesActions();
+      toastSafe('已提交任务动作，等待审批：' + content.slice(0, 24));
     } catch (e) {
       if (button) button.disabled = false;
       toastSafe(e && e.status === 403 ? '无权新增任务' : '补数任务入库失败：' + ((e && e.message) || 'save_failed'));
+    }
+  }
+
+  function actionStatusText(status) {
+    return {
+      proposed: '待审批', approved: '已批准', running: '执行中',
+      failed: '执行失败', succeeded: '已完成', verified: '已验证', cancelled: '已取消',
+    }[status] || status || '未知状态';
+  }
+
+  function actionTypeText(type) {
+    return { create_task: '创建任务', sync_gsc: '同步 GSC', sync_ga4: '同步 GA4', sync_ads: '同步 Ads' }[type] || type || '未知动作';
+  }
+
+  function renderHermesActions(actions) {
+    const box = byId('hermesActions');
+    if (!box) return;
+    const pending = (Array.isArray(actions) ? actions : []).filter((action) => ['proposed', 'approved', 'running', 'failed'].includes(action.status));
+    box.replaceChildren();
+    box.hidden = !pending.length;
+    if (!pending.length) return;
+
+    const head = document.createElement('div');
+    head.className = 'hermes-actions-head';
+    const title = document.createElement('strong');
+    title.textContent = '待处理动作';
+    const note = document.createElement('span');
+    note.textContent = '只显示需要审批、重试或正在执行的动作';
+    head.append(title, note);
+    box.appendChild(head);
+
+    pending.slice(0, 8).forEach((action) => {
+      const row = document.createElement('div');
+      row.className = 'hermes-action-row';
+      const main = document.createElement('div');
+      main.className = 'hermes-action-main';
+      const label = document.createElement('strong');
+      label.textContent = action.title || actionTypeText(action.action_type);
+      const meta = document.createElement('span');
+      meta.textContent = `${actionTypeText(action.action_type)} · ${actionStatusText(action.status)}${action.error ? ' · ' + action.error : ''}`;
+      main.append(label, meta);
+      row.appendChild(main);
+
+      const isManager = ['manager', 'boss'].includes(currentUser().role);
+      if (isManager && action.status === 'proposed') {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'hermes-action-control';
+        button.dataset.id = String(action.id);
+        button.dataset.command = 'approve-execute';
+        button.textContent = '批准并执行';
+        row.appendChild(button);
+      } else if (isManager && action.status === 'approved') {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'hermes-action-control';
+        button.dataset.id = String(action.id);
+        button.dataset.command = 'execute';
+        button.textContent = '继续执行';
+        row.appendChild(button);
+      } else if (isManager && action.status === 'failed') {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'hermes-action-control';
+        button.dataset.id = String(action.id);
+        button.dataset.command = 'retry';
+        button.textContent = '重试执行';
+        row.appendChild(button);
+      } else if (action.status === 'proposed') {
+        const wait = document.createElement('span');
+        wait.className = 'hermes-action-wait';
+        wait.textContent = '等待主管审批';
+        row.appendChild(wait);
+      }
+      box.appendChild(row);
+    });
+  }
+
+  async function loadHermesActions() {
+    if (!window.API) return;
+    try {
+      const result = await window.API.get('/api/hermes/actions');
+      hermesActionItems = Array.isArray(result && result.actions) ? result.actions : [];
+      renderHermesActions(hermesActionItems);
+    } catch {
+      hermesActionItems = [];
+      renderHermesActions([]);
+    }
+  }
+
+  async function runHermesAction(id, command) {
+    if (!window.API || !id) return;
+    const button = Array.from(document.querySelectorAll('.hermes-action-control'))
+      .find((item) => item.dataset.id === String(id));
+    if (button) button.disabled = true;
+    try {
+      if (command === 'retry') await window.API.post('/api/hermes/actions/' + encodeURIComponent(id) + '/retry', {});
+      if (command === 'approve-execute') await window.API.post('/api/hermes/actions/' + encodeURIComponent(id) + '/approve', {});
+      await window.API.post('/api/hermes/actions/' + encodeURIComponent(id) + '/execute', {});
+      toastSafe('动作已执行并记录结果');
+      await loadHermesActions();
+      await refreshDataGapTaskKeys();
+      if (typeof window.loadClosedLoop === 'function') await window.loadClosedLoop();
+    } catch (error) {
+      toastSafe('动作未完成：' + ((error && error.message) || 'action_failed'));
+      await loadHermesActions();
     }
   }
 
@@ -1556,6 +1706,7 @@
     if (!statusChecked) refreshHermesStatus(false);
     if (!messages.length) loadHermesLatest(false);
     refreshDataGapTaskKeys();
+    loadHermesActions();
   }
 
   function closeHermesPanel() {
@@ -1626,6 +1777,11 @@
     const gapAddBtn = e.target.closest && e.target.closest('.hermes-gap-add');
     if (gapAddBtn) {
       createDataGapTask(gapAddBtn.dataset.task, gapAddBtn);
+      return;
+    }
+    const actionBtn = e.target.closest && e.target.closest('.hermes-action-control');
+    if (actionBtn) {
+      runHermesAction(actionBtn.dataset.id, actionBtn.dataset.command);
       return;
     }
     const gapRefreshBtn = e.target.closest && e.target.closest('.hermes-gap-refresh-btn');

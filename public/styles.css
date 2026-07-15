@@ -4164,6 +4164,93 @@ table.dt td.editable:focus,
   color: #2159d6;
 }
 
+.hermes-actions {
+  display: grid;
+  gap: 7px;
+  margin: 8px 0;
+  padding: 9px;
+  border: 1px solid #e7edf6;
+  border-radius: var(--radius);
+  background: #fbfdff;
+}
+
+.hermes-actions[hidden] {
+  display: none;
+}
+
+.hermes-actions-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hermes-actions-head strong {
+  color: #334155;
+  font-size: 12px;
+}
+
+.hermes-actions-head span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.hermes-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 8px;
+  border: 1px solid #e7edf6;
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.hermes-action-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hermes-action-main strong {
+  overflow: hidden;
+  color: #334155;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hermes-action-main span,
+.hermes-action-wait {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hermes-action-control {
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid #bbd0ff;
+  border-radius: var(--radius);
+  background: #eef5ff;
+  color: #2159d6;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hermes-action-control:hover {
+  border-color: #7da8ff;
+  background: #e3efff;
+}
+
+.hermes-action-control:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
 .hermes-gap-tasks {
   display: grid;
   gap: 7px;
@@ -4609,6 +4696,8 @@ body.dark .hermes-last-open,
 body.dark .hermes-brief,
 body.dark .hermes-history,
 body.dark .hermes-history-head,
+body.dark .hermes-actions,
+body.dark .hermes-action-row,
 body.dark .hermes-mode summary,
 body.dark .hermes-more summary,
 body.dark .hermes-mode-menu,
@@ -4628,6 +4717,8 @@ body.dark .hermes-last strong,
 body.dark .hermes-brief span,
 body.dark .hermes-history-head strong,
 body.dark .hermes-history-title,
+body.dark .hermes-actions-head strong,
+body.dark .hermes-action-main strong,
 body.dark .hermes-msg-bubble,
 body.dark .hermes-compose textarea {
   color: #e5e7eb;
@@ -4638,6 +4729,9 @@ body.dark .hermes-last span,
 body.dark .hermes-brief small,
 body.dark .hermes-history-row small,
 body.dark .hermes-history-empty,
+body.dark .hermes-actions-head span,
+body.dark .hermes-action-main span,
+body.dark .hermes-action-wait,
 body.dark .hermes-mode-menu label,
 body.dark .hermes-agent-note {
   color: #94a3b8;
@@ -4659,6 +4753,12 @@ body.dark .hermes-compose textarea {
   border-color: #273142;
   background: #0f172a;
   color: #cbd5e1;
+}
+
+body.dark .hermes-action-control {
+  border-color: #315a9d;
+  background: #10254a;
+  color: #93c5fd;
 }
 
 body.dark .hermes-history-row:hover {
