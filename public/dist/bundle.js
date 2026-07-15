@@ -60,9 +60,9 @@
   // public/src/ga4-view.js
   var ga4_view_exports = {};
   __export(ga4_view_exports, {
-    loadGa4: () => loadGa4
+    loadGa4: () => loadGa42
   });
-  async function loadGa4() {
+  async function loadGa42() {
     let r = { connected: false };
     try {
       r = await API.get(withRange("/api/ga4/overview"));
@@ -460,6 +460,309 @@
     }
   }
 
+  // public/src/google-projects.js
+  var google_projects_exports = {};
+  __export(google_projects_exports, {
+    backfillGoogle: () => backfillGoogle,
+    loadDataSourcesStatus: () => loadDataSourcesStatus,
+    loadIntegrations: () => loadIntegrations,
+    startGoogleAuth: () => startGoogleAuth,
+    syncGoogle: () => syncGoogle
+  });
+  var INTEG_LABEL = { gsc: "Google Search Console", ga4: "Google Analytics 4 (GA4)", ads: "Google Ads" };
+  var GOOGLE_PROVIDER_ORDER = ["gsc", "ga4", "ads"];
+  var DS_LABEL = { inquiries: "\u8BE2\u76D8", seo_weeks: "SEO \u5468\u62A5", sem_weeks: "SEM \u5468\u62A5", gsc: "GSC", ga4: "GA4", ads: "Google Ads", ai: "AI Provider" };
+  var DS_ORDER = ["inquiries", "seo_weeks", "sem_weeks", "gsc", "ga4", "ads", "ai"];
+  var DS_TYPE_LABEL = { manual: "\u4EBA\u5DE5\u5F55\u5165", sync: "\u81EA\u52A8\u540C\u6B65", provider: "AI Provider" };
+  function dsStatusMeta(status, type) {
+    const map = {
+      available: [type === "sync" ? "\u5DF2\u6388\u6743 \xB7 \u53EF\u540C\u6B65" : "\u4EBA\u5DE5\u5F55\u5165 \xB7 \u6709\u6570\u636E", type === "sync" ? "b-green" : "b-blue"],
+      no_records: ["\u4EBA\u5DE5\u5F55\u5165 \xB7 \u6682\u65E0\u6570\u636E", "b-gray"],
+      not_configured: type === "sync" ? ["\u540E\u7AEF\u672A\u914D\u7F6E", "b-gray"] : ["\u672A\u914D\u7F6E", "b-gray"],
+      configured_not_synced: ["\u5DF2\u914D\u7F6E \xB7 \u5F85 OAuth \u6388\u6743", "b-amber"],
+      not_implemented: ["\u672A\u63A5\u5165", "b-gray"],
+      configured_unverified: ["\u5DF2\u914D\u7F6E \xB7 \u672A\u9A8C\u8BC1", "b-amber"],
+      error: ["\u72B6\u6001\u83B7\u53D6\u5931\u8D25", "b-red"]
+    };
+    return map[status] || ["\u72B6\u6001\u83B7\u53D6\u5931\u8D25", "b-red"];
+  }
+  function dsRow(key, s) {
+    s = s || {};
+    const name = DS_LABEL[key] || key;
+    const typeText = DS_TYPE_LABEL[s.type] || s.type || "";
+    const [text, cls] = dsStatusMeta(s.status, s.type);
+    const time = s.type === "manual" ? s.lastAt || "\u2014" : s.type === "sync" ? s.lastSyncAt || "\u2014" : "\u2014";
+    const count = s.type === "manual" || s.type === "sync" ? s.count == null ? 0 : s.count : "\u2014";
+    let extra = "";
+    if (s.error) extra = `<span style="color:var(--primary)"> \xB7 \u9519\u8BEF\uFF1A${esc(s.error)}</span>`;
+    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc(s.missing.join(", "))}</span>`;
+    else if (s.note === "google_oauth_required") extra = `<span class="dim"> \xB7 \u9700\u8981 OAuth \u6388\u6743</span>`;
+    else if (s.note === "google_sync_ready") extra = `<span class="dim"> \xB7 \u53EF\u624B\u52A8\u540C\u6B65</span>`;
+    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc(s.provider || "")}${s.model ? " / " + esc(s.model) : ""}</span>`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)"><div style="width:96px;font-weight:600">${esc(name)}</div><div style="width:74px;color:var(--text3);font-size:11px">${esc(typeText)}</div><span class="badge ${cls}">${esc(text)}</span><div style="flex:1"></div><div style="color:var(--text3);font-size:11px;white-space:nowrap">\u65F6\u95F4 ${esc(String(time))} \xB7 \u8BB0\u5F55 ${esc(String(count))}</div><div style="font-size:11px">${extra}</div></div>`;
+  }
+  async function loadDataSourcesStatus() {
+    const box = document.getElementById("ds-status-rows");
+    if (!box) return;
+    const tag = document.getElementById("ds-demo-tag");
+    if (tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber" style="margin-left:8px">\u793A\u4F8B\u6A21\u5F0F</span>' : "";
+    try {
+      const r = await API.get("/api/data-sources/status");
+      const src = r && r.sources || {};
+      box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("") + (window.DEMO_MODE ? '<div class="dim" style="font-size:11px;margin-top:6px">\u5F53\u524D\u4E3A\u6F14\u793A\u6807\u8BB0\uFF0C\u4E0B\u65B9\u4ECD\u4E3A\u63A5\u53E3\u771F\u5B9E\u72B6\u6001\u3002</div>' : "");
+    } catch (e) {
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+    }
+  }
+  async function loadIntegrations() {
+    const box = document.getElementById("integ-rows");
+    if (!box) return;
+    try {
+      const r = await API.get("/api/google/status");
+      const providers = r && r.providers || {};
+      const project = r && r.defaultProject;
+      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
+      box.innerHTML = `<div class="sheet-tip" style="margin-bottom:2px"><i class="ti ti-info-circle"></i> ${projectText}</div>` + GOOGLE_PROVIDER_ORDER.map((p) => googleProviderRow(p, providers[p] || {}, project)).join("");
+    } catch (e) {
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+    }
+  }
+  function googleProviderRow(provider, s, project) {
+    const configured = !!s.configured;
+    const authorized = !!s.authorized;
+    const ok = configured && authorized;
+    const badge2 = ok ? '<span class="badge b-green">\u5DF2\u6388\u6743</span>' : configured ? '<span class="badge b-amber">\u5F85\u6388\u6743</span>' : '<span class="badge b-gray">\u540E\u7AEF\u672A\u914D\u7F6E</span>';
+    const missing = s.missing && s.missing.length ? `<div class="dim" style="font-size:11px;margin-top:4px">\u7F3A\u5C11\uFF1A${esc(s.missing.join(", "))}</div>` : "";
+    const lastSync = s.lastSyncAt || "\u2014";
+    const lastStatus = s.lastSyncStatus || "\u672A\u540C\u6B65";
+    const lastError = s.lastError ? `<div style="color:var(--primary);font-size:11px;margin-top:4px">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc(s.lastError)}</div>` : "";
+    const providerConfigNote = provider === "gsc" ? s.siteUrlConfigured || project?.gsc_site_url ? "\u7AD9\u70B9\u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GSC_SITE_URL \u6216\u9879\u76EE\u7AD9\u70B9" : provider === "ga4" ? s.propertyConfigured || project?.ga4_property_id ? "Property \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GA4_PROPERTY_ID \u6216\u9879\u76EE Property" : s.customerConfigured || project?.ads_customer_id ? "Customer \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GOOGLE_ADS_CUSTOMER_ID \u6216\u9879\u76EE Customer";
+    const authDisabled = configured ? "" : "disabled";
+    const syncDisabled = ok ? "" : "disabled";
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
+    <div style="width:230px;font-weight:700">${esc(INTEG_LABEL[provider] || provider)} ${badge2}</div>
+    <div style="flex:1;min-width:260px;color:var(--text2);font-size:12px;line-height:1.6">
+      <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
+      ${missing}${lastError}
+    </div>
+    <button class="btn-ghost" onclick="startGoogleAuth('${provider}')" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
+    <button class="btn-ghost" onclick="backfillGoogle('${provider}',90,this)" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
+    <button class="btn-primary" onclick="syncGoogle('${provider}',this)" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
+  </div>`;
+  }
+  function startGoogleAuth(provider) {
+    location.href = "/api/google/auth/start?provider=" + encodeURIComponent(provider);
+  }
+  async function backfillGoogle(provider, days, btn) {
+    const old = btn ? btn.innerHTML : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2"></i> \u56DE\u8865\u4E2D\u2026';
+    }
+    try {
+      const end = /* @__PURE__ */ new Date();
+      end.setUTCDate(end.getUTCDate() - 1);
+      const start = new Date(end);
+      start.setUTCDate(start.getUTCDate() - (days - 1));
+      const iso = (d) => d.toISOString().slice(0, 10);
+      const r = await API.post("/api/sync/" + encodeURIComponent(provider), { start_date: iso(start), end_date: iso(end) });
+      toast(`${INTEG_LABEL[provider] || provider} \u56DE\u8865 ${days} \u5929\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
+      await loadDataSourcesStatus();
+      await loadIntegrations();
+      if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
+      if (typeof loadDataFreshness === "function") loadDataFreshness();
+    } catch (e) {
+      const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
+      toast(`\u56DE\u8865\u5931\u8D25\uFF1A${e.message}${missing}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
+    }
+  }
+  async function syncGoogle(provider, btn) {
+    const old = btn ? btn.innerHTML : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2"></i> \u540C\u6B65\u4E2D';
+    }
+    try {
+      const r = await API.post("/api/sync/" + encodeURIComponent(provider), {});
+      toast(`${INTEG_LABEL[provider] || provider} \u540C\u6B65\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
+      await loadDataSourcesStatus();
+      await loadIntegrations();
+      if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
+    } catch (e) {
+      const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
+      toast(`\u540C\u6B65\u5931\u8D25\uFF1A${e.message}${missing}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
+    }
+  }
+
+  // public/src/archive.js
+  var archive_exports = {};
+  __export(archive_exports, {
+    loadArchive: () => loadArchive
+  });
+  document.addEventListener("click", async (e) => {
+    const arc = e.target.closest(".row-archive");
+    const dep = e.target.closest(".row-dep");
+    if (!arc && !dep) return;
+    const tr = (arc || dep).closest("tr");
+    if (!tr) return;
+    const id = tr.dataset.id, ep = tr.dataset.ep;
+    if (!id || !ep) return;
+    const dEl = tr.querySelector('[data-kind="dept"]');
+    const deptTxt = dEl ? dEl.textContent.trim() : "";
+    const isSem = deptTxt === "SEM" || /sem/i.test(tr.parentElement && tr.parentElement.id || "");
+    const isCompany = deptTxt === "\u516C\u53F8";
+    const ak = isCompany ? "company" : isSem ? "sem" : "seo";
+    const content = (tr.querySelector('[data-field="content"]') || tr.querySelector('[data-field="title"]') || tr.cells[0]).innerText.trim();
+    if (arc) {
+      if (!inlineConfirm(arc, "\u786E\u8BA4\u5F52\u6863")) return;
+      arc.disabled = true;
+      try {
+        await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
+        tr.remove();
+        toast("\u5DF2\u5F52\u6863");
+      } catch (err) {
+        arc.disabled = false;
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5F52\u6863\u5931\u8D25");
+      }
+    } else if (dep) {
+      dep.disabled = true;
+      try {
+        const s = { dept: isCompany ? "\u516C\u53F8" : isSem ? "SEM" : "SEO", owner: isSem ? "\u9648" : "\u674E", c: isSem ? "b-purple" : "b-blue" };
+        const { item } = await persistLoop("deposit", s, content, "\u6C89\u6DC0");
+        const depTb = document.getElementById("tb-dep");
+        if (depTb) {
+          const ntr = document.createElement("tr");
+          ntr.dataset.id = item.id;
+          ntr.dataset.ep = "/api/loop-items";
+          ntr.innerHTML = depRowHtml(item);
+          depTb.insertBefore(ntr, depTb.firstChild);
+          const de = document.getElementById("dep-empty");
+          if (de) de.style.display = "none";
+        }
+        dep.disabled = false;
+        toast("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93");
+      } catch (err) {
+        dep.disabled = false;
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6C89\u6DC0\u5931\u8D25");
+      }
+    }
+  });
+  function archRowHtml(it, from) {
+    const date = (it.archived_at || "").slice(0, 10);
+    const dept = it.dept || "\u2014";
+    const content = esc(it.content || it.title || it.detail || "");
+    const fromBadge = '<span class="badge ' + (from === "fix" ? "b-amber" : "b-blue") + '">' + (from === "fix" ? "\u6574\u6539" : it.kind === "task" ? "\u4EFB\u52A1" : it.kind === "plan" ? "\u8BA1\u5212" : it.kind === "test" ? "\u6D4B\u8BD5" : it.kind === "deposit" ? "\u6C89\u6DC0" : "\u95ED\u73AF") + "</span>";
+    const isBoss = (window.ME || {}).role === "boss";
+    const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u539F\u9875"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09" style="color:var(--primary)"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
+  }
+  function archInqRowHtml(it) {
+    const date = (it.archived_at || "").slice(0, 10);
+    const isBoss = (window.ME || {}).role === "boss";
+    const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u8BE2\u76D8\u5217\u8868"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09" style="color:var(--primary)"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
+    const cust = (it.customer_name ? esc(it.customer_name) + " \xB7 " : "") + esc(it.country || "");
+    const source = esc(it.source || "");
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-short-date num">${esc((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
+  }
+  async function loadArchive() {
+    const bucket = { sem: [], seo: [], company: [] };
+    try {
+      const { items } = await API.get("/api/fixes?archived=1");
+      (items || []).forEach((f) => {
+        const k = f.archive_kind || deriveAk(f.dept);
+        if (bucket[k]) bucket[k].push({ ...f, _from: "fix" });
+      });
+    } catch (e) {
+    }
+    try {
+      const { items } = await API.get("/api/loop-items?archived=1");
+      (items || []).forEach((it) => {
+        const k = it.archive_kind || deriveAk(it.dept);
+        if (bucket[k]) bucket[k].push({ ...it, _from: "loop" });
+      });
+    } catch (e) {
+    }
+    ["sem", "seo", "company"].forEach((k) => {
+      const tb = document.getElementById("tb-arc-" + k);
+      if (!tb) return;
+      tb.innerHTML = "";
+      const rows2 = bucket[k].slice().sort((a, b) => String(b.archived_at || "").localeCompare(String(a.archived_at || "")));
+      rows2.forEach((it) => {
+        const tr = document.createElement("tr");
+        tr.dataset.id = it.id;
+        tr.dataset.ep = it._from === "fix" ? "/api/fixes" : "/api/loop-items";
+        tr.innerHTML = archRowHtml(it, it._from);
+        tb.appendChild(tr);
+      });
+      const e = document.getElementById("arc-" + k + "-empty");
+      if (e) e.style.display = rows2.length ? "none" : "block";
+    });
+    const itb = document.getElementById("tb-arc-inquiry");
+    if (itb) {
+      itb.innerHTML = "";
+      let inqs = [];
+      try {
+        const { items } = await API.get("/api/inquiries?archived=1");
+        inqs = items || [];
+      } catch (e2) {
+      }
+      inqs.forEach((it) => {
+        const tr = document.createElement("tr");
+        tr.dataset.id = it.id;
+        tr.dataset.ep = "/api/inquiries";
+        tr.innerHTML = archInqRowHtml(it);
+        itb.appendChild(tr);
+      });
+      const e = document.getElementById("arc-inquiry-empty");
+      if (e) e.style.display = inqs.length ? "none" : "block";
+    }
+  }
+  function deriveAk(dept) {
+    return dept === "SEM" ? "sem" : dept === "\u516C\u53F8" ? "company" : "seo";
+  }
+  document.addEventListener("click", async (e) => {
+    const r = e.target.closest(".arch-restore");
+    const h = e.target.closest(".arch-hard");
+    if (!r && !h) return;
+    const tr = (r || h).closest("tr");
+    if (!tr) return;
+    const id = tr.dataset.id, ep = tr.dataset.ep;
+    if (!id || !ep) return;
+    if (r) {
+      if (!inlineConfirm(r, "\u786E\u8BA4\u6062\u590D")) return;
+      try {
+        await API.post(ep + "/" + id + "/restore");
+        tr.remove();
+        if (ep === "/api/inquiries") {
+          loadInquiries();
+          loadDashboardInq();
+        }
+        toast("\u5DF2\u6062\u590D \xB7 \u8BF7\u56DE\u539F\u9875\u67E5\u770B");
+      } catch (err) {
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25");
+      }
+    } else {
+      if (!inlineConfirm(h, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
+      try {
+        await API.del(ep + "/" + id + "?hard=1");
+        tr.remove();
+        toast("\u5DF2\u5F7B\u5E95\u5220\u9664");
+      } catch (err) {
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25");
+      }
+    }
+  });
+
   // public/src/main.js
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports);
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports);
 })();

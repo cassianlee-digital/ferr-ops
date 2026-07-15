@@ -6,10 +6,14 @@
 // 已迁移（批次1·叶子）：neg-ads / ga4-view / market-brain
 // 已迁移（批次2·叶子）：kpi-view（renderKPI/loadOverview 被 index.html+kpi.js 调用）
 //                       tagselect（OPT 被 keywords.js clsOf() 裸引用，必须挂 window）
+// 已迁移（批次3·叶子）：google-projects（startGoogleAuth/backfillGoogle/syncGoogle 被动态生成的内联 onclick 调用）
+//                       archive（loadArchive 被 index.html 路由切换 + inquiries.js 调用）
 import * as negAds from './neg-ads.js';
 import * as ga4View from './ga4-view.js';
 import * as marketBrain from './market-brain.js';
 import * as kpiView from './kpi-view.js';
 import * as tagSelect from './tagselect.js';
+import * as googleProjects from './google-projects.js';
+import * as archive from './archive.js';
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive);

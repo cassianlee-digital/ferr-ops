@@ -1,6 +1,10 @@
-/* Google 接入 / 数据源状态（拆分自 index.html · 阶段2）
-   经典 script + window 全局兼容。依赖（均在调用时解析）：window.API、esc()、toast()、window.DEMO_MODE（index.html 内联）。
-   含：Google OAuth 配置状态 + 数据源只读状态卡。 */
+/* Google 接入 / 数据源状态（ES 模块 · esbuild 打包为 IIFE）。
+   运行时依赖的全局（调用时解析）：API、esc()、toast()、window.DEMO_MODE（index.html 内联）、
+   loadGa4()（已迁入本包）、loadDataFreshness()（charts.js，仍为经典脚本；已用 typeof 守卫）。
+   必须挂 window（main.js 统一处理）：
+     - startGoogleAuth/backfillGoogle/syncGoogle —— googleProviderRow() 动态生成的内联 onclick 会调用；
+     - loadDataSourcesStatus/loadIntegrations —— index.html 初始化调用。
+   INTEG_LABEL、DS_LABEL/DS_ORDER/DS_TYPE_LABEL、dsRow、dsStatusMeta、googleProviderRow 无外部引用，收进模块作用域。 */
 
 const INTEG_LABEL={gsc:'Google Search Console',ga4:'Google Analytics 4 (GA4)',ads:'Google Ads'};
 const GOOGLE_PROVIDER_ORDER=['gsc','ga4','ads'];
@@ -44,7 +48,7 @@ function dsRow(key,s){
     +`<div style="font-size:11px">${extra}</div>`
   +`</div>`;
 }
-async function loadDataSourcesStatus(){
+export async function loadDataSourcesStatus(){
   const box=document.getElementById('ds-status-rows'); if(!box)return; // 容器不存在直接返回，不报错
   const tag=document.getElementById('ds-demo-tag');
   if(tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber" style="margin-left:8px">示例模式</span>' : '';
@@ -58,7 +62,7 @@ async function loadDataSourcesStatus(){
     box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">状态获取失败</div><div class="banner-s">${esc(e&&e.message?e.message:'请求失败')}</div></div></div>`;
   }
 }
-async function loadIntegrations(){
+export async function loadIntegrations(){
   const box=document.getElementById('integ-rows'); if(!box)return;
   try{
     const r=await API.get('/api/google/status');
@@ -102,12 +106,12 @@ function googleProviderRow(provider,s,project){
   </div>`;
 }
 
-function startGoogleAuth(provider){
+export function startGoogleAuth(provider){
   location.href='/api/google/auth/start?provider='+encodeURIComponent(provider);
 }
 
 // 回补历史：默认同步只拉 7 天，早期数据从未进库 → 一键拉最近 N 天填补图表空白段
-async function backfillGoogle(provider,days,btn){
+export async function backfillGoogle(provider,days,btn){
   const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2"></i> 回补中…'; }
   try{
@@ -126,7 +130,7 @@ async function backfillGoogle(provider,days,btn){
     if(btn){ btn.disabled=false; btn.innerHTML=old; }
   }
 }
-async function syncGoogle(provider,btn){
+export async function syncGoogle(provider,btn){
   const old=btn?btn.innerHTML:'';
   if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2"></i> 同步中'; }
   try{

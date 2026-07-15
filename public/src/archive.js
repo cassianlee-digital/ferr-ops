@@ -1,8 +1,10 @@
-/* 归档②：行级归档/沉淀委托 + 归档页加载（拆分自 index.html · 阶段4-A）
-   经典 script + window 全局兼容。依赖（运行时解析，均在 index.html 内联或其他模块）：
-   window.API、esc()、toast()、inlineConfirm()（keywords.js）、persistLoop()/depRowHtml()（闭环）、
-   GRADE_BADGE（询盘录入）、loadInquiries()/loadDashboardInq()、window.ME。
-   loadArchive() 由路由切换/window load 初始化调用。 */
+/* 归档②：行级归档/沉淀委托 + 归档页加载（ES 模块 · esbuild 打包为 IIFE）。
+   运行时依赖的全局（均在事件/调用时解析，仍由经典脚本或内联提供）：
+   API、esc()、toast()、inlineConfirm()（keywords.js）、persistLoop()/depRowHtml()（closed-loop.js）、
+   GRADE_BADGE（inquiries.js）、loadInquiries()/loadDashboardInq()、window.ME。
+   仅 loadArchive 需挂 window（index.html 路由切换 + inquiries.js 调用）；
+   archRowHtml/archInqRowHtml/deriveAk 无外部引用，收进模块作用域。
+   两个 click 委托在模块求值时注册（bundle 为经典脚本，时机与旧脚本一致）。 */
 
 /* 归档②：行级「沉淀 / 归档」按钮事件委托——整改/测试/计划 通用 */
 document.addEventListener('click',async e=>{
@@ -58,7 +60,7 @@ function archInqRowHtml(it){
   const source=esc(it.source||'');
   return `<td class="archive-date num">${esc(date||'—')}</td><td class="archive-short-date num">${esc((it.date||'').slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade]||'b-gray'}">${esc(it.grade||'')}</span></td><td class="archive-channel ctr dim">${esc(it.channel||'')}</td><td class="archive-actions ctr">${ops}</td>`;
 }
-async function loadArchive(){
+export async function loadArchive(){
   // 拉两类归档：fixes 与 loop_items
   const bucket={sem:[],seo:[],company:[]};
   try{
