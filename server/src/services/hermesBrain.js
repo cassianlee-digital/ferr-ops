@@ -13,6 +13,7 @@ import * as googleRepo from '../db/repositories/googleSync.js';
 import * as loopItemsRepo from '../db/repositories/loopItems.js';
 import * as weeklyReportsRepo from '../db/repositories/weeklyReports.js';
 import { resolveProject } from '../sync/googleClient.js';
+import { findMemoryConflicts, trustedMemories } from './hermesMemoryPolicy.js';
 
 function numericValue(value) {
   const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''));
@@ -367,12 +368,6 @@ function beijingDateKey() {
   }).format(new Date());
 }
 
-function normalizedMemoryTopic(title) {
-  return String(title || '').toLowerCase()
-    .replace(/[\s\-_:：/\\]+/g, '')
-    .replace(/[^\p{L}\p{N}]/gu, '').slice(0, 80);
-}
-
 function actionStatus(row) {
   return String(row?.status || '').trim().toLowerCase();
 }
@@ -396,37 +391,7 @@ function recentReportCutoff(today) {
 }
 
 export function buildClosureAudit({ memories = [], actions = [], reports = [], today = beijingDateKey() } = {}) {
-  const memoryGroups = new Map();
-  for (const memory of Array.isArray(memories) ? memories : []) {
-    const source = String(memory?.source || '');
-    if (/^hermes_(daily_learning|morning_brief)/i.test(source)) continue;
-    const topic = normalizedMemoryTopic(memory?.title);
-    if (!topic) continue;
-    const group = memoryGroups.get(topic) || [];
-    group.push(memory);
-    memoryGroups.set(topic, group);
-  }
-
-  const memoryConflicts = [];
-  for (const [topic, group] of memoryGroups) {
-    const contents = new Set(group.map((memory) => String(memory?.content || '').trim()).filter(Boolean));
-    if (group.length < 2 || contents.size < 2) continue;
-    memoryConflicts.push({
-      topic,
-      memoryIds: group.map((memory) => memory.id).filter(Boolean),
-      titles: group.map((memory) => String(memory.title || '').trim()).filter(Boolean),
-      candidates: group.map((memory) => ({
-        id: memory.id,
-        title: String(memory.title || '').trim(),
-        content: String(memory.content || '').trim(),
-        evidence: String(memory.evidence || '').trim(),
-        source: String(memory.source || '').trim(),
-        updatedAt: memory.updated_at || memory.created_at || '',
-        importance: memory.importance,
-      })),
-      reason: '同一主题存在多条内容不同的活动记忆，需要确认哪一条仍然有效。',
-    });
-  }
+  const memoryConflicts = findMemoryConflicts(memories);
 
   const actionRows = (Array.isArray(actions) ? actions : []).filter((row) => row?.state !== 'deleted');
   const completedActions = actionRows.filter((row) => COMPLETED_ACTION_STATUSES.has(actionStatus(row)));
@@ -481,7 +446,7 @@ export function buildClosureAudit({ memories = [], actions = [], reports = [], t
   }));
 
   const issueCount = memoryConflicts.length + overdueActions.length + unverifiedActions.length + reviewGaps.length;
-  const hasRecords = memoryGroups.size > 0 || actionRows.length > 0 || reportRows.length > 0;
+  const hasRecords = (Array.isArray(memories) && memories.length > 0) || actionRows.length > 0 || reportRows.length > 0;
   return {
     generatedAt: new Date().toISOString(),
     status: !hasRecords ? 'no_data' : issueCount ? 'blocked' : 'clear',
@@ -541,6 +506,7 @@ export function buildEnterpriseMemory() {
     missing.push('weekly_reports');
   }
 
+  const closureAudit = buildClosureAudit({ memories: longTermMemories, actions, reports });
   return {
     generatedAt: new Date().toISOString(),
     purpose: 'Long-lived enterprise memory for Hermes. Use this before generic marketing assumptions.',
@@ -557,7 +523,8 @@ export function buildEnterpriseMemory() {
       instruction: 'Use market research rows as customer/ICP evidence. Do not quote rows not present in this payload.',
     },
     longTermMemories,
-    closureAudit: buildClosureAudit({ memories: longTermMemories, actions, reports }),
+    trustedLongTermMemories: trustedMemories(longTermMemories, closureAudit.memoryConflicts),
+    closureAudit,
     missingData: missing,
   };
 }

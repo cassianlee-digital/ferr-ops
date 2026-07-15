@@ -709,7 +709,7 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     responseStyle: RESPONSE_STYLE,
     enterpriseMemory: {
       marketBrain: memory.marketBrain,
-      longTermMemories: memory.longTermMemories,
+      longTermMemories: memory.trustedLongTermMemories || memory.longTermMemories,
       missingData: memory.missingData,
     },
     assistantPlaybook: context.assistantPlaybook,
@@ -760,7 +760,7 @@ function morningBriefPrompt(context) {
     missingData: [...new Set(missing)],
     enterpriseMemory: {
       marketBrain: memory.marketBrain,
-      longTermMemories: memory.longTermMemories,
+      longTermMemories: memory.trustedLongTermMemories || memory.longTermMemories,
     },
     backendContext: trimText(context.context, 12000),
   };
@@ -963,7 +963,7 @@ function contextPayload(request, options = {}) {
         'Use opsDiagnosis.evidencePack ids as citation anchors before giving recommendations.',
         'If dataRefresh exists, report the requested range and sync result accurately; synced with rowsWritten=0 means no rows were written, not that business data exists.',
         'Unsupported claims must be labeled as assumptions, risks, or missing data.',
-        'Use enterpriseMemory.marketBrain and enterpriseMemory.longTermMemories as FERR company/customer background.',
+        'Use enterpriseMemory.longTermMemories as FERR company/customer background. Conflicting memories are excluded until a human confirms the valid candidate.',
         'Use closureAudit as a read-only control report: do not silently choose between conflicting memories, do not call an action closed without a result and verification metric, and surface overdue actions or missing review sections when relevant.',
         'Market Analysis is first-party business research. Treat it as higher priority than generic web/LLM knowledge.',
         'The system can persist a daily learning memory via /api/hermes/memories/daily-learning so future analysis becomes more company-specific.',
@@ -1077,7 +1077,7 @@ export async function hermesRoutes(app) {
         mode: 'ferr_hermes_morning_brief',
         skill: { id: 'auto', label: '今日早报' },
         workflow: { id: 'diagnose_to_action', label: '诊断到动作' },
-        usedMemory: Boolean(context.enterpriseMemory?.longTermMemories?.length),
+        usedMemory: Boolean((context.enterpriseMemory?.trustedLongTermMemories || context.enterpriseMemory?.longTermMemories)?.length),
         usedPageContext: Boolean(context.pageContext),
         missingData,
         dataGapTasks: buildDataGapTasks(missingData),
@@ -1224,7 +1224,7 @@ export async function hermesRoutes(app) {
         mode: 'ferr_hermes_gateway',
         skill: { id: skillKey, label: HERMES_SKILLS[skillKey].label },
         workflow: { id: workflowKey, label: HERMES_WORKFLOWS[workflowKey].label },
-        usedMemory: Boolean(context.enterpriseMemory?.longTermMemories?.length),
+        usedMemory: Boolean((context.enterpriseMemory?.trustedLongTermMemories || context.enterpriseMemory?.longTermMemories)?.length),
         usedPageContext: Boolean(context.pageContext),
         missingData: [
           ...(context.opsDiagnosis?.missingData || []),
