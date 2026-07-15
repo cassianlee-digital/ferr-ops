@@ -1,6 +1,11 @@
-/* Inquiry distribution world map.
+/* Inquiry distribution world map（ES 模块 · esbuild 打包为 IIFE）。
    Entry stays renderGlobe(); data still comes from window._inqCache.
-   The world base map is real GeoJSON loaded at runtime, not a hand-drawn sketch. */
+   The world base map is real GeoJSON loaded at runtime, not a hand-drawn sketch.
+
+   迁移说明：唯一入口 renderGlobe 由 main.js 挂到 window —— inquiries.js:32 与 index.html:1109/1195 真实调用它。
+   其余 20 个符号（COUNTRY_GEO/COUNTRY_ALIAS/collectMapData/tooltipHtml/ensureWorldMap/... ）经审计无任何外部引用，
+   全部收进模块作用域（index.html:1146 提到 COUNTRY_GEO 只是注释）。
+   本模块无加载期副作用，且用 window.echarts 显式取图表库，不依赖裸全局。 */
 
 const QINGDAO = [120.38, 36.07];
 const WORLD_MAP_NAME = 'ferrWorld';
@@ -171,7 +176,7 @@ function bindResize(){
   });
 }
 
-async function renderGlobe(){
+export async function renderGlobe(){
   const el = document.getElementById('inqGlobe');
   if (!el) return;
 

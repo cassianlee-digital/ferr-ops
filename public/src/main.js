@@ -25,5 +25,8 @@ import * as sop from './sop.js';
 //                   hermes-memory（原就是 IIFE+显式挂全局的干净写法，5 个导出正是内联 onclick 所用）
 import * as keywords from './keywords.js';
 import * as hermesMemory from './hermes-memory.js';
+// 已迁移（批次6）：inquiry-globe（唯一入口 renderGlobe 被 inquiries.js:32 / index.html:1109,1195 调用；
+//                                其余 20 个符号无外部引用，已全部收进模块作用域）
+import * as inquiryGlobe from './inquiry-globe.js';
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe);
