@@ -1,10 +1,12 @@
-/* 彩色标签下拉 tag-select（拆分自 index.html · 阶段4-B）
-   经典 script + window 全局兼容。依赖（运行时解析）：window.API、toast()、
-   inqRowHtml()/isUpgraded()/window._inqCache（inquiries.js）。OPT 被 keywords.js clsOf() 运行时引用。
-   注：const menu=getElementById('selMenu') 在脚本加载时执行——#selMenu 在 body(行 ~577) 已先于本脚本解析，安全。 */
+/* 彩色标签下拉 tag-select（ES 模块 · esbuild 打包为 IIFE）。
+   运行时依赖的全局（事件时解析）：API、toast()、inqRowHtml()/isUpgraded()/window._inqCache（inquiries.js）。
+   OPT 必须挂到 window：keywords.js 的 clsOf() 裸引用它（原为经典脚本的词法全局）。
+   menu/curSel 已证无外部引用，收进模块作用域。
+   注：const menu=getElementById('selMenu') 在模块求值时执行——bundle 以经典 <script> 加载且位于 body 之后，
+       #selMenu 早已解析，安全（与旧脚本同一时机语义）。 */
 
 /* ---------- colored tag-select ---------- */
-const OPT={
+export const OPT={
  channel:[['SEO自然','b-blue'],['SEM付费','b-purple'],['直接','b-teal'],['其他','b-gray']],
  product:[['铸造','b-amber'],['锻造','b-red'],['机加工','b-blue'],['阀门','b-purple'],['管件','b-teal']],
  status:[['待开始','b-gray'],['进行中','b-amber'],['已完成','b-green']],
@@ -36,7 +38,7 @@ document.addEventListener('click',e=>{
   menu.style.display='none';
 });
 /* 否词/广告创意 的匹配方式/状态变更 → PATCH 入库（其余表的标签变更后续步骤再接）*/
-async function persistTagChange(el,value){
+export async function persistTagChange(el,value){
   const kind=el.dataset.kind; const tr=el.closest('tr'); const id=tr&&tr.dataset.id; if(!id)return;
   // 关键词库行：写入 attrs
   if(tr.dataset.kwType){

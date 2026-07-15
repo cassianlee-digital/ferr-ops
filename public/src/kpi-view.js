@@ -1,14 +1,15 @@
-/* KPI 看板渲染（拆分自 index.html · 阶段4-B）
-   经典 script + window 全局兼容。依赖（运行时解析）：esc()、window.API、
-   ratio()/recomputeScores()/TOTAL/SEO/SEM/company/liScore/chenScore（kpi.js）。
-   renderKPI()/loadOverview() 由 window load 初始化、kpi.js 周报录入在运行时调用。 */
+/* KPI 看板渲染（ES 模块 · esbuild 打包为 IIFE）。
+   运行时依赖的全局（调用时解析，非加载期）：esc()、API（index.html 内联）、
+   ratio()/recomputeScores()/TOTAL/SEO/SEM/company/liScore/chenScore（kpi.js，仍为经典脚本）。
+   导出由 main.js 挂到 window：renderKPI/loadOverview 有真实外部调用方（index.html、kpi.js），
+   其余保持与旧全局脚本一致的暴露面，确保零行为差异。 */
 
-function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-soft)',i:'ti-trophy'};if(s>=75)return{t:'合格',c:'var(--blue)',bg:'var(--blue-soft)',i:'ti-circle-check'};if(s>=60)return{t:'警告',c:'var(--amber)',bg:'var(--amber-soft)',i:'ti-alert-triangle'};return{t:'整改',c:'var(--primary)',bg:'var(--primary-soft)',i:'ti-flame'};}
-function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
-function badge(id,score){const b=document.getElementById(id);if(!b)return;const g=grade(score);b.style.background=g.bg;b.style.color=g.c;b.innerHTML='<i class="ti '+g.i+'"></i> '+g.t;}
-function fmt(k,v){return k.u==='¥'?'¥'+v.toLocaleString():k.u==='%'?v+'%':k.u===''?v:v+k.u;}
-function rows(arr,box){const el=document.getElementById(box);if(!el)return;el.innerHTML=arr.map(k=>{const r=ratio(k),col=r>=.9?'var(--green)':r>=.7?'var(--blue)':r>=.5?'var(--amber)':'var(--primary)';return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11.5px"><div style="flex:1"><div style="font-weight:600">${esc(k.n)}</div><div style="color:var(--text3);font-size:10px">目标 ${fmt(k,k.t)} · 实际 ${fmt(k,k.a)}</div></div><div style="width:64px"><div class="progress-bar"><div class="progress-fill" style="width:${r*100}%;background:${col}"></div></div></div><div style="width:30px;text-align:right;font-weight:800;color:${col}">${Math.round(r*100)}</div></div>`;}).join('');}
-function mini(ov){
+export function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-soft)',i:'ti-trophy'};if(s>=75)return{t:'合格',c:'var(--blue)',bg:'var(--blue-soft)',i:'ti-circle-check'};if(s>=60)return{t:'警告',c:'var(--amber)',bg:'var(--amber-soft)',i:'ti-alert-triangle'};return{t:'整改',c:'var(--primary)',bg:'var(--primary-soft)',i:'ti-flame'};}
+export function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
+export function badge(id,score){const b=document.getElementById(id);if(!b)return;const g=grade(score);b.style.background=g.bg;b.style.color=g.c;b.innerHTML='<i class="ti '+g.i+'"></i> '+g.t;}
+export function fmt(k,v){return k.u==='¥'?'¥'+v.toLocaleString():k.u==='%'?v+'%':k.u===''?v:v+k.u;}
+export function rows(arr,box){const el=document.getElementById(box);if(!el)return;el.innerHTML=arr.map(k=>{const r=ratio(k),col=r>=.9?'var(--green)':r>=.7?'var(--blue)':r>=.5?'var(--amber)':'var(--primary)';return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11.5px"><div style="flex:1"><div style="font-weight:600">${esc(k.n)}</div><div style="color:var(--text3);font-size:10px">目标 ${fmt(k,k.t)} · 实际 ${fmt(k,k.a)}</div></div><div style="width:64px"><div class="progress-bar"><div class="progress-fill" style="width:${r*100}%;background:${col}"></div></div></div><div style="width:30px;text-align:right;font-weight:800;color:${col}">${Math.round(r*100)}</div></div>`;}).join('');}
+export function mini(ov){
   ov=ov||{current:{}}; const c=ov.current||{}; const d=ov.delta||{};
   const momTxt=(v)=> v==null?'':(v>0?'▲'+v:(v<0?'▼'+Math.abs(v):'—'));
   const m=[['有效询盘', (c.valid??'—'), '', ''],
@@ -18,7 +19,7 @@ function mini(ov){
   el.innerHTML=m.map(x=>`<div style="background:var(--bg3);border-radius:9px;padding:9px 10px"><div style="font-size:10px;color:var(--text3)">${x[0]}</div><div style="font-size:16px;font-weight:800;margin-top:2px">${x[1]}<span style="font-size:10px;color:var(--text3);font-weight:500">${x[2]}</span> <span style="font-size:10px;font-weight:700;color:${(x[3]||'').startsWith('▲')?'var(--green)':((x[3]||'').startsWith('▼')?'var(--primary)':'var(--text3)')}">${x[3]||''}</span></div></div>`).join('');
 }
 /* 总览：拉真实数据 + 与上月环比，更新顶栏与表盘旁的环比 */
-async function loadOverview(){
+export async function loadOverview(){
   try{
     const ov=await API.get('/api/overview'); const c=ov.current||{}, d=ov.delta||{};
     const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
@@ -38,7 +39,7 @@ async function loadOverview(){
   }catch(e){ mini(); }
 }
 /* 任何目标/实际变动后，一处重算+重渲染所有考核展示 */
-function renderKPI(){
+export function renderKPI(){
   recomputeScores();
   rows(TOTAL,'totalRows');rows(SEO,'seoRows');rows(SEM,'semRows');
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
