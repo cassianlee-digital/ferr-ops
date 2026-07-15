@@ -164,3 +164,17 @@
 - 不再所有逻辑塞进一个 HTML
 - 后续修改只需读相关模块
 - token 消耗下降
+
+### 进度与真实状态(2026-07-15 实测)
+
+- **CSS 拆分:已完成**。index.html 内联 `<style>` **已清零**,拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`(重写工程见记忆 `css-rewrite-plan`)。
+- **JS 模块化:进行中**,绞杀式,已迁 12 个模块进 `public/src/*.js`(esbuild → `dist/bundle.js`)。**确有实效**:inquiry-globe 21 个顶层符号 → 1 个导出,净减 20 个全局。
+- **但这条路有地板,必须知道**:157 个内联 `onclick`/`onchange` 裸调用 **77 个全局函数名**,`onclick="foo()"` 点击时才从 `window` 查 `foo`。**迁完所有模块,这 77 个仍必须挂在 `window` 上**(`src/main.js` 的 `Object.assign(window, …)` 即此兼容层)。详见 `CLAUDE.md`「前端全局面与模块化地板」。
+
+**下一步的选择(别默认「再迁两个模块」)**
+
+1. **继续迁剩余模块** —— 收益真实但递减,把全局面从 ~285 压向 77 的地板。
+2. **事件委托(拆地板)** —— `document` 上一个监听器 + `data-action` 属性,替掉 157 个内联 handler。**这是唯一能让全局降到 77 以下的路**,也是唯一能让「改函数名有编译期报错」的路。改动面大(157 处 + index.html),但一次性。
+3. 两者可并行:迁模块时顺手把该模块相关的内联 handler 换成 `data-action`,避免二次翻工。
+
+**建议**:新迁模块时优先做 3(边迁边换),不要迁完再回头补 —— 否则 77 个名字会随迁移不断被 `Object.assign` 重新钉死在 window 上。
