@@ -1193,7 +1193,7 @@ export async function hermesRoutes(app) {
 
     const skillKey = safeChoice(request.body?.skill, HERMES_SKILLS, 'auto');
     const workflowKey = safeChoice(request.body?.workflow, HERMES_WORKFLOWS, 'answer');
-    const attachments = cleanAiAttachments(request.body?.attachments);
+    const attachments = await cleanAiAttachments(request.body?.attachments);
     const requestedConversationId = Number(request.body?.conversationId || 0);
     const existingConversation = requestedConversationId
       ? hermesConversationRepo.getForUser(requestedConversationId, userId)

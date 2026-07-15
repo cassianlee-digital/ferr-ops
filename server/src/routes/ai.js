@@ -72,7 +72,7 @@ export async function aiRoutes(app) {
   app.post('/api/ai', { preHandler: requireAuth }, async (request, reply) => {
     const prompt = s(request.body?.prompt, AI_PROMPT_LIMIT);
     if (!prompt) return reply.code(400).send({ error: 'prompt_required' });
-    const attachments = cleanAiAttachments(request.body?.attachments);
+    const attachments = await cleanAiAttachments(request.body?.attachments);
     const fullPrompt = prompt + attachmentPromptBlock(attachments);
     try {
       const text = await callAnthropic(buildSystem(), fullPrompt, { attachments });

@@ -21,7 +21,8 @@ async function main() {
 
   const app = Fastify({
     logger: { level: config.env === 'production' ? 'info' : 'debug' },
-    bodyLimit: 2_500_000,
+    // Hermes attachments are capped at 8MB raw per request; allow Base64 and JSON overhead.
+    bodyLimit: 16_000_000,
     trustProxy: true, // 位于 Caddy 反代之后
   });
 

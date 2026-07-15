@@ -21,6 +21,8 @@
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.3.0",
     "dotenv": "^16.4.5",
-    "fastify": "^4.28.1"
+    "fastify": "^4.28.1",
+    "pdf-parse": "^1.1.1",
+    "xlsx": "^0.18.5"
   }
 }

@@ -7,6 +7,7 @@
   const MAX_HISTORY = 8;
   const MAX_ATTACHMENTS = 5;
   const MAX_TEXT_CHARS = 10000;
+  const MAX_DOCUMENT_BYTES = 8 * 1024 * 1024;
   const MAX_IMAGE_SIDE = 1280;
   const MAX_IMAGE_DATA_URL = 850000;
   const IMAGE_QUALITY = 0.76;
@@ -209,6 +210,18 @@
     });
   }
 
+  function readBinaryFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const value = String(reader.result || '');
+        resolve(value.includes(',') ? value.slice(value.indexOf(',') + 1) : value);
+      };
+      reader.onerror = () => reject(reader.error || new Error('read_failed'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   function loadImage(url) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -243,7 +256,7 @@
 
   function unsupportedReason(file) {
     const ext = extName(file.name).toUpperCase() || (file.type || 'unknown');
-    if (['PDF', 'XLS', 'XLSX'].includes(ext)) return ext + ' 内容解析未接入，本阶段不会把它当作已分析证据。';
+    if (['PDF', 'XLS', 'XLSX'].includes(ext)) return ext + ' 内容解析失败，本次不会把它当作已分析证据。';
     return '暂不支持该文件类型。';
   }
 
@@ -260,6 +273,16 @@
     if (isTextFile(file)) {
       return { ...base, kind: 'text', textContent: await readTextFile(file), note: '文本内容已读取。' };
     }
+    const ext = extName(file.name).toLowerCase();
+    if (['pdf', 'xls', 'xlsx'].includes(ext)) {
+      if (file.size > MAX_DOCUMENT_BYTES) throw new Error('文件超过 8MB 限制');
+      return {
+        ...base,
+        kind: 'document',
+        fileDataBase64: await readBinaryFile(file),
+        note: '将由服务端解析后再交给模型。',
+      };
+    }
     return { ...base, kind: 'unsupported', note: unsupportedReason(file) };
   }
 
@@ -273,6 +296,7 @@
         kind: item.kind,
         textContent: item.kind === 'text' ? item.textContent : undefined,
         imageDataUrl: item.kind === 'image' ? item.imageDataUrl : undefined,
+        fileDataBase64: item.kind === 'document' ? item.fileDataBase64 : undefined,
       }));
   }
 

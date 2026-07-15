@@ -1,3 +1,5 @@
+import { MAX_TOTAL_DOCUMENT_BYTES, parseDocumentAttachment } from './documentParser.js';
+
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_TEXT = 10000;
 const MAX_TOTAL_ATTACHMENT_TEXT = 20000;
@@ -6,11 +8,13 @@ const MAX_IMAGE_DATA_URL = 900000;
 
 const s = (v, n = 4000) => (v == null ? '' : String(v).slice(0, n));
 
-export function cleanAiAttachments(raw) {
+export async function cleanAiAttachments(raw) {
   const items = Array.isArray(raw) ? raw.slice(0, MAX_ATTACHMENTS) : [];
   let textBudget = MAX_TOTAL_ATTACHMENT_TEXT;
+  let documentBudget = MAX_TOTAL_DOCUMENT_BYTES;
   let imageCount = 0;
-  return items.map((item) => {
+  const result = [];
+  for (const item of items) {
     const base = {
       name: s(item?.name, 160) || 'unnamed',
       type: s(item?.type, 80),
@@ -20,17 +24,39 @@ export function cleanAiAttachments(raw) {
     if (base.kind === 'text' && textBudget > 0) {
       const text = s(item?.textContent, Math.min(MAX_ATTACHMENT_TEXT, textBudget));
       textBudget -= text.length;
-      return { ...base, textContent: text };
+      result.push({ ...base, textContent: text });
+      continue;
     }
     if (base.kind === 'image' && imageCount < MAX_IMAGES) {
       const dataUrl = s(item?.imageDataUrl, MAX_IMAGE_DATA_URL);
       if (/^data:image\/(?:jpeg|png|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(dataUrl)) {
         imageCount += 1;
-        return { ...base, imageDataUrl: dataUrl.replace(/\s/g, '') };
+        result.push({ ...base, imageDataUrl: dataUrl.replace(/\s/g, '') });
+        continue;
       }
     }
-    return { ...base, kind: 'unsupported' };
-  });
+    if (base.kind === 'document') {
+      const encoded = String(item?.fileDataBase64 || '').replace(/^data:[^;]+;base64,/, '').replace(/\s/g, '');
+      const estimatedBytes = encoded ? Math.floor((encoded.length * 3) / 4) : 0;
+      if (!estimatedBytes || estimatedBytes > documentBudget) {
+        result.push({ ...base, kind: 'unsupported', parseError: 'document_total_too_large' });
+        continue;
+      }
+      try {
+        const parsed = await parseDocumentAttachment(item);
+        documentBudget -= estimatedBytes;
+        const text = textBudget > 0 ? parsed.textContent.slice(0, Math.min(MAX_ATTACHMENT_TEXT, textBudget)) : '';
+        textBudget -= text.length;
+        result.push({ ...base, kind: 'text', sourceKind: parsed.format, textContent: text });
+        continue;
+      } catch (error) {
+        result.push({ ...base, kind: 'unsupported', parseError: error.message || 'document_parse_failed' });
+        continue;
+      }
+    }
+    result.push({ ...base, kind: 'unsupported' });
+  }
+  return result;
 }
 
 export function attachmentPromptBlock(attachments) {
