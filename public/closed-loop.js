@@ -120,7 +120,7 @@ async function submitTask(){
     if(urgent)loadUrgent(); // Step C：紧急任务即时刷 banner
   }catch(e){ toast(persistFailMsg(e)); }
 }
-function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>card.remove()).catch(()=>toast('删除失败')); }
+function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>card.remove()).catch(e=>toast('删除失败：'+(e.message||'请求失败'))); }
 async function addFixRow(){
   const s=sFromDept('SEO');
   try{
@@ -134,7 +134,10 @@ async function addFixRow(){
 function sFromDept(dept){return dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};}
 function persistFix(s,text){return API.post('/api/fixes',{title:clip(text,24),dept:s.dept,detail:text,owner:s.owner,due_date:formatLocalDate(new Date(Date.now()+7*864e5)),status:'计划下周',source:'AI诊断'});}
 function persistLoop(kind,s,content,status){return API.post('/api/loop-items',{kind,dept:s.dept,content,owner:s.owner,status:status||''});}
-function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库';}
+// 全站最常用的失败文案（11 处复用：ai/charts/closed-loop/weekly-review）。403 有专属文案；
+// 其余必须带上后端给的原因（api.js 已把 400 的 detail 放进 e.message，如「字段 due_date 需要字符串」），
+// 否则用户只看到「保存失败」，违背 CLAUDE.md「API 失败必须显示失败原因」。
+function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库：'+((e&&e.message)||'请求失败');}
 async function loadClosedLoop(){
   // BUG-28：重建已采纳/沉淀/测试指纹集（每次加载先清空，避免残留）
   window._aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
@@ -172,9 +175,9 @@ async function addDepositRow(){
   try{ const {item}=await API.post('/api/loop-items',{kind:'deposit',content:'',status:'沉淀'});
     const tb=document.getElementById('tb-dep'); const tr=document.createElement('tr'); tr.dataset.id=item.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(item); tb.insertBefore(tr,tb.firstChild);
     document.getElementById('dep-empty').style.display='none'; const c=tr.querySelector('[data-field="content"]'); if(c){c.focus();}
-  }catch(e){ toast(e.status===403?'无权操作':'保存失败'); }
+  }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+(e.message||'请求失败')); }
 }
-function depDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-dep'); if(tb&&!tb.children.length)document.getElementById('dep-empty').style.display='block';}).catch(e=>toast('删除失败')); }
+function depDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-dep'); if(tb&&!tb.children.length)document.getElementById('dep-empty').style.display='block';}).catch(e=>toast('删除失败：'+(e.message||'请求失败'))); }
 async function addPlanRow(dept){
   const s=sFromDept(dept);
   try{
@@ -217,9 +220,9 @@ async function loadContent(){
 async function addContent(){
   try{ const {item}=await API.post('/api/content-assets',{}); const tb=document.getElementById('tb-content'); const tr=document.createElement('tr'); tr.dataset.id=item.id; tr.dataset.ep='/api/content-assets'; tr.innerHTML=contentRowHtml(item); tb.appendChild(tr);
     document.getElementById('content-empty').style.display='none'; const c=tr.querySelector('[data-field="name"]'); if(c){c.focus();placeCaretEnd(c);}
-  }catch(e){ toast(e.status===403?'无权操作':'保存失败'); }
+  }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+(e.message||'请求失败')); }
 }
-function contentDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/content-assets/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-content'); if(tb&&!tb.children.length)document.getElementById('content-empty').style.display='block';}).catch(e=>toast('删除失败')); }
+function contentDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/content-assets/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-content'); if(tb&&!tb.children.length)document.getElementById('content-empty').style.display='block';}).catch(e=>toast('删除失败：'+(e.message||'请求失败'))); }
 
 /* AI 三连: 沉淀→沉淀表 / 采纳→整改清单+沉淀表 / 测试→测试登记
    BUG-28：刷新后保持「已点」灰态——按 dept|文本前200 指纹反查 fixes+loop_items 缓存(纯前端、无后端改) */

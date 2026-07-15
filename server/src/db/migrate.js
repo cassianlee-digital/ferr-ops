@@ -614,7 +614,9 @@ export function dropAllTables() {
 
 // 跨平台入口判断：Windows 下 process.argv[1] 是反斜杠/含空格的路径，
 // 直接拼 `file://` 与 import.meta.url 永远不相等，故用 pathToFileURL 归一化。
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+// argv[1] 判空不能省：`node -e` / REPL / 嵌入式场景下它是 undefined，
+// pathToFileURL(undefined) 会抛 ERR_INVALID_ARG_TYPE，导致「import 本模块」直接崩。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (process.argv.includes('--reset')) {
     // 显式清库重建：需 CONFIRM_RESET=1 双重确认，且先自动在线备份，绝不可被误触发。
     if (process.env.CONFIRM_RESET !== '1') {

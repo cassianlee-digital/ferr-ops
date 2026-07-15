@@ -415,7 +415,7 @@
       try {
         await API.patch("/api/keywords/" + id, { attrs: { [attrKey]: value } });
       } catch (err) {
-        toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25");
+        toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
       return;
     }
@@ -456,7 +456,7 @@
         toast("\u5DF2\u5B8C\u6210 \xB7 \u5DF2\u81EA\u52A8\u5F52\u6863");
       }
     } catch (err) {
-      toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25");
+      toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
 
@@ -632,7 +632,7 @@
         toast("\u5DF2\u5F52\u6863");
       } catch (err) {
         arc.disabled = false;
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5F52\u6863\u5931\u8D25");
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5F52\u6863\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     } else if (dep) {
       dep.disabled = true;
@@ -653,7 +653,7 @@
         toast("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93");
       } catch (err) {
         dep.disabled = false;
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6C89\u6DC0\u5931\u8D25");
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6C89\u6DC0\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     }
   });
@@ -749,7 +749,7 @@
         }
         toast("\u5DF2\u6062\u590D \xB7 \u8BF7\u56DE\u539F\u9875\u67E5\u770B");
       } catch (err) {
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25");
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     } else {
       if (!inlineConfirm(h, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
@@ -758,7 +758,7 @@
         tr.remove();
         toast("\u5DF2\u5F7B\u5E95\u5220\u9664");
       } catch (err) {
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25");
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     }
   });
@@ -1181,7 +1181,7 @@
         toast("\u5DF2\u505C\u7528");
         await loadSops();
       } catch (err) {
-        toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u64CD\u4F5C\u5931\u8D25");
+        toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u64CD\u4F5C\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     }
   });
@@ -1533,7 +1533,7 @@
         btn.innerHTML = btn.dataset.old;
         btn.classList.remove("confirming");
       }
-      toast(e.status === 403 ? "\u65E0\u6743\u5220\u9664\uFF08\u8BE5\u8BCD\u5E93\u975E\u4F60\u8D1F\u8D23\uFF09" : "\u5220\u9664\u5931\u8D25");
+      toast(e.status === 403 ? "\u65E0\u6743\u5220\u9664\uFF08\u8BE5\u8BCD\u5E93\u975E\u4F60\u8D1F\u8D23\uFF09" : "\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
   document.addEventListener("click", (e) => {

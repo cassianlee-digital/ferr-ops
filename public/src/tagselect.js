@@ -43,7 +43,7 @@ export async function persistTagChange(el,value){
   // 关键词库行：写入 attrs
   if(tr.dataset.kwType){
     const attrKey={comp:'comp',optstatus:'optstatus',match:'match',priority:'priority',intent:'searchIntent'}[kind]; if(!attrKey)return;
-    try{ await API.patch('/api/keywords/'+id,{attrs:{[attrKey]:value}}); }catch(err){ toast(err.status===403?'无权修改':'保存失败'); }
+    try{ await API.patch('/api/keywords/'+id,{attrs:{[attrKey]:value}}); }catch(err){ toast(err.status===403?'无权修改':'保存失败：'+(err.message||'请求失败')); }
     return;
   }
   // 任意带 data-ep 的行：标签 kind → 字段名 通用映射
@@ -72,5 +72,5 @@ export async function persistTagChange(el,value){
       await API.post(ep+'/'+id+'/archive',{archive_kind:ak});
       tr.remove(); toast('已完成 · 已自动归档');
     }
-  }catch(err){ toast(err.status===403?'无权修改':'保存失败'); }
+  }catch(err){ toast(err.status===403?'无权修改':'保存失败：'+(err.message||'请求失败')); }
 }

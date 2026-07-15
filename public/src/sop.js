@@ -139,7 +139,7 @@ document.addEventListener('click',async e=>{
   if(del){
     if(!inlineConfirm(del,'确认停用'))return;
     try{ await API.del('/api/sop/'+id); toast('已停用'); await loadSops(); }
-    catch(err){ toast(err&&err.status===403?'无权操作（仅经理/老板）':'操作失败'); }
+    catch(err){ toast(err&&err.status===403?'无权操作（仅经理/老板）':'操作失败：'+(err.message||'请求失败')); }
   }
 });
 

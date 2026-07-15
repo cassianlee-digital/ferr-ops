@@ -98,7 +98,7 @@ document.addEventListener('click',async e=>{
     loadDashboardInq();      // 总览当月趋势同步
     if(window._curTab==='archive'){try{loadArchive();}catch(_){}}
     toast('已删除 · 已归档到「归档」页');
-  }catch(err){ toast(err&&err.status===403?'无权操作':'删除失败'); }
+  }catch(err){ toast(err&&err.status===403?'无权操作':'删除失败：'+(err.message||'请求失败')); }
 });
 /* 明细表(下方)：只渲染「之前月份」，当月不在此显示（当月见上方「最新询盘」表）。
    历史月份按月分组、默认折叠（点月份条展开/收起）。*/

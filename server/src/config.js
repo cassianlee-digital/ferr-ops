@@ -25,8 +25,10 @@ export const config = {
   port: Number(process.env.PORT || 3000),
   host: '0.0.0.0',
 
-  // 数据库文件路径（容器内挂载到 /app/data）
-  dbFile: resolve(__dirname, '../../data/ferr.sqlite'),
+  // 数据库文件路径（容器内挂载到 /app/data）。
+  // DB_FILE 可覆盖：路由测试据此指向临时库，避免冒烟测试写进真实开发库
+  // （connection.js 在 import 期就打开 config.dbFile，故测试必须在 import 前设好此环境变量）。
+  dbFile: process.env.DB_FILE ? resolve(process.env.DB_FILE) : resolve(__dirname, '../../data/ferr.sqlite'),
 
   jwtSecret: required('JWT_SECRET', 'dev-insecure-secret-change-me'),
   sessionHours: Number(process.env.SESSION_HOURS || 72),

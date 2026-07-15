@@ -154,7 +154,7 @@ export async function kwDelete(tr,btn){
   }
   if(btn)clearTimeout(btn._t);
   try{ const type=tr.dataset.kwType; await API.del('/api/keywords/'+tr.dataset.id); tr.remove(); if(type==='seo'||type==='sem')renderCatTabs(type); else applyKwPaging(type); toast('已删除 · 已入库'); }
-  catch(e){ if(btn){ btn.dataset.confirm=''; btn.innerHTML=btn.dataset.old; btn.classList.remove('confirming'); } toast(e.status===403?'无权删除（该词库非你负责）':'删除失败'); }
+  catch(e){ if(btn){ btn.dataset.confirm=''; btn.innerHTML=btn.dataset.old; btn.classList.remove('confirming'); } toast(e.status===403?'无权删除（该词库非你负责）':'删除失败：'+(e.message||'请求失败')); }
 }
 /* 关键词行：AI 按钮 / 删除 / 词文本编辑 委托处理 */
 document.addEventListener('click',e=>{

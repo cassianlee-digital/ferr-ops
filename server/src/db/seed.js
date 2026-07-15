@@ -84,8 +84,8 @@ export function seed() {
   ).run();
 }
 
-// 跨平台入口判断（见 migrate.js 同款说明）：用 pathToFileURL 归一化 Windows 路径。
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+// 跨平台入口判断（见 migrate.js 同款说明）：用 pathToFileURL 归一化 Windows 路径 + argv[1] 判空。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   seed();
   console.log('[seed] 完成');
 }

@@ -16,7 +16,11 @@
     if (!res.ok) {
       let e = null;
       try { e = await res.json(); } catch {}
-      const err = new Error((e && e.error) || 'HTTP ' + res.status);
+      // 优先用 detail 当错误文案：后端 400（含 updateById 类型闸门，如「字段 due_date 需要字符串，
+      // 收到 number(99999999)」）、AI 502、Google 授权被拒都会带 detail，它比 error 码
+      // （bad_request / ai_failed）对用户有用得多。缺 detail 才退回 error 码，再退回 HTTP 状态。
+      // 原始响应仍挂在 err.body 上，需要判错误码的调用方读 err.body.error / err.status。
+      const err = new Error((e && (e.detail || e.error)) || 'HTTP ' + res.status);
       err.status = res.status; err.body = e;
       throw err;
     }

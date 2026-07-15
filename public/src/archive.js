@@ -25,7 +25,7 @@ document.addEventListener('click',async e=>{
     if(!inlineConfirm(arc,'确认归档'))return;
     arc.disabled=true;
     try{ await API.post(ep+'/'+id+'/archive',{archive_kind:ak}); tr.remove(); toast('已归档'); }
-    catch(err){ arc.disabled=false; toast(err.status===403?'无权操作':'归档失败'); }
+    catch(err){ arc.disabled=false; toast(err.status===403?'无权操作':'归档失败：'+(err.message||'请求失败')); }
   } else if(dep){
     dep.disabled=true;
     try{
@@ -35,7 +35,7 @@ document.addEventListener('click',async e=>{
       const depTb=document.getElementById('tb-dep');
       if(depTb){ const ntr=document.createElement('tr'); ntr.dataset.id=item.id; ntr.dataset.ep='/api/loop-items'; ntr.innerHTML=depRowHtml(item); depTb.insertBefore(ntr,depTb.firstChild); const de=document.getElementById('dep-empty'); if(de)de.style.display='none'; }
       dep.disabled=false; toast('已沉淀到沉淀表 · 已入库');
-    }catch(err){ dep.disabled=false; toast(err.status===403?'无权操作':'沉淀失败'); }
+    }catch(err){ dep.disabled=false; toast(err.status===403?'无权操作':'沉淀失败：'+(err.message||'请求失败')); }
   }
 });
 
@@ -96,10 +96,10 @@ document.addEventListener('click',async e=>{
   if(r){
     if(!inlineConfirm(r,'确认恢复'))return;
     try{ await API.post(ep+'/'+id+'/restore'); tr.remove(); if(ep==='/api/inquiries'){ loadInquiries(); loadDashboardInq(); } toast('已恢复 · 请回原页查看'); }
-    catch(err){ toast(err.status===403?'无权操作':'恢复失败'); }
+    catch(err){ toast(err.status===403?'无权操作':'恢复失败：'+(err.message||'请求失败')); }
   } else {
     if(!inlineConfirm(h,'确认彻底删除'))return;
     try{ await API.del(ep+'/'+id+'?hard=1'); tr.remove(); toast('已彻底删除'); }
-    catch(err){ toast(err.status===403?'无权操作':'删除失败'); }
+    catch(err){ toast(err.status===403?'无权操作':'删除失败：'+(err.message||'请求失败')); }
   }
 });
