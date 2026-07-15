@@ -20,5 +20,10 @@ import * as googleProjects from './google-projects.js';
 import * as archive from './archive.js';
 import * as timeRange from './timerange.js';
 import * as sop from './sop.js';
+// 已迁移（批次5）：keywords（inlineConfirm 被 inquiries.js/closed-loop.js 这些仍是经典脚本的文件真实调用；
+//                            addKeyword 内联 onclick；OPT 改为显式 import 自 tagselect）
+//                   hermes-memory（原就是 IIFE+显式挂全局的干净写法，5 个导出正是内联 onclick 所用）
+import * as keywords from './keywords.js';
+import * as hermesMemory from './hermes-memory.js';
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory);

@@ -1,8 +1,15 @@
-/* 关键词库（4 类 · 增删改入库 · FR-9）（拆分自 index.html · 阶段4-A）
-   经典 script + window 全局兼容。依赖（运行时解析，均在 index.html 内联）：
-   OPT（标签下拉）、esc()、toast()、window.API、renderSparklines()、placeCaretEnd()、aiAsk()、
-   validateEditableValue()/rollbackEditable()/showSaveError()/setSavingState()（Excel 化基建）。
-   注：inlineConfirm() 是全局共享小工具（闭环/归档也用），暂随本模块迁出，仍挂全局。 */
+/* 关键词库（4 类 · 增删改入库 · FR-9）（ES 模块 · esbuild 打包为 IIFE）。
+   显式模块依赖：OPT 来自 ./tagselect.js —— 不再靠全局碰运气。
+   运行时仍依赖的全局（尚未迁移的经典脚本/内联提供，调用/事件时解析）：
+   esc()、toast()、API、renderSparklines()、placeCaretEnd()、aiAsk()（ai.js）、
+   validateEditableValue()/rollbackEditable()/showSaveError()/setSavingState()（Excel 化基建，内联）。
+   必须挂 window（main.js 统一处理）：
+     - inlineConfirm —— 全局共享小工具，inquiries.js:94 与 closed-loop.js:123（仍是经典脚本）真实调用；
+       归档/SOP 模块也用它。等 closed-loop/inquiries 迁完后，宜抽成独立 ui-utils 模块。
+     - addKeyword —— 内联 onclick（加词按钮 ×4）；filterKwByCat —— index.html:1135/1138 真实调用；
+     - 其余函数保持原有全局暴露面，零行为差异。
+   KW_TB/KW_PAGE_OPTS/_kwPage/_kwSize 无外部引用，收进模块作用域。 */
+import { OPT } from './tagselect.js';
 
 /* ================= 关键词库（4 类 · 增删改入库 · FR-9）================= */
 const KW_TB={seo:'tb-kw-seo',sem:'tb-kw-sem',high:'tb-kw-high',customer:'tb-kw-cust'};
@@ -11,8 +18,8 @@ const KW_PAGE_OPTS=[10,20,50,100,200,300];
 const _kwPage={seo:0,sem:0,high:0,customer:0};
 const _kwSize={seo:20,sem:20,high:20,customer:20};
 try{ const saved=JSON.parse(localStorage.getItem('ferr:kwSize')||'null'); if(saved&&typeof saved==='object'){ ['seo','sem','high','customer'].forEach(t=>{ if(KW_PAGE_OPTS.includes(saved[t]))_kwSize[t]=saved[t]; }); } }catch(e){}
-function clsOf(kind,val){const o=(OPT[kind]||[]).find(x=>x[0]===val);return o?o[1]:'b-gray';}
-function kwRow(type,r){
+export function clsOf(kind,val){const o=(OPT[kind]||[]).find(x=>x[0]===val);return o?o[1]:'b-gray';}
+export function kwRow(type,r){
   const a=r.attrs||{}; const tr=document.createElement('tr'); tr.dataset.id=r.id; tr.dataset.kwType=type; tr.dataset.cat=r.category||'';
   const aiBtn='<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> 分析意图</button>';
   const del='<button class="btn-mini kw-del" title="删除" style="color:var(--primary);border-color:var(--border2)"><i class="ti ti-trash"></i></button>';
@@ -58,7 +65,7 @@ document.addEventListener('focusout',async e=>{
   catch(err){ rollbackEditable(c,oldVal); toast(err.status===403?'无权修改，已恢复旧值':'保存失败，已恢复旧值'); }
 });
 /* 分类标签：渲染（按现有 category 去重）/ 筛选 / 新建 */
-function renderCatTabs(type){
+export function renderCatTabs(type){
   if(type!=='seo'&&type!=='sem')return;
   const sub=document.getElementById(type==='seo'?'sub-kw-seo':'sub-kw-sem'); const box=sub&&sub.querySelector('.cat-tabs'); const tb=document.getElementById(KW_TB[type]); if(!box||!tb)return;
   const active=(box.querySelector('.cat-tab.active')||{}).textContent; // 记住当前选中
@@ -67,9 +74,9 @@ function renderCatTabs(type){
   const keep=[...box.querySelectorAll('.cat-tab')].find(x=>x.textContent.trim()===(active||'').trim())||box.querySelector('.cat-all');
   keep.classList.add('active'); filterKwByCat(type, keep.classList.contains('cat-all')?null:keep.textContent.trim());
 }
-function filterKwByCat(type,cat){ _kwPage[type]=0; applyKwPaging(type); } // C-1：切分类回到第1页，可见性统一交给 applyKwPaging
+export function filterKwByCat(type,cat){ _kwPage[type]=0; applyKwPaging(type); } // C-1：切分类回到第1页，可见性统一交给 applyKwPaging
 /* C-1：统一计算可见行 = 命中当前分类(seo/sem) ∩ 当前页(每页20)；其余隐藏 */
-function applyKwPaging(type){
+export function applyKwPaging(type){
   const tb=document.getElementById(KW_TB[type]); if(!tb)return;
   const cat=(type==='seo'||type==='sem')?activeCat(type):null;
   const all=[...tb.querySelectorAll('tr')];
@@ -80,7 +87,7 @@ function applyKwPaging(type){
   rows.slice(p*size,(p+1)*size).forEach(tr=>tr.style.display='');
   renderKwPager(type,p,pages,total);
 }
-function renderKwPager(type,p,pages,total){
+export function renderKwPager(type,p,pages,total){
   const tb=document.getElementById(KW_TB[type]); if(!tb)return;
   const card=tb.closest('.card')||(tb.closest('table')||{}).parentNode; if(!card)return;
   let pg=card.querySelector('.kw-pager'); if(!pg){ pg=document.createElement('div'); pg.className='kw-pager'; card.appendChild(pg); }
@@ -103,8 +110,8 @@ document.addEventListener('change',e=>{
   try{ localStorage.setItem('ferr:kwSize',JSON.stringify(_kwSize)); }catch(e){}
   applyKwPaging(type);
 });
-function activeCat(type){ const sub=document.getElementById(type==='seo'?'sub-kw-seo':type==='sem'?'sub-kw-sem':null); const t=sub&&sub.querySelector('.cat-tab.active'); if(!t||t.classList.contains('cat-all')||t.classList.contains('add'))return null; return t.textContent.trim(); }
-async function loadKeywords(){
+export function activeCat(type){ const sub=document.getElementById(type==='seo'?'sub-kw-seo':type==='sem'?'sub-kw-sem':null); const t=sub&&sub.querySelector('.cat-tab.active'); if(!t||t.classList.contains('cat-all')||t.classList.contains('add'))return null; return t.textContent.trim(); }
+export async function loadKeywords(){
   try{
     const {items}=await API.get('/api/keywords');
     const byType={seo:[],sem:[],high:[],customer:[]};
@@ -113,7 +120,7 @@ async function loadKeywords(){
     renderSparklines(); renderCatTabs('seo'); renderCatTabs('sem'); applyKwPaging('high'); applyKwPaging('customer');
   }catch(e){ if(e&&e.message!=='unauthorized'){ Object.keys(KW_TB).forEach(t=>{const tb=document.getElementById(KW_TB[t]); if(tb)tb.innerHTML='';}); toast('关键词加载失败：'+(e.message||'未知错误')); } }
 }
-async function addKeyword(type){
+export async function addKeyword(type){
   try{
     const category=activeCat(type); // 当前选中的分类（若有）→ 新词归入该分类
     const {item}=await API.post('/api/keywords',{type,keyword:'新关键词',attrs:{},category});
@@ -123,7 +130,7 @@ async function addKeyword(type){
 }
 /* 通用就地两次点确认：第一次点→按钮变红「⚠️ 确认X」，3 秒内再点返回 true 执行，超时自动还原。
    用法：把 if(!confirm('…'))return; 换成 if(!inlineConfirm(btn,'确认删除'))return; */
-function inlineConfirm(btn,label){
+export function inlineConfirm(btn,label){
   if(!btn)return true;
   if(btn.dataset.confirm==='1'){ // 第二次点：确认执行
     clearTimeout(btn._t); btn.dataset.confirm='';
@@ -137,7 +144,7 @@ function inlineConfirm(btn,label){
   clearTimeout(btn._t); btn._t=setTimeout(()=>{ btn.dataset.confirm=''; if(btn.dataset.old!=null)btn.innerHTML=btn.dataset.old; btn.classList.remove('confirming'); },3000);
   return false;
 }
-async function kwDelete(tr,btn){
+export async function kwDelete(tr,btn){
   if(!tr||!tr.dataset.id)return;
   if(btn&&btn.dataset.confirm!=='1'){ // 第一次点：就地变「确认删除」，3 秒内再点才真删（不再用顶部弹框）
     btn.dataset.confirm='1'; if(!btn.dataset.old)btn.dataset.old=btn.innerHTML;

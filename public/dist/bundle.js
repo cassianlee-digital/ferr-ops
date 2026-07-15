@@ -433,11 +433,11 @@
       dept: "dept",
       grade: "grade"
     };
-    const field = fieldMap[kind];
-    if (!field) return;
+    const field2 = fieldMap[kind];
+    if (!field2) return;
     try {
-      await API.patch(ep + "/" + id, { [field]: value });
-      if (ep === "/api/inquiries" && field === "grade") {
+      await API.patch(ep + "/" + id, { [field2]: value });
+      if (ep === "/api/inquiries" && field2 === "grade") {
         const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
         if (it) {
           it.grade = value;
@@ -490,7 +490,7 @@
     s = s || {};
     const name = DS_LABEL[key] || key;
     const typeText = DS_TYPE_LABEL[s.type] || s.type || "";
-    const [text, cls] = dsStatusMeta(s.status, s.type);
+    const [text2, cls] = dsStatusMeta(s.status, s.type);
     const time = s.type === "manual" ? s.lastAt || "\u2014" : s.type === "sync" ? s.lastSyncAt || "\u2014" : "\u2014";
     const count = s.type === "manual" || s.type === "sync" ? s.count == null ? 0 : s.count : "\u2014";
     let extra = "";
@@ -499,7 +499,7 @@
     else if (s.note === "google_oauth_required") extra = `<span class="dim"> \xB7 \u9700\u8981 OAuth \u6388\u6743</span>`;
     else if (s.note === "google_sync_ready") extra = `<span class="dim"> \xB7 \u53EF\u624B\u52A8\u540C\u6B65</span>`;
     else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc(s.provider || "")}${s.model ? " / " + esc(s.model) : ""}</span>`;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)"><div style="width:96px;font-weight:600">${esc(name)}</div><div style="width:74px;color:var(--text3);font-size:11px">${esc(typeText)}</div><span class="badge ${cls}">${esc(text)}</span><div style="flex:1"></div><div style="color:var(--text3);font-size:11px;white-space:nowrap">\u65F6\u95F4 ${esc(String(time))} \xB7 \u8BB0\u5F55 ${esc(String(count))}</div><div style="font-size:11px">${extra}</div></div>`;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)"><div style="width:96px;font-weight:600">${esc(name)}</div><div style="width:74px;color:var(--text3);font-size:11px">${esc(typeText)}</div><span class="badge ${cls}">${esc(text2)}</span><div style="flex:1"></div><div style="color:var(--text3);font-size:11px;white-space:nowrap">\u65F6\u95F4 ${esc(String(time))} \xB7 \u8BB0\u5F55 ${esc(String(count))}</div><div style="font-size:11px">${extra}</div></div>`;
   }
   async function loadDataSourcesStatus() {
     const box = document.getElementById("ds-status-rows");
@@ -531,7 +531,7 @@
     const configured = !!s.configured;
     const authorized = !!s.authorized;
     const ok = configured && authorized;
-    const badge2 = ok ? '<span class="badge b-green">\u5DF2\u6388\u6743</span>' : configured ? '<span class="badge b-amber">\u5F85\u6388\u6743</span>' : '<span class="badge b-gray">\u540E\u7AEF\u672A\u914D\u7F6E</span>';
+    const badge3 = ok ? '<span class="badge b-green">\u5DF2\u6388\u6743</span>' : configured ? '<span class="badge b-amber">\u5F85\u6388\u6743</span>' : '<span class="badge b-gray">\u540E\u7AEF\u672A\u914D\u7F6E</span>';
     const missing = s.missing && s.missing.length ? `<div class="dim" style="font-size:11px;margin-top:4px">\u7F3A\u5C11\uFF1A${esc(s.missing.join(", "))}</div>` : "";
     const lastSync = s.lastSyncAt || "\u2014";
     const lastStatus = s.lastSyncStatus || "\u672A\u540C\u6B65";
@@ -540,7 +540,7 @@
     const authDisabled = configured ? "" : "disabled";
     const syncDisabled = ok ? "" : "disabled";
     return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
-    <div style="width:230px;font-weight:700">${esc(INTEG_LABEL[provider] || provider)} ${badge2}</div>
+    <div style="width:230px;font-weight:700">${esc(INTEG_LABEL[provider] || provider)} ${badge3}</div>
     <div style="flex:1;min-width:260px;color:var(--text2);font-size:12px;line-height:1.6">
       <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
       ${missing}${lastError}
@@ -1080,9 +1080,9 @@
     card.className = "tcard must" + (done ? " done" : "");
     card.dataset.sopId = s.id;
     card.dataset.sopFreq = s.freq;
-    const badge2 = DEPT_BADGE[s.dept] || "b-gray";
+    const badge3 = DEPT_BADGE[s.dept] || "b-gray";
     const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : done ? '<span class="tdue">\u5DF2\u5B8C\u6210</span>' : "";
-    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" onclick="chk(this)">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc(s.title)}</div><div class="tmeta"><span class="badge ${badge2}">${esc(s.dept)}</span>${due}</div>`;
+    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" onclick="chk(this)">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc(s.title)}</div><div class="tmeta"><span class="badge ${badge3}">${esc(s.dept)}</span>${due}</div>`;
     return card;
   }
   function updateSopCounts() {
@@ -1260,6 +1260,569 @@
     dot.style.display = overdue || urgent ? "" : "none";
   }
 
+  // public/src/keywords.js
+  var keywords_exports = {};
+  __export(keywords_exports, {
+    activeCat: () => activeCat,
+    addKeyword: () => addKeyword,
+    applyKwPaging: () => applyKwPaging,
+    clsOf: () => clsOf,
+    filterKwByCat: () => filterKwByCat,
+    inlineConfirm: () => inlineConfirm2,
+    kwDelete: () => kwDelete,
+    kwRow: () => kwRow,
+    loadKeywords: () => loadKeywords,
+    renderCatTabs: () => renderCatTabs,
+    renderKwPager: () => renderKwPager
+  });
+  var KW_TB = { seo: "tb-kw-seo", sem: "tb-kw-sem", high: "tb-kw-high", customer: "tb-kw-cust" };
+  var KW_PAGE_OPTS = [10, 20, 50, 100, 200, 300];
+  var _kwPage = { seo: 0, sem: 0, high: 0, customer: 0 };
+  var _kwSize = { seo: 20, sem: 20, high: 20, customer: 20 };
+  try {
+    const saved = JSON.parse(localStorage.getItem("ferr:kwSize") || "null");
+    if (saved && typeof saved === "object") {
+      ["seo", "sem", "high", "customer"].forEach((t) => {
+        if (KW_PAGE_OPTS.includes(saved[t])) _kwSize[t] = saved[t];
+      });
+    }
+  } catch (e) {
+  }
+  function clsOf(kind, val) {
+    const o = (OPT[kind] || []).find((x) => x[0] === val);
+    return o ? o[1] : "b-gray";
+  }
+  function kwRow(type, r) {
+    const a = r.attrs || {};
+    const tr = document.createElement("tr");
+    tr.dataset.id = r.id;
+    tr.dataset.kwType = type;
+    tr.dataset.cat = r.category || "";
+    const aiBtn = '<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> \u5206\u6790\u610F\u56FE</button>';
+    const del = '<button class="btn-mini kw-del" title="\u5220\u9664" style="color:var(--primary);border-color:var(--border2)"><i class="ti ti-trash"></i></button>';
+    const ev = (v) => v == null ? "" : v;
+    const ed = (attr, val) => `<td class="editable" contenteditable data-attr="${attr}">${esc(ev(val))}</td>`;
+    const ct = `<td class="dim" style="font-size:11px;white-space:nowrap">${esc((r.created_at || "").slice(0, 10))}</td>`;
+    if (type === "seo") {
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+    } else if (type === "sem") {
+      tr.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+    } else if (type === "high") {
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
+    } else {
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr">${aiBtn} ${del}</td>`;
+    }
+    return tr;
+  }
+  document.addEventListener("focusin", (e) => {
+    const c = e.target.closest && e.target.closest("#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]");
+    if (c) c._old = c.innerText;
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const c = e.target.closest && e.target.closest("#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]");
+      if (c) {
+        e.preventDefault();
+        c.blur();
+      }
+    }
+  });
+  document.addEventListener("focusout", async (e) => {
+    const c = e.target.closest && e.target.closest("#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]");
+    if (!c) return;
+    const tr = c.closest("tr");
+    if (!tr || !tr.dataset.id) return;
+    const val = c.innerText.trim();
+    const oldVal = c._old != null ? c._old : c.innerText;
+    if (val === String(oldVal).trim()) return;
+    const isCat = c.dataset.cat != null;
+    const body = isCat ? { category: val } : { attrs: { [c.dataset.attr]: val } };
+    try {
+      await API.patch("/api/keywords/" + tr.dataset.id, body);
+      c._old = val;
+      if (isCat) {
+        tr.dataset.cat = val;
+        renderCatTabs(tr.dataset.kwType);
+      }
+    } catch (err) {
+      rollbackEditable(c, oldVal);
+      toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+    }
+  });
+  function renderCatTabs(type) {
+    if (type !== "seo" && type !== "sem") return;
+    const sub = document.getElementById(type === "seo" ? "sub-kw-seo" : "sub-kw-sem");
+    const box = sub && sub.querySelector(".cat-tabs");
+    const tb = document.getElementById(KW_TB[type]);
+    if (!box || !tb) return;
+    const active = (box.querySelector(".cat-tab.active") || {}).textContent;
+    const cats = [...new Set([...tb.querySelectorAll("tr")].map((tr) => tr.dataset.cat).filter(Boolean))];
+    box.innerHTML = '<span class="cat-tab cat-all">\u5168\u90E8</span>' + cats.map((c) => `<span class="cat-tab">${esc(c)}</span>`).join("") + '<span class="cat-tab add"><i class="ti ti-plus"></i> \u65B0\u5EFA\u5206\u7C7B</span>';
+    const keep = [...box.querySelectorAll(".cat-tab")].find((x) => x.textContent.trim() === (active || "").trim()) || box.querySelector(".cat-all");
+    keep.classList.add("active");
+    filterKwByCat(type, keep.classList.contains("cat-all") ? null : keep.textContent.trim());
+  }
+  function filterKwByCat(type, cat) {
+    _kwPage[type] = 0;
+    applyKwPaging(type);
+  }
+  function applyKwPaging(type) {
+    const tb = document.getElementById(KW_TB[type]);
+    if (!tb) return;
+    const cat = type === "seo" || type === "sem" ? activeCat(type) : null;
+    const all = [...tb.querySelectorAll("tr")];
+    const rows2 = all.filter((tr) => !cat || tr.dataset.cat === cat);
+    const size = _kwSize[type] || 20, total = rows2.length, pages = Math.max(1, Math.ceil(total / size));
+    let p = _kwPage[type] || 0;
+    if (p > pages - 1) p = pages - 1;
+    if (p < 0) p = 0;
+    _kwPage[type] = p;
+    all.forEach((tr) => tr.style.display = "none");
+    rows2.slice(p * size, (p + 1) * size).forEach((tr) => tr.style.display = "");
+    renderKwPager(type, p, pages, total);
+  }
+  function renderKwPager(type, p, pages, total) {
+    const tb = document.getElementById(KW_TB[type]);
+    if (!tb) return;
+    const card = tb.closest(".card") || (tb.closest("table") || {}).parentNode;
+    if (!card) return;
+    let pg = card.querySelector(".kw-pager");
+    if (!pg) {
+      pg = document.createElement("div");
+      pg.className = "kw-pager";
+      card.appendChild(pg);
+    }
+    const sizeSel = `<select class="kw-pg-size" data-kwsize="${type}" title="\u6BCF\u9875\u6761\u6570">${KW_PAGE_OPTS.map((n) => `<option value="${n}"${n === _kwSize[type] ? " selected" : ""}>${n}/\u9875</option>`).join("")}</select>`;
+    if (pages <= 1) {
+      pg.innerHTML = (total ? `<span class="kw-pg-info">\u5171 ${total} \u6761</span>` : '<span class="kw-pg-info">\u6682\u65E0\u6570\u636E</span>') + sizeSel;
+      return;
+    }
+    let btns = "";
+    for (let i = 0; i < pages; i++) {
+      btns += `<button class="kw-pg${i === p ? " active" : ""}" data-kwpg="${type}" data-pg="${i}">${i + 1}</button>`;
+    }
+    pg.innerHTML = `<button class="kw-pg" data-kwpg="${type}" data-pg="${p - 1}"${p === 0 ? " disabled" : ""}>\u2039</button>${btns}<button class="kw-pg" data-kwpg="${type}" data-pg="${p + 1}"${p === pages - 1 ? " disabled" : ""}>\u203A</button><span class="kw-pg-info">\u5171 ${total} \u6761 \xB7 \u7B2C ${p + 1}/${pages} \u9875</span>${sizeSel}`;
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-kwpg]");
+    if (!b || b.disabled) return;
+    const type = b.dataset.kwpg;
+    const pg = parseInt(b.dataset.pg, 10);
+    if (isNaN(pg)) return;
+    _kwPage[type] = pg;
+    applyKwPaging(type);
+  });
+  document.addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-kwsize]");
+    if (!sel) return;
+    const type = sel.dataset.kwsize;
+    const n = parseInt(sel.value, 10);
+    if (!KW_PAGE_OPTS.includes(n)) return;
+    _kwSize[type] = n;
+    _kwPage[type] = 0;
+    try {
+      localStorage.setItem("ferr:kwSize", JSON.stringify(_kwSize));
+    } catch (e2) {
+    }
+    applyKwPaging(type);
+  });
+  function activeCat(type) {
+    const sub = document.getElementById(type === "seo" ? "sub-kw-seo" : type === "sem" ? "sub-kw-sem" : null);
+    const t = sub && sub.querySelector(".cat-tab.active");
+    if (!t || t.classList.contains("cat-all") || t.classList.contains("add")) return null;
+    return t.textContent.trim();
+  }
+  async function loadKeywords() {
+    try {
+      const { items } = await API.get("/api/keywords");
+      const byType = { seo: [], sem: [], high: [], customer: [] };
+      (items || []).forEach((r) => {
+        if (byType[r.type]) byType[r.type].push(r);
+      });
+      Object.keys(KW_TB).forEach((t) => {
+        const tb = document.getElementById(KW_TB[t]);
+        if (!tb) return;
+        tb.innerHTML = "";
+        byType[t].forEach((r) => tb.appendChild(kwRow(t, r)));
+      });
+      renderSparklines();
+      renderCatTabs("seo");
+      renderCatTabs("sem");
+      applyKwPaging("high");
+      applyKwPaging("customer");
+    } catch (e) {
+      if (e && e.message !== "unauthorized") {
+        Object.keys(KW_TB).forEach((t) => {
+          const tb = document.getElementById(KW_TB[t]);
+          if (tb) tb.innerHTML = "";
+        });
+        toast("\u5173\u952E\u8BCD\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+      }
+    }
+  }
+  async function addKeyword(type) {
+    try {
+      const category = activeCat(type);
+      const { item } = await API.post("/api/keywords", { type, keyword: "\u65B0\u5173\u952E\u8BCD", attrs: {}, category });
+      const tb = document.getElementById(KW_TB[type]);
+      if (tb) {
+        const tr = kwRow(type, item);
+        tb.appendChild(tr);
+        renderSparklines();
+        if (type === "seo" || type === "sem") renderCatTabs(type);
+        _kwPage[type] = 1e9;
+        applyKwPaging(type);
+        const c = tr.querySelector(".kw-name");
+        if (c) {
+          c.focus();
+          placeCaretEnd(c);
+        }
+      }
+      toast("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+    }
+  }
+  function inlineConfirm2(btn, label) {
+    if (!btn) return true;
+    if (btn.dataset.confirm === "1") {
+      clearTimeout(btn._t);
+      btn.dataset.confirm = "";
+      if (btn.dataset.old != null) btn.innerHTML = btn.dataset.old;
+      btn.classList.remove("confirming");
+      return true;
+    }
+    btn.dataset.confirm = "1";
+    if (btn.dataset.old == null) btn.dataset.old = btn.innerHTML;
+    btn.innerHTML = '<i class="ti ti-alert-triangle"></i> ' + (label || "\u786E\u8BA4");
+    btn.classList.add("confirming");
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => {
+      btn.dataset.confirm = "";
+      if (btn.dataset.old != null) btn.innerHTML = btn.dataset.old;
+      btn.classList.remove("confirming");
+    }, 3e3);
+    return false;
+  }
+  async function kwDelete(tr, btn) {
+    if (!tr || !tr.dataset.id) return;
+    if (btn && btn.dataset.confirm !== "1") {
+      btn.dataset.confirm = "1";
+      if (!btn.dataset.old) btn.dataset.old = btn.innerHTML;
+      btn.innerHTML = '<i class="ti ti-alert-triangle"></i> \u786E\u8BA4\u5220\u9664';
+      btn.classList.add("confirming");
+      clearTimeout(btn._t);
+      btn._t = setTimeout(() => {
+        btn.dataset.confirm = "";
+        btn.innerHTML = btn.dataset.old;
+        btn.classList.remove("confirming");
+      }, 3e3);
+      return;
+    }
+    if (btn) clearTimeout(btn._t);
+    try {
+      const type = tr.dataset.kwType;
+      await API.del("/api/keywords/" + tr.dataset.id);
+      tr.remove();
+      if (type === "seo" || type === "sem") renderCatTabs(type);
+      else applyKwPaging(type);
+      toast("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5165\u5E93");
+    } catch (e) {
+      if (btn) {
+        btn.dataset.confirm = "";
+        btn.innerHTML = btn.dataset.old;
+        btn.classList.remove("confirming");
+      }
+      toast(e.status === 403 ? "\u65E0\u6743\u5220\u9664\uFF08\u8BE5\u8BCD\u5E93\u975E\u4F60\u8D1F\u8D23\uFF09" : "\u5220\u9664\u5931\u8D25");
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const ai = e.target.closest(".kw-ai");
+    if (ai) {
+      const tr = ai.closest("tr");
+      const n = tr.querySelector(".kw-name");
+      const kw = (n ? n.textContent : tr.cells[0].textContent).trim();
+      aiAsk("\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE", "\u300C" + kw + "\u300D\u610F\u56FE");
+      return;
+    }
+    const del = e.target.closest(".kw-del");
+    if (del) {
+      kwDelete(del.closest("tr"), del);
+      return;
+    }
+  });
+  document.addEventListener("focusin", (e) => {
+    const cell = e.target.closest && e.target.closest(".kw-name");
+    if (cell) cell.dataset.kwOld = cell.textContent;
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const cell = e.target.closest && e.target.closest(".kw-name");
+      if (cell) {
+        e.preventDefault();
+        cell.blur();
+      }
+    }
+  });
+  document.addEventListener("focusout", async (e) => {
+    const cell = e.target.closest && e.target.closest(".kw-name");
+    if (!cell) return;
+    const tr = cell.closest("tr");
+    if (!tr || !tr.dataset.id) return;
+    const oldVal = cell.dataset.kwOld != null ? cell.dataset.kwOld : cell.textContent;
+    const vr = validateEditableValue(cell.textContent, "text", { nonempty: true, emptyMsg: "\u5173\u952E\u8BCD\u4E0D\u80FD\u4E3A\u7A7A" });
+    if (!vr.ok) {
+      rollbackEditable(cell, oldVal);
+      showSaveError(cell, vr.msg);
+      return;
+    }
+    const v = vr.value;
+    if (v === String(oldVal).trim()) {
+      cell.textContent = v;
+      setSavingState(cell, null);
+      return;
+    }
+    setSavingState(cell, "saving");
+    try {
+      await API.patch("/api/keywords/" + tr.dataset.id, { keyword: v });
+      cell.textContent = v;
+      cell.dataset.kwOld = v;
+      setSavingState(cell, "ok");
+      toast("\u5DF2\u66F4\u65B0\u5173\u952E\u8BCD \xB7 \u5DF2\u5165\u5E93");
+    } catch (err) {
+      rollbackEditable(cell, oldVal);
+      showSaveError(cell, err.status === 403 ? "\u65E0\u6743\u9650\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+    }
+  });
+
+  // public/src/hermes-memory.js
+  var hermes_memory_exports = {};
+  __export(hermes_memory_exports, {
+    loadHermesMemories: () => loadHermesMemories,
+    resetHermesFeedbackForm: () => resetHermesFeedbackForm,
+    resetHermesMemoryForm: () => resetHermesMemoryForm,
+    saveHermesFeedback: () => saveHermesFeedback,
+    saveHermesMemory: () => saveHermesMemory
+  });
+  var KIND_LABEL = {
+    company: "\u516C\u53F8\u4E8B\u5B9E",
+    customer: "\u5BA2\u6237\u753B\u50CF",
+    market: "\u5E02\u573A / \u5BA2\u6237",
+    operation: "\u8FD0\u8425\u7ECF\u9A8C",
+    decision: "\u51B3\u7B56\u6807\u51C6",
+    learning: "\u6BCF\u65E5\u5B66\u4E60",
+    preference: "\u504F\u597D",
+    risk: "\u98CE\u9669\u63D0\u9192"
+  };
+  function byId(id) {
+    return document.getElementById(id);
+  }
+  function text(value) {
+    return value == null ? "" : String(value);
+  }
+  function setText(el, value) {
+    if (el) el.textContent = text(value);
+  }
+  function toastSafe(message) {
+    if (window.toast) window.toast(message);
+  }
+  function field(id) {
+    const el = byId(id);
+    return el ? el.value.trim() : "";
+  }
+  var FEEDBACK_LABEL = {
+    adopted: "\u91C7\u7EB3 \xB7 \u6709\u4EF7\u503C",
+    done: "\u5DF2\u6267\u884C \xB7 \u540E\u7EED\u53EF\u590D\u7528",
+    rejected: "\u6682\u4E0D\u91C7\u7EB3 \xB7 \u4E0D\u7B26\u5408\u5F53\u524D\u7B56\u7565",
+    wrong: "\u4E0D\u51C6 \xB7 \u5224\u65AD\u9519\u8BEF",
+    generic: "\u592A\u6CDB \xB7 \u6CA1\u6709\u7ED3\u5408\u4E1A\u52A1"
+  };
+  function td(value, className) {
+    const cell = document.createElement("td");
+    if (className) cell.className = className;
+    cell.textContent = text(value);
+    return cell;
+  }
+  function badge2(label, className) {
+    const span = document.createElement("span");
+    span.className = "badge " + (className || "b-gray");
+    span.textContent = label;
+    return span;
+  }
+  function renderMemory(row) {
+    const tr = document.createElement("tr");
+    const kind = td("", "");
+    kind.appendChild(badge2(KIND_LABEL[row.kind] || row.kind || "\u8BB0\u5FC6", row.kind === "risk" ? "b-red" : row.kind === "decision" ? "b-amber" : "b-blue"));
+    tr.appendChild(kind);
+    const importance = td("", "ctr");
+    importance.appendChild(badge2(String(row.importance || 3), Number(row.importance) >= 4 ? "b-green" : "b-gray"));
+    tr.appendChild(importance);
+    const main = document.createElement("td");
+    const title = document.createElement("div");
+    title.style.fontWeight = "800";
+    title.style.marginBottom = "5px";
+    title.textContent = text(row.title);
+    const content = document.createElement("div");
+    content.className = "dim";
+    content.style.fontSize = "11.5px";
+    content.style.whiteSpace = "pre-wrap";
+    content.textContent = text(row.content);
+    const source = document.createElement("div");
+    source.className = "dim";
+    source.style.fontSize = "11px";
+    source.style.marginTop = "6px";
+    source.textContent = row.source ? "\u6765\u6E90\uFF1A" + row.source : "";
+    main.append(title, content, source);
+    tr.appendChild(main);
+    const evidence = td(row.evidence || "\u2014", "");
+    evidence.style.whiteSpace = "pre-wrap";
+    evidence.style.fontSize = "11.5px";
+    tr.appendChild(evidence);
+    tr.appendChild(td(row.updated_at || row.created_at || "\u2014", "dim"));
+    const action = td("", "ctr");
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "btn-ghost";
+    editBtn.textContent = "\u7F16\u8F91";
+    editBtn.addEventListener("click", () => editHermesMemory(row));
+    const stopBtn = document.createElement("button");
+    stopBtn.type = "button";
+    stopBtn.className = "btn-ghost";
+    stopBtn.textContent = "\u505C\u7528";
+    stopBtn.style.marginLeft = "6px";
+    stopBtn.addEventListener("click", () => deactivateHermesMemory(row.id));
+    action.append(editBtn, stopBtn);
+    tr.appendChild(action);
+    return tr;
+  }
+  async function loadHermesMemories(manual) {
+    const tbody = byId("tb-hermes-memory");
+    const empty = byId("hm-empty");
+    const count = byId("hm-count");
+    if (!tbody || !window.API) return;
+    tbody.textContent = "";
+    setText(count, "\u52A0\u8F7D\u4E2D...");
+    try {
+      const data = await window.API.get("/api/hermes/memories");
+      const items = data.items || [];
+      items.forEach((item) => tbody.appendChild(renderMemory(item)));
+      if (empty) empty.style.display = items.length ? "none" : "block";
+      setText(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
+      if (manual) toastSafe("AI \u8BB0\u5FC6\u5DF2\u5237\u65B0");
+    } catch (e) {
+      setText(count, "\u52A0\u8F7D\u5931\u8D25");
+      if (empty) empty.style.display = "block";
+      toastSafe("AI \u8BB0\u5FC6\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+    }
+  }
+  function resetHermesMemoryForm() {
+    ["hm-id", "hm-title", "hm-content", "hm-evidence"].forEach((id) => {
+      const el = byId(id);
+      if (el) el.value = "";
+    });
+    const kind = byId("hm-kind");
+    if (kind) kind.value = "market";
+    const importance = byId("hm-importance");
+    if (importance) importance.value = "3";
+    const source = byId("hm-source");
+    if (source) source.value = "manual";
+    setText(byId("hm-submit-label"), "\u5B58\u5165 AI \u8BB0\u5FC6");
+  }
+  function editHermesMemory(row) {
+    const id = byId("hm-id");
+    if (id) id.value = row.id || "";
+    const kind = byId("hm-kind");
+    if (kind) kind.value = row.kind || "learning";
+    const importance = byId("hm-importance");
+    if (importance) importance.value = String(row.importance || 3);
+    const title = byId("hm-title");
+    if (title) title.value = text(row.title);
+    const content = byId("hm-content");
+    if (content) content.value = text(row.content);
+    const evidence = byId("hm-evidence");
+    if (evidence) evidence.value = text(row.evidence);
+    const source = byId("hm-source");
+    if (source) source.value = text(row.source || "manual");
+    setText(byId("hm-submit-label"), "\u66F4\u65B0 AI \u8BB0\u5FC6");
+    const panel = byId("panel-ai-memory");
+    if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  async function saveHermesMemory() {
+    const body = {
+      kind: field("hm-kind") || "learning",
+      importance: Number(field("hm-importance")) || 3,
+      title: field("hm-title"),
+      content: field("hm-content"),
+      evidence: field("hm-evidence"),
+      source: field("hm-source") || "manual"
+    };
+    if (!body.title || !body.content) {
+      toastSafe("\u6807\u9898\u548C\u8BB0\u5FC6\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A");
+      return;
+    }
+    try {
+      const id = field("hm-id");
+      if (id) await window.API.patch("/api/hermes/memories/" + encodeURIComponent(id), body);
+      else await window.API.post("/api/hermes/memories", body);
+      resetHermesMemoryForm();
+      await loadHermesMemories(false);
+      toastSafe(id ? "AI \u8BB0\u5FC6\u5DF2\u66F4\u65B0" : "\u5DF2\u5B58\u5165 AI \u8BB0\u5FC6");
+    } catch (e) {
+      toastSafe(e.status === 403 ? "\u65E0\u6743\u4FEE\u6539 AI \u8BB0\u5FC6" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+    }
+  }
+  async function deactivateHermesMemory(id) {
+    if (!id || !window.API) return;
+    if (!confirm("\u786E\u5B9A\u505C\u7528\u8FD9\u6761 AI \u8BB0\u5FC6\u5417\uFF1F\u505C\u7528\u540E Hermes \u4E0D\u4F1A\u518D\u53C2\u8003\u5B83\u3002")) return;
+    try {
+      await window.API.del("/api/hermes/memories/" + encodeURIComponent(id));
+      await loadHermesMemories(false);
+      toastSafe("\u5DF2\u505C\u7528\u8FD9\u6761 AI \u8BB0\u5FC6");
+    } catch (e) {
+      toastSafe(e.status === 403 ? "\u65E0\u6743\u505C\u7528 AI \u8BB0\u5FC6" : "\u505C\u7528\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+    }
+  }
+  function resetHermesFeedbackForm() {
+    ["hf-scope", "hf-suggestion", "hf-note"].forEach((id) => {
+      const el = byId(id);
+      if (el) el.value = "";
+    });
+    const result = byId("hf-result");
+    if (result) result.value = "adopted";
+  }
+  async function saveHermesFeedback() {
+    const result = field("hf-result") || "adopted";
+    const suggestion = field("hf-suggestion");
+    const note = field("hf-note");
+    const scope = field("hf-scope") || "\u672A\u6307\u5B9A\u8303\u56F4";
+    if (!suggestion || !note) {
+      toastSafe("\u539F\u5EFA\u8BAE\u548C\u4F60\u7684\u5224\u65AD\u4E0D\u80FD\u4E3A\u7A7A");
+      return;
+    }
+    const negative = result === "wrong" || result === "generic";
+    const body = {
+      kind: negative ? "risk" : result === "rejected" ? "preference" : "learning",
+      importance: negative ? 4 : 3,
+      title: "Hermes\u5EFA\u8BAE\u53CD\u9988\uFF1A" + (FEEDBACK_LABEL[result] || result),
+      content: [
+        "\u9002\u7528\u8303\u56F4\uFF1A" + scope,
+        "\u53CD\u9988\u7ED3\u679C\uFF1A" + (FEEDBACK_LABEL[result] || result),
+        "\u539F\u5EFA\u8BAE\uFF1A" + suggestion,
+        "\u4EBA\u5DE5\u5224\u65AD\uFF1A" + note
+      ].join("\n"),
+      evidence: "\u6765\u6E90\uFF1AAI\u8BB0\u5FC6\u9875\u4EBA\u5DE5\u53CD\u9988\uFF1B\u9875\u9762\uFF1A" + (window._curTab || location.pathname),
+      source: "hermes_feedback"
+    };
+    try {
+      await window.API.post("/api/hermes/memories", body);
+      resetHermesFeedbackForm();
+      await loadHermesMemories(false);
+      toastSafe("\u53CD\u9988\u5DF2\u6C89\u6DC0\uFF0CHermes \u540E\u7EED\u4F1A\u53C2\u8003");
+    } catch (e) {
+      toastSafe(e.status === 403 ? "\u65E0\u6743\u6C89\u6DC0\u53CD\u9988" : "\u53CD\u9988\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+    }
+  }
+
   // public/src/main.js
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports);
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports);
 })();
