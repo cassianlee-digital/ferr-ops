@@ -1876,7 +1876,61 @@
     "\u4E39\u9EA6": [9.5, 56.3],
     "\u632A\u5A01": [8.5, 60.5],
     "\u82AC\u5170": [26, 64],
-    "\u7231\u5C14\u5170": [-8.2, 53.4]
+    "\u7231\u5C14\u5170": [-8.2, 53.4],
+    // 拉美(本站主力市场)
+    "\u4E4C\u62C9\u572D": [-56, -32.8],
+    "\u79D8\u9C81": [-75, -9.2],
+    "\u5384\u74DC\u591A\u5C14": [-78.2, -1.5],
+    "\u59D4\u5185\u745E\u62C9": [-66.6, 6.4],
+    "\u73BB\u5229\u7EF4\u4E9A": [-64.7, -16.3],
+    "\u5DF4\u62C9\u572D": [-58.4, -23.4],
+    "\u5371\u5730\u9A6C\u62C9": [-90.4, 15.7],
+    "\u54E5\u65AF\u8FBE\u9ECE\u52A0": [-84.1, 9.9],
+    "\u5DF4\u62FF\u9A6C": [-80.1, 8.5],
+    "\u5C3C\u52A0\u62C9\u74DC": [-85.2, 12.9],
+    "\u6D2A\u90FD\u62C9\u65AF": [-86.6, 15],
+    "\u8428\u5C14\u74E6\u591A": [-88.9, 13.8],
+    "\u591A\u7C73\u5C3C\u52A0": [-70.2, 18.7],
+    "\u53E4\u5DF4": [-79, 21.5],
+    "\u6CE2\u591A\u9ECE\u5404": [-66.5, 18.2],
+    // 非洲 / 中东
+    "\u4E4C\u5E72\u8FBE": [32.3, 1.4],
+    "\u80AF\u5C3C\u4E9A": [37.9, 0],
+    "\u5C3C\u65E5\u5229\u4E9A": [8.7, 9.1],
+    "\u52A0\u7EB3": [-1, 7.9],
+    "\u6469\u6D1B\u54E5": [-7.1, 31.8],
+    "\u963F\u5C14\u53CA\u5229\u4E9A": [2.6, 28],
+    "\u7A81\u5C3C\u65AF": [9.5, 33.9],
+    "\u57C3\u585E\u4FC4\u6BD4\u4E9A": [40.5, 9.1],
+    "\u5766\u6851\u5C3C\u4E9A": [34.9, -6.4],
+    "\u4EE5\u8272\u5217": [34.9, 31],
+    "\u4F0A\u6717": [53.7, 32.4],
+    "\u4F0A\u62C9\u514B": [43.7, 33.2],
+    "\u5361\u5854\u5C14": [51.2, 25.3],
+    "\u79D1\u5A01\u7279": [47.5, 29.3],
+    "\u7EA6\u65E6": [36.2, 31.2],
+    "\u9ECE\u5DF4\u5AE9": [35.9, 33.9],
+    "\u963F\u66FC": [56, 21.5],
+    "\u5DF4\u6797": [50.6, 26.1],
+    // 亚洲 / 其他
+    "\u5DF4\u57FA\u65AF\u5766": [69.3, 30.4],
+    "\u5B5F\u52A0\u62C9\u56FD": [90.4, 23.7],
+    "\u5B5F\u52A0\u62C9": [90.4, 23.7],
+    "\u65AF\u91CC\u5170\u5361": [80.8, 7.9],
+    "\u83F2\u5F8B\u5BBE": [122.9, 12.9],
+    "\u65B0\u52A0\u5761": [103.8, 1.35],
+    "\u7F05\u7538": [96, 21.9],
+    "\u67EC\u57D4\u5BE8": [104.9, 12.6],
+    "\u5C3C\u6CCA\u5C14": [84.1, 28.4],
+    "\u54C8\u8428\u514B\u65AF\u5766": [66.9, 48],
+    "\u8499\u53E4": [103.8, 46.9],
+    "\u5308\u7259\u5229": [19.5, 47.2],
+    "\u7F57\u9A6C\u5C3C\u4E9A": [24.97, 45.9],
+    "\u4FDD\u52A0\u5229\u4E9A": [25.5, 42.7],
+    "\u585E\u5C14\u7EF4\u4E9A": [20.8, 44],
+    "\u65AF\u6D1B\u4F10\u514B": [19.7, 48.7],
+    "\u65AF\u6D1B\u6587\u5C3C\u4E9A": [14.8, 46.1],
+    "\u7ACB\u9676\u5B9B": [23.9, 55.2]
   };
   var COUNTRY_ALIAS = {
     Germany: "\u5FB7\u56FD",
@@ -1921,7 +1975,57 @@
     Denmark: "\u4E39\u9EA6",
     Norway: "\u632A\u5A01",
     Finland: "\u82AC\u5170",
-    Ireland: "\u7231\u5C14\u5170"
+    Ireland: "\u7231\u5C14\u5170",
+    Uruguay: "\u4E4C\u62C9\u572D",
+    Peru: "\u79D8\u9C81",
+    Ecuador: "\u5384\u74DC\u591A\u5C14",
+    Venezuela: "\u59D4\u5185\u745E\u62C9",
+    Bolivia: "\u73BB\u5229\u7EF4\u4E9A",
+    Paraguay: "\u5DF4\u62C9\u572D",
+    Guatemala: "\u5371\u5730\u9A6C\u62C9",
+    CostaRica: "\u54E5\u65AF\u8FBE\u9ECE\u52A0",
+    Panama: "\u5DF4\u62FF\u9A6C",
+    Nicaragua: "\u5C3C\u52A0\u62C9\u74DC",
+    Honduras: "\u6D2A\u90FD\u62C9\u65AF",
+    ElSalvador: "\u8428\u5C14\u74E6\u591A",
+    DominicanRepublic: "\u591A\u7C73\u5C3C\u52A0",
+    Cuba: "\u53E4\u5DF4",
+    PuertoRico: "\u6CE2\u591A\u9ECE\u5404",
+    Uganda: "\u4E4C\u5E72\u8FBE",
+    Kenya: "\u80AF\u5C3C\u4E9A",
+    Nigeria: "\u5C3C\u65E5\u5229\u4E9A",
+    Ghana: "\u52A0\u7EB3",
+    Morocco: "\u6469\u6D1B\u54E5",
+    Algeria: "\u963F\u5C14\u53CA\u5229\u4E9A",
+    Tunisia: "\u7A81\u5C3C\u65AF",
+    Ethiopia: "\u57C3\u585E\u4FC4\u6BD4\u4E9A",
+    Tanzania: "\u5766\u6851\u5C3C\u4E9A",
+    Israel: "\u4EE5\u8272\u5217",
+    Iran: "\u4F0A\u6717",
+    Iraq: "\u4F0A\u62C9\u514B",
+    Qatar: "\u5361\u5854\u5C14",
+    Kuwait: "\u79D1\u5A01\u7279",
+    Jordan: "\u7EA6\u65E6",
+    Lebanon: "\u9ECE\u5DF4\u5AE9",
+    Oman: "\u963F\u66FC",
+    Bahrain: "\u5DF4\u6797",
+    Pakistan: "\u5DF4\u57FA\u65AF\u5766",
+    Bangladesh: "\u5B5F\u52A0\u62C9\u56FD",
+    SriLanka: "\u65AF\u91CC\u5170\u5361",
+    Philippines: "\u83F2\u5F8B\u5BBE",
+    Singapore: "\u65B0\u52A0\u5761",
+    Myanmar: "\u7F05\u7538",
+    Cambodia: "\u67EC\u57D4\u5BE8",
+    Nepal: "\u5C3C\u6CCA\u5C14",
+    Kazakhstan: "\u54C8\u8428\u514B\u65AF\u5766",
+    Mongolia: "\u8499\u53E4",
+    Hungary: "\u5308\u7259\u5229",
+    Romania: "\u7F57\u9A6C\u5C3C\u4E9A",
+    Bulgaria: "\u4FDD\u52A0\u5229\u4E9A",
+    Serbia: "\u585E\u5C14\u7EF4\u4E9A",
+    Slovakia: "\u65AF\u6D1B\u4F10\u514B",
+    Slovenia: "\u65AF\u6D1B\u6587\u5C3C\u4E9A",
+    Lithuania: "\u7ACB\u9676\u5B9B"
   };
   var inqGlobeChart = null;
   var worldMapPromise = null;
@@ -1957,10 +2061,15 @@
   }
   function collectMapData() {
     const map = {};
+    const unmapped = {};
     (window._inqCache || []).forEach((row) => {
       const name = countryName(row.country);
       const geo = COUNTRY_GEO[name];
-      if (!name || !geo) return;
+      if (!name) return;
+      if (!geo) {
+        unmapped[name] = (unmapped[name] || 0) + 1;
+        return;
+      }
       const group = map[name] || (map[name] = {
         country: name,
         geo,
@@ -1978,7 +2087,10 @@
       group.channels.push(row.channel);
       group.rows.push(row);
     });
-    return Object.values(map).sort((a, b) => b.total - a.total || a.country.localeCompare(b.country));
+    const groups = Object.values(map).sort((a, b) => b.total - a.total || a.country.localeCompare(b.country));
+    const unmappedList = Object.entries(unmapped).map(([country, count]) => ({ country, count })).sort((a, b) => b.count - a.count);
+    const unmappedTotal = unmappedList.reduce((sum, u) => sum + u.count, 0);
+    return { groups, unmappedList, unmappedTotal };
   }
   function tooltipHtml(group) {
     const valid = (group.A || 0) + (group.B || 0);
@@ -2023,13 +2135,23 @@
     }
     await worldMapPromise;
   }
-  function renderShell(el, groups, bodyHtml) {
+  function unmappedNoteHtml(unmappedList, unmappedTotal) {
+    if (!unmappedTotal) return "";
+    const names = unmappedList.map((u) => `${inqMapEsc(u.country)}${u.count > 1 ? ` \xD7${u.count}` : ""}`).join("\u3001");
+    return `
+    <div class="inq-map-note">
+      \u6709 ${unmappedTotal} \u6761\u8BE2\u76D8\u56E0\u56FD\u5BB6\u6682\u65E0\u5730\u56FE\u5750\u6807\u672A\u753B\u4E0A\u98DE\u7EBF:${names}\u3002\u6570\u636E\u6CA1\u4E22,\u53EA\u662F\u5730\u56FE\u7F3A\u8BE5\u56FD\u5750\u6807,\u8BF7\u8865\u5145\u5750\u6807\u8868\u3002
+    </div>
+  `;
+  }
+  function renderShell(el, groups, bodyHtml, unmappedList, unmappedTotal) {
     el.innerHTML = `
     <div class="inq-flat-map inq-blue-map">
       <div class="inq-map-head">
         <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
         <div class="inq-map-total">${groups.length} \u4E2A\u56FD\u5BB6 \xB7 ${(window._inqCache || []).length} \u6761\u8BE2\u76D8</div>
       </div>
+      ${unmappedNoteHtml(unmappedList, unmappedTotal)}
       ${bodyHtml}
     </div>
   `;
@@ -2055,11 +2177,11 @@
     const el = document.getElementById("inqGlobe");
     if (!el) return;
     const seq = ++renderSeq;
-    const groups = collectMapData();
+    const { groups, unmappedList, unmappedTotal } = collectMapData();
     const empty = document.getElementById("inqGlobe-empty");
     if (empty) empty.style.display = "none";
     disposeMap();
-    renderShell(el, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>');
+    renderShell(el, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
     try {
       await ensureWorldMap();
       if (seq !== renderSeq) return;
@@ -2072,10 +2194,10 @@
         <span>${msg}</span>
         <em>\u8BF7\u786E\u8BA4 public/world.geo.json \u5DF2\u968F\u9879\u76EE\u4E00\u8D77\u90E8\u7F72\u3002\u8BE2\u76D8\u6570\u636E\u6CA1\u6709\u4E22\uFF0C\u53EA\u662F\u5730\u56FE\u5E95\u56FE\u6CA1\u6709\u52A0\u8F7D\u3002</em>
       </div>
-    `);
+    `, unmappedList, unmappedTotal);
       return;
     }
-    renderShell(el, groups, '<div class="inq-echarts-map"></div>');
+    renderShell(el, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
     const chartEl = el.querySelector(".inq-echarts-map");
     if (!chartEl || !window.echarts) return;
     inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "svg" });

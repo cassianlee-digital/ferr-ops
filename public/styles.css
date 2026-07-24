@@ -810,6 +810,16 @@ body.dark #panel-tasks .colcap{
   font-style:normal;
   line-height:1.6;
 }
+.inq-map-note{
+  margin:6px 24px 0;
+  padding:7px 12px;
+  border:1px solid rgba(234,179,8,.35);
+  border-radius:8px;
+  background:rgba(254,249,231,.92);
+  color:#8a6d1f;
+  font-size:12px;
+  line-height:1.6;
+}
 .inq-map-ocean{
   fill:url(#inqSea);
 }
