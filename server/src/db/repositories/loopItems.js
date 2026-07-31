@@ -32,8 +32,8 @@ export function list(kind, opts = {}) {
 export function create(rec) {
   const info = db
     .prepare(
-      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, task_hour, note, urgent)
-       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@task_hour,@note,@urgent)`
+      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, task_hour, note, urgent, parent_id)
+       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@task_hour,@note,@urgent,@parent_id)`
     )
     .run(rec);
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(info.lastInsertRowid);
@@ -67,6 +67,15 @@ export function archive(id, archiveKind) {
            archived_at = datetime('now'),
            archive_kind = COALESCE(@ak, archive_kind)
      WHERE id = @id`
+  ).run({ id, ak });
+  // 级联：公司大任务归档时，名下未归档/未删的子任务一并归档（进同一分桶，日计划上一起消失）
+  db.prepare(
+    `UPDATE loop_items
+       SET state = 'archived',
+           archived_at = datetime('now'),
+           archive_kind = COALESCE(@ak, archive_kind)
+     WHERE parent_id = @id
+       AND (state IS NULL OR state NOT IN ('archived','deleted'))`
   ).run({ id, ak });
   return get(id);
 }

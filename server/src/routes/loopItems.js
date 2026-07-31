@@ -34,6 +34,7 @@ export async function loopItemsRoutes(app) {
       task_hour: s(b.task_hour, 10),
       note: s(b.note, 400),
       urgent: b.urgent === 1 || b.urgent === '1' || b.urgent === true ? 1 : null,
+      parent_id: Number.isFinite(Number(b.parent_id)) && Number(b.parent_id) > 0 ? Number(b.parent_id) : null,
     });
     reply.code(201);
     return { item };

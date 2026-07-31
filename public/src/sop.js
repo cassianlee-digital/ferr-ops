@@ -81,7 +81,8 @@ export function updateSopCounts(){
     const el=document.getElementById('kcount-'+key); if(!el)return;
     const sopN=window._sops.filter(s=>s.dept===dept).length;
     const addCol=document.getElementById('newtask-'+key);
-    const addN=addCol?addCol.querySelectorAll('.tcard').length:0;
+    // 只数顶层任务卡，公司大任务下的子卡（.subtask）不计入「派发 N」
+    const addN=addCol?addCol.querySelectorAll('.tcard:not(.subtask)').length:0;
     el.textContent='SOP '+sopN+' · '+verb+' '+addN;
   });
 }

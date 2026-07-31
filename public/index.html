@@ -968,6 +968,23 @@
   </div>
 </div>
 
+<!-- 公司大任务拆解：分发子任务（内容 + 负责人 陈/李）。子任务勾完不消失，随大任务完成一起归档 -->
+<div class="modal-mask" id="subtaskMask">
+  <div class="modal" style="width:440px">
+    <div class="modal-head"><i class="ti ti-git-branch" style="color:var(--primary)"></i> 分发子任务<span class="x" onclick="closeModal('subtaskMask')"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld"><label>所属大任务</label><div id="subtask-parent-title" class="dim" style="font-size:12px;padding:2px 0"></div></div>
+      <div class="fld"><label>子任务内容</label><textarea id="subtask-content" placeholder="拆出来的一件具体事…"></textarea></div>
+      <div class="fld"><label>负责人</label><select id="subtask-owner"><option value="李">李（SEO）</option><option value="陈">陈（SEM）</option></select></div>
+      <div class="fld-row">
+        <div class="fld"><label>完成日期（可选）</label><input type="date" id="subtask-date"></div>
+        <div class="fld"><label>完成时间（可选）</label><select id="subtask-hour"><option value="">未定</option></select></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('subtaskMask')">取消</button><button class="btn-primary" onclick="submitSubtask()"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
 <!-- SOP 新增/编辑弹框 (Step B) -->
 <div class="modal-mask" id="sopMask">
   <div class="modal" style="width:460px">
@@ -1230,6 +1247,13 @@ function chk(el){
   const sopId=c&&c.dataset.sopId;
   const rollback=()=>{ el.classList.toggle('on'); if(on){el.innerHTML='';c.classList.remove('done');} else {el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');} };
   if(id){
+    // 公司大任务完成 → 归档自己 + 级联名下子任务，一起从日计划消失（留痕在归档页；子任务勾完不消失，只有大任务完成才连带清掉）
+    if(on && c.classList.contains('cotask')){
+      API.post('/api/loop-items/'+id+'/archive',{archive_kind:'company'})
+        .then(()=>{ toast('大任务完成 · 已归档（含子任务）'); c.remove(); loadUrgent(); if(typeof updateSopCounts==='function')updateSopCounts(); })
+        .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
+      return;
+    }
     // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看
     API.patch('/api/loop-items/'+id,{state:on?'done':'todo',status:on?'done':'待办'})
       .then(()=>{ toast(on?'任务完成 · 已入库':'撤销完成 · 已入库'); loadUrgent(); }) // Step C：完成 urgent 任务 → banner 自动消失

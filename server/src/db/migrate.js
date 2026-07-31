@@ -175,6 +175,7 @@ CREATE TABLE IF NOT EXISTS loop_items (
   task_date     TEXT,   -- 任务：日期（可选）
   task_hour     TEXT,   -- 任务：今日完成时间（小时 00-23）
   note          TEXT,   -- 任务：备注
+  parent_id     INTEGER,-- 公司大任务拆解：子任务指向父 loop_item.id；NULL=顶层任务
   -- 归档地基（第①步）：state 显式状态机 + 软删 + 归档时间 + 归档分桶
   state         TEXT,   -- todo / done / adopted / deposited / archived / deleted  (NULL=兼容旧行视为 todo)
   archived_at   TEXT,   -- 归档时间（ISO）；进入归档页就用这个，不是 created_at
@@ -499,6 +500,8 @@ export function migrate() {
     ['variable', 'TEXT'], ['period', 'TEXT'], ['conclusion', 'TEXT'],
     ['analysis', 'TEXT'],
     ['task_date', 'TEXT'], ['task_hour', 'TEXT'], ['note', 'TEXT'],
+    // 公司大任务拆解：子任务父指针（旧库幂等加列）
+    ['parent_id', 'INTEGER'],
     // 归档地基（第①步）：旧库幂等加列
     ['state', 'TEXT'], ['archived_at', 'TEXT'], ['deleted_at', 'TEXT'], ['archive_kind', 'TEXT'],
     // SOP 引擎（Step A）：公司新派紧急任务标记

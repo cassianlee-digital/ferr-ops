@@ -1091,7 +1091,7 @@
       if (!el) return;
       const sopN = window._sops.filter((s) => s.dept === dept).length;
       const addCol = document.getElementById("newtask-" + key);
-      const addN = addCol ? addCol.querySelectorAll(".tcard").length : 0;
+      const addN = addCol ? addCol.querySelectorAll(".tcard:not(.subtask)").length : 0;
       el.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
     });
   }

@@ -79,15 +79,67 @@ function taskColFor(dept){return document.getElementById(dept==='公司'?'newtas
 function addTaskCard(s,content,it){
   const col=taskColFor(s.dept); if(!col)return null; const add=col.querySelector('.add-task');
   const done=!!(it&&(it.state==='done'||it.status==='done')); // 归档③：优先 state，兼容旧 status='done' 行
-  const card=document.createElement('div'); card.className='tcard'+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
-  const del=(it&&it.id)?`<button class="btn-mini" style="color:var(--primary);margin-left:auto" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
+  const isCoParent=s.dept==='公司'; // 公司顶层大任务：可拆解出子任务
+  const card=document.createElement('div'); card.className='tcard'+(isCoParent?' cotask':'')+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
+  // 公司卡：分发键吃 margin-left:auto（靠右），删除键仅留小间距；普通卡：删除键吃 auto 靠右
+  const del=(it&&it.id)?`<button class="btn-mini" style="color:var(--primary);margin-left:${isCoParent?'8px':'auto'}" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
+  const split=isCoParent?`<button class="btn-mini cotask-split" onclick="openSubtaskModal(this)"><i class="ti ti-git-branch"></i> 分发</button>`:'';
+  // 个人任务(SEM/SEO)在各自列里、左侧色条已表明部门，dept 徽章冗余 → 只公司大任务保留「公司」徽章
+  const deptBadge=isCoParent?`<span class="badge ${s.c}">${esc(s.dept)}</span>`:'';
   const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
   const due=(dt||hr)?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr?(dt?' ':'')+esc(hr)+':00':''}</span>`:'';
-  const note=(it&&it.note)?`<div class="tnote" style="font-size:11px;color:var(--text3);margin-top:2px">${esc(it.note)}</div>`:'';
-  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(content||'')}</div>${note}<div class="tmeta"><span class="badge ${s.c}">${esc(s.dept)}</span>${due}${del}</div>`;
+  // 备注并入 meta 行（备注居左、日期/删除居右同一行），消掉单独的备注行与空白，卡更紧凑、两边对齐
+  const note=(it&&it.note)?`<span class="tnote">${esc(it.note)}</span>`:'';
+  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(content||'')}</div><div class="tmeta">${deptBadge}${note}${due}${split}${del}</div>`;
+  if(isCoParent){ const box=document.createElement('div'); box.className='subtasks'; card.appendChild(box); } // 子任务容器
   if(add)col.insertBefore(card,add); else col.appendChild(card); return card;
 }
 function addTaskCards(s,items){ (items||[]).forEach(t=>addTaskCard(s,t)); } // 兼容复盘回流 loopBack
+
+/* 公司大任务拆解：子任务卡（挂在父卡 .subtasks 内）。负责人徽章 陈=紫/李=蓝；勾完只划线不消失，删按钮同普通任务。 */
+function subOwnerBadge(owner){ return owner==='陈'?'b-purple':'b-blue'; }
+function addSubTaskCard(parentCard,it){
+  if(!parentCard)return null;
+  let box=parentCard.querySelector('.subtasks');
+  if(!box){ box=document.createElement('div'); box.className='subtasks'; parentCard.appendChild(box); }
+  const done=!!(it&&(it.state==='done'||it.status==='done'));
+  const card=document.createElement('div'); card.className='tcard subtask'+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
+  const owner=(it&&it.owner)||'李'; const oc=subOwnerBadge(owner);
+  const del=(it&&it.id)?`<button class="btn-mini" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
+  const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
+  const due=(dt||hr)?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr?(dt?' ':'')+esc(hr)+':00':''}</span>`:'';
+  // 单行紧凑：勾选 + 内容 + 右侧组(完成时间 + 负责人徽章 + 删除)，一行放下，避免堆叠把父卡撑高
+  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span><span class="sub-text">${esc((it&&it.content)||'')}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc(owner)}</span>${del}</span></div>`;
+  box.appendChild(card); return card;
+}
+let _subtaskParentId=null;
+function openSubtaskModal(btn){
+  const card=btn.closest('.tcard'); const pid=card&&card.dataset.id;
+  if(!pid){ toast('请先保存大任务再分发'); return; }
+  _subtaskParentId=pid;
+  const t=document.getElementById('subtask-content'); if(t)t.value='';
+  const o=document.getElementById('subtask-owner'); if(o)o.value='李';
+  const hs=document.getElementById('subtask-hour');
+  if(hs&&hs.options.length<=1){ for(let h=0;h<24;h++){ const op=document.createElement('option'); const hh=String(h).padStart(2,'0'); op.value=hh; op.textContent=hh+':00'; hs.appendChild(op); } }
+  if(hs)hs.value=''; const de=document.getElementById('subtask-date'); if(de)de.value='';
+  const ti=document.getElementById('subtask-parent-title'); if(ti){ const tt=card.querySelector('.ttitle'); ti.textContent=tt?tt.innerText.trim():''; }
+  openModal('subtaskMask'); if(t)setTimeout(()=>t.focus(),50);
+}
+async function submitSubtask(){
+  const pid=_subtaskParentId; if(!pid)return;
+  const content=(document.getElementById('subtask-content').value||'').trim();
+  if(!content){ toast('请填写子任务内容'); return; }
+  const owner=document.getElementById('subtask-owner').value||'李';
+  const task_date=document.getElementById('subtask-date').value||'';
+  const task_hour=document.getElementById('subtask-hour').value||'';
+  try{
+    // dept 保持「公司」→ 不漏进 SEM/SEO 列；负责人靠 owner 承载（陈/李）；完成时间可选
+    const {item}=await API.post('/api/loop-items',{kind:'task',dept:'公司',content,owner,status:'待办',task_date,task_hour,parent_id:Number(pid)});
+    const parentCard=document.querySelector('#newtask-company .tcard[data-id="'+pid+'"]');
+    addSubTaskCard(parentCard,item); closeModal('subtaskMask');
+    toast('已分发子任务给'+owner+' · 已入库');
+  }catch(e){ toast(persistFailMsg(e)); }
+}
 let _taskScope=null;
 function openTaskModal(dept){
   _taskScope=dept==='公司'?coScope():sFromDept(dept);
@@ -143,12 +195,15 @@ async function loadClosedLoop(){
   window._aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
   try{ const {items}=await API.get('/api/fixes'); (items||[]).slice().reverse().forEach(f=>{ addFixFromObj(f); window._aiDone.采纳.add(aiFp(f.dept,f.detail||f.title)); }); }catch(e){}
   const depTb=document.getElementById('tb-dep'); if(depTb)depTb.innerHTML='';
+  const _pendingSubtasks=[]; // 子任务延后挂：父卡须先建好（加载为 id 倒序）
   try{ const {items}=await API.get('/api/loop-items');
     (items||[]).slice().reverse().forEach(it=>{ const s=sFromDept(it.dept);
       if(it.kind==='deposit'){ const tr=document.createElement('tr'); tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(it); depTb&&depTb.appendChild(tr); window._aiDone[it.status==='采纳'?'采纳':'沉淀'].add(aiFp(it.dept,it.content)); }
       else if(it.kind==='test'){ addTest(s,it.content,it); window._aiDone.测试.add(aiFp(it.dept,it.content)); }
       else if(it.kind==='plan')addPlan(s,it.content,it);
       else if(it.kind==='task'){
+        // 公司大任务的子任务：延后挂到父卡下（子任务不参与惰性归档，只随父任务级联归档）
+        if(it.parent_id){ _pendingSubtasks.push(it); return; }
         const ts=it.dept==='公司'?coScope():s;
         // 归档③：完成 + task_date 已过 → 静默惰性归档，不再渲染（次日自动消失，进归档页）
         const today=formatLocalDate(new Date());
@@ -160,6 +215,12 @@ async function loadClosedLoop(){
           addTaskCard(ts,it.content,it);
         }
       }
+    });
+    // 第二遍：把子任务按 id 升序挂到各自父卡下；父卡不在（异常）则兜底平铺，避免数据隐身
+    _pendingSubtasks.sort((a,b)=>a.id-b.id).forEach(it=>{
+      const parentCard=document.querySelector('#newtask-company .tcard[data-id="'+it.parent_id+'"]');
+      if(parentCard)addSubTaskCard(parentCard,it);
+      else addTaskCard(coScope(),it.content,it);
     });
   }catch(e){}
   const de=document.getElementById('dep-empty'); if(de)de.style.display=(depTb&&depTb.children.length)?'none':'block';
