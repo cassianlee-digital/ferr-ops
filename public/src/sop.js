@@ -25,9 +25,8 @@ export function sopPeriodKey(freq){
   return formatLocalDate(d);
 }
 window._sops=[]; window._sopDone={daily:new Set(),weekly:new Set(),monthly:new Set()};
-const DEPT_BADGE={SEM:'b-purple',SEO:'b-blue','公司':'b-red'};
 const FREQ_LABEL={daily:'每日必做',weekly:'每周必做',monthly:'每月必做'};
-const FREQ_ICON={daily:'ti-repeat',weekly:'ti-calendar-week',monthly:'ti-calendar-month'};
+const FREQ_TAG={daily:'日',weekly:'周',monthly:'月'};
 export async function loadSops(){
   try{ const {items}=await API.get('/api/sop'); window._sops=items||[]; }
   catch(e){ window._sops=[]; if(e&&e.message!=='unauthorized')toast('SOP 加载失败：'+(e.message||'')); }
@@ -57,23 +56,26 @@ export function renderSopCards(){
       anchor.insertAdjacentHTML('beforeend','<div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>');
       return;
     }
+    // 日/周/月合并进同一个清单框：频率退化为行尾小标签，不再各占一个分组标题 + 一张卡（版面太长）
+    const box=document.createElement('div'); box.className='sop-list';
     ['daily','weekly','monthly'].forEach(freq=>{
-      const subset=list.filter(s=>s.freq===freq);
-      if(!subset.length)return;
-      anchor.insertAdjacentHTML('beforeend',`<div class="freq-cap"><i class="ti ${FREQ_ICON[freq]}"></i> ${FREQ_LABEL[freq]}</div>`);
-      subset.forEach(s=>anchor.appendChild(sopCardEl(s)));
+      list.filter(s=>s.freq===freq).forEach(s=>box.appendChild(sopCardEl(s)));
     });
+    anchor.appendChild(box);
   });
 }
+// 单行清单项：勾选 + 标题 + (时间提示) + 频率标签。仍是 .tcard[data-sop-id]，chk() 的完成/撤销逻辑不变。
+// 部门徽章去掉：每列本就只有一个部门，徽章冗余。
 export function sopCardEl(s){
   const done=window._sopDone[s.freq]&&window._sopDone[s.freq].has(s.id);
-  const card=document.createElement('div');
-  card.className='tcard must'+(done?' done':'');
-  card.dataset.sopId=s.id; card.dataset.sopFreq=s.freq;
-  const badge=DEPT_BADGE[s.dept]||'b-gray';
-  const due=s.time_hint?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:(done?'<span class="tdue">已完成</span>':'');
-  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(s.title)}</div><div class="tmeta"><span class="badge ${badge}">${esc(s.dept)}</span>${due}</div>`;
-  return card;
+  const row=document.createElement('div');
+  row.className='tcard sop-row'+(done?' done':'');
+  row.dataset.sopId=s.id; row.dataset.sopFreq=s.freq;
+  const due=s.time_hint?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:'';
+  row.innerHTML=`<span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>`
+    +`<span class="sop-text">${esc(s.title)}</span>`
+    +`<span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq]||'')}">${esc(FREQ_TAG[s.freq]||'')}</span></span>`;
+  return row;
 }
 export function updateSopCounts(){
   // SEM/SEO：SOP N · 新增 M；公司：SOP N · 派发 M（容器 id 用 newtask-company / kcount-company）

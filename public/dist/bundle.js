@@ -1028,9 +1028,8 @@
   }
   window._sops = [];
   window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
-  var DEPT_BADGE = { SEM: "b-purple", SEO: "b-blue", "\u516C\u53F8": "b-red" };
   var FREQ_LABEL = { daily: "\u6BCF\u65E5\u5FC5\u505A", weekly: "\u6BCF\u5468\u5FC5\u505A", monthly: "\u6BCF\u6708\u5FC5\u505A" };
-  var FREQ_ICON = { daily: "ti-repeat", weekly: "ti-calendar-week", monthly: "ti-calendar-month" };
+  var FREQ_TAG = { daily: "\u65E5", weekly: "\u5468", monthly: "\u6708" };
   async function loadSops() {
     try {
       const { items } = await API.get("/api/sop");
@@ -1066,24 +1065,23 @@
         anchor.insertAdjacentHTML("beforeend", '<div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">\u6682\u65E0 SOP\uFF0C\u53BB\u300C\u8BBE\u7F6E \xB7 SOP \u8BBE\u7F6E\u300D\u6DFB\u52A0</div>');
         return;
       }
+      const box = document.createElement("div");
+      box.className = "sop-list";
       ["daily", "weekly", "monthly"].forEach((freq) => {
-        const subset = list.filter((s) => s.freq === freq);
-        if (!subset.length) return;
-        anchor.insertAdjacentHTML("beforeend", `<div class="freq-cap"><i class="ti ${FREQ_ICON[freq]}"></i> ${FREQ_LABEL[freq]}</div>`);
-        subset.forEach((s) => anchor.appendChild(sopCardEl(s)));
+        list.filter((s) => s.freq === freq).forEach((s) => box.appendChild(sopCardEl(s)));
       });
+      anchor.appendChild(box);
     });
   }
   function sopCardEl(s) {
     const done = window._sopDone[s.freq] && window._sopDone[s.freq].has(s.id);
-    const card = document.createElement("div");
-    card.className = "tcard must" + (done ? " done" : "");
-    card.dataset.sopId = s.id;
-    card.dataset.sopFreq = s.freq;
-    const badge3 = DEPT_BADGE[s.dept] || "b-gray";
-    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : done ? '<span class="tdue">\u5DF2\u5B8C\u6210</span>' : "";
-    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" onclick="chk(this)">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc(s.title)}</div><div class="tmeta"><span class="badge ${badge3}">${esc(s.dept)}</span>${due}</div>`;
-    return card;
+    const row = document.createElement("div");
+    row.className = "tcard sop-row" + (done ? " done" : "");
+    row.dataset.sopId = s.id;
+    row.dataset.sopFreq = s.freq;
+    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
+    row.innerHTML = `<span class="tcheck${done ? " on" : ""}" onclick="chk(this)">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc(s.title)}</span><span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq] || "")}">${esc(FREQ_TAG[s.freq] || "")}</span></span>`;
+    return row;
   }
   function updateSopCounts() {
     [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {

@@ -226,18 +226,6 @@ body.dark #panel-tasks .kcount{
   border-color: var(--task-border);
 }
 
-#panel-tasks .pblock:has(#sop-company) {
-  border-top: 2px solid var(--danger);
-}
-
-#panel-tasks .pblock:has(#sop-sem) {
-  border-top: 2px solid #7b61ff;
-}
-
-#panel-tasks .pblock:has(#sop-seo) {
-  border-top: 2px solid var(--primary);
-}
-
 #panel-tasks .pblock-head {
   min-height: 46px;
   padding: 0 16px;
@@ -278,8 +266,7 @@ body.dark #panel-tasks .kcount{
   border-top: 1px solid var(--border);
 }
 
-#panel-tasks .colcap,
-#panel-tasks .freq-cap {
+#panel-tasks .colcap {
   min-height: 28px;
   display: flex;
   align-items: center;
@@ -316,16 +303,145 @@ body.dark #panel-tasks .kcount{
   font-size: 15px;
 }
 
-/* 备注并入 meta 行：备注占左侧弹性空间、把日期/删除挤到右边，消掉单独备注行的空白，卡更紧凑 */
-#panel-tasks .tmeta {
-  margin-top: 4px;
+/* 任务卡压成单行：标题占左侧弹性空间，meta（备注/日期/分发/删除）跟在同一行右侧。
+   卡本身 flex-wrap：备注长到放不下时，整条 meta 自动落到第二行（此时备注吃弹性宽），不会挤爆标题。 */
+#panel-tasks .sopnew .tcard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 8px;
+  padding: 8px 10px;
+}
+#panel-tasks .sopnew .tcard > .ttitle {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#panel-tasks .sopnew .tcard > .tmeta {
+  flex: 0 1 auto;
+  margin-top: 0;
+  margin-left: auto;
+  padding-left: 0;
+  flex-wrap: nowrap;
+}
+#panel-tasks .tcard > .subtasks {
+  flex: 1 0 100%;
 }
 #panel-tasks .tmeta .tnote {
   flex: 1 1 auto;
   min-width: 0;
+  margin: 0 !important;
+  padding-left: 0;
+  border-left: 0;
   font-size: 11px;
   color: var(--text3);
   line-height: 1.4;
+}
+
+/* 三列各自滚动：不再由最长的一列（公司大任务 + 一串子任务）决定整页高度 */
+#panel-tasks .sopnew {
+  max-height: 64vh;
+  overflow-y: auto;
+}
+
+/* SOP 固定任务：日/周/月合并成一个清单框，每条一行；频率是行尾小标签 */
+#panel-tasks .sop-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+  overflow: hidden;
+}
+#panel-tasks .sop-list .tcard {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#panel-tasks .sop-list .tcard + .tcard {
+  border-top: 1px solid var(--border);
+}
+#panel-tasks .sop-list .tcard:hover {
+  background: #f7f9fc;
+  border-color: transparent;
+}
+#panel-tasks .sop-list .tcheck {
+  margin-top: 0;
+}
+#panel-tasks .sop-list .sop-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text1);
+}
+#panel-tasks .sop-list .tcard.done .sop-text {
+  color: var(--text3);
+  text-decoration: line-through;
+}
+#panel-tasks .sop-list .sop-right {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#panel-tasks .sop-list .tdue {
+  margin-left: 0;
+  font-size: 11px;
+}
+#panel-tasks .freq-tag {
+  min-width: 20px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text3);
+  font-size: 11px;
+}
+
+/* 「已完成 N 项」折叠条：列尾一条，默认收起完成项 */
+#panel-tasks .donefold {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 2px 0 8px;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text3);
+  font-size: 12px;
+  cursor: pointer;
+}
+#panel-tasks .donefold:hover {
+  background: #ffffff;
+  color: var(--text2);
+}
+#panel-tasks .folded > .tcard.done:not(.nofold) {
+  display: none;
+}
+
+body.dark #panel-tasks .sop-list {
+  background: #10151d;
+  border-color: #202838;
+}
+body.dark #panel-tasks .sop-list .tcard + .tcard {
+  border-top-color: #202838;
+}
+body.dark #panel-tasks .sop-list .tcard:hover {
+  background: #151d28;
+}
+body.dark #panel-tasks .donefold:hover {
+  background: #151d28;
 }
 
 /* 公司大任务拆解：分发按钮 —— 带文字的小药丸。必须覆盖 .tmeta .btn-mini 的 26px 图标方框，否则「分发」二字被裁 */

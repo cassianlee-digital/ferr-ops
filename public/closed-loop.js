@@ -77,7 +77,9 @@ function coScope(){return {dept:'公司',owner:'',c:'b-red'};}
 // 三栏 UI 后：公司派发任务卡插入 #newtask-company（其内有 .add-task 直接子节点，insertBefore 才合法）
 function taskColFor(dept){return document.getElementById(dept==='公司'?'newtask-company':(dept==='SEM'?'newtask-sem':'newtask-seo'));}
 function addTaskCard(s,content,it){
-  const col=taskColFor(s.dept); if(!col)return null; const add=col.querySelector('.add-task');
+  const col=taskColFor(s.dept); if(!col)return null;
+  // 插入锚点：折叠条永远贴着「新增」按钮待在列尾，新卡插在它之前
+  const add=col.querySelector('.donefold')||col.querySelector('.add-task');
   const done=!!(it&&(it.state==='done'||it.status==='done')); // 归档③：优先 state，兼容旧 status='done' 行
   const isCoParent=s.dept==='公司'; // 公司顶层大任务：可拆解出子任务
   const card=document.createElement('div'); card.className='tcard'+(isCoParent?' cotask':'')+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
@@ -172,7 +174,26 @@ async function submitTask(){
     if(urgent)loadUrgent(); // Step C：紧急任务即时刷 banner
   }catch(e){ toast(persistFailMsg(e)); }
 }
-function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>card.remove()).catch(e=>toast('删除失败：'+(e.message||'请求失败'))); }
+function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>{card.remove();refreshDoneFold();}).catch(e=>toast('删除失败：'+(e.message||'请求失败'))); }
+
+/* 已完成折叠：每列列尾一条「已完成 N 项」，默认收起，避免历史完成项把每日新增列拉长。
+   刚刚手动勾完的卡带 .nofold（chk() 加），本次会话内不隐藏——点完就消失会让人以为点错了；刷新后归位。
+   只数列的直接子卡：公司大任务下的 .subtask 嵌在父卡里，不参与。 */
+function refreshDoneFold(col){
+  if(!col){ ['company','sem','seo'].forEach(k=>refreshDoneFold(document.getElementById('newtask-'+k))); return; }
+  const n=col.querySelectorAll(':scope > .tcard.done:not(.nofold)').length;
+  let bar=col.querySelector('.donefold');
+  if(!n){ if(bar)bar.remove(); col.classList.remove('folded'); return; }
+  if(!bar){
+    bar=document.createElement('button'); bar.type='button'; bar.className='donefold';
+    bar.addEventListener('click',()=>{ col.classList.toggle('folded'); refreshDoneFold(col); });
+    const add=col.querySelector('.add-task');
+    if(add)col.insertBefore(bar,add); else col.appendChild(bar);
+    col.classList.add('folded'); // 默认收起
+  }
+  const folded=col.classList.contains('folded');
+  bar.innerHTML=`<i class="ti ti-${folded?'chevron-right':'chevron-down'}"></i> 已完成 ${n} 项`;
+}
 async function addFixRow(){
   const s=sFromDept('SEO');
   try{
@@ -224,6 +245,7 @@ async function loadClosedLoop(){
     });
   }catch(e){}
   const de=document.getElementById('dep-empty'); if(de)de.style.display=(depTb&&depTb.children.length)?'none':'block';
+  refreshDoneFold(); // 三列的「已完成 N 项」折叠条
   applyAiDoneStates(); // 给已渲染的 AI 项标灰
 }
 /* 沉淀表行（可改内容 + 删除）*/

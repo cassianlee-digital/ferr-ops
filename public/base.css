@@ -289,12 +289,10 @@ table.dt td.editable:focus{background:transparent;border-radius:0;box-shadow:ins
 .kcount{background:var(--bg4);border-radius:var(--radius);padding:2px 9px;font-size:11px;color:var(--text2);margin-left:auto}
 .sopnew{display:flex;flex-direction:column;gap:12px} /* 三栏并排后栏宽变窄：SOP 区与新增区改上下排 */
 .colcap{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;display:flex;align-items:center;gap:5px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.freq-cap{font-size:10px;color:var(--text3);font-weight:700;margin:8px 0 5px;display:flex;align-items:center;gap:4px}
 .cocol{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--sh);height:100%}
 .tcard{background:var(--bg3);border:1px solid transparent;border-radius:var(--radius);padding:9px 11px;margin-bottom:7px;cursor:pointer}
 .tcard:hover{border-color:var(--border2)}
-.tcard.must{border-left:3px solid var(--blue)}
-.tcard.urgent{border-left:3px solid var(--primary);background:var(--primary-soft)}
+.tcard.urgent{background:var(--primary-soft)}
 .tcard.done{opacity:.55}.tcard.done .ttitle{text-decoration:line-through}
 .ttitle{font-size:12px;font-weight:600;line-height:1.4;display:flex;align-items:flex-start;gap:7px}
 .tcheck{width:15px;height:15px;border:1.5px solid var(--border2);border-radius:var(--radius);flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}

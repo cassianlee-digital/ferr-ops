@@ -636,7 +636,7 @@
 
       <!-- ============ 任务看板 V3 ============ -->
       <div class="panel" id="panel-tasks">
-        <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">陈(上) / 李(下) 各自：左=SOP固定(每日/每周/每月必做)、右=每日新增 · 公司任务在右</div></div><button class="btn-primary" onclick="ai('根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序')"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
+        <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">每列上=SOP 固定清单(日/周/月合并一条一行)、下=每日新增 · 陈=SEM、李=SEO、公司任务在左</div></div><button class="btn-primary" onclick="ai('根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序')"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
         <!-- Step C：未做 SOP 提示 banner（周期首日 08:00 后才显示）+ 公司新派 banner（urgent=1 未完成；硬编码 Bafaw banner 已移除）-->
         <div id="sop-overdue-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-alert-triangle" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">未完成提示</div><div class="banner-s" id="sop-overdue-list"></div></div></div>
         <div id="urgent-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-bell-ringing" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">公司新派任务</div><div class="banner-s" id="urgent-list"></div></div></div>
@@ -1243,6 +1243,8 @@ function chk(el){
   const on=el.classList.contains('on');
   if(on){el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
   else  {el.innerHTML='';                            c.classList.remove('done');}
+  // 刚手动勾的卡本次会话不被「已完成」折叠条收走（点完就消失像点错了）；撤销完成时重算折叠条计数
+  if(c){c.classList.add('nofold'); if(typeof refreshDoneFold==='function')refreshDoneFold();}
   const id=c&&c.dataset.id;
   const sopId=c&&c.dataset.sopId;
   const rollback=()=>{ el.classList.toggle('on'); if(on){el.innerHTML='';c.classList.remove('done');} else {el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');} };

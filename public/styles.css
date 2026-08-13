@@ -558,11 +558,7 @@ body.dark #integ-rows>.sheet-tip{
   border-color:#cfd7e5;
   box-shadow:0 8px 18px rgba(15,23,42,.06);
 }
-#panel-tasks .tcard.must{
-  border-left:3px solid #2f72e8;
-}
 #panel-tasks .tcard.urgent{
-  border-left:3px solid var(--primary);
   background:#fff8f7;
 }
 #panel-tasks .tcard.done{
@@ -1835,7 +1831,6 @@ table.dt tbody tr:nth-child(even):hover {
   margin-bottom: 8px;
   padding: 10px 11px;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--primary);
   border-radius: var(--radius);
   background: #ffffff;
   box-shadow: none;
@@ -1847,7 +1842,6 @@ table.dt tbody tr:nth-child(even):hover {
 }
 
 #panel-tasks .tcard.urgent {
-  border-left-color: var(--danger);
   background: #fff7f6;
 }
 
@@ -2242,12 +2236,6 @@ table.dt td.editable:focus,
 
 
 
-#panel-tasks .freq-cap {
-  min-height: 24px;
-  margin: 10px 0 6px;
-  padding-left: 2px;
-  color: var(--task-muted);
-}
 
 
 
@@ -2258,29 +2246,11 @@ table.dt td.editable:focus,
   margin-bottom: 8px;
   padding: 11px 12px 10px;
   border-color: var(--border);
-  border-left-width: 3px;
   background: #ffffff;
-}
-
-#panel-tasks .tcard.must {
-  border-left-color: var(--primary);
-}
-
-#panel-tasks #newtask-company .tcard {
-  border-left-color: var(--danger);
-}
-
-#panel-tasks #newtask-sem .tcard {
-  border-left-color: #7b61ff;
-}
-
-#panel-tasks #newtask-seo .tcard {
-  border-left-color: var(--primary);
 }
 
 #panel-tasks .tcard.urgent {
   border-color: #ffd7d7;
-  border-left-color: var(--danger);
   background: #fff7f6;
 }
 
@@ -2291,7 +2261,6 @@ table.dt td.editable:focus,
 
 #panel-tasks .tcard.done {
   opacity: 1;
-  border-left-color: var(--green);
   background: #f7f8fa;
 }
 
