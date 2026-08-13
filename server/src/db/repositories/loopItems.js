@@ -32,15 +32,15 @@ export function list(kind, opts = {}) {
 // INSERT 的具名参数必须齐全（better-sqlite3 缺一个就抛 RangeError），所以按列清单归一：
 // 调用方少给的补 null、多给的丢掉，新增列不再逼着每个调用方同步改。
 const CREATE_COLS = ['kind', 'dept', 'content', 'owner', 'status',
-  'task_date', 'start_date', 'task_hour', 'note', 'urgent', 'parent_id'];
+  'task_date', 'start_date', 'task_hour', 'note', 'urgent', 'parent_id', 'fix_id'];
 
 export function create(rec) {
   const row = {};
   for (const c of CREATE_COLS) row[c] = rec?.[c] ?? null;
   const info = db
     .prepare(
-      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, start_date, task_hour, note, urgent, parent_id)
-       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@start_date,@task_hour,@note,@urgent,@parent_id)`
+      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, start_date, task_hour, note, urgent, parent_id, fix_id)
+       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@start_date,@task_hour,@note,@urgent,@parent_id,@fix_id)`
     )
     .run(row);
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(info.lastInsertRowid);
@@ -58,6 +58,29 @@ export function update(id, fields) {
 
 export function get(id) {
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(id);
+}
+
+// 某条整改项当前排下来的、还活着的任务（归档/软删的不算）。
+// fix_id 是出身，不进 update 白名单——排过就是排过，不该被改写。
+export function findActiveByFixId(fixId) {
+  return db.prepare(
+    `SELECT * FROM loop_items
+      WHERE kind = 'task' AND fix_id = ?
+        AND (state IS NULL OR state NOT IN ('archived','deleted'))
+      ORDER BY id DESC LIMIT 1`
+  ).get(fixId);
+}
+
+// 整改清单一次性问「这些整改项各自排了没、做完没」，避免每行一个请求
+export function planStatusByFix() {
+  return db.prepare(
+    `SELECT fix_id, MAX(id) AS task_id,
+            MAX(CASE WHEN state = 'done' OR status = 'done' THEN 1 ELSE 0 END) AS done
+       FROM loop_items
+      WHERE kind = 'task' AND fix_id IS NOT NULL
+        AND (state IS NULL OR state NOT IN ('archived','deleted'))
+      GROUP BY fix_id`
+  ).all();
 }
 
 // 归档：幂等。已 archived 直接返回当前行。

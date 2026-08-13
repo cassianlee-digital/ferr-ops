@@ -62,8 +62,41 @@ function fixRowHtml(f){
     +`<td class="ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td>`
     +`<td class="ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr"><button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive" title="归档" style="color:var(--primary)"><i class="ti ti-archive"></i> 归档</button></td>`;
+    +`<td class="ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive" title="归档" style="color:var(--primary)"><i class="ti ti-archive"></i> 归档</button></td>`;
 }
+/* 整改行的「排入」控件：没排过 → 可点；排过 → 显示状态并可跳去日计划。
+   整改清单一直是"写下来就完了"，没人接的那条和已经在做的那条长得一模一样。 */
+function fixPlanHtml(f){
+  if(f&&f.planned_done)return `<span class="badge b-green row-plan-go" style="cursor:pointer" title="日计划里已完成，点击查看">已做完</span>`;
+  if(f&&f.planned_task_id)return `<button class="btn-mini row-plan-go" title="已在日计划里，点击查看"><i class="ti ti-calendar-check"></i> 已排</button>`;
+  return `<button class="btn-mini row-plan" title="排进负责人的日计划"><i class="ti ti-calendar-plus"></i> 排入</button>`;
+}
+/* 行级「排入 / 已排」委托。用委托不用内联 onclick：内联 handler 是模块化的地板，能不加就不加 */
+document.addEventListener('click',async e=>{
+  const jump=e.target.closest('.row-plan-go');
+  if(jump){ go('planning'); if(typeof setPlanningTab==='function')setPlanningTab('daily'); return; }
+  const btn=e.target.closest('.row-plan'); if(!btn)return;
+  const tr=btn.closest('tr'); const id=tr&&tr.dataset.id; if(!id)return;
+  btn.disabled=true;
+  try{
+    const {item,existed}=await API.post('/api/fixes/'+id+'/plan',{start_date:formatLocalDate(new Date())});
+    // 行内就地反映：结果标签推到「进行中」、按钮换成「已排」
+    const tag=tr.querySelector('[data-kind="result"]');
+    if(tag&&tag.firstChild&&!/已改|放弃/.test(tag.textContent))tag.firstChild.nodeValue='进行中';
+    btn.outerHTML=fixPlanHtml({planned_task_id:item.id});
+    // 日计划已经在 DOM 里的话就地插卡，用户切过去就能看见，不用刷新
+    if(!existed&&document.getElementById('newtask-sem')){
+      addTaskCard(item.dept==='公司'?coScope():sFromDept(item.dept),item.content,item);
+      refreshTaskCols(); if(typeof updateSopCounts==='function')updateSopCounts();
+    }
+    toastGo(existed?'这条已经在日计划里了':'已排进'+(item.owner||item.dept||'')+'的日计划','planning');
+  }catch(err){ btn.disabled=false; toast(err&&err.status===409?'该整改项已归档，不能再排':persistFailMsg(err)); }
+});
+/* 日计划卡上的「整改」出身标：点它跳回整改清单看依据 */
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.src-fix'))return;
+  go('action'); if(typeof setActionTab==='function')setActionTab('fix');
+});
 function bindFixRow(tr,f){ if(tr&&f&&f.id){ tr.dataset.id=f.id; tr.dataset.ep='/api/fixes'; } return tr; }
 function addFixFromObj(f){ return bindFixRow(prepend('tb-fix',fixRowHtml(f)),f); }
 function bindLoopRow(tr,it){ if(tr&&it&&it.id){ tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; } return tr; }
@@ -120,6 +153,8 @@ function renderTaskMeta(card){
   const isCo=card.classList.contains('cotask'), g=taskGroupOf(it);
   // 个人任务在各自列里，dept 徽章冗余 → 只公司大任务保留「公司」徽章
   const deptBadge=isCo?`<span class="badge ${s.c||'b-gray'}">${esc(s.dept||'')}</span>`:'';
+  // 出身标：这条是从整改清单排下来的，点它回去看依据数据（任务能追溯到证据，才不是拍脑袋）
+  const srcBadge=it.fix_id?`<span class="badge b-amber src-fix" title="来自整改清单 · 点击查看依据">整改</span>`:'';
   // 备注并入 meta 行（备注居左、日期/操作居右同一行），消掉单独的备注行与空白
   const note=it.note?`<span class="tnote">${esc(it.note)}</span>`:'';
   // 逾期两个出口：顺延到今天 / 放弃并归档。没有出口的话逾期组就是下一个垃圾堆
@@ -131,7 +166,7 @@ function renderTaskMeta(card){
   const split=isCo?`<button class="btn-mini cotask-split" onclick="openSubtaskModal(this)"><i class="ti ti-git-branch"></i> 分发</button>`:'';
   // 右侧已有东西时删除键只留间距；只有它自己时才吃 auto 靠右
   const del=it.id?`<button class="btn-mini" style="color:var(--primary);margin-left:${(isCo||ops||push)?'8px':'auto'}" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
-  box.innerHTML=deptBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
+  box.innerHTML=deptBadge+srcBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
 }
 /* 日期胶囊：跨天显示「开始 ~ 截止」（同年省年份省宽度，完整日期放 title），单日照旧；点它改期。
    没填日期也给一个「设日期」入口——AI 生成/复盘回流的任务本来就没日期，否则永远没法补。 */

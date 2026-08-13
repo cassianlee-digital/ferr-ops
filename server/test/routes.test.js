@@ -212,6 +212,60 @@ test('打卡拒绝脏输入：日期格式不对 / 任务不存在', async () =>
   assert.equal(ghost.statusCode, 404, '不存在的任务不能留下孤儿打卡');
 });
 
+// 诊断→整改→日计划→回写：整条闭环的最后一环。断在任何一节，整改清单和日计划就又是两套各写各的表。
+test('整改排进日计划：幂等、带出身、把整改推到进行中', async () => {
+  const fix = await app.inject({
+    method: 'POST', url: '/api/fixes', headers: auth('boss'),
+    payload: { title: '补齐落地页 H1', dept: 'SEO', owner: '李', due_date: '2026-08-20', status: '计划下周' },
+  });
+  const fixId = fix.json().item.id;
+
+  const plan = await app.inject({ method: 'POST', url: `/api/fixes/${fixId}/plan`, headers: auth('seo'), payload: { start_date: '2026-08-13' } });
+  assert.equal(plan.statusCode, 201);
+  const task = plan.json().item;
+  assert.equal(task.fix_id, fixId, '任务必须带着出身，否则回写无从谈起');
+  assert.equal(task.content, '补齐落地页 H1');
+  assert.equal(task.owner, '李');
+  assert.equal(task.task_date, '2026-08-20', '整改的截止日就是任务的截止日');
+  assert.equal(plan.json().fix.status, '进行中', '排进日计划 = 已开工');
+
+  // 幂等：再排一次不该多出一条任务
+  const again = await app.inject({ method: 'POST', url: `/api/fixes/${fixId}/plan`, headers: auth('seo') });
+  assert.equal(again.json().existed, true);
+  assert.equal(again.json().item.id, task.id);
+
+  // 列表带排期状态
+  const list = await app.inject({ method: 'GET', url: '/api/fixes', headers: auth('boss') });
+  const row = list.json().items.find((f) => f.id === fixId);
+  assert.equal(row.planned_task_id, task.id);
+  assert.equal(row.planned_done, false);
+
+  // 回写：勾完 → 已改；撤销 → 进行中
+  await app.inject({ method: 'PATCH', url: `/api/loop-items/${task.id}`, headers: auth('seo'), payload: { state: 'done', status: 'done' } });
+  let cur = await app.inject({ method: 'GET', url: '/api/fixes', headers: auth('boss') });
+  assert.equal(cur.json().items.find((f) => f.id === fixId).status, '已改');
+  assert.equal(cur.json().items.find((f) => f.id === fixId).planned_done, true);
+
+  await app.inject({ method: 'PATCH', url: `/api/loop-items/${task.id}`, headers: auth('seo'), payload: { state: 'todo', status: '待办' } });
+  cur = await app.inject({ method: 'GET', url: '/api/fixes', headers: auth('boss') });
+  assert.equal(cur.json().items.find((f) => f.id === fixId).status, '进行中', '撤销完成必须把整改状态也退回去');
+});
+
+test('放弃的整改不被任务状态牵着走；归档的整改不能再排', async () => {
+  const fix = await app.inject({
+    method: 'POST', url: '/api/fixes', headers: auth('boss'), payload: { title: '不打算做的事', dept: 'SEM', status: '放弃' },
+  });
+  const fixId = fix.json().item.id;
+  const task = (await app.inject({ method: 'POST', url: `/api/fixes/${fixId}/plan`, headers: auth('boss') })).json().item;
+  await app.inject({ method: 'PATCH', url: `/api/loop-items/${task.id}`, headers: auth('boss'), payload: { state: 'done', status: 'done' } });
+  const list = await app.inject({ method: 'GET', url: '/api/fixes', headers: auth('boss') });
+  assert.equal(list.json().items.find((f) => f.id === fixId).status, '放弃', '放弃是人的决定，不该被勾选覆盖');
+
+  await app.inject({ method: 'POST', url: `/api/fixes/${fixId}/archive`, headers: auth('boss'), payload: {} });
+  const denied = await app.inject({ method: 'POST', url: `/api/fixes/${fixId}/plan`, headers: auth('boss') });
+  assert.equal(denied.statusCode, 409);
+});
+
 test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响应吐回来', async () => {
   const res = await app.inject({ method: 'GET', url: '/api/nope-not-a-route' });
   assert.equal(res.statusCode, 404);

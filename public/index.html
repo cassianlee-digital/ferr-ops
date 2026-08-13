@@ -417,7 +417,7 @@
         <div class="page-head"><div><div class="page-title">整改清单</div><div class="page-sub">每条须有依据数据 · 可手动新增，也可从数据看板「采纳」自动汇入 · 表格可编辑、失焦即存</div></div><div style="display:flex;gap:8px"><button class="btn-primary" onclick="addFixRow()"><i class="ti ti-plus"></i> 新增整改</button><button class="btn-ai" onclick="ai('按SOP整改动作库生成本周候选整改清单并排优先级')"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div></div>
         <div class="timebar-inline" data-time></div>
         <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock-off"></i> 整改清单暂不按时间范围过滤，显示全部。</div>
-        <div class="card" style="margin-bottom:14px"><table class="dt fix-table"><thead><tr><th>问题 / 机会</th><th class="ctr">所属</th><th>依据数据</th><th>整改动作</th><th class="ctr">负责人</th><th>截止</th><th class="ctr">结果</th><th class="ctr" style="width:130px">操作</th></tr></thead><tbody id="tb-fix"></tbody></table></div>
+        <div class="card" style="margin-bottom:14px"><table class="dt fix-table"><thead><tr><th>问题 / 机会</th><th class="ctr">所属</th><th>依据数据</th><th>整改动作</th><th class="ctr">负责人</th><th>截止</th><th class="ctr">结果</th><th class="ctr" style="width:190px">操作</th></tr></thead><tbody id="tb-fix"></tbody></table></div>
         <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 补充板块 · 整改调整建议</span><button class="btn-ai" style="margin-left:auto" onclick="aiBox(this,'针对SEO和SEM数据，给我整改/调整建议')">重新生成 ↗</button></div>
           <div class="ai-item"><i class="ti ti-tool"></i><div class="body"><strong>SEO：</strong>合并 2 个意图重复的铸件页，解决关键词蚕食。</div></div>
           <div class="ai-item"><i class="ti ti-tool"></i><div class="body"><strong>SEM：</strong>机加工通用组 ROAS 偏低，拆分为"按图机加工"独立组并提质量分。</div></div>
@@ -1267,7 +1267,8 @@ function chk(el){
     }
     // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看
     API.patch('/api/loop-items/'+id,{state:on?'done':'todo',status:on?'done':'待办'})
-      .then(()=>{ if(on)toastUndo('任务完成 · 已入库',()=>chk(el)); else toast('撤销完成 · 已入库'); loadUrgent(); }) // Step C：完成 urgent 任务 → banner 自动消失
+      // 出身于整改项的任务：后端会把那条整改回写成「已改」，这里得说出来，否则用户不知道另一张表也动了
+      .then(()=>{ const fx=c._item&&c._item.fix_id; if(on)toastUndo('任务完成 · 已入库'+(fx?' · 整改已标「已改」':''),()=>chk(el)); else toast('撤销完成 · 已入库'+(fx?' · 整改回到「进行中」':'')); loadUrgent(); }) // Step C：完成 urgent 任务 → banner 自动消失
       .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
   } else if(sopId){
     // SOP-B：完成→POST /api/sop/completions；撤销→DELETE。period_key 按当前频率算

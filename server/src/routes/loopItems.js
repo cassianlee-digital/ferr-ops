@@ -1,5 +1,6 @@
 // 闭环条目 API（FR-10）：月度计划/测试登记/沉淀表/任务看板 + 归档地基（state/archived/deleted）。写入限李/陈。
 import * as repo from '../db/repositories/loopItems.js';
+import * as fixesRepo from '../db/repositories/fixes.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 
 const KINDS = ['plan', 'test', 'deposit', 'task'];
@@ -41,9 +42,23 @@ export async function loopItemsRoutes(app) {
     return { item };
   });
 
-  app.patch('/api/loop-items/:id', editor, async (request) => ({
-    item: repo.update(Number(request.params.id), request.body || {}),
-  }));
+  // 回写：任务勾完 → 它出身的那条整改项自动变「已改」，撤销则回「进行中」。
+  // 闭环的最后一步；靠人去整改清单里手动改状态，那条状态就永远是脏的。
+  app.patch('/api/loop-items/:id', editor, async (request) => {
+    const id = Number(request.params.id);
+    const body = request.body || {};
+    const item = repo.update(id, body);
+    if (item && item.fix_id && ('state' in body || 'status' in body)) {
+      const done = item.state === 'done' || item.status === 'done';
+      const fix = fixesRepo.get(item.fix_id);
+      // 已归档/已放弃的整改项不被任务状态牵着走
+      if (fix && fix.state !== 'archived' && fix.state !== 'deleted' && fix.status !== '放弃') {
+        const next = done ? '已改' : '进行中';
+        if (fix.status !== next) fixesRepo.update(fix.id, { status: next });
+      }
+    }
+    return { item };
+  });
 
   // 归档：服务端打时间戳、推导 archive_kind；幂等。前端调这个最稳。
   app.post('/api/loop-items/:id/archive', editor, async (request, reply) => {

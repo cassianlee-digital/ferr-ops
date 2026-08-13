@@ -517,6 +517,8 @@ export function migrate() {
     ['task_date', 'TEXT'], ['task_hour', 'TEXT'], ['note', 'TEXT'],
     // 跨天任务：开始日（旧库幂等加列；老数据 NULL = 当天任务，语义不变）
     ['start_date', 'TEXT'],
+    // 出身：这条任务是从哪条整改项排下来的（诊断→整改→日计划→回写 的那根线）
+    ['fix_id', 'INTEGER'],
     // 公司大任务拆解：子任务父指针（旧库幂等加列）
     ['parent_id', 'INTEGER'],
     // 归档地基（第①步）：旧库幂等加列
@@ -556,6 +558,7 @@ export function migrate() {
   ]);
   // 索引：旧库 db.exec(SCHEMA) 已建表，索引语句 IF NOT EXISTS 幂等，重复 exec 无害
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind)'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_fix ON loop_items(fix_id)'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_fixes_state ON fixes(state)'); } catch (e) {}
   try {
     db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_hermes_action_runs_idempotency ON hermes_action_runs(idempotency_key) WHERE idempotency_key IS NOT NULL');
