@@ -47,7 +47,11 @@ export async function loopItemsRoutes(app) {
   app.patch('/api/loop-items/:id', editor, async (request) => {
     const id = Number(request.params.id);
     const body = request.body || {};
-    const item = repo.update(id, body);
+    let item = repo.update(id, body);
+    if (item && ('state' in body || 'status' in body)) {
+      const done = item.state === 'done' || item.status === 'done';
+      item = repo.stampDone(id, done); // 记完成时刻，日计划回放要用
+    }
     if (item && item.fix_id && ('state' in body || 'status' in body)) {
       const done = item.state === 'done' || item.status === 'done';
       const fix = fixesRepo.get(item.fix_id);

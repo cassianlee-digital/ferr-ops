@@ -71,6 +71,48 @@ export function findActiveByFixId(fixId) {
   ).get(fixId);
 }
 
+/* 某一天的日计划回放：那天"在盘子里"的任务。三种算在内——
+   ① 区间覆盖那天（start<=D<=due，跨天任务的每一天）；
+   ② 截止日就是那天；③ 那天完成的（哪怕区间不含那天，比如提前做完）。
+   已归档/软删的照收，只要它是在那天之后才被归档的——那天它确实还在盘子里，
+   否则回放会凭空少掉当时干过的活。 */
+export function listForDay(day) {
+  return db.prepare(
+    `SELECT * FROM loop_items
+      WHERE kind = 'task'
+        AND parent_id IS NULL
+        AND (state IS NULL OR state <> 'deleted')
+        AND (archived_at IS NULL OR date(archived_at) > @day)
+        AND (
+              (start_date IS NOT NULL AND start_date <> '' AND task_date IS NOT NULL AND task_date <> ''
+                 AND start_date <= @day AND task_date >= @day)
+           OR (task_date = @day)
+           OR (date(done_at) = @day)
+            )
+      ORDER BY id ASC`
+  ).all({ day });
+}
+
+// 那天的子任务（挂在上面那批父卡下），单独取，避免父子判定规则打架
+export function listSubtasksForParents(ids) {
+  if (!ids || !ids.length) return [];
+  const ph = ids.map(() => '?').join(',');
+  return db.prepare(
+    `SELECT * FROM loop_items WHERE kind = 'task' AND parent_id IN (${ph})
+        AND (state IS NULL OR state <> 'deleted') ORDER BY id ASC`
+  ).all(...ids);
+}
+
+// 完成时刻：勾上记 datetime('now')，撤销清空。日计划回放全靠它回答"那天完成了什么"。
+export function stampDone(id, done) {
+  db.prepare(
+    done
+      ? "UPDATE loop_items SET done_at = COALESCE(done_at, datetime('now')) WHERE id = ?"
+      : 'UPDATE loop_items SET done_at = NULL WHERE id = ?'
+  ).run(id);
+  return get(id);
+}
+
 // 整改清单一次性问「这些整改项各自排了没、做完没」，避免每行一个请求
 export function planStatusByFix() {
   return db.prepare(

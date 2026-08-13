@@ -529,6 +529,158 @@ body.dark #panel-tasks .kcount{
 body.dark #panel-tasks .tage-idle {
   background: #2a2113;
 }
+
+/* ===== 日期条 + 回放（只读快照） ===== */
+#panel-tasks .planday {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+#panel-tasks .planday .cell-date {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--text1);
+  font-size: 12px;
+}
+#panel-tasks .planday .btn-mini {
+  width: auto;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  gap: 4px;
+  font-size: 12px;
+}
+#panel-tasks .planday-hint {
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--text3);
+}
+#panel-tasks .planday-hint.on {
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  background: #fff7e8;
+  color: #b76a00;
+}
+
+#plan-history .hcard {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+  margin-bottom: 6px;
+}
+#plan-history .sop-list .hcard {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#plan-history .sop-list .hcard + .hcard {
+  border-top: 1px solid var(--border);
+}
+#plan-history .hrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+#plan-history .htext {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text1);
+}
+#plan-history .hright {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#plan-history .hdue,
+#plan-history .hnote {
+  font-size: 11px;
+  color: var(--text3);
+}
+#plan-history .hmemo {
+  margin: 4px 0 0 4px;
+  font-size: 11px;
+  color: var(--text3);
+}
+#plan-history .hcheck {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: #ffffff;
+}
+#plan-history .hsop.on .hcheck {
+  background: var(--green);
+  border-color: var(--green);
+}
+#plan-history .hsop.on .htext {
+  color: var(--text3);
+  text-decoration: line-through;
+}
+/* 那天这条有没有交代：当天完成 / 当天推进 / 此前已完成 / 无记录 */
+#plan-history .hstat {
+  flex: none;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  white-space: nowrap;
+}
+#plan-history .hs-done {
+  background: #f6fffb;
+  color: var(--green);
+}
+#plan-history .hs-push {
+  background: #eef6ff;
+  color: var(--primary);
+}
+#plan-history .hs-old {
+  background: #f0f2f5;
+  color: var(--text3);
+}
+#plan-history .hs-none {
+  background: #fff7e8;
+  color: #b76a00;
+}
+#plan-history .hsubs {
+  margin: 0 0 6px 6px;
+  padding-left: 12px;
+  border-left: 2px solid var(--border);
+}
+#plan-history .hempty,
+#plan-history .hloading {
+  padding: 14px 10px;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--text3);
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.6;
+}
+body.dark #plan-history .hcard,
+body.dark #plan-history .hempty,
+body.dark #plan-history .hloading,
+body.dark #panel-tasks .planday .cell-date {
+  background: #10151d;
+  border-color: #202838;
+}
 body.dark #panel-tasks .tmeta .task-push.on {
   background: #0f1a15;
 }

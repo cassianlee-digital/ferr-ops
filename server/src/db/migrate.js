@@ -519,6 +519,9 @@ export function migrate() {
     ['start_date', 'TEXT'],
     // 出身：这条任务是从哪条整改项排下来的（诊断→整改→日计划→回写 的那根线）
     ['fix_id', 'INTEGER'],
+    // 完成时刻。以前只存 state='done'，"那天完成了什么"就永远答不出来；
+    // 老数据留 NULL——不知道就是不知道，不编。
+    ['done_at', 'TEXT'],
     // 公司大任务拆解：子任务父指针（旧库幂等加列）
     ['parent_id', 'INTEGER'],
     // 归档地基（第①步）：旧库幂等加列

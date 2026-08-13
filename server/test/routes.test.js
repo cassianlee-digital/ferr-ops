@@ -266,6 +266,46 @@ test('放弃的整改不被任务状态牵着走；归档的整改不能再排',
   assert.equal(denied.statusCode, 409);
 });
 
+// 日计划回放：那天在盘子里的任务 + 那天的打卡 + 完成时刻。
+// 没有 done_at 就答不了"那天完成了什么"，所以完成时刻必须在 PATCH 时被戳上。
+test('日计划回放：跨天任务的每一天都在、当天完成的算数、完成时刻被记下', async () => {
+  const mk = (payload) => app.inject({ method: 'POST', url: '/api/loop-items', headers: auth('boss'), payload: { kind: 'task', ...payload } });
+  const span = (await mk({ dept: 'SEO', content: '跨天的活', start_date: '2026-08-10', task_date: '2026-08-14' })).json().item;
+  const oneDay = (await mk({ dept: 'SEO', content: '只在 08-12 那天', start_date: '2026-08-12', task_date: '2026-08-12' })).json().item;
+
+  // 勾完 → done_at 被戳上
+  const done = await app.inject({
+    method: 'PATCH', url: `/api/loop-items/${oneDay.id}`, headers: auth('seo'), payload: { state: 'done', status: 'done' },
+  });
+  assert.ok(done.json().item.done_at, '完成必须留下时刻，否则回放答不出"那天完成了什么"');
+
+  await app.inject({
+    method: 'POST', url: '/api/task-checkins', headers: auth('seo'),
+    payload: { loop_item_id: span.id, day_key: '2026-08-12', note: '写了两段' },
+  });
+
+  const d12 = await app.inject({ method: 'GET', url: '/api/daily-plan?day=2026-08-12', headers: auth('boss') });
+  assert.equal(d12.statusCode, 200);
+  const ids12 = d12.json().tasks.map((t) => t.id);
+  assert.ok(ids12.includes(span.id), '跨天任务的中间那天也该在盘子里');
+  assert.ok(ids12.includes(oneDay.id));
+  assert.equal(d12.json().checkins.filter((c) => c.loop_item_id === span.id)[0].note, '写了两段');
+
+  // 区间外的日子：跨天任务不该出现
+  const d09 = await app.inject({ method: 'GET', url: '/api/daily-plan?day=2026-08-09', headers: auth('boss') });
+  assert.ok(!d09.json().tasks.map((t) => t.id).includes(span.id), '开始日之前不该算它在盘子里');
+
+  // 撤销完成 → done_at 清掉，不留假记录
+  await app.inject({ method: 'PATCH', url: `/api/loop-items/${oneDay.id}`, headers: auth('seo'), payload: { state: 'todo', status: '待办' } });
+  const after = await app.inject({ method: 'GET', url: '/api/daily-plan?day=2026-08-12', headers: auth('boss') });
+  assert.equal(after.json().tasks.find((t) => t.id === oneDay.id).done_at, null);
+});
+
+test('回放要日期，且格式必须对（脏参数不能悄悄回空盘子）', async () => {
+  assert.equal((await app.inject({ method: 'GET', url: '/api/daily-plan', headers: auth('boss') })).statusCode, 400);
+  assert.equal((await app.inject({ method: 'GET', url: '/api/daily-plan?day=2026/08/12', headers: auth('boss') })).statusCode, 400);
+});
+
 test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响应吐回来', async () => {
   const res = await app.inject({ method: 'GET', url: '/api/nope-not-a-route' });
   assert.equal(res.statusCode, 404);

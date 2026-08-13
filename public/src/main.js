@@ -28,5 +28,8 @@ import * as hermesMemory from './hermes-memory.js';
 // 已迁移（批次6）：inquiry-globe（唯一入口 renderGlobe 被 inquiries.js:32 / index.html:1109,1195 调用；
 //                                其余 20 个符号无外部引用，已全部收进模块作用域）
 import * as inquiryGlobe from './inquiry-globe.js';
+// 新增（不是迁移，是新写的）：plan-history —— 日计划按日期回放。
+// 日期条用事件委托，零内联 handler；只有 setPlanDay/planDayIsToday 需要给别的脚本用。
+import * as planHistory from './plan-history.js';
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory);

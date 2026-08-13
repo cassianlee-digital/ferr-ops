@@ -807,31 +807,31 @@
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
   }
   function resolveRange(label) {
-    const today = /* @__PURE__ */ new Date();
-    today.setHours(0, 0, 0, 0);
+    const today2 = /* @__PURE__ */ new Date();
+    today2.setHours(0, 0, 0, 0);
     const back = (n) => {
-      const d = new Date(today);
+      const d = new Date(today2);
       d.setDate(d.getDate() - n);
       return d;
     };
     const r = (s, e) => ({ start_date: formatLocalDate(s), end_date: formatLocalDate(e), period_label: label });
     switch (label) {
       case "\u4ECA\u5929":
-        return r(today, today);
+        return r(today2, today2);
       case "\u6628\u5929": {
         const y = back(1);
         return r(y, y);
       }
       case "\u8FD17\u5929":
-        return r(back(6), today);
+        return r(back(6), today2);
       case "\u8FD130\u5929":
-        return r(back(29), today);
+        return r(back(29), today2);
       case "\u8FD190\u5929":
-        return r(back(89), today);
+        return r(back(89), today2);
       case "\u8FD1\u4E00\u5E74":
-        return r(back(364), today);
+        return r(back(364), today2);
       case "\u4E0A\u5468": {
-        const day = (today.getDay() + 6) % 7;
+        const day = (today2.getDay() + 6) % 7;
         const thisMon = back(day);
         const lastMon = new Date(thisMon);
         lastMon.setDate(thisMon.getDate() - 7);
@@ -840,25 +840,25 @@
         return r(lastMon, lastSun);
       }
       case "\u4E0A\u534A\u6708": {
-        const first = new Date(today.getFullYear(), today.getMonth(), 1);
-        const mid = new Date(today.getFullYear(), today.getMonth(), 15);
+        const first = new Date(today2.getFullYear(), today2.getMonth(), 1);
+        const mid = new Date(today2.getFullYear(), today2.getMonth(), 15);
         return r(first, mid);
       }
       case "\u8FD11\u6708":
-        return r(back(29), today);
+        return r(back(29), today2);
       case "\u8FD13\u6708":
-        return r(back(89), today);
+        return r(back(89), today2);
       case "\u8FD1\u534A\u5E74":
-        return r(back(179), today);
+        return r(back(179), today2);
       case "\u8FD11\u5E74":
-        return r(back(364), today);
+        return r(back(364), today2);
       case "\u81EA\u5B9A\u4E49": {
         const cr = window._customRange;
         if (!cr) return null;
         return { start_date: cr.start_date, end_date: cr.end_date, period_label: "\u81EA\u5B9A\u4E49 " + cr.start_date + "~" + cr.end_date };
       }
       default:
-        return r(back(29), today);
+        return r(back(29), today2);
     }
   }
   var _range = resolveRange(window._timeRange);
@@ -946,14 +946,14 @@
   });
   function openCustomRange() {
     const cr = window._customRange || {};
-    const today = formatLocalDate(/* @__PURE__ */ new Date());
+    const today2 = formatLocalDate(/* @__PURE__ */ new Date());
     const back = (n) => {
       const d = /* @__PURE__ */ new Date();
       d.setDate(d.getDate() - n);
       return formatLocalDate(d);
     };
     document.getElementById("cr-start").value = cr.start_date || back(29);
-    document.getElementById("cr-end").value = cr.end_date || today;
+    document.getElementById("cr-end").value = cr.end_date || today2;
     openModal("customRangeMask");
     setTimeout(() => document.getElementById("cr-start").focus(), 50);
   }
@@ -1193,7 +1193,7 @@
     return false;
   }
   function buildSopOverdueList() {
-    const today = formatLocalDate(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^\d{4}\./, "");
+    const today2 = formatLocalDate(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^\d{4}\./, "");
     const lines = [];
     ["daily", "weekly", "monthly"].forEach((freq) => {
       if (!isOverduePeriodFirstDay(freq)) return;
@@ -1201,7 +1201,7 @@
         if (s.freq !== freq) return;
         const done = window._sopDone[freq] && window._sopDone[freq].has(s.id);
         if (done) return;
-        lines.push(esc(s.dept) + "-" + today + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
+        lines.push(esc(s.dept) + "-" + today2 + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
       });
     });
     return lines;
@@ -2326,6 +2326,136 @@
     }, true);
   }
 
+  // public/src/plan-history.js
+  var plan_history_exports = {};
+  __export(plan_history_exports, {
+    planDayIsToday: () => planDayIsToday,
+    setPlanDay: () => setPlanDay
+  });
+  var DEPTS = [
+    { key: "\u516C\u53F8", label: "\u516C\u53F8\u4EFB\u52A1", badge: "b-red" },
+    { key: "SEM", label: "SEM \u4EFB\u52A1\uFF08\u9648\uFF09", badge: "b-purple" },
+    { key: "SEO", label: "SEO \u4EFB\u52A1\uFF08\u674E\uFF09", badge: "b-blue" }
+  ];
+  var FREQ_TAG2 = { daily: "\u65E5", weekly: "\u5468", monthly: "\u6708" };
+  var _day = null;
+  function planDayIsToday() {
+    return !_day || _day === formatLocalDate(/* @__PURE__ */ new Date());
+  }
+  var today = () => formatLocalDate(/* @__PURE__ */ new Date());
+  var shiftDay = (day, n) => {
+    const d = /* @__PURE__ */ new Date(day + "T00:00:00");
+    d.setDate(d.getDate() + n);
+    return formatLocalDate(d);
+  };
+  function periodKeysFor(day) {
+    const d = /* @__PURE__ */ new Date(day + "T00:00:00");
+    const tmp = new Date(d);
+    tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7));
+    const yearStart = new Date(tmp.getFullYear(), 0, 1);
+    const week = Math.ceil(((tmp - yearStart) / 864e5 + 1) / 7);
+    return {
+      weekly: tmp.getFullYear() + "-W" + String(week).padStart(2, "0"),
+      monthly: d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
+    };
+  }
+  function taskStateFor(t, day, pushed) {
+    const doneDay = (t.done_at || "").slice(0, 10);
+    if (doneDay === day) return { cls: "hs-done", text: "\u5F53\u5929\u5B8C\u6210" };
+    if (pushed.has(t.id)) return { cls: "hs-push", text: "\u5F53\u5929\u63A8\u8FDB" };
+    if (doneDay && doneDay < day) return { cls: "hs-old", text: "\u6B64\u524D\u5DF2\u5B8C\u6210" };
+    return { cls: "hs-none", text: "\u65E0\u8BB0\u5F55" };
+  }
+  function taskRowHtml(t, day, pushed, note) {
+    const st = taskStateFor(t, day, pushed);
+    const span = t.start_date && t.task_date && t.start_date < t.task_date ? `${esc(t.start_date.slice(5))} ~ ${esc(t.task_date.slice(5))}` : esc(t.task_date || "");
+    const src = t.fix_id ? '<span class="badge b-amber">\u6574\u6539</span>' : "";
+    const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc(t.owner)}</span>` : "";
+    const memo = note ? `<span class="hnote">${esc(note)}</span>` : "";
+    return `<div class="hcard">
+    <div class="hrow"><span class="htext">${esc(t.content || "")}</span>
+      <span class="hright">${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st.cls}">${st.text}</span></span></div>
+    ${memo ? `<div class="hmemo">${memo}</div>` : ""}
+  </div>`;
+  }
+  function render(data) {
+    const box = document.getElementById("plan-history");
+    if (!box) return;
+    const day = data.day;
+    const pushed = new Set((data.checkins || []).map((c) => c.loop_item_id));
+    const noteOf = new Map((data.checkins || []).filter((c) => c.note).map((c) => [c.loop_item_id, c.note]));
+    const subsByParent = /* @__PURE__ */ new Map();
+    (data.subtasks || []).forEach((s) => {
+      if (!subsByParent.has(s.parent_id)) subsByParent.set(s.parent_id, []);
+      subsByParent.get(s.parent_id).push(s);
+    });
+    box.innerHTML = '<div class="tboard">' + DEPTS.map((d) => {
+      const sops = (data.sops || []).filter((s) => s.dept === d.key);
+      const tasks = (data.tasks || []).filter((t) => (t.dept || "SEO") === d.key);
+      const sopDone = sops.filter((s) => s.done).length;
+      const spoken = tasks.filter((t) => (t.done_at || "").slice(0, 10) === day || pushed.has(t.id)).length;
+      const sopHtml = sops.length ? '<div class="sop-list">' + sops.map((s) => `<div class="hcard hsop${s.done ? " on" : ""}">
+          <div class="hrow"><span class="hcheck">${s.done ? '<i class="ti ti-check"></i>' : ""}</span>
+            <span class="htext">${esc(s.title)}</span>
+            <span class="hright">${s.active ? "" : '<span class="badge b-gray">\u5DF2\u505C\u7528</span>'}<span class="freq-tag">${FREQ_TAG2[s.freq] || ""}</span></span></div>
+        </div>`).join("") + "</div>" : '<div class="hempty">\u5F53\u65F6\u6CA1\u6709\u914D\u7F6E SOP</div>';
+      const taskHtml = tasks.length ? tasks.map((t) => {
+        const subs = subsByParent.get(t.id) || [];
+        return taskRowHtml(t, day, pushed, noteOf.get(t.id)) + (subs.length ? `<div class="hsubs">${subs.map((s2) => taskRowHtml(s2, day, pushed, noteOf.get(s2.id))).join("")}</div>` : "");
+      }).join("") : '<div class="hempty">\u90A3\u5929\u8FD9\u4E00\u5217\u6CA1\u6709\u4EFB\u52A1</div>';
+      return `<div class="pblock">
+      <div class="pblock-head"><span class="badge ${d.badge}">${esc(d.key)}</span><span class="pn">${esc(d.label)}</span>
+        <span class="kcount">SOP ${sopDone}/${sops.length} \xB7 \u4EFB\u52A1 ${tasks.length} \xB7 \u6709\u4EA4\u4EE3 ${spoken}</span></div>
+      <div class="sopnew">
+        <div><div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>${sopHtml}</div>
+        <div><div class="colcap"><i class="ti ti-list-check"></i> \u5F53\u5929\u5728\u76D8\u5B50\u91CC\u7684\u4EFB\u52A1</div>${taskHtml}</div>
+      </div>
+    </div>`;
+    }).join("") + "</div>";
+  }
+  async function load(day) {
+    const box = document.getElementById("plan-history");
+    if (!box) return;
+    const pk = periodKeysFor(day);
+    box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc(day) + " \u7684\u8BB0\u5F55\u2026</div>";
+    try {
+      const data = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
+      render(data);
+    } catch (e) {
+      box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
+    }
+  }
+  function setPlanDay(day) {
+    const isToday = !day || day === today();
+    _day = isToday ? null : day;
+    const board = document.querySelector("#panel-tasks > .tboard");
+    const hist = document.getElementById("plan-history");
+    const hint = document.getElementById("planday-hint");
+    const input = document.getElementById("planday-input");
+    if (input) input.value = day || today();
+    if (board) board.style.display = isToday ? "" : "none";
+    if (hist) hist.style.display = isToday ? "none" : "";
+    if (hint) {
+      hint.textContent = isToday ? "" : "\u56DE\u653E\u6A21\u5F0F \xB7 \u53EA\u8BFB";
+      hint.className = "planday-hint" + (isToday ? "" : " on");
+    }
+    if (!isToday) load(day);
+  }
+  document.addEventListener("click", (e) => {
+    const step = e.target.closest("[data-planday]");
+    if (step) {
+      const base = (document.getElementById("planday-input") || {}).value || today();
+      setPlanDay(shiftDay(base, Number(step.dataset.planday)));
+      return;
+    }
+    if (e.target.closest("#planday-today")) setPlanDay(today());
+  });
+  document.addEventListener("change", (e) => {
+    if (e.target && e.target.id === "planday-input") setPlanDay(e.target.value || today());
+  });
+  var _dayInput = document.getElementById("planday-input");
+  if (_dayInput && !_dayInput.value) _dayInput.value = today();
+
   // public/src/main.js
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports);
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports);
 })();

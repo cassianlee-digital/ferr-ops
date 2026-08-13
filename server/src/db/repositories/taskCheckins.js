@@ -17,6 +17,11 @@ export function summary(dayKey) {
   ).all({ day: dayKey || '' });
 }
 
+// 某一天的全部打卡（日计划回放：那天谁推进了哪条）
+export function listForDay(dayKey) {
+  return db.prepare('SELECT * FROM task_checkins WHERE day_key = ?').all(dayKey);
+}
+
 export function listForItem(loopItemId) {
   return db.prepare(
     'SELECT * FROM task_checkins WHERE loop_item_id = ? ORDER BY day_key ASC'

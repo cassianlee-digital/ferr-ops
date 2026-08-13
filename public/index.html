@@ -640,6 +640,15 @@
         <!-- Step C：未做 SOP 提示 banner（周期首日 08:00 后才显示）+ 公司新派 banner（urgent=1 未完成；硬编码 Bafaw banner 已移除）-->
         <div id="sop-overdue-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-alert-triangle" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">未完成提示</div><div class="banner-s" id="sop-overdue-list"></div></div></div>
         <div id="urgent-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-bell-ringing" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">公司新派任务</div><div class="banner-s" id="urgent-list"></div></div></div>
+        <!-- 日期条：选别的日期 = 只读回放那天的日计划（plan-history.js 事件委托，无内联 handler） -->
+        <div class="planday">
+          <button class="btn-mini" data-planday="-1" title="前一天"><i class="ti ti-chevron-left"></i></button>
+          <input type="date" id="planday-input" class="cell-date">
+          <button class="btn-mini" data-planday="1" title="后一天"><i class="ti ti-chevron-right"></i></button>
+          <button class="btn-mini" id="planday-today"><i class="ti ti-calendar-due"></i> 今天</button>
+          <span class="planday-hint" id="planday-hint"></span>
+        </div>
+        <div id="plan-history" style="display:none"></div>
         <div class="tboard">
           <!-- 公司任务（前） -->
           <div class="pblock co-block" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span><span class="kcount" id="kcount-company">SOP 0 · 派发 0</span></div>
