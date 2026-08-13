@@ -29,20 +29,27 @@ export function list(kind, opts = {}) {
   return db.prepare(sql).all(params);
 }
 
+// INSERT 的具名参数必须齐全（better-sqlite3 缺一个就抛 RangeError），所以按列清单归一：
+// 调用方少给的补 null、多给的丢掉，新增列不再逼着每个调用方同步改。
+const CREATE_COLS = ['kind', 'dept', 'content', 'owner', 'status',
+  'task_date', 'start_date', 'task_hour', 'note', 'urgent', 'parent_id'];
+
 export function create(rec) {
+  const row = {};
+  for (const c of CREATE_COLS) row[c] = rec?.[c] ?? null;
   const info = db
     .prepare(
-      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, task_hour, note, urgent, parent_id)
-       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@task_hour,@note,@urgent,@parent_id)`
+      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, start_date, task_hour, note, urgent, parent_id)
+       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@start_date,@task_hour,@note,@urgent,@parent_id)`
     )
-    .run(rec);
+    .run(row);
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(info.lastInsertRowid);
 }
 
 export function update(id, fields) {
   const allowed = ['dept', 'content', 'owner', 'status',
     'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis',
-    'task_date', 'task_hour', 'note',
+    'task_date', 'start_date', 'task_hour', 'note',
     'state', 'archived_at', 'deleted_at', 'archive_kind',
     'urgent'];
   updateById('loop_items', id, fields, allowed);

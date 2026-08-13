@@ -1076,7 +1076,7 @@
   function sopCardEl(s) {
     const done = window._sopDone[s.freq] && window._sopDone[s.freq].has(s.id);
     const row = document.createElement("div");
-    row.className = "tcard sop-row" + (done ? " done" : "");
+    row.className = "tcard" + (done ? " done" : "");
     row.dataset.sopId = s.id;
     row.dataset.sopFreq = s.freq;
     const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";

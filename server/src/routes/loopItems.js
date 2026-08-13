@@ -31,6 +31,7 @@ export async function loopItemsRoutes(app) {
       owner: s(b.owner, 20),
       status: s(b.status, 20) || '',
       task_date: s(b.task_date, 20),
+      start_date: s(b.start_date, 20),
       task_hour: s(b.task_hour, 10),
       note: s(b.note, 400),
       urgent: b.urgent === 1 || b.urgent === '1' || b.urgent === true ? 1 : null,

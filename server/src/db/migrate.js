@@ -172,7 +172,8 @@ CREATE TABLE IF NOT EXISTS loop_items (
   period        TEXT,   -- 测试：起止
   conclusion    TEXT,   -- 测试：结论
   analysis      TEXT,   -- 沉淀：对该动作的分析
-  task_date     TEXT,   -- 任务：日期（可选）
+  task_date     TEXT,   -- 任务：截止日（可选）
+  start_date    TEXT,   -- 任务：开始日（可选）。与 task_date 一起表达跨天任务：start<=今天<截止 即「进行中」
   task_hour     TEXT,   -- 任务：今日完成时间（小时 00-23）
   note          TEXT,   -- 任务：备注
   parent_id     INTEGER,-- 公司大任务拆解：子任务指向父 loop_item.id；NULL=顶层任务
@@ -500,6 +501,8 @@ export function migrate() {
     ['variable', 'TEXT'], ['period', 'TEXT'], ['conclusion', 'TEXT'],
     ['analysis', 'TEXT'],
     ['task_date', 'TEXT'], ['task_hour', 'TEXT'], ['note', 'TEXT'],
+    // 跨天任务：开始日（旧库幂等加列；老数据 NULL = 当天任务，语义不变）
+    ['start_date', 'TEXT'],
     // 公司大任务拆解：子任务父指针（旧库幂等加列）
     ['parent_id', 'INTEGER'],
     // 归档地基（第①步）：旧库幂等加列
@@ -547,10 +550,31 @@ export function migrate() {
   // 周报 week_key 从「年-月-第几周」升级为「本周周一日期 YYYY-MM-DD」，根治相邻周撞 key。幂等。
   try { migrateWeeklyKeysToMonday(); } catch (e) {}
 
+  // 一次性回填：start_date 之前的老任务都是 NULL，日计划会把「截止日在未来」的它们判成「稍后」，
+  // 看着像没人做。按创建日补开始日，让它们回到「进行中」。
+  // 只跑一次（meta 打标），否则用户事后手动清空开始日会被下次启动重新填回来。
+  try { backfillTaskStartDates(); } catch (e) {}
+
   db.prepare(
     `INSERT INTO meta (key,value) VALUES ('schema_version',?)
      ON CONFLICT(key) DO UPDATE SET value=excluded.value`
   ).run(SCHEMA_VERSION);
+}
+
+// 老任务补开始日：只补 kind='task'、有截止日、start_date 仍为空的行，取创建日（created_at 的日期部分）。
+// 创建日晚于截止日的（补录的旧任务）取截止日，避免出现「开始晚于截止」的倒挂区间。
+function backfillTaskStartDates() {
+  const done = db.prepare("SELECT value FROM meta WHERE key='backfill_task_start_date'").get();
+  if (done) return;
+  db.prepare(
+    `UPDATE loop_items
+        SET start_date = MIN(date(created_at), task_date)
+      WHERE kind = 'task'
+        AND (start_date IS NULL OR start_date = '')
+        AND task_date IS NOT NULL AND task_date <> ''
+        AND created_at IS NOT NULL`
+  ).run();
+  db.prepare("INSERT INTO meta (key,value) VALUES ('backfill_task_start_date','1')").run();
 }
 
 // 把旧「年-月-第几周」周报键改写成「本周周一日期 YYYY-MM-DD」。幂等：日期键/月报键都不匹配 legacy 正则。

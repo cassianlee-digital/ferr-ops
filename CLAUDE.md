@@ -14,7 +14,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **后端不是单文件**:Fastify,模块化良好。
   - `server/src/routes/`(**27 个路由**)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1504 行 / 144KB**,**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分三层:**经典脚本**(`hermes.js`/`charts.js`/`inquiries.js`/`kpi.js`/`ai.js`/`closed-loop.js`/`weekly-review.js`/`api.js`)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1539 行 / 146KB**(2026-08-13 复测),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分三层:**经典脚本**(`hermes.js`/`charts.js`/`inquiries.js`/`kpi.js`/`ai.js`/`closed-loop.js`/`weekly-review.js`/`api.js`)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -25,9 +25,9 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **自有函数约 285 个挂在 `window` 上**(实测:空 iframe 差集 = 338 名字 / 302 函数,含 vendor;其中经典脚本顶层函数 217 + `main.js` 挂上去的模块导出 68)。
   - **别用 grep 数 `window.X =` 去估全局面**——那样只得 56,**低 6 倍**:经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量。
-- **内联 handler 是模块化的地板**:模板/HTML 里有 **157 个内联 `onclick`/`onchange`**,裸调用 **77 个全局函数名**。`onclick="foo()"` 在**点击那一刻**才从 `window` 查 `foo` —— 所以**无论 ES 模块迁移做到多完整,这 77 个都必须留在 `window` 上**。`src/main.js` 末尾的 `Object.assign(window, …)` 就是这个兼容层,其注释已写明「供内联 onclick 调用」。
-- **迁移确实在消全局,不是白干**(inquiry-globe:21 个顶层符号 → 1 个导出,净减 20)。但它的**终点是 77 个强制全局,不是 0**;想拆掉这层地板**只有事件委托**(`document` 上一个监听器 + `data-action` 属性)。**在那之前别承诺「模块化完成后全局清零」。**
-- **最大的隐形风险**:内联 handler 对打包器/静态分析**完全隐形**。改掉一个被 `onclick` 调用的函数名,**没有任何编译期报错**,直到用户点下去才 ReferenceError。**故每批迁移/改名后,必须在活站上核对这 77 个名字仍是 function**(2026-07-15 已核:77/77 全在,无已坏按钮)。
+- **内联 handler 是模块化的地板**:模板/HTML 里有 **177 个内联 `onclick`/`onchange`**,裸调用 **82 个全局函数名**(2026-08-13 复测,日计划改造 +3:openTaskEdit/taskDefer/taskDrop)。`onclick="foo()"` 在**点击那一刻**才从 `window` 查 `foo` —— 所以**无论 ES 模块迁移做到多完整,这 82 个都必须留在 `window` 上**。`src/main.js` 末尾的 `Object.assign(window, …)` 就是这个兼容层,其注释已写明「供内联 onclick 调用」。
+- **迁移确实在消全局,不是白干**(inquiry-globe:21 个顶层符号 → 1 个导出,净减 20)。但它的**终点是这 82 个强制全局,不是 0**;想拆掉这层地板**只有事件委托**(`document` 上一个监听器 + `data-action` 属性)。**在那之前别承诺「模块化完成后全局清零」。**
+- **最大的隐形风险**:内联 handler 对打包器/静态分析**完全隐形**。改掉一个被 `onclick` 调用的函数名,**没有任何编译期报错**,直到用户点下去才 ReferenceError。**故每批迁移/改名后,必须在活站上核对这些名字仍是 function**(2026-07-15 已核 77/77;2026-08-13 新增的 3 个已在活页核过)。
 
 ## API / Sync Reality(真实状态,禁止把未实现描述成已完成)
 
@@ -51,6 +51,15 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **仍残留的 demo 假数据:** 整改清单 AI 框两条写死建议(`index.html` 约 348-349);GA4 看板与总览部分 mini 图仍空状态。
 - **时间筛选目前只停留在前端变量**(`window._timeRange`),总览/KPI 仍不受区间影响(询盘/SEO/SEM/诊断已真正按区间重算)。
 - **AI 目前是单 provider**,仅通过 Anthropic(`server/src/services/anthropic.js`)。
+- **日计划(`#panel-tasks`)已改版**(2026-08-13):三列(公司/陈-SEM/李-SEO),每列上=SOP 固定清单、下=每日新增。
+  - SOP 日/周/月**合并成一个清单框**,一条一行,频率是行尾标签(`src/sop.js renderSopCards/sopCardEl`)。
+  - 任务卡单行、无彩色边条;三列各自 `max-height:64vh` 滚动(1280px 断点下撤销,见 `page-tasks.css` 注释)。
+  - `loop_items` 加 **`start_date`**(开始日),`task_date` 语义=**截止日**。两者构成跨天任务:
+    `逾期(截止<今天) / 今日(截止=今天或无日期) / 进行中(已开始未到截止) / 稍后`,**分组只在 SEM/SEO 列**,公司列平铺。
+    跨天卡显示「第 N/M 天」、逾期卡显示「逾期 N 天」+ 两个出口(顺延到今天 / 放弃并归档)。
+  - 日期胶囊可点 → 复用任务弹窗的**编辑模式**(`openTaskEdit` + `submitTask` 的 `_taskEditing` 分支)走 PATCH。
+  - 每列列尾「已完成 N 项」折叠条(默认收起);跨零点靠 `checkDayRollover()`(visibility/focus/5min)**就地重排,不重拉列表**。
+  - 老库一次性回填 `start_date=创建日`(migrate 的 `backfillTaskStartDates`,`meta.backfill_task_start_date` 打标只跑一次)。
 
 ## Low Token Working Rules
 
@@ -75,8 +84,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 数据建议必须能**追溯到数据证据**。
 - AI 建议必须**结构化**,不能只是漂亮文字。
 - 任务必须能被**复盘验证**。
-- **改前端函数名前先搜内联 handler**:被 `onclick=` 调用的名字(77 个)改了**不会有任何报错**,直到用户点击。改完在活站上验 `typeof window.<name>==='function'`。
-- **写进本文件的数字必须是实测的**,并注日期。本文件自称「固定项目真实状态」,一旦数字漂移(2026-07-15 曾查出路由 19→实为 27、index.html 1836 行→实为 1504、innerHTML 47→实为 168),它就从「省 token 的地图」变成「误导人的旧地图」,危害大于没有。**引用前先抽验一个数,对不上就先修文件再干活。**
+- **改前端函数名前先搜内联 handler**:被 `onclick=` 调用的名字(82 个)改了**不会有任何报错**,直到用户点击。改完在活站上验 `typeof window.<name>==='function'`。
+- **写进本文件的数字必须是实测的**,并注日期。本文件自称「固定项目真实状态」,一旦数字漂移(2026-07-15 曾查出路由 19→实为 27、index.html 1836 行→实为 1504、innerHTML 47→实为 168;2026-08-13 又漂:1504→1539、内联 handler 157/77→177/82),它就从「省 token 的地图」变成「误导人的旧地图」,危害大于没有。**引用前先抽验一个数,对不上就先修文件再干活。**
 - 修改后运行相关检查。
 
 ## Security Rules
@@ -87,7 +96,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 密钥只存**服务器环境变量**或**加密存储**(参考 `integrations.js` 的 AES 方案)。
 - **前端不能直接接触密钥。**
 - 所有**用户输入和 API 返回文本**渲染前必须 **escape**。
-- **谨慎使用 `innerHTML`**(2026-07-15 实测 **165 处赋值 + 3 处 `insertAdjacentHTML`**,不是旧文写的 47 处,属 XSS 高风险面)。**这 168 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
+- **谨慎使用 `innerHTML`**(2026-08-13 实测 **236 处赋值 / 分布 167 行 + 2 处 `insertAdjacentHTML`**,不是旧文写的 47 处,属 XSS 高风险面)。**这 238 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
 
 ## 协作流程约定
 

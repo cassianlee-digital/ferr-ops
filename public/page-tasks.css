@@ -337,10 +337,19 @@ body.dark #panel-tasks .kcount{
   line-height: 1.4;
 }
 
-/* 三列各自滚动：不再由最长的一列（公司大任务 + 一串子任务）决定整页高度 */
+/* 三列各自滚动：不再由最长的一列（公司大任务 + 一串子任务）决定整页高度。
+   注意这条必须留在 page-tasks.css —— styles.css 里 1280px 断点会把三列压成一列，
+   那时得撤掉 max-height（三块上下叠着各开一个滚动区 = 三个套娃滚动条），
+   而 page-tasks.css 后加载，同特异性下写在 styles.css 的覆盖压不住它。 */
 #panel-tasks .sopnew {
   max-height: 64vh;
   overflow-y: auto;
+}
+@media (max-width: 1280px) {
+  #panel-tasks .sopnew {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 /* SOP 固定任务：日/周/月合并成一个清单框，每条一行；频率是行尾小标签 */
@@ -426,8 +435,101 @@ body.dark #panel-tasks .kcount{
   background: #ffffff;
   color: var(--text2);
 }
-#panel-tasks .folded > .tcard.done:not(.nofold) {
+/* 折叠只收顶层任务卡；公司大任务下的子任务跟着父卡走，不被收 */
+#panel-tasks .folded .tcard.done:not(.subtask):not(.nofold) {
   display: none;
+}
+
+/* 每日新增分组：逾期 / 今日 / 进行中 / 稍后。跨天任务靠「进行中」天天露面，不用每天新建 */
+#panel-tasks .tgroup + .tgroup {
+  margin-top: 10px;
+}
+#panel-tasks .tgroup.empty {
+  display: none;
+}
+#panel-tasks .tgroup-cap {
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--text3);
+  font-size: 12px;
+}
+#panel-tasks .tgroup-cap .n {
+  min-width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-radius: var(--radius);
+  background: #f0f2f5;
+  font-size: 11px;
+}
+#panel-tasks .tgroup[data-g="overdue"] .tgroup-cap {
+  color: var(--danger);
+}
+#panel-tasks .tgroup[data-g="overdue"] .tgroup-cap .n {
+  background: #fff1f0;
+}
+
+/* 逾期标记挂在卡上而不是分组上——公司列不分组，同样要标红 */
+#panel-tasks .tcard.t-overdue .tdue {
+  color: var(--danger);
+}
+
+/* 天数徽章：跨天任务「第 N/M 天」、逾期「逾期 N 天」。跨天任务唯一的问责信号 */
+#panel-tasks .tage {
+  flex: none;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: var(--radius);
+  background: #f0f2f5;
+  color: var(--text3);
+  font-size: 11px;
+  white-space: nowrap;
+}
+#panel-tasks .tage-over {
+  background: #fff1f0;
+  color: var(--danger);
+}
+
+/* 日期胶囊可点改期 */
+#panel-tasks .tdue.task-edit {
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+#panel-tasks .tdue.task-edit:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+#panel-tasks .tdue-none {
+  color: var(--text3);
+  opacity: 0.75;
+}
+
+/* 逾期两个出口：顺延 / 放弃归档 */
+#panel-tasks .tmeta .task-defer,
+#panel-tasks .tmeta .task-drop {
+  margin-left: 4px !important;
+  color: var(--text2);
+}
+#panel-tasks .tcard.t-overdue .tmeta .task-defer:hover {
+  color: var(--primary);
+}
+#panel-tasks .tcard.t-overdue .tmeta .task-drop:hover {
+  color: var(--danger);
+}
+
+body.dark #panel-tasks .tage {
+  background: #151d28;
+}
+body.dark #panel-tasks .tgroup-cap .n {
+  background: #151d28;
 }
 
 body.dark #panel-tasks .sop-list {

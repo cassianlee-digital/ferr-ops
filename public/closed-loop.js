@@ -76,25 +76,119 @@ function addPlan(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-plan-sem':'
 function coScope(){return {dept:'公司',owner:'',c:'b-red'};}
 // 三栏 UI 后：公司派发任务卡插入 #newtask-company（其内有 .add-task 直接子节点，insertBefore 才合法）
 function taskColFor(dept){return document.getElementById(dept==='公司'?'newtask-company':(dept==='SEM'?'newtask-sem':'newtask-seo'));}
+/* 跨天任务分组：一条任务写一次、设开始日+截止日，这段时间里天天落在「进行中」，不用每天拆一条。
+   逾期=截止日已过；今日=截止就是今天或没填日期；进行中=已开始但还没到截止；稍后=还没到开始日。 */
+const TASK_GROUPS=[['overdue','逾期'],['today','今日'],['doing','进行中'],['later','稍后']];
+function taskGroupOf(it){
+  const t=formatLocalDate(new Date());
+  const due=(it&&it.task_date)||'', st=(it&&it.start_date)||'';
+  if(due&&due<t)return 'overdue';
+  if(st&&st>t)return 'later';
+  if(due&&due>t)return st?'doing':'later'; // 只有截止没开始日 = 排在以后做，不算已经在做
+  return 'today';
+}
+// 分组容器按 TASK_GROUPS 固定顺序排列，永远待在折叠条/新增按钮之前
+function taskGroupEl(col,g){
+  let el=col.querySelector(':scope > .tgroup[data-g="'+g+'"]');
+  if(el)return el;
+  const label=(TASK_GROUPS.find(x=>x[0]===g)||[,g])[1];
+  el=document.createElement('div'); el.className='tgroup'; el.dataset.g=g;
+  el.innerHTML=`<div class="tgroup-cap">${esc(label)} <span class="n"></span></div>`;
+  const order=TASK_GROUPS.map(x=>x[0]);
+  const after=[...col.querySelectorAll(':scope > .tgroup')].find(x=>order.indexOf(x.dataset.g)>order.indexOf(g))
+    ||col.querySelector('.donefold')||col.querySelector('.add-task');
+  if(after)col.insertBefore(el,after); else col.appendChild(el);
+  return el;
+}
 function addTaskCard(s,content,it){
   const col=taskColFor(s.dept); if(!col)return null;
-  // 插入锚点：折叠条永远贴着「新增」按钮待在列尾，新卡插在它之前
-  const add=col.querySelector('.donefold')||col.querySelector('.add-task');
-  const done=!!(it&&(it.state==='done'||it.status==='done')); // 归档③：优先 state，兼容旧 status='done' 行
+  const item=Object.assign({},it||{}); item.content=content||item.content||'';
+  const done=!!(item.state==='done'||item.status==='done'); // 归档③：优先 state，兼容旧 status='done' 行
   const isCoParent=s.dept==='公司'; // 公司顶层大任务：可拆解出子任务
-  const card=document.createElement('div'); card.className='tcard'+(isCoParent?' cotask':'')+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
-  // 公司卡：分发键吃 margin-left:auto（靠右），删除键仅留小间距；普通卡：删除键吃 auto 靠右
-  const del=(it&&it.id)?`<button class="btn-mini" style="color:var(--primary);margin-left:${isCoParent?'8px':'auto'}" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
-  const split=isCoParent?`<button class="btn-mini cotask-split" onclick="openSubtaskModal(this)"><i class="ti ti-git-branch"></i> 分发</button>`:'';
-  // 个人任务(SEM/SEO)在各自列里、左侧色条已表明部门，dept 徽章冗余 → 只公司大任务保留「公司」徽章
-  const deptBadge=isCoParent?`<span class="badge ${s.c}">${esc(s.dept)}</span>`:'';
-  const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
-  const due=(dt||hr)?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr?(dt?' ':'')+esc(hr)+':00':''}</span>`:'';
-  // 备注并入 meta 行（备注居左、日期/删除居右同一行），消掉单独的备注行与空白，卡更紧凑、两边对齐
-  const note=(it&&it.note)?`<span class="tnote">${esc(it.note)}</span>`:'';
-  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(content||'')}</div><div class="tmeta">${deptBadge}${note}${due}${split}${del}</div>`;
+  const card=document.createElement('div'); card.className='tcard'+(isCoParent?' cotask':'')+(done?' done':''); if(item.id)card.dataset.id=item.id;
+  // 卡自带数据：改期/换天后重渲染 meta 与重新分组都读它，不用回后端也不用解析 DOM 文本
+  card._item=item; card._scope=s;
+  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(item.content)}</div><div class="tmeta"></div>`;
   if(isCoParent){ const box=document.createElement('div'); box.className='subtasks'; card.appendChild(box); } // 子任务容器
-  if(add)col.insertBefore(card,add); else col.appendChild(card); return card;
+  renderTaskMeta(card); placeTaskCard(card); return card;
+}
+/* meta 行整条由卡上的 _item 推导：日期胶囊（可点改期）+ 天数 + 逾期两个出口 + 分发 + 删除。
+   任何一次改期/换天只要重跑它 + placeTaskCard，卡的显示和所在分组就一起对上。 */
+function renderTaskMeta(card){
+  const it=card._item||{}, s=card._scope||{}, box=card.querySelector('.tmeta');
+  if(!box)return;
+  const isCo=card.classList.contains('cotask'), g=taskGroupOf(it);
+  // 个人任务在各自列里，dept 徽章冗余 → 只公司大任务保留「公司」徽章
+  const deptBadge=isCo?`<span class="badge ${s.c||'b-gray'}">${esc(s.dept||'')}</span>`:'';
+  // 备注并入 meta 行（备注居左、日期/操作居右同一行），消掉单独的备注行与空白
+  const note=it.note?`<span class="tnote">${esc(it.note)}</span>`:'';
+  // 逾期两个出口：顺延到今天 / 放弃并归档。没有出口的话逾期组就是下一个垃圾堆
+  const ops=(g==='overdue'&&it.id)
+    ? `<button class="btn-mini task-defer" onclick="taskDefer(this)" title="顺延到今天"><i class="ti ti-calendar-plus"></i></button>`
+      +`<button class="btn-mini task-drop" onclick="taskDrop(this)" title="放弃并归档"><i class="ti ti-archive"></i></button>`
+    : '';
+  const split=isCo?`<button class="btn-mini cotask-split" onclick="openSubtaskModal(this)"><i class="ti ti-git-branch"></i> 分发</button>`:'';
+  const del=it.id?`<button class="btn-mini" style="color:var(--primary);margin-left:${(isCo||ops)?'8px':'auto'}" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
+  box.innerHTML=deptBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+ops+split+del;
+}
+/* 日期胶囊：跨天显示「开始 ~ 截止」（同年省年份省宽度，完整日期放 title），单日照旧；点它改期。
+   没填日期也给一个「设日期」入口——AI 生成/复盘回流的任务本来就没日期，否则永远没法补。 */
+function taskDueHtml(it){
+  const due=it.task_date||'', st=it.start_date||'', hr=it.task_hour||'';
+  const span=st&&due&&st<due;
+  const short=d=>(st.slice(0,4)===due.slice(0,4)?d.slice(5):d);
+  const txt=span?(short(st)+' ~ '+short(due)):due;
+  const time=hr?((txt?' ':'')+hr+':00'):'';
+  const empty=!txt&&!time;
+  if(empty&&!it.id)return ''; // 还没入库的卡没法改期，也就不给入口
+  const cls='tdue'+(empty?' tdue-none':'')+(it.id?' task-edit':'');
+  const attrs=it.id?` onclick="openTaskEdit(this)" title="${span?esc(st+' ~ '+due)+' · ':''}点击改期"`:'';
+  return `<span class="${cls}"${attrs}><i class="ti ${empty?'ti-calendar-plus':'ti-clock'}"></i> ${empty?'设日期':esc(txt)+esc(time)}</span>`;
+}
+/* 天数：跨天任务显示「第 N/M 天」，逾期显示「逾期 N 天」。
+   这是跨天任务唯一的问责信号——一条任务能挂 8 天，页面上总得看得见它挂了几天。 */
+const dayDiff=(a,b)=>Math.round((Date.parse(b+'T00:00:00')-Date.parse(a+'T00:00:00'))/864e5);
+function taskAgeHtml(it,g){
+  const t=formatLocalDate(new Date());
+  if(g==='overdue'&&it.task_date){ const n=dayDiff(it.task_date,t); return `<span class="tage tage-over">逾期 ${n} 天</span>`; }
+  if(g==='doing'&&it.start_date&&it.task_date){
+    const total=dayDiff(it.start_date,it.task_date)+1, cur=dayDiff(it.start_date,t)+1;
+    return `<span class="tage">第 ${cur}/${total} 天</span>`;
+  }
+  return '';
+}
+/* 放进正确的分组容器。公司列不分组——公司派的活天然跨周，几乎全落「进行中」，
+   多一层标题只占地方；逾期靠卡上的 .t-overdue 标红，不依赖分组容器。 */
+function placeTaskCard(card){
+  const s=card._scope||{}, col=taskColFor(s.dept); if(!col)return;
+  const g=taskGroupOf(card._item||{});
+  card.classList.toggle('t-overdue',g==='overdue');
+  if(s.dept==='公司'){
+    const anchor=col.querySelector('.donefold')||col.querySelector('.add-task');
+    if(anchor)col.insertBefore(card,anchor); else col.appendChild(card);
+    return;
+  }
+  taskGroupEl(col,g).appendChild(card);
+}
+/* 逾期出口①：顺延到今天。开始日保留（还想看到「已经拖了几天」），只有开始日在今天之后才跟着挪。 */
+function taskDefer(btn){
+  const card=btn.closest('.tcard'); const it=card&&card._item; if(!it||!it.id)return;
+  const t=formatLocalDate(new Date());
+  const body={task_date:t}; if(!it.start_date||it.start_date>t)body.start_date=t;
+  API.patch('/api/loop-items/'+it.id,body)
+    .then(({item})=>{ Object.assign(it,item||body); renderTaskMeta(card); placeTaskCard(card); refreshTaskCols(); toast('已顺延到今天 · 已入库'); })
+    .catch(e=>toast(persistFailMsg(e)));
+}
+/* 逾期出口②：放弃并归档（留痕在归档页，不是删除）。 */
+function taskDrop(btn){
+  const card=btn.closest('.tcard'); const it=card&&card._item; if(!it||!it.id)return;
+  if(!inlineConfirm(btn,'确认放弃'))return;
+  // 归档分桶按卡所在列（_scope 一定有），不赌 item.dept —— 复盘回流/AI 建的任务可能没带 dept
+  const dept=(card._scope||{}).dept||it.dept;
+  const ak=dept==='公司'?'company':(dept==='SEM'?'sem':'seo');
+  API.post('/api/loop-items/'+it.id+'/archive',{archive_kind:ak})
+    .then(()=>{ card.remove(); refreshTaskCols(); if(typeof updateSopCounts==='function')updateSopCounts(); toastGo('已放弃 · 归档留痕','archive'); })
+    .catch(e=>toast(persistFailMsg(e)));
 }
 function addTaskCards(s,items){ (items||[]).forEach(t=>addTaskCard(s,t)); } // 兼容复盘回流 loopBack
 
@@ -143,12 +237,18 @@ async function submitSubtask(){
   }catch(e){ toast(persistFailMsg(e)); }
 }
 let _taskScope=null;
+let _taskEditing=null; // 非空 = 弹窗处于「改这张卡」模式，提交走 PATCH
 function openTaskModal(dept){
+  _taskEditing=null;
+  const verb=document.getElementById('task-mod-verb'); if(verb)verb.textContent='新增';
   _taskScope=dept==='公司'?coScope():sFromDept(dept);
   const lbl=document.getElementById('task-deptlabel'); if(lbl)lbl.textContent=dept;
   const hs=document.getElementById('task-hour');
   if(hs&&hs.options.length<=1){ for(let h=0;h<24;h++){ const o=document.createElement('option'); const hh=String(h).padStart(2,'0'); o.value=hh; o.textContent=hh+':00'; hs.appendChild(o); } }
-  const de=document.getElementById('task-date'); if(de)de.value=formatLocalDate(new Date());
+  // 默认开始=截止=今天（普通当天任务）；把截止往后挪就变成跨天任务
+  const today=formatLocalDate(new Date());
+  const de=document.getElementById('task-date'); if(de)de.value=today;
+  const ds=document.getElementById('task-start'); if(ds)ds.value=today;
   if(hs)hs.value=''; const tc=document.getElementById('task-content'); if(tc)tc.value='';
   const tn=document.getElementById('task-note'); if(tn)tn.value='';
   // Step C：经理/老板派发公司任务时可勾「设为紧急」；其他场景隐藏
@@ -157,43 +257,108 @@ function openTaskModal(dept){
   const uc=document.getElementById('task-urgent'); if(uc)uc.checked=false;
   openModal('taskMask'); if(tc)tc.focus();
 }
+/* 改期/改内容：点卡上的日期胶囊进来，复用同一个弹窗，提交走 PATCH。
+   没有它，跨天任务要延期只能删了重建——这是①落地后最先被骂的地方。 */
+function openTaskEdit(el){
+  const card=el.closest('.tcard'); const it=card&&card._item;
+  if(!it||!it.id)return;
+  _taskScope=card._scope||coScope(); _taskEditing=card;
+  const verb=document.getElementById('task-mod-verb'); if(verb)verb.textContent='编辑';
+  const lbl=document.getElementById('task-deptlabel'); if(lbl)lbl.textContent=_taskScope.dept||'';
+  const hs=document.getElementById('task-hour');
+  if(hs&&hs.options.length<=1){ for(let h=0;h<24;h++){ const o=document.createElement('option'); const hh=String(h).padStart(2,'0'); o.value=hh; o.textContent=hh+':00'; hs.appendChild(o); } }
+  const de=document.getElementById('task-date'); if(de)de.value=it.task_date||'';
+  const ds=document.getElementById('task-start'); if(ds)ds.value=it.start_date||'';
+  if(hs)hs.value=it.task_hour||'';
+  const tc=document.getElementById('task-content'); if(tc)tc.value=it.content||'';
+  const tn=document.getElementById('task-note'); if(tn)tn.value=it.note||'';
+  const uf=document.getElementById('task-urgent-fld'); if(uf)uf.style.display='none'; // 紧急标记只在派发时设
+  openModal('taskMask'); if(tc)tc.focus();
+}
 async function submitTask(){
   const s=_taskScope; if(!s)return;
   const content=(document.getElementById('task-content').value||'').trim();
   if(!content){ toast('请填写任务内容'); return; }
   const task_date=document.getElementById('task-date').value||'';
+  const startEl=document.getElementById('task-start');
+  const start_date=(startEl&&startEl.value)||'';
+  if(start_date&&task_date&&start_date>task_date){ toast('开始日期不能晚于截止日期'); return; }
   const task_hour=document.getElementById('task-hour').value||'';
   const note=(document.getElementById('task-note').value||'').trim();
   const ucEl=document.getElementById('task-urgent'); const urgent=(ucEl&&ucEl.checked&&document.getElementById('task-urgent-fld').style.display!=='none')?1:undefined;
+  if(_taskEditing){
+    const card=_taskEditing, it=card._item||{};
+    try{
+      const {item}=await API.patch('/api/loop-items/'+it.id,{content,task_date,start_date,task_hour,note});
+      Object.assign(it,item||{content,task_date,start_date,task_hour,note});
+      const t=card.querySelector('.ttitle'); // 只换标题文本，别动前面的勾选框
+      if(t){ [...t.childNodes].forEach(n=>{ if(n.nodeType===3)n.remove(); }); t.appendChild(document.createTextNode(it.content||'')); }
+      renderTaskMeta(card); placeTaskCard(card); refreshTaskCols();
+      closeModal('taskMask'); _taskEditing=null; toast('已更新 · 已入库');
+    }catch(e){ toast(persistFailMsg(e)); }
+    return;
+  }
   try{
-    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,task_hour,note};
+    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,start_date,task_hour,note};
     if(urgent)body.urgent=1;
     const {item}=await API.post('/api/loop-items',body);
-    addTaskCard(s,item.content,item); closeModal('taskMask');
+    addTaskCard(s,item.content,item); refreshTaskCols(); closeModal('taskMask');
     toast((s.dept==='公司'?(urgent?'已派发紧急公司任务':'已派发公司任务'):'已新增'+s.dept+'任务')+' · 已入库');
     if(urgent)loadUrgent(); // Step C：紧急任务即时刷 banner
   }catch(e){ toast(persistFailMsg(e)); }
 }
-function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>{card.remove();refreshDoneFold();}).catch(e=>toast('删除失败：'+(e.message||'请求失败'))); }
+function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+card.dataset.id).then(()=>{card.remove();refreshTaskCols();}).catch(e=>toast('删除失败：'+(e.message||'请求失败'))); }
 
-/* 已完成折叠：每列列尾一条「已完成 N 项」，默认收起，避免历史完成项把每日新增列拉长。
-   刚刚手动勾完的卡带 .nofold（chk() 加），本次会话内不隐藏——点完就消失会让人以为点错了；刷新后归位。
-   只数列的直接子卡：公司大任务下的 .subtask 嵌在父卡里，不参与。 */
-function refreshDoneFold(col){
-  if(!col){ ['company','sem','seo'].forEach(k=>refreshDoneFold(document.getElementById('newtask-'+k))); return; }
-  const n=col.querySelectorAll(':scope > .tcard.done:not(.nofold)').length;
+/* 每列刷新：分组小标题计数 / 空分组收起 / 「已完成 N 项」折叠条。
+   已完成默认收起，避免历史完成项把每日新增列拉长；刚手动勾完的卡带 .nofold（chk() 加），
+   本次会话内不隐藏——点完就消失会让人以为点错了；刷新后归位。
+   只数顶层任务卡：公司大任务下的 .subtask 嵌在父卡里，不参与分组也不参与折叠。 */
+function refreshTaskCols(col){
+  if(!col){ ['company','sem','seo'].forEach(k=>refreshTaskCols(document.getElementById('newtask-'+k))); return; }
+  const folded=col.classList.contains('folded');
+  const foldable=c=>c.classList.contains('done')&&!c.classList.contains('nofold');
+  // 顶层卡 = 分组容器里的 + 公司列直接平铺的；子任务嵌在父卡内，两边都不算
+  const doneN=[...col.querySelectorAll('.tcard:not(.subtask)')].filter(foldable).length;
+  col.querySelectorAll(':scope > .tgroup').forEach(g=>{
+    const cards=[...g.querySelectorAll(':scope > .tcard')];
+    if(!cards.length){ g.remove(); return; }
+    const shown=cards.filter(c=>!(folded&&foldable(c))).length;
+    g.classList.toggle('empty',shown===0);
+    const n=g.querySelector('.tgroup-cap .n'); if(n)n.textContent=shown||'';
+  });
   let bar=col.querySelector('.donefold');
-  if(!n){ if(bar)bar.remove(); col.classList.remove('folded'); return; }
+  if(!doneN){ if(bar)bar.remove(); col.classList.remove('folded'); return; }
   if(!bar){
     bar=document.createElement('button'); bar.type='button'; bar.className='donefold';
-    bar.addEventListener('click',()=>{ col.classList.toggle('folded'); refreshDoneFold(col); });
+    bar.addEventListener('click',()=>{ col.classList.toggle('folded'); refreshTaskCols(col); });
     const add=col.querySelector('.add-task');
     if(add)col.insertBefore(bar,add); else col.appendChild(bar);
-    col.classList.add('folded'); // 默认收起
+    col.classList.add('folded'); // 默认收起 → 再刷一次让分组计数按收起态算
+    refreshTaskCols(col); return;
   }
-  const folded=col.classList.contains('folded');
-  bar.innerHTML=`<i class="ti ti-${folded?'chevron-right':'chevron-down'}"></i> 已完成 ${n} 项`;
+  bar.innerHTML=`<i class="ti ti-${col.classList.contains('folded')?'chevron-right':'chevron-down'}"></i> 已完成 ${doneN} 项`;
 }
+
+/* 跨零点：分组是「按今天」算死在渲染那一刻的，而这个后台常常一开一整天——
+   第二天早上看到的还是昨天的今日/逾期。回到页面（或每 5 分钟）比一次日期，变了就地重排，
+   顺带重拉 SOP（它的 period_key 也换天了）。只动前端排列，不重拉任务列表，避免重复渲染。 */
+let _boardDay=''; // 惰性取首日：脚本顶层不调 formatLocalDate（它来自 bundle.js，顶层调用就把本脚本绑死在加载序上）
+function checkDayRollover(){
+  if(typeof formatLocalDate!=='function')return;
+  const d=formatLocalDate(new Date());
+  if(!_boardDay){ _boardDay=d; return; }
+  if(d===_boardDay)return;
+  _boardDay=d;
+  ['company','sem','seo'].forEach(k=>{
+    const col=document.getElementById('newtask-'+k); if(!col)return;
+    [...col.querySelectorAll('.tcard:not(.subtask)')].forEach(card=>{ if(card._item){ renderTaskMeta(card); placeTaskCard(card); } });
+  });
+  refreshTaskCols();
+  if(typeof loadSops==='function')loadSops();
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkDayRollover(); });
+window.addEventListener('focus',checkDayRollover);
+setInterval(checkDayRollover,5*60*1000); // 页面整夜开着且一直可见时的兜底
 async function addFixRow(){
   const s=sFromDept('SEO');
   try{
@@ -245,7 +410,7 @@ async function loadClosedLoop(){
     });
   }catch(e){}
   const de=document.getElementById('dep-empty'); if(de)de.style.display=(depTb&&depTb.children.length)?'none':'block';
-  refreshDoneFold(); // 三列的「已完成 N 项」折叠条
+  refreshTaskCols(); // 三列的「已完成 N 项」折叠条
   applyAiDoneStates(); // 给已渲染的 AI 项标灰
 }
 /* 沉淀表行（可改内容 + 删除）*/

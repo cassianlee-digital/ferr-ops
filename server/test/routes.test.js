@@ -132,6 +132,35 @@ test('整改 CRUD 走通（建→改→读→软删），并验类型闸门在�
   assert.equal(del.statusCode, 200);
 });
 
+// 跨天任务：start_date 是新加的列，POST/PATCH 两条路都得放行——任一处漏白名单，
+// 前端能存进去、刷新后却丢日期，而且不报错，只能靠这条测试挡。
+test('任务的 start_date 建、改、读一路通（跨天任务的开始日不能在任何一层被吞掉）', async () => {
+  const created = await app.inject({
+    method: 'POST', url: '/api/loop-items', headers: auth('boss'),
+    payload: { kind: 'task', dept: 'SEO', content: '优化文章', start_date: '2026-08-13', task_date: '2026-08-20' },
+  });
+  assert.equal(created.statusCode, 201);
+  assert.equal(created.json().item.start_date, '2026-08-13');
+  const id = created.json().item.id;
+
+  const patched = await app.inject({
+    method: 'PATCH', url: `/api/loop-items/${id}`, headers: auth('boss'), payload: { start_date: '2026-08-14' },
+  });
+  assert.equal(patched.statusCode, 200);
+  assert.equal(patched.json().item.start_date, '2026-08-14');
+
+  const list = await app.inject({ method: 'GET', url: '/api/loop-items?kind=task', headers: auth('boss') });
+  assert.equal(list.json().items.find((x) => x.id === id).start_date, '2026-08-14');
+});
+
+test('只给最少字段也能建任务（INSERT 具名参数由仓储补全，调用方不必跟着新列改）', async () => {
+  const res = await app.inject({
+    method: 'POST', url: '/api/loop-items', headers: auth('boss'), payload: { kind: 'task', content: '仅内容' },
+  });
+  assert.equal(res.statusCode, 201);
+  assert.equal(res.json().item.start_date, null);
+});
+
 test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响应吐回来', async () => {
   const res = await app.inject({ method: 'GET', url: '/api/nope-not-a-route' });
   assert.equal(res.statusCode, 404);
