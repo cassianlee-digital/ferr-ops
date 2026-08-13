@@ -127,9 +127,11 @@ function renderTaskMeta(card){
     ? `<button class="btn-mini task-defer" onclick="taskDefer(this)" title="顺延到今天"><i class="ti ti-calendar-plus"></i></button>`
       +`<button class="btn-mini task-drop" onclick="taskDrop(this)" title="放弃并归档"><i class="ti ti-archive"></i></button>`
     : '';
+  const push=taskPushHtml(it,g);
   const split=isCo?`<button class="btn-mini cotask-split" onclick="openSubtaskModal(this)"><i class="ti ti-git-branch"></i> 分发</button>`:'';
-  const del=it.id?`<button class="btn-mini" style="color:var(--primary);margin-left:${(isCo||ops)?'8px':'auto'}" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
-  box.innerHTML=deptBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+ops+split+del;
+  // 右侧已有东西时删除键只留间距；只有它自己时才吃 auto 靠右
+  const del=it.id?`<button class="btn-mini" style="color:var(--primary);margin-left:${(isCo||ops||push)?'8px':'auto'}" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
+  box.innerHTML=deptBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
 }
 /* 日期胶囊：跨天显示「开始 ~ 截止」（同年省年份省宽度，完整日期放 title），单日照旧；点它改期。
    没填日期也给一个「设日期」入口——AI 生成/复盘回流的任务本来就没日期，否则永远没法补。 */
@@ -145,17 +147,59 @@ function taskDueHtml(it){
   const attrs=it.id?` onclick="openTaskEdit(this)" title="${span?esc(st+' ~ '+due)+' · ':''}点击改期"`:'';
   return `<span class="${cls}"${attrs}><i class="ti ${empty?'ti-calendar-plus':'ti-clock'}"></i> ${empty?'设日期':esc(txt)+esc(time)}</span>`;
 }
-/* 天数：跨天任务显示「第 N/M 天」，逾期显示「逾期 N 天」。
-   这是跨天任务唯一的问责信号——一条任务能挂 8 天，页面上总得看得见它挂了几天。 */
+/* 天数：跨天任务显示「第 N/M 天 · 已推进 K 天」，逾期显示「逾期 N 天」。
+   跨天任务能在「进行中」挂一整周，光看"它还在"看不出有没有人动它；
+   天数 + 推进打卡合起来才是它的问责信号。 */
 const dayDiff=(a,b)=>Math.round((Date.parse(b+'T00:00:00')-Date.parse(a+'T00:00:00'))/864e5);
 function taskAgeHtml(it,g){
   const t=formatLocalDate(new Date());
   if(g==='overdue'&&it.task_date){ const n=dayDiff(it.task_date,t); return `<span class="tage tage-over">逾期 ${n} 天</span>`; }
   if(g==='doing'&&it.start_date&&it.task_date){
     const total=dayDiff(it.start_date,it.task_date)+1, cur=dayDiff(it.start_date,t)+1;
-    return `<span class="tage">第 ${cur}/${total} 天</span>`;
+    const ck=taskCheckin(it.id);
+    const pushed=ck.days?` · 已推进 ${ck.days} 天`:'';
+    // 停滞：既没打今天的卡，上次推进也在 2 天前（或压根没推进过）→ 标黄，别让它安静地烂在进行中
+    const idle=!ck.today&&(ck.last?dayDiff(ck.last,t)>=2:dayDiff(it.start_date,t)>=2);
+    return `<span class="tage${idle?' tage-idle':''}">第 ${cur}/${total} 天${pushed}</span>`;
   }
   return '';
+}
+/* 推进打卡：跨天任务每天一勾，落 task_checkins（day_key 按本地日期，与 SOP 同口径）。
+   只给"进行中/逾期"的跨天任务——当天任务勾完成就够了，再来一个打卡是多余动作。 */
+window._taskCheckins=new Map();
+function taskCheckin(id){ return window._taskCheckins.get(Number(id))||{days:0,last:'',today:false}; }
+function taskPushHtml(it,g){
+  if(!it.id||!it.start_date||!it.task_date||it.start_date>=it.task_date)return '';
+  if(g!=='doing'&&g!=='overdue')return '';
+  const on=taskCheckin(it.id).today;
+  return `<button class="btn-mini task-push${on?' on':''}" onclick="taskPush(this)" title="${on?'今天已记推进，点一下撤销':'记一笔：今天推进了这条'}">`
+    +`<i class="ti ti-${on?'check':'player-track-next'}"></i> ${on?'今日已推进':'推进'}</button>`;
+}
+async function taskPush(btn){
+  const card=btn.closest('.tcard'); const it=card&&card._item; if(!it||!it.id)return;
+  const day=formatLocalDate(new Date());
+  const cur=taskCheckin(it.id); const on=cur.today;
+  btn.disabled=true;
+  try{
+    if(on){
+      await API.del('/api/task-checkins/'+it.id+'?day_key='+encodeURIComponent(day));
+      const days=Math.max(0,cur.days-1);
+      window._taskCheckins.set(Number(it.id),{days,last:days?cur.last:'',today:false});
+      toast('已撤销今日推进 · 已入库');
+    } else {
+      await API.post('/api/task-checkins',{loop_item_id:it.id,day_key:day});
+      window._taskCheckins.set(Number(it.id),{days:cur.days+1,last:day,today:true});
+      toast('已记今日推进 · 已入库');
+    }
+    renderTaskMeta(card);
+  }catch(e){ btn.disabled=false; toast(persistFailMsg(e)); }
+}
+async function loadTaskCheckins(){
+  window._taskCheckins=new Map();
+  try{
+    const {items}=await API.get('/api/task-checkins/summary?day='+encodeURIComponent(formatLocalDate(new Date())));
+    (items||[]).forEach(r=>window._taskCheckins.set(Number(r.loop_item_id),{days:r.days||0,last:r.last_day||'',today:!!r.today_done}));
+  }catch(e){ /* 打卡拿不到不该挡住整块日计划：退化成"没人打过卡" */ }
 }
 /* 放进正确的分组容器。公司列不分组——公司派的活天然跨周，几乎全落「进行中」，
    多一层标题只占地方；逾期靠卡上的 .t-overdue 标红，不依赖分组容器。 */
@@ -314,7 +358,10 @@ function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset
    本次会话内不隐藏——点完就消失会让人以为点错了；刷新后归位。
    只数顶层任务卡：公司大任务下的 .subtask 嵌在父卡里，不参与分组也不参与折叠。 */
 function refreshTaskCols(col){
-  if(!col){ ['company','sem','seo'].forEach(k=>refreshTaskCols(document.getElementById('newtask-'+k))); return; }
+  // null = 传进来的那一列在页面上不存在 → 到此为止。
+  // 不能和「没传参数」共用一个 !col 分支：getElementById 找不到时回 null，会又拐回下面这行，自己递归自己。
+  if(col===null)return;
+  if(col===undefined){ ['company','sem','seo'].forEach(k=>refreshTaskCols(document.getElementById('newtask-'+k))); return; }
   const folded=col.classList.contains('folded');
   const foldable=c=>c.classList.contains('done')&&!c.classList.contains('nofold');
   // 顶层卡 = 分组容器里的 + 公司列直接平铺的；子任务嵌在父卡内，两边都不算
@@ -349,12 +396,17 @@ function checkDayRollover(){
   if(!_boardDay){ _boardDay=d; return; }
   if(d===_boardDay)return;
   _boardDay=d;
+  rerenderTaskCards();
+  if(typeof loadSops==='function')loadSops();
+  // 打卡的「今天」也换了：重拉汇总再刷一次，否则昨天的「今日已推进」会挂到今天头上
+  loadTaskCheckins().then(rerenderTaskCards);
+}
+function rerenderTaskCards(){
   ['company','sem','seo'].forEach(k=>{
     const col=document.getElementById('newtask-'+k); if(!col)return;
     [...col.querySelectorAll('.tcard:not(.subtask)')].forEach(card=>{ if(card._item){ renderTaskMeta(card); placeTaskCard(card); } });
   });
   refreshTaskCols();
-  if(typeof loadSops==='function')loadSops();
 }
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkDayRollover(); });
 window.addEventListener('focus',checkDayRollover);
@@ -381,6 +433,7 @@ async function loadClosedLoop(){
   window._aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
   try{ const {items}=await API.get('/api/fixes'); (items||[]).slice().reverse().forEach(f=>{ addFixFromObj(f); window._aiDone.采纳.add(aiFp(f.dept,f.detail||f.title)); }); }catch(e){}
   const depTb=document.getElementById('tb-dep'); if(depTb)depTb.innerHTML='';
+  await loadTaskCheckins(); // 先拿打卡汇总，卡片渲染时「已推进 K 天/停滞」才是对的
   const _pendingSubtasks=[]; // 子任务延后挂：父卡须先建好（加载为 id 倒序）
   try{ const {items}=await API.get('/api/loop-items');
     (items||[]).slice().reverse().forEach(it=>{ const s=sFromDept(it.dept);

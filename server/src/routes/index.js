@@ -19,6 +19,7 @@ import { contentAssetsRoutes } from './contentAssets.js';
 import { ga4Routes } from './ga4.js';
 import { dataSourcesRoutes } from './dataSources.js';
 import { sopRoutes } from './sop.js';
+import { taskCheckinsRoutes } from './taskCheckins.js';
 import { googleRoutes } from './google.js';
 import { diagnosticsRoutes } from './diagnostics.js';
 import { attributionRoutes } from './attribution.js';
@@ -47,6 +48,7 @@ export async function registerRoutes(app) {
   await app.register(ga4Routes);
   await app.register(dataSourcesRoutes);
   await app.register(sopRoutes);
+  await app.register(taskCheckinsRoutes);
   await app.register(googleRoutes);
   await app.register(diagnosticsRoutes);
   await app.register(attributionRoutes);

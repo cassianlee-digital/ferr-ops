@@ -161,6 +161,57 @@ test('只给最少字段也能建任务（INSERT 具名参数由仓储补全，�
   assert.equal(res.json().item.start_date, null);
 });
 
+// 推进打卡：跨天任务的问责证据。幂等、可撤销、不给不存在的任务留孤儿记录。
+test('跨天任务推进打卡：打→汇总→重复打不加天→撤销', async () => {
+  const task = await app.inject({
+    method: 'POST', url: '/api/loop-items', headers: auth('boss'),
+    payload: { kind: 'task', dept: 'SEM', content: '跨天任务', start_date: '2026-08-10', task_date: '2026-08-20' },
+  });
+  const id = task.json().item.id;
+
+  const mark = await app.inject({
+    method: 'POST', url: '/api/task-checkins', headers: auth('sem'),
+    payload: { loop_item_id: id, day_key: '2026-08-13', note: '写了两段' },
+  });
+  assert.equal(mark.statusCode, 201);
+  assert.equal(mark.json().item.note, '写了两段');
+
+  // 同一天再打一次：幂等，天数不涨
+  await app.inject({
+    method: 'POST', url: '/api/task-checkins', headers: auth('sem'),
+    payload: { loop_item_id: id, day_key: '2026-08-13' },
+  });
+  await app.inject({
+    method: 'POST', url: '/api/task-checkins', headers: auth('sem'),
+    payload: { loop_item_id: id, day_key: '2026-08-14' },
+  });
+  const sum = await app.inject({ method: 'GET', url: '/api/task-checkins/summary?day=2026-08-14', headers: auth('boss') });
+  const row = sum.json().items.find((x) => x.loop_item_id === id);
+  assert.equal(row.days, 2, '两天两条，重复打不重复计');
+  assert.equal(row.last_day, '2026-08-14');
+  assert.equal(row.today_done, 1);
+
+  const del = await app.inject({
+    method: 'DELETE', url: `/api/task-checkins/${id}?day_key=2026-08-14`, headers: auth('sem'),
+  });
+  assert.equal(del.statusCode, 200);
+  const sum2 = await app.inject({ method: 'GET', url: '/api/task-checkins/summary?day=2026-08-14', headers: auth('boss') });
+  assert.equal(sum2.json().items.find((x) => x.loop_item_id === id).days, 1);
+});
+
+test('打卡拒绝脏输入：日期格式不对 / 任务不存在', async () => {
+  const bad = await app.inject({
+    method: 'POST', url: '/api/task-checkins', headers: auth('boss'),
+    payload: { loop_item_id: 1, day_key: '2026/08/13' },
+  });
+  assert.equal(bad.statusCode, 400);
+  const ghost = await app.inject({
+    method: 'POST', url: '/api/task-checkins', headers: auth('boss'),
+    payload: { loop_item_id: 999999, day_key: '2026-08-13' },
+  });
+  assert.equal(ghost.statusCode, 404, '不存在的任务不能留下孤儿打卡');
+});
+
 test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响应吐回来', async () => {
   const res = await app.inject({ method: 'GET', url: '/api/nope-not-a-route' });
   assert.equal(res.statusCode, 404);

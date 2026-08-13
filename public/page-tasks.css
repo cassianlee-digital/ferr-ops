@@ -497,6 +497,41 @@ body.dark #panel-tasks .kcount{
   background: #fff1f0;
   color: var(--danger);
 }
+/* 停滞：跨天任务今天没打卡、上次推进也在 2 天前 —— 别让它安静地烂在「进行中」 */
+#panel-tasks .tage-idle {
+  background: #fff7e8;
+  color: #b76a00;
+}
+
+/* 推进打卡：跨天任务每天一勾 */
+#panel-tasks .tmeta .task-push {
+  width: auto;
+  min-width: 0;
+  height: 22px;
+  padding: 0 8px;
+  gap: 4px;
+  margin-left: 6px !important;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-size: 11px;
+  white-space: nowrap;
+}
+#panel-tasks .tmeta .task-push:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+#panel-tasks .tmeta .task-push.on {
+  border-color: #b7e2d0;
+  background: #f6fffb;
+  color: var(--green);
+}
+body.dark #panel-tasks .tage-idle {
+  background: #2a2113;
+}
+body.dark #panel-tasks .tmeta .task-push.on {
+  background: #0f1a15;
+}
 
 /* 日期胶囊可点改期 */
 #panel-tasks .tdue.task-edit {

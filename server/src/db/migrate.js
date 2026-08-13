@@ -16,7 +16,7 @@ const ALL_TABLES = [
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions', 'hermes_action_runs',
+  'sop_definitions', 'sop_completions', 'task_checkins', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily',
@@ -486,6 +486,20 @@ CREATE TABLE IF NOT EXISTS sop_completions (
   UNIQUE(sop_id, period_key)
 );
 CREATE INDEX IF NOT EXISTS idx_sop_comp_period ON sop_completions(period_key);
+
+-- 跨天任务的每日推进打卡。跨天任务（start_date~task_date）在日计划上会连续挂好几天，
+-- 没有这张表就只能看到"它还在"，看不到"这几天推进了没有"——每天一条记录才是可复盘的证据。
+-- 与 sop_completions 同构：day_key 按客户端本地日期算，UNIQUE 防重、撤销即删。
+CREATE TABLE IF NOT EXISTS task_checkins (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  loop_item_id  INTEGER NOT NULL,
+  day_key       TEXT NOT NULL,                              -- YYYY-MM-DD
+  note          TEXT,                                       -- 今天推进了什么（可选）
+  created_by    TEXT,                                       -- username
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(loop_item_id, day_key)
+);
+CREATE INDEX IF NOT EXISTS idx_task_checkins_item ON task_checkins(loop_item_id);
 `;
 
 export function migrate() {
