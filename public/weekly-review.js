@@ -142,6 +142,16 @@ function prevPlanOf(keys, byKey, key, dept) {
   return null;
 }
 
+/* SOP 执行率的空壳：周卡片折叠着的很多，展开哪一周才去算哪一周（src/sop-rate.js 懒加载）。
+   week key 就是那周周一的日期，周日 = +6 天。 */
+function sopRateShell(weekKey) {
+  const mon = mondayOf(weekKey);
+  if (!mon) return '';
+  const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+  const fmt = (d) => `${d.getFullYear()}-${rvPad2(d.getMonth() + 1)}-${rvPad2(d.getDate())}`;
+  return `<div class="sop-rate" data-from="${fmt(mon)}" data-to="${fmt(sun)}"></div>`;
+}
+
 async function renderReview() {
   const cur = curWeekKey();
   let items = [];
@@ -176,7 +186,7 @@ async function renderReview() {
     const collapsed = isCurrent ? !currentWeekShouldOpen() : true;
     return `<div class="acc-week${collapsed ? ' collapsed' : ''}">
       <div class="acc-bar" onclick="this.parentElement.classList.toggle('collapsed')"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green" style="margin-left:6px">本周</span>' : ''}</div>
-      <div class="acc-body">${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
+      <div class="acc-body">${sopRateShell(week)}${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
     </div>`;
   }).join('');
 
@@ -188,7 +198,7 @@ async function renderReview() {
     const inner = sortWeekKeys(oldGroups[monthKey]).map((week) => `
       <div class="acc-week collapsed">
         <div class="acc-bar" onclick="this.parentElement.classList.toggle('collapsed')"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)}</div>
-        <div class="acc-body">${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
+        <div class="acc-body">${sopRateShell(week)}${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
       </div>`).join('');
     return `<div class="acc-month collapsed">
       <div class="acc-month-bar" onclick="this.parentElement.classList.toggle('collapsed')"><i class="ti ti-chevron-down hicon"></i> ${monthGroupLabel(monthKey)}</div>
@@ -197,6 +207,10 @@ async function renderReview() {
   }).join('');
 
   acc.innerHTML = currentHtml + groupHtml;
+  // 已经展开的那周（通常是本周）直接算；其余等点开
+  acc.querySelectorAll('.acc-week:not(.collapsed) .sop-rate').forEach((el) => {
+    if (typeof mountSopRate === 'function') mountSopRate(el);
+  });
 }
 
 async function renderMonthReview() {

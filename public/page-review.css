@@ -182,3 +182,95 @@ body.dark #panel-month-review .acc-month-bar {
   background: #0f172a;
   color: #e5e7eb;
 }
+
+/* ===== SOP 执行率块（src/sop-rate.js 注入）=====
+   周报的 acc-body 是「李 | 陈」两列网格，这块要横跨两列摆在最上面。 */
+#panel-review .sop-rate {
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fafafa;
+}
+#panel-review .sr-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: var(--text1);
+  font-size: 13px;
+  font-weight: 500;
+}
+#panel-review .sr-note {
+  margin-left: auto;
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 400;
+}
+#panel-review .sr-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+#panel-review .sr-dept {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+#panel-review .sr-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+#panel-review .sr-num {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+}
+#panel-review .sr-good { color: var(--green); }
+#panel-review .sr-mid  { color: #b76a00; }
+#panel-review .sr-bad  { color: var(--danger); }
+#panel-review .sr-na   { color: var(--text3); }
+#panel-review .sr-miss {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+#panel-review .sr-miss + .sr-miss {
+  border-top: 1px dashed var(--border);
+}
+#panel-review .sr-mt {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#panel-review .sr-mf {
+  flex: none;
+  color: var(--text3);
+}
+#panel-review .sr-mn {
+  flex: none;
+  color: var(--danger);
+}
+#panel-review .sr-ok {
+  color: var(--green);
+}
+#panel-review .sr-loading {
+  padding: 6px 0;
+  color: var(--text3);
+  font-size: 12px;
+}
+@media (max-width: 900px) {
+  #panel-review .sr-cols { grid-template-columns: 1fr; }
+}
+body.dark #panel-review .sop-rate,
+body.dark #panel-review .sr-dept {
+  background: #10151d;
+  border-color: #202838;
+}

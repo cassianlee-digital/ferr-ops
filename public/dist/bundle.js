@@ -2456,6 +2456,65 @@
   var _dayInput = document.getElementById("planday-input");
   if (_dayInput && !_dayInput.value) _dayInput.value = today();
 
+  // public/src/sop-rate.js
+  var sop_rate_exports = {};
+  __export(sop_rate_exports, {
+    mountSopRate: () => mountSopRate
+  });
+  var DEPTS2 = [["SEO", "\u674E", "b-blue"], ["SEM", "\u9648", "b-purple"], ["\u516C\u53F8", "\u516C\u53F8", "b-red"]];
+  var FREQ_LABEL2 = { daily: "\u6BCF\u65E5", weekly: "\u6BCF\u5468", monthly: "\u6BCF\u6708" };
+  function pct(done, expected) {
+    return expected > 0 ? Math.round(done / expected * 100) : null;
+  }
+  function rateClass(p) {
+    return p === null ? "sr-na" : p >= 90 ? "sr-good" : p >= 60 ? "sr-mid" : "sr-bad";
+  }
+  function deptBlockHtml(dept, label, badge3, items) {
+    const counted = items.filter((i) => i.expected !== null);
+    const done = counted.reduce((a, i) => a + i.done, 0);
+    const expected = counted.reduce((a, i) => a + i.expected, 0);
+    const p = pct(done, expected);
+    const missed = counted.filter((i) => i.expected > i.done).sort((a, b) => b.expected - b.done - (a.expected - a.done));
+    const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => d.slice(5)).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
+    return `<div class="sr-dept">
+    <div class="sr-head"><span class="badge ${badge3}">${esc(label)}</span>
+      <span class="sr-num ${rateClass(p)}">${expected ? `${done}/${expected}` : "\u2014"}${p === null ? "" : ` \xB7 ${p}%`}</span></div>
+    <div class="sr-misses">${missHtml}</div>
+  </div>`;
+  }
+  async function mountSopRate(el) {
+    if (!el || el.dataset.loaded === "1") return;
+    const from = el.dataset.from;
+    const to = el.dataset.to;
+    if (!from || !to) return;
+    el.dataset.loaded = "1";
+    el.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
+    try {
+      const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date()))}`;
+      const data = await API.get("/api/sop/stats" + q);
+      const items = data.items || [];
+      if (!items.length) {
+        el.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
+        return;
+      }
+      const hasMonthly = items.some((i) => i.expected === null);
+      el.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
+        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc(data.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
+      <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
+    } catch (e) {
+      el.dataset.loaded = "";
+      el.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const bar = e.target.closest("#review-acc .acc-bar");
+    if (!bar) return;
+    const week = bar.parentElement;
+    if (!week || week.classList.contains("collapsed")) return;
+    const el = week.querySelector(".sop-rate");
+    if (el) mountSopRate(el);
+  });
+
   // public/src/main.js
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports);
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, sop_rate_exports);
 })();

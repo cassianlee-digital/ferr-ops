@@ -306,6 +306,47 @@ test('回放要日期，且格式必须对（脏参数不能悄悄回空盘子�
   assert.equal((await app.inject({ method: 'GET', url: '/api/daily-plan?day=2026/08/12', headers: auth('boss') })).statusCode, 400);
 });
 
+// SOP 执行率：分母必须诚实——未来的日子、SOP 创建之前的日子，都不算漏。
+test('SOP 执行率：分母按创建日起算、只算到今天，漏的日子逐条列出', async () => {
+  const def = await app.inject({
+    method: 'POST', url: '/api/sop', headers: auth('boss'),
+    payload: { dept: 'SEO', freq: 'daily', title: '每日观测数据' },
+  });
+  const sopId = def.json().item.id;
+  const week = { from: '2026-08-10', to: '2026-08-16' }; // 周一~周日
+
+  // 只打了两天的卡
+  for (const day of ['2026-08-10', '2026-08-12']) {
+    await app.inject({
+      method: 'POST', url: '/api/sop/completions', headers: auth('seo'),
+      payload: { sop_id: sopId, period_key: day },
+    });
+  }
+  // completed_at 由服务器写「现在」，测试里改成那两天，才能验区间统计
+  const { db } = await import('../src/db/connection.js');
+  db.prepare("UPDATE sop_completions SET completed_at = period_key || ' 09:00:00' WHERE sop_id = ?").run(sopId);
+  db.prepare("UPDATE sop_definitions SET created_at = '2026-08-01 09:00:00' WHERE id = ?").run(sopId);
+
+  // today=08-13 → 分母只到 13 号（4 天），后面 3 天还没到，不算漏
+  const res = await app.inject({ method: 'GET', url: `/api/sop/stats?from=${week.from}&to=${week.to}&today=2026-08-13`, headers: auth('boss') });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.json().counted_to, '2026-08-13');
+  const row = res.json().items.find((i) => i.id === sopId);
+  assert.equal(row.expected, 4, '未来的日子不该进分母');
+  assert.equal(row.done, 2);
+  assert.deepEqual(row.missed_days, ['2026-08-11', '2026-08-13']);
+
+  // 创建日晚于区间起点 → 之前的日子不是它漏的
+  db.prepare("UPDATE sop_definitions SET created_at = '2026-08-12 09:00:00' WHERE id = ?").run(sopId);
+  const later = await app.inject({ method: 'GET', url: `/api/sop/stats?from=${week.from}&to=${week.to}&today=2026-08-13`, headers: auth('boss') });
+  assert.equal(later.json().items.find((i) => i.id === sopId).expected, 2, 'SOP 建之前的日子不算漏');
+});
+
+test('SOP 执行率要区间，脏参数回 400 而不是悄悄回空', async () => {
+  assert.equal((await app.inject({ method: 'GET', url: '/api/sop/stats', headers: auth('boss') })).statusCode, 400);
+  assert.equal((await app.inject({ method: 'GET', url: '/api/sop/stats?from=x&to=y', headers: auth('boss') })).statusCode, 400);
+});
+
 test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响应吐回来', async () => {
   const res = await app.inject({ method: 'GET', url: '/api/nope-not-a-route' });
   assert.equal(res.statusCode, 404);

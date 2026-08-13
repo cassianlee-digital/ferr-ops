@@ -49,6 +49,18 @@ export function listCompletions(periodKeys) {
   ).all(...keys);
 }
 
+// 区间内的完成记录，按打卡发生时间（completed_at）算。
+// 不按 period_key 过滤：daily 的 key 是日期能比，weekly 的是 ISO 周号没法跟日期区间比，
+// 而 ISO 周只在前端算一份（全项目约定），服务端不重算。
+export function completionsBetween(from, to) {
+  return db.prepare(
+    `SELECT c.*, d.dept AS dept, d.freq AS freq
+       FROM sop_completions c
+       JOIN sop_definitions d ON d.id = c.sop_id
+      WHERE date(c.completed_at) BETWEEN @from AND @to`
+  ).all({ from, to });
+}
+
 // 标记完成；UNIQUE(sop_id, period_key) 防重；冲突时返回已有记录（幂等）
 export function markComplete(sopId, periodKey, username) {
   const exists = db.prepare(
