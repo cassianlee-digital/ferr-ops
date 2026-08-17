@@ -9,19 +9,32 @@ dotenv.config({ path: resolve(__dirname, '../../.env') });
 // 兜底：也尝试 server/.env（本地单独跑后端时）
 dotenv.config({ path: resolve(__dirname, '../.env') });
 
-function required(name, fallback) {
-  const v = process.env[name];
-  if (v === undefined || v === '') {
-    if (fallback !== undefined) return fallback;
-    // 不打印值，只提示缺失
-    console.warn(`[config] 缺少环境变量 ${name}，请检查 .env`);
-    return '';
+const DEV_JWT_SECRET = 'dev-insecure-secret-change-me';
+const WEAK_JWT_SECRETS = new Set([
+  DEV_JWT_SECRET,
+  'change-me-to-a-long-random-string',
+  'change-me',
+]);
+
+export function resolveJwtSecret(env, value) {
+  const secret = String(value || '').trim();
+  if (env !== 'production') return secret || DEV_JWT_SECRET;
+  if (!secret || secret.length < 32 || WEAK_JWT_SECRETS.has(secret)) {
+    throw new Error('[config] 生产环境必须设置至少 32 字符的随机 JWT_SECRET');
   }
-  return v;
+  return secret;
 }
 
+function positiveNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const runtimeEnv = process.env.NODE_ENV || 'development';
+const jwtSecret = resolveJwtSecret(runtimeEnv, process.env.JWT_SECRET);
+
 export const config = {
-  env: process.env.NODE_ENV || 'development',
+  env: runtimeEnv,
   port: Number(process.env.PORT || 3000),
   host: '0.0.0.0',
 
@@ -30,8 +43,11 @@ export const config = {
   // （connection.js 在 import 期就打开 config.dbFile，故测试必须在 import 前设好此环境变量）。
   dbFile: process.env.DB_FILE ? resolve(process.env.DB_FILE) : resolve(__dirname, '../../data/ferr.sqlite'),
 
-  jwtSecret: required('JWT_SECRET', 'dev-insecure-secret-change-me'),
-  sessionHours: Number(process.env.SESSION_HOURS || 72),
+  jwtSecret,
+  sessionHours: positiveNumber(process.env.SESSION_HOURS, 12),
+  minPasswordLength: 12,
+  loginRateLimitMax: positiveNumber(process.env.LOGIN_RATE_LIMIT_MAX, 5),
+  loginRateLimitWindowMs: positiveNumber(process.env.LOGIN_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
 
   // 会话 cookie 是否要求 HTTPS。纯 IP/HTTP 部署需设为 false，否则浏览器不回传 cookie、登录失效。
   // 默认：显式 COOKIE_SECURE 优先，否则生产环境为 true。
@@ -49,7 +65,7 @@ export const config = {
 
   // 数据加密主密钥（Google 凭据 / 第三方密钥的 AES）。优先独立的 SETTINGS_SECRET；
   // 未设时回退 JWT_SECRET（兼容既有密文）。settingsSecretExplicit 标记是否已真正解耦。
-  settingsSecret: process.env.SETTINGS_SECRET || process.env.JWT_SECRET || 'dev-settings-key',
+  settingsSecret: process.env.SETTINGS_SECRET || jwtSecret || 'dev-settings-key',
   settingsSecretExplicit: !!process.env.SETTINGS_SECRET,
 
   hermes: {

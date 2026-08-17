@@ -251,7 +251,7 @@
 
   function unsupportedReason(file) {
     const ext = extName(file.name).toUpperCase() || (file.type || 'unknown');
-    if (['PDF', 'XLS', 'XLSX'].includes(ext)) return ext + ' 内容解析失败，本次不会把它当作已分析证据。';
+    if (['PDF', 'XLSX'].includes(ext)) return ext + ' 内容解析失败，本次不会把它当作已分析证据。';
     return '暂不支持该文件类型。';
   }
 
@@ -269,7 +269,7 @@
       return { ...base, kind: 'text', textContent: await readTextFile(file), note: '文本内容已读取。' };
     }
     const ext = extName(file.name).toLowerCase();
-    if (['pdf', 'xls', 'xlsx'].includes(ext)) {
+    if (['pdf', 'xlsx'].includes(ext)) {
       if (file.size > MAX_DOCUMENT_BYTES) throw new Error('文件超过 8MB 限制');
       return {
         ...base,

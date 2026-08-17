@@ -1,4 +1,4 @@
-import { editor, requireAuth } from '../auth/middleware.js';
+import { editor, onlyManagerBoss, requireAuth } from '../auth/middleware.js';
 import { config } from '../config.js';
 import { buildContext } from '../services/aiContext.js';
 import { callAnthropic } from '../services/anthropic.js';
@@ -248,6 +248,10 @@ function resolveOperator(request) {
     username: request.user?.username || '',
     persona: ROLE_PERSONAS[role],
   };
+}
+
+function canManageCompanyMemory(request) {
+  return request.user?.role === 'manager' || request.user?.role === 'boss';
 }
 
 function contextKeys(operator) {
@@ -999,14 +1003,14 @@ export async function hermesRoutes(app) {
         answerQualityRepair,
         closureAudit: context.closureAudit || context.enterpriseMemory?.closureAudit || null,
       };
-      const memory = hermesMemoryRepo.upsertBySourceTitle({
+      const memory = canManageCompanyMemory(request) ? hermesMemoryRepo.upsertBySourceTitle({
         kind: 'learning',
         title: `今日早报 ${day} ${role}`,
         content: parsed.answer || responseText,
         evidence: parsed.basis,
         source: `hermes_morning_brief:${role}`,
         importance: 5,
-      });
+      }) : null;
       const now = new Date().toISOString();
       const additions = [
         { role: 'user', content: '生成今日早报', at: now },
@@ -1081,7 +1085,7 @@ export async function hermesRoutes(app) {
     return { conversation: item };
   });
 
-  app.post('/api/hermes/conversations/:id/learn', editor, async (request, reply) => {
+  app.post('/api/hermes/conversations/:id/learn', onlyManagerBoss, async (request, reply) => {
     const conversation = hermesConversationRepo.getForUser(Number(request.params.id), currentUserId(request));
     if (!conversation) return reply.code(404).send({ error: 'not_found' });
     const payload = conversationLearningPayload(conversation, request.body?.note);
@@ -1091,7 +1095,7 @@ export async function hermesRoutes(app) {
     return { item };
   });
 
-  app.post('/api/hermes/conversations/:id/feedback', editor, async (request, reply) => {
+  app.post('/api/hermes/conversations/:id/feedback', onlyManagerBoss, async (request, reply) => {
     const conversation = hermesConversationRepo.getForUser(Number(request.params.id), currentUserId(request));
     if (!conversation) return reply.code(404).send({ error: 'not_found' });
     const payload = conversationFeedbackPayload(conversation, request.body || {});
@@ -1162,7 +1166,7 @@ export async function hermesRoutes(app) {
           skill: skillKey,
           workflow: workflowKey,
         });
-      const autoMemoryPayload = extractAutoPreferenceMemory(message);
+      const autoMemoryPayload = canManageCompanyMemory(request) ? extractAutoPreferenceMemory(message) : null;
       const autoMemory = autoMemoryPayload ? hermesMemoryRepo.upsertBySourceTitle(autoMemoryPayload) : null;
       return {
         text: responseText,
@@ -1187,22 +1191,22 @@ export async function hermesRoutes(app) {
   app.get('/api/hermes/memories', { preHandler: requireAuth }, async () => ({
     items: hermesMemoryRepo.list({ activeOnly: true, limit: 100 }),
   }));
-  app.post('/api/hermes/memories', editor, async (request, reply) => {
+  app.post('/api/hermes/memories', onlyManagerBoss, async (request, reply) => {
     const item = hermesMemoryRepo.create(request.body || {});
     if (!item) return reply.code(400).send({ error: 'title_and_content_required' });
     reply.code(201);
     return { item };
   });
-  app.patch('/api/hermes/memories/:id', editor, async (request, reply) => {
+  app.patch('/api/hermes/memories/:id', onlyManagerBoss, async (request, reply) => {
     const item = hermesMemoryRepo.update(Number(request.params.id), request.body || {});
     if (!item) return reply.code(400).send({ error: 'title_and_content_required_or_not_found' });
     return { item };
   });
-  app.post('/api/hermes/memories/daily-learning', editor, async (request) => {
+  app.post('/api/hermes/memories/daily-learning', onlyManagerBoss, async (request) => {
     const operator = resolveOperator(request);
     return buildDailyLearningMemory(operator);
   });
-  app.delete('/api/hermes/memories/:id', editor, async (request, reply) => {
+  app.delete('/api/hermes/memories/:id', onlyManagerBoss, async (request, reply) => {
     const item = hermesMemoryRepo.deactivate(Number(request.params.id));
     if (!item) return reply.code(404).send({ error: 'not_found' });
     return { item };

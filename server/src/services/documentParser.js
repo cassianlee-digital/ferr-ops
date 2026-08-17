@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import * as XLSX from 'xlsx';
+import readExcelFile from 'read-excel-file/node';
 
 const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
@@ -7,7 +7,7 @@ const pdfParse = require('pdf-parse');
 export const MAX_DOCUMENT_BYTES = 8 * 1024 * 1024;
 export const MAX_TOTAL_DOCUMENT_BYTES = 8 * 1024 * 1024;
 const MAX_OUTPUT_CHARS = 20000;
-const DOCUMENT_EXTENSIONS = new Set(['pdf', 'xls', 'xlsx']);
+const DOCUMENT_EXTENSIONS = new Set(['pdf', 'xlsx']);
 
 function extension(name) {
   const match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
@@ -32,12 +32,20 @@ async function parsePdf(buffer) {
   return trimOutput(result.text);
 }
 
-function parseWorkbook(buffer) {
-  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
-  const sections = workbook.SheetNames.map((name) => {
-    const sheet = workbook.Sheets[name];
-    const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
-    return `[Sheet: ${name}]\n${csv}`;
+function csvCell(value) {
+  if (value == null) return '';
+  const raw = value instanceof Date ? value.toISOString() : String(value);
+  return /[",\r\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
+}
+
+async function parseWorkbook(buffer) {
+  const workbook = await readExcelFile(buffer);
+  const sections = workbook.map(({ sheet, data }) => {
+    const csv = data
+      .filter((row) => row.some((cell) => cell != null && cell !== ''))
+      .map((row) => row.map(csvCell).join(','))
+      .join('\n');
+    return `[Sheet: ${sheet}]\n${csv}`;
   }).filter((section) => section.trim());
   return trimOutput(sections.join('\n\n'));
 }
@@ -46,7 +54,7 @@ export async function parseDocumentAttachment(item = {}) {
   const ext = extension(item.name);
   if (!DOCUMENT_EXTENSIONS.has(ext)) throw new Error('document_type_unsupported');
   const buffer = decodeBase64(item.fileDataBase64);
-  const text = ext === 'pdf' ? await parsePdf(buffer) : parseWorkbook(buffer);
+  const text = ext === 'pdf' ? await parsePdf(buffer) : await parseWorkbook(buffer);
   if (!text) throw new Error('document_text_empty');
   return { textContent: text, format: ext };
 }

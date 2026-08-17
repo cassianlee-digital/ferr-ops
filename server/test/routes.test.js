@@ -101,6 +101,64 @@ test('业务数据编辑：四个角色都放行（editor 档）', async () => {
   }
 });
 
+test('系统密钥和公司级 Hermes 记忆仅 manager/boss 可写', async () => {
+  for (const role of ['seo', 'sem']) {
+    const settings = await app.inject({
+      method: 'PUT', url: '/api/settings/integrations', headers: auth(role),
+      payload: { provider: 'invalid', secret: 'not-written' },
+    });
+    assert.equal(settings.statusCode, 403, `${role} 不得修改全局第三方密钥`);
+
+    const memoryWrites = [
+      { method: 'POST', url: '/api/hermes/memories', payload: { title: '越权记忆', content: '不得写入' } },
+      { method: 'PATCH', url: '/api/hermes/memories/1', payload: { content: '不得修改' } },
+      { method: 'DELETE', url: '/api/hermes/memories/1' },
+      { method: 'POST', url: '/api/hermes/memories/daily-learning', payload: {} },
+      { method: 'POST', url: '/api/hermes/conversations/999/learn', payload: {} },
+      { method: 'POST', url: '/api/hermes/conversations/999/feedback', payload: { result: 'wrong' } },
+    ];
+    for (const item of memoryWrites) {
+      const res = await app.inject({ ...item, headers: auth(role) });
+      assert.equal(res.statusCode, 403, `${role} 不得通过 ${item.method} ${item.url} 写公司级记忆`);
+    }
+  }
+
+  for (const role of ['manager', 'boss']) {
+    const settings = await app.inject({
+      method: 'PUT', url: '/api/settings/integrations', headers: auth(role),
+      payload: { provider: 'invalid', secret: 'not-written' },
+    });
+    assert.equal(settings.statusCode, 400, `${role} 应通过权限检查并进入参数校验`);
+
+    const memory = await app.inject({
+      method: 'POST', url: '/api/hermes/memories', headers: auth(role),
+      payload: { title: `权限测试-${role}`, content: '仅管理角色可写' },
+    });
+    assert.equal(memory.statusCode, 201, `${role} 应可维护公司级 Hermes 记忆`);
+  }
+});
+
+test('登录接口按 IP 和用户名限流', async () => {
+  const attempt = () => app.inject({
+    method: 'POST', url: '/api/login',
+    payload: { username: 'rate-limit-regression', password: 'wrong-password' },
+  });
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal((await attempt()).statusCode, 401);
+  }
+  const blocked = await attempt();
+  assert.equal(blocked.statusCode, 429);
+});
+
+test('改密码拒绝少于 12 位的新密码', async () => {
+  const res = await app.inject({
+    method: 'POST', url: '/api/change-password', headers: auth('boss'),
+    payload: { oldPassword: 'old-password', newPassword: 'short123' },
+  });
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.json().error, 'invalid_input');
+});
+
 test('整改 CRUD 走通（建→改→读→软删），并验类型闸门在真实路由上生效', async () => {
   const created = await app.inject({
     method: 'POST', url: '/api/fixes', headers: auth('boss'),
@@ -430,4 +488,11 @@ test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响
   const res = await app.inject({ method: 'GET', url: '/api/nope-not-a-route' });
   assert.equal(res.statusCode, 404);
   assert.equal(res.json().error, 'not_found');
+});
+
+test('静态文件服务不允许编码路径穿越读取后端文件', async () => {
+  for (const url of ['/%2e%2e/server/package.json', '/..%2fserver/package.json', '/%2e%2e%5cserver%5cpackage.json']) {
+    const res = await app.inject({ method: 'GET', url });
+    assert.doesNotMatch(res.body, /"name"\s*:\s*"ferr-ops-server"/, `${url} 泄漏了后端 package.json`);
+  }
 });

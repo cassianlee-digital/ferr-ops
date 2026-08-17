@@ -8,6 +8,6 @@
     "watch:web": "esbuild public/src/main.js --bundle --format=iife --outfile=public/dist/bundle.js --watch"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.28.2"
   }
 }

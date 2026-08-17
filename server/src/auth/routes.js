@@ -6,9 +6,17 @@ import { requireAuth, cookieOpts } from './middleware.js';
 
 export async function registerAuth(app) {
   // 登录
-  app.post('/api/login', async (request, reply) => {
+  app.post('/api/login', {
+    config: {
+      rateLimit: {
+        max: config.loginRateLimitMax,
+        timeWindow: config.loginRateLimitWindowMs,
+        keyGenerator: (request) => `${request.ip}:${String(request.body?.username || '').trim().toLowerCase()}`,
+      },
+    },
+  }, async (request, reply) => {
     const { username, password } = request.body || {};
-    if (!username || !password) {
+    if (!username || !password || String(username).length > 100 || String(password).length > 200) {
       return reply.code(400).send({ error: 'missing_credentials' });
     }
     const user = db
@@ -40,7 +48,13 @@ export async function registerAuth(app) {
   // 改自己的密码
   app.post('/api/change-password', { preHandler: requireAuth }, async (request, reply) => {
     const { oldPassword, newPassword } = request.body || {};
-    if (!oldPassword || !newPassword || String(newPassword).length < 6) {
+    if (
+      !oldPassword
+      || !newPassword
+      || String(oldPassword).length > 200
+      || String(newPassword).length < config.minPasswordLength
+      || String(newPassword).length > 200
+    ) {
       return reply.code(400).send({ error: 'invalid_input' });
     }
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(request.user.id);

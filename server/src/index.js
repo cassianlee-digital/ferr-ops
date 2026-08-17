@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
+import fastifyRateLimit from '@fastify/rate-limit';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -52,6 +53,7 @@ export async function buildApp({ onRoute } = {}) {
     secret: config.jwtSecret,
     cookie: { cookieName: 'ferr_token', signed: false },
   });
+  await app.register(fastifyRateLimit, { global: false, hook: 'preHandler' });
 
   // 健康检查
   app.get('/api/health', async () => ({ ok: true, ts: Date.now() }));
