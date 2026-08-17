@@ -7,6 +7,7 @@ import { Script } from 'node:vm';
 
 const chartsSource = readFileSync(new URL('../../public/charts.js', import.meta.url), 'utf8');
 const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'utf8');
+const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
@@ -64,30 +65,33 @@ test('runtime-generated frontend markup contains no inline event handlers', () =
     assert.doesNotMatch(source, /\bon[a-z]+\s*=\s*(?:["']|\$\{)/i, `generated inline event handler remains in ${file}`);
   }
   assert.doesNotMatch(indexSource, /onclick="\$\{retryAction\}"/);
-  assert.match(indexSource, /tableLoadState\([^;]+,loadInquiries\)/);
-  assert.match(indexSource, /retryBtn\.addEventListener\('click',retryAction\)/);
+  assert.match(appSource, /tableLoadState\([^;]+,loadInquiries\)/);
+  assert.match(appSource, /retryBtn\.addEventListener\('click',retryAction\)/);
 });
 
 test('static frontend markup contains no inline event handlers', () => {
   assert.doesNotMatch(indexSource, /<[^>]+\son[a-z]+\s*=\s*["']/i);
   assert.match(indexSource, /data-ui-action="ai-box" data-ai-prompt=/);
-  assert.match(indexSource, /STATIC_UI_ACTIONS/);
+  assert.match(appSource, /STATIC_UI_ACTIONS/);
   assert.match(aiSource, /button\[data-ai-prompt\]/);
   assert.doesNotMatch(aiSource, /getAttribute\('onclick'\)/);
 });
 
-test('every static UI action is registered and inline JavaScript remains valid', () => {
+test('every static UI action is registered and external application JavaScript remains valid', () => {
   const staticMarkup = indexSource.slice(0, indexSource.indexOf('<script src='));
   const actions = new Set([...staticMarkup.matchAll(/data-ui-action="([^"]+)"/g)].map((match) => match[1]));
-  const mapSource = indexSource.match(/const STATIC_UI_ACTIONS=\{([\s\S]*?)\n\};/);
+  const mapSource = appSource.match(/const STATIC_UI_ACTIONS=\{([\s\S]*?)\n\};/);
   assert.ok(mapSource, 'STATIC_UI_ACTIONS map is missing');
   const registered = new Set(
     [...mapSource[1].matchAll(/^\s*(?:'([^']+)'|"([^"]+)"|([a-z][\w-]*))\s*:/gmi)]
       .map((match) => match[1] || match[2] || match[3])
   );
   assert.deepEqual([...actions].filter((action) => !registered.has(action)), []);
+  assert.doesNotThrow(() => new Script(appSource));
+});
 
-  const inlineScripts = [...indexSource.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
-  assert.ok(inlineScripts.length > 0, 'inline application script is missing');
-  inlineScripts.forEach((source) => assert.doesNotThrow(() => new Script(source)));
+test('main page loads app.js after its dependencies and contains no inline scripts', () => {
+  assert.doesNotMatch(indexSource, /<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i);
+  assert.match(indexSource, /<script src="\/app\.js"><\/script>/);
+  assert.ok(indexSource.indexOf('<script src="/app.js">') > indexSource.indexOf('<script src="/ai.js">'));
 });

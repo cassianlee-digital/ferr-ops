@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const html = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
+const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.meta.url), 'utf8');
 
 function tbody(id) {
@@ -48,15 +49,15 @@ test('AI entry points require evidence, confidence, and explicit insufficient-da
 });
 
 test('empty and failed live loads remain observable and retryable', () => {
-  assert.match(html, /function tableLoadState\(/);
-  assert.match(html, /\$\{esc\(message\)\}/);
-  assert.match(html, /data-load-state="\$\{state\}"/);
-  assert.match(html, /否词加载失败：/);
-  assert.match(html, /广告创意加载失败：/);
-  assert.match(html, /window\._inqStats=null;[\s\S]*renderInqDonuts\(\);/);
-  assert.match(html, /loadInquiries\(\)/);
-  assert.match(html, /loadNegKeywords\(\)/);
-  assert.match(html, /loadAdCreatives\(\)/);
+  assert.match(appSource, /function tableLoadState\(/);
+  assert.match(appSource, /\$\{esc\(message\)\}/);
+  assert.match(appSource, /data-load-state="\$\{state\}"/);
+  assert.match(appSource, /否词加载失败：/);
+  assert.match(appSource, /广告创意加载失败：/);
+  assert.match(appSource, /window\._inqStats=null;[\s\S]*renderInqDonuts\(\);/);
+  assert.match(appSource, /loadInquiries\(\)/);
+  assert.match(appSource, /loadNegKeywords\(\)/);
+  assert.match(appSource, /loadAdCreatives\(\)/);
   assert.match(negAdsSource, /clearLoadState\('tb-neg'\)/);
   assert.match(negAdsSource, /clearLoadState\('tb-ad'\)/);
 });
