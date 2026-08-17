@@ -11,7 +11,8 @@
   const IMAGE_QUALITY = 0.76;
   const STATUS_STALE_MS = 60000;
   const STATUS_TIMEOUT_MS = 10000;
-  const CHAT_TIMEOUT_MS = 100000;
+  // 后端对 OpenRouter 的 200 空/非法响应会做一次最多 45 秒的恢复请求。
+  const CHAT_TIMEOUT_MS = 150000;
 
   let lastSessionSentAt = 0;
   let sessionTimer = null;
