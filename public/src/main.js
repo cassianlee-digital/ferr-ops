@@ -4,7 +4,7 @@
 // 各模块的公开函数在此统一挂到 window，供静态 HTML 入口与仍是经典脚本的文件调用（渐进绞杀期的兼容层）。
 //
 // 已迁移（批次1·叶子）：neg-ads / ga4-view / market-brain
-// 已迁移（批次2·叶子）：kpi-view（renderKPI/loadOverview 被 index.html+kpi.js 调用）
+// 已迁移（批次2·叶子）：kpi-view（仅 renderKPI/loadOverview 保留全局兼容入口）
 //                       tagselect（OPT 被 keywords.js clsOf() 裸引用，必须挂 window；询盘行辅助改为显式 import）
 // 已迁移（批次3·叶子）：google-projects（接入卡使用模块内事件委托）
 //                       archive（loadArchive 被 index.html 路由切换 + inquiries.js 调用）
@@ -37,7 +37,10 @@ import * as weeklyReview from './weekly-review.js';
 // 已迁移（批次8）：inquiries（内部渲染/事件辅助收回模块；仅保留 app.js 调用的 6 个兼容入口）。
 // GRADE_BADGE、inqRowHtml、isUpgraded 由 archive/tagselect 显式 import，不再挂 window。
 import { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed } from './inquiries.js';
+// 已迁移（批次9）：kpi（评分状态由 kpi-view 显式 import；仅 app.js 必需入口挂 window）。
+import { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek } from './kpi.js';
 
 const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats,renderInqFeed};
+const kpiCompatibility={TOTAL,SEO,SEM,applyKpiServer,loadMetrics,loadWeeks,submitSeoWeek,submitSemWeek};
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility);

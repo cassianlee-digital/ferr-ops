@@ -365,8 +365,8 @@ function chk(el){
 /* 归档②已拆分至 /archive.js（阶段4-A）
    — 行级归档/沉淀委托 / archRowHtml / archInqRowHtml / loadArchive / deriveAk / 恢复+彻删委托 */
 
-/* KPI 引擎 + 周数据已拆分至 /kpi.js（阶段4-B）
-   — TOTAL/SEO/SEM / recomputeScores / applyKpiServer / loadMetrics / loadWeeks / 周报录入(openSeoWeek/submitSeoWeek/openSemWeek/submitSemWeek) / renderBoardCards */
+/* KPI 引擎 + 周数据已迁移至 ES 模块 public/src/kpi.js（打包进 /dist/bundle.js）
+   — 仅 TOTAL/SEO/SEM/applyKpiServer/loadMetrics/loadWeeks/submitSeoWeek/submitSemWeek 保留全局兼容入口 */
 
 /* 设置页：目标值 contenteditable → 回写 KPI 数组 + 重算 */
 /* ===== 1c-a: 可编辑保存通用小工具(本轮仅服务 KPI 设置)===== */
@@ -525,8 +525,8 @@ function renderRankTrend(arr){
 }
 /* 关键词库（4 类）已拆分至 /keywords.js（阶段4-A）
    — kwRow / loadKeywords / addKeyword / kwDelete / 分页 / 分类 tab / inlineConfirm（全局共享） / 单元格保存 */
-/* KPI 看板渲染已拆分至 /kpi-view.js（阶段4-B）
-   — grade/gauge/badge/fmt/rows/mini/loadOverview/renderKPI */
+/* KPI 看板渲染：ES 模块 public/src/kpi-view.js（打包进 /dist/bundle.js）
+   — 仅 loadOverview/renderKPI 保留全局兼容入口 */
 
 /* 图表层已拆分至 /charts.js（阶段4-B）
    — DEMO fixture / chartEmpty / renderInqDonuts / SEO 折线(seoSeriesFromWeeks/rebuildSeoChart/loadSeoChartRange) / loadDashboardInq / renderInqTrend / charts() */

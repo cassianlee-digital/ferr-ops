@@ -1,16 +1,16 @@
 /* KPI 看板渲染（ES 模块 · esbuild 打包为 IIFE）。
-   运行时依赖的全局（调用时解析，非加载期）：esc()、API（index.html 内联）、
-   ratio()/recomputeScores()/TOTAL/SEO/SEM/company/liScore/chenScore（kpi.js，仍为经典脚本）。
-   导出由 main.js 挂到 window：renderKPI/loadOverview 有真实外部调用方（index.html、kpi.js），
-   其余保持与旧全局脚本一致的暴露面，确保零行为差异。 */
+   运行时全局依赖：esc()、API。评分数据和重算函数从 kpi.js 显式导入。
+   仅 renderKPI/loadOverview 由 main.js 挂到 window，供 app.js 与 KPI 提交流程调用。 */
 
-export function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-soft)',i:'ti-trophy'};if(s>=75)return{t:'合格',c:'var(--blue)',bg:'var(--blue-soft)',i:'ti-circle-check'};if(s>=60)return{t:'警告',c:'var(--amber)',bg:'var(--amber-soft)',i:'ti-alert-triangle'};return{t:'整改',c:'var(--primary)',bg:'var(--primary-soft)',i:'ti-flame'};}
-export function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
-export function badge(id,score){const b=document.getElementById(id);if(!b)return;const g=grade(score);b.style.background=g.bg;b.style.color=g.c;b.innerHTML='<i class="ti '+g.i+'"></i> '+g.t;}
-export function fmt(k,v){return k.u==='¥'?'¥'+v.toLocaleString():k.u==='%'?v+'%':k.u===''?v:v+k.u;}
+import { TOTAL, SEO, SEM, ratio, recomputeScores, company, liScore, chenScore } from './kpi.js';
+
+function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-soft)',i:'ti-trophy'};if(s>=75)return{t:'合格',c:'var(--blue)',bg:'var(--blue-soft)',i:'ti-circle-check'};if(s>=60)return{t:'警告',c:'var(--amber)',bg:'var(--amber-soft)',i:'ti-alert-triangle'};return{t:'整改',c:'var(--primary)',bg:'var(--primary-soft)',i:'ti-flame'};}
+function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
+function badge(id,score){const b=document.getElementById(id);if(!b)return;const g=grade(score);b.style.background=g.bg;b.style.color=g.c;b.innerHTML='<i class="ti '+g.i+'"></i> '+g.t;}
+function fmt(k,v){return k.u==='¥'?'¥'+v.toLocaleString():k.u==='%'?v+'%':k.u===''?v:v+k.u;}
 function scoreTone(r){return r>=.9?'kpi-tone-green':r>=.7?'kpi-tone-blue':r>=.5?'kpi-tone-amber':'kpi-tone-primary';}
-export function rows(arr,box){const el=document.getElementById(box);if(!el)return;el.innerHTML=arr.map(k=>{const r=ratio(k),tone=scoreTone(r),progress=Math.max(0,Math.min(100,Number.isFinite(r)?r*100:0));return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(k.n)}</div><div class="csp-s-10a2cb4f9a">目标 ${fmt(k,k.t)} · 实际 ${fmt(k,k.a)}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${Math.round(r*100)}</div></div>`;}).join('');el.querySelectorAll('[data-progress]').forEach(fill=>{const progress=Number(fill.dataset.progress);fill.style.width=`${Number.isFinite(progress)?progress:0}%`;});}
-export function mini(ov){
+function rows(arr,box){const el=document.getElementById(box);if(!el)return;el.innerHTML=arr.map(k=>{const r=ratio(k),tone=scoreTone(r),progress=Math.max(0,Math.min(100,Number.isFinite(r)?r*100:0));return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(k.n)}</div><div class="csp-s-10a2cb4f9a">目标 ${fmt(k,k.t)} · 实际 ${fmt(k,k.a)}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${Math.round(r*100)}</div></div>`;}).join('');el.querySelectorAll('[data-progress]').forEach(fill=>{const progress=Number(fill.dataset.progress);fill.style.width=`${Number.isFinite(progress)?progress:0}%`;});}
+function mini(ov){
   ov=ov||{current:{}}; const c=ov.current||{}; const d=ov.delta||{};
   const momTxt=(v)=> v==null?'':(v>0?'▲'+v:(v<0?'▼'+Math.abs(v):'—'));
   const m=[['有效询盘', (c.valid??'—'), '', ''],

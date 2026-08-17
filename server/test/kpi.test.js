@@ -12,7 +12,8 @@ test('ratio(正向 r)：达成率 = actual/target，封顶 1', () => {
 test('ratio(反向 i：越小越好)：达成率 = target/actual，封顶 1', () => {
   assert.equal(ratio({ mode: 'i', target: 50, actual: 100 }), 0.5); // 实际超标一倍
   assert.equal(ratio({ mode: 'i', target: 100, actual: 50 }), 1);   // 优于目标 → 封顶
-  assert.equal(ratio({ mode: 'i', target: 50, actual: 0 }), 1);     // 实际 0（如成本 0）→ 满分
+  assert.equal(ratio({ mode: 'i', target: 50, actual: 0 }), 0);     // 0 是未形成有效观测，不得凭空满分
+  assert.equal(ratio({ mode: 'i', target: 50, actual: null }), 0);  // 缺失值不得参与评分
 });
 
 test('blockRate：按权重加权平均达成率', () => {

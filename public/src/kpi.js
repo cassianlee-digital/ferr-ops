@@ -1,17 +1,22 @@
-/* KPI 引擎 + 周数据（拆分自 index.html · 阶段4-B）
-   经典 script + window 全局兼容。依赖（运行时解析）：window.API、toast()、openModal()/closeModal()、
-   renderKPI()（看板渲染，内联）、seoFull/seoChart/seoSeriesFromWeeks()/buildSeoData()（charts.js）。
-   导出全局：TOTAL/SEO/SEM/recomputeScores/tR..company（renderKPI/设置页在运行时读）、
-   loadMetrics/loadWeeks（init 调）、mapSeoWeek（charts.js 用）、openSeoWeek/submitSeoWeek/openSemWeek/submitSemWeek（onclick）。 */
+/* KPI 引擎 + 周数据（ES 模块 · esbuild 打包为 IIFE）。
+   运行时依赖：window.API、toast()、openModal()/closeModal()、renderKPI()（kpi-view.js 兼容入口）、
+   seoFull/seoChart/seoSeriesFromWeeks()/buildSeoData()（charts.js）。
+   TOTAL/SEO/SEM/applyKpiServer/loadMetrics/loadWeeks 与两个提交入口由 main.js 挂到 window，
+   供仍是经典脚本的 app.js 调用；评分内部状态仅供 kpi-view.js 显式导入。 */
 
 /* ================= KPI ENGINE ================= */
-const TOTAL=[{n:'询盘总量',w:25,t:60,a:55,m:'r',u:'封'},{n:'A级询盘数',w:35,t:10,a:7,m:'r',u:'封'},{n:'有效询盘成本',w:25,t:2000,a:2400,m:'i',u:'¥'},{n:'闭环执行度',w:15,t:5,a:4,m:'r',u:'项'}];
-const SEO=[{n:'自然流量环比',w:25,t:10,a:8,m:'r',u:'%'},{n:'核心词 Top10 占比',w:25,t:40,a:30,m:'r',u:'%'},{n:'关键词覆盖/长尾',w:15,t:500,a:460,m:'r',u:'词'},{n:'新增收录页面',w:15,t:20,a:26,m:'r',u:'页'},{n:'跳出率',w:10,t:55,a:58,m:'i',u:'%'},{n:'页面停留时长',w:10,t:150,a:168,m:'r',u:'s'}];
-const SEM=[{n:'CPC',w:15,t:4.0,a:4.2,m:'i',u:'¥'},{n:'CTR',w:15,t:3.5,a:3.4,m:'r',u:'%'},{n:'质量分',w:15,t:7.5,a:7.2,m:'r',u:''},{n:'ROAS',w:20,t:3.5,a:3.2,m:'r',u:'x'},{n:'转化次数',w:15,t:60,a:55,m:'r',u:'次'},{n:'每次转化费用',w:20,t:300,a:330,m:'i',u:'¥'}];
-const ratio=k=>k.m==='i'?Math.min(k.t/k.a,1):Math.min(k.a/k.t,1);
+export const TOTAL=[{n:'询盘总量',w:25,t:60,a:0,m:'r',u:'封'},{n:'A级询盘数',w:35,t:10,a:0,m:'r',u:'封'},{n:'有效询盘成本',w:25,t:2000,a:0,m:'i',u:'¥'},{n:'闭环执行度',w:15,t:5,a:0,m:'r',u:'项'}];
+export const SEO=[{n:'自然流量环比',w:25,t:10,a:0,m:'r',u:'%'},{n:'核心词 Top10 占比',w:25,t:40,a:0,m:'r',u:'%'},{n:'关键词覆盖/长尾',w:15,t:500,a:0,m:'r',u:'词'},{n:'新增收录页面',w:15,t:20,a:0,m:'r',u:'页'},{n:'跳出率',w:10,t:55,a:0,m:'i',u:'%'},{n:'页面停留时长',w:10,t:150,a:0,m:'r',u:'s'}];
+export const SEM=[{n:'CPC',w:15,t:4.0,a:0,m:'i',u:'¥'},{n:'CTR',w:15,t:3.5,a:0,m:'r',u:'%'},{n:'质量分',w:15,t:7.5,a:0,m:'r',u:''},{n:'ROAS',w:20,t:3.5,a:0,m:'r',u:'x'},{n:'转化次数',w:15,t:60,a:0,m:'r',u:'次'},{n:'每次转化费用',w:20,t:300,a:0,m:'i',u:'¥'}];
+export const ratio=k=>{
+  const target=Number(k.t),actual=Number(k.a);
+  if(!Number.isFinite(target)||!Number.isFinite(actual)||target<=0||actual<=0)return 0;
+  return k.m==='i'?Math.min(target/actual,1):Math.min(actual/target,1);
+};
 const blockRate=a=>a.reduce((s,k)=>s+ratio(k)*k.w,0)/a.reduce((s,k)=>s+k.w,0);
-let tR,seoR,semR,liScore,chenScore,company;
-function recomputeScores(){ tR=blockRate(TOTAL);seoR=blockRate(SEO);semR=blockRate(SEM);liScore=(tR*.5+seoR*.5)*100;chenScore=(tR*.5+semR*.5)*100;company=(liScore+chenScore)/2; }
+let tR,seoR,semR;
+export let liScore,chenScore,company;
+export function recomputeScores(){ tR=blockRate(TOTAL);seoR=blockRate(SEO);semR=blockRate(SEM);liScore=(tR*.5+seoR*.5)*100;chenScore=(tR*.5+semR*.5)*100;company=(liScore+chenScore)/2; }
 recomputeScores();
 
 /* ============================================================
@@ -22,19 +27,22 @@ window._seoWeeks=[]; window._semWeeks=[];
 window._seoWeeksView=undefined; // 区间视图，仅 SEO 折线图使用；KPI 仍使用全量 _seoWeeks。
 
 /* KPI 以后端为权威：把服务端 rows 写回前端 TOTAL/SEO/SEM 数组（含目标/实际/id）*/
-function applyKpiServer(rows){
+export function applyKpiServer(rows){
   const byGrp={total:TOTAL,seo:SEO,sem:SEM};
   (rows||[]).forEach(r=>{ const arr=byGrp[r.grp]; if(!arr)return; const k=arr.find(x=>x.n===r.name);
     if(k){ if(typeof r.target==='number')k.t=r.target; if(typeof r.actual==='number')k.a=r.actual; k.id=r.id; } });
 }
 // 把后端 KPI 目标值回填到设置页可编辑 span（否则刷新后 span 仍显示静态默认值，看着像没保存）
 function syncKpiInputs(){ document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{ const p=el.dataset.kpi.split(':'),arr=({TOTAL,SEO,SEM})[p[0]],idx=+p[1]; if(arr&&arr[idx]&&arr[idx].t!=null){ el.textContent=String(arr[idx].t); el.dataset.kpiOld=String(arr[idx].t); } }); }
-async function loadMetrics(){ try{ const {rows}=await API.get('/api/kpi-targets'); applyKpiServer(rows); syncKpiInputs(); }catch(e){} }
+export async function loadMetrics(){
+  try{ const {rows}=await API.get('/api/kpi-targets'); applyKpiServer(rows); syncKpiInputs(); }
+  catch(e){ if(e&&e.message!=='unauthorized')toast('KPI 加载失败：'+(e.message||'未知错误')); }
+}
 
 /* 后端周报字段 → 前端原有字段名映射，保持下游逻辑不变 */
 function mapSeoWeek(w){return {date:(w.week_date||'').slice(5),ym:(w.week_date||'').slice(0,7),clicks:w.clicks,impr:w.impressions,pos:w.avg_position,top10:w.top10_ratio,coverage:w.coverage,indexed:w.indexed_pages,bounce:w.bounce_rate,dwell:w.dwell_seconds};}
 function mapSemWeek(w){return {date:(w.week_date||'').slice(5),cost:w.cost,impr:w.impressions,clicks:w.clicks,conv:w.conversions,roas:w.roas,qs:w.quality_score,cpc:w.cpc,ctr:w.ctr,cpconv:w.cost_per_conv};}
-async function loadWeeks(){
+export async function loadWeeks(){
   try{
     const seo=await API.get('/api/seo-weeks'); window._seoWeeks=(seo.items||[]).map(mapSeoWeek);
     const sem=await API.get('/api/sem-weeks'); window._semWeeks=(sem.items||[]).map(mapSemWeek);
@@ -69,7 +77,7 @@ const _setTxt=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;
 
 function openSeoWeek(){ const d=document.getElementById('sw-date'); if(d)d.value=new Date().toISOString().slice(0,10);
   ['sw-clicks','sw-impr','sw-pos','sw-top10','sw-cov','sw-idx','sw-bounce','sw-dwell'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';}); openModal('seoWkMask'); }
-async function submitSeoWeek(){
+export async function submitSeoWeek(){
   const body={week_date:document.getElementById('sw-date').value||new Date().toISOString().slice(0,10),
     clicks:_fnum('sw-clicks')||0,impressions:_fnum('sw-impr')||0,avg_position:_fnum('sw-pos'),
     top10_ratio:_fnum('sw-top10'),coverage:_fnum('sw-cov'),indexed_pages:_fnum('sw-idx'),
@@ -86,7 +94,7 @@ async function submitSeoWeek(){
 }
 function openSemWeek(){ const d=document.getElementById('mw-date'); if(d)d.value=new Date().toISOString().slice(0,10);
   ['mw-cost','mw-impr','mw-clicks','mw-conv','mw-roas','mw-qs'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';}); openModal('semWkMask'); }
-async function submitSemWeek(){
+export async function submitSemWeek(){
   const body={week_date:document.getElementById('mw-date').value||new Date().toISOString().slice(0,10),
     cost:_fnum('mw-cost')||0,impressions:_fnum('mw-impr')||0,clicks:_fnum('mw-clicks')||0,
     conversions:_fnum('mw-conv')||0,roas:_fnum('mw-roas'),quality_score:_fnum('mw-qs')};

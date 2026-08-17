@@ -15,6 +15,8 @@ const weeklyReviewSource = readFileSync(new URL('../../public/src/weekly-review.
 const inquiriesSource = readFileSync(new URL('../../public/src/inquiries.js', import.meta.url), 'utf8');
 const tagSelectSource = readFileSync(new URL('../../public/src/tagselect.js', import.meta.url), 'utf8');
 const archiveSource = readFileSync(new URL('../../public/src/archive.js', import.meta.url), 'utf8');
+const kpiSource = readFileSync(new URL('../../public/src/kpi.js', import.meta.url), 'utf8');
+const kpiViewSource = readFileSync(new URL('../../public/src/kpi-view.js', import.meta.url), 'utf8');
 const cspUtilitiesSource = readFileSync(new URL('../../public/csp-utilities.css', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
@@ -119,7 +121,7 @@ test('weekly review is bundled with a narrow global compatibility surface', () =
 test('inquiries are bundled with explicit module dependencies and a narrow global compatibility surface', () => {
   assert.doesNotMatch(indexSource, /<script src="\/inquiries\.js"><\/script>/);
   assert.match(mainSource, /from '\.\/inquiries\.js';/);
-  assert.match(mainSource, /Object\.assign\(window,[^;]*inquiryCompatibility\);/);
+  assert.match(mainSource, /Object\.assign\(window,[^;]*\binquiryCompatibility\b[^;]*\);/);
   assert.match(mainSource, /const inquiryCompatibility=\{([^}]*)\};/);
   const compatibility = mainSource.match(/const inquiryCompatibility=\{([^}]*)\};/)[1]
     .split(',')
@@ -153,6 +155,33 @@ test('inquiries are bundled with explicit module dependencies and a narrow globa
     'submitInquiry',
     'submitTrack'
   ]);
+});
+
+test('KPI modules use loaded values and expose only required classic-script compatibility', () => {
+  assert.doesNotMatch(indexSource, /<script src="\/kpi\.js"><\/script>/);
+  assert.match(mainSource, /from '\.\/kpi\.js';/);
+  assert.match(kpiViewSource, /from '\.\/kpi\.js';/);
+  assert.match(mainSource, /Object\.assign\(window,[^;]*\bkpiCompatibility\b[^;]*\);/);
+  const compatibility = mainSource.match(/const kpiCompatibility=\{([^}]*)\};/);
+  assert.ok(compatibility, 'KPI compatibility surface is missing');
+  assert.deepEqual(compatibility[1].split(',').map((name) => name.trim()).sort(), [
+    'SEM',
+    'SEO',
+    'TOTAL',
+    'applyKpiServer',
+    'loadMetrics',
+    'loadWeeks',
+    'submitSemWeek',
+    'submitSeoWeek'
+  ]);
+  assert.equal([...kpiSource.matchAll(/\ba:0\b/g)].length, 16);
+  assert.match(kpiSource, /target<=0\|\|actual<=0\)return 0/);
+  assert.doesNotMatch(kpiSource, /async function loadMetrics\(\)\{[^}]*catch\(e\)\{\}/);
+  const viewExports = [...kpiViewSource.matchAll(/export (?:async )?function ([A-Za-z_$][\w$]*)/g)]
+    .map((match) => match[1])
+    .sort();
+  assert.deepEqual(viewExports, ['loadOverview', 'renderKPI']);
+  assert.doesNotMatch(mainSource, /\b(?:ratio|recomputeScores|company|liScore|chenScore|mapSeoWeek|openSeoWeek|openSemWeek)\b(?=[,}])/);
 });
 
 test('login page loads only external CSS and JavaScript', () => {

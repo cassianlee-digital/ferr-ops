@@ -7,12 +7,13 @@ import { seoWow } from './derive.js';
 
 // 单指标达成率：反向(i)指标越小越好
 export function ratio(k) {
+  const target = Number(k.target);
+  const actual = Number(k.actual);
+  if (!Number.isFinite(target) || !Number.isFinite(actual) || target <= 0 || actual <= 0) return 0;
   if (k.mode === 'i') {
-    if (!k.actual) return 1;
-    return Math.min(k.target / k.actual, 1);
+    return Math.min(target / actual, 1);
   }
-  if (!k.target) return 0;
-  return Math.min(k.actual / k.target, 1);
+  return Math.min(actual / target, 1);
 }
 
 export function blockRate(rows) {

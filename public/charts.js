@@ -1,6 +1,6 @@
 /* 图表层：DEMO fixture + 询盘/渠道 donut + SEO 折线 + 总览询盘趋势（拆分自 index.html · 阶段4-B）
    经典 script + window 全局兼容。依赖（运行时解析）：Chart（CDN）、window.API、toast()、formatLocalDate()/withRange()（timerange 内联）、
-   mapSeoWeek()（KPI 内联）、window._inqCache（inquiries.js）、window._seoWeeks/_seoWeeksView/_semWeeks/_gran（KPI/timerange）、window.DEMO_MODE。
+   window._inqCache（inquiries.js）、window._seoWeeks/_seoWeeksView/_semWeeks/_gran（KPI/timerange）、window.DEMO_MODE。
    charts()/loadDashboardInq()/renderInqDonuts()/rebuildSeoChart()/loadSeoChartRange() 由 window load 初始化、路由、时间筛选、载入流程在运行时调用。 */
 
 /* ===== 1a: DEMO_MODE —— 真实模式(false)禁止任何硬编码示例数据；仅 true 时展示下方 fixture ===== */

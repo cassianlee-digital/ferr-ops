@@ -222,15 +222,186 @@
   // public/src/kpi-view.js
   var kpi_view_exports = {};
   __export(kpi_view_exports, {
-    badge: () => badge,
-    fmt: () => fmt,
-    gauge: () => gauge,
-    grade: () => grade,
     loadOverview: () => loadOverview,
-    mini: () => mini,
-    renderKPI: () => renderKPI,
-    rows: () => rows
+    renderKPI: () => renderKPI2
   });
+
+  // public/src/kpi.js
+  var TOTAL = [{ n: "\u8BE2\u76D8\u603B\u91CF", w: 25, t: 60, a: 0, m: "r", u: "\u5C01" }, { n: "A\u7EA7\u8BE2\u76D8\u6570", w: 35, t: 10, a: 0, m: "r", u: "\u5C01" }, { n: "\u6709\u6548\u8BE2\u76D8\u6210\u672C", w: 25, t: 2e3, a: 0, m: "i", u: "\xA5" }, { n: "\u95ED\u73AF\u6267\u884C\u5EA6", w: 15, t: 5, a: 0, m: "r", u: "\u9879" }];
+  var SEO = [{ n: "\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4", w: 25, t: 10, a: 0, m: "r", u: "%" }, { n: "\u6838\u5FC3\u8BCD Top10 \u5360\u6BD4", w: 25, t: 40, a: 0, m: "r", u: "%" }, { n: "\u5173\u952E\u8BCD\u8986\u76D6/\u957F\u5C3E", w: 15, t: 500, a: 0, m: "r", u: "\u8BCD" }, { n: "\u65B0\u589E\u6536\u5F55\u9875\u9762", w: 15, t: 20, a: 0, m: "r", u: "\u9875" }, { n: "\u8DF3\u51FA\u7387", w: 10, t: 55, a: 0, m: "i", u: "%" }, { n: "\u9875\u9762\u505C\u7559\u65F6\u957F", w: 10, t: 150, a: 0, m: "r", u: "s" }];
+  var SEM = [{ n: "CPC", w: 15, t: 4, a: 0, m: "i", u: "\xA5" }, { n: "CTR", w: 15, t: 3.5, a: 0, m: "r", u: "%" }, { n: "\u8D28\u91CF\u5206", w: 15, t: 7.5, a: 0, m: "r", u: "" }, { n: "ROAS", w: 20, t: 3.5, a: 0, m: "r", u: "x" }, { n: "\u8F6C\u5316\u6B21\u6570", w: 15, t: 60, a: 0, m: "r", u: "\u6B21" }, { n: "\u6BCF\u6B21\u8F6C\u5316\u8D39\u7528", w: 20, t: 300, a: 0, m: "i", u: "\xA5" }];
+  var ratio = (k) => {
+    const target = Number(k.t), actual = Number(k.a);
+    if (!Number.isFinite(target) || !Number.isFinite(actual) || target <= 0 || actual <= 0) return 0;
+    return k.m === "i" ? Math.min(target / actual, 1) : Math.min(actual / target, 1);
+  };
+  var blockRate = (a) => a.reduce((s, k) => s + ratio(k) * k.w, 0) / a.reduce((s, k) => s + k.w, 0);
+  var tR;
+  var seoR;
+  var semR;
+  var liScore;
+  var chenScore;
+  var company;
+  function recomputeScores() {
+    tR = blockRate(TOTAL);
+    seoR = blockRate(SEO);
+    semR = blockRate(SEM);
+    liScore = (tR * 0.5 + seoR * 0.5) * 100;
+    chenScore = (tR * 0.5 + semR * 0.5) * 100;
+    company = (liScore + chenScore) / 2;
+  }
+  recomputeScores();
+  window._seoWeeks = [];
+  window._semWeeks = [];
+  window._seoWeeksView = void 0;
+  function applyKpiServer(rows2) {
+    const byGrp = { total: TOTAL, seo: SEO, sem: SEM };
+    (rows2 || []).forEach((r) => {
+      const arr = byGrp[r.grp];
+      if (!arr) return;
+      const k = arr.find((x) => x.n === r.name);
+      if (k) {
+        if (typeof r.target === "number") k.t = r.target;
+        if (typeof r.actual === "number") k.a = r.actual;
+        k.id = r.id;
+      }
+    });
+  }
+  function syncKpiInputs() {
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
+      const p = el.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
+      if (arr && arr[idx] && arr[idx].t != null) {
+        el.textContent = String(arr[idx].t);
+        el.dataset.kpiOld = String(arr[idx].t);
+      }
+    });
+  }
+  async function loadMetrics() {
+    try {
+      const { rows: rows2 } = await API.get("/api/kpi-targets");
+      applyKpiServer(rows2);
+      syncKpiInputs();
+    } catch (e) {
+      if (e && e.message !== "unauthorized") toast("KPI \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+    }
+  }
+  function mapSeoWeek(w) {
+    return { date: (w.week_date || "").slice(5), ym: (w.week_date || "").slice(0, 7), clicks: w.clicks, impr: w.impressions, pos: w.avg_position, top10: w.top10_ratio, coverage: w.coverage, indexed: w.indexed_pages, bounce: w.bounce_rate, dwell: w.dwell_seconds };
+  }
+  function mapSemWeek(w) {
+    return { date: (w.week_date || "").slice(5), cost: w.cost, impr: w.impressions, clicks: w.clicks, conv: w.conversions, roas: w.roas, qs: w.quality_score, cpc: w.cpc, ctr: w.ctr, cpconv: w.cost_per_conv };
+  }
+  async function loadWeeks() {
+    try {
+      const seo = await API.get("/api/seo-weeks");
+      window._seoWeeks = (seo.items || []).map(mapSeoWeek);
+      const sem = await API.get("/api/sem-weeks");
+      window._semWeeks = (sem.items || []).map(mapSemWeek);
+    } catch (e) {
+      window._seoWeeks = [];
+      window._semWeeks = [];
+      if (e && e.message !== "unauthorized") toast("\u5468\u62A5\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+    }
+    applySeoActuals();
+    applySemActuals();
+    renderBoardCards();
+  }
+  function renderBoardCards() {
+  }
+  document.addEventListener("change", (e) => {
+    if (!e.target || e.target.id !== "sem-hlevel") return;
+    const v = e.target.value;
+    document.querySelectorAll("#sub-data-sem table.hierarchy tbody tr").forEach((tr) => {
+      let show = true;
+      if (v === "camp") show = tr.classList.contains("h-camp");
+      else if (v === "grp") show = tr.classList.contains("h-camp") || tr.classList.contains("h-grp");
+      tr.style.display = show ? "" : "none";
+    });
+  });
+  function applySeoActuals() {
+    const w = window._seoWeeks;
+    if (!w.length) return;
+    const last = w[w.length - 1], prev = w.length > 1 ? w[w.length - 2] : null;
+    if (prev && prev.clicks) SEO[0].a = Math.round((last.clicks / prev.clicks - 1) * 1e3) / 10;
+    if (last.top10 != null) SEO[1].a = last.top10;
+    if (last.coverage != null) SEO[2].a = last.coverage;
+    if (last.indexed != null) SEO[3].a = last.indexed;
+    if (last.bounce != null) SEO[4].a = last.bounce;
+    if (last.dwell != null) SEO[5].a = last.dwell;
+  }
+  function applySemActuals() {
+    const w = window._semWeeks;
+    if (!w.length) return;
+    const last = w[w.length - 1];
+    if (last.cpc != null) SEM[0].a = last.cpc;
+    if (last.ctr != null) SEM[1].a = last.ctr;
+    if (last.qs != null) SEM[2].a = last.qs;
+    if (last.roas != null) SEM[3].a = last.roas;
+    if (last.conv != null) SEM[4].a = last.conv;
+    if (last.cpconv != null) SEM[5].a = last.cpconv;
+  }
+  var _fnum = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const v = parseFloat(el.value);
+    return isNaN(v) ? null : v;
+  };
+  async function submitSeoWeek() {
+    const body = {
+      week_date: document.getElementById("sw-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+      clicks: _fnum("sw-clicks") || 0,
+      impressions: _fnum("sw-impr") || 0,
+      avg_position: _fnum("sw-pos"),
+      top10_ratio: _fnum("sw-top10"),
+      coverage: _fnum("sw-cov"),
+      indexed_pages: _fnum("sw-idx"),
+      bounce_rate: _fnum("sw-bounce"),
+      dwell_seconds: _fnum("sw-dwell")
+    };
+    try {
+      const { item } = await API.post("/api/seo-weeks", body);
+      const rec = mapSeoWeek(item);
+      window._seoWeeks.push(rec);
+      applySeoActuals();
+      if (typeof loadSeoBoardGsc === "function") loadSeoBoardGsc();
+      seoFull = seoSeriesFromWeeks();
+      if (seoChart) {
+        seoChart.data = buildSeoData(seoFull);
+        seoChart.update();
+      }
+      renderKPI();
+      closeModal("seoWkMask");
+      const wow = window._seoWeeks.length > 1 ? "\uFF0C\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4 " + (SEO[0].a >= 0 ? "+" : "") + SEO[0].a + "%" : "";
+      toast("\u5DF2\u5F55\u5165\u672C\u5468 GSC \u6570\u636E \xB7 \u5DF2\u5165\u5E93, \u56FE\u8868+KPI \u5DF2\u66F4\u65B0" + wow);
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u674E/SEO \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+    }
+  }
+  async function submitSemWeek() {
+    const body = {
+      week_date: document.getElementById("mw-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+      cost: _fnum("mw-cost") || 0,
+      impressions: _fnum("mw-impr") || 0,
+      clicks: _fnum("mw-clicks") || 0,
+      conversions: _fnum("mw-conv") || 0,
+      roas: _fnum("mw-roas"),
+      quality_score: _fnum("mw-qs")
+    };
+    try {
+      const { item } = await API.post("/api/sem-weeks", body);
+      const rec = mapSemWeek(item);
+      window._semWeeks.push(rec);
+      applySemActuals();
+      if (typeof loadSemBoardAds === "function") loadSemBoardAds();
+      renderKPI();
+      closeModal("semWkMask");
+      toast("\u5DF2\u5BFC\u5165\u672C\u5468 Ads \u6570\u636E \xB7 CPC \xA5" + (rec.cpc ?? "-") + " / CTR " + (rec.ctr ?? "-") + "% / \u6BCF\u8BE2\u76D8 \xA5" + (rec.cpconv ?? "-") + "\uFF08\u540E\u7AEF\u8BA1\u7B97\uFF09, KPI \u5DF2\u66F4\u65B0");
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u9648/SEM \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+    }
+  }
+
+  // public/src/kpi-view.js
   function grade(s) {
     if (s >= 90) return { t: "\u4F18\u79C0", c: "var(--green)", bg: "var(--green-soft)", i: "ti-trophy" };
     if (s >= 75) return { t: "\u5408\u683C", c: "var(--blue)", bg: "var(--blue-soft)", i: "ti-circle-check" };
@@ -342,7 +513,7 @@
       mini();
     }
   }
-  function renderKPI() {
+  function renderKPI2() {
     recomputeScores();
     rows(TOTAL, "totalRows");
     rows(SEO, "seoRows");
@@ -3030,5 +3201,6 @@
 
   // public/src/main.js
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility);
+  var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility);
 })();
