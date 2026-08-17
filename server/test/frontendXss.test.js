@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Script } from 'node:vm';
 
 const chartsSource = readFileSync(new URL('../../public/charts.js', import.meta.url), 'utf8');
 const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'utf8');
@@ -65,4 +66,28 @@ test('runtime-generated frontend markup contains no inline event handlers', () =
   assert.doesNotMatch(indexSource, /onclick="\$\{retryAction\}"/);
   assert.match(indexSource, /tableLoadState\([^;]+,loadInquiries\)/);
   assert.match(indexSource, /retryBtn\.addEventListener\('click',retryAction\)/);
+});
+
+test('static frontend markup contains no inline event handlers', () => {
+  assert.doesNotMatch(indexSource, /<[^>]+\son[a-z]+\s*=\s*["']/i);
+  assert.match(indexSource, /data-ui-action="ai-box" data-ai-prompt=/);
+  assert.match(indexSource, /STATIC_UI_ACTIONS/);
+  assert.match(aiSource, /button\[data-ai-prompt\]/);
+  assert.doesNotMatch(aiSource, /getAttribute\('onclick'\)/);
+});
+
+test('every static UI action is registered and inline JavaScript remains valid', () => {
+  const staticMarkup = indexSource.slice(0, indexSource.indexOf('<script src='));
+  const actions = new Set([...staticMarkup.matchAll(/data-ui-action="([^"]+)"/g)].map((match) => match[1]));
+  const mapSource = indexSource.match(/const STATIC_UI_ACTIONS=\{([\s\S]*?)\n\};/);
+  assert.ok(mapSource, 'STATIC_UI_ACTIONS map is missing');
+  const registered = new Set(
+    [...mapSource[1].matchAll(/^\s*(?:'([^']+)'|"([^"]+)"|([a-z][\w-]*))\s*:/gmi)]
+      .map((match) => match[1] || match[2] || match[3])
+  );
+  assert.deepEqual([...actions].filter((action) => !registered.has(action)), []);
+
+  const inlineScripts = [...indexSource.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
+  assert.ok(inlineScripts.length > 0, 'inline application script is missing');
+  inlineScripts.forEach((source) => assert.doesNotThrow(() => new Script(source)));
 });
