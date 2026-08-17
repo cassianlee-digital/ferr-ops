@@ -2,6 +2,7 @@
 import { requireAuth, editor } from '../auth/middleware.js';
 import * as mr from '../db/repositories/marketResearch.js';
 import * as brain from '../services/marketBrain.js';
+import { aiErrorHttpStatus, publicAiError } from '../services/aiProvider.js';
 
 export async function marketRoutes(app) {
   // 市场问卷数据（P3 前端表格化用）
@@ -29,9 +30,8 @@ export async function marketRoutes(app) {
     try {
       return await brain.refresh();
     } catch (e) {
-      if (e.code === 'NO_KEY') return reply.code(503).send({ error: 'ai_unconfigured' });
       request.log.error({ err: e.message }, 'brain refresh failed');
-      return reply.code(502).send({ error: 'ai_failed' });
+      return reply.code(aiErrorHttpStatus(e)).send(publicAiError(e));
     }
   });
 }

@@ -10,6 +10,7 @@ import { config } from './config.js';
 import { seed } from './db/seed.js';
 import { registerAuth } from './auth/routes.js';
 import { registerRoutes } from './routes/index.js';
+import { startHermesHealthMonitor } from './services/hermesStatus.js';
 import { startSyncScheduler } from './sync/scheduler.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -78,6 +79,7 @@ async function main() {
 
   // 谷歌数据定时自动同步（进程内调度）
   startSyncScheduler(app.log);
+  startHermesHealthMonitor(app.log);
 }
 
 // 仅「直接执行本文件」时才起服务器；被 import（如测试）时只导出 buildApp。

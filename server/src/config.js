@@ -52,14 +52,7 @@ export const config = {
   settingsSecret: process.env.SETTINGS_SECRET || process.env.JWT_SECRET || 'dev-settings-key',
   settingsSecretExplicit: !!process.env.SETTINGS_SECRET,
 
-  anthropic: {
-    apiKey: process.env.ANTHROPIC_API_KEY || '',
-    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
-    maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS || 4000),
-  },
-
   hermes: {
-    url: (process.env.HERMES_AGENT_URL || '').replace(/\/+$/, ''),
     sharedSecret: process.env.HERMES_SHARED_SECRET || '',
     dailyLearningAuto: process.env.HERMES_DAILY_LEARNING_AUTO !== 'false',
   },

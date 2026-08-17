@@ -2,38 +2,59 @@
    - 自动带 cookie 会话；遇 401 跳登录页。
    - window.ME 保存当前用户；window.can(...) 做前端权限提示（后端才是权威）。*/
 (function () {
-  async function _fetch(method, path, body) {
+  const DEFAULT_TIMEOUT_MS = 120000;
+
+  async function _fetch(method, path, body, options) {
+    const requestOptions = options || {};
+    const timeoutMs = requestOptions.timeoutMs == null ? DEFAULT_TIMEOUT_MS : Number(requestOptions.timeoutMs);
+    const controller = new AbortController();
+    const upstreamSignal = requestOptions.signal;
+    const abortFromUpstream = () => controller.abort(upstreamSignal && upstreamSignal.reason);
+    if (upstreamSignal && upstreamSignal.aborted) abortFromUpstream();
+    else if (upstreamSignal) upstreamSignal.addEventListener('abort', abortFromUpstream, { once: true });
+    const timer = timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null;
     const opt = { method, headers: {}, credentials: 'same-origin' };
+    opt.signal = controller.signal;
     if (body !== undefined) {
       opt.headers['Content-Type'] = 'application/json';
       opt.body = JSON.stringify(body);
     }
-    const res = await fetch(path, opt);
-    if (res.status === 401) {
-      if (!location.pathname.endsWith('login.html')) location.href = '/login.html';
-      throw new Error('unauthorized');
+    try {
+      const res = await fetch(path, opt);
+      if (res.status === 401) {
+        if (!location.pathname.endsWith('login.html')) location.href = '/login.html';
+        throw new Error('unauthorized');
+      }
+      if (!res.ok) {
+        let e = null;
+        try { e = await res.json(); } catch {}
+        // 优先用 detail 当错误文案；原始响应仍挂在 err.body 上供调用方判断错误码。
+        const err = new Error((e && (e.detail || e.error)) || 'HTTP ' + res.status);
+        err.status = res.status; err.body = e;
+        throw err;
+      }
+      const ct = res.headers.get('content-type') || '';
+      return ct.includes('application/json') ? res.json() : res.text();
+    } catch (error) {
+      if (controller.signal.aborted && (!error || error.message !== 'unauthorized')) {
+        const timeoutError = new Error('请求超时，请检查网络或稍后重试');
+        timeoutError.code = 'REQUEST_TIMEOUT';
+        timeoutError.status = 408;
+        throw timeoutError;
+      }
+      throw error;
+    } finally {
+      if (timer) clearTimeout(timer);
+      if (upstreamSignal) upstreamSignal.removeEventListener('abort', abortFromUpstream);
     }
-    if (!res.ok) {
-      let e = null;
-      try { e = await res.json(); } catch {}
-      // 优先用 detail 当错误文案：后端 400（含 updateById 类型闸门，如「字段 due_date 需要字符串，
-      // 收到 number(99999999)」）、AI 502、Google 授权被拒都会带 detail，它比 error 码
-      // （bad_request / ai_failed）对用户有用得多。缺 detail 才退回 error 码，再退回 HTTP 状态。
-      // 原始响应仍挂在 err.body 上，需要判错误码的调用方读 err.body.error / err.status。
-      const err = new Error((e && (e.detail || e.error)) || 'HTTP ' + res.status);
-      err.status = res.status; err.body = e;
-      throw err;
-    }
-    const ct = res.headers.get('content-type') || '';
-    return ct.includes('application/json') ? res.json() : res.text();
   }
 
   const API = {
-    get: (p) => _fetch('GET', p),
-    post: (p, b) => _fetch('POST', p, b),
-    put: (p, b) => _fetch('PUT', p, b),
-    patch: (p, b) => _fetch('PATCH', p, b),
-    del: (p) => _fetch('DELETE', p),
+    get: (p, o) => _fetch('GET', p, undefined, o),
+    post: (p, b, o) => _fetch('POST', p, b, o),
+    put: (p, b, o) => _fetch('PUT', p, b, o),
+    patch: (p, b, o) => _fetch('PATCH', p, b, o),
+    del: (p, o) => _fetch('DELETE', p, undefined, o),
     async me() { return (await _fetch('GET', '/api/me')).user; },
     async logout() { try { await _fetch('POST', '/api/logout'); } catch {} location.href = '/login.html'; },
   };

@@ -795,8 +795,8 @@
 <section class="hermes-panel" id="hermesPanel" aria-label="Hermes 智能体面板">
   <div class="hermes-head" id="hermesDragHandle">
     <div class="hermes-head-status">
-      <span class="hermes-status-dot" id="hermesStatusBox" title="尚未检查智能体服务器">
-        <span class="sr-only" id="hermesStatusText">当前状态：尚未检查智能体服务器</span>
+      <span class="hermes-status-dot" id="hermesStatusBox" title="尚未检查小瑞服务">
+        <span class="sr-only" id="hermesStatusText">当前状态：尚未检查小瑞服务</span>
       </span>
     </div>
     <button class="hermes-close" type="button" onclick="toggleHermesMaximize()" title="最大化/还原"><i class="ti ti-arrows-maximize"></i></button>
@@ -856,7 +856,7 @@
         <button type="button" id="hermesArchiveBtn" onclick="archiveHermesConversation()" disabled><i class="ti ti-archive"></i> 归档当前</button>
         <button type="button" onclick="refreshHermesStatus(true)"><i class="ti ti-plug-connected"></i> 检查接入</button>
         <button type="button" onclick="resetHermesWindow()"><i class="ti ti-window"></i> 重置窗口</button>
-        <button type="button" id="hermesOpenBtn" onclick="openHermesAgent()" disabled><i class="ti ti-external-link"></i> 高级模式</button>
+        <button type="button" onclick="toggleHermesMaximize()"><i class="ti ti-arrows-maximize"></i> 全屏模式</button>
       </div>
     </details>
   </div>

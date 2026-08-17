@@ -1,9 +1,9 @@
 import { requireAuth } from '../auth/middleware.js';
-import { config } from '../config.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
 import * as seoRepo from '../db/repositories/seoWeeks.js';
 import * as semRepo from '../db/repositories/semWeeks.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
+import { getHermesStatus } from '../services/hermesStatus.js';
 import { projectProviderConfig, resolveProject } from '../sync/googleClient.js';
 
 function manualSource(label, listFn, dateKey) {
@@ -50,15 +50,8 @@ function syncSource(provider) {
 }
 
 export async function dataSourcesRoutes(app) {
-  app.get('/api/data-sources/status', { preHandler: requireAuth }, async () => {
-    const aiProvider = (process.env.AI_PROVIDER || 'openrouter').toLowerCase();
-    const aiConfigured = aiProvider === 'anthropic'
-      ? !!config.anthropic.apiKey
-      : !!process.env.OPENROUTER_API_KEY;
-    const aiModel = aiProvider === 'anthropic'
-      ? config.anthropic.model
-      : (process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash');
-
+  app.get('/api/data-sources/status', { preHandler: requireAuth }, async (request) => {
+    const ai = await getHermesStatus({ logger: request.log });
     return {
       sources: {
         inquiries: manualSource('人工录入', inqRepo.list, 'date'),
@@ -69,11 +62,16 @@ export async function dataSourcesRoutes(app) {
         ads: syncSource('ads'),
         ai: {
           type: 'provider',
-          status: aiConfigured ? 'configured_unverified' : 'not_configured',
-          provider: aiProvider,
-          configured: aiConfigured,
-          model: aiConfigured ? aiModel : null,
-          error: null,
+          status: ai.status,
+          provider: ai.provider,
+          configured: ai.configured,
+          connected: ai.connected,
+          model: ai.model,
+          lastSuccessfulAt: ai.lastSuccessfulAt,
+          lastFailureAt: ai.lastFailureAt,
+          consecutiveFailures: ai.consecutiveFailures,
+          checkedAt: ai.checkedAt,
+          error: ai.error || null,
         },
       },
     };

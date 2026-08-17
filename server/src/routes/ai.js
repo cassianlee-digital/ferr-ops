@@ -1,6 +1,7 @@
 import { requireAuth, editor } from '../auth/middleware.js';
 import { buildContext } from '../services/aiContext.js';
 import { callAnthropic } from '../services/anthropic.js';
+import { aiErrorHttpStatus, publicAiError } from '../services/aiProvider.js';
 import { attachmentPromptBlock, cleanAiAttachments } from '../services/aiAttachments.js';
 import { getSummary as getBrain } from '../services/marketBrain.js';
 import * as analyses from '../db/repositories/aiAnalyses.js';
@@ -63,9 +64,8 @@ function chatPrompt(row, message, attachments) {
 }
 
 function aiError(e, request, reply) {
-  if (e.code === 'NO_KEY') return reply.code(503).send({ error: 'ai_unconfigured' });
   request.log.error({ err: e.message, status: e.status }, 'ai call failed');
-  return reply.code(502).send({ error: e.message || 'ai_failed', detail: s(e.detail, 400) });
+  return reply.code(aiErrorHttpStatus(e)).send(publicAiError(e));
 }
 
 export async function aiRoutes(app) {

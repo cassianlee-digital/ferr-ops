@@ -1,133 +1,131 @@
-import { config } from '../config.js';
+import {
+  getAiProviderRuntimeStatus,
+  probeAiProvider,
+  publicAiProviderConfig,
+} from './aiProvider.js';
 
-const RETRYABLE_HTTP = new Set([502, 503, 504]);
-const RETRYABLE_ERRORS = new Set([
-  'hermes_connection_refused',
-  'hermes_connection_reset',
-  'hermes_dns_failed',
-  'hermes_network_failed',
-  'hermes_timeout',
-]);
+let cache = null;
+let inFlight = null;
+let lastLoggedState = '';
+let monitorTimer = null;
 
-function aiProvider() {
-  return (process.env.AI_PROVIDER || 'openrouter').toLowerCase();
+function cacheMs(env = process.env) {
+  const value = Number(env.HERMES_HEALTH_CACHE_MS ?? 60_000);
+  return Number.isFinite(value) ? Math.max(1_000, Math.min(600_000, value)) : 60_000;
 }
 
-export function hermesGatewayStatus() {
-  const provider = aiProvider();
-  const configured = provider === 'anthropic'
-    ? Boolean(config.anthropic.apiKey)
-    : Boolean(process.env.OPENROUTER_API_KEY);
-  const model = provider === 'anthropic'
-    ? config.anthropic.model
-    : (process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4-flash');
+function monitorIntervalMs(env = process.env) {
+  const value = Number(env.HERMES_HEALTH_CHECK_INTERVAL_MS ?? 300_000);
+  return Number.isFinite(value) ? Math.max(0, Math.min(3_600_000, value)) : 300_000;
+}
 
+function logStateChange(logger, status) {
+  if (!logger) return;
+  const key = [status.connected, status.error, status.provider, status.model].join('|');
+  if (key === lastLoggedState) return;
+  lastLoggedState = key;
+  const payload = {
+    connected: status.connected,
+    configured: status.configured,
+    provider: status.provider,
+    model: status.model,
+    error: status.error || undefined,
+    consecutiveFailures: status.consecutiveFailures,
+    elapsedMs: status.elapsedMs,
+  };
+  if (status.connected) logger.info(payload, 'Hermes AI provider available');
+  else logger.warn(payload, 'Hermes AI provider unavailable');
+}
+
+function publicStatus(probe, checkedAt) {
+  const runtime = getAiProviderRuntimeStatus();
   return {
-    configured,
-    connected: configured,
-    provider,
-    model: configured ? model : null,
-    error: configured ? '' : 'ai_unconfigured',
+    mode: 'local_ai',
+    status: probe.connected
+      ? 'available'
+      : (probe.error === 'ai_provider_invalid' ? 'invalid_provider' : (probe.configured ? 'unavailable' : 'not_configured')),
+    configured: probe.configured,
+    connected: probe.connected,
+    provider: probe.provider,
+    model: probe.model,
+    visionModel: probe.visionModel,
+    checkedAt,
+    lastSuccessfulAt: runtime.lastSuccessfulAt,
+    lastFailureAt: runtime.lastFailureAt,
+    consecutiveFailures: runtime.consecutiveFailures,
+    elapsedMs: probe.elapsedMs,
+    error: probe.error || '',
+    detail: probe.detail || '',
   };
 }
 
-export function classifyHermesConnectionError(error) {
-  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') {
-    return { error: 'hermes_timeout', detail: 'Hermes console health check timed out.' };
+export async function getHermesStatus(options = {}) {
+  const now = options.now || (() => Date.now());
+  const runtime = getAiProviderRuntimeStatus();
+  if (!options.force && cache && cache.expiresAt > now() && cache.runtimeVersion === runtime.version) {
+    return { ...cache.value, cached: true };
   }
+  if (inFlight) return inFlight;
 
-  const code = String(error?.cause?.code || error?.code || '').toUpperCase();
-  if (code === 'ECONNREFUSED') {
-    return { error: 'hermes_connection_refused', detail: 'Hermes console refused the connection.' };
-  }
-  if (code === 'ECONNRESET') {
-    return { error: 'hermes_connection_reset', detail: 'Hermes console reset the connection.' };
-  }
-  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
-    return { error: 'hermes_dns_failed', detail: 'Hermes console hostname could not be resolved.' };
-  }
-  return { error: 'hermes_network_failed', detail: 'Hermes console could not be reached.' };
-}
-
-function validateConsoleUrl(rawUrl) {
-  try {
-    const url = new URL(rawUrl);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
-function wait(ms) {
-  return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
-}
-
-async function probeOnce(url, fetchImpl, timeoutMs) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetchImpl(url, {
-      method: 'GET',
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: {
-        accept: 'text/html,application/json;q=0.9,*/*;q=0.8',
-        'user-agent': 'ferr-ops-hermes-health/1.0',
-      },
+  inFlight = (async () => {
+    const checkedAt = new Date(now()).toISOString();
+    const probe = await probeAiProvider({
+      env: options.env || process.env,
+      fetchImpl: options.fetchImpl,
+      timeoutMs: options.timeoutMs,
     });
-    return {
-      connected: response.ok,
-      statusCode: response.status,
-      statusText: response.statusText,
-      contentType: response.headers.get('content-type') || '',
-      error: response.ok ? '' : 'hermes_http_' + response.status,
-      detail: response.ok ? '' : 'Hermes console returned HTTP ' + response.status + '.',
-      retryable: RETRYABLE_HTTP.has(response.status),
+    const value = publicStatus(probe, checkedAt);
+    const afterProbe = getAiProviderRuntimeStatus();
+    cache = {
+      value,
+      runtimeVersion: afterProbe.version,
+      expiresAt: now() + cacheMs(options.env || process.env),
     };
-  } catch (error) {
-    const classified = classifyHermesConnectionError(error);
-    return { connected: false, ...classified, retryable: RETRYABLE_ERRORS.has(classified.error) };
-  } finally {
-    clearTimeout(timer);
-  }
+    logStateChange(options.logger, value);
+    return { ...value, cached: false };
+  })().finally(() => {
+    inFlight = null;
+  });
+
+  return inFlight;
 }
 
-export async function probeHermesConsole(rawUrl, options = {}) {
-  if (!rawUrl) {
-    return {
-      configured: false,
-      connected: false,
-      error: 'hermes_url_missing',
-      detail: 'HERMES_AGENT_URL is not configured on the server.',
-      attempts: 0,
-    };
-  }
+export function getHermesConfiguredStatus(env = process.env) {
+  const config = publicAiProviderConfig(env);
+  const runtime = getAiProviderRuntimeStatus();
+  return {
+    ...config,
+    status: config.configured ? 'configured_unverified' : (config.supported ? 'not_configured' : 'invalid_provider'),
+    connected: false,
+    checkedAt: null,
+    lastSuccessfulAt: runtime.lastSuccessfulAt,
+    lastFailureAt: runtime.lastFailureAt,
+    consecutiveFailures: runtime.consecutiveFailures,
+    error: config.supported ? '' : 'ai_provider_invalid',
+  };
+}
 
-  const url = validateConsoleUrl(rawUrl);
-  if (!url) {
-    return {
-      configured: true,
-      connected: false,
-      error: 'hermes_url_invalid',
-      detail: 'HERMES_AGENT_URL must be an HTTP or HTTPS URL.',
-      attempts: 0,
-    };
-  }
+export function startHermesHealthMonitor(logger, options = {}) {
+  if (monitorTimer) return monitorTimer;
+  const env = options.env || process.env;
+  const intervalMs = monitorIntervalMs(env);
+  if (!intervalMs) return null;
 
-  const fetchImpl = options.fetchImpl || fetch;
-  const attempts = Math.max(1, Math.min(Number(options.attempts ?? 2) || 2, 3));
-  const timeoutMs = Math.max(250, Number(options.timeoutMs ?? 3500) || 3500);
-  const retryDelayMs = Math.max(0, Number(options.retryDelayMs ?? 150) || 0);
-  let result;
+  const run = () => {
+    getHermesStatus({ force: true, logger, env }).catch((error) => {
+      logger?.error({ err: error?.message || String(error) }, 'Hermes health monitor failed');
+    });
+  };
+  run();
+  monitorTimer = setInterval(run, intervalMs);
+  monitorTimer.unref?.();
+  return monitorTimer;
+}
 
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    result = await probeOnce(url, fetchImpl, timeoutMs);
-    result.attempts = attempt;
-    if (result.connected || !result.retryable || attempt === attempts) break;
-    await wait(retryDelayMs * attempt);
-  }
-
-  const { retryable, ...publicResult } = result;
-  return { configured: true, url, ...publicResult };
+export function resetHermesStatusForTests() {
+  cache = null;
+  inFlight = null;
+  lastLoggedState = '';
+  if (monitorTimer) clearInterval(monitorTimer);
+  monitorTimer = null;
 }

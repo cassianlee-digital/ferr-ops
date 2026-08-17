@@ -1,6 +1,4 @@
-/* Hermes / Ferr Ops assistant entry.
-   The daily operator UI stays native to ferr-ops; the official Hermes console
-   is kept as an advanced-mode escape hatch. */
+/* Hermes / Ferr Ops assistant entry. All operator workflows stay inside ferr-ops. */
 (function () {
   const STORE_KEY = 'ferr:hermes-window';
   const ROLE_LABEL = { seo: 'SEO 李', sem: 'SEM 陈', manager: '主管', boss: '老板' };
@@ -11,10 +9,14 @@
   const MAX_IMAGE_SIDE = 1280;
   const MAX_IMAGE_DATA_URL = 850000;
   const IMAGE_QUALITY = 0.76;
+  const STATUS_STALE_MS = 60000;
+  const STATUS_TIMEOUT_MS = 10000;
+  const CHAT_TIMEOUT_MS = 100000;
 
   let lastSessionSentAt = 0;
   let sessionTimer = null;
-  let statusChecked = false;
+  let lastStatusCheckedAt = 0;
+  let statusPromise = null;
   let lastHermesState = null;
   let messages = [];
   let attachments = [];
@@ -93,18 +95,6 @@
   function extName(name) {
     const m = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
     return m ? m[1] : '';
-  }
-
-  function appendLaunchParams(url) {
-    const me = currentUser();
-    try {
-      const u = new URL(url, window.location.href);
-      if (me.role) u.searchParams.set('ferr_role', me.role);
-      u.searchParams.set('ferr_source', 'ferr-ops');
-      return u.toString();
-    } catch {
-      return url;
-    }
   }
 
   function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
@@ -466,62 +456,63 @@
     const statusBox = byId('hermesStatusBox');
     const statusText = byId('hermesStatusText');
     const detail = byId('hermesDetail');
-    const openBtn = byId('hermesOpenBtn');
-    const gateway = lastHermesState.gateway || lastHermesState;
-    const consoleState = lastHermesState.console || lastHermesState;
-    const connected = !!gateway.connected;
-    const configured = !!gateway.configured;
-    const consoleConnected = !!consoleState.connected;
-    const launchUrl = consoleConnected && consoleState.url ? appendLaunchParams(consoleState.url) : '';
-    let statusLabel = '当前状态：尚未检查智能体服务器';
+    const connected = !!lastHermesState.connected;
+    const configured = !!lastHermesState.configured;
+    const hasCheck = Boolean(lastHermesState.checkedAt);
+    const checkFailed = Boolean(lastHermesState.checkFailed);
+    let statusLabel = '当前状态：尚未检查小瑞服务';
 
     if (statusBox) {
       statusBox.classList.toggle('ok', connected);
-      statusBox.classList.toggle('bad', !connected);
+      statusBox.classList.toggle('bad', hasCheck && !connected);
     }
     if (statusText) {
-      if (connected) statusLabel = '当前状态：小瑞可用';
+      if (checkFailed) statusLabel = '当前状态：小瑞状态检查失败';
+      else if (connected) statusLabel = '当前状态：小瑞可用';
       else if (configured) statusLabel = '当前状态：小瑞 AI 服务不可用';
-      else statusLabel = '当前状态：小瑞 AI 服务未配置';
+      else if (hasCheck) statusLabel = '当前状态：小瑞 AI 服务未配置';
       statusText.textContent = statusLabel;
     }
     if (statusBox) statusBox.title = statusLabel;
     if (detail) {
       const parts = [];
-      if (!connected && gateway.error) parts.push('小瑞：' + hermesStatusMessage(gateway.error));
-      if (consoleState.configured && !consoleConnected) {
-        parts.push('高级控制台：' + hermesStatusMessage(consoleState.error) + '（不影响小瑞）');
-      } else if (consoleConnected) {
-        parts.push('高级控制台：已连接');
-      }
+      if (lastHermesState.provider) parts.push('Provider：' + lastHermesState.provider);
+      if (lastHermesState.model) parts.push('模型：' + lastHermesState.model);
+      if (!connected && lastHermesState.error) parts.push('原因：' + hermesStatusMessage(lastHermesState.error));
+      if (lastHermesState.lastSuccessfulAt) parts.push('最近成功：' + new Date(lastHermesState.lastSuccessfulAt).toLocaleString());
+      if (lastHermesState.lastFailureAt) parts.push('最近失败：' + new Date(lastHermesState.lastFailureAt).toLocaleString());
+      if (lastHermesState.consecutiveFailures) parts.push('连续失败：' + lastHermesState.consecutiveFailures + ' 次');
       if (lastHermesState.checkedAt) parts.push('检查时间：' + new Date(lastHermesState.checkedAt).toLocaleString());
+      if (!connected && configured) parts.push('可点击“检查接入”重试；持续失败时检查 Provider key、模型、额度和服务器出网');
       detail.textContent = parts.length
         ? parts.join(' · ')
         : '小瑞会结合长期记忆、技能规则、工作流、当前页上下文和附件一起判断。';
-    }
-    if (openBtn) {
-      openBtn.disabled = !launchUrl;
-      openBtn.dataset.url = launchUrl;
     }
   }
 
   function hermesStatusMessage(code) {
     const messages = {
       ai_unconfigured: 'AI 服务未配置',
-      hermes_url_missing: '未配置',
-      hermes_url_invalid: '地址格式无效',
-      hermes_timeout: '连接超时',
-      hermes_connection_refused: '服务未启动或端口未监听',
-      hermes_connection_reset: '连接被对端重置',
-      hermes_dns_failed: '域名解析失败',
-      hermes_network_failed: '网络连接失败',
+      ai_provider_invalid: 'AI Provider 配置无效',
+      ai_timeout: 'AI Provider 响应超时',
+      ai_auth_failed: 'API key 鉴权失败',
+      ai_model_not_found: '配置的模型不可用',
+      ai_rate_limited: 'Provider 限流或额度不足',
+      ai_empty_response: 'Provider 返回空内容',
+      ai_invalid_response: 'Provider 返回格式异常',
+      ai_dns_failed: 'Provider 域名解析失败',
+      ai_connection_refused: 'Provider 拒绝连接',
+      ai_connection_reset: 'Provider 重置连接',
+      ai_network_failed: 'Provider 网络连接失败',
+      ai_provider_error: 'Provider 服务异常',
+      status_failed: '状态接口请求失败',
     };
     if (messages[code]) return messages[code];
-    if (/^hermes_http_\d+$/.test(String(code || ''))) return '服务返回 HTTP ' + String(code).slice(12);
     return code || '未知错误';
   }
 
   async function refreshHermesStatus(manual) {
+    if (statusPromise) return statusPromise;
     const statusBox = byId('hermesStatusBox');
     const statusText = byId('hermesStatusText');
     const checkingText = '当前状态：正在检查小瑞服务…';
@@ -530,19 +521,32 @@
       statusBox.title = checkingText;
     }
     if (statusText) statusText.textContent = checkingText;
-    try {
-      const state = await window.API.get('/api/hermes/status');
-      statusChecked = true;
-      setHermesView(state);
-      if (manual) {
-        const gateway = state.gateway || state;
-        toastSafe(gateway.connected ? '小瑞服务可用' : '小瑞服务不可用：' + hermesStatusMessage(gateway.error));
+    statusPromise = (async () => {
+      try {
+        const path = '/api/hermes/status' + (manual ? '?force=1' : '');
+        const state = await window.API.get(path, { timeoutMs: STATUS_TIMEOUT_MS });
+        lastStatusCheckedAt = Date.now();
+        setHermesView(state);
+        if (manual) {
+          toastSafe(state.connected ? '小瑞服务可用' : '小瑞服务不可用：' + hermesStatusMessage(state.error));
+        }
+        return state;
+      } catch (e) {
+        lastStatusCheckedAt = Date.now();
+        setHermesView({
+          ...lastHermesState,
+          connected: false,
+          checkFailed: true,
+          checkedAt: new Date().toISOString(),
+          error: e.code === 'REQUEST_TIMEOUT' ? 'ai_timeout' : (e.body?.error || 'status_failed'),
+        });
+        if (manual) toastSafe('Hermes 状态检查失败：' + (e.message || 'status_failed'));
+        return null;
+      } finally {
+        statusPromise = null;
       }
-    } catch (e) {
-      statusChecked = true;
-      setHermesView({ configured: false, connected: false, error: e.message || 'status_failed' });
-      if (manual) toastSafe('Hermes 状态检查失败：' + (e.message || 'status_failed'));
-    }
+    })();
+    return statusPromise;
   }
 
   function messageHistoryPayload() {
@@ -721,7 +725,7 @@
       await syncHermesSession(true);
       const res = await window.API.post('/api/hermes/morning-brief', {
         conversationId: activeConversationId,
-      });
+      }, { timeoutMs: CHAT_TIMEOUT_MS });
       if (res.conversation && res.conversation.id) activeConversationId = res.conversation.id;
       const parsed = splitHermesResponse(res.text || '');
       messages[messages.length - 1] = {
@@ -732,6 +736,7 @@
       };
       if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
     } catch (e) {
+      refreshHermesStatus(false);
       messages[messages.length - 1] = {
         role: 'assistant',
         content: '今日早报生成失败。\n\n原因：' + (e.message || 'morning_brief_failed') + '\n\n请确认后端 AI 配置和 Hermes 上下文是否正常。',
@@ -1681,7 +1686,7 @@
         skill: gatewayMode.skill,
         workflow: gatewayMode.workflow,
         conversationId: activeConversationId,
-      });
+      }, { timeoutMs: CHAT_TIMEOUT_MS });
       if (res.conversation && res.conversation.id) activeConversationId = res.conversation.id;
       const parsed = splitHermesResponse(res.text || '');
       messages[messages.length - 1] = { role: 'assistant', content: parsed.answer || '没有返回内容。', basis: parsed.basis, hermes: res.hermes };
@@ -1690,6 +1695,7 @@
         toastSafe('已记住：' + (res.memory.title || '长期偏好'));
       }
     } catch (e) {
+      refreshHermesStatus(false);
       const reason = e && e.message ? e.message : 'ai_failed';
       messages[messages.length - 1] = {
         role: 'assistant',
@@ -1730,7 +1736,7 @@
     restoreWindowState();
     syncHermesSession(true);
     if (panel) panel.classList.add('show');
-    if (!statusChecked) refreshHermesStatus(false);
+    if (!lastStatusCheckedAt || Date.now() - lastStatusCheckedAt > STATUS_STALE_MS) refreshHermesStatus(false);
     if (!messages.length) loadHermesLatest(false);
     refreshDataGapTaskKeys();
     loadHermesActions();
@@ -1742,16 +1748,6 @@
     if (panel) panel.classList.remove('show');
     if (backdrop) backdrop.classList.remove('show');
     saveWindowState();
-  }
-
-  function openHermesAgent() {
-    const btn = byId('hermesOpenBtn');
-    const url = btn && btn.dataset && btn.dataset.url;
-    if (!url) {
-      toastSafe('官方 Hermes 未连接');
-      return;
-    }
-    window.open(url, '_blank', 'noopener');
   }
 
   async function createHermesDailyLearning() {
@@ -1872,18 +1868,9 @@
     if (files.length) addHermesFiles(files);
   });
 
-  window.addEventListener('message', (event) => {
-    const data = event && event.data;
-    if (!data || data.type !== 'ferr:read-page-context') return;
-    syncHermesPageDetail(false).then((ok) => {
-      event.source && event.source.postMessage({ type: 'ferr:page-context-ready', ok }, '*');
-    });
-  });
-
   window.openHermesPanel = openHermesPanel;
   window.closeHermesPanel = closeHermesPanel;
   window.refreshHermesStatus = refreshHermesStatus;
-  window.openHermesAgent = openHermesAgent;
   window.createHermesDailyLearning = createHermesDailyLearning;
   window.resetHermesWindow = resetHermesWindow;
   window.toggleHermesMaximize = toggleHermesMaximize;

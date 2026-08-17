@@ -1,88 +1,125 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  classifyHermesConnectionError,
-  hermesGatewayStatus,
-  probeHermesConsole,
+  getHermesConfiguredStatus,
+  getHermesStatus,
+  resetHermesStatusForTests,
 } from '../src/services/hermesStatus.js';
+import {
+  getAiProviderRuntimeStatus,
+  resetAiProviderRuntimeStatus,
+} from '../src/services/aiProvider.js';
 
-function response(status, contentType = 'text/html') {
-  return new Response('', { status, headers: { 'content-type': contentType } });
+const baseEnv = {
+  AI_PROVIDER: 'openrouter',
+  OPENROUTER_API_KEY: 'test-key',
+  OPENROUTER_MODEL: 'vendor/model',
+  OPENROUTER_VISION_MODEL: 'vendor/vision',
+  OPENROUTER_BASE_URL: 'https://provider.test/api/v1',
+  AI_HEALTH_TIMEOUT_MS: '1000',
+  HERMES_HEALTH_CACHE_MS: '60000',
+};
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
-test('gateway status follows the configured AI provider, not the optional console', () => {
-  const originalProvider = process.env.AI_PROVIDER;
-  const originalKey = process.env.OPENROUTER_API_KEY;
-  try {
-    process.env.AI_PROVIDER = 'openrouter';
-    process.env.OPENROUTER_API_KEY = 'test-key';
-    assert.equal(hermesGatewayStatus().connected, true);
+function healthyFetch(counter) {
+  return async (url) => {
+    counter.calls += 1;
+    if (String(url).endsWith('/auth/key')) return jsonResponse({ data: { limit: 1 } });
+    return jsonResponse({ data: [{ id: 'vendor/model' }, { id: 'vendor/vision' }] });
+  };
+}
 
-    delete process.env.OPENROUTER_API_KEY;
-    assert.equal(hermesGatewayStatus().error, 'ai_unconfigured');
-  } finally {
-    if (originalProvider === undefined) delete process.env.AI_PROVIDER;
-    else process.env.AI_PROVIDER = originalProvider;
-    if (originalKey === undefined) delete process.env.OPENROUTER_API_KEY;
-    else process.env.OPENROUTER_API_KEY = originalKey;
-  }
+test.beforeEach(() => {
+  resetHermesStatusForTests();
+  resetAiProviderRuntimeStatus();
 });
 
-test('console probe retries a transient reset and reports recovery', async () => {
-  let calls = 0;
-  const result = await probeHermesConsole('http://agent.example/chat', {
-    retryDelayMs: 0,
-    fetchImpl: async () => {
-      calls += 1;
-      if (calls === 1) throw new TypeError('fetch failed', { cause: { code: 'ECONNRESET' } });
-      return response(200);
-    },
+test('configured status never claims a live connection before verification', () => {
+  const status = getHermesConfiguredStatus(baseEnv);
+  assert.equal(status.configured, true);
+  assert.equal(status.connected, false);
+  assert.equal(status.status, 'configured_unverified');
+});
+
+test('status verifies provider auth and configured model', async () => {
+  const counter = { calls: 0 };
+  const status = await getHermesStatus({ env: baseEnv, fetchImpl: healthyFetch(counter) });
+  assert.equal(status.connected, true);
+  assert.equal(status.status, 'available');
+  assert.equal(status.provider, 'openrouter');
+  assert.equal(status.model, 'vendor/model');
+  assert.equal(status.consecutiveFailures, 0);
+  assert.ok(status.lastSuccessfulAt);
+  assert.equal(counter.calls, 2);
+});
+
+test('concurrent and cached status checks do not multiply provider probes', async () => {
+  const counter = { calls: 0 };
+  const fetchImpl = healthyFetch(counter);
+  const [first, second] = await Promise.all([
+    getHermesStatus({ env: baseEnv, fetchImpl }),
+    getHermesStatus({ env: baseEnv, fetchImpl }),
+  ]);
+  const cached = await getHermesStatus({ env: baseEnv, fetchImpl });
+  assert.equal(first.connected, true);
+  assert.equal(second.connected, true);
+  assert.equal(cached.cached, true);
+  assert.equal(counter.calls, 2);
+});
+
+test('auth failure is observable and a later success clears the failure streak', async () => {
+  const failed = await getHermesStatus({
+    env: baseEnv,
+    fetchImpl: async (url) => String(url).endsWith('/auth/key')
+      ? jsonResponse({ error: 'bad key' }, 401)
+      : jsonResponse({ data: [{ id: 'vendor/model' }] }),
   });
+  assert.equal(failed.connected, false);
+  assert.equal(failed.error, 'ai_auth_failed');
+  assert.equal(failed.consecutiveFailures, 1);
+  assert.ok(failed.lastFailureAt);
 
-  assert.equal(result.connected, true);
-  assert.equal(result.attempts, 2);
-  assert.equal(calls, 2);
-});
-
-test('console probe classifies a persistent reset without exposing raw errors', async () => {
-  const result = await probeHermesConsole('http://agent.example/chat', {
-    retryDelayMs: 0,
-    fetchImpl: async () => {
-      throw new TypeError('socket details', { cause: { code: 'ECONNRESET' } });
-    },
+  const recovered = await getHermesStatus({
+    force: true,
+    env: baseEnv,
+    fetchImpl: healthyFetch({ calls: 0 }),
   });
-
-  assert.equal(result.connected, false);
-  assert.equal(result.error, 'hermes_connection_reset');
-  assert.equal(result.attempts, 2);
-  assert.equal(result.detail, 'Hermes console reset the connection.');
+  assert.equal(recovered.connected, true);
+  assert.equal(recovered.consecutiveFailures, 0);
+  assert.equal(getAiProviderRuntimeStatus().lastError, '');
 });
 
-test('console probe does not retry terminal HTTP errors', async () => {
-  let calls = 0;
-  const result = await probeHermesConsole('https://agent.example/chat', {
-    retryDelayMs: 0,
-    fetchImpl: async () => {
-      calls += 1;
-      return response(401, 'application/json');
-    },
+test('missing configured model is reported without exposing provider response bodies', async () => {
+  const status = await getHermesStatus({
+    env: baseEnv,
+    fetchImpl: async (url) => String(url).endsWith('/auth/key')
+      ? jsonResponse({ data: {} })
+      : jsonResponse({ data: [{ id: 'another/model' }] }),
   });
-
-  assert.equal(result.error, 'hermes_http_401');
-  assert.equal(result.attempts, 1);
-  assert.equal(calls, 1);
+  assert.equal(status.connected, false);
+  assert.equal(status.error, 'ai_model_not_found');
+  assert.match(status.detail, /vendor\/model/);
 });
 
-test('console probe rejects non-http URLs before fetching', async () => {
-  const result = await probeHermesConsole('file:///tmp/hermes');
-  assert.equal(result.error, 'hermes_url_invalid');
-  assert.equal(result.attempts, 0);
-});
-
-test('connection classifier distinguishes timeouts and refused ports', () => {
-  assert.equal(classifyHermesConnectionError({ name: 'AbortError' }).error, 'hermes_timeout');
-  assert.equal(
-    classifyHermesConnectionError({ cause: { code: 'ECONNREFUSED' } }).error,
-    'hermes_connection_refused',
-  );
+test('health probe aborts all stalled provider requests at the timeout boundary', async () => {
+  const status = await getHermesStatus({
+    env: baseEnv,
+    timeoutMs: 20,
+    fetchImpl: async (_url, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => {
+        const error = new Error('aborted');
+        error.name = 'AbortError';
+        reject(error);
+      }, { once: true });
+    }),
+  });
+  assert.equal(status.connected, false);
+  assert.equal(status.error, 'ai_timeout');
+  assert.equal(status.consecutiveFailures, 1);
 });

@@ -2,13 +2,14 @@ import { editor, requireAuth } from '../auth/middleware.js';
 import { config } from '../config.js';
 import { buildContext } from '../services/aiContext.js';
 import { callAnthropic } from '../services/anthropic.js';
+import { aiErrorHttpStatus, publicAiError } from '../services/aiProvider.js';
 import { attachmentPromptBlock, cleanAiAttachments } from '../services/aiAttachments.js';
 import * as marketBrain from '../services/marketBrain.js';
 import * as hermesMemoryRepo from '../db/repositories/hermesMemories.js';
 import * as hermesConversationRepo from '../db/repositories/hermesConversations.js';
 import { buildOpsDiagnosis, buildEnterpriseMemory, buildDailyLearningMemory, requestedRangeFromText } from '../services/hermesBrain.js';
 import { executeTrustedReadAction } from '../services/hermesActions.js';
-import { hermesGatewayStatus, probeHermesConsole } from '../services/hermesStatus.js';
+import { getHermesStatus } from '../services/hermesStatus.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -199,13 +200,9 @@ function beijingDayKey() {
 const pageContexts = new Map();
 const sessions = new Map();
 
-function publicStatus(extra = {}) {
-  return {
-    configured: Boolean(config.hermes.url),
-    url: config.hermes.url,
-    checkedAt: new Date().toISOString(),
-    ...extra,
-  };
+function aiFailureReply(error, request, reply, label) {
+  request.log.error({ err: error.message, status: error.status, code: error.code }, label);
+  return reply.code(aiErrorHttpStatus(error)).send(publicAiError(error));
 }
 
 function bearerToken(request) {
@@ -999,13 +996,9 @@ function contextPayload(request, options = {}) {
 }
 
 export async function hermesRoutes(app) {
-  app.get('/api/hermes/status', { preHandler: requireAuth }, async () => {
-    const consoleStatus = await probeHermesConsole(config.hermes.url);
-    return publicStatus({
-      ...consoleStatus,
-      gateway: hermesGatewayStatus(),
-      console: consoleStatus,
-    });
+  app.get('/api/hermes/status', { preHandler: requireAuth }, async (request) => {
+    const force = request.query?.force === '1' || request.query?.force === 'true';
+    return getHermesStatus({ force, logger: request.log });
   });
 
   app.get('/api/hermes/capabilities', { preHandler: requireAuth }, async () => ({
@@ -1015,7 +1008,7 @@ export async function hermesRoutes(app) {
     responseStyle: RESPONSE_STYLE,
     skills: Object.entries(HERMES_SKILLS).map(([id, item]) => ({ id, label: item.label, instruction: item.instruction })),
     workflows: Object.entries(HERMES_WORKFLOWS).map(([id, item]) => ({ id, label: item.label, instruction: item.instruction })),
-    note: '当前使用 ferr-ops 本地 Hermes 记忆、playbook、诊断卡和上下文网关；官方 Hermes 控制台仍作为高级模式入口。',
+    note: '当前使用 ferr-ops 本地 Hermes、记忆、playbook、诊断卡和上下文网关。',
   }));
 
   app.post('/api/hermes/morning-brief', editor, async (request, reply) => {
@@ -1093,11 +1086,7 @@ export async function hermesRoutes(app) {
         } : null,
       };
     } catch (e) {
-      request.log.error({ err: e.message, status: e.status }, 'hermes morning brief failed');
-      return reply.code(e.code === 'NO_KEY' ? 503 : 502).send({
-        error: e.code === 'NO_KEY' ? 'ai_unconfigured' : (e.message || 'hermes_morning_brief_failed'),
-        detail: trimText(e.detail, 400),
-      });
+      return aiFailureReply(e, request, reply, 'hermes morning brief failed');
     }
   });
 
@@ -1238,11 +1227,7 @@ export async function hermesRoutes(app) {
         } : null,
       };
     } catch (e) {
-      request.log.error({ err: e.message, status: e.status }, 'hermes chat failed');
-      return reply.code(e.code === 'NO_KEY' ? 503 : 502).send({
-        error: e.code === 'NO_KEY' ? 'ai_unconfigured' : (e.message || 'hermes_chat_failed'),
-        detail: trimText(e.detail, 400),
-      });
+      return aiFailureReply(e, request, reply, 'hermes chat failed');
     }
   });
 
