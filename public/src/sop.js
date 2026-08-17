@@ -72,9 +72,10 @@ export function sopCardEl(s){
   row.className='tcard'+(done?' done':'');
   row.dataset.sopId=s.id; row.dataset.sopFreq=s.freq;
   const due=s.time_hint?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:'';
-  row.innerHTML=`<span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>`
+  row.innerHTML=`<span class="tcheck${done?' on':''}">${done?'<i class="ti ti-check"></i>':''}</span>`
     +`<span class="sop-text">${esc(s.title)}</span>`
     +`<span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq]||'')}">${esc(FREQ_TAG[s.freq]||'')}</span></span>`;
+  row.querySelector('.tcheck').addEventListener('click',e=>window.chk(e.currentTarget));
   return row;
 }
 export function updateSopCounts(){

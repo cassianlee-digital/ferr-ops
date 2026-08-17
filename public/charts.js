@@ -402,7 +402,7 @@ function renderSemBoard(){
   const cpc=(cost,conv)=> (conv&&conv>0)? _money(cost/conv) : '—';
   let html='';
   camps.forEach(c=>{
-    html+='<tr class="h-camp" onclick="toggleHier(this)"><td><i class="ti ti-chevron-down hicon"></i> <b>'+esc(c.campaignName||'(未命名)')+'</b></td>'
+    html+='<tr class="h-camp" data-chart-action="toggle-hier"><td><i class="ti ti-chevron-down hicon"></i> <b>'+esc(c.campaignName||'(未命名)')+'</b></td>'
         +'<td class="num">'+_money(c.costMicros)+'</td><td class="num">'+_conv(c.conversions)+'</td><td class="num">'+cpc(c.costMicros,c.conversions)+'</td><td class="ctr">'+_adsBadge(c.costMicros,c.conversions)+'</td></tr>';
     (byCamp.get(c.campaignName||'')||[]).forEach(k=>{
       const mt=k.matchType?(' · '+esc(k.matchType)):'';
@@ -580,6 +580,7 @@ function _dataActionAttr(name,value){ return ' data-'+name+'="'+esc(String(value
 function _aiActionAttrs(prompt,title){ return _dataActionAttr('ferr-action','ai')+_dataActionAttr('ai-prompt',prompt)+_dataActionAttr('ai-title',title); }
 function _adoptActionAttrs(dept,title,detail,evidence){ return _dataActionAttr('ferr-action','adopt')+_dataActionAttr('dept',dept)+_dataActionAttr('title',title)+_dataActionAttr('detail',detail)+_dataActionAttr('evidence',evidence); }
 document.addEventListener('click',e=>{
+  const chartAction=e.target&&e.target.closest?e.target.closest('[data-chart-action="toggle-hier"]'):null; if(chartAction){ toggleHier(chartAction); return; }
   const btn=e.target&&e.target.closest?e.target.closest('[data-ferr-action]'):null; if(!btn)return;
   if(btn.dataset.ferrAction==='ai'){ runAiAnalysis(btn,btn.dataset.aiPrompt||'',btn.dataset.aiTitle||'AI 分析',false); return; }
   if(btn.dataset.ferrAction==='adopt') adoptFinding(btn,btn.dataset.dept||'SEO',btn.dataset.title||'',btn.dataset.detail||'',btn.dataset.evidence||'');

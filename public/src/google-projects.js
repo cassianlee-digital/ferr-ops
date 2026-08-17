@@ -2,7 +2,7 @@
    运行时依赖的全局（调用时解析）：API、esc()、toast()、window.DEMO_MODE（index.html 内联）、
    loadGa4()（已迁入本包）、loadDataFreshness()（charts.js，仍为经典脚本；已用 typeof 守卫）。
    必须挂 window（main.js 统一处理）：
-     - startGoogleAuth/backfillGoogle/syncGoogle —— googleProviderRow() 动态生成的内联 onclick 会调用；
+     - startGoogleAuth/backfillGoogle/syncGoogle —— Google 接入卡的局部事件委托调用；
      - loadDataSourcesStatus/loadIntegrations —— index.html 初始化调用。
    INTEG_LABEL、DS_LABEL/DS_ORDER/DS_TYPE_LABEL、dsRow、dsStatusMeta、googleProviderRow 无外部引用，收进模块作用域。 */
 
@@ -73,6 +73,7 @@ export async function loadIntegrations(){
       : '未创建项目时使用 .env 中的默认站点 / Property / Customer';
     box.innerHTML=`<div class="sheet-tip" style="margin-bottom:2px"><i class="ti ti-info-circle"></i> ${projectText}</div>`
       +GOOGLE_PROVIDER_ORDER.map(p=>googleProviderRow(p,providers[p]||{},project)).join('');
+    bindGoogleProviderActions(box);
   }catch(e){
     box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">Google 接入状态获取失败</div><div class="banner-s">${esc(e&&e.message?e.message:'请求失败')}</div></div></div>`;
   }
@@ -100,10 +101,14 @@ function googleProviderRow(provider,s,project){
       <div>${esc(providerConfigNote)} · 最近同步：${esc(String(lastSync))} · 状态：${esc(String(lastStatus))}</div>
       ${missing}${lastError}
     </div>
-    <button class="btn-ghost" onclick="startGoogleAuth('${provider}')" ${authDisabled}><i class="ti ti-brand-google"></i> 授权</button>
-    <button class="btn-ghost" onclick="backfillGoogle('${provider}',90,this)" ${syncDisabled} title="回补最近 90 天历史（首次接入或图表前段空白时用，可能耗时较久）"><i class="ti ti-history"></i> 回补90天</button>
-    <button class="btn-primary" onclick="syncGoogle('${provider}',this)" ${syncDisabled}><i class="ti ti-refresh"></i> 立即同步</button>
+    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> 授权</button>
+    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="回补最近 90 天历史（首次接入或图表前段空白时用，可能耗时较久）"><i class="ti ti-history"></i> 回补90天</button>
+    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> 立即同步</button>
   </div>`;
+}
+
+function bindGoogleProviderActions(box){
+  box.onclick=e=>{ const btn=e.target.closest('[data-google-action]'); if(!btn||!box.contains(btn))return; const provider=btn.dataset.provider; if(!GOOGLE_PROVIDER_ORDER.includes(provider))return; const action=btn.dataset.googleAction; if(action==='auth')startGoogleAuth(provider); else if(action==='backfill')backfillGoogle(provider,90,btn); else if(action==='sync')syncGoogle(provider,btn); };
 }
 
 export function startGoogleAuth(provider){

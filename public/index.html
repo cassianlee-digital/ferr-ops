@@ -1200,8 +1200,9 @@ function renderSparklines(){
 /* ================= 载入持久化数据 ================= */
 function tableLoadState(id,colspan,state,message,retryAction){
   const tb=document.getElementById(id); if(!tb)return;
-  const retry=retryAction?` <button class="btn-mini" onclick="${retryAction}"><i class="ti ti-refresh"></i> 重试</button>`:'';
+  const retry=typeof retryAction==='function'?' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> 重试</button>':'';
   tb.innerHTML=`<tr data-load-state="${state}"><td colspan="${colspan}" class="dim" style="text-align:center;padding:16px">${esc(message)}${retry}</td></tr>`;
+  const retryBtn=tb.querySelector('.table-retry'); if(retryBtn)retryBtn.addEventListener('click',retryAction);
 }
 // 询盘加载（带当前时间区间）。供首屏 hydrate 与时间切换共用。
 async function loadInquiries(){
@@ -1218,8 +1219,8 @@ async function loadInquiries(){
     window._inqCache=[];
     window._inqStats=null;
     const reason=e.message||'未知错误';
-    tableLoadState('tb-inq-cur',11,'error','询盘加载失败：'+reason,'loadInquiries()');
-    tableLoadState('tb-inq',11,'error','询盘加载失败：'+reason,'loadInquiries()');
+    tableLoadState('tb-inq-cur',11,'error','询盘加载失败：'+reason,loadInquiries);
+    tableLoadState('tb-inq',11,'error','询盘加载失败：'+reason,loadInquiries);
     const count=document.getElementById('inqFeedCount'); if(count)count.textContent='加载失败';
     renderInqDonuts();
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(_){}}
@@ -1235,7 +1236,7 @@ async function loadNegKeywords(){
     rows.slice().reverse().forEach(r=>{prepend('tb-neg',negRowHtml(r)); tb.firstChild.dataset.id=r.id; tb.firstChild.dataset.ep='/api/neg-keywords';});
   }catch(e){ if(e&&e.message!=='unauthorized'){
     const reason=e.message||'未知错误';
-    tableLoadState('tb-neg',6,'error','否词加载失败：'+reason,'loadNegKeywords()');
+    tableLoadState('tb-neg',6,'error','否词加载失败：'+reason,loadNegKeywords);
     toast('否词加载失败：'+reason);
   } }
 }
@@ -1248,7 +1249,7 @@ async function loadAdCreatives(){
     rows.slice().reverse().forEach(r=>{prepend('tb-ad',adRowHtml(r)); tb.firstChild.dataset.id=r.id; tb.firstChild.dataset.ep='/api/ad-creatives';});
   }catch(e){ if(e&&e.message!=='unauthorized'){
     const reason=e.message||'未知错误';
-    tableLoadState('tb-ad',5,'error','广告创意加载失败：'+reason,'loadAdCreatives()');
+    tableLoadState('tb-ad',5,'error','广告创意加载失败：'+reason,loadAdCreatives);
     toast('广告创意加载失败：'+reason);
   } }
 }
@@ -1266,7 +1267,9 @@ async function hydrate(){
 /* ⓪ 闭环步骤条渲染 */
 const LOOP=[['① 计划','plan'],['② 测试','test'],['③ 数据','data'],['④ 整改','fix'],['⑤ 复盘','review']];
 function renderLoopbars(){ document.querySelectorAll('.loopbar').forEach(bar=>{ const cur=+bar.dataset.step;
-  bar.innerHTML=LOOP.map((x,i)=>{const n=i+1;const cls=n===cur?'active':(n<cur?'done':'');return `<span class="loopstep ${cls}" onclick="go('${x[1]}')">${x[0]}</span>`+(n<LOOP.length?'<span class="loopsep"></span>':'');}).join(''); }); }
+  bar.innerHTML=LOOP.map((x,i)=>{const n=i+1;const cls=n===cur?'active':(n<cur?'done':'');return `<span class="loopstep ${cls}" data-loop-tab="${esc(x[1])}">${x[0]}</span>`+(n<LOOP.length?'<span class="loopsep"></span>':'');}).join('');
+  bar.onclick=e=>{ const step=e.target.closest('[data-loop-tab]'); if(step&&bar.contains(step))go(step.dataset.loopTab); };
+}); }
 renderLoopbars();
 
 /* ---------- task check ---------- */

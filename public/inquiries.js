@@ -111,7 +111,8 @@ function renderInqList(){
   rows.forEach(r=>{ const ym=r.date.slice(0,7); if(idx[ym]==null){ idx[ym]=groups.length; groups.push({ym,items:[]}); } groups[idx[ym]].items.push(r); });
   groups.forEach(g=>{
     const sep=document.createElement('tr'); sep.className='inq-msep collapsed'; sep.dataset.month=g.ym;
-    sep.innerHTML=`<td colspan="11" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span></td>`;
+    sep.innerHTML=`<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span></td>`;
+    sep.querySelector('.inq-month-toggle').addEventListener('click',e=>toggleInqMonth(e.currentTarget));
     tb.appendChild(sep);
     g.items.forEach(r=>{
       const tr=document.createElement('tr');
@@ -146,7 +147,8 @@ function renderInqFeed(){
   if(!rows.length){ tb.innerHTML='<tr><td colspan="11" class="dim" style="text-align:center;padding:20px">本月暂无询盘 · 录入后即时显示</td></tr>'; return; }
   const p=curM.split('-');
   const sep=document.createElement('tr'); sep.className='inq-msep'; sep.dataset.month=curM;
-  sep.innerHTML=`<td colspan="11" onclick="toggleInqMonth(this)"><i class="ti ti-chevron-down hicon"></i> ${p[0]}年${(+p[1])}月 <span class="dim" style="font-weight:400">· ${rows.length} 条</span><span class="badge b-green" style="margin-left:6px">本月</span></td>`;
+  sep.innerHTML=`<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}年${(+p[1])}月 <span class="dim" style="font-weight:400">· ${rows.length} 条</span><span class="badge b-green" style="margin-left:6px">本月</span></td>`;
+  sep.querySelector('.inq-month-toggle').addEventListener('click',e=>toggleInqMonth(e.currentTarget));
   tb.appendChild(sep);
   rows.forEach(r=>{
     const tr=document.createElement('tr');

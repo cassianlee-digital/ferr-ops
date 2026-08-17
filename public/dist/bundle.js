@@ -529,6 +529,7 @@
       const project = r && r.defaultProject;
       const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
       box.innerHTML = `<div class="sheet-tip" style="margin-bottom:2px"><i class="ti ti-info-circle"></i> ${projectText}</div>` + GOOGLE_PROVIDER_ORDER.map((p) => googleProviderRow(p, providers[p] || {}, project)).join("");
+      bindGoogleProviderActions(box);
     } catch (e) {
       box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
     }
@@ -551,10 +552,22 @@
       <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
       ${missing}${lastError}
     </div>
-    <button class="btn-ghost" onclick="startGoogleAuth('${provider}')" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
-    <button class="btn-ghost" onclick="backfillGoogle('${provider}',90,this)" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
-    <button class="btn-primary" onclick="syncGoogle('${provider}',this)" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
+    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
+    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
+    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
   </div>`;
+  }
+  function bindGoogleProviderActions(box) {
+    box.onclick = (e) => {
+      const btn = e.target.closest("[data-google-action]");
+      if (!btn || !box.contains(btn)) return;
+      const provider = btn.dataset.provider;
+      if (!GOOGLE_PROVIDER_ORDER.includes(provider)) return;
+      const action = btn.dataset.googleAction;
+      if (action === "auth") startGoogleAuth(provider);
+      else if (action === "backfill") backfillGoogle(provider, 90, btn);
+      else if (action === "sync") syncGoogle(provider, btn);
+    };
   }
   function startGoogleAuth(provider) {
     location.href = "/api/google/auth/start?provider=" + encodeURIComponent(provider);
@@ -1086,7 +1099,8 @@
     row.dataset.sopId = s.id;
     row.dataset.sopFreq = s.freq;
     const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
-    row.innerHTML = `<span class="tcheck${done ? " on" : ""}" onclick="chk(this)">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc(s.title)}</span><span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq] || "")}">${esc(FREQ_TAG[s.freq] || "")}</span></span>`;
+    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc(s.title)}</span><span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq] || "")}">${esc(FREQ_TAG[s.freq] || "")}</span></span>`;
+    row.querySelector(".tcheck").addEventListener("click", (e) => window.chk(e.currentTarget));
     return row;
   }
   function updateSopCounts() {

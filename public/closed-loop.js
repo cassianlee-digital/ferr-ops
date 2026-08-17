@@ -73,6 +73,21 @@ function fixPlanHtml(f){
 }
 /* 行级「排入 / 已排」委托。用委托不用内联 onclick：内联 handler 是模块化的地板，能不加就不加 */
 document.addEventListener('click',async e=>{
+  const action=e.target.closest('[data-loop-action]');
+  if(action){
+    const kind=action.dataset.loopAction;
+    if(kind==='check')chk(action);
+    else if(kind==='task-defer')taskDefer(action);
+    else if(kind==='task-drop')taskDrop(action);
+    else if(kind==='task-split')openSubtaskModal(action);
+    else if(kind==='task-delete')taskDel(action);
+    else if(kind==='task-edit')openTaskEdit(action);
+    else if(kind==='task-push')taskPush(action);
+    else if(kind==='deposit-delete')depDel(action);
+    else if(kind==='content-delete')contentDel(action);
+    else if(kind==='ai-action')aiAct(action,action.dataset.kind);
+    return;
+  }
   const jump=e.target.closest('.row-plan-go');
   if(jump){ go('planning'); if(typeof setPlanningTab==='function')setPlanningTab('daily'); return; }
   const btn=e.target.closest('.row-plan'); if(!btn)return;
@@ -141,7 +156,7 @@ function addTaskCard(s,content,it){
   const card=document.createElement('div'); card.className='tcard'+(isCoParent?' cotask':'')+(done?' done':''); if(item.id)card.dataset.id=item.id;
   // 卡自带数据：改期/换天后重渲染 meta 与重新分组都读它，不用回后端也不用解析 DOM 文本
   card._item=item; card._scope=s;
-  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span>${esc(item.content)}</div><div class="tmeta"></div>`;
+  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" data-loop-action="check">${done?'<i class="ti ti-check"></i>':''}</span>${esc(item.content)}</div><div class="tmeta"></div>`;
   if(isCoParent){ const box=document.createElement('div'); box.className='subtasks'; card.appendChild(box); } // 子任务容器
   renderTaskMeta(card); placeTaskCard(card); return card;
 }
@@ -159,13 +174,13 @@ function renderTaskMeta(card){
   const note=it.note?`<span class="tnote">${esc(it.note)}</span>`:'';
   // 逾期两个出口：顺延到今天 / 放弃并归档。没有出口的话逾期组就是下一个垃圾堆
   const ops=(g==='overdue'&&it.id)
-    ? `<button class="btn-mini task-defer" onclick="taskDefer(this)" title="顺延到今天"><i class="ti ti-calendar-plus"></i></button>`
-      +`<button class="btn-mini task-drop" onclick="taskDrop(this)" title="放弃并归档"><i class="ti ti-archive"></i></button>`
+    ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="顺延到今天"><i class="ti ti-calendar-plus"></i></button>`
+      +`<button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="放弃并归档"><i class="ti ti-archive"></i></button>`
     : '';
   const push=taskPushHtml(it,g);
-  const split=isCo?`<button class="btn-mini cotask-split" onclick="openSubtaskModal(this)"><i class="ti ti-git-branch"></i> 分发</button>`:'';
+  const split=isCo?`<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> 分发</button>`:'';
   // 右侧已有东西时删除键只留间距；只有它自己时才吃 auto 靠右
-  const del=it.id?`<button class="btn-mini" style="color:var(--primary);margin-left:${(isCo||ops||push)?'8px':'auto'}" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
+  const del=it.id?`<button type="button" class="btn-mini" style="color:var(--primary);margin-left:${(isCo||ops||push)?'8px':'auto'}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
   box.innerHTML=deptBadge+srcBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
 }
 /* 日期胶囊：跨天显示「开始 ~ 截止」（同年省年份省宽度，完整日期放 title），单日照旧；点它改期。
@@ -179,7 +194,7 @@ function taskDueHtml(it){
   const empty=!txt&&!time;
   if(empty&&!it.id)return ''; // 还没入库的卡没法改期，也就不给入口
   const cls='tdue'+(empty?' tdue-none':'')+(it.id?' task-edit':'');
-  const attrs=it.id?` onclick="openTaskEdit(this)" title="${span?esc(st+' ~ '+due)+' · ':''}点击改期"`:'';
+  const attrs=it.id?` data-loop-action="task-edit" title="${span?esc(st+' ~ '+due)+' · ':''}点击改期"`:'';
   return `<span class="${cls}"${attrs}><i class="ti ${empty?'ti-calendar-plus':'ti-clock'}"></i> ${empty?'设日期':esc(txt)+esc(time)}</span>`;
 }
 /* 天数：跨天任务显示「第 N/M 天 · 已推进 K 天」，逾期显示「逾期 N 天」。
@@ -207,7 +222,7 @@ function taskPushHtml(it,g){
   if(!it.id||!it.start_date||!it.task_date||it.start_date>=it.task_date)return '';
   if(g!=='doing'&&g!=='overdue')return '';
   const on=taskCheckin(it.id).today;
-  return `<button class="btn-mini task-push${on?' on':''}" onclick="taskPush(this)" title="${on?'今天已记推进，点一下撤销':'记一笔：今天推进了这条'}">`
+  return `<button type="button" class="btn-mini task-push${on?' on':''}" data-loop-action="task-push" title="${on?'今天已记推进，点一下撤销':'记一笔：今天推进了这条'}">`
     +`<i class="ti ti-${on?'check':'player-track-next'}"></i> ${on?'今日已推进':'推进'}</button>`;
 }
 async function taskPush(btn){
@@ -280,11 +295,11 @@ function addSubTaskCard(parentCard,it){
   const done=!!(it&&(it.state==='done'||it.status==='done'));
   const card=document.createElement('div'); card.className='tcard subtask'+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
   const owner=(it&&it.owner)||'李'; const oc=subOwnerBadge(owner);
-  const del=(it&&it.id)?`<button class="btn-mini" onclick="taskDel(this)"><i class="ti ti-trash"></i></button>`:'';
+  const del=(it&&it.id)?`<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
   const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
   const due=(dt||hr)?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr?(dt?' ':'')+esc(hr)+':00':''}</span>`:'';
   // 单行紧凑：勾选 + 内容 + 右侧组(完成时间 + 负责人徽章 + 删除)，一行放下，避免堆叠把父卡撑高
-  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" onclick="chk(this)">${done?'<i class="ti ti-check"></i>':''}</span><span class="sub-text">${esc((it&&it.content)||'')}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc(owner)}</span>${del}</span></div>`;
+  card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" data-loop-action="check">${done?'<i class="ti ti-check"></i>':''}</span><span class="sub-text">${esc((it&&it.content)||'')}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc(owner)}</span>${del}</span></div>`;
   box.appendChild(card); return card;
 }
 let _subtaskParentId=null;
@@ -505,7 +520,7 @@ async function loadClosedLoop(){
 function depRowHtml(it){
   const date=(it.created_at||'').slice(5,10)||today();
   const badge=it.status==='采纳'?'<span class="badge b-green">采纳</span>':'<span class="badge b-teal">沉淀</span>';
-  return `<td class="num">${esc(date)}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim" contenteditable data-field="analysis" style="font-size:11px">${esc(it.analysis||'')}</td><td class="ctr"><button class="btn-mini" style="color:var(--primary)" onclick="depDel(this)"><i class="ti ti-trash"></i></button></td>`;
+  return `<td class="num">${esc(date)}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim" contenteditable data-field="analysis" style="font-size:11px">${esc(it.analysis||'')}</td><td class="ctr"><button type="button" class="btn-mini" style="color:var(--primary)" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
 }
 async function addDepositRow(){
   try{ const {item}=await API.post('/api/loop-items',{kind:'deposit',content:'',status:'沉淀'});
@@ -545,7 +560,7 @@ function contentRowHtml(r){
     +`<td class="ctr"><span class="tagselect ${CA_STATUS[r.status]||'b-gray'}" data-kind="status">${esc(r.status||'待开始')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="num">${esc(r.add_date||'')}</td>`
     +`<td class="editable dim" contenteditable data-field="note" style="font-size:11px">${esc(r.note)}</td>`
-    +`<td class="ctr"><button class="btn-mini" style="color:var(--primary)" onclick="contentDel(this)"><i class="ti ti-trash"></i></button></td>`;
+    +`<td class="ctr"><button type="button" class="btn-mini" style="color:var(--primary)" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
 }
 async function loadContent(){
   try{ const {items}=await API.get('/api/content-assets'); const tb=document.getElementById('tb-content'); if(!tb)return; tb.innerHTML='';
@@ -581,7 +596,7 @@ async function aiAct(btn,kind){
   }catch(e){ btn.disabled=false; toast(persistFailMsg(e)); }
 }
 /* inject 沉淀/采纳/测试 onto every AI suggestion item；带 data-kind 便于反查标灰 */
-function injectAiActions(){ document.querySelectorAll('.ai-item').forEach(it=>{ if(it.querySelector('.ai-actions'))return; const wrap=document.createElement('span'); wrap.className='ai-actions'; wrap.innerHTML='<button class="aibtn dep" data-kind="沉淀" onclick="aiAct(this,\'沉淀\')">沉淀</button><button class="aibtn adopt" data-kind="采纳" onclick="aiAct(this,\'采纳\')">采纳</button><button class="aibtn test" data-kind="测试" onclick="aiAct(this,\'测试\')">测试</button>'; it.appendChild(wrap); }); applyAiDoneStates(); }
+function injectAiActions(){ document.querySelectorAll('.ai-item').forEach(it=>{ if(it.querySelector('.ai-actions'))return; const wrap=document.createElement('span'); wrap.className='ai-actions'; wrap.innerHTML='<button type="button" class="aibtn dep" data-loop-action="ai-action" data-kind="沉淀">沉淀</button><button type="button" class="aibtn adopt" data-loop-action="ai-action" data-kind="采纳">采纳</button><button type="button" class="aibtn test" data-loop-action="ai-action" data-kind="测试">测试</button>'; it.appendChild(wrap); }); applyAiDoneStates(); }
 injectAiActions();
 
 /* ⑤复盘「下周必做」回流 → ①月度计划 + 任务看板，闭环回到起点 */

@@ -114,8 +114,20 @@ function sortMonthKeys(keys) {
 }
 
 function rvItemHtml(text, acts) {
-  const btns = (acts || []).map((a) => `<button class="aibtn ${a === '采纳' ? 'adopt' : 'test'}" onclick="rvAct(this,'${a}')">${a}</button>`).join('');
-  return `<div class="rv-item"><span class="txt" contenteditable>${esc(text)}</span>${btns}<span class="rv-del" onclick="rvDel(this)" title="删除"><i class="ti ti-x"></i></span></div>`;
+  const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === '采纳' ? 'adopt' : 'test'}" data-review-action="act" data-kind="${esc(a)}">${a}</button>`).join('');
+  return `<div class="rv-item"><span class="txt" contenteditable>${esc(text)}</span>${btns}<span class="rv-del" data-review-action="delete" title="删除"><i class="ti ti-x"></i></span></div>`;
+}
+
+function bindReviewActions(root) {
+  root.onclick = (e) => {
+    const el = e.target.closest('[data-review-action]');
+    if (!el || !root.contains(el)) return;
+    const action = el.dataset.reviewAction;
+    if (action === 'act') rvAct(el, el.dataset.kind);
+    else if (action === 'delete') rvDel(el);
+    else if (action === 'add') rvAdd(el);
+    else if (action === 'toggle' && el.parentElement) el.parentElement.classList.toggle('collapsed');
+  };
 }
 
 function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
@@ -128,7 +140,7 @@ function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
       h += `<div class="rv-prev">上期计划：${prevPlan.map((x) => esc(x)).join('；')}</div>`;
     }
     h += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join('')}</div>`;
-    h += `<span class="rv-add" onclick="rvAdd(this)"><i class="ti ti-plus"></i> 添加</span></div>`;
+    h += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> 添加</span></div>`;
   });
   return h + '</div>';
 }
@@ -185,7 +197,7 @@ async function renderReview() {
     const isCurrent = week === cur;
     const collapsed = isCurrent ? !currentWeekShouldOpen() : true;
     return `<div class="acc-week${collapsed ? ' collapsed' : ''}">
-      <div class="acc-bar" onclick="this.parentElement.classList.toggle('collapsed')"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green" style="margin-left:6px">本周</span>' : ''}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green" style="margin-left:6px">本周</span>' : ''}</div>
       <div class="acc-body">${sopRateShell(week)}${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
     </div>`;
   }).join('');
@@ -197,16 +209,17 @@ async function renderReview() {
   }).map((monthKey) => {
     const inner = sortWeekKeys(oldGroups[monthKey]).map((week) => `
       <div class="acc-week collapsed">
-        <div class="acc-bar" onclick="this.parentElement.classList.toggle('collapsed')"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)}</div>
+        <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)}</div>
         <div class="acc-body">${sopRateShell(week)}${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
       </div>`).join('');
     return `<div class="acc-month collapsed">
-      <div class="acc-month-bar" onclick="this.parentElement.classList.toggle('collapsed')"><i class="ti ti-chevron-down hicon"></i> ${monthGroupLabel(monthKey)}</div>
+      <div class="acc-month-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthGroupLabel(monthKey)}</div>
       <div class="acc-month-body">${inner}</div>
     </div>`;
   }).join('');
 
   acc.innerHTML = currentHtml + groupHtml;
+  bindReviewActions(acc);
   // 已经展开的那周（通常是本周）直接算；其余等点开
   acc.querySelectorAll('.acc-week:not(.collapsed) .sop-rate').forEach((el) => {
     if (typeof mountSopRate === 'function') mountSopRate(el);
@@ -233,10 +246,11 @@ async function renderMonthReview() {
   acc.innerHTML = keys.map((key) => {
     const collapsed = key !== cur;
     return `<div class="acc-week${collapsed ? ' collapsed' : ''}">
-      <div class="acc-bar" onclick="this.parentElement.classList.toggle('collapsed')"><i class="ti ti-chevron-down hicon"></i> ${monthLabel(key)} ${key === cur ? '<span class="badge b-green" style="margin-left:6px">本月</span>' : ''}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel(key)} ${key === cur ? '<span class="badge b-green" style="margin-left:6px">本月</span>' : ''}</div>
       <div class="acc-body">${rvColHtml('SEO', byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml('SEM', byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
     </div>`;
   }).join('');
+  bindReviewActions(acc);
 }
 
 function rvSectionSave(sec) {

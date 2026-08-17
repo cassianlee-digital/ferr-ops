@@ -1,9 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const chartsSource = readFileSync(new URL('../../public/charts.js', import.meta.url), 'utf8');
 const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'utf8');
+const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
+const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
+
+function runtimeJavaScriptSources() {
+  const topLevel = readdirSync(publicDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
+    .map((entry) => join(publicDir, entry.name));
+  const srcDir = join(publicDir, 'src');
+  const modules = readdirSync(srcDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
+    .map((entry) => join(srcDir, entry.name));
+  return [...topLevel, ...modules].map((file) => ({ file, source: readFileSync(file, 'utf8') }));
+}
 
 test('API-backed action buttons never interpolate data into inline JavaScript', () => {
   assert.doesNotMatch(chartsSource, /onclick="(?:aiAsk|adoptFinding)\([^"\n]*\+/);
@@ -41,4 +56,13 @@ test('legacy AI fallback keeps prompts out of inline handlers', () => {
   assert.doesNotMatch(aiSource, /onclick="sendOrToast\(/);
   assert.doesNotMatch(aiSource, /JSON\.stringify\(prompt\).*&quot;/);
   assert.match(aiSource, /addEventListener\('click',\(\)=>sendOrToast\(prompt\)\)/);
+});
+
+test('runtime-generated frontend markup contains no inline event handlers', () => {
+  for (const { file, source } of runtimeJavaScriptSources()) {
+    assert.doesNotMatch(source, /\bon[a-z]+\s*=\s*(?:["']|\$\{)/i, `generated inline event handler remains in ${file}`);
+  }
+  assert.doesNotMatch(indexSource, /onclick="\$\{retryAction\}"/);
+  assert.match(indexSource, /tableLoadState\([^;]+,loadInquiries\)/);
+  assert.match(indexSource, /retryBtn\.addEventListener\('click',retryAction\)/);
 });
