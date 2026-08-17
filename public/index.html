@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="/page-ga4.css">
 <link rel="stylesheet" href="/page-archive.css">
 <link rel="stylesheet" href="/components.css">
+<link rel="stylesheet" href="/csp-utilities.css">
 </head>
 <body>
 <div class="wrap">
@@ -39,7 +40,7 @@
     <div class="nav-section"><div class="nav-label">数据中心</div>
       <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div></div>
     <div class="nav-section"><div class="nav-label">行动中心</div>
-      <div class="nav-item" data-tab="planning"><i class="ti ti-calendar-stats"></i> 计划 / 总结<span class="dot dot-red" id="nav-tasks-dot" style="display:none"></span></div>
+      <div class="nav-item" data-tab="planning"><i class="ti ti-calendar-stats"></i> 计划 / 总结<span class="dot dot-red is-hidden" id="nav-tasks-dot"></span></div>
       <div class="nav-item" data-tab="action"><i class="ti ti-git-branch"></i> 测试 / 整改</div>
     </div>
     <div class="nav-section"><div class="nav-label">资产库</div>
@@ -99,39 +100,39 @@
         <div class="grid32">
           <div class="card"><div class="card-head"><span class="card-title">本月 KPI 考核总分</span><span class="card-link" data-ui-action="go" data-tab="kpi">查看明细 →</span></div>
             <div class="score-hero"><div class="gauge"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g1" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g1s">0</div><div class="gauge-max">/ 100</div></div></div>
-            <div style="flex:1"><div class="grade-badge" id="g1b"></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px" id="miniScores"></div></div></div>
+            <div class="csp-s-83725d2c6e"><div class="grade-badge" id="g1b"></div><div class="csp-s-734b996f5e" id="miniScores"></div></div></div>
           </div>
           <div class="card"><div class="card-head"><span class="card-title">有效询盘趋势</span><span class="card-sub" id="inqTrendSub">近 8 周</span></div>
-            <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>有效询盘</div><div class="legend-item"><div class="legend-dot" style="background:var(--text3)"></div>询盘总量</div></div>
-            <div class="chart-wrap" style="height:155px"><canvas id="inqTrend"></canvas></div></div>
+            <div class="legend"><div class="legend-item"><div class="legend-dot csp-s-2eeb30cb25"></div>有效询盘</div><div class="legend-item"><div class="legend-dot csp-s-9a7b826d35"></div>询盘总量</div></div>
+            <div class="chart-wrap csp-s-f6f4334f92"><canvas id="inqTrend"></canvas></div></div>
         </div>
         <!-- 6.23 文档 4：GEO 监控（占位，后续接入） -->
-        <div class="card" style="margin-bottom:14px;text-align:center;padding:32px 16px;border:1px dashed var(--border2);background:transparent;box-shadow:none">
-          <div style="display:inline-flex;align-items:center;gap:10px;color:var(--text3);font-size:13px">
-            <i class="ti ti-world-search" style="font-size:22px;color:var(--text3)"></i>
-            <div style="text-align:left">
-              <div style="font-weight:700;color:var(--text2);font-size:13px">GEO 监控</div>
-              <div style="font-size:11.5px">占位中 · 后期接入地理位置/区域级 SEO/SEM 监控</div>
+        <div class="card csp-s-0c2d35ec2b">
+          <div class="csp-s-5c7facb46f">
+            <i class="ti ti-world-search csp-s-551dec436c"></i>
+            <div class="csp-s-0deeda8007">
+              <div class="csp-s-b44f80d0fa">GEO 监控</div>
+              <div class="csp-s-bd299c8ad6">占位中 · 后期接入地理位置/区域级 SEO/SEM 监控</div>
             </div>
           </div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search" style="color:var(--blue)"></i> SEO 总览</span><span class="card-sub">GSC · 近30天</span></div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"><div><div class="metric-num" style="font-size:19px" id="ov-seo-clicks">—</div><div class="metric-lbl">自然点击</div></div><div><div class="metric-num" style="font-size:19px" id="ov-seo-impr">—</div><div class="metric-lbl">自然展现</div></div><div><div class="metric-num" style="font-size:19px" id="ov-seo-pos">—</div><div class="metric-lbl">平均排名</div></div></div>
-            <div class="chart-wrap" style="height:100px"><canvas id="seoMini"></canvas></div>
-            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px"><button class="btn-ai" data-ui-action="ai" data-ai-prompt="给SEO本月总览级AI诊断，按优先级列最该先做的3件事" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> SEO AI 诊断 ↗</button></div></div>
-          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-ad-2" style="color:var(--purple)"></i> SEM 总览</span><span class="card-sub">Ads · 近30天</span></div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"><div><div class="metric-num" style="font-size:19px" id="ov-sem-cost">—</div><div class="metric-lbl">花费</div></div><div><div class="metric-num" style="font-size:19px" id="ov-sem-conv">—</div><div class="metric-lbl">转化</div></div><div><div class="metric-num" style="font-size:19px" id="ov-sem-cpa">—</div><div class="metric-lbl">每转化成本</div></div></div>
-            <div class="chart-wrap" style="height:100px"><canvas id="semMini"></canvas></div>
-            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px"><button class="btn-ai" data-ui-action="ai" data-ai-prompt="给SEM本月总览级AI诊断，按优先级列最该先做的3件事" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> SEM AI 诊断 ↗</button></div></div>
+          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search csp-s-e1bc9acca5"></i> SEO 总览</span><span class="card-sub">GSC · 近30天</span></div>
+            <div class="csp-s-0b1204e7ba"><div><div class="metric-num csp-s-3b4a6452bb" id="ov-seo-clicks">—</div><div class="metric-lbl">自然点击</div></div><div><div class="metric-num csp-s-3b4a6452bb" id="ov-seo-impr">—</div><div class="metric-lbl">自然展现</div></div><div><div class="metric-num csp-s-3b4a6452bb" id="ov-seo-pos">—</div><div class="metric-lbl">平均排名</div></div></div>
+            <div class="chart-wrap csp-s-584921563c"><canvas id="seoMini"></canvas></div>
+            <div class="csp-s-e7c2d4c829"><button class="btn-ai" data-ui-action="ai" data-ai-prompt="给SEO本月总览级AI诊断，按优先级列最该先做的3件事" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> SEO AI 诊断 ↗</button></div></div>
+          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-ad-2 csp-s-0fbc2fe745"></i> SEM 总览</span><span class="card-sub">Ads · 近30天</span></div>
+            <div class="csp-s-0b1204e7ba"><div><div class="metric-num csp-s-3b4a6452bb" id="ov-sem-cost">—</div><div class="metric-lbl">花费</div></div><div><div class="metric-num csp-s-3b4a6452bb" id="ov-sem-conv">—</div><div class="metric-lbl">转化</div></div><div><div class="metric-num csp-s-3b4a6452bb" id="ov-sem-cpa">—</div><div class="metric-lbl">每转化成本</div></div></div>
+            <div class="chart-wrap csp-s-584921563c"><canvas id="semMini"></canvas></div>
+            <div class="csp-s-e7c2d4c829"><button class="btn-ai" data-ui-action="ai" data-ai-prompt="给SEM本月总览级AI诊断，按优先级列最该先做的3件事" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> SEM AI 诊断 ↗</button></div></div>
         </div>
-        <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">Top 关键词表现</span><span class="card-link" data-ui-action="go" data-tab="keywords">查看全部 →</span></div>
+        <div class="card csp-s-42a6ced8b6"><div class="card-head"><span class="card-title">Top 关键词表现</span><span class="card-link" data-ui-action="go" data-tab="keywords">查看全部 →</span></div>
           <table class="dt"><thead><tr><th>关键词</th><th>类型</th><th class="num">有效询盘</th><th class="num">排名</th><th class="ctr">趋势</th><th class="ctr">分级</th></tr></thead><tbody id="overview-top-keywords">
-            <tr data-load-state="unavailable"><td colspan="6" class="dim" style="text-align:center;padding:16px">暂不可用：尚未完成关键词排名与询盘归因，不能生成可信的 Top 关键词。</td></tr>
+            <tr data-load-state="unavailable"><td colspan="6" class="dim csp-s-d48bfa87bb">暂不可用：尚未完成关键词排名与询盘归因，不能生成可信的 Top 关键词。</td></tr>
           </tbody></table>
         </div>
         <!-- 新增: 总览级 AI 诊断 (达标判断+整改思路) -->
-        <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 总诊断 · 本月考核达标研判</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="仅根据后台当前真实的KPI、询盘、SEO/SEM周报和已同步数据判断本月是否达标；逐条说明数据依据和置信度，数据不足时明确说明，不得补造结论。">重新研判 ↗</button></div>
+        <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 总诊断 · 本月考核达标研判</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台当前真实的KPI、询盘、SEO/SEM周报和已同步数据判断本月是否达标；逐条说明数据依据和置信度，数据不足时明确说明，不得补造结论。">重新研判 ↗</button></div>
           <div class="ai-render" data-ai-state="not-generated"><div class="ai-item"><i class="ti ti-search"></i><div class="body">尚未生成研判。点击“重新研判”后，仅展示可追溯到后台真实数据的结论。</div></div></div>
         </div>
       </div>
@@ -139,27 +140,27 @@
       <!-- ============ KPI ============ -->
       <div class="panel" id="panel-kpi">
         <div class="page-head"><div><div class="page-title">KPI 考核</div><div class="page-sub">公司总分 + 李 + 陈 · 目标值与权重在「设置」可改</div></div><button class="btn-ghost"><i class="ti ti-calendar"></i> 2026-06 ▾</button></div>
-        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> KPI 评分按月度目标与全量实际值计算，不受顶部时间范围影响。</div>
+        <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-info-circle"></i> KPI 评分按月度目标与全量实际值计算，不受顶部时间范围影响。</div>
         <div class="grid3">
-          <div class="card" style="text-align:center"><div class="card-head" style="justify-content:center"><span class="card-title">公司总分</span></div>
-            <div class="gauge" style="margin:0 auto"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g2" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g2s">0</div><div class="gauge-max">/ 100</div></div></div>
-            <div class="grade-badge" id="g2b" style="margin-top:4px"></div></div>
+          <div class="card csp-s-905008530c"><div class="card-head csp-s-99b9ba53aa"><span class="card-title">公司总分</span></div>
+            <div class="gauge csp-s-4a5cbbd240"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g2" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g2s">0</div><div class="gauge-max">/ 100</div></div></div>
+            <div class="grade-badge csp-s-eb2cdaa55e" id="g2b"></div></div>
           <!-- 6.23 文档 5：李/陈 也用 gauge 进度图（与公司总分同款，仅颜色按各自部门 default 着色，gauge() 会按 score 等级覆盖） -->
-          <div class="card" style="text-align:center"><div class="card-head" style="justify-content:center"><span class="card-title" style="color:var(--blue)">李 · SEO</span></div>
-            <div class="gauge" style="margin:0 auto"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="liArc" cx="70" cy="70" r="58" fill="none" stroke="var(--blue)" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="liScore" style="color:var(--blue)">0</div><div class="gauge-max">/ 100</div></div></div>
-            <div class="grade-badge" id="liBadge" style="margin-top:4px"></div></div>
-          <div class="card" style="text-align:center"><div class="card-head" style="justify-content:center"><span class="card-title" style="color:var(--purple)">陈 · SEM</span></div>
-            <div class="gauge" style="margin:0 auto"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="chenArc" cx="70" cy="70" r="58" fill="none" stroke="var(--purple)" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="chenScore" style="color:var(--purple)">0</div><div class="gauge-max">/ 100</div></div></div>
-            <div class="grade-badge" id="chenBadge" style="margin-top:4px"></div></div>
+          <div class="card csp-s-905008530c"><div class="card-head csp-s-99b9ba53aa"><span class="card-title csp-s-e1bc9acca5">李 · SEO</span></div>
+            <div class="gauge csp-s-4a5cbbd240"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="liArc" cx="70" cy="70" r="58" fill="none" stroke="var(--blue)" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score csp-s-e1bc9acca5" id="liScore">0</div><div class="gauge-max">/ 100</div></div></div>
+            <div class="grade-badge csp-s-eb2cdaa55e" id="liBadge"></div></div>
+          <div class="card csp-s-905008530c"><div class="card-head csp-s-99b9ba53aa"><span class="card-title csp-s-0fbc2fe745">陈 · SEM</span></div>
+            <div class="gauge csp-s-4a5cbbd240"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="chenArc" cx="70" cy="70" r="58" fill="none" stroke="var(--purple)" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score csp-s-0fbc2fe745" id="chenScore">0</div><div class="gauge-max">/ 100</div></div></div>
+            <div class="grade-badge csp-s-eb2cdaa55e" id="chenBadge"></div></div>
         </div>
         <div class="grid3">
           <div class="card"><div class="card-head"><span class="card-title">总指标（共担）</span></div><div id="totalRows"></div></div>
-          <div class="card"><div class="card-head"><span class="card-title" style="color:var(--blue)">SEO 明细 · 李</span></div><div id="seoRows"></div></div>
-          <div class="card"><div class="card-head"><span class="card-title" style="color:var(--purple)">SEM 明细 · 陈</span></div><div id="semRows"></div></div>
+          <div class="card"><div class="card-head"><span class="card-title csp-s-e1bc9acca5">SEO 明细 · 李</span></div><div id="seoRows"></div></div>
+          <div class="card"><div class="card-head"><span class="card-title csp-s-0fbc2fe745">SEM 明细 · 陈</span></div><div id="semRows"></div></div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title">询盘质量分布</span></div><div style="display:flex;align-items:center;gap:18px;height:130px"><div class="chart-wrap" style="height:120px;width:120px;flex-shrink:0"><canvas id="inqDonut"></canvas></div><div style="flex:1;font-size:11.5px"><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● A 级 有效·优质</span><b id="lgInqA">—</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● B 级 有效·合格</span><b id="lgInqB">—</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● C 级 无效</span><b id="lgInqC">—</b></div><div style="border-top:1px solid var(--border);padding-top:9px;display:flex;justify-content:space-between"><span class="dim">有效询盘率</span><b id="lgInqRate" style="color:var(--amber)">—</b></div></div></div></div>
-          <div class="card"><div class="card-head"><span class="card-title">有效询盘渠道来源</span></div><div style="display:flex;align-items:center;gap:18px;height:130px"><div class="chart-wrap" style="height:120px;width:120px;flex-shrink:0"><canvas id="chanDonut"></canvas></div><div style="flex:1;font-size:11.5px"><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● SEO 自然</span><b id="lgChSeo">—</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● SEM 付费</span><b id="lgChSem">—</b></div><div style="display:flex;justify-content:space-between;margin-bottom:9px"><span>● 直接</span><b id="lgChDirect">—</b></div><div style="display:flex;justify-content:space-between"><span>● 其他</span><b id="lgChOther">—</b></div></div></div></div>
+          <div class="card"><div class="card-head"><span class="card-title">询盘质量分布</span></div><div class="csp-s-467e89c5e1"><div class="chart-wrap csp-s-94e5df08d2"><canvas id="inqDonut"></canvas></div><div class="csp-s-647f7dbb4d"><div class="csp-s-f3adee31c5"><span>● A 级 有效·优质</span><b id="lgInqA">—</b></div><div class="csp-s-f3adee31c5"><span>● B 级 有效·合格</span><b id="lgInqB">—</b></div><div class="csp-s-f3adee31c5"><span>● C 级 无效</span><b id="lgInqC">—</b></div><div class="csp-s-676282eec8"><span class="dim">有效询盘率</span><b class="csp-s-4e3b78e924" id="lgInqRate">—</b></div></div></div></div>
+          <div class="card"><div class="card-head"><span class="card-title">有效询盘渠道来源</span></div><div class="csp-s-467e89c5e1"><div class="chart-wrap csp-s-94e5df08d2"><canvas id="chanDonut"></canvas></div><div class="csp-s-647f7dbb4d"><div class="csp-s-f3adee31c5"><span>● SEO 自然</span><b id="lgChSeo">—</b></div><div class="csp-s-f3adee31c5"><span>● SEM 付费</span><b id="lgChSem">—</b></div><div class="csp-s-f3adee31c5"><span>● 直接</span><b id="lgChDirect">—</b></div><div class="csp-s-26e45015bd"><span>● 其他</span><b id="lgChOther">—</b></div></div></div></div>
         </div>
       </div>
 
@@ -176,14 +177,14 @@
             <div class="inq-feed-tip"><i class="ti ti-clock"></i> 本月询盘 · 随时间范围筛选；历史月份见下方明细表</div>
             <div class="inq-feed-list" id="inqFeedList">
               <table class="dt inq-cur-table">
-                <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr" style="width:96px">跟踪反馈</th><th class="ctr" style="width:104px">操作</th></tr></thead>
-                <tbody id="tb-inq-cur" class="inq-tb"><tr data-load-state="loading"><td colspan="11" class="dim" style="text-align:center;padding:20px">正在加载真实询盘…</td></tr></tbody>
+                <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr csp-s-2d09dd5b97">跟踪反馈</th><th class="ctr csp-s-0b3b13b1db">操作</th></tr></thead>
+                <tbody id="tb-inq-cur" class="inq-tb"><tr data-load-state="loading"><td colspan="11" class="dim csp-s-651d52088e">正在加载真实询盘…</td></tr></tbody>
               </table>
             </div>
           </aside>
           <div class="card inq-map-card">
             <div class="card-head"><span class="card-title">🌍 全球询盘分布</span><span class="card-sub">青岛 → 各国飞线</span></div>
-            <div id="inqGlobe" style="width:100%;aspect-ratio:2.1 / 1"></div>
+            <div class="csp-s-4bbfeca396" id="inqGlobe"></div>
           </div>
         </div>
 
@@ -193,9 +194,9 @@
           <div class="card"><table class="dt">
           <!-- 6.23 文档 11/12/7：删销售确认列；加客户姓名（日期后）+ 跟踪反馈（备注后）；总列数 = 10（colspan 同步） -->
           <!-- P3：末尾加「操作」删除列；总列数 10 → 11（colspan 同步） -->
-          <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr" style="width:120px">跟踪反馈</th><th class="ctr" style="width:60px">操作</th></tr></thead>
+          <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr></thead>
           <tbody id="tb-inq" class="inq-tb">
-            <tr data-load-state="loading"><td colspan="11" class="dim" style="text-align:center;padding:16px">正在加载真实询盘…</td></tr>
+            <tr data-load-state="loading"><td colspan="11" class="dim csp-s-d48bfa87bb">正在加载真实询盘…</td></tr>
           </tbody>
         </table></div>
           </div>
@@ -208,18 +209,18 @@
           <div class="col">
             <div class="col-cap"><span class="badge b-purple">陈</span> SEM 月度计划</div>
             <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-plan" data-dept="SEM"><i class="ti ti-plus"></i> 新增 SEM 计划</button></div>
-            <div class="card" style="margin-bottom:14px"><table class="dt">
-              <thead><tr><th>动作</th><th>假设</th><th>成功指标</th><th>预算</th><th class="ctr">状态</th><th class="ctr" style="width:80px">操作</th></tr></thead><tbody id="tb-plan-sem"></tbody></table></div>
-            <div class="ai-box purple"><div class="ai-header"><div class="ai-dot" style="background:var(--purple)"></div><span class="ai-title" style="color:var(--purple)">AI 补充板块 · 月初市场情报（SEM）</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实的市场调研、SEM数据、询盘和现有计划，提出本月额外重点；逐条说明依据和置信度，数据不足时明确说明，不得补造市场事实。">重新抓取 ↗</button></div>
+            <div class="card csp-s-42a6ced8b6"><table class="dt">
+              <thead><tr><th>动作</th><th>假设</th><th>成功指标</th><th>预算</th><th class="ctr">状态</th><th class="ctr csp-s-91269935bd">操作</th></tr></thead><tbody id="tb-plan-sem"></tbody></table></div>
+            <div class="ai-box purple"><div class="ai-header"><div class="ai-dot csp-s-2251b2b8c5"></div><span class="ai-title csp-s-0fbc2fe745">AI 补充板块 · 月初市场情报（SEM）</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实的市场调研、SEM数据、询盘和现有计划，提出本月额外重点；逐条说明依据和置信度，数据不足时明确说明，不得补造市场事实。">重新抓取 ↗</button></div>
               <div class="ai-render" data-ai-state="not-generated"><div class="ai-item"><i class="ti ti-search"></i><div class="body">尚未生成建议。点击“重新抓取”后，根据后台真实数据生成。</div></div></div>
             </div>
           </div>
           <div class="col">
             <div class="col-cap"><span class="badge b-blue">李</span> SEO 月度计划</div>
             <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-plan" data-dept="SEO"><i class="ti ti-plus"></i> 新增 SEO 计划</button></div>
-            <div class="card" style="margin-bottom:14px"><table class="dt">
-              <thead><tr><th>动作</th><th>假设</th><th>成功指标</th><th>截止</th><th class="ctr">状态</th><th class="ctr" style="width:80px">操作</th></tr></thead><tbody id="tb-plan-seo"></tbody></table></div>
-            <div class="ai-box blue"><div class="ai-header"><div class="ai-dot" style="background:var(--blue)"></div><span class="ai-title" style="color:var(--blue)">AI 补充板块 · 月初市场情报（SEO）</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实的市场调研、SEO/GSC数据、询盘、现有计划和内容资产，提出本月额外重点；逐条说明依据和置信度，数据不足时明确说明，不得声称未提供的外部市场趋势。">重新抓取 ↗</button></div>
+            <div class="card csp-s-42a6ced8b6"><table class="dt">
+              <thead><tr><th>动作</th><th>假设</th><th>成功指标</th><th>截止</th><th class="ctr">状态</th><th class="ctr csp-s-91269935bd">操作</th></tr></thead><tbody id="tb-plan-seo"></tbody></table></div>
+            <div class="ai-box blue"><div class="ai-header"><div class="ai-dot csp-s-94867e8852"></div><span class="ai-title csp-s-e1bc9acca5">AI 补充板块 · 月初市场情报（SEO）</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实的市场调研、SEO/GSC数据、询盘、现有计划和内容资产，提出本月额外重点；逐条说明依据和置信度，数据不足时明确说明，不得声称未提供的外部市场趋势。">重新抓取 ↗</button></div>
               <div class="ai-render" data-ai-state="not-generated"><div class="ai-item"><i class="ti ti-search"></i><div class="body">尚未生成建议。点击“重新抓取”后，根据后台真实数据生成。</div></div></div>
             </div>
           </div>
@@ -233,16 +234,16 @@
           <div class="col">
             <div class="col-cap"><span class="badge b-purple">陈</span> SEM 测试</div>
             <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-test" data-dept="SEM"><i class="ti ti-plus"></i> 新增 SEM 测试</button></div>
-            <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th>起止</th><th>结论</th><th class="ctr" style="width:130px">操作</th></tr></thead><tbody id="tb-test-sem"></tbody></table></div>
-            <div class="ai-box purple"><div class="ai-header"><div class="ai-dot" style="background:var(--purple)"></div><span class="ai-title" style="color:var(--purple)">AI 补充板块 · SEM 测试建议</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实SEM数据、询盘归因和已有测试，提出可验证的测试假设；每条写明依据、成功指标和置信度，数据不足时明确说明。">重新生成 ↗</button></div>
+            <div class="card csp-s-42a6ced8b6"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th>起止</th><th>结论</th><th class="ctr csp-s-9db3c3232a">操作</th></tr></thead><tbody id="tb-test-sem"></tbody></table></div>
+            <div class="ai-box purple"><div class="ai-header"><div class="ai-dot csp-s-2251b2b8c5"></div><span class="ai-title csp-s-0fbc2fe745">AI 补充板块 · SEM 测试建议</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实SEM数据、询盘归因和已有测试，提出可验证的测试假设；每条写明依据、成功指标和置信度，数据不足时明确说明。">重新生成 ↗</button></div>
               <div class="ai-render" data-ai-state="not-generated"><div class="ai-item"><i class="ti ti-search"></i><div class="body">尚未生成测试建议。点击“重新生成”后，根据后台真实数据生成。</div></div></div>
             </div>
           </div>
           <div class="col">
             <div class="col-cap"><span class="badge b-blue">李</span> SEO 测试</div>
             <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-test" data-dept="SEO"><i class="ti ti-plus"></i> 新增 SEO 测试</button></div>
-            <div class="card" style="margin-bottom:14px"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th>起止</th><th>结论</th><th class="ctr" style="width:130px">操作</th></tr></thead><tbody id="tb-test-seo"></tbody></table></div>
-            <div class="ai-box blue"><div class="ai-header"><div class="ai-dot" style="background:var(--blue)"></div><span class="ai-title" style="color:var(--blue)">AI 补充板块 · SEO 测试建议</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实SEO/GSC数据、询盘归因和已有测试，提出可验证的测试假设；每条写明依据、成功指标和置信度，数据不足时明确说明。">重新生成 ↗</button></div>
+            <div class="card csp-s-42a6ced8b6"><table class="dt"><thead><tr><th>实验名</th><th>假设</th><th>变量</th><th>起止</th><th>结论</th><th class="ctr csp-s-9db3c3232a">操作</th></tr></thead><tbody id="tb-test-seo"></tbody></table></div>
+            <div class="ai-box blue"><div class="ai-header"><div class="ai-dot csp-s-94867e8852"></div><span class="ai-title csp-s-e1bc9acca5">AI 补充板块 · SEO 测试建议</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实SEO/GSC数据、询盘归因和已有测试，提出可验证的测试假设；每条写明依据、成功指标和置信度，数据不足时明确说明。">重新生成 ↗</button></div>
               <div class="ai-render" data-ai-state="not-generated"><div class="ai-item"><i class="ti ti-search"></i><div class="body">尚未生成测试建议。点击“重新生成”后，根据后台真实数据生成。</div></div></div>
             </div>
           </div>
@@ -259,59 +260,59 @@
 
         <!-- ===== SEO 看板 ===== -->
         <div class="subpanel active" id="sub-data-seo">
-          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber" id="diag-opp-n" style="display:none"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red" id="diag-decay-n" style="display:none"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple" id="diag-cann-n" style="display:none"></span></div></div>
+          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber is-hidden" id="diag-opp-n"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red is-hidden" id="diag-decay-n"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple is-hidden" id="diag-cann-n"></span></div></div>
 
           <div class="minipanel active" id="mp-seo-overview">
             <!-- AI 周报已移至「AI 周报」子tab；数据由 GSC 同步驱动，手动录入入口已移除 -->
             <div class="metric-row"><div class="metric-card"><div class="metric-num" id="sb-clicks">—</div><div class="metric-lbl">自然点击</div><div class="metric-delta" id="sb-clicks-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-impr">—</div><div class="metric-lbl">自然展现</div><div class="metric-delta" id="sb-impr-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-pos">—</div><div class="metric-lbl">平均排名</div><div class="metric-delta" id="sb-pos-d"></div></div><div class="metric-card"><div class="metric-num" id="sb-cov">—</div><div class="metric-lbl">关键词覆盖</div><div class="metric-delta" id="sb-cov-d"></div></div></div>
-            <div id="seoHighlights" class="seo-hl" style="display:none"></div>
-            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">点击 / 展现趋势</span><span class="card-sub">按所选时间范围 · GSC</span></div><div class="chart-wrap" style="height:170px"><canvas id="seoBoard"></canvas></div></div>
+            <div id="seoHighlights" class="seo-hl is-hidden"></div>
+            <div class="card csp-s-42a6ced8b6"><div class="card-head"><span class="card-title">点击 / 展现趋势</span><span class="card-sub">按所选时间范围 · GSC</span></div><div class="chart-wrap csp-s-cf7e9863b5"><canvas id="seoBoard"></canvas></div></div>
             <div class="seo-grid2">
               <div class="card"><div class="card-head"><span class="card-title">流量来源占比</span><span class="card-sub">GA4 · 会话</span></div>
-                <div style="display:flex;align-items:center;gap:16px;min-height:150px"><div class="chart-wrap" style="height:150px;width:150px;flex-shrink:0"><canvas id="seoSrcDonut"></canvas></div><div id="seoSrcLegend" style="flex:1;font-size:11.5px"><span class="dim">加载中…</span></div></div>
+                <div class="csp-s-252a33ed74"><div class="chart-wrap csp-s-2ceaf6738c"><canvas id="seoSrcDonut"></canvas></div><div class="csp-s-647f7dbb4d" id="seoSrcLegend"><span class="dim">加载中…</span></div></div>
               </div>
-              <div class="card"><div class="card-head"><span class="card-title">来源趋势 · 按天堆叠</span><span class="card-sub">GA4 · 会话</span></div><div class="chart-wrap" style="height:190px"><canvas id="seoSrcArea"></canvas></div></div>
+              <div class="card"><div class="card-head"><span class="card-title">来源趋势 · 按天堆叠</span><span class="card-sub">GA4 · 会话</span></div><div class="chart-wrap csp-s-9f5fe07151"><canvas id="seoSrcArea"></canvas></div></div>
             </div>
             <div class="seo-grid2">
               <div class="card"><div class="card-head"><span class="card-title">落地页 · 点击 & 环比</span><span class="card-sub">GSC · 点击前 15</span></div>
-                <table class="dt"><thead><tr><th>落地页</th><th class="num">点击</th><th class="num">Δ</th><th class="num">展现</th><th class="ctr">动作</th></tr></thead><tbody id="seoPagesDelta"><tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
+                <table class="dt"><thead><tr><th>落地页</th><th class="num">点击</th><th class="num">Δ</th><th class="num">展现</th><th class="ctr">动作</th></tr></thead><tbody id="seoPagesDelta"><tr><td colspan="5" class="dim csp-s-45c174bbec">加载中…</td></tr></tbody></table>
               </div>
               <div class="card"><div class="card-head"><span class="card-title">关键词 · 展现/点击/排名 环比</span><span class="card-sub">GSC · 展现前 15</span></div>
-                <table class="dt"><thead><tr><th>关键词</th><th class="num">展现</th><th class="num">Δ</th><th class="num">点击</th><th class="num">排名</th><th class="num">Δ</th></tr></thead><tbody id="seoQueriesDelta"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
+                <table class="dt"><thead><tr><th>关键词</th><th class="num">展现</th><th class="num">Δ</th><th class="num">点击</th><th class="num">排名</th><th class="num">Δ</th></tr></thead><tbody id="seoQueriesDelta"><tr><td colspan="6" class="dim csp-s-45c174bbec">加载中…</td></tr></tbody></table>
               </div>
             </div>
             <!-- 会话×跳出率气泡图已移至「站点机会」子tab -->
-            <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEO 看板 · AI 诊断（按优先级）</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="基于下方SEO数据，按优先级列本周最该先做的3件事，每条一句话、可执行。">重新诊断 ↗</button></div>
+            <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEO 看板 · AI 诊断（按优先级）</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="基于下方SEO数据，按优先级列本周最该先做的3件事，每条一句话、可执行。">重新诊断 ↗</button></div>
               <div class="ai-render"><div class="ai-item"><i class="ti ti-search"></i><div class="body">点右上「重新诊断」，基于本周真实 SEO 数据按优先级列动作。未诊断前不显示建议。</div></div></div>
             </div>
           </div>
 
           <div class="minipanel" id="mp-seo-opp">
             <!-- 先气泡图：高流量+高跳出=重点优化页面 -->
-            <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title" id="seoScatterTitle">找出需要优化的页面 · 会话 × 跳出率</span><span class="card-sub" id="seoScatterSub">右上=高流量+高跳出=重点优化对象；中位线分四象限；点=落地页</span></div>
-              <div id="seoScatter" style="height:360px"></div>
+            <div class="card csp-s-42a6ced8b6"><div class="card-head"><span class="card-title" id="seoScatterTitle">找出需要优化的页面 · 会话 × 跳出率</span><span class="card-sub" id="seoScatterSub">右上=高流量+高跳出=重点优化对象；中位线分四象限；点=落地页</span></div>
+              <div class="csp-s-d141882ab8" id="seoScatter"></div>
               <div id="seoScatterTargets"></div>
-              <div id="seoScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 GSC/GA4 同步后显示</div>
+              <div id="seoScatterEmpty" class="dim csp-scatter-empty is-hidden">暂无足够数据 · 完成 GSC/GA4 同步后显示</div>
             </div>
             <!-- 后机会词：排名 11-20 -->
-            <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-target-arrow"></i> 机会词 · 排名 11-20、就差一步进首页，优先攻性价比最高的</div>
-            <div class="sheet-toolbar" style="margin-bottom:10px"><button class="btn-ghost" data-ui-action="snapshot-ranks"><i class="ti ti-camera"></i> 记录本周排名快照</button><span class="sheet-tip" id="rankTrendNote">每周点一次，积累 2 周后这里显示排名升降趋势（▲升 ▼降），验证整改效果</span></div>
+            <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-target-arrow"></i> 机会词 · 排名 11-20、就差一步进首页，优先攻性价比最高的</div>
+            <div class="sheet-toolbar csp-s-b922c89f16"><button class="btn-ghost" data-ui-action="snapshot-ranks"><i class="ti ti-camera"></i> 记录本周排名快照</button><span class="sheet-tip" id="rankTrendNote">每周点一次，积累 2 周后这里显示排名升降趋势（▲升 ▼降），验证整改效果</span></div>
             <div class="card"><table class="dt"><thead><tr><th>关键词</th><th class="dim">所在页</th><th class="num">当前排名</th><th class="num">区间展现</th><th class="ctr">动作</th></tr></thead><tbody id="diagOppRows">
-              <tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
+              <tr><td colspan="5" class="dim csp-s-45c174bbec">加载中…</td></tr>
             </tbody></table></div>
           </div>
 
           <div class="minipanel" id="mp-seo-decay">
-            <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-trending-down" style="color:var(--primary)"></i> 点击/排名近 4 周明显下滑的页面，先止损</div>
+            <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-trending-down csp-s-b0e08465c2"></i> 点击/排名近 4 周明显下滑的页面，先止损</div>
             <div class="card"><table class="dt"><thead><tr><th>URL</th><th class="num">点击变化</th><th class="num">排名变化</th><th class="ctr">疑因</th><th class="ctr">动作</th></tr></thead><tbody id="diagDecayRows">
-              <tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
+              <tr><td colspan="5" class="dim csp-s-45c174bbec">加载中…</td></tr>
             </tbody></table></div>
           </div>
 
           <div class="minipanel" id="mp-seo-cann">
-            <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-git-merge"></i> 意图重复、互相抢排名的 URL 组——合并后排名通常立竿见影。每组点「AI 合并建议」让 AI 给方案</div>
+            <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-git-merge"></i> 意图重复、互相抢排名的 URL 组——合并后排名通常立竿见影。每组点「AI 合并建议」让 AI 给方案</div>
             <div class="card"><table class="dt"><thead><tr><th>蚕食词</th><th>互相竞争的 URL</th><th class="num">分散排名</th><th class="ctr">建议</th><th class="ctr">动作</th></tr></thead><tbody id="diagCannRows">
-              <tr><td colspan="5" class="dim" style="text-align:center;padding:14px">加载中…</td></tr>
+              <tr><td colspan="5" class="dim csp-s-45c174bbec">加载中…</td></tr>
             </tbody></table></div>
           </div>
         </div>
@@ -322,7 +323,7 @@
           <div class="minipanel active" id="mp-sem-overview">
           <!-- 要点带 + 系列筛选器（旁边）：选后全页 Ads 数据联动，默认全部系列 -->
           <div class="sem-hl-row">
-            <div id="semHighlights" class="seo-hl" style="display:none"></div>
+            <div id="semHighlights" class="seo-hl is-hidden"></div>
             <div class="sem-filter"><i class="ti ti-filter"></i> <select id="semCampFilter"><option value="">全部系列</option></select> <select id="semAdGroupFilter" disabled title="先选广告系列，再选其下的广告组"><option value="">全部广告组</option></select></div>
           </div>
           <!-- 账户体检（合并一栏、去重）+ 真实询盘回报（3项·底色加深）并排 -->
@@ -340,8 +341,8 @@
                 <div class="sem-stat"><div class="sem-stat-n" id="sm-cpconv">—</div><div class="sem-stat-l">每转化成本</div></div>
               </div>
             </div>
-            <div class="card attr-report" id="semAttrCard" style="display:none">
-              <div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报</span><span class="card-sub">花费 ÷ 真实有效询盘<span id="semAttrScope" style="display:none;color:var(--amber)"> · 账户级，不随系列筛选</span></span></div>
+            <div class="card attr-report is-hidden" id="semAttrCard">
+              <div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报</span><span class="card-sub">花费 ÷ 真实有效询盘<span class="sem-attr-scope is-hidden" id="semAttrScope"> · 账户级，不随系列筛选</span></span></div>
               <div id="semAttrBody"></div>
             </div>
           </div>
@@ -349,39 +350,39 @@
           <!-- 图表提前：老板一眼看走向 -->
           <div class="seo-grid2">
             <div class="card"><div class="card-head"><span class="card-title">花费占比 · 按系列</span><span class="card-sub">Ads</span></div>
-              <div style="display:flex;align-items:center;gap:16px;min-height:150px"><div class="chart-wrap" style="height:150px;width:150px;flex-shrink:0"><canvas id="semCostDonut"></canvas></div><div id="semCostLegend" style="flex:1;font-size:11.5px"><span class="dim">加载中…</span></div></div>
+              <div class="csp-s-252a33ed74"><div class="chart-wrap csp-s-2ceaf6738c"><canvas id="semCostDonut"></canvas></div><div class="csp-s-647f7dbb4d" id="semCostLegend"><span class="dim">加载中…</span></div></div>
             </div>
-            <div class="card"><div class="card-head"><span class="card-title">每日趋势 · 花费/转化</span><span class="card-sub">Ads</span></div><div class="chart-wrap" style="height:190px"><canvas id="semTrend"></canvas></div></div>
+            <div class="card"><div class="card-head"><span class="card-title">每日趋势 · 花费/转化</span><span class="card-sub">Ads</span></div><div class="chart-wrap csp-s-9f5fe07151"><canvas id="semTrend"></canvas></div></div>
           </div>
           <!-- 投放中广告系列 全量（像 Ads 后台一样看） -->
-          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">投放中广告系列 · 全量</span><span class="card-sub">Ads · 每个系列完整指标（按花费排序）</span></div>
-            <div style="overflow-x:auto"><table class="dt"><thead><tr><th>系列</th><th class="num">曝光</th><th class="num">点击</th><th class="num">CTR</th><th class="num">花费</th><th class="num">CPC</th><th class="num">转化</th><th class="num">转化率</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semCampFull"><tr><td colspan="10" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table></div>
+          <div class="card csp-s-42a6ced8b6"><div class="card-head"><span class="card-title">投放中广告系列 · 全量</span><span class="card-sub">Ads · 每个系列完整指标（按花费排序）</span></div>
+            <div class="csp-s-1b1d75452f"><table class="dt"><thead><tr><th>系列</th><th class="num">曝光</th><th class="num">点击</th><th class="num">CTR</th><th class="num">花费</th><th class="num">CPC</th><th class="num">转化</th><th class="num">转化率</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semCampFull"><tr><td colspan="10" class="dim csp-s-45c174bbec">加载中…</td></tr></tbody></table></div>
           </div>
-          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title" id="semScatterTitle">花费 × 每转化成本</span><span class="card-sub" id="semScatterSub">找又贵又不划算的词</span></div>
-            <div id="semScatter" style="height:360px"></div>
+          <div class="card csp-s-42a6ced8b6"><div class="card-head"><span class="card-title" id="semScatterTitle">花费 × 每转化成本</span><span class="card-sub" id="semScatterSub">找又贵又不划算的词</span></div>
+            <div class="csp-s-d141882ab8" id="semScatter"></div>
             <div id="semScatterTargets"></div>
-            <div id="semScatterEmpty" class="dim" style="text-align:center;padding:18px;display:none">暂无足够数据 · 完成 Google Ads 同步后显示</div>
+            <div id="semScatterEmpty" class="dim csp-scatter-empty is-hidden">暂无足够数据 · 完成 Google Ads 同步后显示</div>
           </div>
-          <div class="card" style="margin-bottom:14px"><div class="card-head"><span class="card-title">关键词 · 花费/转化 环比</span><span class="card-sub">Ads · 花费前 15 · Δ 为转化环比</span></div>
-            <table class="dt"><thead><tr><th>关键词</th><th class="num">花费</th><th class="num">转化</th><th class="num">Δ</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semKwRows"><tr><td colspan="6" class="dim" style="text-align:center;padding:14px">加载中…</td></tr></tbody></table>
+          <div class="card csp-s-42a6ced8b6"><div class="card-head"><span class="card-title">关键词 · 花费/转化 环比</span><span class="card-sub">Ads · 花费前 15 · Δ 为转化环比</span></div>
+            <table class="dt"><thead><tr><th>关键词</th><th class="num">花费</th><th class="num">转化</th><th class="num">Δ</th><th class="num">每转化</th><th class="ctr">评估</th></tr></thead><tbody id="semKwRows"><tr><td colspan="6" class="dim csp-s-45c174bbec">加载中…</td></tr></tbody></table>
           </div>
-          <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 看板 · AI 诊断（按优先级）</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="基于下方SEM层级数据，按优先级列本周最该先做的3件事，指明在哪一层(系列/广告组/关键词)操作。">重新诊断 ↗</button></div>
+          <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 看板 · AI 诊断（按优先级）</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="基于下方SEM层级数据，按优先级列本周最该先做的3件事，指明在哪一层(系列/广告组/关键词)操作。">重新诊断 ↗</button></div>
             <div class="ai-render"><div class="ai-item"><i class="ti ti-search"></i><div class="body">点右上「重新诊断」，基于本周真实 SEM 层级数据按优先级列动作。未诊断前不显示建议。</div></div></div>
           </div>
           </div><!-- /mp-sem-overview -->
 
           <div class="minipanel" id="mp-sem-problem">
-            <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 问题分析</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="你是费尔瑞SEM负责人。基于真实SEM数据，找出当前最严重的3个问题（花费浪费/转化低/每询盘成本高/否词缺失等），每条指明在哪一层并量化影响。">AI 分析问题 ↗</button></div>
+            <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 问题分析</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="你是费尔瑞SEM负责人。基于真实SEM数据，找出当前最严重的3个问题（花费浪费/转化低/每询盘成本高/否词缺失等），每条指明在哪一层并量化影响。">AI 分析问题 ↗</button></div>
               <div class="ai-render"><div class="ai-item"><i class="ti ti-search"></i><div class="body">点右上「AI 分析问题」，基于本周真实数据 + 市场记忆给出问题清单。</div></div></div>
             </div>
           </div>
           <div class="minipanel" id="mp-sem-optimize">
-            <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 优化思路</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="基于真实SEM数据给出本周可执行的优化思路：出价策略、预算再分配、广告组结构、落地页方向，按优先级排序。">AI 给优化思路 ↗</button></div>
+            <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 优化思路</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="基于真实SEM数据给出本周可执行的优化思路：出价策略、预算再分配、广告组结构、落地页方向，按优先级排序。">AI 给优化思路 ↗</button></div>
               <div class="ai-render"><div class="ai-item"><i class="ti ti-bulb"></i><div class="body">点右上生成优化思路（出价/预算/结构/落地页）。</div></div></div>
             </div>
           </div>
           <div class="minipanel" id="mp-sem-keyword">
-            <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 关键词排查</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="排查SEM关键词：哪些词高花费零转化应暂停、哪些该加否词、哪些值得放量；结合客户语言库给出可加的高价值买家意图词。">AI 排查关键词 ↗</button></div>
+            <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">SEM 关键词排查</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="排查SEM关键词：哪些词高花费零转化应暂停、哪些该加否词、哪些值得放量；结合客户语言库给出可加的高价值买家意图词。">AI 排查关键词 ↗</button></div>
               <div class="ai-render"><div class="ai-item"><i class="ti ti-key"></i><div class="body">点右上排查关键词（暂停/否词/放量/可加词）。</div></div></div>
             </div>
           </div>
@@ -390,13 +391,13 @@
 
         <!-- ===== AI 周报（SEO + SEM 合一，周级低频，独立 tab，不占概览黄金位） ===== -->
         <div class="subpanel" id="sub-data-report">
-          <div class="sheet-tip" style="margin-bottom:12px"><i class="ti ti-calendar-week"></i> 周报每周测一次即可，已从概览移到这里。基于真实同步数据点「重新生成」按本周数据出结论；结论存入历史时间线可回溯。</div>
-          <div class="card-title" style="margin:2px 0 8px"><i class="ti ti-brand-google" style="color:var(--green)"></i> SEO 周报</div>
-          <div class="ai-box" style="margin-bottom:16px"><div class="ai-header"><span class="ai-title"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span>对接 GSC</span><button class="btn-ghost" data-ui-action="ai-box" data-ai-prompt="你是费尔瑞SEO负责人。基于下方真实数据写一份本周SEO周报：先两句话概述点击/展现/排名走势，再分「机会」「风险」两条给出可执行建议。">重新生成 ↗</button></div></div>
+          <div class="sheet-tip csp-s-b56987dbcb"><i class="ti ti-calendar-week"></i> 周报每周测一次即可，已从概览移到这里。基于真实同步数据点「重新生成」按本周数据出结论；结论存入历史时间线可回溯。</div>
+          <div class="card-title csp-s-6873237b5c"><i class="ti ti-brand-google csp-s-7608acb292"></i> SEO 周报</div>
+          <div class="ai-box csp-s-bf4a218e05"><div class="ai-header"><span class="ai-title"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta csp-s-ca6fc035af"><span>对接 GSC</span><button class="btn-ghost" data-ui-action="ai-box" data-ai-prompt="你是费尔瑞SEO负责人。基于下方真实数据写一份本周SEO周报：先两句话概述点击/展现/排名走势，再分「机会」「风险」两条给出可执行建议。">重新生成 ↗</button></div></div>
             <div class="ai-render"><div class="ai-item"><i class="ti ti-sparkles"></i><div class="body">点右上「重新生成」，基于本周录入的真实 SEO 数据生成周报（机会/风险）。未生成前不显示建议。</div></div></div>
           </div>
-          <div class="card-title" style="margin:2px 0 8px"><i class="ti ti-ad" style="color:var(--purple)"></i> SEM 周报</div>
-          <div class="ai-box purple"><div class="ai-header"><span class="ai-title" style="color:var(--purple)"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta" style="margin-left:auto"><span class="cache-tag">已缓存 · 本周 1/1</span><button class="btn-ghost" data-ui-action="ai-box" data-ai-prompt="你是费尔瑞SEM负责人。基于下方真实数据写本周Ads周报：概述花费/ROAS/有效询盘成本，再给「立即做」「本周做」两条建议。">重新生成 ↗</button></div></div>
+          <div class="card-title csp-s-6873237b5c"><i class="ti ti-ad csp-s-0fbc2fe745"></i> SEM 周报</div>
+          <div class="ai-box purple"><div class="ai-header"><span class="ai-title csp-s-0fbc2fe745"><i class="ti ti-sparkles"></i> AI 周报 · 本周</span><div class="report-meta csp-s-ca6fc035af"><span class="cache-tag">已缓存 · 本周 1/1</span><button class="btn-ghost" data-ui-action="ai-box" data-ai-prompt="你是费尔瑞SEM负责人。基于下方真实数据写本周Ads周报：概述花费/ROAS/有效询盘成本，再给「立即做」「本周做」两条建议。">重新生成 ↗</button></div></div>
             <div class="ai-render"><div class="ai-item"><i class="ti ti-sparkles"></i><div class="body">点右上「重新生成」，基于本周导入的真实 Ads 数据生成周报（立即做/本周做）。未生成前不显示建议。</div></div></div>
           </div>
         </div>
@@ -404,11 +405,11 @@
 
       <!-- ============ ④ 整改清单 ============ -->
       <div class="panel" id="panel-fix">
-        <div class="page-head"><div><div class="page-title">整改清单</div><div class="page-sub">每条须有依据数据 · 可手动新增，也可从数据看板「采纳」自动汇入 · 表格可编辑、失焦即存</div></div><div style="display:flex;gap:8px"><button class="btn-primary" data-ui-action="add-fix"><i class="ti ti-plus"></i> 新增整改</button><button class="btn-ai" data-ui-action="ai" data-ai-prompt="按SOP整改动作库生成本周候选整改清单并排优先级" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div></div>
+        <div class="page-head"><div><div class="page-title">整改清单</div><div class="page-sub">每条须有依据数据 · 可手动新增，也可从数据看板「采纳」自动汇入 · 表格可编辑、失焦即存</div></div><div class="csp-s-9c40389b4a"><button class="btn-primary" data-ui-action="add-fix"><i class="ti ti-plus"></i> 新增整改</button><button class="btn-ai" data-ui-action="ai" data-ai-prompt="按SOP整改动作库生成本周候选整改清单并排优先级" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div></div>
         <div class="timebar-inline" data-time></div>
-        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock-off"></i> 整改清单暂不按时间范围过滤，显示全部。</div>
-        <div class="card" style="margin-bottom:14px"><table class="dt fix-table"><thead><tr><th>问题 / 机会</th><th class="ctr">所属</th><th>依据数据</th><th>整改动作</th><th class="ctr">负责人</th><th>截止</th><th class="ctr">结果</th><th class="ctr" style="width:190px">操作</th></tr></thead><tbody id="tb-fix"></tbody></table></div>
-        <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 补充板块 · 整改调整建议</span><button class="btn-ai" style="margin-left:auto" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实SEO、SEM、询盘和诊断数据提出整改建议；每条写明问题、证据、动作、验证指标和置信度，数据不足时明确说明。">重新生成 ↗</button></div>
+        <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-clock-off"></i> 整改清单暂不按时间范围过滤，显示全部。</div>
+        <div class="card csp-s-42a6ced8b6"><table class="dt fix-table"><thead><tr><th>问题 / 机会</th><th class="ctr">所属</th><th>依据数据</th><th>整改动作</th><th class="ctr">负责人</th><th>截止</th><th class="ctr">结果</th><th class="ctr csp-s-dc9eac3f89">操作</th></tr></thead><tbody id="tb-fix"></tbody></table></div>
+        <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 补充板块 · 整改调整建议</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实SEO、SEM、询盘和诊断数据提出整改建议；每条写明问题、证据、动作、验证指标和置信度，数据不足时明确说明。">重新生成 ↗</button></div>
           <div class="ai-render" data-ai-state="not-generated"><div class="ai-item"><i class="ti ti-search"></i><div class="body">尚未生成整改建议。点击“重新生成”后，仅展示有数据依据的候选动作。</div></div></div>
         </div>
       </div>
@@ -443,22 +444,22 @@
           <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>关键词</th><th>类型</th><th>渠道</th><th>有效询盘</th><th>分级</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-high"></tbody></table></div>
         </div>
         <div class="subpanel" id="sub-kw-cust">
-          <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> 记录业务/客户口中说出的真实用词</div>
+          <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-info-circle"></i> 记录业务/客户口中说出的真实用词</div>
           <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-keyword" data-keyword-type="customer"><i class="ti ti-plus"></i> 加词</button></div>
           <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>客户原话 / 用词</th><th>来源客户</th><th>对应我们的词</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust"></tbody></table></div>
         </div>
         <div class="subpanel" id="sub-kw-neg">
-          <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-ban" style="color:var(--primary)"></i> SEM 质量控制核心：记录每个否词「什么时候加、为什么加」，写新广告/排查浪费时一查就有</div>
+          <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-ban csp-s-b0e08465c2"></i> SEM 质量控制核心：记录每个否词「什么时候加、为什么加」，写新广告/排查浪费时一查就有</div>
           <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-neg"><i class="ti ti-plus"></i> 加否词</button><button class="btn-ai" data-ui-action="ai-ask" data-ai-prompt="仅根据后台真实的SEM搜索词、花费与转化、询盘质量、市场调研和已有否词记录，提出本月候选否词；按词组/精确分类，逐条说明数据依据和置信度。没有搜索词级证据时必须明确说明，不得假定地区、系列或客户类型表现。" data-ai-title="AI 建议否词"><i class="ti ti-sparkles"></i> AI 建议否词</button></div>
           <div class="card"><table class="dt"><thead><tr><th>否词</th><th class="ctr">匹配类型</th><th>加入日期</th><th>原因</th><th>来源系列</th><th class="ctr">状态</th></tr></thead><tbody id="tb-neg">
-            <tr data-load-state="loading"><td colspan="6" class="dim" style="text-align:center;padding:16px">正在加载真实否词记录…</td></tr>
+            <tr data-load-state="loading"><td colspan="6" class="dim csp-s-d48bfa87bb">正在加载真实否词记录…</td></tr>
           </tbody></table></div>
         </div>
         <div class="subpanel" id="sub-kw-ad">
-          <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-bulb"></i> 记录已投放创意及真实 CTR / A/B 结论，验证有效后再复用</div>
+          <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-bulb"></i> 记录已投放创意及真实 CTR / A/B 结论，验证有效后再复用</div>
           <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-ad"><i class="ti ti-plus"></i> 加创意</button><button class="btn-ai" data-ui-action="ai-ask" data-ai-prompt="仅根据后台真实的市场调研、客户语言、产品能力、内容资产和SEM数据生成3组Google Ads响应式搜索广告候选，每组含标题、描述、依据和置信度；不得编造认证、交期、报价速度或未记录的产品能力。" data-ai-title="AI 生成广告创意"><i class="ti ti-sparkles"></i> AI 生成创意</button></div>
           <div class="card"><table class="dt"><thead><tr><th>标题</th><th>描述</th><th>CTR</th><th>A/B 结论</th><th class="ctr">状态</th></tr></thead><tbody id="tb-ad">
-            <tr data-load-state="loading"><td colspan="5" class="dim" style="text-align:center;padding:16px">正在加载真实广告创意…</td></tr>
+            <tr data-load-state="loading"><td colspan="5" class="dim csp-s-d48bfa87bb">正在加载真实广告创意…</td></tr>
           </tbody></table></div>
         </div>
       </div>
@@ -467,24 +468,24 @@
       <div class="panel" id="panel-content">
         <div class="page-head"><div><div class="page-title">内容资产</div><div class="page-sub">记录客户真实索要与资产状态，优先级以市场调研和询盘证据为准</div></div><button class="btn-primary" data-ui-action="add-content"><i class="ti ti-plus"></i> 新增资产</button></div>
         <div class="card"><table class="dt"><thead><tr><th>内容资产</th><th>解决什么问题</th><th>类型</th><th class="ctr">优先级</th><th class="ctr">负责人</th><th class="ctr">状态</th><th class="num">添加日期</th><th>备注</th><th class="ctr"></th></tr></thead><tbody id="tb-content"></tbody></table>
-          <div id="content-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无内容资产，点「新增资产」开始</div>
+          <div class="csp-s-2ef32a3eca" id="content-empty"><i class="ti ti-database-off csp-s-fd53510ab7"></i>暂无内容资产，点「新增资产」开始</div>
         </div>
       </div>
 
       <!-- ============ 市场分析 ============ -->
       <div class="panel" id="panel-market">
         <div class="page-head"><div><div class="page-title">市场分析</div><div class="page-sub">客户/市场调研基线（按受访者整理）· AI 的所有建议以此为「事实地基」</div></div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div class="csp-s-39c68df36f">
             <span id="brainStatus" class="badge b-gray">记忆状态加载中…</span>
             <button class="btn-primary" data-ui-action="refresh-brain"><i class="ti ti-brain"></i> 同步 / 更新 AI 记忆</button>
           </div>
         </div>
-        <div class="banner banner-red"><i class="ti ti-anchor" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">AI 记忆体机制（省 token）</div><div class="banner-s">下表是 AI 的常驻背景知识。系统用 MD5 检测资料是否变动：未变 / 未跨月则<strong>绝不重复分析</strong>，直接复用已有记忆；只有改了资料或点上方「同步/更新 AI 记忆」才会重新学习一次。</div></div></div>
-        <div class="card" id="brainSummaryCard" style="margin-bottom:14px;display:none"><div class="card-head"><span class="card-title">🧠 AI 市场记忆摘要（注入所有分析的常驻背景）</span><span class="card-sub" id="brainUpdatedAt"></span></div><div class="ai-render" id="brainSummary" style="font-size:12.5px;line-height:1.7;color:var(--text2)"></div></div>
+        <div class="banner banner-red"><i class="ti ti-anchor csp-s-fd44150866"></i><div><div class="banner-t">AI 记忆体机制（省 token）</div><div class="banner-s">下表是 AI 的常驻背景知识。系统用 MD5 检测资料是否变动：未变 / 未跨月则<strong>绝不重复分析</strong>，直接复用已有记忆；只有改了资料或点上方「同步/更新 AI 记忆」才会重新学习一次。</div></div></div>
+        <div class="card csp-s-19dcb71206" id="brainSummaryCard"><div class="card-head"><span class="card-title">🧠 AI 市场记忆摘要（注入所有分析的常驻背景）</span><span class="card-sub" id="brainUpdatedAt"></span></div><div class="ai-render csp-s-ae8bc5ab2a" id="brainSummary"></div></div>
         <div class="card"><div class="card-head"><span class="card-title">🗣️ 市场调研问卷（孟雪 / 王璐平 / 燕敏）</span><span class="card-sub">双击单元格可编辑，失焦自动保存；改完点上方「更新 AI 记忆」让 AI 重新学习</span></div>
-          <table class="dt"><thead><tr><th style="width:80px">分类</th><th style="width:240px">问题</th><th>孟雪</th><th>王璐平</th><th>燕敏</th></tr></thead>
+          <table class="dt"><thead><tr><th class="csp-s-91269935bd">分类</th><th class="csp-s-aebc026e77">问题</th><th>孟雪</th><th>王璐平</th><th>燕敏</th></tr></thead>
           <tbody id="tb-market"></tbody></table>
-          <div id="market-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无市场调研数据</div>
+          <div class="csp-s-2ef32a3eca" id="market-empty"><i class="ti ti-database-off csp-s-fd53510ab7"></i>暂无市场调研数据</div>
         </div>
       </div>
 
@@ -495,13 +496,13 @@
             <div class="page-title">AI 记忆</div>
             <div class="page-sub">Hermes 的长期运营认知：客户事实、判断标准、决策、风险和每日学习沉淀</div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div class="csp-s-39c68df36f">
             <button class="btn-ghost" data-ui-action="create-hermes-daily-learning"><i class="ti ti-sparkles"></i> 沉淀今日记忆</button>
             <button class="btn-primary" data-ui-action="load-hermes-memories"><i class="ti ti-refresh"></i> 刷新</button>
           </div>
         </div>
-        <div class="banner banner-red" style="margin-bottom:14px">
-          <i class="ti ti-shield-check" style="color:var(--primary);font-size:18px"></i>
+        <div class="banner banner-red csp-s-42a6ced8b6">
+          <i class="ti ti-shield-check csp-s-fd44150866"></i>
           <div>
             <div class="banner-t">这里不是聊天记录，是 Hermes 的企业长期记忆。</div>
             <div class="banner-s">只放可以长期复用的事实、判断和经验；错误、过期、太泛的内容要停用，避免以后分析被带偏。</div>
@@ -534,7 +535,7 @@
             <div class="fld"><label>记忆内容</label><textarea id="hm-content" rows="5" placeholder="写清楚 Hermes 以后应该记住什么，以及分析时怎么使用。"></textarea></div>
             <div class="fld"><label>证据 / 来源</label><textarea id="hm-evidence" rows="3" placeholder="例如：市场分析第 3/7/12 题、SEM 周报、询盘复盘、老板决策等。"></textarea></div>
             <div class="fld"><label>来源标记</label><input id="hm-source" value="manual" maxlength="80"></div>
-            <div style="display:flex;justify-content:flex-end;gap:8px">
+            <div class="csp-s-0067b1f3e4">
               <button class="btn-ghost" data-ui-action="reset-hermes-memory-form">清空</button>
               <button class="btn-primary" data-ui-action="save-hermes-memory"><i class="ti ti-device-floppy"></i> <span id="hm-submit-label">存入 AI 记忆</span></button>
             </div>
@@ -546,7 +547,7 @@
             <div class="ai-item"><i class="ti ti-alert-triangle"></i><div class="body"><strong>要删：</strong>过期、错误、和新数据冲突的记忆。停用后不会再进入 Hermes 长期上下文。</div></div>
           </div>
         </div>
-        <div class="card" style="margin-top:14px">
+        <div class="card csp-s-c53ea1da23">
           <div class="card-head"><span class="card-title">反馈一条 Hermes 建议</span><span class="card-sub">让它记住哪些建议有用、哪些不适合 FERR</span></div>
           <div class="fld-row">
             <div class="fld"><label>反馈结果</label><select id="hf-result">
@@ -560,29 +561,29 @@
           </div>
           <div class="fld"><label>Hermes 原建议</label><textarea id="hf-suggestion" rows="3" placeholder="把 Hermes 刚才那条建议或核心观点贴在这里。"></textarea></div>
           <div class="fld"><label>你的判断 / 结果</label><textarea id="hf-note" rows="3" placeholder="为什么采纳、为什么不准、执行后结果如何。"></textarea></div>
-          <div style="display:flex;justify-content:flex-end;gap:8px">
+          <div class="csp-s-0067b1f3e4">
             <button class="btn-ghost" data-ui-action="reset-hermes-feedback-form">清空反馈</button>
             <button class="btn-primary" data-ui-action="save-hermes-feedback"><i class="ti ti-message-check"></i> 沉淀反馈</button>
           </div>
         </div>
-        <div class="card" style="margin-top:14px">
+        <div class="card csp-s-c53ea1da23">
           <div class="card-head">
             <span class="card-title">已沉淀记忆</span>
             <span class="card-sub" id="hm-count">加载中...</span>
           </div>
           <table class="dt">
-            <thead><tr><th style="width:86px">类型</th><th style="width:90px" class="ctr">重要度</th><th>标题 / 内容</th><th>证据</th><th style="width:140px">更新时间</th><th class="ctr" style="width:126px">操作</th></tr></thead>
+            <thead><tr><th class="csp-s-d5a9d27606">类型</th><th class="ctr csp-s-f47e3b970d">重要度</th><th>标题 / 内容</th><th>证据</th><th class="csp-s-cd2b97c43d">更新时间</th><th class="ctr csp-s-4274b8ea7b">操作</th></tr></thead>
             <tbody id="tb-hermes-memory"></tbody>
           </table>
-          <div id="hm-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-brain-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 AI 记忆，先从市场分析或今日运营复盘沉淀第一条</div>
+          <div class="csp-s-2ef32a3eca" id="hm-empty"><i class="ti ti-brain-off csp-s-fd53510ab7"></i>暂无 AI 记忆，先从市场分析或今日运营复盘沉淀第一条</div>
         </div>
       </div>
 
       <!-- ============ 沉淀表 ============ -->
       <div class="panel" id="panel-deposit">
         <div class="page-head"><div><div class="page-title">沉淀表</div><div class="page-sub">点过「沉淀」「采纳」的数据/线索自动归档到这里，也可手动增删改</div></div><button class="btn-primary" data-ui-action="add-deposit"><i class="ti ti-plus"></i> 加一行</button></div>
-        <div class="card"><table class="dt"><thead><tr><th class="num" style="width:90px">日期</th><th class="ctr" style="width:90px">来源</th><th>沉淀内容</th><th>分析</th><th class="ctr" style="width:60px"></th></tr></thead><tbody id="tb-dep"></tbody></table>
-          <div id="dep-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无沉淀内容</div>
+        <div class="card"><table class="dt"><thead><tr><th class="num csp-s-f47e3b970d">日期</th><th class="ctr csp-s-f47e3b970d">来源</th><th>沉淀内容</th><th>分析</th><th class="ctr csp-s-8071f21693"></th></tr></thead><tbody id="tb-dep"></tbody></table>
+          <div class="csp-s-2ef32a3eca" id="dep-empty"><i class="ti ti-database-off csp-s-fd53510ab7"></i>暂无沉淀内容</div>
         </div>
       </div>
 
@@ -597,23 +598,23 @@
         </div>
         <div class="subpanel active" id="sub-arc-sem">
           <div class="card"><table class="dt archive-table archive-main"><thead><tr><th>归档时间</th><th class="ctr">来源</th><th>内容</th><th class="ctr">部门</th><th class="ctr">操作</th></tr></thead><tbody id="tb-arc-sem"></tbody></table>
-            <div id="arc-sem-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-archive-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 SEM 归档项</div>
+            <div class="csp-s-2ef32a3eca" id="arc-sem-empty"><i class="ti ti-archive-off csp-s-fd53510ab7"></i>暂无 SEM 归档项</div>
           </div>
         </div>
         <div class="subpanel" id="sub-arc-seo">
           <div class="card"><table class="dt archive-table archive-main"><thead><tr><th>归档时间</th><th class="ctr">来源</th><th>内容</th><th class="ctr">部门</th><th class="ctr">操作</th></tr></thead><tbody id="tb-arc-seo"></tbody></table>
-            <div id="arc-seo-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-archive-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 SEO 归档项</div>
+            <div class="csp-s-2ef32a3eca" id="arc-seo-empty"><i class="ti ti-archive-off csp-s-fd53510ab7"></i>暂无 SEO 归档项</div>
           </div>
         </div>
         <div class="subpanel" id="sub-arc-company">
           <div class="card"><table class="dt archive-table archive-main"><thead><tr><th>归档时间</th><th class="ctr">来源</th><th>内容</th><th class="ctr">部门</th><th class="ctr">操作</th></tr></thead><tbody id="tb-arc-company"></tbody></table>
-            <div id="arc-company-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-archive-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无公司任务归档项</div>
+            <div class="csp-s-2ef32a3eca" id="arc-company-empty"><i class="ti ti-archive-off csp-s-fd53510ab7"></i>暂无公司任务归档项</div>
           </div>
         </div>
         <!-- P3：询盘归档桶（删除的询盘进这里，可恢复 / boss 可彻底删） -->
         <div class="subpanel" id="sub-arc-inquiry">
           <div class="card"><table class="dt archive-table archive-inquiry"><thead><tr><th>归档时间</th><th>日期</th><th>客户 / 国家</th><th>来源词</th><th class="ctr">等级</th><th class="ctr">渠道</th><th class="ctr">操作</th></tr></thead><tbody id="tb-arc-inquiry"></tbody></table>
-            <div id="arc-inquiry-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-archive-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无询盘归档项</div>
+            <div class="csp-s-2ef32a3eca" id="arc-inquiry-empty"><i class="ti ti-archive-off csp-s-fd53510ab7"></i>暂无询盘归档项</div>
           </div>
         </div>
       </div>
@@ -622,8 +623,8 @@
       <div class="panel" id="panel-tasks">
         <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">每列上=SOP 固定清单(日/周/月合并一条一行)、下=每日新增 · 陈=SEM、李=SEO、公司任务在左</div></div><button class="btn-primary" data-ui-action="ai" data-ai-prompt="根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
         <!-- Step C：未做 SOP 提示 banner（周期首日 08:00 后才显示）+ 公司新派 banner（urgent=1 未完成；硬编码 Bafaw banner 已移除）-->
-        <div id="sop-overdue-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-alert-triangle" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">未完成提示</div><div class="banner-s" id="sop-overdue-list"></div></div></div>
-        <div id="urgent-banner" class="banner banner-red" style="display:none;align-items:flex-start"><i class="ti ti-bell-ringing" style="color:var(--primary);font-size:18px;margin-top:2px"></i><div style="flex:1"><div class="banner-t">公司新派任务</div><div class="banner-s" id="urgent-list"></div></div></div>
+        <div id="sop-overdue-banner" class="banner banner-red csp-s-43becb3c13"><i class="ti ti-alert-triangle csp-s-61d6cf4bc7"></i><div class="csp-s-83725d2c6e"><div class="banner-t">未完成提示</div><div class="banner-s" id="sop-overdue-list"></div></div></div>
+        <div id="urgent-banner" class="banner banner-red csp-s-43becb3c13"><i class="ti ti-bell-ringing csp-s-61d6cf4bc7"></i><div class="csp-s-83725d2c6e"><div class="banner-t">公司新派任务</div><div class="banner-s" id="urgent-list"></div></div></div>
         <!-- 日期条：选别的日期 = 只读回放那天的日计划（plan-history.js 事件委托，无内联 handler） -->
         <div class="planday">
           <button class="btn-mini" data-planday="-1" title="前一天"><i class="ti ti-chevron-left"></i></button>
@@ -632,13 +633,13 @@
           <button class="btn-mini" id="planday-today"><i class="ti ti-calendar-due"></i> 今天</button>
           <span class="planday-hint" id="planday-hint"></span>
         </div>
-        <div id="plan-history" style="display:none"></div>
+        <div class="is-hidden" id="plan-history"></div>
         <div class="tboard">
           <!-- 公司任务（前） -->
           <div class="pblock co-block" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span><span class="kcount" id="kcount-company">SOP 0 · 派发 0</span></div>
             <div class="sopnew">
               <div id="sop-company"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
-                <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
+                <div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>
               </div>
               <div id="newtask-company"><div class="colcap"><i class="ti ti-building"></i> 公司派发（强提示）</div>
                 <button class="add-task" data-ui-action="open-task" data-dept="公司"><i class="ti ti-plus"></i> 派发任务</button>
@@ -649,7 +650,7 @@
           <div class="pblock"><div class="pblock-head"><span class="badge b-purple">陈</span><span class="pn">SEM 任务</span><span class="kcount" id="kcount-sem">SOP 0 · 新增 0</span></div>
             <div class="sopnew">
               <div id="sop-sem"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
-                <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
+                <div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>
               </div>
               <div id="newtask-sem"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
                 <button class="add-task" data-ui-action="open-task" data-dept="SEM"><i class="ti ti-plus"></i> 新增</button>
@@ -660,7 +661,7 @@
           <div class="pblock"><div class="pblock-head"><span class="badge b-blue">李</span><span class="pn">SEO 任务</span><span class="kcount" id="kcount-seo">SOP 0 · 新增 0</span></div>
             <div class="sopnew">
               <div id="sop-seo"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
-                <div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>
+                <div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>
               </div>
               <div id="newtask-seo"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
                 <button class="add-task" data-ui-action="open-task" data-dept="SEO"><i class="ti ti-plus"></i> 新增</button>
@@ -674,22 +675,22 @@
       <div class="panel" id="panel-ga4">
         <div class="page-head"><div><div class="page-title">GA4 流量</div><div class="page-sub">专业 GA4 看板 · 授权并同步后自动填充</div></div><span id="ga4-status" class="badge b-gray">未接入</span></div>
         <div class="timebar-inline" data-time></div>
-        <div class="sheet-tip" style="margin-bottom:10px"><i class="ti ti-clock-off"></i> GA4 看板读取本地同步数据；授权后请在「设置 · API 接入」执行一次同步。</div>
-        <div id="ga4-hint" class="banner banner-red" style="display:none"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">暂无 GA4 数据，请前往「设置 · API 接入」授权并同步</div><div class="banner-s">后台不会展示示例流量；只有 Google 同步写入数据库后，下列模块才会填充真实数据。</div></div></div>
-        <div class="metric-row" style="grid-template-columns:repeat(5,1fr)">
-          <div class="metric-card"><div class="metric-num" id="ga4-users" style="font-size:22px">—</div><div class="metric-lbl">活跃用户</div></div>
-          <div class="metric-card"><div class="metric-num" id="ga4-sessions" style="font-size:22px">—</div><div class="metric-lbl">会话</div></div>
-          <div class="metric-card"><div class="metric-num" id="ga4-views" style="font-size:22px">—</div><div class="metric-lbl">浏览量</div></div>
-          <div class="metric-card"><div class="metric-num" id="ga4-bounce" style="font-size:22px">—</div><div class="metric-lbl">跳出率</div></div>
-          <div class="metric-card"><div class="metric-num" id="ga4-dur" style="font-size:22px">—</div><div class="metric-lbl">平均会话时长</div></div>
+        <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-clock-off"></i> GA4 看板读取本地同步数据；授权后请在「设置 · API 接入」执行一次同步。</div>
+        <div id="ga4-hint" class="banner banner-red csp-s-6aa34d7432"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">暂无 GA4 数据，请前往「设置 · API 接入」授权并同步</div><div class="banner-s">后台不会展示示例流量；只有 Google 同步写入数据库后，下列模块才会填充真实数据。</div></div></div>
+        <div class="metric-row csp-s-91144dcb46">
+          <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-users">—</div><div class="metric-lbl">活跃用户</div></div>
+          <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-sessions">—</div><div class="metric-lbl">会话</div></div>
+          <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-views">—</div><div class="metric-lbl">浏览量</div></div>
+          <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-bounce">—</div><div class="metric-lbl">跳出率</div></div>
+          <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-dur">—</div><div class="metric-lbl">平均会话时长</div></div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title">流量来源 / 媒介</span></div><table class="dt"><thead><tr><th>来源/媒介</th><th class="num">会话</th><th class="num">用户</th></tr></thead><tbody id="ga4-sources"></tbody></table><div class="ga4-empty" style="text-align:center;padding:18px;color:var(--text3);font-size:12px">暂无数据</div></div>
-          <div class="card"><div class="card-head"><span class="card-title">国家 / 地区分布</span></div><table class="dt"><thead><tr><th>国家</th><th class="num">会话</th><th class="num">用户</th></tr></thead><tbody id="ga4-countries"></tbody></table><div class="ga4-empty" style="text-align:center;padding:18px;color:var(--text3);font-size:12px">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">流量来源 / 媒介</span></div><table class="dt"><thead><tr><th>来源/媒介</th><th class="num">会话</th><th class="num">用户</th></tr></thead><tbody id="ga4-sources"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">国家 / 地区分布</span></div><table class="dt"><thead><tr><th>国家</th><th class="num">会话</th><th class="num">用户</th></tr></thead><tbody id="ga4-countries"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e">暂无数据</div></div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title">设备占比</span></div><div class="chart-wrap" style="height:150px"><canvas id="ga4Devices"></canvas></div><div class="ga4-empty" style="text-align:center;padding:18px;color:var(--text3);font-size:12px">暂无数据</div></div>
-          <div class="card"><div class="card-head"><span class="card-title">热门入口页面</span></div><table class="dt"><thead><tr><th>入口页面</th><th class="num">会话</th><th class="num">转化</th></tr></thead><tbody id="ga4-landing"></tbody></table><div class="ga4-empty" style="text-align:center;padding:18px;color:var(--text3);font-size:12px">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">设备占比</span></div><div class="chart-wrap csp-s-767250db37"><canvas id="ga4Devices"></canvas></div><div class="ga4-empty csp-s-adba8a2d1e">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">热门入口页面</span></div><table class="dt"><thead><tr><th>入口页面</th><th class="num">会话</th><th class="num">转化</th></tr></thead><tbody id="ga4-landing"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e">暂无数据</div></div>
         </div>
       </div>
 
@@ -712,7 +713,7 @@
             <div class="prof-field"><label>姓名</label><div class="val" id="prof-name">—</div></div>
             <div class="prof-field"><label>角色</label><div class="val" id="prof-role">—</div></div>
             <div class="prof-field"><label>登录用户名</label><div class="val" id="prof-user">—</div></div>
-            <div style="margin-top:6px"><button class="btn-ghost" data-ui-action="open-password"><i class="ti ti-key"></i> 修改密码</button></div>
+            <div class="csp-s-301647f506"><button class="btn-ghost" data-ui-action="open-password"><i class="ti ti-key"></i> 修改密码</button></div>
           </div>
         </div>
         <div class="subpanel" id="sub-set-kpi">
@@ -723,38 +724,38 @@
             <tr><td>有效询盘成本</td><td class="num">25</td><td class="ctr">¥<span class="editable" contenteditable data-kpi="TOTAL:2">2000</span></td></tr>
             <tr><td>闭环执行度</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="TOTAL:3">5</span> 项</td></tr>
           </tbody></table></div>
-          <div class="card"><div class="card-head"><span class="card-title" style="color:var(--blue)">SEO 明细 · 李</span></div><table class="dt"><thead><tr><th>指标</th><th class="num">权重</th><th class="ctr">目标</th></tr></thead><tbody>
+          <div class="card"><div class="card-head"><span class="card-title csp-s-e1bc9acca5">SEO 明细 · 李</span></div><table class="dt"><thead><tr><th>指标</th><th class="num">权重</th><th class="ctr">目标</th></tr></thead><tbody>
             <tr><td>自然流量环比</td><td class="num">25</td><td class="ctr">+<span class="editable" contenteditable data-kpi="SEO:0">10</span>%</td></tr><tr><td>核心词 Top10 占比</td><td class="num">25</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEO:1">40</span>%</td></tr><tr><td>关键词覆盖/长尾</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEO:2">500</span></td></tr><tr><td>新增收录页面</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEO:3">20</span></td></tr><tr><td>跳出率</td><td class="num">10</td><td class="ctr">≤<span class="editable" contenteditable data-kpi="SEO:4">55</span>%</td></tr><tr><td>页面停留</td><td class="num">10</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEO:5">150</span>s</td></tr>
           </tbody></table></div>
-          <div class="card"><div class="card-head"><span class="card-title" style="color:var(--purple)">SEM 明细 · 陈</span></div><table class="dt"><thead><tr><th>指标</th><th class="num">权重</th><th class="ctr">目标</th></tr></thead><tbody>
+          <div class="card"><div class="card-head"><span class="card-title csp-s-0fbc2fe745">SEM 明细 · 陈</span></div><table class="dt"><thead><tr><th>指标</th><th class="num">权重</th><th class="ctr">目标</th></tr></thead><tbody>
             <tr><td>CPC</td><td class="num">15</td><td class="ctr">¥<span class="editable" contenteditable data-kpi="SEM:0">4.0</span></td></tr><tr><td>CTR</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEM:1">3.5</span>%</td></tr><tr><td>质量分</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEM:2">7.5</span></td></tr><tr><td>ROAS</td><td class="num">20</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEM:3">3.5</span>x</td></tr><tr><td>转化次数</td><td class="num">15</td><td class="ctr"><span class="editable" contenteditable data-kpi="SEM:4">60</span></td></tr><tr><td>每次转化费用</td><td class="num">20</td><td class="ctr">¥<span class="editable" contenteditable data-kpi="SEM:5">300</span></td></tr>
           </tbody></table></div>
         </div>
         </div>
         <div class="subpanel" id="sub-set-threshold">
-        <div class="card"><div class="card-head"><span class="card-title">等级阈值 / 角色</span></div><div style="font-size:12.5px;line-height:2.1;color:var(--text2)">
-          <div>等级阈值：<span style="color:var(--green);font-weight:700">优秀 ≥90</span> · <span style="color:var(--blue);font-weight:700">合格 75-89</span> · <span style="color:var(--amber);font-weight:700">警告 60-74</span> · <span style="color:var(--primary);font-weight:700">整改 &lt;60</span></div>
-          <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">角色：李(SEO) · 陈(SEM) · 主管(Manager) · 老板(Boss)。Boss/主管全权；李/陈 除 KPI 目标外全权。</div>
+        <div class="card"><div class="card-head"><span class="card-title">等级阈值 / 角色</span></div><div class="csp-s-051bf636af">
+          <div>等级阈值：<span class="csp-s-938af0079f">优秀 ≥90</span> · <span class="csp-s-b45f74dcd3">合格 75-89</span> · <span class="csp-s-3eb70bdd49">警告 60-74</span> · <span class="csp-s-c347ceed31">整改 &lt;60</span></div>
+          <div class="csp-s-79ad438625">角色：李(SEO) · 陈(SEM) · 主管(Manager) · 老板(Boss)。Boss/主管全权；李/陈 除 KPI 目标外全权。</div>
         </div></div>
         </div>
         <div class="subpanel" id="sub-set-ds">
         <!-- 1d-b: 数据源状态卡（只读，读 /api/data-sources/status 真实状态）-->
-        <div class="card" id="ds-status-card" style="margin-top:14px"><div class="card-head"><span class="card-title">数据源状态</span><span id="ds-demo-tag"></span><span class="card-sub">各数据源真实接入状态 · 人工录入 / Google 同步 / AI Provider</span></div>
-          <div id="ds-status-rows" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px"></div>
+        <div class="card csp-s-c53ea1da23" id="ds-status-card"><div class="card-head"><span class="card-title">数据源状态</span><span id="ds-demo-tag"></span><span class="card-sub">各数据源真实接入状态 · 人工录入 / Google 同步 / AI Provider</span></div>
+          <div class="csp-s-690699d0d0" id="ds-status-rows"></div>
         </div>
         </div>
         <div class="subpanel" id="sub-set-api">
         <!-- V7: Google API 接入（后端环境变量 + OAuth 授权 + 手动同步）-->
-        <div class="card" style="margin-top:14px"><div class="card-head"><span class="card-title">API 接入 · Google 授权与同步</span><span class="card-sub">显示后端配置、OAuth 授权、最近同步结果；密钥不进入前端</span></div>
-          <div id="integ-rows" style="display:flex;flex-direction:column;gap:10px;font-size:12.5px"></div>
-          <div class="sheet-tip" style="margin-top:10px"><i class="ti ti-info-circle"></i> Google OAuth Client、站点 / Property / Customer 等仍由服务器环境变量或项目配置提供；页面只负责发起授权和同步。</div>
+        <div class="card csp-s-c53ea1da23"><div class="card-head"><span class="card-title">API 接入 · Google 授权与同步</span><span class="card-sub">显示后端配置、OAuth 授权、最近同步结果；密钥不进入前端</span></div>
+          <div class="csp-s-a624e8ba1e" id="integ-rows"></div>
+          <div class="sheet-tip csp-s-df928149c5"><i class="ti ti-info-circle"></i> Google OAuth Client、站点 / Property / Customer 等仍由服务器环境变量或项目配置提供；页面只负责发起授权和同步。</div>
         </div></div>
         <div class="subpanel" id="sub-set-sop">
           <div class="card"><div class="card-head"><span class="card-title">SOP 设置</span><span class="card-sub">每日 / 每周 / 每月固定任务 · 设置后自动出现在任务看板对应板块 · 仅经理 / 老板可改</span>
-            <button class="btn-primary" id="sop-add-btn" style="margin-left:auto" data-ui-action="open-sop"><i class="ti ti-plus"></i> 新增 SOP</button>
+            <button class="btn-primary csp-s-ca6fc035af" id="sop-add-btn" data-ui-action="open-sop"><i class="ti ti-plus"></i> 新增 SOP</button>
           </div>
-            <table class="dt"><thead><tr><th style="width:80px">部门</th><th style="width:90px">频率</th><th>标题</th><th>内容</th><th style="width:100px">时间提示</th><th style="width:80px" class="ctr">操作</th></tr></thead><tbody id="tb-sop"></tbody></table>
-            <div id="sop-empty" style="display:none;text-align:center;padding:24px;color:var(--text3);font-size:12px"><i class="ti ti-pin-off" style="font-size:22px;display:block;margin-bottom:6px"></i>暂无 SOP，点上方「新增 SOP」开始</div>
+            <table class="dt"><thead><tr><th class="csp-s-91269935bd">部门</th><th class="csp-s-f47e3b970d">频率</th><th>标题</th><th>内容</th><th class="csp-s-6d2a18baae">时间提示</th><th class="ctr csp-s-91269935bd">操作</th></tr></thead><tbody id="tb-sop"></tbody></table>
+            <div class="csp-s-2ef32a3eca" id="sop-empty"><i class="ti ti-pin-off csp-s-fd53510ab7"></i>暂无 SOP，点上方「新增 SOP」开始</div>
           </div>
         </div></div></div>
       </div>
@@ -822,7 +823,7 @@
       <div class="hermes-attachments" id="hermesAttachments"></div>
       <div class="hermes-compose-tools">
         <label class="btn-ghost hermes-upload-btn" for="hermesFiles" title="上传文件或截图"><i class="ti ti-paperclip"></i> 附件</label>
-        <input id="hermesFiles" type="file" multiple accept="image/*,.csv,.txt,.md,.json,.pdf,.xlsx" style="display:none">
+        <input class="csp-s-6aa34d7432" id="hermesFiles" type="file" multiple accept="image/*,.csv,.txt,.md,.json,.pdf,.xlsx">
         <button class="btn-ghost" type="button" data-ui-action="sync-hermes-page-detail"><i class="ti ti-file-search"></i> 读取当前页</button>
         <button class="btn-ghost hermes-deep" type="button" id="hermesDeepBtn" data-ui-action="toggle-hermes-deep-thinking" title="重要问题开启后，小瑞会做更深入的证据分析和风险审查"><i class="ti ti-brain"></i> 深度思考</button>
         <button class="btn-primary" type="button" id="hermesSendBtn" data-ui-action="send-hermes-prompt"><i class="ti ti-send"></i> 发送</button>
@@ -851,7 +852,7 @@
 <!-- 询盘录入弹框 -->
 <div class="modal-mask" id="inqMask">
   <div class="modal">
-    <div class="modal-head"><i class="ti ti-mail-plus" style="color:var(--primary)"></i> 录入询盘<span class="x" data-ui-action="close-modal" data-modal="inqMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-head"><i class="ti ti-mail-plus csp-s-b0e08465c2"></i> 录入询盘<span class="x" data-ui-action="close-modal" data-modal="inqMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="fld-row">
         <div class="fld"><label>日期</label><input type="date" id="f-date"></div>
@@ -875,14 +876,14 @@
 
 <!-- 6.23 文档 26：自定义时间区间弹框 -->
 <div class="modal-mask" id="customRangeMask">
-  <div class="modal" style="width:380px">
-    <div class="modal-head"><i class="ti ti-calendar-event" style="color:var(--primary)"></i> 自定义时间范围<span class="x" data-ui-action="close-modal" data-modal="customRangeMask"><i class="ti ti-x"></i></span></div>
+  <div class="modal csp-s-0b76278fae">
+    <div class="modal-head"><i class="ti ti-calendar-event csp-s-b0e08465c2"></i> 自定义时间范围<span class="x" data-ui-action="close-modal" data-modal="customRangeMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="fld-row">
         <div class="fld"><label>开始日期</label><input type="date" id="cr-start"></div>
         <div class="fld"><label>结束日期</label><input type="date" id="cr-end"></div>
       </div>
-      <div class="sheet-tip" style="margin-top:8px"><i class="ti ti-info-circle"></i> 区间最长 1 年；切换其他预设后，自定义区间仍保留，下次点「自定义」直接复用。</div>
+      <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 区间最长 1 年；切换其他预设后，自定义区间仍保留，下次点「自定义」直接复用。</div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="customRangeMask">取消</button><button class="btn-primary" data-ui-action="submit-custom-range"><i class="ti ti-device-floppy"></i> 应用</button></div>
   </div>
@@ -890,11 +891,11 @@
 
 <!-- 6.23 文档 7：跟踪反馈编辑弹框（录入时不展示，点表格才打开） -->
 <div class="modal-mask" id="trackMask">
-  <div class="modal" style="width:480px">
-    <div class="modal-head"><i class="ti ti-message-2" style="color:var(--primary)"></i> 跟踪反馈 · <span id="track-cust">客户</span><span class="x" data-ui-action="close-modal" data-modal="trackMask"><i class="ti ti-x"></i></span></div>
+  <div class="modal csp-s-ac44573161">
+    <div class="modal-head"><i class="ti ti-message-2 csp-s-b0e08465c2"></i> 跟踪反馈 · <span id="track-cust">客户</span><span class="x" data-ui-action="close-modal" data-modal="trackMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="fld"><label>跟踪记录（可分多次补充）</label><textarea id="track-text" rows="6" placeholder="客户的后续反馈、报价、关键节点…"></textarea></div>
-      <div class="sheet-tip" style="margin-top:8px"><i class="ti ti-info-circle"></i> 跟踪后若发现是好询盘，记得回表格把「等级」上调（C→A/B），系统会自动标红提示重点处理。</div>
+      <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 跟踪后若发现是好询盘，记得回表格把「等级」上调（C→A/B），系统会自动标红提示重点处理。</div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="trackMask">取消</button><button class="btn-primary" data-ui-action="submit-track"><i class="ti ti-device-floppy"></i> 保存</button></div>
   </div>
@@ -903,7 +904,7 @@
 <!-- SEO 本周数据录入 -->
 <div class="modal-mask" id="seoWkMask">
   <div class="modal">
-    <div class="modal-head"><i class="ti ti-world-search" style="color:var(--blue)"></i> 录入本周 GSC 数据<span class="x" data-ui-action="close-modal" data-modal="seoWkMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-head"><i class="ti ti-world-search csp-s-e1bc9acca5"></i> 录入本周 GSC 数据<span class="x" data-ui-action="close-modal" data-modal="seoWkMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="fld"><label>本周日期</label><input type="date" id="sw-date"></div>
       <div class="fld-row"><div class="fld"><label>自然点击</label><input id="sw-clicks" type="number" placeholder="3612"></div><div class="fld"><label>自然展现</label><input id="sw-impr" type="number" placeholder="42489"></div><div class="fld"><label>平均排名</label><input id="sw-pos" type="number" step="0.1" placeholder="14.1"></div></div>
@@ -918,7 +919,7 @@
 <!-- SEM 本周数据录入 -->
 <div class="modal-mask" id="semWkMask">
   <div class="modal">
-    <div class="modal-head"><i class="ti ti-ad-2" style="color:var(--purple)"></i> 导入本周 Ads 数据<span class="x" data-ui-action="close-modal" data-modal="semWkMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-head"><i class="ti ti-ad-2 csp-s-0fbc2fe745"></i> 导入本周 Ads 数据<span class="x" data-ui-action="close-modal" data-modal="semWkMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="fld"><label>本周日期</label><input type="date" id="mw-date"></div>
       <div class="fld-row"><div class="fld"><label>花费 ¥</label><input id="mw-cost" type="number" placeholder="28800"></div><div class="fld"><label>展现</label><input id="mw-impr" type="number" placeholder="50783"></div></div>
@@ -932,8 +933,8 @@
 
 <!-- 修改密码弹框 -->
 <div class="modal-mask" id="pwdMask">
-  <div class="modal" style="width:420px">
-    <div class="modal-head"><i class="ti ti-key" style="color:var(--primary)"></i> 修改密码<span class="x" data-ui-action="close-modal" data-modal="pwdMask"><i class="ti ti-x"></i></span></div>
+  <div class="modal csp-s-8141cac54b">
+    <div class="modal-head"><i class="ti ti-key csp-s-b0e08465c2"></i> 修改密码<span class="x" data-ui-action="close-modal" data-modal="pwdMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="fld"><label>当前密码</label><input id="pwd-old" type="password" autocomplete="current-password"></div>
       <div class="fld"><label>新密码（至少 6 位）</label><input id="pwd-new" type="password" autocomplete="new-password"></div>
@@ -945,8 +946,8 @@
 
 <!-- 新增任务弹框（B-4）-->
 <div class="modal-mask" id="taskMask">
-  <div class="modal" style="width:440px">
-    <div class="modal-head"><i class="ti ti-plus" style="color:var(--primary)"></i> <span id="task-mod-verb">新增</span><span id="task-deptlabel"></span>任务<span class="x" data-ui-action="close-modal" data-modal="taskMask"><i class="ti ti-x"></i></span></div>
+  <div class="modal csp-s-779f6e951b">
+    <div class="modal-head"><i class="ti ti-plus csp-s-b0e08465c2"></i> <span id="task-mod-verb">新增</span><span id="task-deptlabel"></span>任务<span class="x" data-ui-action="close-modal" data-modal="taskMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="fld-row">
         <div class="fld"><label>开始日期</label><input type="date" id="task-start"></div>
@@ -954,12 +955,12 @@
       </div>
       <div class="fld-row">
         <div class="fld"><label>今日完成时间（可选）</label><select id="task-hour"><option value="">未定</option></select></div>
-        <div class="fld"><label>&nbsp;</label><div class="dim" style="font-size:11px;line-height:1.5">截止日晚于开始日 = 跨天任务，这段时间里每天都在「进行中」，不用每天新建。</div></div>
+        <div class="fld"><label>&nbsp;</label><div class="dim csp-s-25b23d2157">截止日晚于开始日 = 跨天任务，这段时间里每天都在「进行中」，不用每天新建。</div></div>
       </div>
       <div class="fld"><label>任务内容</label><textarea id="task-content" placeholder="要做什么…"></textarea></div>
       <div class="fld"><label>备注（可选）</label><textarea id="task-note" placeholder="补充说明…"></textarea></div>
       <!-- Step C：urgent 勾选，仅经理/老板派发公司任务时显示 -->
-      <div class="fld" id="task-urgent-fld" style="display:none"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:var(--primary)"><input type="checkbox" id="task-urgent" style="width:14px;height:14px"> ⚠️ 设为紧急（顶部强提示，所有人可见，完成后消失）</label></div>
+      <div class="fld is-hidden" id="task-urgent-fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="task-urgent"> ⚠️ 设为紧急（顶部强提示，所有人可见，完成后消失）</label></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskMask">取消</button><button class="btn-primary" data-ui-action="submit-task"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
   </div>
@@ -967,10 +968,10 @@
 
 <!-- 公司大任务拆解：分发子任务（内容 + 负责人 陈/李）。子任务勾完不消失，随大任务完成一起归档 -->
 <div class="modal-mask" id="subtaskMask">
-  <div class="modal" style="width:440px">
-    <div class="modal-head"><i class="ti ti-git-branch" style="color:var(--primary)"></i> 分发子任务<span class="x" data-ui-action="close-modal" data-modal="subtaskMask"><i class="ti ti-x"></i></span></div>
+  <div class="modal csp-s-779f6e951b">
+    <div class="modal-head"><i class="ti ti-git-branch csp-s-b0e08465c2"></i> 分发子任务<span class="x" data-ui-action="close-modal" data-modal="subtaskMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
-      <div class="fld"><label>所属大任务</label><div id="subtask-parent-title" class="dim" style="font-size:12px;padding:2px 0"></div></div>
+      <div class="fld"><label>所属大任务</label><div id="subtask-parent-title" class="dim csp-s-502b11afb2"></div></div>
       <div class="fld"><label>子任务内容</label><textarea id="subtask-content" placeholder="拆出来的一件具体事…"></textarea></div>
       <div class="fld"><label>负责人</label><select id="subtask-owner"><option value="李">李（SEO）</option><option value="陈">陈（SEM）</option></select></div>
       <div class="fld-row">
@@ -984,8 +985,8 @@
 
 <!-- SOP 新增/编辑弹框 (Step B) -->
 <div class="modal-mask" id="sopMask">
-  <div class="modal" style="width:460px">
-    <div class="modal-head"><i class="ti ti-pin" style="color:var(--primary)"></i> <span id="sop-mod-title">新增 SOP</span><span class="x" data-ui-action="close-modal" data-modal="sopMask"><i class="ti ti-x"></i></span></div>
+  <div class="modal csp-s-2f0b0e4ba0">
+    <div class="modal-head"><i class="ti ti-pin csp-s-b0e08465c2"></i> <span id="sop-mod-title">新增 SOP</span><span class="x" data-ui-action="close-modal" data-modal="sopMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="fld-row">
         <div class="fld"><label>部门</label><select id="sop-dept"><option>SEM</option><option>SEO</option><option>公司</option></select></div>
@@ -1002,13 +1003,13 @@
 <!-- AI 结果弹框 -->
 <div class="modal-mask" id="aiMask">
   <div class="modal ai-chat-modal">
-    <div class="modal-head"><i class="ti ti-sparkles" style="color:var(--primary)"></i> <span id="aiModalTitle">AI 分析</span><span class="x" data-ui-action="close-modal" data-modal="aiMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-head"><i class="ti ti-sparkles csp-s-b0e08465c2"></i> <span id="aiModalTitle">AI 分析</span><span class="x" data-ui-action="close-modal" data-modal="aiMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body ai-chat-body"><div class="ai-chat-scroll" id="aiModalBody"></div></div>
-    <div class="modal-foot" id="aiModalFoot" style="display:none"><button class="btn-ghost" data-ui-action="close-modal" data-modal="aiMask">关闭</button><button class="btn-primary" id="aiAdoptBtn" style="display:none" data-ui-action="adopt-ai"><i class="ti ti-clipboard-check"></i> 采纳到整改清单</button></div>
+    <div class="modal-foot csp-s-6aa34d7432" id="aiModalFoot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="aiMask">关闭</button><button class="btn-primary csp-s-6aa34d7432" id="aiAdoptBtn" data-ui-action="adopt-ai"><i class="ti ti-clipboard-check"></i> 采纳到整改清单</button></div>
   </div>
 </div>
 
-<div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#191c24;color:#fff;padding:11px 18px;border-radius:10px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:transform .3s;z-index:100;max-width:90%"></div>
+<div class="csp-s-6d3303d761" id="toast"></div>
 
 <!-- 图表库本地托管（原 jsdelivr，改本地避免国内 CDN 被墙 + 供应链风险）。版本：chart.js 4.4.1 / echarts 5.4.3 / echarts-gl 2.0.9 -->
 <script src="/vendor/chart.umd.min.js"></script>

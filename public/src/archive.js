@@ -47,7 +47,7 @@ function archRowHtml(it,from){
   const fromBadge='<span class="badge '+(from==='fix'?'b-amber':'b-blue')+'">'+(from==='fix'?'整改':(it.kind==='task'?'任务':(it.kind==='plan'?'计划':(it.kind==='test'?'测试':(it.kind==='deposit'?'沉淀':'闭环')))))+'</span>';
   const isBoss=(window.ME||{}).role==='boss';
   const ops='<button class="btn-mini arch-restore" title="恢复到原页"><i class="ti ti-rotate"></i> 恢复</button>'
-    +(isBoss?' <button class="btn-mini arch-hard" title="彻底删除（不可恢复）" style="color:var(--primary)"><i class="ti ti-trash"></i> 彻底删除</button>':'');
+    +(isBoss?' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="彻底删除（不可恢复）"><i class="ti ti-trash"></i> 彻底删除</button>':'');
   return `<td class="archive-date num">${esc(date||'—')}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
 }
 // P3：询盘归档行（7 列，对齐 #sub-arc-inquiry 表头）；恢复/彻删复用 arch-restore/arch-hard 委托
@@ -55,7 +55,7 @@ function archInqRowHtml(it){
   const date=(it.archived_at||'').slice(0,10);
   const isBoss=(window.ME||{}).role==='boss';
   const ops='<button class="btn-mini arch-restore" title="恢复到询盘列表"><i class="ti ti-rotate"></i> 恢复</button>'
-    +(isBoss?' <button class="btn-mini arch-hard" title="彻底删除（不可恢复）" style="color:var(--primary)"><i class="ti ti-trash"></i> 彻底删除</button>':'');
+    +(isBoss?' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="彻底删除（不可恢复）"><i class="ti ti-trash"></i> 彻底删除</button>':'');
   const cust=(it.customer_name?esc(it.customer_name)+' · ':'')+esc(it.country||'');
   const source=esc(it.source||'');
   return `<td class="archive-date num">${esc(date||'—')}</td><td class="archive-short-date num">${esc((it.date||'').slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade]||'b-gray'}">${esc(it.grade||'')}</span></td><td class="archive-channel ctr dim">${esc(it.channel||'')}</td><td class="archive-actions ctr">${ops}</td>`;

@@ -197,7 +197,7 @@ async function renderReview() {
     const isCurrent = week === cur;
     const collapsed = isCurrent ? !currentWeekShouldOpen() : true;
     return `<div class="acc-week${collapsed ? ' collapsed' : ''}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green" style="margin-left:6px">本周</span>' : ''}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green csp-s-4b17347c23">本周</span>' : ''}</div>
       <div class="acc-body">${sopRateShell(week)}${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
     </div>`;
   }).join('');
@@ -246,7 +246,7 @@ async function renderMonthReview() {
   acc.innerHTML = keys.map((key) => {
     const collapsed = key !== cur;
     return `<div class="acc-week${collapsed ? ' collapsed' : ''}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel(key)} ${key === cur ? '<span class="badge b-green" style="margin-left:6px">本月</span>' : ''}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel(key)} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">本月</span>' : ''}</div>
       <div class="acc-body">${rvColHtml('SEO', byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml('SEM', byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
     </div>`;
   }).join('');

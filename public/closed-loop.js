@@ -29,12 +29,12 @@ function fixRowHtml(f){
   const status=f.status||'计划下周';
   return `<td class="fix-title editable" contenteditable data-field="title">${esc(f.title||'')}</td>`
     +`<td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="fix-evidence editable dim" contenteditable data-field="evidence" style="font-size:11px">${esc(f.evidence||'')}</td>`
+    +`<td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence||'')}</td>`
     +`<td class="fix-detail editable" contenteditable data-field="detail">${esc(f.detail||'')}</td>`
     +`<td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td>`
     +`<td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="fix-actions ctr"><button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button><button class="btn-mini row-archive" title="归档" style="color:var(--primary)"><i class="ti ti-archive"></i> 归档</button></td>`;
+    +`<td class="fix-actions ctr"><button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button><button class="btn-mini row-archive csp-s-b0e08465c2" title="归档"><i class="ti ti-archive"></i> 归档</button></td>`;
 }
 /* decide SEO(李) vs SEM(陈) from context */
 function scopeDept(btn,txt){
@@ -49,7 +49,7 @@ function scopeDept(btn,txt){
 const clip=(s,n)=>s.length>n?s.slice(0,n)+'…':s;
 
 function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
-  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc(s.dept)}诊断</span></td><td>${esc(text)}</td><td class="dim" style="font-size:11px"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);}
+  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc(s.dept)}诊断</span></td><td>${esc(text)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);}
 /* 整改行：问题/所属/依据/动作/负责人/截止/结果，全部可编辑或可选；绑定 id 后失焦即存 */
 function fixRowHtml(f){
   const dept=f.dept==='SEM'?'SEM':'SEO'; const c=dept==='SEM'?'b-purple':'b-blue';
@@ -57,17 +57,17 @@ function fixRowHtml(f){
   const RES=['已改','进行中','计划下周','放弃']; const status=RES.includes(f.status)?f.status:'计划下周';
   return `<td class="editable" contenteditable data-field="title">${esc(f.title||'')}</td>`
     +`<td class="ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="editable dim" contenteditable data-field="evidence" style="font-size:11px">${esc(f.evidence||'')}</td>`
+    +`<td class="editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence||'')}</td>`
     +`<td class="editable" contenteditable data-field="detail">${esc(f.detail||'')}</td>`
     +`<td class="ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td>`
     +`<td class="ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive" title="归档" style="color:var(--primary)"><i class="ti ti-archive"></i> 归档</button></td>`;
+    +`<td class="ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="归档"><i class="ti ti-archive"></i> 归档</button></td>`;
 }
 /* 整改行的「排入」控件：没排过 → 可点；排过 → 显示状态并可跳去日计划。
    整改清单一直是"写下来就完了"，没人接的那条和已经在做的那条长得一模一样。 */
 function fixPlanHtml(f){
-  if(f&&f.planned_done)return `<span class="badge b-green row-plan-go" style="cursor:pointer" title="日计划里已完成，点击查看">已做完</span>`;
+  if(f&&f.planned_done)return `<span class="badge b-green row-plan-go csp-s-9463ff4798" title="日计划里已完成，点击查看">已做完</span>`;
   if(f&&f.planned_task_id)return `<button class="btn-mini row-plan-go" title="已在日计划里，点击查看"><i class="ti ti-calendar-check"></i> 已排</button>`;
   return `<button class="btn-mini row-plan" title="排进负责人的日计划"><i class="ti ti-calendar-plus"></i> 排入</button>`;
 }
@@ -116,10 +116,10 @@ function bindFixRow(tr,f){ if(tr&&f&&f.id){ tr.dataset.id=f.id; tr.dataset.ep='/
 function addFixFromObj(f){ return bindFixRow(prepend('tb-fix',fixRowHtml(f)),f); }
 function bindLoopRow(tr,it){ if(tr&&it&&it.id){ tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; } return tr; }
 function addTest(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-test-sem':'tb-test-seo';
-  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable||'')}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period||'').split('~')[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period||'').split('~')[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion||'')}</td><td class="ctr"><button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive" title="归档" style="color:var(--primary)"><i class="ti ti-archive"></i></button></td>`),it);}
+  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable||'')}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period||'').split('~')[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period||'').split('~')[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion||'')}</td><td class="ctr"><button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="归档"><i class="ti ti-archive"></i></button></td>`),it);}
 function addPlan(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-plan-sem':'tb-plan-seo';
   const status=it.status||'待开始';
-  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric||'')}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget||'')}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive" title="归档" style="color:var(--primary)"><i class="ti ti-archive"></i></button></td>`),it);}
+  return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric||'')}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget||'')}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="归档"><i class="ti ti-archive"></i></button></td>`),it);}
 /* 任务卡：个人(SEO/SEM) → 每日新增列；公司 → 公司任务列。绑定 id 后可删除、刷新仍在 */
 function coScope(){return {dept:'公司',owner:'',c:'b-red'};}
 // 三栏 UI 后：公司派发任务卡插入 #newtask-company（其内有 .add-task 直接子节点，insertBefore 才合法）
@@ -180,7 +180,7 @@ function renderTaskMeta(card){
   const push=taskPushHtml(it,g);
   const split=isCo?`<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> 分发</button>`:'';
   // 右侧已有东西时删除键只留间距；只有它自己时才吃 auto 靠右
-  const del=it.id?`<button type="button" class="btn-mini" style="color:var(--primary);margin-left:${(isCo||ops||push)?'8px':'auto'}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
+  const del=it.id?`<button type="button" class="btn-mini csp-task-delete ${(isCo||ops||push)?'csp-task-delete-spaced':'csp-task-delete-pushed'}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
   box.innerHTML=deptBadge+srcBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
 }
 /* 日期胶囊：跨天显示「开始 ~ 截止」（同年省年份省宽度，完整日期放 title），单日照旧；点它改期。
@@ -347,7 +347,7 @@ function openTaskModal(dept){
   const tn=document.getElementById('task-note'); if(tn)tn.value='';
   // Step C：经理/老板派发公司任务时可勾「设为紧急」；其他场景隐藏
   const role=(window.ME||{}).role; const canUrgent=(role==='manager'||role==='boss')&&dept==='公司';
-  const uf=document.getElementById('task-urgent-fld'); if(uf)uf.style.display=canUrgent?'':'none';
+  const uf=document.getElementById('task-urgent-fld'); if(uf)uf.classList.toggle('is-hidden',!canUrgent);
   const uc=document.getElementById('task-urgent'); if(uc)uc.checked=false;
   openModal('taskMask'); if(tc)tc.focus();
 }
@@ -366,7 +366,7 @@ function openTaskEdit(el){
   if(hs)hs.value=it.task_hour||'';
   const tc=document.getElementById('task-content'); if(tc)tc.value=it.content||'';
   const tn=document.getElementById('task-note'); if(tn)tn.value=it.note||'';
-  const uf=document.getElementById('task-urgent-fld'); if(uf)uf.style.display='none'; // 紧急标记只在派发时设
+  const uf=document.getElementById('task-urgent-fld'); if(uf)uf.classList.add('is-hidden'); // 紧急标记只在派发时设
   openModal('taskMask'); if(tc)tc.focus();
 }
 async function submitTask(){
@@ -379,7 +379,7 @@ async function submitTask(){
   if(start_date&&task_date&&start_date>task_date){ toast('开始日期不能晚于截止日期'); return; }
   const task_hour=document.getElementById('task-hour').value||'';
   const note=(document.getElementById('task-note').value||'').trim();
-  const ucEl=document.getElementById('task-urgent'); const urgent=(ucEl&&ucEl.checked&&document.getElementById('task-urgent-fld').style.display!=='none')?1:undefined;
+  const ucEl=document.getElementById('task-urgent'); const urgent=(ucEl&&ucEl.checked&&!document.getElementById('task-urgent-fld').classList.contains('is-hidden'))?1:undefined;
   if(_taskEditing){
     const card=_taskEditing, it=card._item||{};
     try{
@@ -520,7 +520,7 @@ async function loadClosedLoop(){
 function depRowHtml(it){
   const date=(it.created_at||'').slice(5,10)||today();
   const badge=it.status==='采纳'?'<span class="badge b-green">采纳</span>':'<span class="badge b-teal">沉淀</span>';
-  return `<td class="num">${esc(date)}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim" contenteditable data-field="analysis" style="font-size:11px">${esc(it.analysis||'')}</td><td class="ctr"><button type="button" class="btn-mini" style="color:var(--primary)" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
+  return `<td class="num">${esc(date)}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc(it.analysis||'')}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
 }
 async function addDepositRow(){
   try{ const {item}=await API.post('/api/loop-items',{kind:'deposit',content:'',status:'沉淀'});
@@ -553,14 +553,14 @@ const CA_OWNER={'李':'b-blue','陈':'b-purple','主管':'b-teal'};
 const CA_STATUS={'待开始':'b-gray','进行中':'b-amber','已完成':'b-green'};
 function contentRowHtml(r){
   return `<td class="editable" contenteditable data-field="name">${esc(r.name)}</td>`
-    +`<td class="editable dim" contenteditable data-field="problem" style="font-size:11px">${esc(r.problem)}</td>`
-    +`<td class="editable" contenteditable data-field="type" style="font-size:11px">${esc(r.type)}</td>`
+    +`<td class="editable dim csp-s-33ee298127" contenteditable data-field="problem">${esc(r.problem)}</td>`
+    +`<td class="editable csp-s-33ee298127" contenteditable data-field="type">${esc(r.type)}</td>`
     +`<td class="ctr"><span class="tagselect ${CA_PRIO[r.priority]||'b-blue'}" data-kind="priority">${esc(r.priority||'中')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${CA_OWNER[r.owner]||'b-blue'}" data-kind="owner">${esc(r.owner||'李')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${CA_STATUS[r.status]||'b-gray'}" data-kind="status">${esc(r.status||'待开始')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="num">${esc(r.add_date||'')}</td>`
-    +`<td class="editable dim" contenteditable data-field="note" style="font-size:11px">${esc(r.note)}</td>`
-    +`<td class="ctr"><button type="button" class="btn-mini" style="color:var(--primary)" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
+    +`<td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc(r.note)}</td>`
+    +`<td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
 }
 async function loadContent(){
   try{ const {items}=await API.get('/api/content-assets'); const tb=document.getElementById('tb-content'); if(!tb)return; tb.innerHTML='';

@@ -8,7 +8,8 @@ export function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--g
 export function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
 export function badge(id,score){const b=document.getElementById(id);if(!b)return;const g=grade(score);b.style.background=g.bg;b.style.color=g.c;b.innerHTML='<i class="ti '+g.i+'"></i> '+g.t;}
 export function fmt(k,v){return k.u==='¥'?'¥'+v.toLocaleString():k.u==='%'?v+'%':k.u===''?v:v+k.u;}
-export function rows(arr,box){const el=document.getElementById(box);if(!el)return;el.innerHTML=arr.map(k=>{const r=ratio(k),col=r>=.9?'var(--green)':r>=.7?'var(--blue)':r>=.5?'var(--amber)':'var(--primary)';return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11.5px"><div style="flex:1"><div style="font-weight:600">${esc(k.n)}</div><div style="color:var(--text3);font-size:10px">目标 ${fmt(k,k.t)} · 实际 ${fmt(k,k.a)}</div></div><div style="width:64px"><div class="progress-bar"><div class="progress-fill" style="width:${r*100}%;background:${col}"></div></div></div><div style="width:30px;text-align:right;font-weight:800;color:${col}">${Math.round(r*100)}</div></div>`;}).join('');}
+function scoreTone(r){return r>=.9?'kpi-tone-green':r>=.7?'kpi-tone-blue':r>=.5?'kpi-tone-amber':'kpi-tone-primary';}
+export function rows(arr,box){const el=document.getElementById(box);if(!el)return;el.innerHTML=arr.map(k=>{const r=ratio(k),tone=scoreTone(r),progress=Math.max(0,Math.min(100,Number.isFinite(r)?r*100:0));return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(k.n)}</div><div class="csp-s-10a2cb4f9a">目标 ${fmt(k,k.t)} · 实际 ${fmt(k,k.a)}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${Math.round(r*100)}</div></div>`;}).join('');el.querySelectorAll('[data-progress]').forEach(fill=>{const progress=Number(fill.dataset.progress);fill.style.width=`${Number.isFinite(progress)?progress:0}%`;});}
 export function mini(ov){
   ov=ov||{current:{}}; const c=ov.current||{}; const d=ov.delta||{};
   const momTxt=(v)=> v==null?'':(v>0?'▲'+v:(v<0?'▼'+Math.abs(v):'—'));
@@ -16,7 +17,7 @@ export function mini(ov){
            ['A级占比', (c.aRatio!=null?c.aRatio+'%':'—'), '', momTxt(d.aRatio)],
            ['有效询盘率', (c.validRate!=null?c.validRate+'%':'—'), '', momTxt(d.validRate)]];
   const el=document.getElementById('miniScores'); if(!el)return;
-  el.innerHTML=m.map(x=>`<div style="background:var(--bg3);border-radius:9px;padding:9px 10px"><div style="font-size:10px;color:var(--text3)">${x[0]}</div><div style="font-size:16px;font-weight:800;margin-top:2px">${x[1]}<span style="font-size:10px;color:var(--text3);font-weight:500">${x[2]}</span> <span style="font-size:10px;font-weight:700;color:${(x[3]||'').startsWith('▲')?'var(--green)':((x[3]||'').startsWith('▼')?'var(--primary)':'var(--text3)')}">${x[3]||''}</span></div></div>`).join('');
+  el.innerHTML=m.map(x=>`<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3]||'').startsWith('▲')?'kpi-tone-green':((x[3]||'').startsWith('▼')?'kpi-tone-primary':'kpi-tone-muted')}">${x[3]||''}</span></div></div>`).join('');
 }
 /* 总览：拉真实数据 + 与上月环比，更新顶栏与表盘旁的环比 */
 export async function loadOverview(){

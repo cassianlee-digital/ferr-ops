@@ -53,7 +53,7 @@ export function renderSopCards(){
     // 三栏统一：公司块也带「SOP 固定任务」colcap
     anchor.innerHTML='<div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>';
     if(!list.length){
-      anchor.insertAdjacentHTML('beforeend','<div class="sop-empty-hint" style="font-size:11px;color:var(--text3);padding:8px 0">暂无 SOP，去「设置 · SOP 设置」添加</div>');
+      anchor.insertAdjacentHTML('beforeend','<div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>');
       return;
     }
     // 日/周/月合并进同一个清单框：频率退化为行尾小标签，不再各占一个分组标题 + 一张卡（版面太长）
@@ -104,9 +104,9 @@ export function renderSopSettingsTable(){
   list.forEach(s=>{
     const tr=document.createElement('tr'); tr.dataset.sopId=s.id;
     const ops=writable
-      ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del" style="color:var(--primary)"><i class="ti ti-trash"></i></button>`
-      : '<span class="dim" style="font-size:11px">只读</span>';
-    tr.innerHTML=`<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq]||s.freq)}</td><td>${esc(s.title)}</td><td class="dim" style="font-size:11px">${esc(s.content||'')}</td><td>${esc(s.time_hint||'')}</td><td class="ctr">${ops}</td>`;
+      ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>`
+      : '<span class="dim csp-s-33ee298127">只读</span>';
+    tr.innerHTML=`<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq]||s.freq)}</td><td>${esc(s.title)}</td><td class="dim csp-s-33ee298127">${esc(s.content||'')}</td><td>${esc(s.time_hint||'')}</td><td class="ctr">${ops}</td>`;
     tb.appendChild(tr);
   });
 }
@@ -210,5 +210,5 @@ export function refreshNavTaskDot(){
   const dot=document.getElementById('nav-tasks-dot'); if(!dot)return;
   const overdue=buildSopOverdueList().length>0;
   const urgent=(window._urgentTasks||[]).length>0;
-  dot.style.display=(overdue||urgent)?'':'none';
+  dot.classList.toggle('is-hidden',!(overdue||urgent));
 }

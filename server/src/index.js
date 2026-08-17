@@ -25,7 +25,7 @@ const CONTENT_SECURITY_POLICY = [
   "script-src 'self'",
   "script-src-attr 'none'",
   "style-src 'self'",
-  "style-src-attr 'unsafe-inline'",
+  "style-src-attr 'none'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
   "connect-src 'self'",
@@ -47,7 +47,7 @@ export async function buildApp({ onRoute } = {}) {
     trustProxy: true, // 位于 Caddy 反代之后
   });
 
-  // 脚本只允许同源外部文件；style 属性暂时兼容，待全站样式类化后移除 unsafe-inline。
+  // 脚本和样式只允许同源外部文件，并禁用 HTML 内联事件与 style 属性。
   app.addHook('onRequest', (_request, reply, done) => {
     reply.header('Content-Security-Policy', CONTENT_SECURITY_POLICY);
     done();

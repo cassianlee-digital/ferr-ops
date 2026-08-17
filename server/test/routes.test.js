@@ -497,6 +497,9 @@ test('HTML、静态资源和 API 响应都携带严格脚本 CSP', async () => {
     assert.match(policy, /(?:^|; )script-src 'self'(?:;|$)/, `${url} 未限制脚本来源`);
     assert.match(policy, /(?:^|; )script-src-attr 'none'(?:;|$)/, `${url} 未禁用内联事件脚本`);
     assert.doesNotMatch(policy, /script-src[^;]*'unsafe-inline'/, `${url} 仍允许内联脚本`);
+    assert.match(policy, /(?:^|; )style-src 'self'(?:;|$)/, `${url} 未限制样式来源`);
+    assert.match(policy, /(?:^|; )style-src-attr 'none'(?:;|$)/, `${url} 未禁用内联 style 属性`);
+    assert.doesNotMatch(policy, /style-src[^;]*'unsafe-inline'/, `${url} 仍允许内联样式`);
     assert.match(policy, /(?:^|; )object-src 'none'(?:;|$)/, `${url} 未禁用 object 插件内容`);
     assert.match(policy, /(?:^|; )frame-ancestors 'none'(?:;|$)/, `${url} 未阻止页面被嵌入`);
   }

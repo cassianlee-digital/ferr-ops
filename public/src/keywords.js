@@ -22,10 +22,10 @@ export function clsOf(kind,val){const o=(OPT[kind]||[]).find(x=>x[0]===val);retu
 export function kwRow(type,r){
   const a=r.attrs||{}; const tr=document.createElement('tr'); tr.dataset.id=r.id; tr.dataset.kwType=type; tr.dataset.cat=r.category||'';
   const aiBtn='<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> 分析意图</button>';
-  const del='<button class="btn-mini kw-del" title="删除" style="color:var(--primary);border-color:var(--border2)"><i class="ti ti-trash"></i></button>';
+  const del='<button class="btn-mini kw-del csp-s-7ee38adc7c" title="删除"><i class="ti ti-trash"></i></button>';
   const ev=v=>v==null?'':v;
   const ed=(attr,val)=>`<td class="editable" contenteditable data-attr="${attr}">${esc(ev(val))}</td>`; // 可编辑→写入 attrs
-  const ct=`<td class="dim" style="font-size:11px;white-space:nowrap">${esc((r.created_at||'').slice(0,10))}</td>`; // 添加时间(只读，取 created_at)
+  const ct=`<td class="dim csp-s-4a01f70563">${esc((r.created_at||'').slice(0,10))}</td>`; // 添加时间(只读，取 created_at)
   if(type==='seo'){
     tr.innerHTML=ct+`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
       +`<td class="ctr"><span class="tagselect ${clsOf('intent',a.searchIntent)}" data-kind="intent">${esc(a.searchIntent||'选意图')}<i class="ti ti-chevron-down"></i></span></td>`

@@ -237,7 +237,7 @@ function renderSparklines(){
 function tableLoadState(id,colspan,state,message,retryAction){
   const tb=document.getElementById(id); if(!tb)return;
   const retry=typeof retryAction==='function'?' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> 重试</button>':'';
-  tb.innerHTML=`<tr data-load-state="${state}"><td colspan="${colspan}" class="dim" style="text-align:center;padding:16px">${esc(message)}${retry}</td></tr>`;
+  tb.innerHTML=`<tr data-load-state="${state}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
   const retryBtn=tb.querySelector('.table-retry'); if(retryBtn)retryBtn.addEventListener('click',retryAction);
 }
 // 询盘加载（带当前时间区间）。供首屏 hydrate 与时间切换共用。

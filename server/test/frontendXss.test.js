@@ -10,6 +10,7 @@ const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'u
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
 const loginSource = readFileSync(new URL('../../public/login.html', import.meta.url), 'utf8');
+const cspUtilitiesSource = readFileSync(new URL('../../public/csp-utilities.css', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
 function runtimeJavaScriptSources() {
@@ -102,4 +103,21 @@ test('login page loads only external CSS and JavaScript', () => {
   assert.doesNotMatch(loginSource, /<style\b[^>]*>[\s\S]*?<\/style>/i);
   assert.match(loginSource, /<link rel="stylesheet" href="\/login\.css">/);
   assert.match(loginSource, /<script src="\/login\.js"><\/script>/);
+});
+
+test('first-party frontend sources contain no inline style attributes', () => {
+  for (const { file, source } of runtimeJavaScriptSources()) {
+    assert.doesNotMatch(source, /\sstyle\s*=\s*(?:["']|\$\{)/i, `generated inline style remains in ${file}`);
+  }
+  assert.doesNotMatch(indexSource, /<[^>]+\sstyle\s*=\s*["']/i);
+  assert.doesNotMatch(loginSource, /<[^>]+\sstyle\s*=\s*["']/i);
+  assert.match(indexSource, /<link rel="stylesheet" href="\/csp-utilities\.css">/);
+});
+
+test('migrated CSP utility classes are defined and contain only CSS declarations', () => {
+  const sources = [indexSource, loginSource, ...runtimeJavaScriptSources().map(({ source }) => source)];
+  const referenced = new Set(sources.flatMap((source) => [...source.matchAll(/\bcsp-s-[a-f0-9]{10}\b/g)].map((match) => match[0])));
+  const defined = new Set([...cspUtilitiesSource.matchAll(/\.([a-z][\w-]*)\s*\{/gi)].map((match) => match[1]));
+  assert.deepEqual([...referenced].filter((className) => !defined.has(className)), []);
+  assert.doesNotMatch(cspUtilitiesSource, /\$\{|:\s*['"]\s*\+/);
 });

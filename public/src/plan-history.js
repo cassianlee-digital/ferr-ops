@@ -129,7 +129,7 @@ export function setPlanDay(day) {
   const input = document.getElementById('planday-input');
   if (input) input.value = day || today();
   if (board) board.style.display = isToday ? '' : 'none';
-  if (hist) hist.style.display = isToday ? 'none' : '';
+  if (hist) hist.classList.toggle('is-hidden',isToday);
   if (hint) {
     hint.textContent = isToday ? '' : '回放模式 · 只读';
     hint.className = 'planday-hint' + (isToday ? '' : ' on');

@@ -11,11 +11,11 @@ export function renderMarket(items) {
   items.forEach(it => {
     let ans = {}; try { ans = JSON.parse(it.answers || '{}'); } catch {} it._ans = ans; window._marketById[it.id] = it;
     if (it.section !== lastSec) { lastSec = it.section; const hr = document.createElement('tr');
-      hr.innerHTML = `<td colspan="5" style="background:var(--bg3);font-weight:800;color:var(--primary)">${mktEsc(it.section)}</td>`; tb.appendChild(hr); }
+      hr.innerHTML = `<td class="csp-s-24cc594aae" colspan="5">${mktEsc(it.section)}</td>`; tb.appendChild(hr); }
     const tr = document.createElement('tr'); tr.dataset.id = it.id;
-    tr.innerHTML = `<td class="dim" style="font-size:11px">${mktEsc(it.section)}</td>`
-      + `<td class="mkt-q editable" contenteditable style="font-size:11.5px">${mktEsc(it.question)}</td>`
-      + ['孟雪', '王璐平', '燕敏'].map(r => `<td class="mkt-ans editable" contenteditable data-resp="${r}" style="font-size:11.5px;white-space:pre-wrap">${mktEsc(ans[r] || '')}</td>`).join('');
+    tr.innerHTML = `<td class="dim csp-s-33ee298127">${mktEsc(it.section)}</td>`
+      + `<td class="mkt-q editable csp-s-bd299c8ad6" contenteditable>${mktEsc(it.question)}</td>`
+      + ['孟雪', '王璐平', '燕敏'].map(r => `<td class="mkt-ans editable csp-s-23e1d32409" contenteditable data-resp="${r}">${mktEsc(ans[r] || '')}</td>`).join('');
     tb.appendChild(tr);
   });
   const empty = document.getElementById('market-empty'); if (empty) empty.style.display = items.length ? 'none' : 'block';

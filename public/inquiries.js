@@ -73,7 +73,7 @@ function trackCellHtml(r){
 }
 function inqRowHtml(r){
   const up=isUpgraded(r);
-  const upMark=up?` <i class="ti ti-alert-triangle" title="等级已上调（原 ${esc(r.original_grade)} → 现 ${esc(r.grade)}） · 重点处理" style="color:var(--primary);margin-left:2px"></i>`:'';
+  const upMark=up?` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="等级已上调（原 ${esc(r.original_grade)} → 现 ${esc(r.grade)}） · 重点处理"></i>`:'';
   return `<td>${esc(r.date.slice(5))}</td>`
     +`<td class="editable" contenteditable data-field="customer_name">${esc(r.customer_name||'')}</td>`
     +`<td>${esc(r.country)}</td>`
@@ -82,9 +82,9 @@ function inqRowHtml(r){
     +`<td>${esc(r.source)}</td>`
     +`<td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
-    +`<td class="dim" style="font-size:11px">${esc(r.note||'')}</td>`
+    +`<td class="dim csp-s-33ee298127">${esc(r.note||'')}</td>`
     +`<td class="ctr">${trackCellHtml(r)}</td>`
-    +`<td class="ctr"><button class="btn-mini inq-del" title="删除（归档到归档页）" style="color:var(--primary);border-color:var(--border2)"><i class="ti ti-trash"></i></button></td>`;
+    +`<td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="删除（归档到归档页）"><i class="ti ti-trash"></i></button></td>`;
 }
 function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
 /* P3：询盘删除 → 就地确认 → 软删归档（进归档页「询盘」桶）→ 重拉列表/统计/总览/归档 */
@@ -106,12 +106,12 @@ function renderInqList(){
   const tb=document.getElementById('tb-inq'); if(!tb)return; tb.innerHTML='';
   const curM=formatLocalDate(new Date()).slice(0,7);
   const rows=(window._inqCache||[]).filter(r=>r&&r.date&&r.date.slice(0,7)!==curM).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0); // 排除当月、日期倒序
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="11" class="dim" style="text-align:center;padding:16px">暂无历史月份询盘 · 本月询盘见上方「最新询盘」</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="11" class="dim csp-s-d48bfa87bb">暂无历史月份询盘 · 本月询盘见上方「最新询盘」</td></tr>'; return; }
   const groups=[]; const idx={};
   rows.forEach(r=>{ const ym=r.date.slice(0,7); if(idx[ym]==null){ idx[ym]=groups.length; groups.push({ym,items:[]}); } groups[idx[ym]].items.push(r); });
   groups.forEach(g=>{
     const sep=document.createElement('tr'); sep.className='inq-msep collapsed'; sep.dataset.month=g.ym;
-    sep.innerHTML=`<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim" style="font-weight:400">· ${g.items.length} 条</span></td>`;
+    sep.innerHTML=`<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">· ${g.items.length} 条</span></td>`;
     sep.querySelector('.inq-month-toggle').addEventListener('click',e=>toggleInqMonth(e.currentTarget));
     tb.appendChild(sep);
     g.items.forEach(r=>{
@@ -144,10 +144,10 @@ function renderInqFeed(){
   const curM=formatLocalDate(new Date()).slice(0,7); // 本月 YYYY-MM（本地）
   const rows=(window._inqCache||[]).filter(r=>r&&r.date&&r.date.slice(0,7)===curM).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
   const cnt=document.getElementById('inqFeedCount'); if(cnt)cnt.textContent=rows.length?('本月 '+rows.length+' 条'):'本月暂无';
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="11" class="dim" style="text-align:center;padding:20px">本月暂无询盘 · 录入后即时显示</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="11" class="dim csp-s-651d52088e">本月暂无询盘 · 录入后即时显示</td></tr>'; return; }
   const p=curM.split('-');
   const sep=document.createElement('tr'); sep.className='inq-msep'; sep.dataset.month=curM;
-  sep.innerHTML=`<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}年${(+p[1])}月 <span class="dim" style="font-weight:400">· ${rows.length} 条</span><span class="badge b-green" style="margin-left:6px">本月</span></td>`;
+  sep.innerHTML=`<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}年${(+p[1])}月 <span class="dim csp-s-8bde36d0d6">· ${rows.length} 条</span><span class="badge b-green csp-s-4b17347c23">本月</span></td>`;
   sep.querySelector('.inq-month-toggle').addEventListener('click',e=>toggleInqMonth(e.currentTarget));
   tb.appendChild(sep);
   rows.forEach(r=>{

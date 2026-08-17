@@ -34,32 +34,32 @@ function dsRow(key,s){
   const count = s.type==='manual' || s.type==='sync' ? (s.count==null?0:s.count) : '—';
   // 错误仅在 error 非空时展示；Google 同步展示缺失配置/OAuth 提示；AI 已配置附 provider/model
   let extra='';
-  if(s.error) extra=`<span style="color:var(--primary)"> · 错误：${esc(s.error)}</span>`;
+  if(s.error) extra=`<span class="csp-s-b0e08465c2"> · 错误：${esc(s.error)}</span>`;
   else if(s.type==='sync'&&s.missing&&s.missing.length) extra=`<span class="dim"> · 缺少 ${esc(s.missing.join(', '))}</span>`;
   else if(s.note==='google_oauth_required') extra=`<span class="dim"> · 需要 OAuth 授权</span>`;
   else if(s.note==='google_sync_ready') extra=`<span class="dim"> · 可手动同步</span>`;
   else if(s.type==='provider'&&s.status==='configured_unverified') extra=`<span class="dim"> · ${esc(s.provider||'')}${s.model?(' / '+esc(s.model)):''}</span>`;
-  return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">`
-    +`<div style="width:96px;font-weight:600">${esc(name)}</div>`
-    +`<div style="width:74px;color:var(--text3);font-size:11px">${esc(typeText)}</div>`
+  return `<div class="csp-s-6d1156dd83">`
+    +`<div class="csp-s-22dccc46c7">${esc(name)}</div>`
+    +`<div class="csp-s-b57829faf1">${esc(typeText)}</div>`
     +`<span class="badge ${cls}">${esc(text)}</span>`
-    +`<div style="flex:1"></div>`
-    +`<div style="color:var(--text3);font-size:11px;white-space:nowrap">时间 ${esc(String(time))} · 记录 ${esc(String(count))}</div>`
-    +`<div style="font-size:11px">${extra}</div>`
+    +`<div class="csp-s-83725d2c6e"></div>`
+    +`<div class="csp-s-95144d7b86">时间 ${esc(String(time))} · 记录 ${esc(String(count))}</div>`
+    +`<div class="csp-s-33ee298127">${extra}</div>`
   +`</div>`;
 }
 export async function loadDataSourcesStatus(){
   const box=document.getElementById('ds-status-rows'); if(!box)return; // 容器不存在直接返回，不报错
   const tag=document.getElementById('ds-demo-tag');
-  if(tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber" style="margin-left:8px">示例模式</span>' : '';
+  if(tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber csp-s-9d5367afed">示例模式</span>' : '';
   try{
     const r=await API.get('/api/data-sources/status');
     const src=(r&&r.sources)||{};
     box.innerHTML = DS_ORDER.map(k=>dsRow(k,src[k])).join('')
-      + (window.DEMO_MODE ? '<div class="dim" style="font-size:11px;margin-top:6px">当前为演示标记，下方仍为接口真实状态。</div>' : '');
+      + (window.DEMO_MODE ? '<div class="dim csp-s-5698104cf1">当前为演示标记，下方仍为接口真实状态。</div>' : '');
   }catch(e){
     // 整卡显示「状态获取失败」，不渲染任何假数据源，不 fallback 成已接入
-    box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">状态获取失败</div><div class="banner-s">${esc(e&&e.message?e.message:'请求失败')}</div></div></div>`;
+    box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">状态获取失败</div><div class="banner-s">${esc(e&&e.message?e.message:'请求失败')}</div></div></div>`;
   }
 }
 export async function loadIntegrations(){
@@ -71,11 +71,11 @@ export async function loadIntegrations(){
     const projectText=project
       ? `默认项目：${esc(project.name||'未命名项目')}`
       : '未创建项目时使用 .env 中的默认站点 / Property / Customer';
-    box.innerHTML=`<div class="sheet-tip" style="margin-bottom:2px"><i class="ti ti-info-circle"></i> ${projectText}</div>`
+    box.innerHTML=`<div class="sheet-tip csp-s-145afb7049"><i class="ti ti-info-circle"></i> ${projectText}</div>`
       +GOOGLE_PROVIDER_ORDER.map(p=>googleProviderRow(p,providers[p]||{},project)).join('');
     bindGoogleProviderActions(box);
   }catch(e){
-    box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x" style="color:var(--primary);font-size:18px"></i><div><div class="banner-t">Google 接入状态获取失败</div><div class="banner-s">${esc(e&&e.message?e.message:'请求失败')}</div></div></div>`;
+    box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google 接入状态获取失败</div><div class="banner-s">${esc(e&&e.message?e.message:'请求失败')}</div></div></div>`;
   }
 }
 
@@ -84,10 +84,10 @@ function googleProviderRow(provider,s,project){
   const authorized=!!s.authorized;
   const ok=configured&&authorized;
   const badge=ok?'<span class="badge b-green">已授权</span>':(configured?'<span class="badge b-amber">待授权</span>':'<span class="badge b-gray">后端未配置</span>');
-  const missing=s.missing&&s.missing.length ? `<div class="dim" style="font-size:11px;margin-top:4px">缺少：${esc(s.missing.join(', '))}</div>` : '';
+  const missing=s.missing&&s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">缺少：${esc(s.missing.join(', '))}</div>` : '';
   const lastSync=s.lastSyncAt||'—';
   const lastStatus=s.lastSyncStatus||'未同步';
-  const lastError=s.lastError ? `<div style="color:var(--primary);font-size:11px;margin-top:4px">最近错误：${esc(s.lastError)}</div>` : '';
+  const lastError=s.lastError ? `<div class="csp-s-5ade8bf698">最近错误：${esc(s.lastError)}</div>` : '';
   const providerConfigNote=provider==='gsc'
     ? ((s.siteUrlConfigured||project?.gsc_site_url)?'站点已配置':'还需要 GSC_SITE_URL 或项目站点')
     : provider==='ga4'
@@ -95,9 +95,9 @@ function googleProviderRow(provider,s,project){
       : ((s.customerConfigured||project?.ads_customer_id)?'Customer 已配置':'还需要 GOOGLE_ADS_CUSTOMER_ID 或项目 Customer');
   const authDisabled=configured?'':'disabled';
   const syncDisabled=ok?'':'disabled';
-  return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
-    <div style="width:230px;font-weight:700">${esc(INTEG_LABEL[provider]||provider)} ${badge}</div>
-    <div style="flex:1;min-width:260px;color:var(--text2);font-size:12px;line-height:1.6">
+  return `<div class="csp-s-98c17c8e1c">
+    <div class="csp-s-fad0d7671e">${esc(INTEG_LABEL[provider]||provider)} ${badge}</div>
+    <div class="csp-s-fd03ebc21e">
       <div>${esc(providerConfigNote)} · 最近同步：${esc(String(lastSync))} · 状态：${esc(String(lastStatus))}</div>
       ${missing}${lastError}
     </div>
