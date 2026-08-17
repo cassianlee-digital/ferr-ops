@@ -2,7 +2,7 @@
    运行时依赖的全局：toast()、openModal()/closeModal()（内联）、loadInquiries()（inquiries.js）和 loadGa4()。
    图表消费者监听 timerange/granularity 事件，避免时间模块反向依赖图表实现。
    必须挂 window（main.js 统一处理）：
-     - formatLocalDate/ymd —— closed-loop.js 运行时真实调用（仍是经典脚本）；
+     - formatLocalDate/ymd —— closed-loop.js 显式导入；
      - withRange/getCurrentRange —— charts.js 与 index.html 真实调用；
      - submitCustomRange —— 内联 onclick 调用；
      - 其余函数保持原有全局暴露面，零行为差异。

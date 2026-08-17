@@ -13,217 +13,28 @@
     addNeg: () => addNeg,
     negRowHtml: () => negRowHtml
   });
-  var NEGMATCH_BADGE = { "\u7CBE\u786E": "b-green", "\u8BCD\u7EC4": "b-blue", "\u5E7F\u6CDB": "b-amber" };
-  var NEGSTATUS_BADGE = { "\u751F\u6548": "b-green", "\u89C2\u5BDF": "b-amber", "\u5DF2\u79FB\u9664": "b-gray" };
-  var ADSTATUS_BADGE = { "\u91C7\u7528\u4E2D": "b-green", "\u6D4B\u8BD5\u4E2D": "b-amber", "\u5DF2\u5F03\u7528": "b-gray" };
-  function clearLoadState(id) {
-    const row = document.querySelector(`#${id} tr[data-load-state]`);
-    if (row) row.remove();
-  }
-  function negRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc(r.added_date || "")}</td><td class="editable csp-s-33ee298127" contenteditable data-field="reason">${esc(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
-  }
-  function adRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="title">${esc(r.title)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="description">${esc(r.description || "")}</td><td class="editable" contenteditable data-field="ctr">${esc(r.ctr || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="ab_conclusion">${esc(r.ab_conclusion || "")}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || "b-amber"}" data-kind="adstatus">${esc(r.status || "\u6D4B\u8BD5\u4E2D")}<i class="ti ti-chevron-down"></i></span></td>`;
-  }
-  async function addNeg() {
-    try {
-      const { item } = await API.post("/api/neg-keywords", { word: "\u65B0\u5426\u8BCD", reason: "" });
-      clearLoadState("tb-neg");
-      prepend("tb-neg", negRowHtml(item));
-      const tr = document.getElementById("tb-neg").firstChild;
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/neg-keywords";
-      const c = tr.querySelector('[data-field="word"]');
-      if (c) {
-        c.focus();
-        placeCaretEnd(c);
-      }
-      toast("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
-    } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
-    }
-  }
-  async function addAd() {
-    try {
-      const { item } = await API.post("/api/ad-creatives", { title: "\u65B0\u521B\u610F", description: "" });
-      clearLoadState("tb-ad");
-      prepend("tb-ad", adRowHtml(item));
-      const tr = document.getElementById("tb-ad").firstChild;
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/ad-creatives";
-      const c = tr.querySelector('[data-field="title"]');
-      if (c) {
-        c.focus();
-        placeCaretEnd(c);
-      }
-      toast("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
-    } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
-    }
-  }
 
-  // public/src/ga4-view.js
-  var ga4_view_exports = {};
-  __export(ga4_view_exports, {
-    loadGa4: () => loadGa42
+  // public/src/keywords.js
+  var keywords_exports = {};
+  __export(keywords_exports, {
+    activeCat: () => activeCat,
+    addKeyword: () => addKeyword,
+    applyKwPaging: () => applyKwPaging,
+    clsOf: () => clsOf,
+    filterKwByCat: () => filterKwByCat,
+    inlineConfirm: () => inlineConfirm,
+    kwDelete: () => kwDelete,
+    kwRow: () => kwRow,
+    loadKeywords: () => loadKeywords,
+    renderCatTabs: () => renderCatTabs,
+    renderKwPager: () => renderKwPager
   });
-  async function loadGa42() {
-    let r = { connected: false };
-    try {
-      r = await API.get(withRange("/api/ga4/overview"));
-    } catch (e) {
-    }
-    const st = document.getElementById("ga4-status");
-    if (st) {
-      st.className = "badge " + (r.connected ? "b-green" : "b-gray");
-      st.textContent = r.connected ? "\u5DF2\u63A5\u5165" : "\u672A\u63A5\u5165";
-    }
-    const hint = document.getElementById("ga4-hint");
-    if (hint) hint.style.display = r.connected ? "none" : "flex";
-    const set = (id, v) => {
-      const e = document.getElementById(id);
-      if (e) e.textContent = v == null ? "\u2014" : v;
-    };
-    const m = r.metrics;
-    if (m) {
-      set("ga4-users", m.activeUsers);
-      set("ga4-sessions", m.sessions);
-      set("ga4-views", m.pageViews);
-      set("ga4-bounce", m.bounceRate != null ? m.bounceRate + "%" : "\u2014");
-      set("ga4-dur", m.avgDuration);
-    }
-    const fill = (tbId, rows2, cols) => {
-      const tb = document.getElementById(tbId);
-      if (!tb) return;
-      if (rows2 && rows2.length) {
-        tb.innerHTML = rows2.map((x) => "<tr>" + cols.map((c) => `<td class="${c.cls || ""}">${esc(x[c.k] ?? "")}</td>`).join("") + "</tr>").join("");
-        const card = tb.closest(".card");
-        const e = card && card.querySelector(".ga4-empty");
-        if (e) e.style.display = "none";
-      }
-    };
-    fill("ga4-sources", r.sources, [{ k: "source" }, { k: "sessions", cls: "num" }, { k: "users", cls: "num" }]);
-    fill("ga4-countries", r.countries, [{ k: "country" }, { k: "sessions", cls: "num" }, { k: "users", cls: "num" }]);
-    fill("ga4-landing", r.landingPages, [{ k: "page" }, { k: "sessions", cls: "num" }, { k: "conversions", cls: "num" }]);
-  }
 
-  // public/src/market-brain.js
-  var market_brain_exports = {};
-  __export(market_brain_exports, {
-    loadBrain: () => loadBrain,
-    loadMarket: () => loadMarket,
-    refreshBrain: () => refreshBrain,
-    renderMarket: () => renderMarket
-  });
-  window._marketById = {};
-  function mktEsc(s) {
-    return esc(s);
-  }
-  function renderMarket(items) {
-    const tb = document.getElementById("tb-market");
-    if (!tb) return;
-    tb.innerHTML = "";
-    window._marketById = {};
-    let lastSec = null;
-    items.forEach((it) => {
-      let ans = {};
-      try {
-        ans = JSON.parse(it.answers || "{}");
-      } catch {
-      }
-      it._ans = ans;
-      window._marketById[it.id] = it;
-      if (it.section !== lastSec) {
-        lastSec = it.section;
-        const hr = document.createElement("tr");
-        hr.innerHTML = `<td class="csp-s-24cc594aae" colspan="5">${mktEsc(it.section)}</td>`;
-        tb.appendChild(hr);
-      }
-      const tr = document.createElement("tr");
-      tr.dataset.id = it.id;
-      tr.innerHTML = `<td class="dim csp-s-33ee298127">${mktEsc(it.section)}</td><td class="mkt-q editable csp-s-bd299c8ad6" contenteditable>${mktEsc(it.question)}</td>` + ["\u5B5F\u96EA", "\u738B\u7490\u5E73", "\u71D5\u654F"].map((r) => `<td class="mkt-ans editable csp-s-23e1d32409" contenteditable data-resp="${r}">${mktEsc(ans[r] || "")}</td>`).join("");
-      tb.appendChild(tr);
-    });
-    const empty = document.getElementById("market-empty");
-    if (empty) empty.style.display = items.length ? "none" : "block";
-  }
-  async function loadMarket() {
-    try {
-      const { items } = await API.get("/api/market/research");
-      renderMarket(items || []);
-    } catch (e) {
-    }
-  }
-  document.addEventListener("focusout", (e) => {
-    const cell = e.target.closest && e.target.closest("#tb-market [contenteditable]");
-    if (!cell) return;
-    const tr = cell.closest("tr");
-    const id = tr && tr.dataset.id;
-    if (!id) return;
-    const it = window._marketById[id];
-    if (!it) return;
-    const body = {};
-    if (cell.classList.contains("mkt-q")) body.question = cell.innerText.trim();
-    else if (cell.classList.contains("mkt-ans")) {
-      it._ans = it._ans || {};
-      it._ans[cell.dataset.resp] = cell.innerText;
-      body.answers = JSON.stringify(it._ans);
-    } else return;
-    API.patch("/api/market/research/" + id, body).catch((err) => toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
-  });
-  async function loadBrain() {
-    try {
-      const { state, summary } = await API.get("/api/market/brain");
-      const chip = document.getElementById("brainStatus");
-      if (chip) {
-        if (!state.hasSummary) {
-          chip.className = "badge b-gray";
-          chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u672A\u5B66\u4E60";
-        } else if (state.needsUpdate) {
-          chip.className = "badge b-amber";
-          chip.textContent = state.reason === "new_month" ? "AI \u8BB0\u5FC6\uFF1A\u5DF2\u8DE8\u6708\uFF0C\u5EFA\u8BAE\u66F4\u65B0" : "AI \u8BB0\u5FC6\uFF1A\u8D44\u6599\u6709\u53D8\uFF0C\u5EFA\u8BAE\u66F4\u65B0";
-        } else {
-          chip.className = "badge b-green";
-          chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u5DF2\u662F\u6700\u65B0";
-        }
-      }
-      const card = document.getElementById("brainSummaryCard");
-      if (card) {
-        if (summary) {
-          card.style.display = "block";
-          document.getElementById("brainSummary").innerHTML = mdToHtml(summary);
-          document.getElementById("brainUpdatedAt").textContent = state.updatedAt ? "\u66F4\u65B0\u4E8E " + state.updatedAt : "";
-        } else card.style.display = "none";
-      }
-    } catch (e) {
-    }
-  }
-  async function refreshBrain(btn) {
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i class="ti ti-loader"></i> \u5B66\u4E60\u4E2D\u2026';
-    }
-    try {
-      const r = await API.post("/api/market/brain/refresh", {});
-      if (r && r.updated) toast("AI \u5DF2\u91CD\u65B0\u5B66\u4E60\u5E02\u573A\u8D44\u6599\uFF0C\u8BB0\u5FC6\u5DF2\u66F4\u65B0");
-      else if (r && r.reason === "no_source") toast("\u6682\u65E0\u5E02\u573A\u8D44\u6599\u53EF\u5B66\u4E60");
-      else toast("\u8BB0\u5FC6\u5DF2\u66F4\u65B0");
-      await loadBrain();
-    } catch (e) {
-      toast(e.status === 503 ? "\u8BF7\u5148\u914D\u7F6E ANTHROPIC_API_KEY \u518D\u66F4\u65B0\u8BB0\u5FC6" : "\u66F4\u65B0\u5931\u8D25\uFF1A" + (e.body && e.body.error || e.message));
-    }
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ti ti-brain"></i> \u540C\u6B65 / \u66F4\u65B0 AI \u8BB0\u5FC6';
-    }
-  }
-
-  // public/src/kpi-view.js
-  var kpi_view_exports = {};
-  __export(kpi_view_exports, {
-    loadOverview: () => loadOverview,
-    renderKPI: () => renderKPI2
+  // public/src/tagselect.js
+  var tagselect_exports = {};
+  __export(tagselect_exports, {
+    OPT: () => OPT,
+    persistTagChange: () => persistTagChange
   });
 
   // public/src/timerange.js
@@ -270,31 +81,31 @@
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
   }
   function resolveRange(label) {
-    const today2 = /* @__PURE__ */ new Date();
-    today2.setHours(0, 0, 0, 0);
+    const today3 = /* @__PURE__ */ new Date();
+    today3.setHours(0, 0, 0, 0);
     const back = (n) => {
-      const d = new Date(today2);
+      const d = new Date(today3);
       d.setDate(d.getDate() - n);
       return d;
     };
     const r = (s, e) => ({ start_date: formatLocalDate2(s), end_date: formatLocalDate2(e), period_label: label });
     switch (label) {
       case "\u4ECA\u5929":
-        return r(today2, today2);
+        return r(today3, today3);
       case "\u6628\u5929": {
         const y = back(1);
         return r(y, y);
       }
       case "\u8FD17\u5929":
-        return r(back(6), today2);
+        return r(back(6), today3);
       case "\u8FD130\u5929":
-        return r(back(29), today2);
+        return r(back(29), today3);
       case "\u8FD190\u5929":
-        return r(back(89), today2);
+        return r(back(89), today3);
       case "\u8FD1\u4E00\u5E74":
-        return r(back(364), today2);
+        return r(back(364), today3);
       case "\u4E0A\u5468": {
-        const day = (today2.getDay() + 6) % 7;
+        const day = (today3.getDay() + 6) % 7;
         const thisMon = back(day);
         const lastMon = new Date(thisMon);
         lastMon.setDate(thisMon.getDate() - 7);
@@ -303,25 +114,25 @@
         return r(lastMon, lastSun);
       }
       case "\u4E0A\u534A\u6708": {
-        const first = new Date(today2.getFullYear(), today2.getMonth(), 1);
-        const mid = new Date(today2.getFullYear(), today2.getMonth(), 15);
+        const first = new Date(today3.getFullYear(), today3.getMonth(), 1);
+        const mid = new Date(today3.getFullYear(), today3.getMonth(), 15);
         return r(first, mid);
       }
       case "\u8FD11\u6708":
-        return r(back(29), today2);
+        return r(back(29), today3);
       case "\u8FD13\u6708":
-        return r(back(89), today2);
+        return r(back(89), today3);
       case "\u8FD1\u534A\u5E74":
-        return r(back(179), today2);
+        return r(back(179), today3);
       case "\u8FD11\u5E74":
-        return r(back(364), today2);
+        return r(back(364), today3);
       case "\u81EA\u5B9A\u4E49": {
         const cr = window._customRange;
         if (!cr) return null;
         return { start_date: cr.start_date, end_date: cr.end_date, period_label: "\u81EA\u5B9A\u4E49 " + cr.start_date + "~" + cr.end_date };
       }
       default:
-        return r(back(29), today2);
+        return r(back(29), today3);
     }
   }
   var _range = resolveRange(window._timeRange);
@@ -401,14 +212,14 @@
   });
   function openCustomRange() {
     const cr = window._customRange || {};
-    const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
+    const today3 = formatLocalDate2(/* @__PURE__ */ new Date());
     const back = (n) => {
       const d = /* @__PURE__ */ new Date();
       d.setDate(d.getDate() - n);
       return formatLocalDate2(d);
     };
     document.getElementById("cr-start").value = cr.start_date || back(29);
-    document.getElementById("cr-end").value = cr.end_date || today2;
+    document.getElementById("cr-end").value = cr.end_date || today3;
     openModal("customRangeMask");
     setTimeout(() => document.getElementById("cr-start").focus(), 50);
   }
@@ -1440,15 +1251,15 @@
   }
   async function adoptFinding(btn, dept, title, detail, evidence) {
     try {
-      const s = typeof sFromDept === "function" ? sFromDept(dept) : { dept, owner: "" };
-      const { item } = await API.post("/api/fixes", { title: typeof clip === "function" ? clip(title, 40) : title, dept: s.dept, detail, evidence, owner: s.owner, due_date: typeof plusDays === "function" ? plusDays(7) : "", status: "\u8BA1\u5212\u4E0B\u5468", source: "\u8BCA\u65AD\u5F15\u64CE" });
-      if (typeof addFixFromObj === "function") addFixFromObj(item);
+      const s = sFromDept(dept);
+      const { item } = await API.post("/api/fixes", { title: clip(title, 40), dept: s.dept, detail, evidence, owner: s.owner, due_date: futureDate(7), status: "\u8BA1\u5212\u4E0B\u5468", source: "\u8BCA\u65AD\u5F15\u64CE" });
+      addFixFromObj(item);
       btn.disabled = true;
       btn.innerHTML = '<i class="ti ti-check"></i> \u5DF2\u91C7\u7EB3';
       if (typeof toastGo === "function") toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355 \xB7 \u5DF2\u5165\u5E93", "fix");
       else toast("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355");
     } catch (e) {
-      toast(typeof persistFailMsg === "function" ? persistFailMsg(e) : "\u4FDD\u5B58\u5931\u8D25,\u672A\u5165\u5E93");
+      toast(persistFailMsg(e));
     }
   }
   async function loadDataFreshness() {
@@ -1507,10 +1318,10 @@
   }
   async function loadDashboardBoards() {
     if (window.DEMO_MODE) return;
-    const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
+    const today3 = formatLocalDate2(/* @__PURE__ */ new Date());
     const s = /* @__PURE__ */ new Date();
     s.setDate(s.getDate() - 29);
-    const r = { start_date: formatLocalDate2(s), end_date: today2 };
+    const r = { start_date: formatLocalDate2(s), end_date: today3 };
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
@@ -1615,10 +1426,10 @@
   window._inqMonthCache = [];
   var _inqMonthError = null;
   async function loadDashboardInq() {
-    const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
-    const first = today2.slice(0, 7) + "-01";
+    const today3 = formatLocalDate2(/* @__PURE__ */ new Date());
+    const first = today3.slice(0, 7) + "-01";
     try {
-      const { items } = await API.get(withRange2("/api/inquiries", { start_date: first, end_date: today2 }));
+      const { items } = await API.get(withRange2("/api/inquiries", { start_date: first, end_date: today3 }));
       window._inqMonthCache = items || [];
       _inqMonthError = null;
     } catch (e) {
@@ -1633,8 +1444,8 @@
     const rows2 = window._inqMonthCache || [];
     const sub = document.getElementById("inqTrendSub");
     if (sub) {
-      const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
-      sub.textContent = "\u5F53\u6708 \xB7 \u6309\u65E5\uFF08" + today2.slice(0, 7) + "\uFF09";
+      const today3 = formatLocalDate2(/* @__PURE__ */ new Date());
+      sub.textContent = "\u5F53\u6708 \xB7 \u6309\u65E5\uFF08" + today3.slice(0, 7) + "\uFF09";
     }
     if (inqChart) {
       try {
@@ -1708,316 +1519,6 @@
     loadDataFreshness();
   });
   document.addEventListener("granularity", rebuildSeoChart);
-
-  // public/src/kpi.js
-  var TOTAL = [{ n: "\u8BE2\u76D8\u603B\u91CF", w: 25, t: 60, a: 0, m: "r", u: "\u5C01" }, { n: "A\u7EA7\u8BE2\u76D8\u6570", w: 35, t: 10, a: 0, m: "r", u: "\u5C01" }, { n: "\u6709\u6548\u8BE2\u76D8\u6210\u672C", w: 25, t: 2e3, a: 0, m: "i", u: "\xA5" }, { n: "\u95ED\u73AF\u6267\u884C\u5EA6", w: 15, t: 5, a: 0, m: "r", u: "\u9879" }];
-  var SEO = [{ n: "\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4", w: 25, t: 10, a: 0, m: "r", u: "%" }, { n: "\u6838\u5FC3\u8BCD Top10 \u5360\u6BD4", w: 25, t: 40, a: 0, m: "r", u: "%" }, { n: "\u5173\u952E\u8BCD\u8986\u76D6/\u957F\u5C3E", w: 15, t: 500, a: 0, m: "r", u: "\u8BCD" }, { n: "\u65B0\u589E\u6536\u5F55\u9875\u9762", w: 15, t: 20, a: 0, m: "r", u: "\u9875" }, { n: "\u8DF3\u51FA\u7387", w: 10, t: 55, a: 0, m: "i", u: "%" }, { n: "\u9875\u9762\u505C\u7559\u65F6\u957F", w: 10, t: 150, a: 0, m: "r", u: "s" }];
-  var SEM = [{ n: "CPC", w: 15, t: 4, a: 0, m: "i", u: "\xA5" }, { n: "CTR", w: 15, t: 3.5, a: 0, m: "r", u: "%" }, { n: "\u8D28\u91CF\u5206", w: 15, t: 7.5, a: 0, m: "r", u: "" }, { n: "ROAS", w: 20, t: 3.5, a: 0, m: "r", u: "x" }, { n: "\u8F6C\u5316\u6B21\u6570", w: 15, t: 60, a: 0, m: "r", u: "\u6B21" }, { n: "\u6BCF\u6B21\u8F6C\u5316\u8D39\u7528", w: 20, t: 300, a: 0, m: "i", u: "\xA5" }];
-  var ratio = (k) => {
-    const target = Number(k.t), actual = Number(k.a);
-    if (!Number.isFinite(target) || !Number.isFinite(actual) || target <= 0 || actual <= 0) return 0;
-    return k.m === "i" ? Math.min(target / actual, 1) : Math.min(actual / target, 1);
-  };
-  var blockRate = (a) => a.reduce((s, k) => s + ratio(k) * k.w, 0) / a.reduce((s, k) => s + k.w, 0);
-  var tR;
-  var seoR;
-  var semR;
-  var liScore;
-  var chenScore;
-  var company;
-  function recomputeScores() {
-    tR = blockRate(TOTAL);
-    seoR = blockRate(SEO);
-    semR = blockRate(SEM);
-    liScore = (tR * 0.5 + seoR * 0.5) * 100;
-    chenScore = (tR * 0.5 + semR * 0.5) * 100;
-    company = (liScore + chenScore) / 2;
-  }
-  recomputeScores();
-  window._seoWeeks = [];
-  window._semWeeks = [];
-  window._seoWeeksView = void 0;
-  function applyKpiServer(rows2) {
-    const byGrp = { total: TOTAL, seo: SEO, sem: SEM };
-    (rows2 || []).forEach((r) => {
-      const arr = byGrp[r.grp];
-      if (!arr) return;
-      const k = arr.find((x) => x.n === r.name);
-      if (k) {
-        if (typeof r.target === "number") k.t = r.target;
-        if (typeof r.actual === "number") k.a = r.actual;
-        k.id = r.id;
-      }
-    });
-  }
-  function syncKpiInputs() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
-      const p = el.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
-      if (arr && arr[idx] && arr[idx].t != null) {
-        el.textContent = String(arr[idx].t);
-        el.dataset.kpiOld = String(arr[idx].t);
-      }
-    });
-  }
-  async function loadMetrics() {
-    try {
-      const { rows: rows2 } = await API.get("/api/kpi-targets");
-      applyKpiServer(rows2);
-      syncKpiInputs();
-    } catch (e) {
-      if (e && e.message !== "unauthorized") toast("KPI \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
-    }
-  }
-  function mapSeoWeek(w) {
-    return { date: (w.week_date || "").slice(5), ym: (w.week_date || "").slice(0, 7), clicks: w.clicks, impr: w.impressions, pos: w.avg_position, top10: w.top10_ratio, coverage: w.coverage, indexed: w.indexed_pages, bounce: w.bounce_rate, dwell: w.dwell_seconds };
-  }
-  function mapSemWeek(w) {
-    return { date: (w.week_date || "").slice(5), cost: w.cost, impr: w.impressions, clicks: w.clicks, conv: w.conversions, roas: w.roas, qs: w.quality_score, cpc: w.cpc, ctr: w.ctr, cpconv: w.cost_per_conv };
-  }
-  async function loadWeeks() {
-    try {
-      const seo = await API.get("/api/seo-weeks");
-      window._seoWeeks = (seo.items || []).map(mapSeoWeek);
-      const sem = await API.get("/api/sem-weeks");
-      window._semWeeks = (sem.items || []).map(mapSemWeek);
-    } catch (e) {
-      window._seoWeeks = [];
-      window._semWeeks = [];
-      if (e && e.message !== "unauthorized") toast("\u5468\u62A5\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
-    }
-    applySeoActuals();
-    applySemActuals();
-    renderBoardCards();
-  }
-  function renderBoardCards() {
-  }
-  document.addEventListener("change", (e) => {
-    if (!e.target || e.target.id !== "sem-hlevel") return;
-    const v = e.target.value;
-    document.querySelectorAll("#sub-data-sem table.hierarchy tbody tr").forEach((tr) => {
-      let show = true;
-      if (v === "camp") show = tr.classList.contains("h-camp");
-      else if (v === "grp") show = tr.classList.contains("h-camp") || tr.classList.contains("h-grp");
-      tr.style.display = show ? "" : "none";
-    });
-  });
-  function applySeoActuals() {
-    const w = window._seoWeeks;
-    if (!w.length) return;
-    const last = w[w.length - 1], prev = w.length > 1 ? w[w.length - 2] : null;
-    if (prev && prev.clicks) SEO[0].a = Math.round((last.clicks / prev.clicks - 1) * 1e3) / 10;
-    if (last.top10 != null) SEO[1].a = last.top10;
-    if (last.coverage != null) SEO[2].a = last.coverage;
-    if (last.indexed != null) SEO[3].a = last.indexed;
-    if (last.bounce != null) SEO[4].a = last.bounce;
-    if (last.dwell != null) SEO[5].a = last.dwell;
-  }
-  function applySemActuals() {
-    const w = window._semWeeks;
-    if (!w.length) return;
-    const last = w[w.length - 1];
-    if (last.cpc != null) SEM[0].a = last.cpc;
-    if (last.ctr != null) SEM[1].a = last.ctr;
-    if (last.qs != null) SEM[2].a = last.qs;
-    if (last.roas != null) SEM[3].a = last.roas;
-    if (last.conv != null) SEM[4].a = last.conv;
-    if (last.cpconv != null) SEM[5].a = last.cpconv;
-  }
-  var _fnum = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return null;
-    const v = parseFloat(el.value);
-    return isNaN(v) ? null : v;
-  };
-  async function submitSeoWeek() {
-    const body = {
-      week_date: document.getElementById("sw-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
-      clicks: _fnum("sw-clicks") || 0,
-      impressions: _fnum("sw-impr") || 0,
-      avg_position: _fnum("sw-pos"),
-      top10_ratio: _fnum("sw-top10"),
-      coverage: _fnum("sw-cov"),
-      indexed_pages: _fnum("sw-idx"),
-      bounce_rate: _fnum("sw-bounce"),
-      dwell_seconds: _fnum("sw-dwell")
-    };
-    try {
-      const { item } = await API.post("/api/seo-weeks", body);
-      const rec = mapSeoWeek(item);
-      window._seoWeeks.push(rec);
-      applySeoActuals();
-      loadSeoBoardGsc();
-      refreshSeoWeekChart();
-      renderKPI();
-      closeModal("seoWkMask");
-      const wow = window._seoWeeks.length > 1 ? "\uFF0C\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4 " + (SEO[0].a >= 0 ? "+" : "") + SEO[0].a + "%" : "";
-      toast("\u5DF2\u5F55\u5165\u672C\u5468 GSC \u6570\u636E \xB7 \u5DF2\u5165\u5E93, \u56FE\u8868+KPI \u5DF2\u66F4\u65B0" + wow);
-    } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u674E/SEO \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
-    }
-  }
-  async function submitSemWeek() {
-    const body = {
-      week_date: document.getElementById("mw-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
-      cost: _fnum("mw-cost") || 0,
-      impressions: _fnum("mw-impr") || 0,
-      clicks: _fnum("mw-clicks") || 0,
-      conversions: _fnum("mw-conv") || 0,
-      roas: _fnum("mw-roas"),
-      quality_score: _fnum("mw-qs")
-    };
-    try {
-      const { item } = await API.post("/api/sem-weeks", body);
-      const rec = mapSemWeek(item);
-      window._semWeeks.push(rec);
-      applySemActuals();
-      loadSemBoardAds();
-      renderKPI();
-      closeModal("semWkMask");
-      toast("\u5DF2\u5BFC\u5165\u672C\u5468 Ads \u6570\u636E \xB7 CPC \xA5" + (rec.cpc ?? "-") + " / CTR " + (rec.ctr ?? "-") + "% / \u6BCF\u8BE2\u76D8 \xA5" + (rec.cpconv ?? "-") + "\uFF08\u540E\u7AEF\u8BA1\u7B97\uFF09, KPI \u5DF2\u66F4\u65B0");
-    } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u9648/SEM \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
-    }
-  }
-
-  // public/src/kpi-view.js
-  function grade(s) {
-    if (s >= 90) return { t: "\u4F18\u79C0", c: "var(--green)", bg: "var(--green-soft)", i: "ti-trophy" };
-    if (s >= 75) return { t: "\u5408\u683C", c: "var(--blue)", bg: "var(--blue-soft)", i: "ti-circle-check" };
-    if (s >= 60) return { t: "\u8B66\u544A", c: "var(--amber)", bg: "var(--amber-soft)", i: "ti-alert-triangle" };
-    return { t: "\u6574\u6539", c: "var(--primary)", bg: "var(--primary-soft)", i: "ti-flame" };
-  }
-  function gauge(arc, sc, score) {
-    const C = 364.4, g = grade(score), A = document.getElementById(arc), S = document.getElementById(sc);
-    if (!A) return;
-    A.style.stroke = g.c;
-    S.style.color = g.c;
-    let c = 0;
-    (function st() {
-      c += score / 40;
-      if (c >= score) c = score;
-      A.style.strokeDashoffset = C - C * c / 100;
-      S.textContent = c.toFixed(0);
-      if (c < score) requestAnimationFrame(st);
-    })();
-  }
-  function badge(id, score) {
-    const b = document.getElementById(id);
-    if (!b) return;
-    const g = grade(score);
-    b.style.background = g.bg;
-    b.style.color = g.c;
-    b.innerHTML = '<i class="ti ' + g.i + '"></i> ' + g.t;
-  }
-  function fmt(k, v) {
-    return k.u === "\xA5" ? "\xA5" + v.toLocaleString() : k.u === "%" ? v + "%" : k.u === "" ? v : v + k.u;
-  }
-  function scoreTone(r) {
-    return r >= 0.9 ? "kpi-tone-green" : r >= 0.7 ? "kpi-tone-blue" : r >= 0.5 ? "kpi-tone-amber" : "kpi-tone-primary";
-  }
-  function rows(arr, box) {
-    const el = document.getElementById(box);
-    if (!el) return;
-    el.innerHTML = arr.map((k) => {
-      const r = ratio(k), tone = scoreTone(r), progress = Math.max(0, Math.min(100, Number.isFinite(r) ? r * 100 : 0));
-      return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${fmt(k, k.a)}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${Math.round(r * 100)}</div></div>`;
-    }).join("");
-    el.querySelectorAll("[data-progress]").forEach((fill) => {
-      const progress = Number(fill.dataset.progress);
-      fill.style.width = `${Number.isFinite(progress) ? progress : 0}%`;
-    });
-  }
-  function mini(ov) {
-    ov = ov || { current: {} };
-    const c = ov.current || {};
-    const d = ov.delta || {};
-    const momTxt = (v) => v == null ? "" : v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014";
-    const m = [
-      ["\u6709\u6548\u8BE2\u76D8", c.valid ?? "\u2014", "", ""],
-      ["A\u7EA7\u5360\u6BD4", c.aRatio != null ? c.aRatio + "%" : "\u2014", "", momTxt(d.aRatio)],
-      ["\u6709\u6548\u8BE2\u76D8\u7387", c.validRate != null ? c.validRate + "%" : "\u2014", "", momTxt(d.validRate)]
-    ];
-    const el = document.getElementById("miniScores");
-    if (!el) return;
-    el.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
-  }
-  async function loadOverview() {
-    try {
-      const ov = await API.get("/api/overview");
-      const c = ov.current || {}, d = ov.delta || {};
-      const set = (id, v) => {
-        const e = document.getElementById(id);
-        if (e) e.textContent = v;
-      };
-      set("topValid", (c.valid ?? "\u2014") + " / " + (c.total ?? "\u2014"));
-      set("topAratio", c.aRatio != null ? c.aRatio + "%" : "\u2014");
-      set("topRate", c.validRate != null ? c.validRate + "%" : "\u2014");
-      const tg = document.getElementById("topGrade");
-      if (tg) {
-        tg.textContent = c.grade || "";
-        tg.className = "kpi-delta " + (c.company >= 75 ? "delta-pos" : "delta-neg");
-      }
-      const mom = (el, v) => {
-        if (!el) return;
-        if (v == null) {
-          el.textContent = "";
-          return;
-        }
-        el.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " vs\u4E0A\u6708";
-        el.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
-      };
-      mom(document.getElementById("topAratioMoM"), d.aRatio);
-      mom(document.getElementById("topRateMoM"), d.validRate);
-      const g1b = document.getElementById("g1b");
-      if (g1b) {
-        let chip = document.getElementById("g1mom");
-        if (!chip) {
-          chip = document.createElement("span");
-          chip.id = "g1mom";
-          chip.style.marginLeft = "8px";
-          chip.style.fontSize = "11px";
-          chip.style.fontWeight = "800";
-          g1b.parentElement && g1b.parentElement.appendChild(chip);
-        }
-        if (d.company == null) {
-          chip.textContent = "\u9996\u6708\u65E0\u73AF\u6BD4";
-          chip.style.color = "var(--text3)";
-        } else {
-          chip.textContent = (d.company > 0 ? "\u25B2" + d.company : d.company < 0 ? "\u25BC" + Math.abs(d.company) : "\u2014") + " \u5206 vs\u4E0A\u6708";
-          chip.style.color = d.company > 0 ? "var(--green)" : d.company < 0 ? "var(--primary)" : "var(--text3)";
-        }
-      }
-      mini(ov);
-    } catch (e) {
-      mini();
-    }
-  }
-  function renderKPI2() {
-    recomputeScores();
-    rows(TOTAL, "totalRows");
-    rows(SEO, "seoRows");
-    rows(SEM, "semRows");
-    const set = (id, v) => {
-      const e = document.getElementById(id);
-      if (e) e.textContent = v;
-    };
-    set("topScore", company.toFixed(0));
-    badge("liBadge", liScore);
-    badge("chenBadge", chenScore);
-    gauge("g1", "g1s", company);
-    gauge("g2", "g2s", company);
-    badge("g1b", company);
-    badge("g2b", company);
-    gauge("liArc", "liScore", liScore);
-    gauge("chenArc", "chenScore", chenScore);
-  }
-
-  // public/src/tagselect.js
-  var tagselect_exports = {};
-  __export(tagselect_exports, {
-    OPT: () => OPT,
-    persistTagChange: () => persistTagChange
-  });
 
   // public/src/inquiries.js
   var REGION_BADGE = { "\u6B27\u6D32": "b-blue", "\u897F\u6B27": "b-blue", "\u5357\u6B27": "b-blue", "\u5317\u6B27": "b-blue", "\u4E2D\u4E1C\u6B27": "b-teal", "\u4E1C\u6B27/\u4FC4\u7F57\u65AF": "b-amber", "\u4FC4\u7F57\u65AF": "b-amber", "\u5317\u7F8E": "b-purple", "\u62C9\u7F8E": "b-red", "\u4E2D\u4E1C": "b-amber", "\u5317\u975E": "b-amber", "\u6492\u54C8\u62C9\u4EE5\u5357\u975E\u6D32": "b-gray", "\u5357\u4E9A": "b-teal", "\u4E1C\u5357\u4E9A": "b-red", "\u4E1C\u5357\u4E9A/\u5DF4\u897F": "b-red", "\u4E1C\u4E9A": "b-green", "\u4E2D\u4E9A": "b-gray", "\u5927\u6D0B\u6D32": "b-teal", "\u5176\u4ED6": "b-gray" };
@@ -2329,605 +1830,7 @@
     }
   }
 
-  // public/src/google-projects.js
-  var google_projects_exports = {};
-  __export(google_projects_exports, {
-    backfillGoogle: () => backfillGoogle,
-    loadDataSourcesStatus: () => loadDataSourcesStatus,
-    loadIntegrations: () => loadIntegrations,
-    startGoogleAuth: () => startGoogleAuth,
-    syncGoogle: () => syncGoogle
-  });
-  var INTEG_LABEL = { gsc: "Google Search Console", ga4: "Google Analytics 4 (GA4)", ads: "Google Ads" };
-  var GOOGLE_PROVIDER_ORDER = ["gsc", "ga4", "ads"];
-  var DS_LABEL = { inquiries: "\u8BE2\u76D8", seo_weeks: "SEO \u5468\u62A5", sem_weeks: "SEM \u5468\u62A5", gsc: "GSC", ga4: "GA4", ads: "Google Ads", ai: "AI Provider" };
-  var DS_ORDER = ["inquiries", "seo_weeks", "sem_weeks", "gsc", "ga4", "ads", "ai"];
-  var DS_TYPE_LABEL = { manual: "\u4EBA\u5DE5\u5F55\u5165", sync: "\u81EA\u52A8\u540C\u6B65", provider: "AI Provider" };
-  function dsStatusMeta(status, type) {
-    const map = {
-      available: [type === "sync" ? "\u5DF2\u6388\u6743 \xB7 \u53EF\u540C\u6B65" : "\u4EBA\u5DE5\u5F55\u5165 \xB7 \u6709\u6570\u636E", type === "sync" ? "b-green" : "b-blue"],
-      no_records: ["\u4EBA\u5DE5\u5F55\u5165 \xB7 \u6682\u65E0\u6570\u636E", "b-gray"],
-      not_configured: type === "sync" ? ["\u540E\u7AEF\u672A\u914D\u7F6E", "b-gray"] : ["\u672A\u914D\u7F6E", "b-gray"],
-      configured_not_synced: ["\u5DF2\u914D\u7F6E \xB7 \u5F85 OAuth \u6388\u6743", "b-amber"],
-      not_implemented: ["\u672A\u63A5\u5165", "b-gray"],
-      configured_unverified: ["\u5DF2\u914D\u7F6E \xB7 \u672A\u9A8C\u8BC1", "b-amber"],
-      error: ["\u72B6\u6001\u83B7\u53D6\u5931\u8D25", "b-red"]
-    };
-    return map[status] || ["\u72B6\u6001\u83B7\u53D6\u5931\u8D25", "b-red"];
-  }
-  function dsRow(key, s) {
-    s = s || {};
-    const name = DS_LABEL[key] || key;
-    const typeText = DS_TYPE_LABEL[s.type] || s.type || "";
-    const [text2, cls] = dsStatusMeta(s.status, s.type);
-    const time = s.type === "manual" ? s.lastAt || "\u2014" : s.type === "sync" ? s.lastSyncAt || "\u2014" : "\u2014";
-    const count = s.type === "manual" || s.type === "sync" ? s.count == null ? 0 : s.count : "\u2014";
-    let extra = "";
-    if (s.error) extra = `<span class="csp-s-b0e08465c2"> \xB7 \u9519\u8BEF\uFF1A${esc(s.error)}</span>`;
-    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc(s.missing.join(", "))}</span>`;
-    else if (s.note === "google_oauth_required") extra = `<span class="dim"> \xB7 \u9700\u8981 OAuth \u6388\u6743</span>`;
-    else if (s.note === "google_sync_ready") extra = `<span class="dim"> \xB7 \u53EF\u624B\u52A8\u540C\u6B65</span>`;
-    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc(s.provider || "")}${s.model ? " / " + esc(s.model) : ""}</span>`;
-    return `<div class="csp-s-6d1156dd83"><div class="csp-s-22dccc46c7">${esc(name)}</div><div class="csp-s-b57829faf1">${esc(typeText)}</div><span class="badge ${cls}">${esc(text2)}</span><div class="csp-s-83725d2c6e"></div><div class="csp-s-95144d7b86">\u65F6\u95F4 ${esc(String(time))} \xB7 \u8BB0\u5F55 ${esc(String(count))}</div><div class="csp-s-33ee298127">${extra}</div></div>`;
-  }
-  async function loadDataSourcesStatus() {
-    const box = document.getElementById("ds-status-rows");
-    if (!box) return;
-    const tag = document.getElementById("ds-demo-tag");
-    if (tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber csp-s-9d5367afed">\u793A\u4F8B\u6A21\u5F0F</span>' : "";
-    try {
-      const r = await API.get("/api/data-sources/status");
-      const src = r && r.sources || {};
-      box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("") + (window.DEMO_MODE ? '<div class="dim csp-s-5698104cf1">\u5F53\u524D\u4E3A\u6F14\u793A\u6807\u8BB0\uFF0C\u4E0B\u65B9\u4ECD\u4E3A\u63A5\u53E3\u771F\u5B9E\u72B6\u6001\u3002</div>' : "");
-    } catch (e) {
-      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
-    }
-  }
-  async function loadIntegrations() {
-    const box = document.getElementById("integ-rows");
-    if (!box) return;
-    try {
-      const r = await API.get("/api/google/status");
-      const providers = r && r.providers || {};
-      const project = r && r.defaultProject;
-      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
-      box.innerHTML = `<div class="sheet-tip csp-s-145afb7049"><i class="ti ti-info-circle"></i> ${projectText}</div>` + GOOGLE_PROVIDER_ORDER.map((p) => googleProviderRow(p, providers[p] || {}, project)).join("");
-      bindGoogleProviderActions(box);
-    } catch (e) {
-      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
-    }
-  }
-  function googleProviderRow(provider, s, project) {
-    const configured = !!s.configured;
-    const authorized = !!s.authorized;
-    const ok = configured && authorized;
-    const badge3 = ok ? '<span class="badge b-green">\u5DF2\u6388\u6743</span>' : configured ? '<span class="badge b-amber">\u5F85\u6388\u6743</span>' : '<span class="badge b-gray">\u540E\u7AEF\u672A\u914D\u7F6E</span>';
-    const missing = s.missing && s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">\u7F3A\u5C11\uFF1A${esc(s.missing.join(", "))}</div>` : "";
-    const lastSync = s.lastSyncAt || "\u2014";
-    const lastStatus = s.lastSyncStatus || "\u672A\u540C\u6B65";
-    const lastError = s.lastError ? `<div class="csp-s-5ade8bf698">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc(s.lastError)}</div>` : "";
-    const providerConfigNote = provider === "gsc" ? s.siteUrlConfigured || project?.gsc_site_url ? "\u7AD9\u70B9\u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GSC_SITE_URL \u6216\u9879\u76EE\u7AD9\u70B9" : provider === "ga4" ? s.propertyConfigured || project?.ga4_property_id ? "Property \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GA4_PROPERTY_ID \u6216\u9879\u76EE Property" : s.customerConfigured || project?.ads_customer_id ? "Customer \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GOOGLE_ADS_CUSTOMER_ID \u6216\u9879\u76EE Customer";
-    const authDisabled = configured ? "" : "disabled";
-    const syncDisabled = ok ? "" : "disabled";
-    return `<div class="csp-s-98c17c8e1c">
-    <div class="csp-s-fad0d7671e">${esc(INTEG_LABEL[provider] || provider)} ${badge3}</div>
-    <div class="csp-s-fd03ebc21e">
-      <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
-      ${missing}${lastError}
-    </div>
-    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
-    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
-    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
-  </div>`;
-  }
-  function bindGoogleProviderActions(box) {
-    box.onclick = (e) => {
-      const btn = e.target.closest("[data-google-action]");
-      if (!btn || !box.contains(btn)) return;
-      const provider = btn.dataset.provider;
-      if (!GOOGLE_PROVIDER_ORDER.includes(provider)) return;
-      const action = btn.dataset.googleAction;
-      if (action === "auth") startGoogleAuth(provider);
-      else if (action === "backfill") backfillGoogle(provider, 90, btn);
-      else if (action === "sync") syncGoogle(provider, btn);
-    };
-  }
-  function startGoogleAuth(provider) {
-    location.href = "/api/google/auth/start?provider=" + encodeURIComponent(provider);
-  }
-  async function backfillGoogle(provider, days, btn) {
-    const old = btn ? btn.innerHTML : "";
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i class="ti ti-loader-2"></i> \u56DE\u8865\u4E2D\u2026';
-    }
-    try {
-      const end = /* @__PURE__ */ new Date();
-      end.setUTCDate(end.getUTCDate() - 1);
-      const start = new Date(end);
-      start.setUTCDate(start.getUTCDate() - (days - 1));
-      const iso = (d) => d.toISOString().slice(0, 10);
-      const r = await API.post("/api/sync/" + encodeURIComponent(provider), { start_date: iso(start), end_date: iso(end) });
-      toast(`${INTEG_LABEL[provider] || provider} \u56DE\u8865 ${days} \u5929\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
-      await loadDataSourcesStatus();
-      await loadIntegrations();
-      if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
-      loadDataFreshness();
-    } catch (e) {
-      const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
-      toast(`\u56DE\u8865\u5931\u8D25\uFF1A${e.message}${missing}`);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = old;
-      }
-    }
-  }
-  async function syncGoogle(provider, btn) {
-    const old = btn ? btn.innerHTML : "";
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i class="ti ti-loader-2"></i> \u540C\u6B65\u4E2D';
-    }
-    try {
-      const r = await API.post("/api/sync/" + encodeURIComponent(provider), {});
-      toast(`${INTEG_LABEL[provider] || provider} \u540C\u6B65\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
-      await loadDataSourcesStatus();
-      await loadIntegrations();
-      if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
-    } catch (e) {
-      const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
-      toast(`\u540C\u6B65\u5931\u8D25\uFF1A${e.message}${missing}`);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = old;
-      }
-    }
-  }
-
-  // public/src/archive.js
-  var archive_exports = {};
-  __export(archive_exports, {
-    loadArchive: () => loadArchive2
-  });
-  document.addEventListener("click", async (e) => {
-    const arc = e.target.closest(".row-archive");
-    const dep = e.target.closest(".row-dep");
-    if (!arc && !dep) return;
-    const tr = (arc || dep).closest("tr");
-    if (!tr) return;
-    const id = tr.dataset.id, ep = tr.dataset.ep;
-    if (!id || !ep) return;
-    const dEl = tr.querySelector('[data-kind="dept"]');
-    const deptTxt = dEl ? dEl.textContent.trim() : "";
-    const isSem = deptTxt === "SEM" || /sem/i.test(tr.parentElement && tr.parentElement.id || "");
-    const isCompany = deptTxt === "\u516C\u53F8";
-    const ak = isCompany ? "company" : isSem ? "sem" : "seo";
-    const content = (tr.querySelector('[data-field="content"]') || tr.querySelector('[data-field="title"]') || tr.cells[0]).innerText.trim();
-    if (arc) {
-      if (!inlineConfirm(arc, "\u786E\u8BA4\u5F52\u6863")) return;
-      arc.disabled = true;
-      try {
-        await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
-        tr.remove();
-        toast("\u5DF2\u5F52\u6863");
-      } catch (err) {
-        arc.disabled = false;
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5F52\u6863\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
-      }
-    } else if (dep) {
-      dep.disabled = true;
-      try {
-        const s = { dept: isCompany ? "\u516C\u53F8" : isSem ? "SEM" : "SEO", owner: isSem ? "\u9648" : "\u674E", c: isSem ? "b-purple" : "b-blue" };
-        const { item } = await persistLoop("deposit", s, content, "\u6C89\u6DC0");
-        const depTb = document.getElementById("tb-dep");
-        if (depTb) {
-          const ntr = document.createElement("tr");
-          ntr.dataset.id = item.id;
-          ntr.dataset.ep = "/api/loop-items";
-          ntr.innerHTML = depRowHtml(item);
-          depTb.insertBefore(ntr, depTb.firstChild);
-          const de = document.getElementById("dep-empty");
-          if (de) de.style.display = "none";
-        }
-        dep.disabled = false;
-        toast("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93");
-      } catch (err) {
-        dep.disabled = false;
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6C89\u6DC0\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
-      }
-    }
-  });
-  function archRowHtml(it, from) {
-    const date = (it.archived_at || "").slice(0, 10);
-    const dept = it.dept || "\u2014";
-    const content = esc(it.content || it.title || it.detail || "");
-    const fromBadge = '<span class="badge ' + (from === "fix" ? "b-amber" : "b-blue") + '">' + (from === "fix" ? "\u6574\u6539" : it.kind === "task" ? "\u4EFB\u52A1" : it.kind === "plan" ? "\u8BA1\u5212" : it.kind === "test" ? "\u6D4B\u8BD5" : it.kind === "deposit" ? "\u6C89\u6DC0" : "\u95ED\u73AF") + "</span>";
-    const isBoss = (window.ME || {}).role === "boss";
-    const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u539F\u9875"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
-    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
-  }
-  function archInqRowHtml(it) {
-    const date = (it.archived_at || "").slice(0, 10);
-    const isBoss = (window.ME || {}).role === "boss";
-    const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u8BE2\u76D8\u5217\u8868"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
-    const cust = (it.customer_name ? esc(it.customer_name) + " \xB7 " : "") + esc(it.country || "");
-    const source = esc(it.source || "");
-    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-short-date num">${esc((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
-  }
-  async function loadArchive2() {
-    const bucket = { sem: [], seo: [], company: [] };
-    try {
-      const { items } = await API.get("/api/fixes?archived=1");
-      (items || []).forEach((f) => {
-        const k = f.archive_kind || deriveAk(f.dept);
-        if (bucket[k]) bucket[k].push({ ...f, _from: "fix" });
-      });
-    } catch (e) {
-    }
-    try {
-      const { items } = await API.get("/api/loop-items?archived=1");
-      (items || []).forEach((it) => {
-        const k = it.archive_kind || deriveAk(it.dept);
-        if (bucket[k]) bucket[k].push({ ...it, _from: "loop" });
-      });
-    } catch (e) {
-    }
-    ["sem", "seo", "company"].forEach((k) => {
-      const tb = document.getElementById("tb-arc-" + k);
-      if (!tb) return;
-      tb.innerHTML = "";
-      const rows2 = bucket[k].slice().sort((a, b) => String(b.archived_at || "").localeCompare(String(a.archived_at || "")));
-      rows2.forEach((it) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = it.id;
-        tr.dataset.ep = it._from === "fix" ? "/api/fixes" : "/api/loop-items";
-        tr.innerHTML = archRowHtml(it, it._from);
-        tb.appendChild(tr);
-      });
-      const e = document.getElementById("arc-" + k + "-empty");
-      if (e) e.style.display = rows2.length ? "none" : "block";
-    });
-    const itb = document.getElementById("tb-arc-inquiry");
-    if (itb) {
-      itb.innerHTML = "";
-      let inqs = [];
-      try {
-        const { items } = await API.get("/api/inquiries?archived=1");
-        inqs = items || [];
-      } catch (e2) {
-      }
-      inqs.forEach((it) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = it.id;
-        tr.dataset.ep = "/api/inquiries";
-        tr.innerHTML = archInqRowHtml(it);
-        itb.appendChild(tr);
-      });
-      const e = document.getElementById("arc-inquiry-empty");
-      if (e) e.style.display = inqs.length ? "none" : "block";
-    }
-  }
-  function deriveAk(dept) {
-    return dept === "SEM" ? "sem" : dept === "\u516C\u53F8" ? "company" : "seo";
-  }
-  document.addEventListener("click", async (e) => {
-    const r = e.target.closest(".arch-restore");
-    const h = e.target.closest(".arch-hard");
-    if (!r && !h) return;
-    const tr = (r || h).closest("tr");
-    if (!tr) return;
-    const id = tr.dataset.id, ep = tr.dataset.ep;
-    if (!id || !ep) return;
-    if (r) {
-      if (!inlineConfirm(r, "\u786E\u8BA4\u6062\u590D")) return;
-      try {
-        await API.post(ep + "/" + id + "/restore");
-        tr.remove();
-        if (ep === "/api/inquiries") {
-          loadInquiries();
-          loadDashboardInq();
-        }
-        toast("\u5DF2\u6062\u590D \xB7 \u8BF7\u56DE\u539F\u9875\u67E5\u770B");
-      } catch (err) {
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
-      }
-    } else {
-      if (!inlineConfirm(h, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
-      try {
-        await API.del(ep + "/" + id + "?hard=1");
-        tr.remove();
-        toast("\u5DF2\u5F7B\u5E95\u5220\u9664");
-      } catch (err) {
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
-      }
-    }
-  });
-
-  // public/src/sop.js
-  var sop_exports = {};
-  __export(sop_exports, {
-    buildSopOverdueList: () => buildSopOverdueList,
-    isOverduePeriodFirstDay: () => isOverduePeriodFirstDay,
-    isSopWritable: () => isSopWritable,
-    loadSops: () => loadSops,
-    loadUrgent: () => loadUrgent,
-    openSopModal: () => openSopModal,
-    refreshNavTaskDot: () => refreshNavTaskDot,
-    renderSopCards: () => renderSopCards,
-    renderSopOverdueBanner: () => renderSopOverdueBanner,
-    renderSopSettingsTable: () => renderSopSettingsTable,
-    renderUrgentBanner: () => renderUrgentBanner,
-    sopCardEl: () => sopCardEl,
-    sopPeriodKey: () => sopPeriodKey,
-    submitSop: () => submitSop,
-    updateSopCounts: () => updateSopCounts
-  });
-  function sopPeriodKey(freq) {
-    const d = /* @__PURE__ */ new Date();
-    d.setHours(0, 0, 0, 0);
-    if (freq === "monthly") {
-      const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0");
-      return y + "-" + m;
-    }
-    if (freq === "weekly") {
-      const tmp = new Date(d);
-      tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7));
-      const yearStart = new Date(tmp.getFullYear(), 0, 1);
-      const week = Math.ceil(((tmp - yearStart) / 864e5 + 1) / 7);
-      return tmp.getFullYear() + "-W" + String(week).padStart(2, "0");
-    }
-    return formatLocalDate2(d);
-  }
-  window._sops = [];
-  window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
-  var FREQ_LABEL = { daily: "\u6BCF\u65E5\u5FC5\u505A", weekly: "\u6BCF\u5468\u5FC5\u505A", monthly: "\u6BCF\u6708\u5FC5\u505A" };
-  var FREQ_TAG = { daily: "\u65E5", weekly: "\u5468", monthly: "\u6708" };
-  async function loadSops() {
-    try {
-      const { items } = await API.get("/api/sop");
-      window._sops = items || [];
-    } catch (e) {
-      window._sops = [];
-      if (e && e.message !== "unauthorized") toast("SOP \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || ""));
-    }
-    try {
-      const q = "daily=" + encodeURIComponent(sopPeriodKey("daily")) + "&weekly=" + encodeURIComponent(sopPeriodKey("weekly")) + "&monthly=" + encodeURIComponent(sopPeriodKey("monthly"));
-      const { items } = await API.get("/api/sop/completions?" + q);
-      window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
-      const keyToFreq = { [sopPeriodKey("daily")]: "daily", [sopPeriodKey("weekly")]: "weekly", [sopPeriodKey("monthly")]: "monthly" };
-      (items || []).forEach((c) => {
-        const f = keyToFreq[c.period_key];
-        if (f) window._sopDone[f].add(c.sop_id);
-      });
-    } catch (e) {
-    }
-    renderSopCards();
-    renderSopSettingsTable();
-    updateSopCounts();
-    renderSopOverdueBanner();
-    refreshNavTaskDot();
-  }
-  function renderSopCards() {
-    ["SEM", "SEO", "\u516C\u53F8"].forEach((dept) => {
-      const anchor = document.getElementById(dept === "\u516C\u53F8" ? "sop-company" : "sop-" + dept.toLowerCase());
-      if (!anchor) return;
-      const list = window._sops.filter((s) => s.dept === dept);
-      anchor.innerHTML = '<div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>';
-      if (!list.length) {
-        anchor.insertAdjacentHTML("beforeend", '<div class="sop-empty-hint csp-s-fec2a1b122">\u6682\u65E0 SOP\uFF0C\u53BB\u300C\u8BBE\u7F6E \xB7 SOP \u8BBE\u7F6E\u300D\u6DFB\u52A0</div>');
-        return;
-      }
-      const box = document.createElement("div");
-      box.className = "sop-list";
-      ["daily", "weekly", "monthly"].forEach((freq) => {
-        list.filter((s) => s.freq === freq).forEach((s) => box.appendChild(sopCardEl(s)));
-      });
-      anchor.appendChild(box);
-    });
-  }
-  function sopCardEl(s) {
-    const done = window._sopDone[s.freq] && window._sopDone[s.freq].has(s.id);
-    const row = document.createElement("div");
-    row.className = "tcard" + (done ? " done" : "");
-    row.dataset.sopId = s.id;
-    row.dataset.sopFreq = s.freq;
-    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
-    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc(s.title)}</span><span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq] || "")}">${esc(FREQ_TAG[s.freq] || "")}</span></span>`;
-    row.querySelector(".tcheck").addEventListener("click", (e) => window.chk(e.currentTarget));
-    return row;
-  }
-  function updateSopCounts() {
-    [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
-      const el = document.getElementById("kcount-" + key);
-      if (!el) return;
-      const sopN = window._sops.filter((s) => s.dept === dept).length;
-      const addCol = document.getElementById("newtask-" + key);
-      const addN = addCol ? addCol.querySelectorAll(".tcard:not(.subtask)").length : 0;
-      el.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
-    });
-  }
-  function isSopWritable() {
-    const r = (window.ME || {}).role;
-    return r === "manager" || r === "boss";
-  }
-  function renderSopSettingsTable() {
-    const tb = document.getElementById("tb-sop");
-    if (!tb) return;
-    const addBtn = document.getElementById("sop-add-btn");
-    const writable = isSopWritable();
-    if (addBtn) addBtn.style.display = writable ? "" : "none";
-    tb.innerHTML = "";
-    const list = window._sops;
-    if (!list.length) {
-      const e2 = document.getElementById("sop-empty");
-      if (e2) e2.style.display = "block";
-      return;
-    }
-    const e = document.getElementById("sop-empty");
-    if (e) e.style.display = "none";
-    list.forEach((s) => {
-      const tr = document.createElement("tr");
-      tr.dataset.sopId = s.id;
-      const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>` : '<span class="dim csp-s-33ee298127">\u53EA\u8BFB</span>';
-      tr.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.title)}</td><td class="dim csp-s-33ee298127">${esc(s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
-      tb.appendChild(tr);
-    });
-  }
-  var _sopEditing = null;
-  function openSopModal(sop) {
-    if (!isSopWritable()) {
-      toast("\u4EC5\u7ECF\u7406 / \u8001\u677F\u53EF\u7F16\u8F91 SOP");
-      return;
-    }
-    _sopEditing = sop || null;
-    document.getElementById("sop-mod-title").textContent = sop ? "\u7F16\u8F91 SOP" : "\u65B0\u589E SOP";
-    document.getElementById("sop-dept").value = sop ? sop.dept : "SEM";
-    document.getElementById("sop-freq").value = sop ? sop.freq : "daily";
-    document.getElementById("sop-title").value = sop ? sop.title : "";
-    document.getElementById("sop-content").value = sop ? sop.content || "" : "";
-    document.getElementById("sop-time").value = sop ? sop.time_hint || "" : "";
-    openModal("sopMask");
-    setTimeout(() => document.getElementById("sop-title").focus(), 50);
-  }
-  async function submitSop() {
-    const dept = document.getElementById("sop-dept").value;
-    const freq = document.getElementById("sop-freq").value;
-    const title = document.getElementById("sop-title").value.trim();
-    const content = document.getElementById("sop-content").value.trim();
-    const time_hint = document.getElementById("sop-time").value.trim();
-    if (!title) {
-      toast("\u8BF7\u586B\u5199\u6807\u9898");
-      return;
-    }
-    try {
-      if (_sopEditing) {
-        await API.patch("/api/sop/" + _sopEditing.id, { dept, freq, title, content, time_hint });
-        toast("\u5DF2\u66F4\u65B0 SOP");
-      } else {
-        await API.post("/api/sop", { dept, freq, title, content, time_hint });
-        toast("\u5DF2\u65B0\u589E SOP");
-      }
-      closeModal("sopMask");
-      await loadSops();
-    } catch (e) {
-      toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || ""));
-    }
-  }
-  document.addEventListener("click", async (e) => {
-    const edit = e.target.closest(".sop-edit");
-    const del = e.target.closest(".sop-del");
-    if (!edit && !del) return;
-    const tr = (edit || del).closest("tr");
-    const id = tr && tr.dataset.sopId;
-    if (!id) return;
-    if (edit) {
-      const s = window._sops.find((x) => String(x.id) === String(id));
-      if (s) openSopModal(s);
-      return;
-    }
-    if (del) {
-      if (!inlineConfirm(del, "\u786E\u8BA4\u505C\u7528")) return;
-      try {
-        await API.del("/api/sop/" + id);
-        toast("\u5DF2\u505C\u7528");
-        await loadSops();
-      } catch (err) {
-        toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u64CD\u4F5C\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
-      }
-    }
-  });
-  function isOverduePeriodFirstDay(freq) {
-    const now = /* @__PURE__ */ new Date();
-    const h = now.getHours();
-    if (h < 8) return false;
-    if (freq === "daily") return true;
-    if (freq === "weekly") return now.getDay() === 1;
-    if (freq === "monthly") return now.getDate() === 1;
-    return false;
-  }
-  function buildSopOverdueList() {
-    const today2 = formatLocalDate2(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^\d{4}\./, "");
-    const lines = [];
-    ["daily", "weekly", "monthly"].forEach((freq) => {
-      if (!isOverduePeriodFirstDay(freq)) return;
-      (window._sops || []).forEach((s) => {
-        if (s.freq !== freq) return;
-        const done = window._sopDone[freq] && window._sopDone[freq].has(s.id);
-        if (done) return;
-        lines.push(esc(s.dept) + "-" + today2 + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
-      });
-    });
-    return lines;
-  }
-  function renderSopOverdueBanner() {
-    const box = document.getElementById("sop-overdue-banner");
-    const list = document.getElementById("sop-overdue-list");
-    if (!box || !list) return;
-    const lines = buildSopOverdueList();
-    if (!lines.length) {
-      box.style.display = "none";
-      list.innerHTML = "";
-      return;
-    }
-    box.style.display = "flex";
-    list.innerHTML = lines.map((l) => "<div>" + l + "</div>").join("");
-  }
-  window._urgentTasks = [];
-  async function loadUrgent() {
-    try {
-      const { items } = await API.get("/api/loop-items?urgent=1");
-      window._urgentTasks = (items || []).filter((it) => {
-        const st = it.state || "";
-        const ss = it.status || "";
-        return st !== "done" && ss !== "done";
-      });
-    } catch (e) {
-      window._urgentTasks = [];
-    }
-    renderUrgentBanner();
-    refreshNavTaskDot();
-  }
-  function renderUrgentBanner() {
-    const box = document.getElementById("urgent-banner");
-    const list = document.getElementById("urgent-list");
-    if (!box || !list) return;
-    const arr = window._urgentTasks || [];
-    if (!arr.length) {
-      box.style.display = "none";
-      list.innerHTML = "";
-      return;
-    }
-    box.style.display = "flex";
-    list.innerHTML = arr.map((it) => {
-      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc(it.task_date) + "\uFF09" : "";
-      return "<div>" + esc(it.content || "") + due + "</div>";
-    }).join("");
-  }
-  function refreshNavTaskDot() {
-    const dot = document.getElementById("nav-tasks-dot");
-    if (!dot) return;
-    const overdue = buildSopOverdueList().length > 0;
-    const urgent = (window._urgentTasks || []).length > 0;
-    dot.classList.toggle("is-hidden", !(overdue || urgent));
-  }
-
   // public/src/keywords.js
-  var keywords_exports = {};
-  __export(keywords_exports, {
-    activeCat: () => activeCat,
-    addKeyword: () => addKeyword,
-    applyKwPaging: () => applyKwPaging,
-    clsOf: () => clsOf,
-    filterKwByCat: () => filterKwByCat,
-    inlineConfirm: () => inlineConfirm2,
-    kwDelete: () => kwDelete,
-    kwRow: () => kwRow,
-    loadKeywords: () => loadKeywords,
-    renderCatTabs: () => renderCatTabs,
-    renderKwPager: () => renderKwPager
-  });
   var KW_TB = { seo: "tb-kw-seo", sem: "tb-kw-sem", high: "tb-kw-high", customer: "tb-kw-cust" };
   var KW_PAGE_OPTS = [10, 20, 50, 100, 200, 300];
   var _kwPage = { seo: 0, sem: 0, high: 0, customer: 0 };
@@ -3136,7 +2039,7 @@
       toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
     }
   }
-  function inlineConfirm2(btn, label) {
+  function inlineConfirm(btn, label) {
     if (!btn) return true;
     if (btn.dataset.confirm === "1") {
       clearTimeout(btn._t);
@@ -3245,6 +2148,2128 @@
     } catch (err) {
       rollbackEditable(cell, oldVal);
       showSaveError(cell, err.status === 403 ? "\u65E0\u6743\u9650\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+    }
+  });
+
+  // public/src/sop.js
+  var sop_exports = {};
+  __export(sop_exports, {
+    buildSopOverdueList: () => buildSopOverdueList,
+    isOverduePeriodFirstDay: () => isOverduePeriodFirstDay,
+    isSopWritable: () => isSopWritable,
+    loadSops: () => loadSops,
+    loadUrgent: () => loadUrgent,
+    openSopModal: () => openSopModal,
+    refreshNavTaskDot: () => refreshNavTaskDot,
+    renderSopCards: () => renderSopCards,
+    renderSopOverdueBanner: () => renderSopOverdueBanner,
+    renderSopSettingsTable: () => renderSopSettingsTable,
+    renderUrgentBanner: () => renderUrgentBanner,
+    sopCardEl: () => sopCardEl,
+    sopPeriodKey: () => sopPeriodKey,
+    submitSop: () => submitSop,
+    updateSopCounts: () => updateSopCounts
+  });
+  function sopPeriodKey(freq) {
+    const d = /* @__PURE__ */ new Date();
+    d.setHours(0, 0, 0, 0);
+    if (freq === "monthly") {
+      const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0");
+      return y + "-" + m;
+    }
+    if (freq === "weekly") {
+      const tmp = new Date(d);
+      tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7));
+      const yearStart = new Date(tmp.getFullYear(), 0, 1);
+      const week = Math.ceil(((tmp - yearStart) / 864e5 + 1) / 7);
+      return tmp.getFullYear() + "-W" + String(week).padStart(2, "0");
+    }
+    return formatLocalDate2(d);
+  }
+  window._sops = [];
+  window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
+  var FREQ_LABEL = { daily: "\u6BCF\u65E5\u5FC5\u505A", weekly: "\u6BCF\u5468\u5FC5\u505A", monthly: "\u6BCF\u6708\u5FC5\u505A" };
+  var FREQ_TAG = { daily: "\u65E5", weekly: "\u5468", monthly: "\u6708" };
+  async function loadSops() {
+    try {
+      const { items } = await API.get("/api/sop");
+      window._sops = items || [];
+    } catch (e) {
+      window._sops = [];
+      if (e && e.message !== "unauthorized") toast("SOP \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || ""));
+    }
+    try {
+      const q = "daily=" + encodeURIComponent(sopPeriodKey("daily")) + "&weekly=" + encodeURIComponent(sopPeriodKey("weekly")) + "&monthly=" + encodeURIComponent(sopPeriodKey("monthly"));
+      const { items } = await API.get("/api/sop/completions?" + q);
+      window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
+      const keyToFreq = { [sopPeriodKey("daily")]: "daily", [sopPeriodKey("weekly")]: "weekly", [sopPeriodKey("monthly")]: "monthly" };
+      (items || []).forEach((c) => {
+        const f = keyToFreq[c.period_key];
+        if (f) window._sopDone[f].add(c.sop_id);
+      });
+    } catch (e) {
+    }
+    renderSopCards();
+    renderSopSettingsTable();
+    updateSopCounts();
+    renderSopOverdueBanner();
+    refreshNavTaskDot();
+  }
+  function renderSopCards() {
+    ["SEM", "SEO", "\u516C\u53F8"].forEach((dept) => {
+      const anchor = document.getElementById(dept === "\u516C\u53F8" ? "sop-company" : "sop-" + dept.toLowerCase());
+      if (!anchor) return;
+      const list = window._sops.filter((s) => s.dept === dept);
+      anchor.innerHTML = '<div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>';
+      if (!list.length) {
+        anchor.insertAdjacentHTML("beforeend", '<div class="sop-empty-hint csp-s-fec2a1b122">\u6682\u65E0 SOP\uFF0C\u53BB\u300C\u8BBE\u7F6E \xB7 SOP \u8BBE\u7F6E\u300D\u6DFB\u52A0</div>');
+        return;
+      }
+      const box = document.createElement("div");
+      box.className = "sop-list";
+      ["daily", "weekly", "monthly"].forEach((freq) => {
+        list.filter((s) => s.freq === freq).forEach((s) => box.appendChild(sopCardEl(s)));
+      });
+      anchor.appendChild(box);
+    });
+  }
+  function sopCardEl(s) {
+    const done = window._sopDone[s.freq] && window._sopDone[s.freq].has(s.id);
+    const row = document.createElement("div");
+    row.className = "tcard" + (done ? " done" : "");
+    row.dataset.sopId = s.id;
+    row.dataset.sopFreq = s.freq;
+    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
+    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc(s.title)}</span><span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq] || "")}">${esc(FREQ_TAG[s.freq] || "")}</span></span>`;
+    row.querySelector(".tcheck").addEventListener("click", (e) => window.chk(e.currentTarget));
+    return row;
+  }
+  function updateSopCounts() {
+    [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
+      const el = document.getElementById("kcount-" + key);
+      if (!el) return;
+      const sopN = window._sops.filter((s) => s.dept === dept).length;
+      const addCol = document.getElementById("newtask-" + key);
+      const addN = addCol ? addCol.querySelectorAll(".tcard:not(.subtask)").length : 0;
+      el.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
+    });
+  }
+  function isSopWritable() {
+    const r = (window.ME || {}).role;
+    return r === "manager" || r === "boss";
+  }
+  function renderSopSettingsTable() {
+    const tb = document.getElementById("tb-sop");
+    if (!tb) return;
+    const addBtn = document.getElementById("sop-add-btn");
+    const writable = isSopWritable();
+    if (addBtn) addBtn.style.display = writable ? "" : "none";
+    tb.innerHTML = "";
+    const list = window._sops;
+    if (!list.length) {
+      const e2 = document.getElementById("sop-empty");
+      if (e2) e2.style.display = "block";
+      return;
+    }
+    const e = document.getElementById("sop-empty");
+    if (e) e.style.display = "none";
+    list.forEach((s) => {
+      const tr = document.createElement("tr");
+      tr.dataset.sopId = s.id;
+      const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>` : '<span class="dim csp-s-33ee298127">\u53EA\u8BFB</span>';
+      tr.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.title)}</td><td class="dim csp-s-33ee298127">${esc(s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+  var _sopEditing = null;
+  function openSopModal(sop) {
+    if (!isSopWritable()) {
+      toast("\u4EC5\u7ECF\u7406 / \u8001\u677F\u53EF\u7F16\u8F91 SOP");
+      return;
+    }
+    _sopEditing = sop || null;
+    document.getElementById("sop-mod-title").textContent = sop ? "\u7F16\u8F91 SOP" : "\u65B0\u589E SOP";
+    document.getElementById("sop-dept").value = sop ? sop.dept : "SEM";
+    document.getElementById("sop-freq").value = sop ? sop.freq : "daily";
+    document.getElementById("sop-title").value = sop ? sop.title : "";
+    document.getElementById("sop-content").value = sop ? sop.content || "" : "";
+    document.getElementById("sop-time").value = sop ? sop.time_hint || "" : "";
+    openModal("sopMask");
+    setTimeout(() => document.getElementById("sop-title").focus(), 50);
+  }
+  async function submitSop() {
+    const dept = document.getElementById("sop-dept").value;
+    const freq = document.getElementById("sop-freq").value;
+    const title = document.getElementById("sop-title").value.trim();
+    const content = document.getElementById("sop-content").value.trim();
+    const time_hint = document.getElementById("sop-time").value.trim();
+    if (!title) {
+      toast("\u8BF7\u586B\u5199\u6807\u9898");
+      return;
+    }
+    try {
+      if (_sopEditing) {
+        await API.patch("/api/sop/" + _sopEditing.id, { dept, freq, title, content, time_hint });
+        toast("\u5DF2\u66F4\u65B0 SOP");
+      } else {
+        await API.post("/api/sop", { dept, freq, title, content, time_hint });
+        toast("\u5DF2\u65B0\u589E SOP");
+      }
+      closeModal("sopMask");
+      await loadSops();
+    } catch (e) {
+      toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || ""));
+    }
+  }
+  document.addEventListener("click", async (e) => {
+    const edit = e.target.closest(".sop-edit");
+    const del = e.target.closest(".sop-del");
+    if (!edit && !del) return;
+    const tr = (edit || del).closest("tr");
+    const id = tr && tr.dataset.sopId;
+    if (!id) return;
+    if (edit) {
+      const s = window._sops.find((x) => String(x.id) === String(id));
+      if (s) openSopModal(s);
+      return;
+    }
+    if (del) {
+      if (!inlineConfirm(del, "\u786E\u8BA4\u505C\u7528")) return;
+      try {
+        await API.del("/api/sop/" + id);
+        toast("\u5DF2\u505C\u7528");
+        await loadSops();
+      } catch (err) {
+        toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u64CD\u4F5C\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      }
+    }
+  });
+  function isOverduePeriodFirstDay(freq) {
+    const now = /* @__PURE__ */ new Date();
+    const h = now.getHours();
+    if (h < 8) return false;
+    if (freq === "daily") return true;
+    if (freq === "weekly") return now.getDay() === 1;
+    if (freq === "monthly") return now.getDate() === 1;
+    return false;
+  }
+  function buildSopOverdueList() {
+    const today3 = formatLocalDate2(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^\d{4}\./, "");
+    const lines = [];
+    ["daily", "weekly", "monthly"].forEach((freq) => {
+      if (!isOverduePeriodFirstDay(freq)) return;
+      (window._sops || []).forEach((s) => {
+        if (s.freq !== freq) return;
+        const done = window._sopDone[freq] && window._sopDone[freq].has(s.id);
+        if (done) return;
+        lines.push(esc(s.dept) + "-" + today3 + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
+      });
+    });
+    return lines;
+  }
+  function renderSopOverdueBanner() {
+    const box = document.getElementById("sop-overdue-banner");
+    const list = document.getElementById("sop-overdue-list");
+    if (!box || !list) return;
+    const lines = buildSopOverdueList();
+    if (!lines.length) {
+      box.style.display = "none";
+      list.innerHTML = "";
+      return;
+    }
+    box.style.display = "flex";
+    list.innerHTML = lines.map((l) => "<div>" + l + "</div>").join("");
+  }
+  window._urgentTasks = [];
+  async function loadUrgent() {
+    try {
+      const { items } = await API.get("/api/loop-items?urgent=1");
+      window._urgentTasks = (items || []).filter((it) => {
+        const st = it.state || "";
+        const ss = it.status || "";
+        return st !== "done" && ss !== "done";
+      });
+    } catch (e) {
+      window._urgentTasks = [];
+    }
+    renderUrgentBanner();
+    refreshNavTaskDot();
+  }
+  function renderUrgentBanner() {
+    const box = document.getElementById("urgent-banner");
+    const list = document.getElementById("urgent-list");
+    if (!box || !list) return;
+    const arr = window._urgentTasks || [];
+    if (!arr.length) {
+      box.style.display = "none";
+      list.innerHTML = "";
+      return;
+    }
+    box.style.display = "flex";
+    list.innerHTML = arr.map((it) => {
+      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc(it.task_date) + "\uFF09" : "";
+      return "<div>" + esc(it.content || "") + due + "</div>";
+    }).join("");
+  }
+  function refreshNavTaskDot() {
+    const dot = document.getElementById("nav-tasks-dot");
+    if (!dot) return;
+    const overdue = buildSopOverdueList().length > 0;
+    const urgent = (window._urgentTasks || []).length > 0;
+    dot.classList.toggle("is-hidden", !(overdue || urgent));
+  }
+
+  // public/src/closed-loop.js
+  var _2 = (n) => String(n).padStart(2, "0");
+  var today = () => {
+    const d = /* @__PURE__ */ new Date();
+    return _2(d.getMonth() + 1) + "-" + _2(d.getDate());
+  };
+  function futureDate(days) {
+    return formatLocalDate2(new Date(Date.now() + days * 864e5));
+  }
+  function flashRow(tr) {
+    tr.style.transition = "background .25s";
+    tr.style.background = "var(--green-soft)";
+    setTimeout(() => tr.style.background = "", 1700);
+  }
+  function prepend(tbId, html) {
+    const tb = document.getElementById(tbId);
+    if (!tb) return null;
+    const state = tb.querySelector("tr[data-load-state]");
+    if (state) state.remove();
+    const tr = document.createElement("tr");
+    tr.innerHTML = html;
+    tb.insertBefore(tr, tb.firstChild);
+    flashRow(tr);
+    return tr;
+  }
+  function grabText(btn) {
+    const it = btn.closest(".ai-item");
+    if (it) {
+      const b = it.querySelector(".body");
+      return (b ? b.innerText : it.innerText).trim();
+    }
+    const rf = btn.closest(".rowflex");
+    if (rf) {
+      const s = rf.querySelector("span");
+      return s ? s.innerText.trim() : "";
+    }
+    const cell = btn.closest(".review-grid>div");
+    if (cell) return cell.innerText.trim();
+    return "";
+  }
+  function scopeDept(btn, txt) {
+    const head = (txt || "").slice(0, 8);
+    let d = null;
+    if (/SEM/i.test(head)) d = "SEM";
+    else if (/SEO/i.test(head)) d = "SEO";
+    if (!d) {
+      const sp = btn.closest(".subpanel");
+      if (sp && /sem/i.test(sp.id)) d = "SEM";
+      else if (sp && /seo/i.test(sp.id)) d = "SEO";
+    }
+    if (!d) {
+      const box = btn.closest(".ai-box");
+      if (box && box.classList.contains("purple")) d = "SEM";
+      else if (box && box.classList.contains("blue")) d = "SEO";
+    }
+    if (!d) {
+      const card = btn.closest(".card");
+      const t = card && card.querySelector(".card-title");
+      if (t && /SEM/.test(t.textContent)) d = "SEM";
+      else if (t && /SEO/.test(t.textContent)) d = "SEO";
+    }
+    if (!d) d = "SEO";
+    return d === "SEM" ? { dept: "SEM", owner: "\u9648", c: "b-purple" } : { dept: "SEO", owner: "\u674E", c: "b-blue" };
+  }
+  function clip(s, n) {
+    return s.length > n ? s.slice(0, n) + "\u2026" : s;
+  }
+  function addDeposit(s, text2, act) {
+    const ac = act === "\u91C7\u7EB3" ? "b-green" : "b-teal";
+    prepend("tb-dep", `<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc(s.dept)}\u8BCA\u65AD</span></td><td>${esc(text2)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);
+  }
+  function fixRowHtml(f) {
+    const dept = f.dept === "SEM" ? "SEM" : "SEO";
+    const c = dept === "SEM" ? "b-purple" : "b-blue";
+    const owner = f.owner || (dept === "SEM" ? "\u9648" : "\u674E");
+    const oc = owner === "\u9648" ? "b-purple" : "b-blue";
+    const RES = ["\u5DF2\u6539", "\u8FDB\u884C\u4E2D", "\u8BA1\u5212\u4E0B\u5468", "\u653E\u5F03"];
+    const status = RES.includes(f.status) ? f.status : "\u8BA1\u5212\u4E0B\u5468";
+    return `<td class="fix-title editable" contenteditable data-field="title">${esc(f.title || "")}</td><td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence || "")}</td><td class="fix-detail editable" contenteditable data-field="detail">${esc(f.detail || "")}</td><td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td><td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-actions ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i> \u5F52\u6863</button></td>`;
+  }
+  function fixPlanHtml(f) {
+    if (f && f.planned_done) return `<span class="badge b-green row-plan-go csp-s-9463ff4798" title="\u65E5\u8BA1\u5212\u91CC\u5DF2\u5B8C\u6210\uFF0C\u70B9\u51FB\u67E5\u770B">\u5DF2\u505A\u5B8C</span>`;
+    if (f && f.planned_task_id) return `<button class="btn-mini row-plan-go" title="\u5DF2\u5728\u65E5\u8BA1\u5212\u91CC\uFF0C\u70B9\u51FB\u67E5\u770B"><i class="ti ti-calendar-check"></i> \u5DF2\u6392</button>`;
+    return `<button class="btn-mini row-plan" title="\u6392\u8FDB\u8D1F\u8D23\u4EBA\u7684\u65E5\u8BA1\u5212"><i class="ti ti-calendar-plus"></i> \u6392\u5165</button>`;
+  }
+  document.addEventListener("click", async (e) => {
+    const action = e.target.closest("[data-loop-action]");
+    if (action) {
+      const kind = action.dataset.loopAction;
+      if (kind === "check") chk(action);
+      else if (kind === "task-defer") taskDefer(action);
+      else if (kind === "task-drop") taskDrop(action);
+      else if (kind === "task-split") openSubtaskModal(action);
+      else if (kind === "task-delete") taskDel(action);
+      else if (kind === "task-edit") openTaskEdit(action);
+      else if (kind === "task-push") taskPush(action);
+      else if (kind === "deposit-delete") depDel(action);
+      else if (kind === "content-delete") contentDel(action);
+      else if (kind === "ai-action") aiAct(action, action.dataset.kind);
+      return;
+    }
+    const jump = e.target.closest(".row-plan-go");
+    if (jump) {
+      go("planning");
+      if (typeof setPlanningTab === "function") setPlanningTab("daily");
+      return;
+    }
+    const btn = e.target.closest(".row-plan");
+    if (!btn) return;
+    const tr = btn.closest("tr");
+    const id = tr && tr.dataset.id;
+    if (!id) return;
+    btn.disabled = true;
+    try {
+      const { item, existed } = await API.post("/api/fixes/" + id + "/plan", { start_date: formatLocalDate2(/* @__PURE__ */ new Date()) });
+      const tag = tr.querySelector('[data-kind="result"]');
+      if (tag && tag.firstChild && !/已改|放弃/.test(tag.textContent)) tag.firstChild.nodeValue = "\u8FDB\u884C\u4E2D";
+      btn.outerHTML = fixPlanHtml({ planned_task_id: item.id });
+      if (!existed && document.getElementById("newtask-sem")) {
+        addTaskCard(item.dept === "\u516C\u53F8" ? coScope() : sFromDept(item.dept), item.content, item);
+        refreshTaskCols();
+        updateSopCounts();
+      }
+      toastGo(existed ? "\u8FD9\u6761\u5DF2\u7ECF\u5728\u65E5\u8BA1\u5212\u91CC\u4E86" : "\u5DF2\u6392\u8FDB" + (item.owner || item.dept || "") + "\u7684\u65E5\u8BA1\u5212", "planning");
+    } catch (err) {
+      btn.disabled = false;
+      toast(err && err.status === 409 ? "\u8BE5\u6574\u6539\u9879\u5DF2\u5F52\u6863\uFF0C\u4E0D\u80FD\u518D\u6392" : persistFailMsg(err));
+    }
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".src-fix")) return;
+    go("action");
+    if (typeof setActionTab === "function") setActionTab("fix");
+  });
+  function bindFixRow(tr, f) {
+    if (tr && f && f.id) {
+      tr.dataset.id = f.id;
+      tr.dataset.ep = "/api/fixes";
+    }
+    return tr;
+  }
+  function addFixFromObj(f) {
+    return bindFixRow(prepend("tb-fix", fixRowHtml(f)), f);
+  }
+  function bindLoopRow(tr, it) {
+    if (tr && it && it.id) {
+      tr.dataset.id = it.id;
+      tr.dataset.ep = "/api/loop-items";
+    }
+    return tr;
+  }
+  function addTest(s, content, it) {
+    it = it || {};
+    const id = s.dept === "SEM" ? "tb-test-sem" : "tb-test-seo";
+    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable || "")}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion || "")}</td><td class="ctr"><button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
+  }
+  function addPlan(s, content, it) {
+    it = it || {};
+    const id = s.dept === "SEM" ? "tb-plan-sem" : "tb-plan-seo";
+    const status = it.status || "\u5F85\u5F00\u59CB";
+    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric || "")}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget || "")}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
+  }
+  function coScope() {
+    return { dept: "\u516C\u53F8", owner: "", c: "b-red" };
+  }
+  function taskColFor(dept) {
+    return document.getElementById(dept === "\u516C\u53F8" ? "newtask-company" : dept === "SEM" ? "newtask-sem" : "newtask-seo");
+  }
+  var TASK_GROUPS = [["overdue", "\u903E\u671F"], ["today", "\u4ECA\u65E5"], ["doing", "\u8FDB\u884C\u4E2D"], ["later", "\u7A0D\u540E"]];
+  function taskGroupOf(it) {
+    const t = formatLocalDate2(/* @__PURE__ */ new Date());
+    const due = it && it.task_date || "", st = it && it.start_date || "";
+    if (due && due < t) return "overdue";
+    if (st && st > t) return "later";
+    if (due && due > t) return st ? "doing" : "later";
+    return "today";
+  }
+  function taskGroupEl(col, g) {
+    let el = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
+    if (el) return el;
+    const label = (TASK_GROUPS.find((x) => x[0] === g) || [, g])[1];
+    el = document.createElement("div");
+    el.className = "tgroup";
+    el.dataset.g = g;
+    el.innerHTML = `<div class="tgroup-cap">${esc(label)} <span class="n"></span></div>`;
+    const order = TASK_GROUPS.map((x) => x[0]);
+    const after = [...col.querySelectorAll(":scope > .tgroup")].find((x) => order.indexOf(x.dataset.g) > order.indexOf(g)) || col.querySelector(".donefold") || col.querySelector(".add-task");
+    if (after) col.insertBefore(el, after);
+    else col.appendChild(el);
+    return el;
+  }
+  function addTaskCard(s, content, it) {
+    const col = taskColFor(s.dept);
+    if (!col) return null;
+    const item = Object.assign({}, it || {});
+    item.content = content || item.content || "";
+    const done = !!(item.state === "done" || item.status === "done");
+    const isCoParent = s.dept === "\u516C\u53F8";
+    const card = document.createElement("div");
+    card.className = "tcard" + (isCoParent ? " cotask" : "") + (done ? " done" : "");
+    if (item.id) card.dataset.id = item.id;
+    card._item = item;
+    card._scope = s;
+    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc(item.content)}</div><div class="tmeta"></div>`;
+    if (isCoParent) {
+      const box = document.createElement("div");
+      box.className = "subtasks";
+      card.appendChild(box);
+    }
+    renderTaskMeta(card);
+    placeTaskCard(card);
+    return card;
+  }
+  function renderTaskMeta(card) {
+    const it = card._item || {}, s = card._scope || {}, box = card.querySelector(".tmeta");
+    if (!box) return;
+    const isCo = card.classList.contains("cotask"), g = taskGroupOf(it);
+    const deptBadge = isCo ? `<span class="badge ${s.c || "b-gray"}">${esc(s.dept || "")}</span>` : "";
+    const srcBadge = it.fix_id ? `<span class="badge b-amber src-fix" title="\u6765\u81EA\u6574\u6539\u6E05\u5355 \xB7 \u70B9\u51FB\u67E5\u770B\u4F9D\u636E">\u6574\u6539</span>` : "";
+    const note = it.note ? `<span class="tnote">${esc(it.note)}</span>` : "";
+    const ops = g === "overdue" && it.id ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="\u987A\u5EF6\u5230\u4ECA\u5929"><i class="ti ti-calendar-plus"></i></button><button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="\u653E\u5F03\u5E76\u5F52\u6863"><i class="ti ti-archive"></i></button>` : "";
+    const push = taskPushHtml(it, g);
+    const split = isCo ? `<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> \u5206\u53D1</button>` : "";
+    const del = it.id ? `<button type="button" class="btn-mini csp-task-delete ${isCo || ops || push ? "csp-task-delete-spaced" : "csp-task-delete-pushed"}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
+    box.innerHTML = deptBadge + srcBadge + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
+  }
+  function taskDueHtml(it) {
+    const due = it.task_date || "", st = it.start_date || "", hr = it.task_hour || "";
+    const span = st && due && st < due;
+    const short = (d) => st.slice(0, 4) === due.slice(0, 4) ? d.slice(5) : d;
+    const txt = span ? short(st) + " ~ " + short(due) : due;
+    const time = hr ? (txt ? " " : "") + hr + ":00" : "";
+    const empty = !txt && !time;
+    if (empty && !it.id) return "";
+    const cls = "tdue" + (empty ? " tdue-none" : "") + (it.id ? " task-edit" : "");
+    const attrs = it.id ? ` data-loop-action="task-edit" title="${span ? esc(st + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F"` : "";
+    return `<span class="${cls}"${attrs}><i class="ti ${empty ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty ? "\u8BBE\u65E5\u671F" : esc(txt) + esc(time)}</span>`;
+  }
+  var dayDiff = (a, b) => Math.round((Date.parse(b + "T00:00:00") - Date.parse(a + "T00:00:00")) / 864e5);
+  function taskAgeHtml(it, g) {
+    const t = formatLocalDate2(/* @__PURE__ */ new Date());
+    if (g === "overdue" && it.task_date) {
+      const n = dayDiff(it.task_date, t);
+      return `<span class="tage tage-over">\u903E\u671F ${n} \u5929</span>`;
+    }
+    if (g === "doing" && it.start_date && it.task_date) {
+      const total = dayDiff(it.start_date, it.task_date) + 1, cur = dayDiff(it.start_date, t) + 1;
+      const ck = taskCheckin(it.id);
+      const pushed = ck.days ? ` \xB7 \u5DF2\u63A8\u8FDB ${ck.days} \u5929` : "";
+      const idle = !ck.today && (ck.last ? dayDiff(ck.last, t) >= 2 : dayDiff(it.start_date, t) >= 2);
+      return `<span class="tage${idle ? " tage-idle" : ""}">\u7B2C ${cur}/${total} \u5929${pushed}</span>`;
+    }
+    return "";
+  }
+  var taskCheckins = /* @__PURE__ */ new Map();
+  function taskCheckin(id) {
+    return taskCheckins.get(Number(id)) || { days: 0, last: "", today: false };
+  }
+  function taskPushHtml(it, g) {
+    if (!it.id || !it.start_date || !it.task_date || it.start_date >= it.task_date) return "";
+    if (g !== "doing" && g !== "overdue") return "";
+    const on = taskCheckin(it.id).today;
+    return `<button type="button" class="btn-mini task-push${on ? " on" : ""}" data-loop-action="task-push" title="${on ? "\u4ECA\u5929\u5DF2\u8BB0\u63A8\u8FDB\uFF0C\u70B9\u4E00\u4E0B\u64A4\u9500" : "\u8BB0\u4E00\u7B14\uFF1A\u4ECA\u5929\u63A8\u8FDB\u4E86\u8FD9\u6761"}"><i class="ti ti-${on ? "check" : "player-track-next"}"></i> ${on ? "\u4ECA\u65E5\u5DF2\u63A8\u8FDB" : "\u63A8\u8FDB"}</button>`;
+  }
+  async function taskPush(btn) {
+    const card = btn.closest(".tcard");
+    const it = card && card._item;
+    if (!it || !it.id) return;
+    const day = formatLocalDate2(/* @__PURE__ */ new Date());
+    const cur = taskCheckin(it.id);
+    const on = cur.today;
+    btn.disabled = true;
+    try {
+      if (on) {
+        await API.del("/api/task-checkins/" + it.id + "?day_key=" + encodeURIComponent(day));
+        const days = Math.max(0, cur.days - 1);
+        taskCheckins.set(Number(it.id), { days, last: days ? cur.last : "", today: false });
+        toast("\u5DF2\u64A4\u9500\u4ECA\u65E5\u63A8\u8FDB \xB7 \u5DF2\u5165\u5E93");
+      } else {
+        await API.post("/api/task-checkins", { loop_item_id: it.id, day_key: day });
+        taskCheckins.set(Number(it.id), { days: cur.days + 1, last: day, today: true });
+        toast("\u5DF2\u8BB0\u4ECA\u65E5\u63A8\u8FDB \xB7 \u5DF2\u5165\u5E93");
+      }
+      renderTaskMeta(card);
+    } catch (e) {
+      btn.disabled = false;
+      toast(persistFailMsg(e));
+    }
+  }
+  async function loadTaskCheckins(isCurrent = () => true) {
+    const nextCheckins = /* @__PURE__ */ new Map();
+    try {
+      const { items } = await API.get("/api/task-checkins/summary?day=" + encodeURIComponent(formatLocalDate2(/* @__PURE__ */ new Date())));
+      if (!isCurrent()) return null;
+      (items || []).forEach((r) => nextCheckins.set(Number(r.loop_item_id), { days: r.days || 0, last: r.last_day || "", today: !!r.today_done }));
+      taskCheckins = nextCheckins;
+      return null;
+    } catch (e) {
+      if (!isCurrent()) return null;
+      taskCheckins = /* @__PURE__ */ new Map();
+      if (e && e.message !== "unauthorized") toast("\u4EFB\u52A1\u63A8\u8FDB\u8BB0\u5F55\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+      return e;
+    }
+  }
+  function placeTaskCard(card) {
+    const s = card._scope || {}, col = taskColFor(s.dept);
+    if (!col) return;
+    const g = taskGroupOf(card._item || {});
+    card.classList.toggle("t-overdue", g === "overdue");
+    if (s.dept === "\u516C\u53F8") {
+      const anchor = col.querySelector(".donefold") || col.querySelector(".add-task");
+      if (anchor) col.insertBefore(card, anchor);
+      else col.appendChild(card);
+      return;
+    }
+    taskGroupEl(col, g).appendChild(card);
+  }
+  function taskDefer(btn) {
+    const card = btn.closest(".tcard");
+    const it = card && card._item;
+    if (!it || !it.id) return;
+    const t = formatLocalDate2(/* @__PURE__ */ new Date());
+    const body = { task_date: t };
+    if (!it.start_date || it.start_date > t) body.start_date = t;
+    API.patch("/api/loop-items/" + it.id, body).then(({ item }) => {
+      Object.assign(it, item || body);
+      renderTaskMeta(card);
+      placeTaskCard(card);
+      refreshTaskCols();
+      toast("\u5DF2\u987A\u5EF6\u5230\u4ECA\u5929 \xB7 \u5DF2\u5165\u5E93");
+    }).catch((e) => toast(persistFailMsg(e)));
+  }
+  function taskDrop(btn) {
+    const card = btn.closest(".tcard");
+    const it = card && card._item;
+    if (!it || !it.id) return;
+    if (!inlineConfirm(btn, "\u786E\u8BA4\u653E\u5F03")) return;
+    const dept = (card._scope || {}).dept || it.dept;
+    const ak = dept === "\u516C\u53F8" ? "company" : dept === "SEM" ? "sem" : "seo";
+    API.post("/api/loop-items/" + it.id + "/archive", { archive_kind: ak }).then(() => {
+      card.remove();
+      refreshTaskCols();
+      updateSopCounts();
+      toastGo("\u5DF2\u653E\u5F03 \xB7 \u5F52\u6863\u7559\u75D5", "archive");
+    }).catch((e) => toast(persistFailMsg(e)));
+  }
+  function subOwnerBadge(owner) {
+    return owner === "\u9648" ? "b-purple" : "b-blue";
+  }
+  function addSubTaskCard(parentCard, it) {
+    if (!parentCard) return null;
+    let box = parentCard.querySelector(".subtasks");
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "subtasks";
+      parentCard.appendChild(box);
+    }
+    const done = !!(it && (it.state === "done" || it.status === "done"));
+    const card = document.createElement("div");
+    card.className = "tcard subtask" + (done ? " done" : "");
+    if (it && it.id) card.dataset.id = it.id;
+    const owner = it && it.owner || "\u674E";
+    const oc = subOwnerBadge(owner);
+    const del = it && it.id ? `<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
+    const dt = it && it.task_date || "", hr = it && it.task_hour || "";
+    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr ? (dt ? " " : "") + esc(hr) + ":00" : ""}</span>` : "";
+    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sub-text">${esc(it && it.content || "")}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc(owner)}</span>${del}</span></div>`;
+    box.appendChild(card);
+    return card;
+  }
+  var _subtaskParentId = null;
+  function openSubtaskModal(btn) {
+    const card = btn.closest(".tcard");
+    const pid = card && card.dataset.id;
+    if (!pid) {
+      toast("\u8BF7\u5148\u4FDD\u5B58\u5927\u4EFB\u52A1\u518D\u5206\u53D1");
+      return;
+    }
+    _subtaskParentId = pid;
+    const t = document.getElementById("subtask-content");
+    if (t) t.value = "";
+    const o = document.getElementById("subtask-owner");
+    if (o) o.value = "\u674E";
+    const hs = document.getElementById("subtask-hour");
+    if (hs && hs.options.length <= 1) {
+      for (let h = 0; h < 24; h++) {
+        const op = document.createElement("option");
+        const hh = String(h).padStart(2, "0");
+        op.value = hh;
+        op.textContent = hh + ":00";
+        hs.appendChild(op);
+      }
+    }
+    if (hs) hs.value = "";
+    const de = document.getElementById("subtask-date");
+    if (de) de.value = "";
+    const ti = document.getElementById("subtask-parent-title");
+    if (ti) {
+      const tt = card.querySelector(".ttitle");
+      ti.textContent = tt ? tt.innerText.trim() : "";
+    }
+    openModal("subtaskMask");
+    if (t) setTimeout(() => t.focus(), 50);
+  }
+  async function submitSubtask() {
+    const pid = _subtaskParentId;
+    if (!pid) return;
+    const content = (document.getElementById("subtask-content").value || "").trim();
+    if (!content) {
+      toast("\u8BF7\u586B\u5199\u5B50\u4EFB\u52A1\u5185\u5BB9");
+      return;
+    }
+    const owner = document.getElementById("subtask-owner").value || "\u674E";
+    const task_date = document.getElementById("subtask-date").value || "";
+    const task_hour = document.getElementById("subtask-hour").value || "";
+    try {
+      const { item } = await API.post("/api/loop-items", { kind: "task", dept: "\u516C\u53F8", content, owner, status: "\u5F85\u529E", task_date, task_hour, parent_id: Number(pid) });
+      const parentCard = document.querySelector('#newtask-company .tcard[data-id="' + pid + '"]');
+      addSubTaskCard(parentCard, item);
+      closeModal("subtaskMask");
+      toast("\u5DF2\u5206\u53D1\u5B50\u4EFB\u52A1\u7ED9" + owner + " \xB7 \u5DF2\u5165\u5E93");
+    } catch (e) {
+      toast(persistFailMsg(e));
+    }
+  }
+  var _taskScope = null;
+  var _taskEditing = null;
+  function openTaskModal(dept) {
+    _taskEditing = null;
+    const verb = document.getElementById("task-mod-verb");
+    if (verb) verb.textContent = "\u65B0\u589E";
+    _taskScope = dept === "\u516C\u53F8" ? coScope() : sFromDept(dept);
+    const lbl = document.getElementById("task-deptlabel");
+    if (lbl) lbl.textContent = dept;
+    const hs = document.getElementById("task-hour");
+    if (hs && hs.options.length <= 1) {
+      for (let h = 0; h < 24; h++) {
+        const o = document.createElement("option");
+        const hh = String(h).padStart(2, "0");
+        o.value = hh;
+        o.textContent = hh + ":00";
+        hs.appendChild(o);
+      }
+    }
+    const today3 = formatLocalDate2(/* @__PURE__ */ new Date());
+    const de = document.getElementById("task-date");
+    if (de) de.value = today3;
+    const ds = document.getElementById("task-start");
+    if (ds) ds.value = today3;
+    if (hs) hs.value = "";
+    const tc = document.getElementById("task-content");
+    if (tc) tc.value = "";
+    const tn = document.getElementById("task-note");
+    if (tn) tn.value = "";
+    const role = (window.ME || {}).role;
+    const canUrgent = (role === "manager" || role === "boss") && dept === "\u516C\u53F8";
+    const uf = document.getElementById("task-urgent-fld");
+    if (uf) uf.classList.toggle("is-hidden", !canUrgent);
+    const uc = document.getElementById("task-urgent");
+    if (uc) uc.checked = false;
+    openModal("taskMask");
+    if (tc) tc.focus();
+  }
+  function openTaskEdit(el) {
+    const card = el.closest(".tcard");
+    const it = card && card._item;
+    if (!it || !it.id) return;
+    _taskScope = card._scope || coScope();
+    _taskEditing = card;
+    const verb = document.getElementById("task-mod-verb");
+    if (verb) verb.textContent = "\u7F16\u8F91";
+    const lbl = document.getElementById("task-deptlabel");
+    if (lbl) lbl.textContent = _taskScope.dept || "";
+    const hs = document.getElementById("task-hour");
+    if (hs && hs.options.length <= 1) {
+      for (let h = 0; h < 24; h++) {
+        const o = document.createElement("option");
+        const hh = String(h).padStart(2, "0");
+        o.value = hh;
+        o.textContent = hh + ":00";
+        hs.appendChild(o);
+      }
+    }
+    const de = document.getElementById("task-date");
+    if (de) de.value = it.task_date || "";
+    const ds = document.getElementById("task-start");
+    if (ds) ds.value = it.start_date || "";
+    if (hs) hs.value = it.task_hour || "";
+    const tc = document.getElementById("task-content");
+    if (tc) tc.value = it.content || "";
+    const tn = document.getElementById("task-note");
+    if (tn) tn.value = it.note || "";
+    const uf = document.getElementById("task-urgent-fld");
+    if (uf) uf.classList.add("is-hidden");
+    openModal("taskMask");
+    if (tc) tc.focus();
+  }
+  async function submitTask() {
+    const s = _taskScope;
+    if (!s) return;
+    const content = (document.getElementById("task-content").value || "").trim();
+    if (!content) {
+      toast("\u8BF7\u586B\u5199\u4EFB\u52A1\u5185\u5BB9");
+      return;
+    }
+    const task_date = document.getElementById("task-date").value || "";
+    const startEl = document.getElementById("task-start");
+    const start_date = startEl && startEl.value || "";
+    if (start_date && task_date && start_date > task_date) {
+      toast("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u622A\u6B62\u65E5\u671F");
+      return;
+    }
+    const task_hour = document.getElementById("task-hour").value || "";
+    const note = (document.getElementById("task-note").value || "").trim();
+    const ucEl = document.getElementById("task-urgent");
+    const urgent = ucEl && ucEl.checked && !document.getElementById("task-urgent-fld").classList.contains("is-hidden") ? 1 : void 0;
+    if (_taskEditing) {
+      const card = _taskEditing, it = card._item || {};
+      try {
+        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, note });
+        Object.assign(it, item || { content, task_date, start_date, task_hour, note });
+        const t = card.querySelector(".ttitle");
+        if (t) {
+          [...t.childNodes].forEach((n) => {
+            if (n.nodeType === 3) n.remove();
+          });
+          t.appendChild(document.createTextNode(it.content || ""));
+        }
+        renderTaskMeta(card);
+        placeTaskCard(card);
+        refreshTaskCols();
+        closeModal("taskMask");
+        _taskEditing = null;
+        toast("\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
+      } catch (e) {
+        toast(persistFailMsg(e));
+      }
+      return;
+    }
+    try {
+      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, note };
+      if (urgent) body.urgent = 1;
+      const { item } = await API.post("/api/loop-items", body);
+      addTaskCard(s, item.content, item);
+      refreshTaskCols();
+      closeModal("taskMask");
+      toast((s.dept === "\u516C\u53F8" ? urgent ? "\u5DF2\u6D3E\u53D1\u7D27\u6025\u516C\u53F8\u4EFB\u52A1" : "\u5DF2\u6D3E\u53D1\u516C\u53F8\u4EFB\u52A1" : "\u5DF2\u65B0\u589E" + s.dept + "\u4EFB\u52A1") + " \xB7 \u5DF2\u5165\u5E93");
+      if (urgent) loadUrgent();
+    } catch (e) {
+      toast(persistFailMsg(e));
+    }
+  }
+  function taskDel(btn) {
+    const card = btn.closest(".tcard");
+    if (!card || !card.dataset.id) return;
+    if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
+    API.del("/api/loop-items/" + card.dataset.id).then(() => {
+      card.remove();
+      refreshTaskCols();
+    }).catch((e) => toast("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
+  }
+  function refreshTaskCols(col) {
+    if (col === null) return;
+    if (col === void 0) {
+      ["company", "sem", "seo"].forEach((k) => refreshTaskCols(document.getElementById("newtask-" + k)));
+      return;
+    }
+    const folded = col.classList.contains("folded");
+    const foldable = (c) => c.classList.contains("done") && !c.classList.contains("nofold");
+    const doneN = [...col.querySelectorAll(".tcard:not(.subtask)")].filter(foldable).length;
+    col.querySelectorAll(":scope > .tgroup").forEach((g) => {
+      const cards = [...g.querySelectorAll(":scope > .tcard")];
+      if (!cards.length) {
+        g.remove();
+        return;
+      }
+      const shown = cards.filter((c) => !(folded && foldable(c))).length;
+      g.classList.toggle("empty", shown === 0);
+      const n = g.querySelector(".tgroup-cap .n");
+      if (n) n.textContent = shown || "";
+    });
+    let bar = col.querySelector(".donefold");
+    if (!doneN) {
+      if (bar) bar.remove();
+      col.classList.remove("folded");
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement("button");
+      bar.type = "button";
+      bar.className = "donefold";
+      bar.addEventListener("click", () => {
+        col.classList.toggle("folded");
+        refreshTaskCols(col);
+      });
+      const add = col.querySelector(".add-task");
+      if (add) col.insertBefore(bar, add);
+      else col.appendChild(bar);
+      col.classList.add("folded");
+      refreshTaskCols(col);
+      return;
+    }
+    bar.innerHTML = `<i class="ti ti-${col.classList.contains("folded") ? "chevron-right" : "chevron-down"}"></i> \u5DF2\u5B8C\u6210 ${doneN} \u9879`;
+  }
+  var _boardDay = "";
+  function checkDayRollover() {
+    const d = formatLocalDate2(/* @__PURE__ */ new Date());
+    if (!_boardDay) {
+      _boardDay = d;
+      return;
+    }
+    if (d === _boardDay) return;
+    _boardDay = d;
+    rerenderTaskCards();
+    loadSops();
+    loadTaskCheckins().then(rerenderTaskCards);
+  }
+  function rerenderTaskCards() {
+    ["company", "sem", "seo"].forEach((k) => {
+      const col = document.getElementById("newtask-" + k);
+      if (!col) return;
+      [...col.querySelectorAll(".tcard:not(.subtask)")].forEach((card) => {
+        if (card._item) {
+          renderTaskMeta(card);
+          placeTaskCard(card);
+        }
+      });
+    });
+    refreshTaskCols();
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) checkDayRollover();
+  });
+  window.addEventListener("focus", checkDayRollover);
+  setInterval(checkDayRollover, 5 * 60 * 1e3);
+  async function addFixRow() {
+    const s = sFromDept("SEO");
+    try {
+      const { item } = await API.post("/api/fixes", { title: "\u65B0\u6574\u6539\u9879", dept: s.dept, detail: "", evidence: "", owner: s.owner, due_date: futureDate(7), status: "\u8BA1\u5212\u4E0B\u5468", source: "\u624B\u52A8" });
+      const tr = addFixFromObj(item);
+      const c = tr && tr.querySelector('[data-field="title"]');
+      if (c) {
+        c.focus();
+        placeCaretEnd(c);
+      }
+      toast("\u5DF2\u65B0\u589E\u6574\u6539\u9879 \xB7 \u5DF2\u5165\u5E93");
+    } catch (e) {
+      toast(persistFailMsg(e));
+    }
+  }
+  function sFromDept(dept) {
+    return dept === "SEM" ? { dept: "SEM", owner: "\u9648", c: "b-purple" } : { dept: "SEO", owner: "\u674E", c: "b-blue" };
+  }
+  function persistFix(s, text2) {
+    return API.post("/api/fixes", { title: clip(text2, 24), dept: s.dept, detail: text2, owner: s.owner, due_date: futureDate(7), status: "\u8BA1\u5212\u4E0B\u5468", source: "AI\u8BCA\u65AD" });
+  }
+  function persistLoop(kind, s, content, status) {
+    return API.post("/api/loop-items", { kind, dept: s.dept, content, owner: s.owner, status: status || "" });
+  }
+  function persistFailMsg(e) {
+    return e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u672A\u5165\u5E93\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25");
+  }
+  var aiDone = { \u6C89\u6DC0: /* @__PURE__ */ new Set(), \u91C7\u7EB3: /* @__PURE__ */ new Set(), \u6D4B\u8BD5: /* @__PURE__ */ new Set() };
+  var closedLoopLoadVersion = 0;
+  var contentLoadVersion = 0;
+  function loadFailureText2(label, e) {
+    return label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u672A\u77E5\u9519\u8BEF");
+  }
+  function showTableFailure(id, colspan, label, e, retry) {
+    const tb = document.getElementById(id);
+    if (!tb) return;
+    tb.innerHTML = "";
+    const tr = document.createElement("tr");
+    tr.dataset.loadState = "error";
+    const td2 = document.createElement("td");
+    td2.colSpan = colspan;
+    td2.className = "dim csp-s-d48bfa87bb";
+    td2.appendChild(document.createTextNode(loadFailureText2(label, e) + " "));
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn-mini";
+    btn.innerHTML = '<i class="ti ti-refresh"></i> \u91CD\u8BD5';
+    btn.addEventListener("click", retry);
+    td2.appendChild(btn);
+    tr.appendChild(td2);
+    tb.appendChild(tr);
+  }
+  function resetClosedLoopView() {
+    ["tb-fix", "tb-dep", "tb-test-sem", "tb-test-seo", "tb-plan-sem", "tb-plan-seo"].forEach((id) => {
+      const tb = document.getElementById(id);
+      if (tb) tb.innerHTML = "";
+    });
+    ["company", "sem", "seo"].forEach((key) => {
+      const col = document.getElementById("newtask-" + key);
+      if (!col) return;
+      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el) => el.remove());
+      col.classList.remove("folded");
+    });
+    const depEmpty = document.getElementById("dep-empty");
+    if (depEmpty) depEmpty.style.display = "none";
+  }
+  function showLoopLoadFailure(e) {
+    [["tb-dep", 5, "\u6C89\u6DC0"], ["tb-test-sem", 6, "SEM \u6D4B\u8BD5"], ["tb-test-seo", 6, "SEO \u6D4B\u8BD5"], ["tb-plan-sem", 6, "SEM \u8BA1\u5212"], ["tb-plan-seo", 6, "SEO \u8BA1\u5212"]].forEach(([id, cols, label]) => showTableFailure(id, cols, label, e, loadClosedLoop));
+    ["company", "sem", "seo"].forEach((key) => {
+      const col = document.getElementById("newtask-" + key);
+      if (!col) return;
+      const box = document.createElement("div");
+      box.className = "sop-empty-hint";
+      box.dataset.closedLoopLoadState = "error";
+      box.appendChild(document.createTextNode(loadFailureText2("\u4EFB\u52A1", e) + " "));
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-mini";
+      btn.innerHTML = '<i class="ti ti-refresh"></i> \u91CD\u8BD5';
+      btn.addEventListener("click", loadClosedLoop);
+      box.appendChild(btn);
+      const anchor = col.querySelector(".add-task");
+      if (anchor) col.insertBefore(box, anchor);
+      else col.appendChild(box);
+    });
+  }
+  function showTaskCheckinFailure(e) {
+    ["company", "sem", "seo"].forEach((key) => {
+      const col = document.getElementById("newtask-" + key);
+      if (!col) return;
+      const box = document.createElement("div");
+      box.className = "sop-empty-hint";
+      box.dataset.closedLoopLoadState = "checkins";
+      box.appendChild(document.createTextNode(loadFailureText2("\u4EFB\u52A1\u63A8\u8FDB\u8BB0\u5F55", e) + " "));
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-mini";
+      btn.innerHTML = '<i class="ti ti-refresh"></i> \u91CD\u8BD5';
+      btn.addEventListener("click", async () => {
+        const retryError = await loadTaskCheckins();
+        if (retryError) return;
+        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el) => el.remove());
+        rerenderTaskCards();
+      });
+      const anchor = col.querySelector(".add-task");
+      if (anchor) col.insertBefore(box, anchor);
+      else col.appendChild(box);
+    });
+  }
+  async function loadClosedLoop() {
+    const loadVersion = ++closedLoopLoadVersion;
+    resetClosedLoopView();
+    aiDone = { \u6C89\u6DC0: /* @__PURE__ */ new Set(), \u91C7\u7EB3: /* @__PURE__ */ new Set(), \u6D4B\u8BD5: /* @__PURE__ */ new Set() };
+    try {
+      const { items } = await API.get("/api/fixes");
+      if (loadVersion !== closedLoopLoadVersion) return;
+      (items || []).slice().reverse().forEach((f) => {
+        addFixFromObj(f);
+        aiDone.\u91C7\u7EB3.add(aiFp(f.dept, f.detail || f.title));
+      });
+    } catch (e) {
+      if (loadVersion !== closedLoopLoadVersion) return;
+      if (e && e.message !== "unauthorized") {
+        showTableFailure("tb-fix", 8, "\u6574\u6539\u6E05\u5355", e, loadClosedLoop);
+        toast(loadFailureText2("\u6574\u6539\u6E05\u5355", e));
+      }
+    }
+    const depTb = document.getElementById("tb-dep");
+    if (depTb) depTb.innerHTML = "";
+    const checkinError = await loadTaskCheckins(() => loadVersion === closedLoopLoadVersion);
+    if (loadVersion !== closedLoopLoadVersion) return;
+    if (checkinError) showTaskCheckinFailure(checkinError);
+    const _pendingSubtasks = [];
+    const _autoArchiveParents = [];
+    try {
+      const { items } = await API.get("/api/loop-items");
+      if (loadVersion !== closedLoopLoadVersion) return;
+      (items || []).slice().reverse().forEach((it) => {
+        const s = sFromDept(it.dept);
+        if (it.kind === "deposit") {
+          const tr = document.createElement("tr");
+          tr.dataset.id = it.id;
+          tr.dataset.ep = "/api/loop-items";
+          tr.innerHTML = depRowHtml(it);
+          depTb && depTb.appendChild(tr);
+          aiDone[it.status === "\u91C7\u7EB3" ? "\u91C7\u7EB3" : "\u6C89\u6DC0"].add(aiFp(it.dept, it.content));
+        } else if (it.kind === "test") {
+          addTest(s, it.content, it);
+          aiDone.\u6D4B\u8BD5.add(aiFp(it.dept, it.content));
+        } else if (it.kind === "plan") addPlan(s, it.content, it);
+        else if (it.kind === "task") {
+          if (it.parent_id) {
+            _pendingSubtasks.push(it);
+            return;
+          }
+          const ts = it.dept === "\u516C\u53F8" ? coScope() : s;
+          const today3 = formatLocalDate2(/* @__PURE__ */ new Date());
+          const isDone = it.state === "done" || it.status === "done";
+          if (isDone && it.task_date && it.task_date < today3) {
+            const ak = it.dept === "\u516C\u53F8" ? "company" : it.dept === "SEM" ? "sem" : "seo";
+            _autoArchiveParents.push({ it, ts, ak });
+          } else {
+            addTaskCard(ts, it.content, it);
+          }
+        }
+      });
+      const archivedParentIds = /* @__PURE__ */ new Set();
+      await Promise.all(_autoArchiveParents.map(async ({ it, ts, ak }) => {
+        try {
+          await API.post("/api/loop-items/" + it.id + "/archive", { archive_kind: ak });
+          archivedParentIds.add(Number(it.id));
+        } catch (e) {
+          if (loadVersion !== closedLoopLoadVersion) return;
+          addTaskCard(ts, it.content, it);
+          toast("\u8FC7\u671F\u4EFB\u52A1\u81EA\u52A8\u5F52\u6863\u5931\u8D25\uFF1A" + (e && e.message || "\u672A\u77E5\u9519\u8BEF"));
+        }
+      }));
+      if (loadVersion !== closedLoopLoadVersion) return;
+      _pendingSubtasks.sort((a, b) => a.id - b.id).forEach((it) => {
+        if (archivedParentIds.has(Number(it.parent_id))) return;
+        const parentCard = document.querySelector('#newtask-company .tcard[data-id="' + it.parent_id + '"]');
+        if (parentCard) addSubTaskCard(parentCard, it);
+        else addTaskCard(coScope(), it.content, it);
+      });
+    } catch (e) {
+      if (loadVersion !== closedLoopLoadVersion) return;
+      if (e && e.message !== "unauthorized") {
+        showLoopLoadFailure(e);
+        toast(loadFailureText2("\u95ED\u73AF\u6570\u636E", e));
+      }
+    }
+    const de = document.getElementById("dep-empty");
+    if (de) de.style.display = depTb && depTb.children.length ? "none" : "block";
+    refreshTaskCols();
+    applyAiDoneStates();
+  }
+  function depRowHtml(it) {
+    const date = (it.created_at || "").slice(5, 10) || today();
+    const badge3 = it.status === "\u91C7\u7EB3" ? '<span class="badge b-green">\u91C7\u7EB3</span>' : '<span class="badge b-teal">\u6C89\u6DC0</span>';
+    return `<td class="num">${esc(date)}</td><td class="ctr">${badge3}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc(it.analysis || "")}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
+  }
+  async function addDepositRow() {
+    try {
+      const { item } = await API.post("/api/loop-items", { kind: "deposit", content: "", status: "\u6C89\u6DC0" });
+      const tb = document.getElementById("tb-dep");
+      const state = tb.querySelector("tr[data-load-state]");
+      if (state) state.remove();
+      const tr = document.createElement("tr");
+      tr.dataset.id = item.id;
+      tr.dataset.ep = "/api/loop-items";
+      tr.innerHTML = depRowHtml(item);
+      tb.insertBefore(tr, tb.firstChild);
+      document.getElementById("dep-empty").style.display = "none";
+      const c = tr.querySelector('[data-field="content"]');
+      if (c) {
+        c.focus();
+      }
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  }
+  function depDel(btn) {
+    const tr = btn.closest("tr");
+    if (!tr.dataset.id) return;
+    if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
+    API.del("/api/loop-items/" + tr.dataset.id).then(() => {
+      tr.remove();
+      const tb = document.getElementById("tb-dep");
+      if (tb && !tb.children.length) document.getElementById("dep-empty").style.display = "block";
+    }).catch((e) => toast("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
+  }
+  async function addPlanRow(dept) {
+    const s = sFromDept(dept);
+    try {
+      const { item } = await persistLoop("plan", s, "\u65B0\u6708\u5EA6\u8BA1\u5212", "\u5F85\u5F00\u59CB");
+      const tr = addPlan(s, item.content, item);
+      const c = tr && tr.querySelector('[data-field="content"]');
+      if (c) {
+        c.focus();
+        placeCaretEnd(c);
+      }
+      toast("\u5DF2\u65B0\u589E" + dept + "\u8BA1\u5212 \xB7 \u5DF2\u5165\u5E93");
+    } catch (e) {
+      toast(persistFailMsg(e));
+    }
+  }
+  async function addTestRow(dept) {
+    const s = sFromDept(dept);
+    try {
+      const { item } = await persistLoop("test", s, "\u65B0\u6D4B\u8BD5\u767B\u8BB0", "\u89C2\u5BDF\u4E2D");
+      const tr = addTest(s, item.content, item);
+      const c = tr && tr.querySelector('[data-field="content"]');
+      if (c) {
+        c.focus();
+        placeCaretEnd(c);
+      }
+      toast("\u5DF2\u65B0\u589E" + dept + "\u6D4B\u8BD5 \xB7 \u5DF2\u5165\u5E93");
+    } catch (e) {
+      toast(persistFailMsg(e));
+    }
+  }
+  var CA_PRIO = { "\u6700\u9AD8": "b-red", "\u9AD8": "b-amber", "\u4E2D": "b-blue", "\u6301\u7EED": "b-gray" };
+  var CA_OWNER = { "\u674E": "b-blue", "\u9648": "b-purple", "\u4E3B\u7BA1": "b-teal" };
+  var CA_STATUS = { "\u5F85\u5F00\u59CB": "b-gray", "\u8FDB\u884C\u4E2D": "b-amber", "\u5DF2\u5B8C\u6210": "b-green" };
+  function contentRowHtml(r) {
+    return `<td class="editable" contenteditable data-field="name">${esc(r.name)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="problem">${esc(r.problem)}</td><td class="editable csp-s-33ee298127" contenteditable data-field="type">${esc(r.type)}</td><td class="ctr"><span class="tagselect ${CA_PRIO[r.priority] || "b-blue"}" data-kind="priority">${esc(r.priority || "\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_OWNER[r.owner] || "b-blue"}" data-kind="owner">${esc(r.owner || "\u674E")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_STATUS[r.status] || "b-gray"}" data-kind="status">${esc(r.status || "\u5F85\u5F00\u59CB")}<i class="ti ti-chevron-down"></i></span></td><td class="num">${esc(r.add_date || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc(r.note)}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
+  }
+  async function loadContent() {
+    const loadVersion = ++contentLoadVersion;
+    try {
+      const { items } = await API.get("/api/content-assets");
+      if (loadVersion !== contentLoadVersion) return;
+      const tb = document.getElementById("tb-content");
+      if (!tb) return;
+      tb.innerHTML = "";
+      (items || []).forEach((r) => {
+        const tr = document.createElement("tr");
+        tr.dataset.id = r.id;
+        tr.dataset.ep = "/api/content-assets";
+        tr.innerHTML = contentRowHtml(r);
+        tb.appendChild(tr);
+      });
+      const e = document.getElementById("content-empty");
+      if (e) e.style.display = items && items.length ? "none" : "block";
+    } catch (e) {
+      if (loadVersion !== contentLoadVersion) return;
+      if (e && e.message !== "unauthorized") {
+        showTableFailure("tb-content", 9, "\u5185\u5BB9\u8D44\u4EA7", e, loadContent);
+        const empty = document.getElementById("content-empty");
+        if (empty) empty.style.display = "none";
+        toast(loadFailureText2("\u5185\u5BB9\u8D44\u4EA7", e));
+      }
+    }
+  }
+  async function addContent() {
+    try {
+      const { item } = await API.post("/api/content-assets", {});
+      const tb = document.getElementById("tb-content");
+      const state = tb.querySelector("tr[data-load-state]");
+      if (state) state.remove();
+      const tr = document.createElement("tr");
+      tr.dataset.id = item.id;
+      tr.dataset.ep = "/api/content-assets";
+      tr.innerHTML = contentRowHtml(item);
+      tb.appendChild(tr);
+      document.getElementById("content-empty").style.display = "none";
+      const c = tr.querySelector('[data-field="name"]');
+      if (c) {
+        c.focus();
+        placeCaretEnd(c);
+      }
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  }
+  function contentDel(btn) {
+    const tr = btn.closest("tr");
+    if (!tr.dataset.id) return;
+    if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
+    API.del("/api/content-assets/" + tr.dataset.id).then(() => {
+      tr.remove();
+      const tb = document.getElementById("tb-content");
+      if (tb && !tb.children.length) document.getElementById("content-empty").style.display = "block";
+    }).catch((e) => toast("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
+  }
+  function aiFp(dept, text2) {
+    return (dept || "") + "|" + String(text2 || "").trim().slice(0, 200);
+  }
+  function aiMarkDone(grp, kind) {
+    grp.querySelectorAll(".aibtn").forEach((b) => b.classList.add("done"));
+    const btn = [...grp.querySelectorAll(".aibtn")].find((b) => b.dataset.kind === kind);
+    if (btn) btn.textContent = "\u2713 \u5DF2" + kind;
+  }
+  function applyAiDoneStates(root) {
+    (root || document).querySelectorAll(".ai-actions").forEach((grp) => {
+      const it = grp.closest(".ai-item");
+      if (!it) return;
+      const text2 = grabText(grp.firstChild || grp);
+      const s = scopeDept(grp, text2);
+      const fp = aiFp(s.dept, text2);
+      ["\u6C89\u6DC0", "\u91C7\u7EB3", "\u6D4B\u8BD5"].forEach((k) => {
+        if (aiDone[k].has(fp)) aiMarkDone(grp, k);
+      });
+    });
+  }
+  async function aiAct(btn, kind) {
+    const grp = btn.closest(".ai-actions");
+    const text2 = grabText(btn);
+    const s = scopeDept(btn, text2);
+    btn.disabled = true;
+    try {
+      if (kind === "\u6C89\u6DC0") {
+        await persistLoop("deposit", s, text2, "\u6C89\u6DC0");
+        addDeposit(s, text2, "\u6C89\u6DC0");
+        toastGo("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "deposit");
+      } else if (kind === "\u91C7\u7EB3") {
+        const [fx] = await Promise.all([persistFix(s, text2), persistLoop("deposit", s, text2, "\u91C7\u7EB3")]);
+        addFixFromObj(fx.item);
+        addDeposit(s, text2, "\u91C7\u7EB3");
+        toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355 + \u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "fix");
+      } else if (kind === "\u6D4B\u8BD5") {
+        const r = await persistLoop("test", s, text2, "\u89C2\u5BDF\u4E2D");
+        addTest(s, r.item.content, r.item);
+        toastGo("\u5DF2\u52A0\u5165\u6D4B\u8BD5\u767B\u8BB0\uFF08" + s.dept + "\uFF09\xB7 \u5DF2\u5165\u5E93", "test");
+      }
+      aiDone[kind].add(aiFp(s.dept, text2));
+      aiMarkDone(grp, kind);
+    } catch (e) {
+      btn.disabled = false;
+      toast(persistFailMsg(e));
+    }
+  }
+  function injectAiActions() {
+    document.querySelectorAll(".ai-item").forEach((it) => {
+      if (it.querySelector(".ai-actions")) return;
+      const wrap = document.createElement("span");
+      wrap.className = "ai-actions";
+      wrap.innerHTML = '<button type="button" class="aibtn dep" data-loop-action="ai-action" data-kind="\u6C89\u6DC0">\u6C89\u6DC0</button><button type="button" class="aibtn adopt" data-loop-action="ai-action" data-kind="\u91C7\u7EB3">\u91C7\u7EB3</button><button type="button" class="aibtn test" data-loop-action="ai-action" data-kind="\u6D4B\u8BD5">\u6D4B\u8BD5</button>';
+      it.appendChild(wrap);
+    });
+    applyAiDoneStates();
+  }
+  injectAiActions();
+
+  // public/src/neg-ads.js
+  var NEGMATCH_BADGE = { "\u7CBE\u786E": "b-green", "\u8BCD\u7EC4": "b-blue", "\u5E7F\u6CDB": "b-amber" };
+  var NEGSTATUS_BADGE = { "\u751F\u6548": "b-green", "\u89C2\u5BDF": "b-amber", "\u5DF2\u79FB\u9664": "b-gray" };
+  var ADSTATUS_BADGE = { "\u91C7\u7528\u4E2D": "b-green", "\u6D4B\u8BD5\u4E2D": "b-amber", "\u5DF2\u5F03\u7528": "b-gray" };
+  function clearLoadState(id) {
+    const row = document.querySelector(`#${id} tr[data-load-state]`);
+    if (row) row.remove();
+  }
+  function negRowHtml(r) {
+    return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc(r.added_date || "")}</td><td class="editable csp-s-33ee298127" contenteditable data-field="reason">${esc(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
+  }
+  function adRowHtml(r) {
+    return `<td class="editable" contenteditable data-field="title">${esc(r.title)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="description">${esc(r.description || "")}</td><td class="editable" contenteditable data-field="ctr">${esc(r.ctr || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="ab_conclusion">${esc(r.ab_conclusion || "")}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || "b-amber"}" data-kind="adstatus">${esc(r.status || "\u6D4B\u8BD5\u4E2D")}<i class="ti ti-chevron-down"></i></span></td>`;
+  }
+  async function addNeg() {
+    try {
+      const { item } = await API.post("/api/neg-keywords", { word: "\u65B0\u5426\u8BCD", reason: "" });
+      clearLoadState("tb-neg");
+      prepend("tb-neg", negRowHtml(item));
+      const tr = document.getElementById("tb-neg").firstChild;
+      tr.dataset.id = item.id;
+      tr.dataset.ep = "/api/neg-keywords";
+      const c = tr.querySelector('[data-field="word"]');
+      if (c) {
+        c.focus();
+        placeCaretEnd(c);
+      }
+      toast("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+    }
+  }
+  async function addAd() {
+    try {
+      const { item } = await API.post("/api/ad-creatives", { title: "\u65B0\u521B\u610F", description: "" });
+      clearLoadState("tb-ad");
+      prepend("tb-ad", adRowHtml(item));
+      const tr = document.getElementById("tb-ad").firstChild;
+      tr.dataset.id = item.id;
+      tr.dataset.ep = "/api/ad-creatives";
+      const c = tr.querySelector('[data-field="title"]');
+      if (c) {
+        c.focus();
+        placeCaretEnd(c);
+      }
+      toast("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+    }
+  }
+
+  // public/src/ga4-view.js
+  var ga4_view_exports = {};
+  __export(ga4_view_exports, {
+    loadGa4: () => loadGa42
+  });
+  async function loadGa42() {
+    let r = { connected: false };
+    try {
+      r = await API.get(withRange("/api/ga4/overview"));
+    } catch (e) {
+    }
+    const st = document.getElementById("ga4-status");
+    if (st) {
+      st.className = "badge " + (r.connected ? "b-green" : "b-gray");
+      st.textContent = r.connected ? "\u5DF2\u63A5\u5165" : "\u672A\u63A5\u5165";
+    }
+    const hint = document.getElementById("ga4-hint");
+    if (hint) hint.style.display = r.connected ? "none" : "flex";
+    const set = (id, v) => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = v == null ? "\u2014" : v;
+    };
+    const m = r.metrics;
+    if (m) {
+      set("ga4-users", m.activeUsers);
+      set("ga4-sessions", m.sessions);
+      set("ga4-views", m.pageViews);
+      set("ga4-bounce", m.bounceRate != null ? m.bounceRate + "%" : "\u2014");
+      set("ga4-dur", m.avgDuration);
+    }
+    const fill = (tbId, rows2, cols) => {
+      const tb = document.getElementById(tbId);
+      if (!tb) return;
+      if (rows2 && rows2.length) {
+        tb.innerHTML = rows2.map((x) => "<tr>" + cols.map((c) => `<td class="${c.cls || ""}">${esc(x[c.k] ?? "")}</td>`).join("") + "</tr>").join("");
+        const card = tb.closest(".card");
+        const e = card && card.querySelector(".ga4-empty");
+        if (e) e.style.display = "none";
+      }
+    };
+    fill("ga4-sources", r.sources, [{ k: "source" }, { k: "sessions", cls: "num" }, { k: "users", cls: "num" }]);
+    fill("ga4-countries", r.countries, [{ k: "country" }, { k: "sessions", cls: "num" }, { k: "users", cls: "num" }]);
+    fill("ga4-landing", r.landingPages, [{ k: "page" }, { k: "sessions", cls: "num" }, { k: "conversions", cls: "num" }]);
+  }
+
+  // public/src/market-brain.js
+  var market_brain_exports = {};
+  __export(market_brain_exports, {
+    loadBrain: () => loadBrain,
+    loadMarket: () => loadMarket,
+    refreshBrain: () => refreshBrain,
+    renderMarket: () => renderMarket
+  });
+  window._marketById = {};
+  function mktEsc(s) {
+    return esc(s);
+  }
+  function renderMarket(items) {
+    const tb = document.getElementById("tb-market");
+    if (!tb) return;
+    tb.innerHTML = "";
+    window._marketById = {};
+    let lastSec = null;
+    items.forEach((it) => {
+      let ans = {};
+      try {
+        ans = JSON.parse(it.answers || "{}");
+      } catch {
+      }
+      it._ans = ans;
+      window._marketById[it.id] = it;
+      if (it.section !== lastSec) {
+        lastSec = it.section;
+        const hr = document.createElement("tr");
+        hr.innerHTML = `<td class="csp-s-24cc594aae" colspan="5">${mktEsc(it.section)}</td>`;
+        tb.appendChild(hr);
+      }
+      const tr = document.createElement("tr");
+      tr.dataset.id = it.id;
+      tr.innerHTML = `<td class="dim csp-s-33ee298127">${mktEsc(it.section)}</td><td class="mkt-q editable csp-s-bd299c8ad6" contenteditable>${mktEsc(it.question)}</td>` + ["\u5B5F\u96EA", "\u738B\u7490\u5E73", "\u71D5\u654F"].map((r) => `<td class="mkt-ans editable csp-s-23e1d32409" contenteditable data-resp="${r}">${mktEsc(ans[r] || "")}</td>`).join("");
+      tb.appendChild(tr);
+    });
+    const empty = document.getElementById("market-empty");
+    if (empty) empty.style.display = items.length ? "none" : "block";
+  }
+  async function loadMarket() {
+    try {
+      const { items } = await API.get("/api/market/research");
+      renderMarket(items || []);
+    } catch (e) {
+    }
+  }
+  document.addEventListener("focusout", (e) => {
+    const cell = e.target.closest && e.target.closest("#tb-market [contenteditable]");
+    if (!cell) return;
+    const tr = cell.closest("tr");
+    const id = tr && tr.dataset.id;
+    if (!id) return;
+    const it = window._marketById[id];
+    if (!it) return;
+    const body = {};
+    if (cell.classList.contains("mkt-q")) body.question = cell.innerText.trim();
+    else if (cell.classList.contains("mkt-ans")) {
+      it._ans = it._ans || {};
+      it._ans[cell.dataset.resp] = cell.innerText;
+      body.answers = JSON.stringify(it._ans);
+    } else return;
+    API.patch("/api/market/research/" + id, body).catch((err) => toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
+  });
+  async function loadBrain() {
+    try {
+      const { state, summary } = await API.get("/api/market/brain");
+      const chip = document.getElementById("brainStatus");
+      if (chip) {
+        if (!state.hasSummary) {
+          chip.className = "badge b-gray";
+          chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u672A\u5B66\u4E60";
+        } else if (state.needsUpdate) {
+          chip.className = "badge b-amber";
+          chip.textContent = state.reason === "new_month" ? "AI \u8BB0\u5FC6\uFF1A\u5DF2\u8DE8\u6708\uFF0C\u5EFA\u8BAE\u66F4\u65B0" : "AI \u8BB0\u5FC6\uFF1A\u8D44\u6599\u6709\u53D8\uFF0C\u5EFA\u8BAE\u66F4\u65B0";
+        } else {
+          chip.className = "badge b-green";
+          chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u5DF2\u662F\u6700\u65B0";
+        }
+      }
+      const card = document.getElementById("brainSummaryCard");
+      if (card) {
+        if (summary) {
+          card.style.display = "block";
+          document.getElementById("brainSummary").innerHTML = mdToHtml(summary);
+          document.getElementById("brainUpdatedAt").textContent = state.updatedAt ? "\u66F4\u65B0\u4E8E " + state.updatedAt : "";
+        } else card.style.display = "none";
+      }
+    } catch (e) {
+    }
+  }
+  async function refreshBrain(btn) {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader"></i> \u5B66\u4E60\u4E2D\u2026';
+    }
+    try {
+      const r = await API.post("/api/market/brain/refresh", {});
+      if (r && r.updated) toast("AI \u5DF2\u91CD\u65B0\u5B66\u4E60\u5E02\u573A\u8D44\u6599\uFF0C\u8BB0\u5FC6\u5DF2\u66F4\u65B0");
+      else if (r && r.reason === "no_source") toast("\u6682\u65E0\u5E02\u573A\u8D44\u6599\u53EF\u5B66\u4E60");
+      else toast("\u8BB0\u5FC6\u5DF2\u66F4\u65B0");
+      await loadBrain();
+    } catch (e) {
+      toast(e.status === 503 ? "\u8BF7\u5148\u914D\u7F6E ANTHROPIC_API_KEY \u518D\u66F4\u65B0\u8BB0\u5FC6" : "\u66F4\u65B0\u5931\u8D25\uFF1A" + (e.body && e.body.error || e.message));
+    }
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-brain"></i> \u540C\u6B65 / \u66F4\u65B0 AI \u8BB0\u5FC6';
+    }
+  }
+
+  // public/src/kpi-view.js
+  var kpi_view_exports = {};
+  __export(kpi_view_exports, {
+    loadOverview: () => loadOverview,
+    renderKPI: () => renderKPI2
+  });
+
+  // public/src/kpi.js
+  var TOTAL = [{ n: "\u8BE2\u76D8\u603B\u91CF", w: 25, t: 60, a: 0, m: "r", u: "\u5C01" }, { n: "A\u7EA7\u8BE2\u76D8\u6570", w: 35, t: 10, a: 0, m: "r", u: "\u5C01" }, { n: "\u6709\u6548\u8BE2\u76D8\u6210\u672C", w: 25, t: 2e3, a: 0, m: "i", u: "\xA5" }, { n: "\u95ED\u73AF\u6267\u884C\u5EA6", w: 15, t: 5, a: 0, m: "r", u: "\u9879" }];
+  var SEO = [{ n: "\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4", w: 25, t: 10, a: 0, m: "r", u: "%" }, { n: "\u6838\u5FC3\u8BCD Top10 \u5360\u6BD4", w: 25, t: 40, a: 0, m: "r", u: "%" }, { n: "\u5173\u952E\u8BCD\u8986\u76D6/\u957F\u5C3E", w: 15, t: 500, a: 0, m: "r", u: "\u8BCD" }, { n: "\u65B0\u589E\u6536\u5F55\u9875\u9762", w: 15, t: 20, a: 0, m: "r", u: "\u9875" }, { n: "\u8DF3\u51FA\u7387", w: 10, t: 55, a: 0, m: "i", u: "%" }, { n: "\u9875\u9762\u505C\u7559\u65F6\u957F", w: 10, t: 150, a: 0, m: "r", u: "s" }];
+  var SEM = [{ n: "CPC", w: 15, t: 4, a: 0, m: "i", u: "\xA5" }, { n: "CTR", w: 15, t: 3.5, a: 0, m: "r", u: "%" }, { n: "\u8D28\u91CF\u5206", w: 15, t: 7.5, a: 0, m: "r", u: "" }, { n: "ROAS", w: 20, t: 3.5, a: 0, m: "r", u: "x" }, { n: "\u8F6C\u5316\u6B21\u6570", w: 15, t: 60, a: 0, m: "r", u: "\u6B21" }, { n: "\u6BCF\u6B21\u8F6C\u5316\u8D39\u7528", w: 20, t: 300, a: 0, m: "i", u: "\xA5" }];
+  var ratio = (k) => {
+    const target = Number(k.t), actual = Number(k.a);
+    if (!Number.isFinite(target) || !Number.isFinite(actual) || target <= 0 || actual <= 0) return 0;
+    return k.m === "i" ? Math.min(target / actual, 1) : Math.min(actual / target, 1);
+  };
+  var blockRate = (a) => a.reduce((s, k) => s + ratio(k) * k.w, 0) / a.reduce((s, k) => s + k.w, 0);
+  var tR;
+  var seoR;
+  var semR;
+  var liScore;
+  var chenScore;
+  var company;
+  function recomputeScores() {
+    tR = blockRate(TOTAL);
+    seoR = blockRate(SEO);
+    semR = blockRate(SEM);
+    liScore = (tR * 0.5 + seoR * 0.5) * 100;
+    chenScore = (tR * 0.5 + semR * 0.5) * 100;
+    company = (liScore + chenScore) / 2;
+  }
+  recomputeScores();
+  window._seoWeeks = [];
+  window._semWeeks = [];
+  window._seoWeeksView = void 0;
+  function applyKpiServer(rows2) {
+    const byGrp = { total: TOTAL, seo: SEO, sem: SEM };
+    (rows2 || []).forEach((r) => {
+      const arr = byGrp[r.grp];
+      if (!arr) return;
+      const k = arr.find((x) => x.n === r.name);
+      if (k) {
+        if (typeof r.target === "number") k.t = r.target;
+        if (typeof r.actual === "number") k.a = r.actual;
+        k.id = r.id;
+      }
+    });
+  }
+  function syncKpiInputs() {
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
+      const p = el.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
+      if (arr && arr[idx] && arr[idx].t != null) {
+        el.textContent = String(arr[idx].t);
+        el.dataset.kpiOld = String(arr[idx].t);
+      }
+    });
+  }
+  async function loadMetrics() {
+    try {
+      const { rows: rows2 } = await API.get("/api/kpi-targets");
+      applyKpiServer(rows2);
+      syncKpiInputs();
+    } catch (e) {
+      if (e && e.message !== "unauthorized") toast("KPI \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+    }
+  }
+  function mapSeoWeek(w) {
+    return { date: (w.week_date || "").slice(5), ym: (w.week_date || "").slice(0, 7), clicks: w.clicks, impr: w.impressions, pos: w.avg_position, top10: w.top10_ratio, coverage: w.coverage, indexed: w.indexed_pages, bounce: w.bounce_rate, dwell: w.dwell_seconds };
+  }
+  function mapSemWeek(w) {
+    return { date: (w.week_date || "").slice(5), cost: w.cost, impr: w.impressions, clicks: w.clicks, conv: w.conversions, roas: w.roas, qs: w.quality_score, cpc: w.cpc, ctr: w.ctr, cpconv: w.cost_per_conv };
+  }
+  async function loadWeeks() {
+    try {
+      const seo = await API.get("/api/seo-weeks");
+      window._seoWeeks = (seo.items || []).map(mapSeoWeek);
+      const sem = await API.get("/api/sem-weeks");
+      window._semWeeks = (sem.items || []).map(mapSemWeek);
+    } catch (e) {
+      window._seoWeeks = [];
+      window._semWeeks = [];
+      if (e && e.message !== "unauthorized") toast("\u5468\u62A5\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+    }
+    applySeoActuals();
+    applySemActuals();
+    renderBoardCards();
+  }
+  function renderBoardCards() {
+  }
+  document.addEventListener("change", (e) => {
+    if (!e.target || e.target.id !== "sem-hlevel") return;
+    const v = e.target.value;
+    document.querySelectorAll("#sub-data-sem table.hierarchy tbody tr").forEach((tr) => {
+      let show = true;
+      if (v === "camp") show = tr.classList.contains("h-camp");
+      else if (v === "grp") show = tr.classList.contains("h-camp") || tr.classList.contains("h-grp");
+      tr.style.display = show ? "" : "none";
+    });
+  });
+  function applySeoActuals() {
+    const w = window._seoWeeks;
+    if (!w.length) return;
+    const last = w[w.length - 1], prev = w.length > 1 ? w[w.length - 2] : null;
+    if (prev && prev.clicks) SEO[0].a = Math.round((last.clicks / prev.clicks - 1) * 1e3) / 10;
+    if (last.top10 != null) SEO[1].a = last.top10;
+    if (last.coverage != null) SEO[2].a = last.coverage;
+    if (last.indexed != null) SEO[3].a = last.indexed;
+    if (last.bounce != null) SEO[4].a = last.bounce;
+    if (last.dwell != null) SEO[5].a = last.dwell;
+  }
+  function applySemActuals() {
+    const w = window._semWeeks;
+    if (!w.length) return;
+    const last = w[w.length - 1];
+    if (last.cpc != null) SEM[0].a = last.cpc;
+    if (last.ctr != null) SEM[1].a = last.ctr;
+    if (last.qs != null) SEM[2].a = last.qs;
+    if (last.roas != null) SEM[3].a = last.roas;
+    if (last.conv != null) SEM[4].a = last.conv;
+    if (last.cpconv != null) SEM[5].a = last.cpconv;
+  }
+  var _fnum = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const v = parseFloat(el.value);
+    return isNaN(v) ? null : v;
+  };
+  async function submitSeoWeek() {
+    const body = {
+      week_date: document.getElementById("sw-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+      clicks: _fnum("sw-clicks") || 0,
+      impressions: _fnum("sw-impr") || 0,
+      avg_position: _fnum("sw-pos"),
+      top10_ratio: _fnum("sw-top10"),
+      coverage: _fnum("sw-cov"),
+      indexed_pages: _fnum("sw-idx"),
+      bounce_rate: _fnum("sw-bounce"),
+      dwell_seconds: _fnum("sw-dwell")
+    };
+    try {
+      const { item } = await API.post("/api/seo-weeks", body);
+      const rec = mapSeoWeek(item);
+      window._seoWeeks.push(rec);
+      applySeoActuals();
+      loadSeoBoardGsc();
+      refreshSeoWeekChart();
+      renderKPI();
+      closeModal("seoWkMask");
+      const wow = window._seoWeeks.length > 1 ? "\uFF0C\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4 " + (SEO[0].a >= 0 ? "+" : "") + SEO[0].a + "%" : "";
+      toast("\u5DF2\u5F55\u5165\u672C\u5468 GSC \u6570\u636E \xB7 \u5DF2\u5165\u5E93, \u56FE\u8868+KPI \u5DF2\u66F4\u65B0" + wow);
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u674E/SEO \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+    }
+  }
+  async function submitSemWeek() {
+    const body = {
+      week_date: document.getElementById("mw-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+      cost: _fnum("mw-cost") || 0,
+      impressions: _fnum("mw-impr") || 0,
+      clicks: _fnum("mw-clicks") || 0,
+      conversions: _fnum("mw-conv") || 0,
+      roas: _fnum("mw-roas"),
+      quality_score: _fnum("mw-qs")
+    };
+    try {
+      const { item } = await API.post("/api/sem-weeks", body);
+      const rec = mapSemWeek(item);
+      window._semWeeks.push(rec);
+      applySemActuals();
+      loadSemBoardAds();
+      renderKPI();
+      closeModal("semWkMask");
+      toast("\u5DF2\u5BFC\u5165\u672C\u5468 Ads \u6570\u636E \xB7 CPC \xA5" + (rec.cpc ?? "-") + " / CTR " + (rec.ctr ?? "-") + "% / \u6BCF\u8BE2\u76D8 \xA5" + (rec.cpconv ?? "-") + "\uFF08\u540E\u7AEF\u8BA1\u7B97\uFF09, KPI \u5DF2\u66F4\u65B0");
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u9648/SEM \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+    }
+  }
+
+  // public/src/kpi-view.js
+  function grade(s) {
+    if (s >= 90) return { t: "\u4F18\u79C0", c: "var(--green)", bg: "var(--green-soft)", i: "ti-trophy" };
+    if (s >= 75) return { t: "\u5408\u683C", c: "var(--blue)", bg: "var(--blue-soft)", i: "ti-circle-check" };
+    if (s >= 60) return { t: "\u8B66\u544A", c: "var(--amber)", bg: "var(--amber-soft)", i: "ti-alert-triangle" };
+    return { t: "\u6574\u6539", c: "var(--primary)", bg: "var(--primary-soft)", i: "ti-flame" };
+  }
+  function gauge(arc, sc, score) {
+    const C = 364.4, g = grade(score), A = document.getElementById(arc), S = document.getElementById(sc);
+    if (!A) return;
+    A.style.stroke = g.c;
+    S.style.color = g.c;
+    let c = 0;
+    (function st() {
+      c += score / 40;
+      if (c >= score) c = score;
+      A.style.strokeDashoffset = C - C * c / 100;
+      S.textContent = c.toFixed(0);
+      if (c < score) requestAnimationFrame(st);
+    })();
+  }
+  function badge(id, score) {
+    const b = document.getElementById(id);
+    if (!b) return;
+    const g = grade(score);
+    b.style.background = g.bg;
+    b.style.color = g.c;
+    b.innerHTML = '<i class="ti ' + g.i + '"></i> ' + g.t;
+  }
+  function fmt(k, v) {
+    return k.u === "\xA5" ? "\xA5" + v.toLocaleString() : k.u === "%" ? v + "%" : k.u === "" ? v : v + k.u;
+  }
+  function scoreTone(r) {
+    return r >= 0.9 ? "kpi-tone-green" : r >= 0.7 ? "kpi-tone-blue" : r >= 0.5 ? "kpi-tone-amber" : "kpi-tone-primary";
+  }
+  function rows(arr, box) {
+    const el = document.getElementById(box);
+    if (!el) return;
+    el.innerHTML = arr.map((k) => {
+      const r = ratio(k), tone = scoreTone(r), progress = Math.max(0, Math.min(100, Number.isFinite(r) ? r * 100 : 0));
+      return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${fmt(k, k.a)}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${Math.round(r * 100)}</div></div>`;
+    }).join("");
+    el.querySelectorAll("[data-progress]").forEach((fill) => {
+      const progress = Number(fill.dataset.progress);
+      fill.style.width = `${Number.isFinite(progress) ? progress : 0}%`;
+    });
+  }
+  function mini(ov) {
+    ov = ov || { current: {} };
+    const c = ov.current || {};
+    const d = ov.delta || {};
+    const momTxt = (v) => v == null ? "" : v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014";
+    const m = [
+      ["\u6709\u6548\u8BE2\u76D8", c.valid ?? "\u2014", "", ""],
+      ["A\u7EA7\u5360\u6BD4", c.aRatio != null ? c.aRatio + "%" : "\u2014", "", momTxt(d.aRatio)],
+      ["\u6709\u6548\u8BE2\u76D8\u7387", c.validRate != null ? c.validRate + "%" : "\u2014", "", momTxt(d.validRate)]
+    ];
+    const el = document.getElementById("miniScores");
+    if (!el) return;
+    el.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
+  }
+  async function loadOverview() {
+    try {
+      const ov = await API.get("/api/overview");
+      const c = ov.current || {}, d = ov.delta || {};
+      const set = (id, v) => {
+        const e = document.getElementById(id);
+        if (e) e.textContent = v;
+      };
+      set("topValid", (c.valid ?? "\u2014") + " / " + (c.total ?? "\u2014"));
+      set("topAratio", c.aRatio != null ? c.aRatio + "%" : "\u2014");
+      set("topRate", c.validRate != null ? c.validRate + "%" : "\u2014");
+      const tg = document.getElementById("topGrade");
+      if (tg) {
+        tg.textContent = c.grade || "";
+        tg.className = "kpi-delta " + (c.company >= 75 ? "delta-pos" : "delta-neg");
+      }
+      const mom = (el, v) => {
+        if (!el) return;
+        if (v == null) {
+          el.textContent = "";
+          return;
+        }
+        el.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " vs\u4E0A\u6708";
+        el.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
+      };
+      mom(document.getElementById("topAratioMoM"), d.aRatio);
+      mom(document.getElementById("topRateMoM"), d.validRate);
+      const g1b = document.getElementById("g1b");
+      if (g1b) {
+        let chip = document.getElementById("g1mom");
+        if (!chip) {
+          chip = document.createElement("span");
+          chip.id = "g1mom";
+          chip.style.marginLeft = "8px";
+          chip.style.fontSize = "11px";
+          chip.style.fontWeight = "800";
+          g1b.parentElement && g1b.parentElement.appendChild(chip);
+        }
+        if (d.company == null) {
+          chip.textContent = "\u9996\u6708\u65E0\u73AF\u6BD4";
+          chip.style.color = "var(--text3)";
+        } else {
+          chip.textContent = (d.company > 0 ? "\u25B2" + d.company : d.company < 0 ? "\u25BC" + Math.abs(d.company) : "\u2014") + " \u5206 vs\u4E0A\u6708";
+          chip.style.color = d.company > 0 ? "var(--green)" : d.company < 0 ? "var(--primary)" : "var(--text3)";
+        }
+      }
+      mini(ov);
+    } catch (e) {
+      mini();
+    }
+  }
+  function renderKPI2() {
+    recomputeScores();
+    rows(TOTAL, "totalRows");
+    rows(SEO, "seoRows");
+    rows(SEM, "semRows");
+    const set = (id, v) => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = v;
+    };
+    set("topScore", company.toFixed(0));
+    badge("liBadge", liScore);
+    badge("chenBadge", chenScore);
+    gauge("g1", "g1s", company);
+    gauge("g2", "g2s", company);
+    badge("g1b", company);
+    badge("g2b", company);
+    gauge("liArc", "liScore", liScore);
+    gauge("chenArc", "chenScore", chenScore);
+  }
+
+  // public/src/google-projects.js
+  var google_projects_exports = {};
+  __export(google_projects_exports, {
+    backfillGoogle: () => backfillGoogle,
+    loadDataSourcesStatus: () => loadDataSourcesStatus,
+    loadIntegrations: () => loadIntegrations,
+    startGoogleAuth: () => startGoogleAuth,
+    syncGoogle: () => syncGoogle
+  });
+  var INTEG_LABEL = { gsc: "Google Search Console", ga4: "Google Analytics 4 (GA4)", ads: "Google Ads" };
+  var GOOGLE_PROVIDER_ORDER = ["gsc", "ga4", "ads"];
+  var DS_LABEL = { inquiries: "\u8BE2\u76D8", seo_weeks: "SEO \u5468\u62A5", sem_weeks: "SEM \u5468\u62A5", gsc: "GSC", ga4: "GA4", ads: "Google Ads", ai: "AI Provider" };
+  var DS_ORDER = ["inquiries", "seo_weeks", "sem_weeks", "gsc", "ga4", "ads", "ai"];
+  var DS_TYPE_LABEL = { manual: "\u4EBA\u5DE5\u5F55\u5165", sync: "\u81EA\u52A8\u540C\u6B65", provider: "AI Provider" };
+  function dsStatusMeta(status, type) {
+    const map = {
+      available: [type === "sync" ? "\u5DF2\u6388\u6743 \xB7 \u53EF\u540C\u6B65" : "\u4EBA\u5DE5\u5F55\u5165 \xB7 \u6709\u6570\u636E", type === "sync" ? "b-green" : "b-blue"],
+      no_records: ["\u4EBA\u5DE5\u5F55\u5165 \xB7 \u6682\u65E0\u6570\u636E", "b-gray"],
+      not_configured: type === "sync" ? ["\u540E\u7AEF\u672A\u914D\u7F6E", "b-gray"] : ["\u672A\u914D\u7F6E", "b-gray"],
+      configured_not_synced: ["\u5DF2\u914D\u7F6E \xB7 \u5F85 OAuth \u6388\u6743", "b-amber"],
+      not_implemented: ["\u672A\u63A5\u5165", "b-gray"],
+      configured_unverified: ["\u5DF2\u914D\u7F6E \xB7 \u672A\u9A8C\u8BC1", "b-amber"],
+      error: ["\u72B6\u6001\u83B7\u53D6\u5931\u8D25", "b-red"]
+    };
+    return map[status] || ["\u72B6\u6001\u83B7\u53D6\u5931\u8D25", "b-red"];
+  }
+  function dsRow(key, s) {
+    s = s || {};
+    const name = DS_LABEL[key] || key;
+    const typeText = DS_TYPE_LABEL[s.type] || s.type || "";
+    const [text2, cls] = dsStatusMeta(s.status, s.type);
+    const time = s.type === "manual" ? s.lastAt || "\u2014" : s.type === "sync" ? s.lastSyncAt || "\u2014" : "\u2014";
+    const count = s.type === "manual" || s.type === "sync" ? s.count == null ? 0 : s.count : "\u2014";
+    let extra = "";
+    if (s.error) extra = `<span class="csp-s-b0e08465c2"> \xB7 \u9519\u8BEF\uFF1A${esc(s.error)}</span>`;
+    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc(s.missing.join(", "))}</span>`;
+    else if (s.note === "google_oauth_required") extra = `<span class="dim"> \xB7 \u9700\u8981 OAuth \u6388\u6743</span>`;
+    else if (s.note === "google_sync_ready") extra = `<span class="dim"> \xB7 \u53EF\u624B\u52A8\u540C\u6B65</span>`;
+    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc(s.provider || "")}${s.model ? " / " + esc(s.model) : ""}</span>`;
+    return `<div class="csp-s-6d1156dd83"><div class="csp-s-22dccc46c7">${esc(name)}</div><div class="csp-s-b57829faf1">${esc(typeText)}</div><span class="badge ${cls}">${esc(text2)}</span><div class="csp-s-83725d2c6e"></div><div class="csp-s-95144d7b86">\u65F6\u95F4 ${esc(String(time))} \xB7 \u8BB0\u5F55 ${esc(String(count))}</div><div class="csp-s-33ee298127">${extra}</div></div>`;
+  }
+  async function loadDataSourcesStatus() {
+    const box = document.getElementById("ds-status-rows");
+    if (!box) return;
+    const tag = document.getElementById("ds-demo-tag");
+    if (tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber csp-s-9d5367afed">\u793A\u4F8B\u6A21\u5F0F</span>' : "";
+    try {
+      const r = await API.get("/api/data-sources/status");
+      const src = r && r.sources || {};
+      box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("") + (window.DEMO_MODE ? '<div class="dim csp-s-5698104cf1">\u5F53\u524D\u4E3A\u6F14\u793A\u6807\u8BB0\uFF0C\u4E0B\u65B9\u4ECD\u4E3A\u63A5\u53E3\u771F\u5B9E\u72B6\u6001\u3002</div>' : "");
+    } catch (e) {
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+    }
+  }
+  async function loadIntegrations() {
+    const box = document.getElementById("integ-rows");
+    if (!box) return;
+    try {
+      const r = await API.get("/api/google/status");
+      const providers = r && r.providers || {};
+      const project = r && r.defaultProject;
+      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
+      box.innerHTML = `<div class="sheet-tip csp-s-145afb7049"><i class="ti ti-info-circle"></i> ${projectText}</div>` + GOOGLE_PROVIDER_ORDER.map((p) => googleProviderRow(p, providers[p] || {}, project)).join("");
+      bindGoogleProviderActions(box);
+    } catch (e) {
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+    }
+  }
+  function googleProviderRow(provider, s, project) {
+    const configured = !!s.configured;
+    const authorized = !!s.authorized;
+    const ok = configured && authorized;
+    const badge3 = ok ? '<span class="badge b-green">\u5DF2\u6388\u6743</span>' : configured ? '<span class="badge b-amber">\u5F85\u6388\u6743</span>' : '<span class="badge b-gray">\u540E\u7AEF\u672A\u914D\u7F6E</span>';
+    const missing = s.missing && s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">\u7F3A\u5C11\uFF1A${esc(s.missing.join(", "))}</div>` : "";
+    const lastSync = s.lastSyncAt || "\u2014";
+    const lastStatus = s.lastSyncStatus || "\u672A\u540C\u6B65";
+    const lastError = s.lastError ? `<div class="csp-s-5ade8bf698">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc(s.lastError)}</div>` : "";
+    const providerConfigNote = provider === "gsc" ? s.siteUrlConfigured || project?.gsc_site_url ? "\u7AD9\u70B9\u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GSC_SITE_URL \u6216\u9879\u76EE\u7AD9\u70B9" : provider === "ga4" ? s.propertyConfigured || project?.ga4_property_id ? "Property \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GA4_PROPERTY_ID \u6216\u9879\u76EE Property" : s.customerConfigured || project?.ads_customer_id ? "Customer \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GOOGLE_ADS_CUSTOMER_ID \u6216\u9879\u76EE Customer";
+    const authDisabled = configured ? "" : "disabled";
+    const syncDisabled = ok ? "" : "disabled";
+    return `<div class="csp-s-98c17c8e1c">
+    <div class="csp-s-fad0d7671e">${esc(INTEG_LABEL[provider] || provider)} ${badge3}</div>
+    <div class="csp-s-fd03ebc21e">
+      <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
+      ${missing}${lastError}
+    </div>
+    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
+    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
+    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
+  </div>`;
+  }
+  function bindGoogleProviderActions(box) {
+    box.onclick = (e) => {
+      const btn = e.target.closest("[data-google-action]");
+      if (!btn || !box.contains(btn)) return;
+      const provider = btn.dataset.provider;
+      if (!GOOGLE_PROVIDER_ORDER.includes(provider)) return;
+      const action = btn.dataset.googleAction;
+      if (action === "auth") startGoogleAuth(provider);
+      else if (action === "backfill") backfillGoogle(provider, 90, btn);
+      else if (action === "sync") syncGoogle(provider, btn);
+    };
+  }
+  function startGoogleAuth(provider) {
+    location.href = "/api/google/auth/start?provider=" + encodeURIComponent(provider);
+  }
+  async function backfillGoogle(provider, days, btn) {
+    const old = btn ? btn.innerHTML : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2"></i> \u56DE\u8865\u4E2D\u2026';
+    }
+    try {
+      const end = /* @__PURE__ */ new Date();
+      end.setUTCDate(end.getUTCDate() - 1);
+      const start = new Date(end);
+      start.setUTCDate(start.getUTCDate() - (days - 1));
+      const iso = (d) => d.toISOString().slice(0, 10);
+      const r = await API.post("/api/sync/" + encodeURIComponent(provider), { start_date: iso(start), end_date: iso(end) });
+      toast(`${INTEG_LABEL[provider] || provider} \u56DE\u8865 ${days} \u5929\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
+      await loadDataSourcesStatus();
+      await loadIntegrations();
+      if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
+      loadDataFreshness();
+    } catch (e) {
+      const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
+      toast(`\u56DE\u8865\u5931\u8D25\uFF1A${e.message}${missing}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
+    }
+  }
+  async function syncGoogle(provider, btn) {
+    const old = btn ? btn.innerHTML : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2"></i> \u540C\u6B65\u4E2D';
+    }
+    try {
+      const r = await API.post("/api/sync/" + encodeURIComponent(provider), {});
+      toast(`${INTEG_LABEL[provider] || provider} \u540C\u6B65\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
+      await loadDataSourcesStatus();
+      await loadIntegrations();
+      if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
+    } catch (e) {
+      const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
+      toast(`\u540C\u6B65\u5931\u8D25\uFF1A${e.message}${missing}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
+    }
+  }
+
+  // public/src/archive.js
+  var archive_exports = {};
+  __export(archive_exports, {
+    loadArchive: () => loadArchive2
+  });
+  document.addEventListener("click", async (e) => {
+    const arc = e.target.closest(".row-archive");
+    const dep = e.target.closest(".row-dep");
+    if (!arc && !dep) return;
+    const tr = (arc || dep).closest("tr");
+    if (!tr) return;
+    const id = tr.dataset.id, ep = tr.dataset.ep;
+    if (!id || !ep) return;
+    const dEl = tr.querySelector('[data-kind="dept"]');
+    const deptTxt = dEl ? dEl.textContent.trim() : "";
+    const isSem = deptTxt === "SEM" || /sem/i.test(tr.parentElement && tr.parentElement.id || "");
+    const isCompany = deptTxt === "\u516C\u53F8";
+    const ak = isCompany ? "company" : isSem ? "sem" : "seo";
+    const content = (tr.querySelector('[data-field="content"]') || tr.querySelector('[data-field="title"]') || tr.cells[0]).innerText.trim();
+    if (arc) {
+      if (!inlineConfirm(arc, "\u786E\u8BA4\u5F52\u6863")) return;
+      arc.disabled = true;
+      try {
+        await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
+        tr.remove();
+        toast("\u5DF2\u5F52\u6863");
+      } catch (err) {
+        arc.disabled = false;
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5F52\u6863\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      }
+    } else if (dep) {
+      dep.disabled = true;
+      try {
+        const s = { dept: isCompany ? "\u516C\u53F8" : isSem ? "SEM" : "SEO", owner: isSem ? "\u9648" : "\u674E", c: isSem ? "b-purple" : "b-blue" };
+        const { item } = await persistLoop("deposit", s, content, "\u6C89\u6DC0");
+        const depTb = document.getElementById("tb-dep");
+        if (depTb) {
+          const state = depTb.querySelector("tr[data-load-state]");
+          if (state) state.remove();
+          const ntr = document.createElement("tr");
+          ntr.dataset.id = item.id;
+          ntr.dataset.ep = "/api/loop-items";
+          ntr.innerHTML = depRowHtml(item);
+          depTb.insertBefore(ntr, depTb.firstChild);
+          const de = document.getElementById("dep-empty");
+          if (de) de.style.display = "none";
+        }
+        dep.disabled = false;
+        toast("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93");
+      } catch (err) {
+        dep.disabled = false;
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6C89\u6DC0\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      }
+    }
+  });
+  function archRowHtml(it, from) {
+    const date = (it.archived_at || "").slice(0, 10);
+    const dept = it.dept || "\u2014";
+    const content = esc(it.content || it.title || it.detail || "");
+    const fromBadge = '<span class="badge ' + (from === "fix" ? "b-amber" : "b-blue") + '">' + (from === "fix" ? "\u6574\u6539" : it.kind === "task" ? "\u4EFB\u52A1" : it.kind === "plan" ? "\u8BA1\u5212" : it.kind === "test" ? "\u6D4B\u8BD5" : it.kind === "deposit" ? "\u6C89\u6DC0" : "\u95ED\u73AF") + "</span>";
+    const isBoss = (window.ME || {}).role === "boss";
+    const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u539F\u9875"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
+  }
+  function archInqRowHtml(it) {
+    const date = (it.archived_at || "").slice(0, 10);
+    const isBoss = (window.ME || {}).role === "boss";
+    const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u8BE2\u76D8\u5217\u8868"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
+    const cust = (it.customer_name ? esc(it.customer_name) + " \xB7 " : "") + esc(it.country || "");
+    const source = esc(it.source || "");
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-short-date num">${esc((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
+  }
+  async function loadArchive2() {
+    const bucket = { sem: [], seo: [], company: [] };
+    try {
+      const { items } = await API.get("/api/fixes?archived=1");
+      (items || []).forEach((f) => {
+        const k = f.archive_kind || deriveAk(f.dept);
+        if (bucket[k]) bucket[k].push({ ...f, _from: "fix" });
+      });
+    } catch (e) {
+    }
+    try {
+      const { items } = await API.get("/api/loop-items?archived=1");
+      (items || []).forEach((it) => {
+        const k = it.archive_kind || deriveAk(it.dept);
+        if (bucket[k]) bucket[k].push({ ...it, _from: "loop" });
+      });
+    } catch (e) {
+    }
+    ["sem", "seo", "company"].forEach((k) => {
+      const tb = document.getElementById("tb-arc-" + k);
+      if (!tb) return;
+      tb.innerHTML = "";
+      const rows2 = bucket[k].slice().sort((a, b) => String(b.archived_at || "").localeCompare(String(a.archived_at || "")));
+      rows2.forEach((it) => {
+        const tr = document.createElement("tr");
+        tr.dataset.id = it.id;
+        tr.dataset.ep = it._from === "fix" ? "/api/fixes" : "/api/loop-items";
+        tr.innerHTML = archRowHtml(it, it._from);
+        tb.appendChild(tr);
+      });
+      const e = document.getElementById("arc-" + k + "-empty");
+      if (e) e.style.display = rows2.length ? "none" : "block";
+    });
+    const itb = document.getElementById("tb-arc-inquiry");
+    if (itb) {
+      itb.innerHTML = "";
+      let inqs = [];
+      try {
+        const { items } = await API.get("/api/inquiries?archived=1");
+        inqs = items || [];
+      } catch (e2) {
+      }
+      inqs.forEach((it) => {
+        const tr = document.createElement("tr");
+        tr.dataset.id = it.id;
+        tr.dataset.ep = "/api/inquiries";
+        tr.innerHTML = archInqRowHtml(it);
+        itb.appendChild(tr);
+      });
+      const e = document.getElementById("arc-inquiry-empty");
+      if (e) e.style.display = inqs.length ? "none" : "block";
+    }
+  }
+  function deriveAk(dept) {
+    return dept === "SEM" ? "sem" : dept === "\u516C\u53F8" ? "company" : "seo";
+  }
+  document.addEventListener("click", async (e) => {
+    const r = e.target.closest(".arch-restore");
+    const h = e.target.closest(".arch-hard");
+    if (!r && !h) return;
+    const tr = (r || h).closest("tr");
+    if (!tr) return;
+    const id = tr.dataset.id, ep = tr.dataset.ep;
+    if (!id || !ep) return;
+    if (r) {
+      if (!inlineConfirm(r, "\u786E\u8BA4\u6062\u590D")) return;
+      try {
+        await API.post(ep + "/" + id + "/restore");
+        tr.remove();
+        if (ep === "/api/inquiries") {
+          loadInquiries();
+          loadDashboardInq();
+        }
+        toast("\u5DF2\u6062\u590D \xB7 \u8BF7\u56DE\u539F\u9875\u67E5\u770B");
+      } catch (err) {
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      }
+    } else {
+      if (!inlineConfirm(h, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
+      try {
+        await API.del(ep + "/" + id + "?hard=1");
+        tr.remove();
+        toast("\u5DF2\u5F7B\u5E95\u5220\u9664");
+      } catch (err) {
+        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      }
     }
   });
 
@@ -4000,7 +5025,7 @@
   function planDayIsToday() {
     return !_day || _day === formatLocalDate2(/* @__PURE__ */ new Date());
   }
-  var today = () => formatLocalDate2(/* @__PURE__ */ new Date());
+  var today2 = () => formatLocalDate2(/* @__PURE__ */ new Date());
   var shiftDay = (day, n) => {
     const d = /* @__PURE__ */ new Date(day + "T00:00:00");
     d.setDate(d.getDate() + n);
@@ -4084,13 +5109,13 @@
     }
   }
   function setPlanDay(day) {
-    const isToday = !day || day === today();
+    const isToday = !day || day === today2();
     _day = isToday ? null : day;
     const board = document.querySelector("#panel-tasks > .tboard");
     const hist = document.getElementById("plan-history");
     const hint = document.getElementById("planday-hint");
     const input = document.getElementById("planday-input");
-    if (input) input.value = day || today();
+    if (input) input.value = day || today2();
     if (board) board.style.display = isToday ? "" : "none";
     if (hist) hist.classList.toggle("is-hidden", isToday);
     if (hint) {
@@ -4102,17 +5127,17 @@
   document.addEventListener("click", (e) => {
     const step = e.target.closest("[data-planday]");
     if (step) {
-      const base = (document.getElementById("planday-input") || {}).value || today();
+      const base = (document.getElementById("planday-input") || {}).value || today2();
       setPlanDay(shiftDay(base, Number(step.dataset.planday)));
       return;
     }
-    if (e.target.closest("#planday-today")) setPlanDay(today());
+    if (e.target.closest("#planday-today")) setPlanDay(today2());
   });
   document.addEventListener("change", (e) => {
-    if (e.target && e.target.id === "planday-input") setPlanDay(e.target.value || today());
+    if (e.target && e.target.id === "planday-input") setPlanDay(e.target.value || today2());
   });
   var _dayInput = document.getElementById("planday-input");
-  if (_dayInput && !_dayInput.value) _dayInput.value = today();
+  if (_dayInput && !_dayInput.value) _dayInput.value = today2();
 
   // public/src/weekly-review.js
   var weekly_review_exports = {};
@@ -4454,5 +5479,6 @@
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
   var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility);
+  var closedLoopCompatibility = { prepend, clip, persistFix, persistLoop, addFixFromObj, addDeposit, persistFailMsg, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent, injectAiActions };
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility);
 })();

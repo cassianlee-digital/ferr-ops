@@ -4,8 +4,7 @@
    esc()、toast()、API、renderSparklines()、placeCaretEnd()、aiAsk()（ai.js）、
    validateEditableValue()/rollbackEditable()/showSaveError()/setSavingState()（Excel 化基建，内联）。
    必须挂 window（main.js 统一处理）：
-     - inlineConfirm —— 全局共享小工具，inquiries.js:94 与 closed-loop.js:123（仍是经典脚本）真实调用；
-       归档/SOP 模块也用它。等 closed-loop/inquiries 迁完后，宜抽成独立 ui-utils 模块。
+     - inlineConfirm —— inquiries / closed-loop / archive / sop 显式导入；经典兼容层暂仍暴露。
      - addKeyword —— 内联 onclick（加词按钮 ×4）；filterKwByCat —— index.html:1135/1138 真实调用；
      - 其余函数保持原有全局暴露面，零行为差异。
    KW_TB/KW_PAGE_OPTS/_kwPage/_kwSize 无外部引用，收进模块作用域。 */

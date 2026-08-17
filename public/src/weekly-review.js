@@ -1,6 +1,7 @@
 /* Weekly/monthly review workspace.
    Keeps the existing weekly_reports API and separates week keys from month keys. */
 
+import { addDeposit, addTest, persistFailMsg, persistLoop, sFromDept } from './closed-loop.js';
 import { mountSopRate } from './sop-rate.js';
 
 const RV_SECTIONS = [

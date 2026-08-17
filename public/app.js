@@ -192,8 +192,8 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 /* 时间范围筛选已拆分至 /timerange.js（阶段4-B）
    — RANGES/formatLocalDate/ymd/resolveRange/withRange/getCurrentRange/rangeText/renderTimebar + [data-time] 时间条 + openCustomRange/submitCustomRange */
 
-/* 运营闭环引擎已拆分至 /closed-loop.js（阶段4-B）
-   — 整改/任务卡(submitTask/taskDel)/沉淀/计划/测试/loadClosedLoop + 内容资产(loadContent/addContent) + AI三连(aiAct/loopBack/applyAiDoneStates) */
+/* 运营闭环引擎已迁移至 ES 模块 public/src/closed-loop.js（打包进 /dist/bundle.js）。
+   app.js 仅通过 main.js 暴露的窄兼容入口调用。 */
 
 /* 询盘 3D 地球仪已拆分至 /inquiry-globe.js（阶段4-A）— renderGlobe()/COUNTRY_GEO/aggInqByCountry 等 */
 /* GA4 流量看板：ES 模块 public/src/ga4-view.js（打包进 /dist/bundle.js）— loadGa4() */

@@ -3,6 +3,7 @@
    仅 app.js 仍需的初始化、筛选和加载入口由 main.js 挂到 window，其余状态留在模块内部。 */
 
 import { formatLocalDate, getCurrentRange, withRange } from './timerange.js';
+import { addFixFromObj, clip, futureDate, persistFailMsg, sFromDept } from './closed-loop.js';
 
 /* ===== 1a: DEMO_MODE —— 真实模式(false)禁止任何硬编码示例数据；仅 true 时展示下方 fixture ===== */
 window.DEMO_MODE = window.DEMO_MODE || false;
@@ -614,15 +615,15 @@ document.addEventListener('click',e=>{
   if(btn.dataset.ferrAction==='adopt') adoptFinding(btn,btn.dataset.dept||'SEO',btn.dataset.title||'',btn.dataset.detail||'',btn.dataset.evidence||'');
 });
 function _badgeCount(id,n){ const e=document.getElementById(id); if(!e)return; if(n>0){ e.textContent=n; e.classList.remove('is-hidden'); } else { e.textContent=''; e.classList.add('is-hidden'); } }
-// 诊断 finding 一键采纳进整改清单（依据数据证据,source=诊断引擎）。复用 closed-loop 的全局
+// 诊断 finding 一键采纳进整改清单（依据数据证据,source=诊断引擎）。
 async function adoptFinding(btn,dept,title,detail,evidence){
   try{
-    const s=(typeof sFromDept==='function')?sFromDept(dept):{dept,owner:''};
-    const {item}=await API.post('/api/fixes',{title:(typeof clip==='function'?clip(title,40):title),dept:s.dept,detail,evidence,owner:s.owner,due_date:(typeof plusDays==='function'?plusDays(7):''),status:'计划下周',source:'诊断引擎'});
-    if(typeof addFixFromObj==='function') addFixFromObj(item);
+    const s=sFromDept(dept);
+    const {item}=await API.post('/api/fixes',{title:clip(title,40),dept:s.dept,detail,evidence,owner:s.owner,due_date:futureDate(7),status:'计划下周',source:'诊断引擎'});
+    addFixFromObj(item);
     btn.disabled=true; btn.innerHTML='<i class="ti ti-check"></i> 已采纳';
     if(typeof toastGo==='function') toastGo('已采纳 → 整改清单 · 已入库','fix'); else toast('已采纳 → 整改清单');
-  }catch(e){ toast((typeof persistFailMsg==='function')?persistFailMsg(e):'保存失败,未入库'); }
+  }catch(e){ toast(persistFailMsg(e)); }
 }
 /* 阶段5：数据新鲜度条——三源实际有数据天数 / 区间总天数 + 最后同步时间 + 连接态 */
 export async function loadDataFreshness(){

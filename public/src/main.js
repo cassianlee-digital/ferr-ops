@@ -8,7 +8,7 @@
 //                       tagselect（OPT 被 keywords.js clsOf() 裸引用，必须挂 window；询盘行辅助改为显式 import）
 // 已迁移（批次3·叶子）：google-projects（接入卡使用模块内事件委托）
 //                       archive（loadArchive 被 index.html 路由切换 + inquiries.js 调用）
-// 已迁移（批次4）：timerange（formatLocalDate/ymd 被 closed-loop.js 真实调用；withRange 被 charts.js 调用）
+// 已迁移（批次4）：timerange（withRange 被 charts.js 调用）
 //                   sop（openSopModal/submitSop 内联 onclick；loadSops/loadUrgent 等被 index.html 调用）
 //                   —— sop.js 已改为显式 import { formatLocalDate } from './timerange.js'，依赖不再靠全局。
 import * as negAds from './neg-ads.js';
@@ -20,7 +20,7 @@ import * as googleProjects from './google-projects.js';
 import * as archive from './archive.js';
 import * as timeRange from './timerange.js';
 import * as sop from './sop.js';
-// 已迁移（批次5）：keywords（inlineConfirm 被 inquiries.js/closed-loop.js 这些仍是经典脚本的文件真实调用；
+// 已迁移（批次5）：keywords（inlineConfirm 被多个模块显式导入；
 //                            addKeyword 内联 onclick；OPT 改为显式 import 自 tagselect）
 //                   hermes-memory（原就是 IIFE+显式挂全局的干净写法，5 个导出正是内联 onclick 所用）
 import * as keywords from './keywords.js';
@@ -41,9 +41,12 @@ import { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats
 import { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek } from './kpi.js';
 // 已迁移（批次10）：charts（时间筛选改为事件契约；模块消费者显式 import；仅 app.js 入口挂 window）。
 import { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters } from './charts.js';
+// 已迁移（批次11）：closed-loop（模块消费者显式 import；经典 app.js / ai.js / hermes.js 仅保留必要入口）。
+import { prepend, clip, persistFix, persistLoop, addFixFromObj, addDeposit, persistFailMsg, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent, injectAiActions } from './closed-loop.js';
 
 const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats,renderInqFeed};
 const kpiCompatibility={TOTAL,SEO,SEM,applyKpiServer,loadMetrics,loadWeeks,submitSeoWeek,submitSemWeek};
 const chartCompatibility={charts,loadDashboardInq,loadDashboardBoards,renderInqDonuts,loadSeoBoardGsc,loadSeoBoardFull,loadSemBoardAds,loadSemBoardFull,loadAttribution,loadDiagnostics,loadDataFreshness,onSemCampaignChange,onSemAdGroupChange,resizeScatters};
+const closedLoopCompatibility={prepend,clip,persistFix,persistLoop,addFixFromObj,addDeposit,persistFailMsg,refreshTaskCols,addFixRow,addDepositRow,addPlanRow,addTestRow,addContent,openTaskModal,submitTask,submitSubtask,loadClosedLoop,loadContent,injectAiActions};
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility);

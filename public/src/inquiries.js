@@ -1,11 +1,12 @@
 /* 询盘录入（真实弹框 + 持久化）（ES 模块 · esbuild 打包为 IIFE）。
    依赖（运行时解析，均由经典脚本或其他模块提供）：
-   openModal()/closeModal()、window.API、esc()、toast()、formatLocalDate()、inlineConfirm()（keywords.js）、
+   openModal()/closeModal()、window.API、esc()、toast()、formatLocalDate()、
    loadInquiries()、renderGlobe()（inquiry-globe.js）、loadArchive()（archive.js）。
    window._inqCache 由本模块初始化、loadInquiries() 填充，被 inquiry-globe.js / 图表 读取。
    仅 app.js 真实调用的 6 个入口由 main.js 挂到 window；行渲染辅助只供模块间显式导入。 */
 
 import { loadDashboardInq } from './charts.js';
+import { inlineConfirm } from './keywords.js';
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
 const REGION_BADGE={'欧洲':'b-blue','西欧':'b-blue','南欧':'b-blue','北欧':'b-blue','中东欧':'b-teal','东欧/俄罗斯':'b-amber','俄罗斯':'b-amber','北美':'b-purple','拉美':'b-red','中东':'b-amber','北非':'b-amber','撒哈拉以南非洲':'b-gray','南亚':'b-teal','东南亚':'b-red','东南亚/巴西':'b-red','东亚':'b-green','中亚':'b-gray','大洋洲':'b-teal','其他':'b-gray'};

@@ -1,6 +1,6 @@
 /* 归档②：行级归档/沉淀委托 + 归档页加载（ES 模块 · esbuild 打包为 IIFE）。
    运行时依赖的全局（均在事件/调用时解析，仍由经典脚本或内联提供）：
-   API、esc()、toast()、inlineConfirm()（keywords.js）、persistLoop()/depRowHtml()（closed-loop.js）、
+   API、esc()、toast()、
    loadInquiries()、window.ME。
    仅 loadArchive 需挂 window（index.html 路由切换 + inquiries.js 调用）；
    archRowHtml/archInqRowHtml/deriveAk 无外部引用，收进模块作用域。
@@ -8,6 +8,8 @@
 
 import { GRADE_BADGE } from './inquiries.js';
 import { loadDashboardInq } from './charts.js';
+import { depRowHtml, persistLoop } from './closed-loop.js';
+import { inlineConfirm } from './keywords.js';
 
 /* 归档②：行级「沉淀 / 归档」按钮事件委托——整改/测试/计划 通用 */
 document.addEventListener('click',async e=>{
@@ -36,7 +38,7 @@ document.addEventListener('click',async e=>{
       const {item}=await persistLoop('deposit',s,content,'沉淀');
       // 在沉淀表插入一行（如果当前已加载）
       const depTb=document.getElementById('tb-dep');
-      if(depTb){ const ntr=document.createElement('tr'); ntr.dataset.id=item.id; ntr.dataset.ep='/api/loop-items'; ntr.innerHTML=depRowHtml(item); depTb.insertBefore(ntr,depTb.firstChild); const de=document.getElementById('dep-empty'); if(de)de.style.display='none'; }
+      if(depTb){ const state=depTb.querySelector('tr[data-load-state]'); if(state)state.remove(); const ntr=document.createElement('tr'); ntr.dataset.id=item.id; ntr.dataset.ep='/api/loop-items'; ntr.innerHTML=depRowHtml(item); depTb.insertBefore(ntr,depTb.firstChild); const de=document.getElementById('dep-empty'); if(de)de.style.display='none'; }
       dep.disabled=false; toast('已沉淀到沉淀表 · 已入库');
     }catch(err){ dep.disabled=false; toast(err.status===403?'无权操作':'沉淀失败：'+(err.message||'请求失败')); }
   }

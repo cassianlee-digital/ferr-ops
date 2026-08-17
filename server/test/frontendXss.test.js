@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { Script } from 'node:vm';
 
 const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.meta.url), 'utf8');
+const closedLoopSource = readFileSync(new URL('../../public/src/closed-loop.js', import.meta.url), 'utf8');
+const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.meta.url), 'utf8');
 const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
@@ -19,6 +21,7 @@ const kpiSource = readFileSync(new URL('../../public/src/kpi.js', import.meta.ur
 const kpiViewSource = readFileSync(new URL('../../public/src/kpi-view.js', import.meta.url), 'utf8');
 const timerangeSource = readFileSync(new URL('../../public/src/timerange.js', import.meta.url), 'utf8');
 const googleProjectsSource = readFileSync(new URL('../../public/src/google-projects.js', import.meta.url), 'utf8');
+const sopSource = readFileSync(new URL('../../public/src/sop.js', import.meta.url), 'utf8');
 const cspUtilitiesSource = readFileSync(new URL('../../public/csp-utilities.css', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
@@ -222,6 +225,56 @@ test('charts are bundled behind events and a narrow classic-script compatibility
   assert.match(archiveSource, /import \{ loadDashboardInq \} from '\.\/charts\.js';/);
   assert.match(googleProjectsSource, /import \{ loadDataFreshness \} from '\.\/charts\.js';/);
   assert.doesNotMatch(appSource, /\b_resizeScatters\b/);
+});
+
+test('closed-loop is bundled with explicit module dependencies and a narrow compatibility surface', () => {
+  assert.doesNotMatch(indexSource, /<script src="\/closed-loop\.js"><\/script>/);
+  assert.match(mainSource, /from '\.\/closed-loop\.js';/);
+  assert.match(mainSource, /Object\.assign\(window,[^;]*\bclosedLoopCompatibility\b[^;]*\);/);
+  const compatibility = mainSource.match(/const closedLoopCompatibility=\{([^}]*)\};/);
+  assert.ok(compatibility, 'closed-loop compatibility surface is missing');
+  const compatibilityNames = compatibility[1].split(',').map((name) => name.trim()).sort();
+  assert.deepEqual(compatibilityNames, [
+    'addContent',
+    'addDeposit',
+    'addDepositRow',
+    'addFixFromObj',
+    'addFixRow',
+    'addPlanRow',
+    'addTestRow',
+    'clip',
+    'injectAiActions',
+    'loadClosedLoop',
+    'loadContent',
+    'openTaskModal',
+    'persistFailMsg',
+    'persistFix',
+    'persistLoop',
+    'prepend',
+    'refreshTaskCols',
+    'submitSubtask',
+    'submitTask'
+  ]);
+  const exports = [...closedLoopSource.matchAll(/export (?:async )?function ([A-Za-z_$][\w$]*)/g)]
+    .map((match) => match[1])
+    .sort();
+  assert.deepEqual(exports, [...compatibilityNames, 'addTest', 'depRowHtml', 'futureDate', 'sFromDept'].sort());
+  assert.match(closedLoopSource, /import \{ inlineConfirm \} from '\.\/keywords\.js';/);
+  assert.match(closedLoopSource, /import \{ loadSops, loadUrgent, updateSopCounts \} from '\.\/sop\.js';/);
+  assert.match(closedLoopSource, /import \{ formatLocalDate, ymd \} from '\.\/timerange\.js';/);
+  assert.match(negAdsSource, /import \{ prepend \} from '\.\/closed-loop\.js';/);
+  assert.match(archiveSource, /import \{ depRowHtml, persistLoop \} from '\.\/closed-loop\.js';/);
+  assert.match(archiveSource, /import \{ inlineConfirm \} from '\.\/keywords\.js';/);
+  assert.match(inquiriesSource, /import \{ inlineConfirm \} from '\.\/keywords\.js';/);
+  assert.match(sopSource, /import \{ inlineConfirm \} from '\.\/keywords\.js';/);
+  assert.match(weeklyReviewSource, /import \{ addDeposit, addTest, persistFailMsg, persistLoop, sFromDept \} from '\.\/closed-loop\.js';/);
+  assert.match(chartsSource, /import \{ addFixFromObj, clip, futureDate, persistFailMsg, sFromDept \} from '\.\/closed-loop\.js';/);
+  assert.doesNotMatch(closedLoopSource, /window\._(?:aiDone|taskCheckins)/);
+
+  const declarations = [...closedLoopSource.matchAll(/^(?:export )?(?:async )?function ([A-Za-z_$][\w$]*)/gm)]
+    .map((match) => match[1]);
+  const duplicates = declarations.filter((name, index) => declarations.indexOf(name) !== index);
+  assert.deepEqual(duplicates, []);
 });
 
 test('login page loads only external CSS and JavaScript', () => {

@@ -6,6 +6,7 @@ const html = readFileSync(new URL('../../public/index.html', import.meta.url), '
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.meta.url), 'utf8');
 const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.meta.url), 'utf8');
+const closedLoopSource = readFileSync(new URL('../../public/src/closed-loop.js', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -67,4 +68,23 @@ test('empty and failed live loads remain observable and retryable', () => {
   assert.match(chartsSource, /window\._adsBoard=\{error:e\}/);
   assert.match(chartsSource, /d=\{error:e\}/);
   assert.doesNotMatch(chartsSource, /await API\.get\([^;]+\); \}catch\(e\)\{\}/);
+  assert.match(closedLoopSource, /function showTableFailure\(/);
+  assert.match(closedLoopSource, /function showLoopLoadFailure\(/);
+  assert.match(closedLoopSource, /function showTaskCheckinFailure\(/);
+  assert.match(closedLoopSource, /data-closed-loop-load-state="checkins"/);
+  assert.match(closedLoopSource, /showTableFailure\('tb-fix',8,'整改清单',e,loadClosedLoop\)/);
+  assert.match(closedLoopSource, /showTableFailure\('tb-content',9,'内容资产',e,loadContent\)/);
+  assert.doesNotMatch(closedLoopSource, /catch\s*\([^)]*\)\s*\{\s*\}/);
+});
+
+test('closed-loop reloads are idempotent and new fix dates use full local ISO dates', () => {
+  assert.match(closedLoopSource, /const loadVersion=\+\+closedLoopLoadVersion;[\s\S]*resetClosedLoopView\(\);/);
+  assert.match(closedLoopSource, /if\(loadVersion!==closedLoopLoadVersion\)return;/);
+  assert.match(closedLoopSource, /loadTaskCheckins\(\(\)=>loadVersion===closedLoopLoadVersion\)/);
+  assert.match(closedLoopSource, /const nextCheckins=new Map\(\);[\s\S]*if\(!isCurrent\(\)\)return null;[\s\S]*taskCheckins=nextCheckins;/);
+  assert.match(closedLoopSource, /catch\(e\)\{ if\(loadVersion!==closedLoopLoadVersion\)return; addTaskCard\(/);
+  assert.match(closedLoopSource, /archivedParentIds\.has\(Number\(it\.parent_id\)\)/);
+  assert.match(closedLoopSource, /querySelector\('tr\[data-load-state\]'\)/);
+  assert.match(closedLoopSource, /function futureDate\(days\)\{ return formatLocalDate\(/);
+  assert.doesNotMatch(closedLoopSource, /\bplusDays\b/);
 });

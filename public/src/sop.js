@@ -2,13 +2,14 @@
    显式模块依赖：formatLocalDate 来自 ./timerange.js —— 不再靠全局碰运气，依赖在编译期可见。
    运行时仍依赖的全局（尚未迁移的经典脚本/内联提供，调用时解析）：
    API、esc()、toast()、chk()（内联；sopCardEl 生成的内联 onclick 会调用）、openModal()/closeModal()、
-   inlineConfirm()（keywords.js）、window.ME。
+   window.ME。
    必须挂 window（main.js 统一处理）：
      - openSopModal/submitSop —— 内联 onclick 调用；
      - loadSops/loadUrgent/sopPeriodKey/updateSopCounts/renderSopOverdueBanner/refreshNavTaskDot —— index.html、closed-loop.js 真实调用；
      - 其余保持原有全局暴露面，零行为差异。
    DEPT_BADGE/FREQ_LABEL/FREQ_ICON/_sopEditing 无外部引用，收进模块作用域。 */
 import { formatLocalDate } from './timerange.js';
+import { inlineConfirm } from './keywords.js';
 
 /* ===== SOP 引擎 Step B：周期 key / 加载 / 渲染 / 设置页 CRUD ===== */
 // period_key 按本地时间算，daily=YYYY-MM-DD / weekly=YYYY-Www / monthly=YYYY-MM

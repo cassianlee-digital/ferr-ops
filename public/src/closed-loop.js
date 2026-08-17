@@ -1,16 +1,17 @@
-/* 运营闭环引擎（整改/任务卡/沉淀/计划/测试 + 内容资产 + AI三连）（拆分自 index.html · 阶段4-B）
-   经典 script + window 全局兼容。依赖（运行时解析）：esc()、toast()、toastGo()、window.API、openModal()/closeModal()、
-   inlineConfirm()（keywords.js）、formatLocalDate()/ymd()（timerange.js）、placeCaretEnd()（Excel 基建，内联）、loadUrgent()（sop.js）、window.ME。
-   导出全局：prepend/flashRow（neg-ads 用）、persistLoop/depRowHtml/addTest/addPlan/addDeposit/addTaskCards/sFromDept/persistFailMsg（weekly-review/archive/AI 用）、
-   loadClosedLoop/loadContent（init 调）、applyAiDoneStates/aiAct/loopBack（AI 渲染/onclick）。
-   注：底部 injectAiActions() 在脚本加载时给 .ai-item 注入按钮——.ai-item 在 body 已先于本脚本解析，安全。 */
+/* 运营闭环引擎（ES 模块 · esbuild 打包为 IIFE）。
+   timerange / keywords / sop 依赖显式导入；API、esc/toast、弹窗、路由和 Excel 编辑基建仍由经典 app.js 提供。
+   main.js 只为 app.js / ai.js / hermes.js 保留必要兼容入口，其余状态和辅助函数留在模块内。 */
+
+import { inlineConfirm } from './keywords.js';
+import { loadSops, loadUrgent, updateSopCounts } from './sop.js';
+import { formatLocalDate, ymd } from './timerange.js';
 
 /* ================= CLOSED-LOOP ENGINE ================= */
 const _2=n=>String(n).padStart(2,'0');
 const today=()=>{const d=new Date();return _2(d.getMonth()+1)+'-'+_2(d.getDate());};
-const plusDays=n=>{const d=new Date(Date.now()+n*864e5);return _2(d.getMonth()+1)+'-'+_2(d.getDate());};
+export function futureDate(days){ return formatLocalDate(new Date(Date.now()+days*864e5)); }
 function flashRow(tr){tr.style.transition='background .25s';tr.style.background='var(--green-soft)';setTimeout(()=>tr.style.background='',1700);}
-function prepend(tbId,html){const tb=document.getElementById(tbId);if(!tb)return null;const tr=document.createElement('tr');tr.innerHTML=html;tb.insertBefore(tr,tb.firstChild);flashRow(tr);return tr;}
+export function prepend(tbId,html){const tb=document.getElementById(tbId);if(!tb)return null;const state=tb.querySelector('tr[data-load-state]');if(state)state.remove();const tr=document.createElement('tr');tr.innerHTML=html;tb.insertBefore(tr,tb.firstChild);flashRow(tr);return tr;}
 
 /* read the text the AI/review item is about */
 function grabText(btn){
@@ -20,22 +21,6 @@ function grabText(btn){
   return '';
 }
 
-/* UI hook override: keep the same data fields, add stable classes for the fix ledger layout. */
-function fixRowHtml(f){
-  const dept=f.dept==='SEM'?'SEM':'SEO';
-  const c=dept==='SEM'?'b-purple':'b-blue';
-  const owner=f.owner||sFromDept(dept).owner;
-  const oc=dept==='SEM'?'b-purple':'b-blue';
-  const status=f.status||'计划下周';
-  return `<td class="fix-title editable" contenteditable data-field="title">${esc(f.title||'')}</td>`
-    +`<td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence||'')}</td>`
-    +`<td class="fix-detail editable" contenteditable data-field="detail">${esc(f.detail||'')}</td>`
-    +`<td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td>`
-    +`<td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="fix-actions ctr"><button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button><button class="btn-mini row-archive csp-s-b0e08465c2" title="归档"><i class="ti ti-archive"></i> 归档</button></td>`;
-}
 /* decide SEO(李) vs SEM(陈) from context */
 function scopeDept(btn,txt){
   const head=(txt||'').slice(0,8); let d=null;
@@ -46,23 +31,23 @@ function scopeDept(btn,txt){
   if(!d)d='SEO';
   return d==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};
 }
-const clip=(s,n)=>s.length>n?s.slice(0,n)+'…':s;
+export function clip(s,n){ return s.length>n?s.slice(0,n)+'…':s; }
 
-function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
+export function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
   prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc(s.dept)}诊断</span></td><td>${esc(text)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);}
 /* 整改行：问题/所属/依据/动作/负责人/截止/结果，全部可编辑或可选；绑定 id 后失焦即存 */
 function fixRowHtml(f){
   const dept=f.dept==='SEM'?'SEM':'SEO'; const c=dept==='SEM'?'b-purple':'b-blue';
   const owner=f.owner||(dept==='SEM'?'陈':'李'); const oc=owner==='陈'?'b-purple':'b-blue';
   const RES=['已改','进行中','计划下周','放弃']; const status=RES.includes(f.status)?f.status:'计划下周';
-  return `<td class="editable" contenteditable data-field="title">${esc(f.title||'')}</td>`
-    +`<td class="ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence||'')}</td>`
-    +`<td class="editable" contenteditable data-field="detail">${esc(f.detail||'')}</td>`
-    +`<td class="ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td>`
-    +`<td class="ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="归档"><i class="ti ti-archive"></i> 归档</button></td>`;
+  return `<td class="fix-title editable" contenteditable data-field="title">${esc(f.title||'')}</td>`
+    +`<td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence||'')}</td>`
+    +`<td class="fix-detail editable" contenteditable data-field="detail">${esc(f.detail||'')}</td>`
+    +`<td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td>`
+    +`<td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="fix-actions ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="归档"><i class="ti ti-archive"></i> 归档</button></td>`;
 }
 /* 整改行的「排入」控件：没排过 → 可点；排过 → 显示状态并可跳去日计划。
    整改清单一直是"写下来就完了"，没人接的那条和已经在做的那条长得一模一样。 */
@@ -102,7 +87,7 @@ document.addEventListener('click',async e=>{
     // 日计划已经在 DOM 里的话就地插卡，用户切过去就能看见，不用刷新
     if(!existed&&document.getElementById('newtask-sem')){
       addTaskCard(item.dept==='公司'?coScope():sFromDept(item.dept),item.content,item);
-      refreshTaskCols(); if(typeof updateSopCounts==='function')updateSopCounts();
+      refreshTaskCols(); updateSopCounts();
     }
     toastGo(existed?'这条已经在日计划里了':'已排进'+(item.owner||item.dept||'')+'的日计划','planning');
   }catch(err){ btn.disabled=false; toast(err&&err.status===409?'该整改项已归档，不能再排':persistFailMsg(err)); }
@@ -113,9 +98,9 @@ document.addEventListener('click',e=>{
   go('action'); if(typeof setActionTab==='function')setActionTab('fix');
 });
 function bindFixRow(tr,f){ if(tr&&f&&f.id){ tr.dataset.id=f.id; tr.dataset.ep='/api/fixes'; } return tr; }
-function addFixFromObj(f){ return bindFixRow(prepend('tb-fix',fixRowHtml(f)),f); }
+export function addFixFromObj(f){ return bindFixRow(prepend('tb-fix',fixRowHtml(f)),f); }
 function bindLoopRow(tr,it){ if(tr&&it&&it.id){ tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; } return tr; }
-function addTest(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-test-sem':'tb-test-seo';
+export function addTest(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-test-sem':'tb-test-seo';
   return bindLoopRow(prepend(id,`<td class="editable" contenteditable data-field="content">${esc(content||it.content||'')}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis||'')}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable||'')}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period||'').split('~')[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period||'').split('~')[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion||'')}</td><td class="ctr"><button class="btn-mini row-dep" title="沉淀到沉淀表"><i class="ti ti-database-heart"></i> 沉淀</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="归档"><i class="ti ti-archive"></i></button></td>`),it);}
 function addPlan(s,content,it){it=it||{};const id=s.dept==='SEM'?'tb-plan-sem':'tb-plan-seo';
   const status=it.status||'待开始';
@@ -216,8 +201,8 @@ function taskAgeHtml(it,g){
 }
 /* 推进打卡：跨天任务每天一勾，落 task_checkins（day_key 按本地日期，与 SOP 同口径）。
    只给"进行中/逾期"的跨天任务——当天任务勾完成就够了，再来一个打卡是多余动作。 */
-window._taskCheckins=new Map();
-function taskCheckin(id){ return window._taskCheckins.get(Number(id))||{days:0,last:'',today:false}; }
+let taskCheckins=new Map();
+function taskCheckin(id){ return taskCheckins.get(Number(id))||{days:0,last:'',today:false}; }
 function taskPushHtml(it,g){
   if(!it.id||!it.start_date||!it.task_date||it.start_date>=it.task_date)return '';
   if(g!=='doing'&&g!=='overdue')return '';
@@ -234,22 +219,31 @@ async function taskPush(btn){
     if(on){
       await API.del('/api/task-checkins/'+it.id+'?day_key='+encodeURIComponent(day));
       const days=Math.max(0,cur.days-1);
-      window._taskCheckins.set(Number(it.id),{days,last:days?cur.last:'',today:false});
+      taskCheckins.set(Number(it.id),{days,last:days?cur.last:'',today:false});
       toast('已撤销今日推进 · 已入库');
     } else {
       await API.post('/api/task-checkins',{loop_item_id:it.id,day_key:day});
-      window._taskCheckins.set(Number(it.id),{days:cur.days+1,last:day,today:true});
+      taskCheckins.set(Number(it.id),{days:cur.days+1,last:day,today:true});
       toast('已记今日推进 · 已入库');
     }
     renderTaskMeta(card);
   }catch(e){ btn.disabled=false; toast(persistFailMsg(e)); }
 }
-async function loadTaskCheckins(){
-  window._taskCheckins=new Map();
+async function loadTaskCheckins(isCurrent=()=>true){
+  const nextCheckins=new Map();
   try{
     const {items}=await API.get('/api/task-checkins/summary?day='+encodeURIComponent(formatLocalDate(new Date())));
-    (items||[]).forEach(r=>window._taskCheckins.set(Number(r.loop_item_id),{days:r.days||0,last:r.last_day||'',today:!!r.today_done}));
-  }catch(e){ /* 打卡拿不到不该挡住整块日计划：退化成"没人打过卡" */ }
+    if(!isCurrent())return null;
+    (items||[]).forEach(r=>nextCheckins.set(Number(r.loop_item_id),{days:r.days||0,last:r.last_day||'',today:!!r.today_done}));
+    taskCheckins=nextCheckins;
+    return null;
+  }catch(e){
+    if(!isCurrent())return null;
+    taskCheckins=new Map();
+    // 推进记录是附加信息，失败不阻断任务主体，但必须让用户知道当前展示已降级。
+    if(e&&e.message!=='unauthorized')toast('任务推进记录加载失败：'+(e.message||'未知错误'));
+    return e;
+  }
 }
 /* 放进正确的分组容器。公司列不分组——公司派的活天然跨周，几乎全落「进行中」，
    多一层标题只占地方；逾期靠卡上的 .t-overdue 标红，不依赖分组容器。 */
@@ -281,7 +275,7 @@ function taskDrop(btn){
   const dept=(card._scope||{}).dept||it.dept;
   const ak=dept==='公司'?'company':(dept==='SEM'?'sem':'seo');
   API.post('/api/loop-items/'+it.id+'/archive',{archive_kind:ak})
-    .then(()=>{ card.remove(); refreshTaskCols(); if(typeof updateSopCounts==='function')updateSopCounts(); toastGo('已放弃 · 归档留痕','archive'); })
+    .then(()=>{ card.remove(); refreshTaskCols(); updateSopCounts(); toastGo('已放弃 · 归档留痕','archive'); })
     .catch(e=>toast(persistFailMsg(e)));
 }
 function addTaskCards(s,items){ (items||[]).forEach(t=>addTaskCard(s,t)); } // 兼容复盘回流 loopBack
@@ -315,7 +309,7 @@ function openSubtaskModal(btn){
   const ti=document.getElementById('subtask-parent-title'); if(ti){ const tt=card.querySelector('.ttitle'); ti.textContent=tt?tt.innerText.trim():''; }
   openModal('subtaskMask'); if(t)setTimeout(()=>t.focus(),50);
 }
-async function submitSubtask(){
+export async function submitSubtask(){
   const pid=_subtaskParentId; if(!pid)return;
   const content=(document.getElementById('subtask-content').value||'').trim();
   if(!content){ toast('请填写子任务内容'); return; }
@@ -332,7 +326,7 @@ async function submitSubtask(){
 }
 let _taskScope=null;
 let _taskEditing=null; // 非空 = 弹窗处于「改这张卡」模式，提交走 PATCH
-function openTaskModal(dept){
+export function openTaskModal(dept){
   _taskEditing=null;
   const verb=document.getElementById('task-mod-verb'); if(verb)verb.textContent='新增';
   _taskScope=dept==='公司'?coScope():sFromDept(dept);
@@ -369,7 +363,7 @@ function openTaskEdit(el){
   const uf=document.getElementById('task-urgent-fld'); if(uf)uf.classList.add('is-hidden'); // 紧急标记只在派发时设
   openModal('taskMask'); if(tc)tc.focus();
 }
-async function submitTask(){
+export async function submitTask(){
   const s=_taskScope; if(!s)return;
   const content=(document.getElementById('task-content').value||'').trim();
   if(!content){ toast('请填写任务内容'); return; }
@@ -407,7 +401,7 @@ function taskDel(btn){ const card=btn.closest('.tcard'); if(!card||!card.dataset
    已完成默认收起，避免历史完成项把每日新增列拉长；刚手动勾完的卡带 .nofold（chk() 加），
    本次会话内不隐藏——点完就消失会让人以为点错了；刷新后归位。
    只数顶层任务卡：公司大任务下的 .subtask 嵌在父卡里，不参与分组也不参与折叠。 */
-function refreshTaskCols(col){
+export function refreshTaskCols(col){
   // null = 传进来的那一列在页面上不存在 → 到此为止。
   // 不能和「没传参数」共用一个 !col 分支：getElementById 找不到时回 null，会又拐回下面这行，自己递归自己。
   if(col===null)return;
@@ -441,13 +435,12 @@ function refreshTaskCols(col){
    顺带重拉 SOP（它的 period_key 也换天了）。只动前端排列，不重拉任务列表，避免重复渲染。 */
 let _boardDay=''; // 惰性取首日：脚本顶层不调 formatLocalDate（它来自 bundle.js，顶层调用就把本脚本绑死在加载序上）
 function checkDayRollover(){
-  if(typeof formatLocalDate!=='function')return;
   const d=formatLocalDate(new Date());
   if(!_boardDay){ _boardDay=d; return; }
   if(d===_boardDay)return;
   _boardDay=d;
   rerenderTaskCards();
-  if(typeof loadSops==='function')loadSops();
+  loadSops();
   // 打卡的「今天」也换了：重拉汇总再刷一次，否则昨天的「今日已推进」会挂到今天头上
   loadTaskCheckins().then(rerenderTaskCards);
 }
@@ -461,34 +454,85 @@ function rerenderTaskCards(){
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden)checkDayRollover(); });
 window.addEventListener('focus',checkDayRollover);
 setInterval(checkDayRollover,5*60*1000); // 页面整夜开着且一直可见时的兜底
-async function addFixRow(){
+export async function addFixRow(){
   const s=sFromDept('SEO');
   try{
-    const {item}=await API.post('/api/fixes',{title:'新整改项',dept:s.dept,detail:'',evidence:'',owner:s.owner,due_date:plusDays(7),status:'计划下周',source:'手动'});
+    const {item}=await API.post('/api/fixes',{title:'新整改项',dept:s.dept,detail:'',evidence:'',owner:s.owner,due_date:futureDate(7),status:'计划下周',source:'手动'});
     const tr=addFixFromObj(item); const c=tr&&tr.querySelector('[data-field="title"]'); if(c){c.focus();placeCaretEnd(c);}
     toast('已新增整改项 · 已入库');
   }catch(e){ toast(persistFailMsg(e)); }
 }
 
 /* —— 整改/闭环 入库（FR-6/10）。上面的 add* 仅负责渲染；下面负责持久化 —— */
-function sFromDept(dept){return dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};}
-function persistFix(s,text){return API.post('/api/fixes',{title:clip(text,24),dept:s.dept,detail:text,owner:s.owner,due_date:formatLocalDate(new Date(Date.now()+7*864e5)),status:'计划下周',source:'AI诊断'});}
-function persistLoop(kind,s,content,status){return API.post('/api/loop-items',{kind,dept:s.dept,content,owner:s.owner,status:status||''});}
+export function sFromDept(dept){return dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};}
+export function persistFix(s,text){return API.post('/api/fixes',{title:clip(text,24),dept:s.dept,detail:text,owner:s.owner,due_date:futureDate(7),status:'计划下周',source:'AI诊断'});}
+export function persistLoop(kind,s,content,status){return API.post('/api/loop-items',{kind,dept:s.dept,content,owner:s.owner,status:status||''});}
 // 全站最常用的失败文案（11 处复用：ai/charts/closed-loop/weekly-review）。403 有专属文案；
 // 其余必须带上后端给的原因（api.js 已把 400 的 detail 放进 e.message，如「字段 due_date 需要字符串」），
 // 否则用户只看到「保存失败」，违背 CLAUDE.md「API 失败必须显示失败原因」。
-function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库：'+((e&&e.message)||'请求失败');}
-async function loadClosedLoop(){
+export function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库：'+((e&&e.message)||'请求失败');}
+let aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
+let closedLoopLoadVersion=0;
+let contentLoadVersion=0;
+function loadFailureText(label,e){ return label+'加载失败：'+((e&&e.message)||'未知错误'); }
+function showTableFailure(id,colspan,label,e,retry){
+  const tb=document.getElementById(id); if(!tb)return;
+  tb.innerHTML='';
+  const tr=document.createElement('tr'); tr.dataset.loadState='error';
+  const td=document.createElement('td'); td.colSpan=colspan; td.className='dim csp-s-d48bfa87bb';
+  td.appendChild(document.createTextNode(loadFailureText(label,e)+' '));
+  const btn=document.createElement('button'); btn.type='button'; btn.className='btn-mini'; btn.innerHTML='<i class="ti ti-refresh"></i> 重试';
+  btn.addEventListener('click',retry); td.appendChild(btn); tr.appendChild(td); tb.appendChild(tr);
+}
+function resetClosedLoopView(){
+  ['tb-fix','tb-dep','tb-test-sem','tb-test-seo','tb-plan-sem','tb-plan-seo'].forEach(id=>{ const tb=document.getElementById(id); if(tb)tb.innerHTML=''; });
+  ['company','sem','seo'].forEach(key=>{ const col=document.getElementById('newtask-'+key); if(!col)return;
+    col.querySelectorAll(':scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]').forEach(el=>el.remove());
+    col.classList.remove('folded');
+  });
+  const depEmpty=document.getElementById('dep-empty'); if(depEmpty)depEmpty.style.display='none';
+}
+function showLoopLoadFailure(e){
+  [['tb-dep',5,'沉淀'],['tb-test-sem',6,'SEM 测试'],['tb-test-seo',6,'SEO 测试'],['tb-plan-sem',6,'SEM 计划'],['tb-plan-seo',6,'SEO 计划']]
+    .forEach(([id,cols,label])=>showTableFailure(id,cols,label,e,loadClosedLoop));
+  ['company','sem','seo'].forEach(key=>{ const col=document.getElementById('newtask-'+key); if(!col)return;
+    const box=document.createElement('div'); box.className='sop-empty-hint'; box.dataset.closedLoopLoadState='error';
+    box.appendChild(document.createTextNode(loadFailureText('任务',e)+' '));
+    const btn=document.createElement('button'); btn.type='button'; btn.className='btn-mini'; btn.innerHTML='<i class="ti ti-refresh"></i> 重试';
+    btn.addEventListener('click',loadClosedLoop); box.appendChild(btn);
+    const anchor=col.querySelector('.add-task'); if(anchor)col.insertBefore(box,anchor); else col.appendChild(box);
+  });
+}
+function showTaskCheckinFailure(e){
+  ['company','sem','seo'].forEach(key=>{ const col=document.getElementById('newtask-'+key); if(!col)return;
+    const box=document.createElement('div'); box.className='sop-empty-hint'; box.dataset.closedLoopLoadState='checkins';
+    box.appendChild(document.createTextNode(loadFailureText('任务推进记录',e)+' '));
+    const btn=document.createElement('button'); btn.type='button'; btn.className='btn-mini'; btn.innerHTML='<i class="ti ti-refresh"></i> 重试';
+    btn.addEventListener('click',async()=>{ const retryError=await loadTaskCheckins(); if(retryError)return;
+      document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach(el=>el.remove()); rerenderTaskCards();
+    });
+    const anchor=col.querySelector('.add-task'); if(anchor)col.insertBefore(box,anchor); else col.appendChild(box);
+  });
+}
+export async function loadClosedLoop(){
+  const loadVersion=++closedLoopLoadVersion;
+  resetClosedLoopView();
   // BUG-28：重建已采纳/沉淀/测试指纹集（每次加载先清空，避免残留）
-  window._aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
-  try{ const {items}=await API.get('/api/fixes'); (items||[]).slice().reverse().forEach(f=>{ addFixFromObj(f); window._aiDone.采纳.add(aiFp(f.dept,f.detail||f.title)); }); }catch(e){}
+  aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
+  try{ const {items}=await API.get('/api/fixes'); if(loadVersion!==closedLoopLoadVersion)return;
+    (items||[]).slice().reverse().forEach(f=>{ addFixFromObj(f); aiDone.采纳.add(aiFp(f.dept,f.detail||f.title)); });
+  }catch(e){ if(loadVersion!==closedLoopLoadVersion)return; if(e&&e.message!=='unauthorized'){ showTableFailure('tb-fix',8,'整改清单',e,loadClosedLoop); toast(loadFailureText('整改清单',e)); } }
   const depTb=document.getElementById('tb-dep'); if(depTb)depTb.innerHTML='';
-  await loadTaskCheckins(); // 先拿打卡汇总，卡片渲染时「已推进 K 天/停滞」才是对的
+  const checkinError=await loadTaskCheckins(()=>loadVersion===closedLoopLoadVersion); // 先拿打卡汇总，卡片渲染时「已推进 K 天/停滞」才是对的
+  if(loadVersion!==closedLoopLoadVersion)return;
+  if(checkinError)showTaskCheckinFailure(checkinError);
   const _pendingSubtasks=[]; // 子任务延后挂：父卡须先建好（加载为 id 倒序）
+  const _autoArchiveParents=[];
   try{ const {items}=await API.get('/api/loop-items');
+    if(loadVersion!==closedLoopLoadVersion)return;
     (items||[]).slice().reverse().forEach(it=>{ const s=sFromDept(it.dept);
-      if(it.kind==='deposit'){ const tr=document.createElement('tr'); tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(it); depTb&&depTb.appendChild(tr); window._aiDone[it.status==='采纳'?'采纳':'沉淀'].add(aiFp(it.dept,it.content)); }
-      else if(it.kind==='test'){ addTest(s,it.content,it); window._aiDone.测试.add(aiFp(it.dept,it.content)); }
+      if(it.kind==='deposit'){ const tr=document.createElement('tr'); tr.dataset.id=it.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(it); depTb&&depTb.appendChild(tr); aiDone[it.status==='采纳'?'采纳':'沉淀'].add(aiFp(it.dept,it.content)); }
+      else if(it.kind==='test'){ addTest(s,it.content,it); aiDone.测试.add(aiFp(it.dept,it.content)); }
       else if(it.kind==='plan')addPlan(s,it.content,it);
       else if(it.kind==='task'){
         // 公司大任务的子任务：延后挂到父卡下（子任务不参与惰性归档，只随父任务级联归档）
@@ -499,37 +543,44 @@ async function loadClosedLoop(){
         const isDone=it.state==='done'||it.status==='done';
         if(isDone && it.task_date && it.task_date<today){
           const ak=it.dept==='公司'?'company':(it.dept==='SEM'?'sem':'seo');
-          API.post('/api/loop-items/'+it.id+'/archive',{archive_kind:ak}).catch(()=>{}); // 静默 + 幂等
+          _autoArchiveParents.push({it,ts,ak});
         } else {
           addTaskCard(ts,it.content,it);
         }
       }
     });
+    const archivedParentIds=new Set();
+    await Promise.all(_autoArchiveParents.map(async({it,ts,ak})=>{
+      try{ await API.post('/api/loop-items/'+it.id+'/archive',{archive_kind:ak}); archivedParentIds.add(Number(it.id)); }
+      catch(e){ if(loadVersion!==closedLoopLoadVersion)return; addTaskCard(ts,it.content,it); toast('过期任务自动归档失败：'+((e&&e.message)||'未知错误')); }
+    }));
+    if(loadVersion!==closedLoopLoadVersion)return;
     // 第二遍：把子任务按 id 升序挂到各自父卡下；父卡不在（异常）则兜底平铺，避免数据隐身
     _pendingSubtasks.sort((a,b)=>a.id-b.id).forEach(it=>{
+      if(archivedParentIds.has(Number(it.parent_id)))return;
       const parentCard=document.querySelector('#newtask-company .tcard[data-id="'+it.parent_id+'"]');
       if(parentCard)addSubTaskCard(parentCard,it);
       else addTaskCard(coScope(),it.content,it);
     });
-  }catch(e){}
+  }catch(e){ if(loadVersion!==closedLoopLoadVersion)return; if(e&&e.message!=='unauthorized'){ showLoopLoadFailure(e); toast(loadFailureText('闭环数据',e)); } }
   const de=document.getElementById('dep-empty'); if(de)de.style.display=(depTb&&depTb.children.length)?'none':'block';
   refreshTaskCols(); // 三列的「已完成 N 项」折叠条
   applyAiDoneStates(); // 给已渲染的 AI 项标灰
 }
 /* 沉淀表行（可改内容 + 删除）*/
-function depRowHtml(it){
+export function depRowHtml(it){
   const date=(it.created_at||'').slice(5,10)||today();
   const badge=it.status==='采纳'?'<span class="badge b-green">采纳</span>':'<span class="badge b-teal">沉淀</span>';
   return `<td class="num">${esc(date)}</td><td class="ctr">${badge}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc(it.analysis||'')}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
 }
-async function addDepositRow(){
+export async function addDepositRow(){
   try{ const {item}=await API.post('/api/loop-items',{kind:'deposit',content:'',status:'沉淀'});
-    const tb=document.getElementById('tb-dep'); const tr=document.createElement('tr'); tr.dataset.id=item.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(item); tb.insertBefore(tr,tb.firstChild);
+    const tb=document.getElementById('tb-dep'); const state=tb.querySelector('tr[data-load-state]'); if(state)state.remove(); const tr=document.createElement('tr'); tr.dataset.id=item.id; tr.dataset.ep='/api/loop-items'; tr.innerHTML=depRowHtml(item); tb.insertBefore(tr,tb.firstChild);
     document.getElementById('dep-empty').style.display='none'; const c=tr.querySelector('[data-field="content"]'); if(c){c.focus();}
   }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+(e.message||'请求失败')); }
 }
 function depDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; if(!inlineConfirm(btn,'确认删除'))return; API.del('/api/loop-items/'+tr.dataset.id).then(()=>{tr.remove(); const tb=document.getElementById('tb-dep'); if(tb&&!tb.children.length)document.getElementById('dep-empty').style.display='block';}).catch(e=>toast('删除失败：'+(e.message||'请求失败'))); }
-async function addPlanRow(dept){
+export async function addPlanRow(dept){
   const s=sFromDept(dept);
   try{
     const {item}=await persistLoop('plan',s,'新月度计划','待开始');
@@ -538,7 +589,7 @@ async function addPlanRow(dept){
     toast('已新增'+dept+'计划 · 已入库');
   }catch(e){ toast(persistFailMsg(e)); }
 }
-async function addTestRow(dept){
+export async function addTestRow(dept){
   const s=sFromDept(dept);
   try{
     const {item}=await persistLoop('test',s,'新测试登记','观察中');
@@ -562,14 +613,15 @@ function contentRowHtml(r){
     +`<td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc(r.note)}</td>`
     +`<td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
 }
-async function loadContent(){
-  try{ const {items}=await API.get('/api/content-assets'); const tb=document.getElementById('tb-content'); if(!tb)return; tb.innerHTML='';
+export async function loadContent(){
+  const loadVersion=++contentLoadVersion;
+  try{ const {items}=await API.get('/api/content-assets'); if(loadVersion!==contentLoadVersion)return; const tb=document.getElementById('tb-content'); if(!tb)return; tb.innerHTML='';
     (items||[]).forEach(r=>{ const tr=document.createElement('tr'); tr.dataset.id=r.id; tr.dataset.ep='/api/content-assets'; tr.innerHTML=contentRowHtml(r); tb.appendChild(tr); });
     const e=document.getElementById('content-empty'); if(e)e.style.display=(items&&items.length)?'none':'block';
-  }catch(e){}
+  }catch(e){ if(loadVersion!==contentLoadVersion)return; if(e&&e.message!=='unauthorized'){ showTableFailure('tb-content',9,'内容资产',e,loadContent); const empty=document.getElementById('content-empty'); if(empty)empty.style.display='none'; toast(loadFailureText('内容资产',e)); } }
 }
-async function addContent(){
-  try{ const {item}=await API.post('/api/content-assets',{}); const tb=document.getElementById('tb-content'); const tr=document.createElement('tr'); tr.dataset.id=item.id; tr.dataset.ep='/api/content-assets'; tr.innerHTML=contentRowHtml(item); tb.appendChild(tr);
+export async function addContent(){
+  try{ const {item}=await API.post('/api/content-assets',{}); const tb=document.getElementById('tb-content'); const state=tb.querySelector('tr[data-load-state]'); if(state)state.remove(); const tr=document.createElement('tr'); tr.dataset.id=item.id; tr.dataset.ep='/api/content-assets'; tr.innerHTML=contentRowHtml(item); tb.appendChild(tr);
     document.getElementById('content-empty').style.display='none'; const c=tr.querySelector('[data-field="name"]'); if(c){c.focus();placeCaretEnd(c);}
   }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+(e.message||'请求失败')); }
 }
@@ -577,12 +629,11 @@ function contentDel(btn){ const tr=btn.closest('tr'); if(!tr.dataset.id)return; 
 
 /* AI 三连: 沉淀→沉淀表 / 采纳→整改清单+沉淀表 / 测试→测试登记
    BUG-28：刷新后保持「已点」灰态——按 dept|文本前200 指纹反查 fixes+loop_items 缓存(纯前端、无后端改) */
-window._aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
 function aiFp(dept,text){ return (dept||'')+'|'+String(text||'').trim().slice(0,200); }
 function aiMarkDone(grp,kind){ grp.querySelectorAll('.aibtn').forEach(b=>b.classList.add('done')); const btn=[...grp.querySelectorAll('.aibtn')].find(b=>b.dataset.kind===kind); if(btn)btn.textContent='✓ 已'+kind; }
 function applyAiDoneStates(root){ (root||document).querySelectorAll('.ai-actions').forEach(grp=>{
   const it=grp.closest('.ai-item'); if(!it)return; const text=grabText(grp.firstChild||grp); const s=scopeDept(grp,text); const fp=aiFp(s.dept,text);
-  ['沉淀','采纳','测试'].forEach(k=>{ if(window._aiDone[k].has(fp))aiMarkDone(grp,k); });
+  ['沉淀','采纳','测试'].forEach(k=>{ if(aiDone[k].has(fp))aiMarkDone(grp,k); });
 }); }
 async function aiAct(btn,kind){
   const grp=btn.closest('.ai-actions');
@@ -592,11 +643,11 @@ async function aiAct(btn,kind){
     if(kind==='沉淀'){ await persistLoop('deposit',s,text,'沉淀'); addDeposit(s,text,'沉淀'); toastGo('已沉淀到沉淀表 · 已入库','deposit'); }
     else if(kind==='采纳'){ const [fx]=await Promise.all([persistFix(s,text),persistLoop('deposit',s,text,'采纳')]); addFixFromObj(fx.item); addDeposit(s,text,'采纳'); toastGo('已采纳 → 整改清单 + 沉淀表 · 已入库','fix'); }
     else if(kind==='测试'){ const r=await persistLoop('test',s,text,'观察中'); addTest(s,r.item.content,r.item); toastGo('已加入测试登记（'+s.dept+'）· 已入库','test'); }
-    window._aiDone[kind].add(aiFp(s.dept,text)); aiMarkDone(grp,kind);
+    aiDone[kind].add(aiFp(s.dept,text)); aiMarkDone(grp,kind);
   }catch(e){ btn.disabled=false; toast(persistFailMsg(e)); }
 }
 /* inject 沉淀/采纳/测试 onto every AI suggestion item；带 data-kind 便于反查标灰 */
-function injectAiActions(){ document.querySelectorAll('.ai-item').forEach(it=>{ if(it.querySelector('.ai-actions'))return; const wrap=document.createElement('span'); wrap.className='ai-actions'; wrap.innerHTML='<button type="button" class="aibtn dep" data-loop-action="ai-action" data-kind="沉淀">沉淀</button><button type="button" class="aibtn adopt" data-loop-action="ai-action" data-kind="采纳">采纳</button><button type="button" class="aibtn test" data-loop-action="ai-action" data-kind="测试">测试</button>'; it.appendChild(wrap); }); applyAiDoneStates(); }
+export function injectAiActions(){ document.querySelectorAll('.ai-item').forEach(it=>{ if(it.querySelector('.ai-actions'))return; const wrap=document.createElement('span'); wrap.className='ai-actions'; wrap.innerHTML='<button type="button" class="aibtn dep" data-loop-action="ai-action" data-kind="沉淀">沉淀</button><button type="button" class="aibtn adopt" data-loop-action="ai-action" data-kind="采纳">采纳</button><button type="button" class="aibtn test" data-loop-action="ai-action" data-kind="测试">测试</button>'; it.appendChild(wrap); }); applyAiDoneStates(); }
 injectAiActions();
 
 /* ⑤复盘「下周必做」回流 → ①月度计划 + 任务看板，闭环回到起点 */

@@ -1,6 +1,8 @@
 /* 否词库 / 广告创意库 录入（ES 模块 · esbuild 打包为 IIFE）。
-   运行时依赖的全局（index.html 内联/其他脚本，调用时解析）：esc()、prepend()、placeCaretEnd()、toast()、API。
+   prepend 显式导入；esc()、placeCaretEnd()、toast()、API 仍由经典 app.js 提供。
    导出的函数由 main.js 挂到 window：addNeg/addAd 供内联 onclick，negRowHtml/adRowHtml 供 hydrate() 运行时调用。 */
+
+import { prepend } from './closed-loop.js';
 
 /* ================= 否词库 / 广告创意库 录入 ================= */
 const NEG_KEY = 'ferr:negs', AD_KEY = 'ferr:ads';

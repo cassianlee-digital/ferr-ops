@@ -3,7 +3,7 @@
    选一个别的日期 → 三列换成那天的只读快照；回到今天 → 还给实时看板。
    运行时依赖的全局（调用时解析）：API、esc()、toast()。
    不新增内联 handler：日期条用事件委托，全部在本模块内注册。
-   必须挂 window：planDayIsToday —— closed-loop.js 的换天重排要问"现在是不是在回放态"。 */
+   setPlanDay/planDayIsToday 暂保留兼容入口，供经典 app.js 与后续计划视图整合。 */
 import { formatLocalDate } from './timerange.js';
 
 const DEPTS = [
