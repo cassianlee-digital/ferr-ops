@@ -10,6 +10,8 @@ const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'u
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
 const loginSource = readFileSync(new URL('../../public/login.html', import.meta.url), 'utf8');
+const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
+const weeklyReviewSource = readFileSync(new URL('../../public/src/weekly-review.js', import.meta.url), 'utf8');
 const cspUtilitiesSource = readFileSync(new URL('../../public/csp-utilities.css', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
@@ -96,6 +98,19 @@ test('main page loads app.js after its dependencies and contains no inline scrip
   assert.doesNotMatch(indexSource, /<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i);
   assert.match(indexSource, /<script src="\/app\.js"><\/script>/);
   assert.ok(indexSource.indexOf('<script src="/app.js">') > indexSource.indexOf('<script src="/ai.js">'));
+});
+
+test('weekly review is bundled with a narrow global compatibility surface', () => {
+  assert.doesNotMatch(indexSource, /<script src="\/weekly-review\.js"><\/script>/);
+  assert.match(mainSource, /import \* as weeklyReview from '\.\/weekly-review\.js';/);
+  assert.match(mainSource, /Object\.assign\(window,[^;]*weeklyReview\);/);
+  assert.doesNotMatch(mainSource, /\bsopRate\b/);
+  assert.match(weeklyReviewSource, /import \{ mountSopRate \} from '\.\/sop-rate\.js';/);
+  const exportedFunctions = [...weeklyReviewSource.matchAll(/export async function ([A-Za-z_$][\w$]*)/g)]
+    .map((match) => match[1])
+    .sort();
+  assert.deepEqual(exportedFunctions, ['renderMonthReview', 'renderReview']);
+  assert.doesNotMatch(weeklyReviewSource, /export\s+(?:const|let|var|class|\{)/);
 });
 
 test('login page loads only external CSS and JavaScript', () => {

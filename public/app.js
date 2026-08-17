@@ -443,8 +443,8 @@ async function submitPwd(){
 /* 市场分析 + AI 记忆体：ES 模块 public/src/market-brain.js（打包进 /dist/bundle.js）
    — renderMarket / loadMarket / 市场单元格 focusout 保存 / loadBrain / refreshBrain */
 
-/* 复盘周报已拆分至 /weekly-review.js（阶段4-A）
-   — renderReview / rvColHtml / rvItemHtml / rvAct / rvAdd / rvDel / rvSectionSave + focusout 保存 */
+/* 复盘周报已迁移至 src/weekly-review.js（阶段4-A / 批次7）
+   — 周报工作区已迁入 src/weekly-review.js，仅 renderReview/renderMonthReview 保留全局兼容入口 */
 
 /* ===== V7 Excel 化基建：通用单元格保存 + 键盘导航 ===== */
 function placeCaretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }

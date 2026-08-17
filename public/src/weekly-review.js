@@ -1,6 +1,8 @@
 /* Weekly/monthly review workspace.
    Keeps the existing weekly_reports API and separates week keys from month keys. */
 
+import { mountSopRate } from './sop-rate.js';
+
 const RV_SECTIONS = [
   ['summary', '① 本周工作总结', []],
   ['problems', '② 遇到的问题', ['测试', '采纳']],
@@ -164,7 +166,7 @@ function sopRateShell(weekKey) {
   return `<div class="sop-rate" data-from="${fmt(mon)}" data-to="${fmt(sun)}"></div>`;
 }
 
-async function renderReview() {
+export async function renderReview() {
   const cur = curWeekKey();
   let items = [];
   try {
@@ -222,11 +224,11 @@ async function renderReview() {
   bindReviewActions(acc);
   // 已经展开的那周（通常是本周）直接算；其余等点开
   acc.querySelectorAll('.acc-week:not(.collapsed) .sop-rate').forEach((el) => {
-    if (typeof mountSopRate === 'function') mountSopRate(el);
+    mountSopRate(el);
   });
 }
 
-async function renderMonthReview() {
+export async function renderMonthReview() {
   const cur = curMonthKey();
   let items = [];
   try {

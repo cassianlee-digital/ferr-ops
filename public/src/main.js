@@ -31,7 +31,8 @@ import * as inquiryGlobe from './inquiry-globe.js';
 // 新增（不是迁移，是新写的）：plan-history —— 日计划按日期回放。
 // 日期条用事件委托，零内联 handler；只有 setPlanDay/planDayIsToday 需要给别的脚本用。
 import * as planHistory from './plan-history.js';
-// 新增：sop-rate —— 周报里的 SOP 执行率块（mountSopRate 被 weekly-review.js 这个经典脚本调用）
-import * as sopRate from './sop-rate.js';
+// 已迁移（批次7）：weekly-review（内部 20+ 个符号收回模块，仅保留 app.js 使用的两个渲染入口）。
+// sop-rate 由 weekly-review 显式 import，不再暴露 window.mountSopRate。
+import * as weeklyReview from './weekly-review.js';
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, sopRate);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview);

@@ -4,7 +4,7 @@
    落点：周报页每个周卡片顶部（weekly-review.js 只吐一个空壳 <div class="sop-rate" data-from data-to>）。
    懒加载：只有展开的那一周才请求——周报页会一次列出十几周。
    运行时依赖的全局（调用时解析）：API、esc()。
-   必须挂 window：mountSopRate —— weekly-review.js（经典脚本）渲染完调它。 */
+   mountSopRate 由 weekly-review.js 显式导入，不进入 window 全局面。 */
 import { formatLocalDate } from './timerange.js';
 
 const DEPTS = [['SEO', '李', 'b-blue'], ['SEM', '陈', 'b-purple'], ['公司', '公司', 'b-red']];
@@ -57,12 +57,12 @@ export async function mountSopRate(el) {
 }
 
 /* 懒加载：周卡片是折叠的，展开哪一周才去算哪一周。
-   acc-bar 的内联 onclick 只 toggle class，这里再挂一个委托监听补上加载。 */
+   weekly-review 的周卡片容器先切换折叠状态，这里读取切换后的状态并加载。 */
 document.addEventListener('click', (e) => {
   const bar = e.target.closest('#review-acc .acc-bar');
   if (!bar) return;
   const week = bar.parentElement;
-  // 内联 onclick 先跑，这里读到的已是切换后的状态
+  // 周卡片容器位于 document 内层，同一轮冒泡到这里时折叠状态已经切换。
   if (!week || week.classList.contains('collapsed')) return;
   const el = week.querySelector('.sop-rate');
   if (el) mountSopRate(el);

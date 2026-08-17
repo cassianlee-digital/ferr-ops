@@ -2486,11 +2486,14 @@
   var _dayInput = document.getElementById("planday-input");
   if (_dayInput && !_dayInput.value) _dayInput.value = today();
 
-  // public/src/sop-rate.js
-  var sop_rate_exports = {};
-  __export(sop_rate_exports, {
-    mountSopRate: () => mountSopRate
+  // public/src/weekly-review.js
+  var weekly_review_exports = {};
+  __export(weekly_review_exports, {
+    renderMonthReview: () => renderMonthReview,
+    renderReview: () => renderReview
   });
+
+  // public/src/sop-rate.js
   var DEPTS2 = [["SEO", "\u674E", "b-blue"], ["SEM", "\u9648", "b-purple"], ["\u516C\u53F8", "\u516C\u53F8", "b-red"]];
   var FREQ_LABEL2 = { daily: "\u6BCF\u65E5", weekly: "\u6BCF\u5468", monthly: "\u6BCF\u6708" };
   function pct(done, expected) {
@@ -2545,6 +2548,280 @@
     if (el) mountSopRate(el);
   });
 
+  // public/src/weekly-review.js
+  var RV_SECTIONS = [
+    ["summary", "\u2460 \u672C\u5468\u5DE5\u4F5C\u603B\u7ED3", []],
+    ["problems", "\u2461 \u9047\u5230\u7684\u95EE\u9898", ["\u6D4B\u8BD5", "\u91C7\u7EB3"]],
+    ["analysis", "\u2462 \u5206\u6790", ["\u91C7\u7EB3"]],
+    ["next_plan", "\u2463 \u4E0B\u5468\u5DE5\u4F5C\u8BA1\u5212", []]
+  ];
+  var RV_MONTH_SECTIONS = [
+    ["summary", "\u2460 \u672C\u6708\u5DE5\u4F5C\u603B\u7ED3", []],
+    ["problems", "\u2461 \u9047\u5230\u7684\u95EE\u9898", ["\u6D4B\u8BD5", "\u91C7\u7EB3"]],
+    ["analysis", "\u2462 \u5206\u6790", ["\u91C7\u7EB3"]],
+    ["next_plan", "\u2463 \u4E0B\u6708\u5DE5\u4F5C\u8BA1\u5212", []]
+  ];
+  function rvPad2(n) {
+    return String(n).padStart(2, "0");
+  }
+  function mondayOf(key) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ""));
+    if (!m) return null;
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  function reportWeekStart(now = /* @__PURE__ */ new Date()) {
+    const d = new Date(now);
+    const day = d.getDay() || 7;
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - day + 1);
+    if ((now.getDay() || 7) === 1 && now.getHours() < 9) d.setDate(d.getDate() - 7);
+    return d;
+  }
+  function keyFromWeekStart(start) {
+    const d = new Date(start);
+    return `${d.getFullYear()}-${rvPad2(d.getMonth() + 1)}-${rvPad2(d.getDate())}`;
+  }
+  function curWeekKey() {
+    return keyFromWeekStart(reportWeekStart());
+  }
+  function curMonthKey() {
+    const d = /* @__PURE__ */ new Date();
+    return `${d.getFullYear()}-${d.getMonth() + 1}-month`;
+  }
+  function parseWeekKey(key) {
+    const mon = mondayOf(key);
+    if (!mon) return null;
+    const thu = new Date(mon);
+    thu.setDate(thu.getDate() + 3);
+    const year = thu.getFullYear();
+    const month = thu.getMonth() + 1;
+    return { monday: mon, year, month, monthKey: `${year}-${month}` };
+  }
+  function parseMonthKey(key) {
+    const m = String(key || "").match(/^(\d{4})-(\d{1,2})-month$/);
+    return m ? { year: Number(m[1]), month: Number(m[2]), monthKey: `${Number(m[1])}-${Number(m[2])}` } : null;
+  }
+  function currentWeekShouldOpen() {
+    const now = /* @__PURE__ */ new Date();
+    const start = reportWeekStart(now);
+    const openAt = new Date(start);
+    openAt.setHours(9, 0, 0, 0);
+    const closeAt = new Date(start);
+    closeAt.setDate(closeAt.getDate() + 4);
+    closeAt.setHours(22, 0, 0, 0);
+    return now >= openAt && now < closeAt;
+  }
+  function weekLabel(key) {
+    const p = parseWeekKey(key);
+    if (!p) return key;
+    const sun = new Date(p.monday);
+    sun.setDate(sun.getDate() + 6);
+    return `${p.monday.getMonth() + 1}\u6708${p.monday.getDate()}\u65E5 \u2013 ${sun.getMonth() + 1}\u6708${sun.getDate()}\u65E5`;
+  }
+  function canonicalWeekKey(key) {
+    const mon = mondayOf(key);
+    return mon ? keyFromWeekStart(mon) : key;
+  }
+  function monthLabel(key) {
+    const p = parseMonthKey(key) || parseWeekKey(key);
+    return p ? `${p.year}\u5E74${p.month}\u6708\u6708\u62A5` : key;
+  }
+  function monthGroupLabel(monthKey) {
+    const [year, month] = String(monthKey || "").split("-");
+    return `${year}\u5E74${Number(month)}\u6708\u5468\u62A5`;
+  }
+  function sortWeekKeys(keys) {
+    return [...keys].sort((a, b) => String(b).localeCompare(String(a)));
+  }
+  function sortMonthKeys(keys) {
+    return [...keys].sort((a, b) => {
+      const pa = parseMonthKey(a) || { year: 0, month: 0 };
+      const pb = parseMonthKey(b) || { year: 0, month: 0 };
+      return pb.year - pa.year || pb.month - pa.month;
+    });
+  }
+  function rvItemHtml(text2, acts) {
+    const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === "\u91C7\u7EB3" ? "adopt" : "test"}" data-review-action="act" data-kind="${esc(a)}">${a}</button>`).join("");
+    return `<div class="rv-item"><span class="txt" contenteditable>${esc(text2)}</span>${btns}<span class="rv-del" data-review-action="delete" title="\u5220\u9664"><i class="ti ti-x"></i></span></div>`;
+  }
+  function bindReviewActions(root) {
+    root.onclick = (e) => {
+      const el = e.target.closest("[data-review-action]");
+      if (!el || !root.contains(el)) return;
+      const action = el.dataset.reviewAction;
+      if (action === "act") rvAct(el, el.dataset.kind);
+      else if (action === "delete") rvDel(el);
+      else if (action === "add") rvAdd(el);
+      else if (action === "toggle" && el.parentElement) el.parentElement.classList.toggle("collapsed");
+    };
+  }
+  function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
+    const name = dept === "SEM" ? "SEM \xB7 \u9648" : "SEO \xB7 \u674E";
+    let h = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
+    sections.forEach(([field2, title, acts]) => {
+      const items = rec && rec[field2] || [];
+      h += `<div class="rv-sec" data-field="${field2}" data-dept="${dept}" data-week="${key}"><h5>${title}</h5>`;
+      if (field2 === "summary" && !items.length && prevPlan && prevPlan.length) {
+        h += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
+      }
+      h += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
+      h += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
+    });
+    return h + "</div>";
+  }
+  function prevPlanOf(keys, byKey, key, dept) {
+    const idx = keys.indexOf(key);
+    for (let i = idx + 1; i < keys.length; i++) {
+      const r = byKey[keys[i]][dept];
+      if (r && r.next_plan && r.next_plan.length) return r.next_plan;
+    }
+    return null;
+  }
+  function sopRateShell(weekKey) {
+    const mon = mondayOf(weekKey);
+    if (!mon) return "";
+    const sun = new Date(mon);
+    sun.setDate(sun.getDate() + 6);
+    const fmt2 = (d) => `${d.getFullYear()}-${rvPad2(d.getMonth() + 1)}-${rvPad2(d.getDate())}`;
+    return `<div class="sop-rate" data-from="${fmt2(mon)}" data-to="${fmt2(sun)}"></div>`;
+  }
+  async function renderReview() {
+    const cur = curWeekKey();
+    let items = [];
+    try {
+      const r = await API.get("/api/weekly-reports?current=" + encodeURIComponent(cur));
+      items = r.items || [];
+    } catch (e) {
+    }
+    const byWeek = {};
+    items.filter((it) => !parseMonthKey(it.week_key)).forEach((it) => {
+      const key = canonicalWeekKey(it.week_key);
+      (byWeek[key] = byWeek[key] || {})[it.dept] = { ...it, week_key: key };
+    });
+    if (!byWeek[cur]) byWeek[cur] = {};
+    const keys = sortWeekKeys(Object.keys(byWeek));
+    const curMeta = parseWeekKey(cur);
+    const currentMonthKey = curMeta && curMeta.monthKey;
+    const currentKeys = keys.filter((key) => (parseWeekKey(key) || {}).monthKey === currentMonthKey);
+    const oldGroups = {};
+    keys.filter((key) => (parseWeekKey(key) || {}).monthKey !== currentMonthKey).forEach((key) => {
+      const meta = parseWeekKey(key);
+      if (!meta) return;
+      (oldGroups[meta.monthKey] = oldGroups[meta.monthKey] || []).push(key);
+    });
+    const acc = document.getElementById("review-acc");
+    if (!acc) return;
+    const currentHtml = currentKeys.map((week) => {
+      const isCurrent = week === cur;
+      const collapsed = isCurrent ? !currentWeekShouldOpen() : true;
+      return `<div class="acc-week${collapsed ? " collapsed" : ""}">
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u5468</span>' : ""}</div>
+      <div class="acc-body">${sopRateShell(week)}${rvColHtml("SEO", byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, "SEO"))}${rvColHtml("SEM", byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, "SEM"))}</div>
+    </div>`;
+    }).join("");
+    const groupHtml = Object.keys(oldGroups).sort((a, b) => {
+      const [ay, am] = a.split("-").map(Number);
+      const [by, bm] = b.split("-").map(Number);
+      return by - ay || bm - am;
+    }).map((monthKey) => {
+      const inner = sortWeekKeys(oldGroups[monthKey]).map((week) => `
+      <div class="acc-week collapsed">
+        <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)}</div>
+        <div class="acc-body">${sopRateShell(week)}${rvColHtml("SEO", byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, "SEO"))}${rvColHtml("SEM", byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, "SEM"))}</div>
+      </div>`).join("");
+      return `<div class="acc-month collapsed">
+      <div class="acc-month-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthGroupLabel(monthKey)}</div>
+      <div class="acc-month-body">${inner}</div>
+    </div>`;
+    }).join("");
+    acc.innerHTML = currentHtml + groupHtml;
+    bindReviewActions(acc);
+    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el) => {
+      mountSopRate(el);
+    });
+  }
+  async function renderMonthReview() {
+    const cur = curMonthKey();
+    let items = [];
+    try {
+      const r = await API.get("/api/weekly-reports?current=" + encodeURIComponent(cur));
+      items = r.items || [];
+    } catch (e) {
+    }
+    const byMonth = {};
+    items.filter((it) => parseMonthKey(it.week_key)).forEach((it) => {
+      (byMonth[it.week_key] = byMonth[it.week_key] || {})[it.dept] = it;
+    });
+    if (!byMonth[cur]) byMonth[cur] = {};
+    const keys = sortMonthKeys(Object.keys(byMonth));
+    const acc = document.getElementById("month-review-acc");
+    if (!acc) return;
+    acc.innerHTML = keys.map((key) => {
+      const collapsed = key !== cur;
+      return `<div class="acc-week${collapsed ? " collapsed" : ""}">
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel(key)} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span>' : ""}</div>
+      <div class="acc-body">${rvColHtml("SEO", byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml("SEM", byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
+    </div>`;
+    }).join("");
+    bindReviewActions(acc);
+  }
+  function rvSectionSave(sec) {
+    if (!sec) return;
+    const field2 = sec.dataset.field;
+    const dept = sec.dataset.dept;
+    const week = sec.dataset.week;
+    const items = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
+    API.put("/api/weekly-reports", { week_key: week, dept, field: field2, items }).catch((err) => toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
+  }
+  function rvAdd(el) {
+    const sec = el.closest(".rv-sec");
+    const list = sec.querySelector(".rv-list");
+    const isMonth = !!parseMonthKey(sec.dataset.week);
+    const sections = isMonth ? RV_MONTH_SECTIONS : RV_SECTIONS;
+    const acts = (sections.find((s) => s[0] === sec.dataset.field) || [])[2] || [];
+    const tmp = document.createElement("div");
+    tmp.innerHTML = rvItemHtml("", acts);
+    const node = tmp.firstChild;
+    list.appendChild(node);
+    const t = node.querySelector(".txt");
+    if (t) t.focus();
+  }
+  function rvDel(el) {
+    const sec = el.closest(".rv-sec");
+    el.closest(".rv-item").remove();
+    rvSectionSave(sec);
+  }
+  async function rvAct(el, kind) {
+    const item = el.closest(".rv-item");
+    const text2 = item.querySelector(".txt").innerText.trim();
+    if (!text2) {
+      toast("\u8BF7\u5148\u586B\u5199\u5185\u5BB9");
+      return;
+    }
+    const sec = el.closest(".rv-sec");
+    const s = sFromDept(sec.dataset.dept);
+    try {
+      if (kind === "\u6D4B\u8BD5") {
+        await persistLoop("test", s, text2, "\u89C2\u5BDF\u4E2D");
+        addTest(s, text2);
+        toastGo("\u5DF2\u52A0\u5165\u6D4B\u8BD5\u767B\u8BB0 \xB7 \u5DF2\u5165\u5E93", "test");
+      } else {
+        await persistLoop("deposit", s, text2, "\u91C7\u7EB3");
+        addDeposit(s, text2, "\u91C7\u7EB3");
+        toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "deposit");
+      }
+    } catch (e) {
+      toast(persistFailMsg(e));
+    }
+  }
+  document.addEventListener("focusout", (e) => {
+    const t = e.target.closest && e.target.closest("#review-acc .rv-list .txt, #month-review-acc .rv-list .txt");
+    if (!t) return;
+    rvSectionSave(t.closest(".rv-sec"));
+  });
+
   // public/src/main.js
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, sop_rate_exports);
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports);
 })();
