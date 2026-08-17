@@ -1,9 +1,11 @@
 /* 彩色标签下拉 tag-select（ES 模块 · esbuild 打包为 IIFE）。
-   运行时依赖的全局（事件时解析）：API、toast()、inqRowHtml()/isUpgraded()/window._inqCache（inquiries.js）。
+   运行时依赖的全局（事件时解析）：API、toast()、window._inqCache（inquiries.js）。
    OPT 必须挂到 window：keywords.js 的 clsOf() 裸引用它（原为经典脚本的词法全局）。
    menu/curSel 已证无外部引用，收进模块作用域。
    注：const menu=getElementById('selMenu') 在模块求值时执行——bundle 以经典 <script> 加载且位于 body 之后，
        #selMenu 早已解析，安全（与旧脚本同一时机语义）。 */
+
+import { inqRowHtml, isUpgraded } from './inquiries.js';
 
 /* ---------- colored tag-select ---------- */
 export const OPT={

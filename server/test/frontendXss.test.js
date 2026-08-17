@@ -12,6 +12,9 @@ const indexSource = readFileSync(new URL('../../public/index.html', import.meta.
 const loginSource = readFileSync(new URL('../../public/login.html', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
 const weeklyReviewSource = readFileSync(new URL('../../public/src/weekly-review.js', import.meta.url), 'utf8');
+const inquiriesSource = readFileSync(new URL('../../public/src/inquiries.js', import.meta.url), 'utf8');
+const tagSelectSource = readFileSync(new URL('../../public/src/tagselect.js', import.meta.url), 'utf8');
+const archiveSource = readFileSync(new URL('../../public/src/archive.js', import.meta.url), 'utf8');
 const cspUtilitiesSource = readFileSync(new URL('../../public/csp-utilities.css', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
@@ -103,7 +106,7 @@ test('main page loads app.js after its dependencies and contains no inline scrip
 test('weekly review is bundled with a narrow global compatibility surface', () => {
   assert.doesNotMatch(indexSource, /<script src="\/weekly-review\.js"><\/script>/);
   assert.match(mainSource, /import \* as weeklyReview from '\.\/weekly-review\.js';/);
-  assert.match(mainSource, /Object\.assign\(window,[^;]*weeklyReview\);/);
+  assert.match(mainSource, /Object\.assign\(window,[^;]*\bweeklyReview\b[^;]*\);/);
   assert.doesNotMatch(mainSource, /\bsopRate\b/);
   assert.match(weeklyReviewSource, /import \{ mountSopRate \} from '\.\/sop-rate\.js';/);
   const exportedFunctions = [...weeklyReviewSource.matchAll(/export async function ([A-Za-z_$][\w$]*)/g)]
@@ -111,6 +114,45 @@ test('weekly review is bundled with a narrow global compatibility surface', () =
     .sort();
   assert.deepEqual(exportedFunctions, ['renderMonthReview', 'renderReview']);
   assert.doesNotMatch(weeklyReviewSource, /export\s+(?:const|let|var|class|\{)/);
+});
+
+test('inquiries are bundled with explicit module dependencies and a narrow global compatibility surface', () => {
+  assert.doesNotMatch(indexSource, /<script src="\/inquiries\.js"><\/script>/);
+  assert.match(mainSource, /from '\.\/inquiries\.js';/);
+  assert.match(mainSource, /Object\.assign\(window,[^;]*inquiryCompatibility\);/);
+  assert.match(mainSource, /const inquiryCompatibility=\{([^}]*)\};/);
+  const compatibility = mainSource.match(/const inquiryCompatibility=\{([^}]*)\};/)[1]
+    .split(',')
+    .map((name) => name.trim())
+    .sort();
+  assert.deepEqual(compatibility, [
+    'openInquiry',
+    'refreshInqStats',
+    'renderInqFeed',
+    'renderInqList',
+    'submitInquiry',
+    'submitTrack'
+  ]);
+  assert.match(tagSelectSource, /import \{ inqRowHtml, isUpgraded \} from '\.\/inquiries\.js';/);
+  assert.match(archiveSource, /import \{ GRADE_BADGE \} from '\.\/inquiries\.js';/);
+  assert.doesNotMatch(mainSource, /\b(?:GRADE_BADGE|inqRowHtml|isUpgraded|openTrack|trackCellHtml|toggleInqMonth|toggleInqFeed)\b(?=[,}])/);
+  assert.match(inquiriesSource, /export const GRADE_BADGE=/);
+  assert.match(inquiriesSource, /class="ctr inq-track-feedback"/);
+  assert.match(inquiriesSource, /querySelector\('\.inq-track-feedback'\)/);
+  assert.doesNotMatch(inquiriesSource, /lastElementChild\.innerHTML=trackCellHtml/);
+  const exportedFunctions = [...inquiriesSource.matchAll(/export (?:async )?function ([A-Za-z_$][\w$]*)/g)]
+    .map((match) => match[1])
+    .sort();
+  assert.deepEqual(exportedFunctions, [
+    'inqRowHtml',
+    'isUpgraded',
+    'openInquiry',
+    'refreshInqStats',
+    'renderInqFeed',
+    'renderInqList',
+    'submitInquiry',
+    'submitTrack'
+  ]);
 });
 
 test('login page loads only external CSS and JavaScript', () => {

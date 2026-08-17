@@ -1,24 +1,23 @@
-/* 询盘录入（真实弹框 + 持久化）（拆分自 index.html · 阶段4-B）
-   经典 script + window 全局兼容。依赖（运行时解析，均在 index.html 内联或其他模块）：
+/* 询盘录入（真实弹框 + 持久化）（ES 模块 · esbuild 打包为 IIFE）。
+   依赖（运行时解析，均由经典脚本或其他模块提供）：
    openModal()/closeModal()、window.API、esc()、toast()、formatLocalDate()、inlineConfirm()（keywords.js）、
    loadInquiries()/loadDashboardInq()、renderGlobe()（inquiry-globe.js）、loadArchive()（archive.js）。
    window._inqCache 由本模块初始化、loadInquiries() 填充，被 inquiry-globe.js / 图表 读取。
-   openInquiry/submitInquiry/renderInqList/refreshInqStats 等被路由/HTML onclick/载入流程在运行时调用。 */
+   仅 app.js 真实调用的 6 个入口由 main.js 挂到 window；行渲染辅助只供模块间显式导入。 */
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
-const INQ_KEY='ferr:inquiries';
 const REGION_BADGE={'欧洲':'b-blue','西欧':'b-blue','南欧':'b-blue','北欧':'b-blue','中东欧':'b-teal','东欧/俄罗斯':'b-amber','俄罗斯':'b-amber','北美':'b-purple','拉美':'b-red','中东':'b-amber','北非':'b-amber','撒哈拉以南非洲':'b-gray','南亚':'b-teal','东南亚':'b-red','东南亚/巴西':'b-red','东亚':'b-green','中亚':'b-gray','大洋洲':'b-teal','其他':'b-gray'};
 const CH_BADGE={'SEO自然':'b-blue','SEM付费':'b-purple','直接':'b-teal','其他':'b-gray'};
 const PROD_BADGE={'铸造':'b-amber','锻造':'b-red','机加工':'b-blue','阀门':'b-purple','管件':'b-teal'};
-const GRADE_BADGE={A:'b-green',B:'b-blue',C:'b-gray'};
+export const GRADE_BADGE={A:'b-green',B:'b-blue',C:'b-gray'};
 window._inqCache=[];
 
-function openInquiry(){
+export function openInquiry(){
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   ['f-country','f-customer','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
   openModal('inqMask');
 }
-async function submitInquiry(){
+export async function submitInquiry(){
   const g=id=>document.getElementById(id).value.trim();
   const rec={date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10),
     customer_name:g('f-customer'), // 6.23 文档 12：客户姓名（可选）
@@ -33,8 +32,8 @@ async function submitInquiry(){
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
   }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
 }
-// 6.23 文档 7/8/9/12：客户姓名(editable) + 等级 tagselect 可点改 + 上调标红(⚠️) + 跟踪反馈点开编辑。共 10 td。
-function isUpgraded(r){ const ord={A:3,B:2,C:1}; return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade]<ord[r.grade]; }
+// 6.23 文档 7/8/9/12：客户姓名(editable) + 等级 tagselect 可点改 + 上调标红(⚠️) + 跟踪反馈点开编辑。共 11 td。
+export function isUpgraded(r){ const ord={A:3,B:2,C:1}; return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade]<ord[r.grade]; }
 /* 6.23 文档 7：跟踪反馈点开弹框 → PATCH → 同步缓存 + 重渲该 td */
 let _trackEditing=null;
 function openTrack(tr){
@@ -45,15 +44,16 @@ function openTrack(tr){
   document.getElementById('track-text').value=it.tracking_feedback||'';
   openModal('trackMask'); setTimeout(()=>document.getElementById('track-text').focus(),50);
 }
-async function submitTrack(){
+export async function submitTrack(){
   if(!_trackEditing)return;
   const text=document.getElementById('track-text').value.trim();
   try{
     await API.patch('/api/inquiries/'+_trackEditing.id,{tracking_feedback:text});
     _trackEditing.tracking_feedback=text;
-    // 重渲该行的跟踪反馈 td（最后一列）
+    // 只重渲跟踪反馈列；操作列位于其后，不能依赖 lastElementChild。
     const tr=document.querySelector('.inq-tb tr[data-id="'+_trackEditing.id+'"]');
-    if(tr&&tr.lastElementChild)tr.lastElementChild.innerHTML=trackCellHtml(_trackEditing);
+    const cell=tr&&tr.querySelector('.inq-track-feedback');
+    if(cell)cell.innerHTML=trackCellHtml(_trackEditing);
     closeModal('trackMask'); toast('已保存跟踪反馈');
   }catch(e){ toast(e.status===403?'无权操作':'保存失败：'+(e.message||'')); }
 }
@@ -71,7 +71,7 @@ function trackCellHtml(r){
   }
   return `<span class="track-cell track-empty"><i class="ti ti-plus"></i>反馈</span>`;
 }
-function inqRowHtml(r){
+export function inqRowHtml(r){
   const up=isUpgraded(r);
   const upMark=up?` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="等级已上调（原 ${esc(r.original_grade)} → 现 ${esc(r.grade)}） · 重点处理"></i>`:'';
   return `<td>${esc(r.date.slice(5))}</td>`
@@ -83,7 +83,7 @@ function inqRowHtml(r){
     +`<td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
     +`<td class="dim csp-s-33ee298127">${esc(r.note||'')}</td>`
-    +`<td class="ctr">${trackCellHtml(r)}</td>`
+    +`<td class="ctr inq-track-feedback">${trackCellHtml(r)}</td>`
     +`<td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="删除（归档到归档页）"><i class="ti ti-trash"></i></button></td>`;
 }
 function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
@@ -102,7 +102,7 @@ document.addEventListener('click',async e=>{
 });
 /* 明细表(下方)：只渲染「之前月份」，当月不在此显示（当月见上方「最新询盘」表）。
    历史月份按月分组、默认折叠（点月份条展开/收起）。*/
-function renderInqList(){
+export function renderInqList(){
   const tb=document.getElementById('tb-inq'); if(!tb)return; tb.innerHTML='';
   const curM=formatLocalDate(new Date()).slice(0,7);
   const rows=(window._inqCache||[]).filter(r=>r&&r.date&&r.date.slice(0,7)!==curM).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0); // 排除当月、日期倒序
@@ -134,12 +134,12 @@ function toggleInqMonth(td){
 }
 // 条目 13：metric-row 四框已删（顶栏 KPI pill 已覆盖三个，询盘总量看月份折叠分隔行）。
 // 保留 stats 写入 _inqStats 缓存，供其他地方读取；不再回填已删除的 DOM。
-function refreshInqStats(stats){
+export function refreshInqStats(stats){
   if(stats)window._inqStats=stats;
 }
 /* 「最新询盘」(上方左栏)：只渲染「当月」，表格形式、与下方明细表同款（同 inqRowHtml，可编辑/评级/跟踪/删除）。
    询盘多时容器内下滑显示。*/
-function renderInqFeed(){
+export function renderInqFeed(){
   const tb=document.getElementById('tb-inq-cur'); if(!tb)return; tb.innerHTML='';
   const curM=formatLocalDate(new Date()).slice(0,7); // 本月 YYYY-MM（本地）
   const rows=(window._inqCache||[]).filter(r=>r&&r.date&&r.date.slice(0,7)===curM).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
@@ -158,10 +158,4 @@ function renderInqFeed(){
     tr.innerHTML=inqRowHtml(r);
     tb.appendChild(tr);
   });
-}
-/* Hero 左栏折叠/展开：地图随宽度变化后重排（触发已绑定的 resize 处理）*/
-function toggleInqFeed(){
-  const hero=document.getElementById('inqHero'); if(!hero)return;
-  hero.classList.toggle('feed-collapsed');
-  setTimeout(()=>{ try{ window.dispatchEvent(new Event('resize')); }catch(_){} },300);
 }

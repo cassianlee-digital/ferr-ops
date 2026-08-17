@@ -368,6 +368,212 @@
     OPT: () => OPT,
     persistTagChange: () => persistTagChange
   });
+
+  // public/src/inquiries.js
+  var REGION_BADGE = { "\u6B27\u6D32": "b-blue", "\u897F\u6B27": "b-blue", "\u5357\u6B27": "b-blue", "\u5317\u6B27": "b-blue", "\u4E2D\u4E1C\u6B27": "b-teal", "\u4E1C\u6B27/\u4FC4\u7F57\u65AF": "b-amber", "\u4FC4\u7F57\u65AF": "b-amber", "\u5317\u7F8E": "b-purple", "\u62C9\u7F8E": "b-red", "\u4E2D\u4E1C": "b-amber", "\u5317\u975E": "b-amber", "\u6492\u54C8\u62C9\u4EE5\u5357\u975E\u6D32": "b-gray", "\u5357\u4E9A": "b-teal", "\u4E1C\u5357\u4E9A": "b-red", "\u4E1C\u5357\u4E9A/\u5DF4\u897F": "b-red", "\u4E1C\u4E9A": "b-green", "\u4E2D\u4E9A": "b-gray", "\u5927\u6D0B\u6D32": "b-teal", "\u5176\u4ED6": "b-gray" };
+  var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
+  var PROD_BADGE = { "\u94F8\u9020": "b-amber", "\u953B\u9020": "b-red", "\u673A\u52A0\u5DE5": "b-blue", "\u9600\u95E8": "b-purple", "\u7BA1\u4EF6": "b-teal" };
+  var GRADE_BADGE = { A: "b-green", B: "b-blue", C: "b-gray" };
+  window._inqCache = [];
+  function openInquiry() {
+    document.getElementById("f-date").value = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    ["f-country", "f-customer", "f-source", "f-note"].forEach((i) => document.getElementById(i).value = "");
+    openModal("inqMask");
+  }
+  async function submitInquiry() {
+    const g = (id) => document.getElementById(id).value.trim();
+    const rec = {
+      date: document.getElementById("f-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+      customer_name: g("f-customer"),
+      // 6.23 文档 12：客户姓名（可选）
+      country: g("f-country") || "\u{1F3F3}\uFE0F \u672A\u586B",
+      region: g("f-region"),
+      channel: g("f-channel"),
+      source: g("f-source") || "\u5F85\u8865",
+      product: g("f-product"),
+      grade: g("f-grade"),
+      note: g("f-note")
+    };
+    try {
+      const { item } = await API.post("/api/inquiries", rec);
+      closeModal("inqMask");
+      await loadInquiries();
+      loadDashboardInq();
+      if (window._curTab === "inquiry") {
+        try {
+          renderGlobe();
+        } catch (e) {
+        }
+      }
+      toast("\u5DF2\u4FDD\u5B58 1 \u6761\u8BE2\u76D8\uFF08" + item.grade + "\u7EA7\uFF09\xB7 \u5DF2\u5165\u5E93\uFF0C\u591A\u4EBA\u5171\u4EAB");
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u9700\u767B\u5F55\u8FD0\u8425\u8D26\u53F7\uFF1A\u674E/\u9648/\u4E3B\u7BA1/\u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+    }
+  }
+  function isUpgraded(r) {
+    const ord = { A: 3, B: 2, C: 1 };
+    return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade] < ord[r.grade];
+  }
+  var _trackEditing = null;
+  function openTrack(tr) {
+    const id = tr && tr.dataset.id;
+    if (!id) return;
+    const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
+    if (!it) return;
+    _trackEditing = it;
+    document.getElementById("track-cust").textContent = it.customer_name || it.country || "#" + it.id;
+    document.getElementById("track-text").value = it.tracking_feedback || "";
+    openModal("trackMask");
+    setTimeout(() => document.getElementById("track-text").focus(), 50);
+  }
+  async function submitTrack() {
+    if (!_trackEditing) return;
+    const text2 = document.getElementById("track-text").value.trim();
+    try {
+      await API.patch("/api/inquiries/" + _trackEditing.id, { tracking_feedback: text2 });
+      _trackEditing.tracking_feedback = text2;
+      const tr = document.querySelector('.inq-tb tr[data-id="' + _trackEditing.id + '"]');
+      const cell = tr && tr.querySelector(".inq-track-feedback");
+      if (cell) cell.innerHTML = trackCellHtml(_trackEditing);
+      closeModal("trackMask");
+      toast("\u5DF2\u4FDD\u5B58\u8DDF\u8E2A\u53CD\u9988");
+    } catch (e) {
+      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || ""));
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest(".inq-tb .track-cell");
+    if (!t) return;
+    const tr = t.closest("tr");
+    if (tr) openTrack(tr);
+  });
+  function trackCellHtml(r) {
+    const has = (r.tracking_feedback || "").trim();
+    if (has) {
+      const short = has.length > 15 ? has.slice(0, 15) + "\u2026" : has;
+      return `<span class="track-cell" title="${esc(has)}"><i class="ti ti-message-2"></i>${esc(short)}</span>`;
+    }
+    return `<span class="track-cell track-empty"><i class="ti ti-plus"></i>\u53CD\u9988</span>`;
+  }
+  function inqRowHtml(r) {
+    const up = isUpgraded(r);
+    const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc(r.original_grade)} \u2192 \u73B0 ${esc(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
+    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_name">${esc(r.customer_name || "")}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region] || "b-gray"}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product] || "b-gray"}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+  }
+  function monthLabel(ym) {
+    const p = ym.split("-");
+    return p[0] + "\u5E74" + +p[1] + "\u6708";
+  }
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".inq-tb .inq-del");
+    if (!btn) return;
+    const tr = btn.closest("tr");
+    const id = tr && tr.dataset.id;
+    if (!id) return;
+    if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
+    try {
+      await API.del("/api/inquiries/" + id);
+      await loadInquiries();
+      loadDashboardInq();
+      if (window._curTab === "archive") {
+        try {
+          loadArchive();
+        } catch (_) {
+        }
+      }
+      toast("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5F52\u6863\u5230\u300C\u5F52\u6863\u300D\u9875");
+    } catch (err) {
+      toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  });
+  function renderInqList() {
+    const tb = document.getElementById("tb-inq");
+    if (!tb) return;
+    tb.innerHTML = "";
+    const curM = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
+    const rows2 = (window._inqCache || []).filter((r) => r && r.date && r.date.slice(0, 7) !== curM).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+    if (!rows2.length) {
+      tb.innerHTML = '<tr><td colspan="11" class="dim csp-s-d48bfa87bb">\u6682\u65E0\u5386\u53F2\u6708\u4EFD\u8BE2\u76D8 \xB7 \u672C\u6708\u8BE2\u76D8\u89C1\u4E0A\u65B9\u300C\u6700\u65B0\u8BE2\u76D8\u300D</td></tr>';
+      return;
+    }
+    const groups = [];
+    const idx = {};
+    rows2.forEach((r) => {
+      const ym = r.date.slice(0, 7);
+      if (idx[ym] == null) {
+        idx[ym] = groups.length;
+        groups.push({ ym, items: [] });
+      }
+      groups[idx[ym]].items.push(r);
+    });
+    groups.forEach((g) => {
+      const sep = document.createElement("tr");
+      sep.className = "inq-msep collapsed";
+      sep.dataset.month = g.ym;
+      sep.innerHTML = `<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${g.items.length} \u6761</span></td>`;
+      sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
+      tb.appendChild(sep);
+      g.items.forEach((r) => {
+        const tr = document.createElement("tr");
+        tr.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
+        tr.dataset.month = g.ym;
+        if (r.id) {
+          tr.dataset.id = r.id;
+          tr.dataset.ep = "/api/inquiries";
+        }
+        tr.style.display = "none";
+        tr.innerHTML = inqRowHtml(r);
+        tb.appendChild(tr);
+      });
+    });
+  }
+  function toggleInqMonth(td2) {
+    const sep = td2.closest("tr");
+    if (!sep) return;
+    sep.classList.toggle("collapsed");
+    const hidden = sep.classList.contains("collapsed");
+    let n = sep.nextElementSibling;
+    while (n && !n.classList.contains("inq-msep")) {
+      if (n.classList.contains("inq-mrow")) n.style.display = hidden ? "none" : "";
+      n = n.nextElementSibling;
+    }
+  }
+  function refreshInqStats(stats) {
+    if (stats) window._inqStats = stats;
+  }
+  function renderInqFeed() {
+    const tb = document.getElementById("tb-inq-cur");
+    if (!tb) return;
+    tb.innerHTML = "";
+    const curM = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
+    const rows2 = (window._inqCache || []).filter((r) => r && r.date && r.date.slice(0, 7) === curM).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+    const cnt = document.getElementById("inqFeedCount");
+    if (cnt) cnt.textContent = rows2.length ? "\u672C\u6708 " + rows2.length + " \u6761" : "\u672C\u6708\u6682\u65E0";
+    if (!rows2.length) {
+      tb.innerHTML = '<tr><td colspan="11" class="dim csp-s-651d52088e">\u672C\u6708\u6682\u65E0\u8BE2\u76D8 \xB7 \u5F55\u5165\u540E\u5373\u65F6\u663E\u793A</td></tr>';
+      return;
+    }
+    const p = curM.split("-");
+    const sep = document.createElement("tr");
+    sep.className = "inq-msep";
+    sep.dataset.month = curM;
+    sep.innerHTML = `<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}\u5E74${+p[1]}\u6708 <span class="dim csp-s-8bde36d0d6">\xB7 ${rows2.length} \u6761</span><span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span></td>`;
+    sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
+    tb.appendChild(sep);
+    rows2.forEach((r) => {
+      const tr = document.createElement("tr");
+      tr.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
+      tr.dataset.month = curM;
+      if (r.id) {
+        tr.dataset.id = r.id;
+        tr.dataset.ep = "/api/inquiries";
+      }
+      tr.innerHTML = inqRowHtml(r);
+      tb.appendChild(tr);
+    });
+  }
+
+  // public/src/tagselect.js
   var OPT = {
     channel: [["SEO\u81EA\u7136", "b-blue"], ["SEM\u4ED8\u8D39", "b-purple"], ["\u76F4\u63A5", "b-teal"], ["\u5176\u4ED6", "b-gray"]],
     product: [["\u94F8\u9020", "b-amber"], ["\u953B\u9020", "b-red"], ["\u673A\u52A0\u5DE5", "b-blue"], ["\u9600\u95E8", "b-purple"], ["\u7BA1\u4EF6", "b-teal"]],
@@ -633,7 +839,7 @@
   // public/src/archive.js
   var archive_exports = {};
   __export(archive_exports, {
-    loadArchive: () => loadArchive
+    loadArchive: () => loadArchive2
   });
   document.addEventListener("click", async (e) => {
     const arc = e.target.closest(".row-archive");
@@ -700,7 +906,7 @@
     const source = esc(it.source || "");
     return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-short-date num">${esc((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
   }
-  async function loadArchive() {
+  async function loadArchive2() {
     const bucket = { sem: [], seo: [], company: [] };
     try {
       const { items } = await API.get("/api/fixes?archived=1");
@@ -793,7 +999,7 @@
   var timerange_exports = {};
   __export(timerange_exports, {
     applyTimeRange: () => applyTimeRange,
-    formatLocalDate: () => formatLocalDate,
+    formatLocalDate: () => formatLocalDate2,
     getCurrentRange: () => getCurrentRange,
     openCustomRange: () => openCustomRange,
     rangeText: () => rangeText,
@@ -824,7 +1030,7 @@
     window._gran = "week";
   }
   var GRAN_LABEL = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" };
-  function formatLocalDate(d) {
+  function formatLocalDate2(d) {
     const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
   }
@@ -840,7 +1046,7 @@
       d.setDate(d.getDate() - n);
       return d;
     };
-    const r = (s, e) => ({ start_date: formatLocalDate(s), end_date: formatLocalDate(e), period_label: label });
+    const r = (s, e) => ({ start_date: formatLocalDate2(s), end_date: formatLocalDate2(e), period_label: label });
     switch (label) {
       case "\u4ECA\u5929":
         return r(today2, today2);
@@ -972,11 +1178,11 @@
   });
   function openCustomRange() {
     const cr = window._customRange || {};
-    const today2 = formatLocalDate(/* @__PURE__ */ new Date());
+    const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
     const back = (n) => {
       const d = /* @__PURE__ */ new Date();
       d.setDate(d.getDate() - n);
-      return formatLocalDate(d);
+      return formatLocalDate2(d);
     };
     document.getElementById("cr-start").value = cr.start_date || back(29);
     document.getElementById("cr-end").value = cr.end_date || today2;
@@ -1050,7 +1256,7 @@
       const week = Math.ceil(((tmp - yearStart) / 864e5 + 1) / 7);
       return tmp.getFullYear() + "-W" + String(week).padStart(2, "0");
     }
-    return formatLocalDate(d);
+    return formatLocalDate2(d);
   }
   window._sops = [];
   window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
@@ -1220,7 +1426,7 @@
     return false;
   }
   function buildSopOverdueList() {
-    const today2 = formatLocalDate(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^\d{4}\./, "");
+    const today2 = formatLocalDate2(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^\d{4}\./, "");
     const lines = [];
     ["daily", "weekly", "monthly"].forEach((freq) => {
       if (!isOverduePeriodFirstDay(freq)) return;
@@ -1854,7 +2060,7 @@
   // public/src/inquiry-globe.js
   var inquiry_globe_exports = {};
   __export(inquiry_globe_exports, {
-    renderGlobe: () => renderGlobe
+    renderGlobe: () => renderGlobe2
   });
   var QINGDAO = [120.38, 36.07];
   var WORLD_MAP_NAME = "ferrWorld";
@@ -2201,7 +2407,7 @@
       }
     });
   }
-  async function renderGlobe() {
+  async function renderGlobe2() {
     const el = document.getElementById("inqGlobe");
     if (!el) return;
     const seq = ++renderSeq;
@@ -2370,13 +2576,13 @@
   var FREQ_TAG2 = { daily: "\u65E5", weekly: "\u5468", monthly: "\u6708" };
   var _day = null;
   function planDayIsToday() {
-    return !_day || _day === formatLocalDate(/* @__PURE__ */ new Date());
+    return !_day || _day === formatLocalDate2(/* @__PURE__ */ new Date());
   }
-  var today = () => formatLocalDate(/* @__PURE__ */ new Date());
+  var today = () => formatLocalDate2(/* @__PURE__ */ new Date());
   var shiftDay = (day, n) => {
     const d = /* @__PURE__ */ new Date(day + "T00:00:00");
     d.setDate(d.getDate() + n);
-    return formatLocalDate(d);
+    return formatLocalDate2(d);
   };
   function periodKeysFor(day) {
     const d = /* @__PURE__ */ new Date(day + "T00:00:00");
@@ -2523,7 +2729,7 @@
     el.dataset.loaded = "1";
     el.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
     try {
-      const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date()))}`;
+      const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate2(/* @__PURE__ */ new Date()))}`;
       const data = await API.get("/api/sop/stats" + q);
       const items = data.items || [];
       if (!items.length) {
@@ -2624,7 +2830,7 @@
     const mon = mondayOf(key);
     return mon ? keyFromWeekStart(mon) : key;
   }
-  function monthLabel(key) {
+  function monthLabel2(key) {
     const p = parseMonthKey(key) || parseWeekKey(key);
     return p ? `${p.year}\u5E74${p.month}\u6708\u6708\u62A5` : key;
   }
@@ -2761,7 +2967,7 @@
     acc.innerHTML = keys.map((key) => {
       const collapsed = key !== cur;
       return `<div class="acc-week${collapsed ? " collapsed" : ""}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel(key)} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span>' : ""}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel2(key)} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span>' : ""}</div>
       <div class="acc-body">${rvColHtml("SEO", byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml("SEM", byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
     </div>`;
     }).join("");
@@ -2823,5 +3029,6 @@
   });
 
   // public/src/main.js
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports);
+  var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility);
 })();

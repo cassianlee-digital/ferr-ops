@@ -5,7 +5,7 @@
 //
 // 已迁移（批次1·叶子）：neg-ads / ga4-view / market-brain
 // 已迁移（批次2·叶子）：kpi-view（renderKPI/loadOverview 被 index.html+kpi.js 调用）
-//                       tagselect（OPT 被 keywords.js clsOf() 裸引用，必须挂 window）
+//                       tagselect（OPT 被 keywords.js clsOf() 裸引用，必须挂 window；询盘行辅助改为显式 import）
 // 已迁移（批次3·叶子）：google-projects（接入卡使用模块内事件委托）
 //                       archive（loadArchive 被 index.html 路由切换 + inquiries.js 调用）
 // 已迁移（批次4）：timerange（formatLocalDate/ymd 被 closed-loop.js 真实调用；withRange 被 charts.js 调用）
@@ -34,5 +34,10 @@ import * as planHistory from './plan-history.js';
 // 已迁移（批次7）：weekly-review（内部 20+ 个符号收回模块，仅保留 app.js 使用的两个渲染入口）。
 // sop-rate 由 weekly-review 显式 import，不再暴露 window.mountSopRate。
 import * as weeklyReview from './weekly-review.js';
+// 已迁移（批次8）：inquiries（内部渲染/事件辅助收回模块；仅保留 app.js 调用的 6 个兼容入口）。
+// GRADE_BADGE、inqRowHtml、isUpgraded 由 archive/tagselect 显式 import，不再挂 window。
+import { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed } from './inquiries.js';
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview);
+const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats,renderInqFeed};
+
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility);

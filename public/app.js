@@ -198,8 +198,8 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 /* 询盘 3D 地球仪已拆分至 /inquiry-globe.js（阶段4-A）— renderGlobe()/COUNTRY_GEO/aggInqByCountry 等 */
 /* GA4 流量看板：ES 模块 public/src/ga4-view.js（打包进 /dist/bundle.js）— loadGa4() */
 
-/* 询盘录入已拆分至 /inquiries.js（阶段4-B）
-   — openInquiry/submitInquiry / openTrack/submitTrack / inqRowHtml / renderInqList / 月分组 / 删除归档 / refreshInqStats */
+/* 询盘录入已迁移至 ES 模块 public/src/inquiries.js（打包进 /dist/bundle.js）
+   — 仅 openInquiry/submitInquiry/submitTrack/renderInqList/renderInqFeed/refreshInqStats 保留全局兼容入口 */
 
 /* 否词库 / 广告创意库 录入：ES 模块 public/src/neg-ads.js（打包进 /dist/bundle.js）— addNeg/addAd/negRowHtml/adRowHtml 等 */
 
