@@ -6,25 +6,7 @@
 <title>登录 · 费尔瑞 FERR 运营指挥中心</title>
 <link rel="icon" type="image/png" href="/ferr-logo.png">
 <link rel="apple-touch-icon" href="/ferr-logo.png">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--primary:#F6423A;--bg:#f4f5f8;--bg2:#fff;--border:#e7e9ee;--text1:#191c24;--text2:#646b7a;--text3:#9aa1ae}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text1);min-height:100vh;display:flex;align-items:center;justify-content:center;font-size:13px}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(20,23,40,.08);width:360px;max-width:92%;padding:30px 28px}
-.logo{display:flex;align-items:center;gap:10px;margin-bottom:22px}
-.logo-icon{width:38px;height:38px;background:transparent;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 10px 24px rgba(239,63,58,.22),0 0 0 1px rgba(255,255,255,.08)}
-.logo-icon img{display:block;width:100%;height:100%;object-fit:cover}
-.logo-text{font-size:15px;font-weight:800;line-height:1.2}
-.logo-text small{display:block;font-size:10px;font-weight:500;color:var(--text3);margin-top:2px}
-label{display:block;font-size:11px;color:var(--text3);font-weight:600;margin:14px 0 5px}
-input{width:100%;background:#f3f4f7;border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text1);font-size:13px;font-family:inherit}
-input:focus{outline:none;border-color:var(--primary)}
-button{width:100%;margin-top:20px;padding:11px;background:var(--primary);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(246,66,58,.25)}
-button:hover{filter:brightness(1.06)}
-button:disabled{opacity:.6;cursor:default}
-.err{color:var(--primary);font-size:12px;margin-top:12px;min-height:16px}
-.hint{font-size:11px;color:var(--text3);margin-top:16px;line-height:1.6}
-</style>
+<link rel="stylesheet" href="/login.css">
 </head>
 <body>
 <form class="card" id="loginForm">
@@ -37,30 +19,6 @@ button:disabled{opacity:.6;cursor:default}
   <div class="err" id="err"></div>
   <div class="hint">李=SEO · 陈=SEM · 主管=Manager · 老板=Boss。Boss/主管全权；李/陈除KPI目标外全权。</div>
 </form>
-<script>
-const form = document.getElementById('loginForm');
-const err = document.getElementById('err');
-const btn = document.getElementById('btn');
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  err.textContent = '';
-  btn.disabled = true; btn.textContent = '登录中…';
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: document.getElementById('username').value.trim(),
-        password: document.getElementById('password').value,
-      }),
-    });
-    if (res.ok) { location.href = '/'; return; }
-    err.textContent = res.status === 401 ? '账号或密码错误' : '登录失败，请重试';
-  } catch {
-    err.textContent = '网络错误，无法连接服务器';
-  }
-  btn.disabled = false; btn.textContent = '登录';
-});
-</script>
+<script src="/login.js"></script>
 </body>
 </html>

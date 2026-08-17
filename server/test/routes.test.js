@@ -490,6 +490,18 @@ test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响
   assert.equal(res.json().error, 'not_found');
 });
 
+test('HTML、静态资源和 API 响应都携带严格脚本 CSP', async () => {
+  for (const url of ['/', '/login.html', '/login.js', '/api/health']) {
+    const res = await app.inject({ method: 'GET', url });
+    const policy = res.headers['content-security-policy'];
+    assert.match(policy, /(?:^|; )script-src 'self'(?:;|$)/, `${url} 未限制脚本来源`);
+    assert.match(policy, /(?:^|; )script-src-attr 'none'(?:;|$)/, `${url} 未禁用内联事件脚本`);
+    assert.doesNotMatch(policy, /script-src[^;]*'unsafe-inline'/, `${url} 仍允许内联脚本`);
+    assert.match(policy, /(?:^|; )object-src 'none'(?:;|$)/, `${url} 未禁用 object 插件内容`);
+    assert.match(policy, /(?:^|; )frame-ancestors 'none'(?:;|$)/, `${url} 未阻止页面被嵌入`);
+  }
+});
+
 test('静态文件服务不允许编码路径穿越读取后端文件', async () => {
   for (const url of ['/%2e%2e/server/package.json', '/..%2fserver/package.json', '/%2e%2e%5cserver%5cpackage.json']) {
     const res = await app.inject({ method: 'GET', url });

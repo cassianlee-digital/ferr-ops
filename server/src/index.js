@@ -16,6 +16,20 @@ import { startSyncScheduler } from './sync/scheduler.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = resolve(__dirname, '../../public');
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "script-src 'self'",
+  "script-src-attr 'none'",
+  "style-src 'self'",
+  "style-src-attr 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self'",
+].join('; ');
 
 // 组装完整的 app（建库 + 插件 + 路由 + 静态托管），但不监听、不起调度。
 // 与 main() 分开是为了让 test/routes.test.js 能用 app.inject() 打**真实**的这一份配置——
@@ -31,6 +45,12 @@ export async function buildApp({ onRoute } = {}) {
     // Hermes attachments are capped at 8MB raw per request; allow Base64 and JSON overhead.
     bodyLimit: 16_000_000,
     trustProxy: true, // 位于 Caddy 反代之后
+  });
+
+  // 脚本只允许同源外部文件；style 属性暂时兼容，待全站样式类化后移除 unsafe-inline。
+  app.addHook('onRequest', (_request, reply, done) => {
+    reply.header('Content-Security-Policy', CONTENT_SECURITY_POLICY);
+    done();
   });
 
   // 统一错误处理：校验错误回 400，其余回 500，且不泄漏堆栈

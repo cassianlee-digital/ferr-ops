@@ -9,6 +9,7 @@ const chartsSource = readFileSync(new URL('../../public/charts.js', import.meta.
 const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
+const loginSource = readFileSync(new URL('../../public/login.html', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
 function runtimeJavaScriptSources() {
@@ -94,4 +95,11 @@ test('main page loads app.js after its dependencies and contains no inline scrip
   assert.doesNotMatch(indexSource, /<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i);
   assert.match(indexSource, /<script src="\/app\.js"><\/script>/);
   assert.ok(indexSource.indexOf('<script src="/app.js">') > indexSource.indexOf('<script src="/ai.js">'));
+});
+
+test('login page loads only external CSS and JavaScript', () => {
+  assert.doesNotMatch(loginSource, /<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i);
+  assert.doesNotMatch(loginSource, /<style\b[^>]*>[\s\S]*?<\/style>/i);
+  assert.match(loginSource, /<link rel="stylesheet" href="\/login\.css">/);
+  assert.match(loginSource, /<script src="\/login\.js"><\/script>/);
 });
