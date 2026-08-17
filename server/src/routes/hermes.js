@@ -8,6 +8,7 @@ import * as hermesMemoryRepo from '../db/repositories/hermesMemories.js';
 import * as hermesConversationRepo from '../db/repositories/hermesConversations.js';
 import { buildOpsDiagnosis, buildEnterpriseMemory, buildDailyLearningMemory, requestedRangeFromText } from '../services/hermesBrain.js';
 import { executeTrustedReadAction } from '../services/hermesActions.js';
+import { hermesGatewayStatus, probeHermesConsole } from '../services/hermesStatus.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -999,40 +1000,12 @@ function contextPayload(request, options = {}) {
 
 export async function hermesRoutes(app) {
   app.get('/api/hermes/status', { preHandler: requireAuth }, async () => {
-    if (!config.hermes.url) {
-      return publicStatus({
-        connected: false,
-        error: 'hermes_url_missing',
-        detail: 'HERMES_AGENT_URL is not configured on the server.',
-      });
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
-
-    try {
-      const res = await fetch(config.hermes.url, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: { accept: 'text/html,application/json;q=0.9,*/*;q=0.8' },
-      });
-
-      return publicStatus({
-        connected: res.ok,
-        statusCode: res.status,
-        statusText: res.statusText,
-        contentType: res.headers.get('content-type') || '',
-        error: res.ok ? '' : 'hermes_http_' + res.status,
-      });
-    } catch (e) {
-      return publicStatus({
-        connected: false,
-        error: e?.name === 'AbortError' ? 'hermes_timeout' : 'hermes_connect_failed',
-        detail: e?.message || 'Hermes Agent is unreachable.',
-      });
-    } finally {
-      clearTimeout(timer);
-    }
+    const consoleStatus = await probeHermesConsole(config.hermes.url);
+    return publicStatus({
+      ...consoleStatus,
+      gateway: hermesGatewayStatus(),
+      console: consoleStatus,
+    });
   });
 
   app.get('/api/hermes/capabilities', { preHandler: requireAuth }, async () => ({

@@ -467,9 +467,12 @@
     const statusText = byId('hermesStatusText');
     const detail = byId('hermesDetail');
     const openBtn = byId('hermesOpenBtn');
-    const connected = !!lastHermesState.connected;
-    const configured = !!lastHermesState.configured;
-    const launchUrl = connected && lastHermesState.url ? appendLaunchParams(lastHermesState.url) : '';
+    const gateway = lastHermesState.gateway || lastHermesState;
+    const consoleState = lastHermesState.console || lastHermesState;
+    const connected = !!gateway.connected;
+    const configured = !!gateway.configured;
+    const consoleConnected = !!consoleState.connected;
+    const launchUrl = consoleConnected && consoleState.url ? appendLaunchParams(consoleState.url) : '';
     let statusLabel = '当前状态：尚未检查智能体服务器';
 
     if (statusBox) {
@@ -477,15 +480,20 @@
       statusBox.classList.toggle('bad', !connected);
     }
     if (statusText) {
-      if (connected) statusLabel = '当前状态：Hermes 智能体可用';
-      else if (configured) statusLabel = '当前状态：Hermes 已配置但连接失败；小瑞仍可使用本地记忆与技能';
-      else statusLabel = '当前状态：未配置官方 Hermes；小瑞使用本地记忆与技能';
+      if (connected) statusLabel = '当前状态：小瑞可用';
+      else if (configured) statusLabel = '当前状态：小瑞 AI 服务不可用';
+      else statusLabel = '当前状态：小瑞 AI 服务未配置';
       statusText.textContent = statusLabel;
     }
     if (statusBox) statusBox.title = statusLabel;
     if (detail) {
       const parts = [];
-      if (lastHermesState.error) parts.push('官方 Hermes：' + lastHermesState.error);
+      if (!connected && gateway.error) parts.push('小瑞：' + hermesStatusMessage(gateway.error));
+      if (consoleState.configured && !consoleConnected) {
+        parts.push('高级控制台：' + hermesStatusMessage(consoleState.error) + '（不影响小瑞）');
+      } else if (consoleConnected) {
+        parts.push('高级控制台：已连接');
+      }
       if (lastHermesState.checkedAt) parts.push('检查时间：' + new Date(lastHermesState.checkedAt).toLocaleString());
       detail.textContent = parts.length
         ? parts.join(' · ')
@@ -497,10 +505,26 @@
     }
   }
 
+  function hermesStatusMessage(code) {
+    const messages = {
+      ai_unconfigured: 'AI 服务未配置',
+      hermes_url_missing: '未配置',
+      hermes_url_invalid: '地址格式无效',
+      hermes_timeout: '连接超时',
+      hermes_connection_refused: '服务未启动或端口未监听',
+      hermes_connection_reset: '连接被对端重置',
+      hermes_dns_failed: '域名解析失败',
+      hermes_network_failed: '网络连接失败',
+    };
+    if (messages[code]) return messages[code];
+    if (/^hermes_http_\d+$/.test(String(code || ''))) return '服务返回 HTTP ' + String(code).slice(12);
+    return code || '未知错误';
+  }
+
   async function refreshHermesStatus(manual) {
     const statusBox = byId('hermesStatusBox');
     const statusText = byId('hermesStatusText');
-    const checkingText = '当前状态：正在检查官方 Hermes 连接…';
+    const checkingText = '当前状态：正在检查小瑞服务…';
     if (statusBox) {
       statusBox.classList.remove('ok', 'bad');
       statusBox.title = checkingText;
@@ -510,7 +534,10 @@
       const state = await window.API.get('/api/hermes/status');
       statusChecked = true;
       setHermesView(state);
-      if (manual) toastSafe(state.connected ? '官方 Hermes 已连接' : '官方 Hermes 未连接：' + (state.error || 'unknown'));
+      if (manual) {
+        const gateway = state.gateway || state;
+        toastSafe(gateway.connected ? '小瑞服务可用' : '小瑞服务不可用：' + hermesStatusMessage(gateway.error));
+      }
     } catch (e) {
       statusChecked = true;
       setHermesView({ configured: false, connected: false, error: e.message || 'status_failed' });
