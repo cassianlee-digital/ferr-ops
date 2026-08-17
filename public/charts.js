@@ -188,14 +188,13 @@ function renderSeoBoard(){
     const pages=(data&&data.topPages)||[];
     if(!pages.length){ tb.innerHTML='<tr><td colspan="7" class="dim" style="text-align:center;padding:14px">暂无真实数据 · 请完成 GSC 同步</td></tr>'; }
     else{
-      const clean=s=>String(s).replace(/["'<>]/g,''); // 用于 onclick 单引号参数，去掉会破坏属性的字符
       tb.innerHTML=pages.slice(0,20).map(p=>{
         const path=_seoPath(p.page);
         const ctr=p.ctr!=null?(p.ctr*100).toFixed(1)+'%':'—';
         const pos=p.position!=null?Number(p.position).toFixed(1):'—';
-        const q=clean('分析页面 '+path+' 的SEO表现：点击'+(p.clicks||0)+'、展现'+(p.impressions||0)+'、CTR'+ctr+'、均排名'+pos+'。给出最该先改的3个动作。');
-        const title=clean(path+' 诊断');
-        return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+pos+'</td><td class="num dim">—</td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\''+title+'\')"><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
+        const q='分析页面 '+path+' 的SEO表现：点击'+(p.clicks||0)+'、展现'+(p.impressions||0)+'、CTR'+ctr+'、均排名'+pos+'。给出最该先改的3个动作。';
+        const title=path+' 诊断';
+        return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+pos+'</td><td class="num dim">—</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,title)+'><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
       }).join('');
     }
   }
@@ -236,8 +235,8 @@ function renderSeoDeltaTables(d){
     const pages=(d&&d.pages)||[];
     pt.innerHTML=pages.length?pages.map(p=>{
       const path=_seoPath(p.page);
-      const q=_attr('分析落地页 '+path+' 的SEO表现：本期点击'+(p.clicks||0)+'(上期'+(p.clicksPrev||0)+')、展现'+(p.impressions||0)+'。给出最该先改的3个动作。');
-      return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(p.clicks,p.clicksPrev,false,'pct')+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'落地页诊断\')"><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
+      const q='分析落地页 '+path+' 的SEO表现：本期点击'+(p.clicks||0)+'(上期'+(p.clicksPrev||0)+')、展现'+(p.impressions||0)+'。给出最该先改的3个动作。';
+      return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(p.clicks,p.clicksPrev,false,'pct')+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'落地页诊断')+'><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
     }).join(''):'<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无数据 · 完成 GSC 同步</td></tr>';
   }
   const qt=document.getElementById('seoQueriesDelta');
@@ -255,9 +254,9 @@ function renderSeoScatterTargets(list){
   if(!list||!list.length){ box.innerHTML=''; return; }
   box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-target-arrow"></i> 重点优化对象 · 高流量高跳出（'+list.length+'）</div>'+list.slice(0,8).map(p=>{
     const path=_seoPath(p.page), b=Math.round((p.bounceRate||0)*100), dur=Math.round(p.avgDuration||0);
-    const q=_attr('落地页 '+path+' 会话'+p.sessions+'、跳出率'+b+'%、均时长'+dur+'s，流量不小但跳出偏高。给出降低跳出、提升留存与转化的具体优化动作（首屏/内容匹配/CTA/加载速度）。');
-    const ti=_attr('降跳出：'+path), de=_attr('落地页 '+path+' 高流量('+p.sessions+'会话)高跳出('+b+'%)，优化首屏/内容匹配/CTA 降低跳出、提升转化。'), ev=_attr('GA4 会话'+p.sessions+' 跳出'+b+'% 时长'+dur+'s');
-    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(path)+'</span><span class="st-meta dim">'+p.sessions.toLocaleString()+' 会话 · 跳出 <b style="color:#c93338">'+b+'%</b> · '+dur+'s</span></div><div class="st-acts"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'降跳出诊断\')"><i class="ti ti-bulb"></i> 诊断</button><button class="btn-mini" onclick="adoptFinding(this,\'SEO\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
+    const q='落地页 '+path+' 会话'+p.sessions+'、跳出率'+b+'%、均时长'+dur+'s，流量不小但跳出偏高。给出降低跳出、提升留存与转化的具体优化动作（首屏/内容匹配/CTA/加载速度）。';
+    const ti='降跳出：'+path, de='落地页 '+path+' 高流量('+p.sessions+'会话)高跳出('+b+'%)，优化首屏/内容匹配/CTA 降低跳出、提升转化。', ev='GA4 会话'+p.sessions+' 跳出'+b+'% 时长'+dur+'s';
+    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(path)+'</span><span class="st-meta dim">'+p.sessions.toLocaleString()+' 会话 · 跳出 <b style="color:#c93338">'+b+'%</b> · '+dur+'s</span></div><div class="st-acts"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'降跳出诊断')+'><i class="ti ti-bulb"></i> 诊断</button><button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
   }).join('')+'</div>';
 }
 function renderSeoScatter(d){
@@ -476,9 +475,9 @@ function renderSemScatterTargets(list){
   if(!list||!list.length){ box.innerHTML=''; return; }
   box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-scissors"></i> 零转化烧钱词 · 该砍/暂停（'+list.length+'）</div>'+list.slice(0,10).map(p=>{
     const cost=(p.costMicros/1e6), c=Number(p.conversions||0);
-    const q=_attr('关键词「'+p.keyword+'」花费'+cost.toFixed(0)+'、转化'+c+'、点击'+(p.clicks||0)+'，花钱多但转化低。判断该暂停/降价/改精准匹配/换落地页，给出具体动作与验证指标。');
-    const ti=_attr('该砍词：'+p.keyword), de=_attr('关键词「'+p.keyword+'」('+(p.campaignName||'')+') 花'+cost.toFixed(0)+' 仅转化'+c+'，暂停或降价/改精准匹配止损。'), ev=_attr('Ads 花费'+cost.toFixed(0)+' 转化'+c+' 点击'+(p.clicks||0));
-    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(p.keyword)+'</span><span class="st-meta dim">'+esc(p.campaignName||'')+' · 花 <b style="color:#c93338">'+cost.toFixed(0)+'</b> · 转化 '+c+'</span></div><div class="st-acts"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'该砍诊断\')"><i class="ti ti-bulb"></i> 诊断</button><button class="btn-mini" onclick="adoptFinding(this,\'SEM\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
+    const q='关键词「'+p.keyword+'」花费'+cost.toFixed(0)+'、转化'+c+'、点击'+(p.clicks||0)+'，花钱多但转化低。判断该暂停/降价/改精准匹配/换落地页，给出具体动作与验证指标。';
+    const ti='该砍词：'+p.keyword, de='关键词「'+p.keyword+'」('+(p.campaignName||'')+') 花'+cost.toFixed(0)+' 仅转化'+c+'，暂停或降价/改精准匹配止损。', ev='Ads 花费'+cost.toFixed(0)+' 转化'+c+' 点击'+(p.clicks||0);
+    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(p.keyword)+'</span><span class="st-meta dim">'+esc(p.campaignName||'')+' · 花 <b style="color:#c93338">'+cost.toFixed(0)+'</b> · 转化 '+c+'</span></div><div class="st-acts"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'该砍诊断')+'><i class="ti ti-bulb"></i> 诊断</button><button type="button" class="btn-mini"'+_adoptActionAttrs('SEM',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
   }).join('')+'</div>';
 }
 function renderSemScatter(d){
@@ -577,7 +576,14 @@ function renderSemCostCharts(d){
 }
 
 /* ===== 诊断引擎：基于真实同步数据填充 SEO 三子面板 + 角标计数 ===== */
-function _attr(s){ return String(s==null?'':s).replace(/["'<>]/g,''); }
+function _dataActionAttr(name,value){ return ' data-'+name+'="'+esc(String(value==null?'':value))+'"'; }
+function _aiActionAttrs(prompt,title){ return _dataActionAttr('ferr-action','ai')+_dataActionAttr('ai-prompt',prompt)+_dataActionAttr('ai-title',title); }
+function _adoptActionAttrs(dept,title,detail,evidence){ return _dataActionAttr('ferr-action','adopt')+_dataActionAttr('dept',dept)+_dataActionAttr('title',title)+_dataActionAttr('detail',detail)+_dataActionAttr('evidence',evidence); }
+document.addEventListener('click',e=>{
+  const btn=e.target&&e.target.closest?e.target.closest('[data-ferr-action]'):null; if(!btn)return;
+  if(btn.dataset.ferrAction==='ai'){ runAiAnalysis(btn,btn.dataset.aiPrompt||'',btn.dataset.aiTitle||'AI 分析',false); return; }
+  if(btn.dataset.ferrAction==='adopt') adoptFinding(btn,btn.dataset.dept||'SEO',btn.dataset.title||'',btn.dataset.detail||'',btn.dataset.evidence||'');
+});
 function _badgeCount(id,n){ const e=document.getElementById(id); if(!e)return; if(n>0){ e.textContent=n; e.style.display=''; } else { e.textContent=''; e.style.display='none'; } }
 // 诊断 finding 一键采纳进整改清单（依据数据证据,source=诊断引擎）。复用 closed-loop 的全局
 async function adoptFinding(btn,dept,title,detail,evidence){
@@ -649,9 +655,9 @@ function renderDiagnostics(d){
   if(t1){
     t1.innerHTML = opp.length ? opp.map(o=>{
       const path=_seoPath(o.page), pos=o.position!=null?Number(o.position).toFixed(1):'—';
-      const q=_attr('关键词「'+o.query+'」当前排名'+pos+'、页面'+path+'、区间曝光'+(o.impressions||0)+'，给出冲进Top10的具体优化清单（标题/内容/内链/外链）。');
-      const ti=_attr('机会词冲首页：'+o.query), de=_attr('关键词「'+o.query+'」当前排名'+pos+'（页面'+path+'），区间曝光'+(o.impressions||0)+'。优化标题/内容/内链冲进 Top10。'), ev=_attr('GSC机会词 排名'+pos+' 展现'+(o.impressions||0)+' 点击'+(o.clicks||0));
-      return '<tr><td>'+esc(o.query)+'</td><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num"><span class="badge b-amber">'+pos+'</span></td><td class="num">'+(o.impressions||0).toLocaleString()+'</td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'机会词诊断\')"><i class="ti ti-bulb"></i> 怎么冲首页</button> <button class="btn-mini" onclick="adoptFinding(this,\'SEO\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
+      const q='关键词「'+o.query+'」当前排名'+pos+'、页面'+path+'、区间曝光'+(o.impressions||0)+'，给出冲进Top10的具体优化清单（标题/内容/内链/外链）。';
+      const ti='机会词冲首页：'+o.query, de='关键词「'+o.query+'」当前排名'+pos+'（页面'+path+'），区间曝光'+(o.impressions||0)+'。优化标题/内容/内链冲进 Top10。', ev='GSC机会词 排名'+pos+' 展现'+(o.impressions||0)+' 点击'+(o.clicks||0);
+      return '<tr><td>'+esc(o.query)+'</td><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num"><span class="badge b-amber">'+pos+'</span></td><td class="num">'+(o.impressions||0).toLocaleString()+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'机会词诊断')+'><i class="ti ti-bulb"></i> 怎么冲首页</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无机会词 · 完成 GSC 同步后按规则自动识别</td></tr>';
   }
   // 流量衰退
@@ -660,9 +666,9 @@ function renderDiagnostics(d){
     t2.innerHTML = dec.length ? dec.map(p=>{
       const path=_seoPath(p.page);
       const posChg=(p.positionPrev!=null&&p.positionCur!=null)?(Number(p.positionPrev).toFixed(1)+'→'+Number(p.positionCur).toFixed(1)):'—';
-      const q=_attr(path+' 点击近一窗跌'+p.dropPct+'%（'+p.clicksPrev+'→'+p.clicksCur+'），排名'+posChg+'。给出排查与止损步骤。');
-      const ti=_attr('衰退止损：'+path), de=_attr('页面'+path+' 点击环比跌'+p.dropPct+'%（'+p.clicksPrev+'→'+p.clicksCur+'），排名'+posChg+'。排查原因并止损。'), ev=_attr('GSC环比 点击↓'+p.dropPct+'% 排名'+posChg);
-      return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num" style="color:var(--primary)">▼'+p.dropPct+'%</td><td class="num">'+esc(posChg)+'</td><td class="ctr"><span class="badge b-gray">需排查</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'衰退止损\')"><i class="ti ti-bulb"></i> 止损方案</button> <button class="btn-mini" onclick="adoptFinding(this,\'SEO\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
+      const q=path+' 点击近一窗跌'+p.dropPct+'%（'+p.clicksPrev+'→'+p.clicksCur+'），排名'+posChg+'。给出排查与止损步骤。';
+      const ti='衰退止损：'+path, de='页面'+path+' 点击环比跌'+p.dropPct+'%（'+p.clicksPrev+'→'+p.clicksCur+'），排名'+posChg+'。排查原因并止损。', ev='GSC环比 点击↓'+p.dropPct+'% 排名'+posChg;
+      return '<tr><td class="dim" style="font-size:11px">'+esc(path)+'</td><td class="num" style="color:var(--primary)">▼'+p.dropPct+'%</td><td class="num">'+esc(posChg)+'</td><td class="ctr"><span class="badge b-gray">需排查</span></td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'衰退止损')+'><i class="ti ti-bulb"></i> 止损方案</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无明显衰退页 · 需≥2 个等长窗口数据才能比较</td></tr>';
   }
   // 关键词蚕食
@@ -672,9 +678,9 @@ function renderDiagnostics(d){
       const urls=g.pages.map(p=>esc(_seoPath(p.page))).join('<br>');
       const ranks=g.pages.map(p=>p.position!=null?Number(p.position).toFixed(0):'—').join(' / ');
       const detail=g.pages.map(p=>_seoPath(p.page)+'(排名'+(p.position!=null?Number(p.position).toFixed(1):'—')+')').join('、');
-      const q=_attr('关键词「'+g.query+'」被'+g.pages.length+'个URL同时竞争：'+detail+'。给出合并方案：保留哪个为主页、其余如何301或改写差异化意图、内链怎么调。');
-      const ti=_attr('蚕食合并：'+g.query), de=_attr('关键词「'+g.query+'」被'+g.pages.length+'个URL竞争：'+detail+'。合并/差异化意图、调整内链。'), ev=_attr('GSC '+g.pages.length+'页分散排名 '+ranks);
-      return '<tr><td>'+esc(g.query)+'</td><td class="dim" style="font-size:11px">'+urls+'</td><td class="num"><span class="badge b-red">'+esc(ranks)+'</span></td><td class="ctr"><span class="badge b-amber">'+g.pages.length+'页抢1意图</span></td><td class="ctr"><button class="btn-mini" onclick="aiAsk(\''+q+'\',\'蚕食合并建议\')"><i class="ti ti-git-merge"></i> AI 合并建议</button> <button class="btn-mini" onclick="adoptFinding(this,\'SEO\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
+      const q='关键词「'+g.query+'」被'+g.pages.length+'个URL同时竞争：'+detail+'。给出合并方案：保留哪个为主页、其余如何301或改写差异化意图、内链怎么调。';
+      const ti='蚕食合并：'+g.query, de='关键词「'+g.query+'」被'+g.pages.length+'个URL竞争：'+detail+'。合并/差异化意图、调整内链。', ev='GSC '+g.pages.length+'页分散排名 '+ranks;
+      return '<tr><td>'+esc(g.query)+'</td><td class="dim" style="font-size:11px">'+urls+'</td><td class="num"><span class="badge b-red">'+esc(ranks)+'</span></td><td class="ctr"><span class="badge b-amber">'+g.pages.length+'页抢1意图</span></td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'蚕食合并建议')+'><i class="ti ti-git-merge"></i> AI 合并建议</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="dim" style="text-align:center;padding:14px">暂无蚕食组 · 完成 GSC 同步后按规则自动识别</td></tr>';
   }
 }

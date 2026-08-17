@@ -21,7 +21,8 @@ function aiAsk(prompt,title){
     body.innerHTML='<div class="ai-render">'+mdToHtml(txt)+'</div>';
     document.getElementById('aiModalFoot').style.display='flex'; if(adoptBtn)adoptBtn.style.display='inline-flex';
   }).catch(e=>{
-    body.innerHTML=apiUnavailableMsg+'<div style="margin-top:10px"><button class="btn-primary" onclick="sendOrToast('+JSON.stringify(prompt).replace(/"/g,'&quot;')+')">发送提示词到对话</button></div>';
+    body.innerHTML=apiUnavailableMsg+'<div style="margin-top:10px"><button type="button" class="btn-primary ai-fallback-send">发送提示词到对话</button></div>';
+    const fallback=body.querySelector('.ai-fallback-send'); if(fallback)fallback.addEventListener('click',()=>sendOrToast(prompt));
     document.getElementById('aiModalFoot').style.display='flex';
   });
 }
@@ -38,7 +39,8 @@ function aiBox(btn,prompt){
     box.querySelectorAll('.ai-render .ai-item').forEach(()=>{});
     injectAiActions(); btn.disabled=false;
   }).catch(e=>{
-    render.innerHTML=old+apiUnavailableMsg+'<div style="margin-top:8px"><button class="btn-ghost" onclick="sendOrToast('+JSON.stringify(prompt).replace(/"/g,'&quot;')+')">发送提示词到对话</button></div>';
+    render.innerHTML=old+apiUnavailableMsg+'<div style="margin-top:8px"><button type="button" class="btn-ghost ai-fallback-send">发送提示词到对话</button></div>';
+    const fallback=render.querySelector('.ai-fallback-send'); if(fallback)fallback.addEventListener('click',()=>sendOrToast(prompt));
     btn.disabled=false;
   });
 }
@@ -101,8 +103,8 @@ async function splitActions(){
     if(!box)return;
     if(!actions||!actions.length){ box.innerHTML='<div class="dim" style="padding:8px 2px">未能从结论中提取到明确可执行的动作。</div>'; return; }
     box.innerHTML='<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> 可采纳的整改动作（逐条）</div>'+actions.map(a=>{
-      const dp=a.dept==='SEM'?'SEM':'SEO', ti=_attr(a.title), de=_attr(a.detail), ev=_attr(a.evidence);
-      return '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge '+(dp==='SEM'?'b-purple':'b-blue')+'">'+dp+'</span> '+esc(a.title)+'</div><div class="ai-action-d">'+esc(a.detail||'')+'</div>'+(a.evidence?'<div class="ai-action-e dim">依据：'+esc(a.evidence)+'</div>':'')+'</div><button class="btn-mini" onclick="adoptFinding(this,\''+dp+'\',\''+ti+'\',\''+de+'\',\''+ev+'\')"><i class="ti ti-clipboard-check"></i> 采纳</button></div>';
+      const dp=a.dept==='SEM'?'SEM':'SEO';
+      return '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge '+(dp==='SEM'?'b-purple':'b-blue')+'">'+dp+'</span> '+esc(a.title)+'</div><div class="ai-action-d">'+esc(a.detail||'')+'</div>'+(a.evidence?'<div class="ai-action-e dim">依据：'+esc(a.evidence)+'</div>':'')+'</div><button type="button" class="btn-mini"'+_adoptActionAttrs(dp,a.title,a.detail,a.evidence)+'><i class="ti ti-clipboard-check"></i> 采纳</button></div>';
     }).join('')+'</div>';
   }catch(e){ if(box)box.innerHTML='<div class="dim" style="padding:8px 2px">拆解失败：'+esc(e.message||'ai_failed')+'</div>'; }
 }
