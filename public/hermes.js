@@ -460,19 +460,25 @@
     const statusBox = byId('hermesStatusBox');
     const statusText = byId('hermesStatusText');
     const detail = byId('hermesDetail');
-    const connected = !!lastHermesState.connected;
     const configured = !!lastHermesState.configured;
     const hasCheck = Boolean(lastHermesState.checkedAt);
     const checkFailed = Boolean(lastHermesState.checkFailed);
+    const status = lastHermesState.status || '';
+    const ready = status === 'available';
+    const warning = status === 'connected_unverified' || status === 'recovered';
     let statusLabel = '当前状态：尚未检查小瑞服务';
 
     if (statusBox) {
-      statusBox.classList.toggle('ok', connected);
-      statusBox.classList.toggle('bad', hasCheck && !connected);
+      statusBox.classList.toggle('ok', ready);
+      statusBox.classList.toggle('warn', warning);
+      statusBox.classList.toggle('bad', hasCheck && !ready && !warning);
     }
     if (statusText) {
       if (checkFailed) statusLabel = '当前状态：小瑞状态检查失败';
-      else if (connected) statusLabel = '当前状态：小瑞可用';
+      else if (status === 'available') statusLabel = '当前状态：小瑞可用';
+      else if (status === 'recovered') statusLabel = '当前状态：小瑞已自动恢复，建议观察';
+      else if (status === 'connected_unverified') statusLabel = '当前状态：Provider 已连接，回答能力待验证';
+      else if (status === 'degraded') statusLabel = '当前状态：Provider 已连接，但最近回答失败';
       else if (configured) statusLabel = '当前状态：小瑞 AI 服务不可用';
       else if (hasCheck) statusLabel = '当前状态：小瑞 AI 服务未配置';
       statusText.textContent = statusLabel;
@@ -482,12 +488,14 @@
       const parts = [];
       if (lastHermesState.provider) parts.push('Provider：' + lastHermesState.provider);
       if (lastHermesState.model) parts.push('模型：' + lastHermesState.model);
-      if (!connected && lastHermesState.error) parts.push('原因：' + hermesStatusMessage(lastHermesState.error));
+      if (lastHermesState.error) parts.push('原因：' + hermesStatusMessage(lastHermesState.error));
       if (lastHermesState.lastSuccessfulAt) parts.push('最近成功：' + new Date(lastHermesState.lastSuccessfulAt).toLocaleString());
       if (lastHermesState.lastFailureAt) parts.push('最近失败：' + new Date(lastHermesState.lastFailureAt).toLocaleString());
+      if (lastHermesState.lastRecoveryAt) parts.push('最近自动恢复：' + new Date(lastHermesState.lastRecoveryAt).toLocaleString());
+      if (lastHermesState.totalRecoveries) parts.push('累计自动恢复：' + lastHermesState.totalRecoveries + ' 次');
       if (lastHermesState.consecutiveFailures) parts.push('连续失败：' + lastHermesState.consecutiveFailures + ' 次');
       if (lastHermesState.checkedAt) parts.push('检查时间：' + new Date(lastHermesState.checkedAt).toLocaleString());
-      if (!connected && configured) parts.push('可点击“检查接入”重试；持续失败时检查 Provider key、模型、额度和服务器出网');
+      if (!ready && configured) parts.push('可点击“检查接入”重试；持续失败时检查 Provider key、模型、额度和服务器出网');
       detail.textContent = parts.length
         ? parts.join(' · ')
         : '小瑞会结合长期记忆、技能规则、工作流、当前页上下文和附件一起判断。';
@@ -504,6 +512,7 @@
       ai_rate_limited: 'Provider 限流或额度不足',
       ai_empty_response: 'Provider 返回空内容',
       ai_invalid_response: 'Provider 返回格式异常',
+      ai_truncated_response: 'Provider 返回内容被截断',
       ai_dns_failed: 'Provider 域名解析失败',
       ai_connection_refused: 'Provider 拒绝连接',
       ai_connection_reset: 'Provider 重置连接',
@@ -521,7 +530,7 @@
     const statusText = byId('hermesStatusText');
     const checkingText = '当前状态：正在检查小瑞服务…';
     if (statusBox) {
-      statusBox.classList.remove('ok', 'bad');
+      statusBox.classList.remove('ok', 'warn', 'bad');
       statusBox.title = checkingText;
     }
     if (statusText) statusText.textContent = checkingText;
@@ -532,14 +541,19 @@
         lastStatusCheckedAt = Date.now();
         setHermesView(state);
         if (manual) {
-          toastSafe(state.connected ? '小瑞服务可用' : '小瑞服务不可用：' + hermesStatusMessage(state.error));
+          if (state.status === 'available') toastSafe('小瑞服务可用');
+          else if (state.status === 'recovered') toastSafe('小瑞已自动恢复，但 Provider 最近出现过异常');
+          else if (state.status === 'connected_unverified') toastSafe('Provider 已连接，回答能力需要一次真实问答验证');
+          else toastSafe('小瑞服务不可用：' + hermesStatusMessage(state.error));
         }
         return state;
       } catch (e) {
         lastStatusCheckedAt = Date.now();
         setHermesView({
           ...lastHermesState,
+          status: 'unavailable',
           connected: false,
+          generationReady: false,
           checkFailed: true,
           checkedAt: new Date().toISOString(),
           error: e.code === 'REQUEST_TIMEOUT' ? 'ai_timeout' : (e.body?.error || 'status_failed'),
@@ -738,6 +752,7 @@
         basis: parsed.basis,
         hermes: res.hermes,
       };
+      refreshHermesStatus(false);
       if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
     } catch (e) {
       refreshHermesStatus(false);
@@ -1631,6 +1646,7 @@
       meta.className = 'hermes-msg-meta';
       const missing = (message.hermes.missingData || []).filter(Boolean);
       const refresh = message.hermes.dataRefresh;
+      const answerQualityRepair = message.hermes.answerQualityRepair;
       const refreshText = refresh && Array.isArray(refresh.providers)
         ? refresh.providers.map((item) => {
           const label = item.provider === 'ads' ? 'Ads' : 'GSC';
@@ -1649,6 +1665,8 @@
         message.hermes.usedPageContext ? '已使用当前页' : '',
         refreshText ? '数据抓取：' + refreshText : '',
         refreshActionText ? '动作记录：' + refreshActionText : '',
+        answerQualityRepair && answerQualityRepair.used ? '证据校验：已自动重写并通过' : '',
+        answerQualityRepair && answerQualityRepair.attempted && !answerQualityRepair.used ? '证据校验：自动重写未提升，已按低置信处理' : '',
         missing.length ? '缺失：' + missing.slice(0, 3).join('、') : '',
       ].filter(Boolean).join(' · ');
       bubble.appendChild(meta);
@@ -1744,6 +1762,7 @@
       if (res.conversation && res.conversation.id) activeConversationId = res.conversation.id;
       const parsed = splitHermesResponse(res.text || '');
       messages[messages.length - 1] = { role: 'assistant', content: parsed.answer || '没有返回内容。', basis: parsed.basis, hermes: res.hermes };
+      refreshHermesStatus(false);
       if (res.memory) {
         if (typeof window.loadHermesMemories === 'function') await window.loadHermesMemories(false);
         toastSafe('已记住：' + (res.memory.title || '长期偏好'));

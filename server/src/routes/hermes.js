@@ -11,9 +11,17 @@ import { buildOpsDiagnosis, buildEnterpriseMemory, buildDailyLearningMemory, req
 import { executeTrustedReadAction } from '../services/hermesActions.js';
 import { getHermesStatus } from '../services/hermesStatus.js';
 import {
+  buildHermesEvidenceCitationIndex,
+  compactHermesEvidence,
+  compactHermesMemories,
+  compactHermesPageContext,
+  serializeHermesPayload,
+} from '../services/hermesPrompt.js';
+import {
   auditHermesAnswer as auditHermesAnswerStrict,
   buildConfidenceAssessment,
   guardHermesAnswer as guardHermesAnswerStrict,
+  needsEvidenceGuard as needsEvidenceGuardStrict,
   stripEvidenceRefs,
 } from '../services/hermesEvidence.js';
 
@@ -52,6 +60,8 @@ const RESPONSE_CONTRACT = [
 
 const hermesRefreshCache = new Map();
 const HERMES_REFRESH_TTL_MS = 60 * 1000;
+const HERMES_QUALITY_REPAIR_ELIGIBLE_MS = 60_000;
+const HERMES_QUALITY_REPAIR_TIMEOUT_MS = 45_000;
 
 const OPERATING_PRINCIPLES = {
   source: '审查原理.docx',
@@ -301,6 +311,72 @@ function composeHermesText(parsed) {
   ].join('\n');
 }
 
+function finalizeHermesAnswer(text, context, options = {}) {
+  let parsed = splitHermesText(text);
+  const requiresEvidence = needsEvidenceGuardStrict(parsed, options.forceEvidence);
+  const audit = auditHermesAnswerStrict(parsed, context);
+  parsed = guardHermesAnswerStrict(parsed, audit, { forceEvidence: options.forceEvidence });
+  const confidenceAssessment = buildConfidenceAssessment(audit, parsed, { forceEvidence: options.forceEvidence });
+  return { parsed, audit, confidenceAssessment, requiresEvidence };
+}
+
+function repairedAnswerIsBetter(current, candidate) {
+  if (!candidate?.audit?.evidence?.length) return false;
+  if (candidate.audit.evidence.length <= (current?.audit?.evidence?.length || 0)) return false;
+  return Number(candidate.confidenceAssessment?.score || 0) > Number(current?.confidenceAssessment?.score || 0);
+}
+
+async function generateVerifiedHermesAnswer({ system, prompt, context, attachments, forceEvidence = false }) {
+  const startedAt = Date.now();
+  const firstText = await callAnthropic(system, prompt, { attachments });
+  let result = finalizeHermesAnswer(firstText, context, { forceEvidence });
+  const answerQualityRepair = { attempted: false, used: false, error: '' };
+  const shouldRepair = result.requiresEvidence
+    && result.audit.evidencePoolSize > 0
+    && result.audit.evidence.length === 0
+    && Date.now() - startedAt < HERMES_QUALITY_REPAIR_ELIGIBLE_MS;
+
+  if (shouldRepair) {
+    answerQualityRepair.attempted = true;
+    try {
+      const repairPrompt = [
+        prompt,
+        '',
+        '[必须纠正]',
+        '上一次草稿没有绑定任何有效证据，不能交付。请重新生成，并严格遵守：',
+        '1. 每条数据事实、判断和动作都在同一句引用“本轮可引用证据”中的匹配 [EV-...]。',
+        '2. 只保留证据在主题、指标和粒度上能直接支持的内容；其余放入“待验证”。',
+        '3. 少而准确，不要为了完整而扩写更多判断。',
+      ].join('\n');
+      const repairText = await callAnthropic(system, repairPrompt, {
+        attachments,
+        timeoutMs: HERMES_QUALITY_REPAIR_TIMEOUT_MS,
+        maxAttempts: 1,
+      });
+      const candidate = finalizeHermesAnswer(repairText, context, { forceEvidence });
+      if (repairedAnswerIsBetter(result, candidate)) {
+        result = candidate;
+        answerQualityRepair.used = true;
+      }
+    } catch (error) {
+      answerQualityRepair.error = publicAiError(error).error;
+    }
+  }
+
+  delete result.audit._evidenceById;
+  result.parsed = {
+    basis: stripEvidenceRefs(result.parsed.basis),
+    answer: stripEvidenceRefs(result.parsed.answer),
+  };
+  return {
+    parsed: result.parsed,
+    responseText: composeHermesText(result.parsed),
+    audit: result.audit,
+    confidenceAssessment: result.confidenceAssessment,
+    answerQualityRepair,
+  };
+}
+
 function dataGapTaskFor(name) {
   const key = String(name || '').trim();
   if (!key) return null;
@@ -540,27 +616,25 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
   const workflow = HERMES_WORKFLOWS[workflowKey] || HERMES_WORKFLOWS.answer;
   const memory = context.enterpriseMemory || {};
   const diagnosis = context.opsDiagnosis || {};
+  const evidencePack = compactHermesEvidence(context.evidencePack || diagnosis.evidencePack || []);
   const payload = {
     operator: context.operator,
     session: context.session,
-    pageContext: context.pageContext,
+    pageContext: compactHermesPageContext(context.pageContext),
     opsDiagnosis: {
       generatedAt: diagnosis.generatedAt,
-      priorityCards: diagnosis.priorityCards,
+      priorityCards: (diagnosis.priorityCards || []).slice(0, 4),
       missingData: diagnosis.missingData,
       usage: diagnosis.usage,
     },
-    evidencePack: context.evidencePack || diagnosis.evidencePack || [],
-    operatingPrinciples: OPERATING_PRINCIPLES,
-    responseStyle: RESPONSE_STYLE,
+    evidencePack,
     enterpriseMemory: {
       marketBrain: memory.marketBrain,
-      marketResearch: memory.marketResearch,
-      longTermMemories: memory.trustedLongTermMemories || memory.longTermMemories,
+      longTermMemories: compactHermesMemories(memory.trustedLongTermMemories || memory.longTermMemories),
       missingData: memory.missingData,
     },
     assistantPlaybook: context.assistantPlaybook,
-    backendContext: trimText(context.context, 12000),
+    backendContext: trimText(context.context, 2500),
   };
 
   return [
@@ -572,11 +646,14 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     '',
     history ? '[最近对话]\n' + history : '',
     '[Hermes 上下文]',
-    JSON.stringify(payload, null, 2).slice(0, 26000),
+    serializeHermesPayload(payload),
     attachmentPromptBlock(attachments),
     '',
     '[用户问题]',
     trimText(message, 5000),
+    '',
+    '[本轮可引用证据]',
+    buildHermesEvidenceCitationIndex(evidencePack) || '无可用证据编号；数据型结论只能写成待验证。',
     '',
     '输出要求：',
     '1. 严格按下面两个 XML 风格标签输出，标签外不要写任何内容：',
@@ -591,6 +668,7 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     '8. 一条只写一个可核验判断。严格分开“数据事实”“原因假设”“建议动作”；不要用“说明、证明、必然、根因”把相关性写成因果。',
     '9. 汇总数据只能支持汇总结论；要评价或操作具体关键词、查询词、页面、系列、广告组，必须引用相同层级的明细证据。',
     '10. KPI target_only 只代表目标值，不能把 actual=0 或缺失值当实际表现；公司特色、客户偏好和认证判断必须引用 market_research 或可信长期记忆。',
+    '11. 优先少而准确；证据只能支持一个判断时就只回答一个，不要为了凑结构扩写。',
   ].filter(Boolean).join('\n');
 }
 
@@ -601,18 +679,19 @@ function morningBriefPrompt(context) {
     ...(diagnosis.missingData || []),
     ...(memory.missingData || []),
   ];
+  const evidencePack = compactHermesEvidence(context.evidencePack || diagnosis.evidencePack || [], 20);
   const payload = {
     date: beijingDayKey(),
     operator: context.operator,
     session: context.session,
     priorityCards: (diagnosis.priorityCards || []).slice(0, 8),
-    evidencePack: (context.evidencePack || diagnosis.evidencePack || []).slice(0, 30),
+    evidencePack,
     missingData: [...new Set(missing)],
     enterpriseMemory: {
       marketBrain: memory.marketBrain,
-      longTermMemories: memory.trustedLongTermMemories || memory.longTermMemories,
+      longTermMemories: compactHermesMemories(memory.trustedLongTermMemories || memory.longTermMemories),
     },
-    backendContext: trimText(context.context, 12000),
+    backendContext: trimText(context.context, 2500),
   };
 
   return [
@@ -630,7 +709,10 @@ function morningBriefPrompt(context) {
     '7. 每条今日动作必须能追溯到同一句/同一条里的有效 [EV-...]；无法追溯的动作只能放入“待验证”。',
     '',
     '[Hermes 上下文]',
-    JSON.stringify(payload, null, 2).slice(0, 26000),
+    serializeHermesPayload(payload),
+    '',
+    '[本轮可引用证据]',
+    buildHermesEvidenceCitationIndex(evidencePack, 20) || '无可用证据编号；所有运营结论只能写成待验证。',
     '',
     '输出要求：',
     '严格按下面两个 XML 风格标签输出，标签外不要写任何内容：',
@@ -892,17 +974,13 @@ export async function hermesRoutes(app) {
     const activeConversation = existingConversation?.state === 'active' ? existingConversation : null;
 
     try {
-      const text = await callAnthropic(
-        hermesSystem(context),
-        morningBriefPrompt(context),
-      );
-      let parsed = splitHermesText(text);
-      const audit = auditHermesAnswerStrict(parsed, context);
-      parsed = guardHermesAnswerStrict(parsed, audit, { forceEvidence: true });
-      const confidenceAssessment = buildConfidenceAssessment(audit, parsed, { forceEvidence: true });
-      delete audit._evidenceById;
-      parsed = { basis: stripEvidenceRefs(parsed.basis), answer: stripEvidenceRefs(parsed.answer) };
-      const responseText = composeHermesText(parsed);
+      const generated = await generateVerifiedHermesAnswer({
+        system: hermesSystem(context),
+        prompt: morningBriefPrompt(context),
+        context,
+        forceEvidence: true,
+      });
+      const { parsed, responseText, audit, confidenceAssessment, answerQualityRepair } = generated;
       const missing = [
         ...(context.opsDiagnosis?.missingData || []),
         ...(context.enterpriseMemory?.missingData || []),
@@ -918,12 +996,13 @@ export async function hermesRoutes(app) {
         dataGapTasks: buildDataGapTasks(missingData),
         evidenceAudit: audit,
         confidenceAssessment,
+        answerQualityRepair,
         closureAudit: context.closureAudit || context.enterpriseMemory?.closureAudit || null,
       };
       const memory = hermesMemoryRepo.upsertBySourceTitle({
         kind: 'learning',
         title: `今日早报 ${day} ${role}`,
-        content: parsed.answer || text,
+        content: parsed.answer || responseText,
         evidence: parsed.basis,
         source: `hermes_morning_brief:${role}`,
         importance: 5,
@@ -931,7 +1010,7 @@ export async function hermesRoutes(app) {
       const now = new Date().toISOString();
       const additions = [
         { role: 'user', content: '生成今日早报', at: now },
-        { role: 'assistant', content: parsed.answer || text, basis: parsed.basis, hermes, at: now },
+        { role: 'assistant', content: parsed.answer || responseText, basis: parsed.basis, hermes, at: now },
       ];
       const conversation = activeConversation
         ? hermesConversationRepo.appendForUser(activeConversation.id, userId, additions, { skill: 'auto', workflow: 'diagnose_to_action' })
@@ -1043,18 +1122,13 @@ export async function hermesRoutes(app) {
     if (!context.ok) return reply.code(500).send({ error: context.error || 'hermes_context_failed', detail: context.detail || '' });
 
     try {
-      const text = await callAnthropic(
-        hermesSystem(context),
-        hermesChatPrompt({ context, message, history, attachments, skillKey, workflowKey }),
-        { attachments },
-      );
-      let parsed = splitHermesText(text);
-      const audit = auditHermesAnswerStrict(parsed, context);
-      parsed = guardHermesAnswerStrict(parsed, audit);
-      const confidenceAssessment = buildConfidenceAssessment(audit, parsed);
-      delete audit._evidenceById;
-      parsed = { basis: stripEvidenceRefs(parsed.basis), answer: stripEvidenceRefs(parsed.answer) };
-      const responseText = composeHermesText(parsed);
+      const generated = await generateVerifiedHermesAnswer({
+        system: hermesSystem(context),
+        prompt: hermesChatPrompt({ context, message, history, attachments, skillKey, workflowKey }),
+        context,
+        attachments,
+      });
+      const { parsed, responseText, audit, confidenceAssessment, answerQualityRepair } = generated;
       const hermes = {
         mode: 'ferr_hermes_gateway',
         skill: { id: skillKey, label: HERMES_SKILLS[skillKey].label },
@@ -1068,6 +1142,7 @@ export async function hermesRoutes(app) {
         dataRefresh: context.dataRefresh || null,
         evidenceAudit: audit,
         confidenceAssessment,
+        answerQualityRepair,
         closureAudit: context.closureAudit || context.enterpriseMemory?.closureAudit || null,
       };
       hermes.missingData = [...new Set(hermes.missingData)];
@@ -1075,7 +1150,7 @@ export async function hermesRoutes(app) {
       const now = new Date().toISOString();
       const additions = [
         { role: 'user', content: message, attachments: publicAttachmentSummary(attachments), at: now },
-        { role: 'assistant', content: parsed.answer || text, basis: parsed.basis, hermes, at: now },
+        { role: 'assistant', content: parsed.answer || responseText, basis: parsed.basis, hermes, at: now },
       ];
       const conversation = activeConversation
         ? hermesConversationRepo.appendForUser(activeConversation.id, userId, additions, { skill: skillKey, workflow: workflowKey })

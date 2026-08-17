@@ -3523,6 +3523,11 @@ table.dt td.editable:focus,
   box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
 }
 
+.hermes-status-dot.warn {
+  background: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, .12);
+}
+
 .hermes-status-dot.bad {
   background: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, .10);

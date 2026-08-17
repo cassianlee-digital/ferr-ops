@@ -12,11 +12,12 @@ import {
 export async function callAnthropic(system, userPrompt, options = {}) {
   try {
     const cfg = requireAiProviderConfig(options.env || process.env);
-    const text = cfg.provider === 'anthropic'
+    const result = cfg.provider === 'anthropic'
       ? await callAnthropicNative(cfg, system, userPrompt, options)
       : await callOpenRouter(cfg, system, userPrompt, options);
+    const text = String(result?.text || '').trim();
     if (!text) throw createAiError('AI_EMPTY_RESPONSE', 'AI Provider 返回了空内容');
-    recordAiProviderSuccess();
+    recordAiProviderSuccess(new Date(), { recoveredReason: result.recoveredReason });
     return text;
   } catch (error) {
     recordAiProviderFailure(error);
@@ -45,8 +46,10 @@ async function callOpenRouter(cfg, system, userPrompt, options) {
     signal: options.signal,
   };
   const timeoutMs = options.timeoutMs || cfg.requestTimeoutMs;
+  const maxAttempts = Number(options.maxAttempts) === 1 ? 1 : 2;
+  let recoveredReason = '';
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const response = await fetchWithTimeout(`${cfg.baseUrl}/chat/completions`, request, {
       timeoutMs: attempt === 0 ? timeoutMs : Math.min(timeoutMs, 45_000),
       fetchImpl: options.fetchImpl,
@@ -59,12 +62,23 @@ async function callOpenRouter(cfg, system, userPrompt, options) {
     try {
       data = await parseJsonResponse(response);
     } catch (error) {
-      if (attempt === 0 && error?.code === 'AI_INVALID_RESPONSE') continue;
+      if (attempt + 1 < maxAttempts && error?.code === 'AI_INVALID_RESPONSE') {
+        recoveredReason = 'invalid_response';
+        continue;
+      }
       throw error;
     }
     const completion = extractOpenRouterCompletion(data);
-    if (completion.text) return completion.text;
-    if (attempt === 1 || completion.refused) throw openRouterEmptyResponseError(completion, attempt + 1);
+    if (completion.text && !completion.truncated) {
+      return { text: completion.text, recoveredReason };
+    }
+    if (completion.refused) throw openRouterEmptyResponseError(completion, attempt + 1);
+    if (attempt + 1 < maxAttempts) {
+      recoveredReason = completion.truncated ? 'truncated_response' : 'empty_response';
+      continue;
+    }
+    if (completion.truncated) throw openRouterTruncatedResponseError(completion);
+    throw openRouterEmptyResponseError(completion, attempt + 1);
   }
 
   throw createAiError('AI_EMPTY_RESPONSE', 'AI Provider 返回了空内容');
@@ -80,15 +94,26 @@ function extractOpenRouterCompletion(data) {
   const legacyText = typeof choice.text === 'string' ? choice.text : '';
   const reasoning = message.reasoning ?? message.reasoning_content;
   const refusal = message.refusal;
+  const finishReason = String(choice.finish_reason || choice.native_finish_reason || 'unknown').slice(0, 40);
   return {
     text: String(contentText).trim() || String(legacyText).trim(),
-    finishReason: String(choice.finish_reason || choice.native_finish_reason || 'unknown').slice(0, 40),
+    finishReason,
+    truncated: ['length', 'max_tokens'].includes(finishReason.toLowerCase()),
     contentType: Array.isArray(content) ? 'array' : typeof content,
     reasoningLength: textLength(reasoning),
     refused: Boolean(typeof refusal === 'string' ? refusal.trim() : refusal),
     choiceKeys: Object.keys(choice).slice(0, 12),
     messageKeys: Object.keys(message).slice(0, 12),
   };
+}
+
+function openRouterTruncatedResponseError(completion) {
+  const detail = [
+    `finish_reason=${completion.finishReason}`,
+    `content_length=${completion.text.length}`,
+    `reasoning_length=${completion.reasoningLength}`,
+  ].join('; ');
+  return createAiError('AI_TRUNCATED_RESPONSE', `AI Provider 连续返回被截断的内容（${detail}）`, { detail });
 }
 
 function openRouterTextBlock(block) {
@@ -143,10 +168,15 @@ async function callAnthropicNative(cfg, system, userPrompt, options) {
     throw providerHttpError(response.status, detail, cfg.model);
   }
   const data = await parseJsonResponse(response);
-  return (Array.isArray(data?.content) ? data.content : [])
+  const text = (Array.isArray(data?.content) ? data.content : [])
     .map((block) => (block?.type === 'text' ? block.text : ''))
     .join('\n')
     .trim();
+  if (data?.stop_reason === 'max_tokens') {
+    const detail = `stop_reason=max_tokens; content_length=${text.length}`;
+    throw createAiError('AI_TRUNCATED_RESPONSE', `AI Provider 返回的内容被截断（${detail}）`, { detail });
+  }
+  return { text, recoveredReason: '' };
 }
 
 async function parseJsonResponse(response) {

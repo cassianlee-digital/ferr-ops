@@ -21,7 +21,7 @@ function monitorIntervalMs(env = process.env) {
 
 function logStateChange(logger, status) {
   if (!logger) return;
-  const key = [status.connected, status.error, status.provider, status.model].join('|');
+  const key = [status.status, status.error, status.provider, status.model].join('|');
   if (key === lastLoggedState) return;
   lastLoggedState = key;
   const payload = {
@@ -31,21 +31,31 @@ function logStateChange(logger, status) {
     model: status.model,
     error: status.error || undefined,
     consecutiveFailures: status.consecutiveFailures,
+    lastSuccessRecovered: status.lastSuccessRecovered,
     elapsedMs: status.elapsedMs,
   };
-  if (status.connected) logger.info(payload, 'Hermes AI provider available');
-  else logger.warn(payload, 'Hermes AI provider unavailable');
+  if (status.status === 'available') logger.info(payload, 'Hermes AI provider available');
+  else logger.warn(payload, 'Hermes AI provider not fully ready');
 }
 
 function publicStatus(probe, checkedAt) {
   const runtime = getAiProviderRuntimeStatus();
+  const generationVerified = Boolean(runtime.lastSuccessfulAt || runtime.lastFailureAt);
+  const generationReady = Boolean(probe.connected && runtime.lastSuccessfulAt && !runtime.consecutiveFailures);
+  const status = !probe.connected
+    ? (probe.error === 'ai_provider_invalid' ? 'invalid_provider' : (probe.configured ? 'unavailable' : 'not_configured'))
+    : runtime.consecutiveFailures
+      ? 'degraded'
+      : runtime.lastSuccessRecovered
+        ? 'recovered'
+        : generationReady ? 'available' : 'connected_unverified';
   return {
     mode: 'local_ai',
-    status: probe.connected
-      ? 'available'
-      : (probe.error === 'ai_provider_invalid' ? 'invalid_provider' : (probe.configured ? 'unavailable' : 'not_configured')),
+    status,
     configured: probe.configured,
     connected: probe.connected,
+    generationVerified,
+    generationReady,
     provider: probe.provider,
     model: probe.model,
     visionModel: probe.visionModel,
@@ -53,8 +63,12 @@ function publicStatus(probe, checkedAt) {
     lastSuccessfulAt: runtime.lastSuccessfulAt,
     lastFailureAt: runtime.lastFailureAt,
     consecutiveFailures: runtime.consecutiveFailures,
+    lastSuccessRecovered: runtime.lastSuccessRecovered,
+    lastRecoveryAt: runtime.lastRecoveryAt,
+    lastRecoveryReason: runtime.lastRecoveryReason,
+    totalRecoveries: runtime.totalRecoveries,
     elapsedMs: probe.elapsedMs,
-    error: probe.error || '',
+    error: probe.error || (runtime.consecutiveFailures ? runtime.lastError : ''),
     detail: probe.detail || '',
   };
 }
@@ -97,10 +111,16 @@ export function getHermesConfiguredStatus(env = process.env) {
     ...config,
     status: config.configured ? 'configured_unverified' : (config.supported ? 'not_configured' : 'invalid_provider'),
     connected: false,
+    generationVerified: Boolean(runtime.lastSuccessfulAt || runtime.lastFailureAt),
+    generationReady: false,
     checkedAt: null,
     lastSuccessfulAt: runtime.lastSuccessfulAt,
     lastFailureAt: runtime.lastFailureAt,
     consecutiveFailures: runtime.consecutiveFailures,
+    lastSuccessRecovered: runtime.lastSuccessRecovered,
+    lastRecoveryAt: runtime.lastRecoveryAt,
+    lastRecoveryReason: runtime.lastRecoveryReason,
+    totalRecoveries: runtime.totalRecoveries,
     error: config.supported ? '' : 'ai_provider_invalid',
   };
 }

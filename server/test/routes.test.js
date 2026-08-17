@@ -347,6 +347,85 @@ test('SOP 执行率要区间，脏参数回 400 而不是悄悄回空', async ()
   assert.equal((await app.inject({ method: 'GET', url: '/api/sop/stats?from=x&to=y', headers: auth('boss') })).statusCode, 400);
 });
 
+test('Hermes 真实路由发送的是完整且受预算约束的 JSON 上下文', async () => {
+  const originalFetch = globalThis.fetch;
+  let contextText = '';
+  let promptText = '';
+  globalThis.fetch = async (_url, init) => {
+    const requestBody = JSON.parse(init.body);
+    const prompt = String(requestBody.messages?.[1]?.content || '');
+    promptText = prompt;
+    const startMarker = '[Hermes 上下文]\n';
+    const start = prompt.indexOf(startMarker) + startMarker.length;
+    const end = prompt.indexOf('[用户问题]', start);
+    contextText = prompt.slice(start, end).trim();
+    return new Response(JSON.stringify({
+      choices: [{
+        finish_reason: 'stop',
+        message: {
+          content: '<hermes_basis>本次仅验证上下文结构。</hermes_basis><hermes_answer>上下文结构有效。</hermes_answer>',
+        },
+      }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/hermes/chat',
+      headers: auth('boss'),
+      payload: { message: '检查 Hermes 上下文结构', skill: 'auto', workflow: 'answer' },
+    });
+    assert.equal(response.statusCode, 200);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.ok(contextText.length > 0);
+  assert.ok(contextText.length <= 26_000);
+  const context = JSON.parse(contextText);
+  assert.equal(context.contextBudget.maxChars, 26_000);
+  assert.ok(context.contextBudget.evidenceIncluded <= context.contextBudget.evidenceAvailable);
+  assert.ok((context.evidencePack || []).every((item) => !Object.hasOwn(item, 'detail')));
+  assert.match(promptText, /\[本轮可引用证据\]/);
+  assert.match(promptText, /EV-[a-z0-9-]+:/i);
+});
+
+test('Hermes 对完全未引用证据的快速回答只做一次有界纠偏，并采用更可信版本', async () => {
+  const originalFetch = globalThis.fetch;
+  let attempts = 0;
+  globalThis.fetch = async (_url, init) => {
+    attempts += 1;
+    const requestBody = JSON.parse(init.body);
+    const prompt = String(requestBody.messages?.[1]?.content || '');
+    const evidenceId = (prompt.match(/EV-[a-z0-9-]+/i) || [])[0];
+    assert.ok(evidenceId, '纠偏请求必须携带可引用证据编号');
+    const content = attempts === 1
+      ? '<hermes_basis>当前数据需要核验。</hermes_basis><hermes_answer>SEO 数据存在问题，建议立即检查。</hermes_answer>'
+      : `<hermes_basis>引用 [${evidenceId}]。</hermes_basis><hermes_answer>待验证：请先核对该证据对应的数据口径 [${evidenceId}]。</hermes_answer>`;
+    return new Response(JSON.stringify({
+      choices: [{ finish_reason: 'stop', message: { content } }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/hermes/chat',
+      headers: auth('boss'),
+      payload: { message: '根据后台数据检查 SEO 问题', skill: 'seo_diagnosis', workflow: 'diagnose_to_action' },
+    });
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+    assert.equal(body.hermes.answerQualityRepair.attempted, true);
+    assert.equal(body.hermes.answerQualityRepair.used, true);
+    assert.ok(body.hermes.evidenceAudit.evidence.length > 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  assert.equal(attempts, 2);
+});
+
 test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响应吐回来', async () => {
   const res = await app.inject({ method: 'GET', url: '/api/nope-not-a-route' });
   assert.equal(res.statusCode, 404);

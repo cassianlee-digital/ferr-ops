@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { callAnthropic } from '../src/services/anthropic.js';
 import {
   getAiProviderConfig,
+  getAiProviderRuntimeStatus,
   publicAiError,
   requireAiProviderConfig,
   resetAiProviderRuntimeStatus,
@@ -77,7 +78,8 @@ test('generation rejects empty and malformed provider responses', async () => {
       });
     },
   }), (error) => {
-    assert.equal(error.code, 'AI_EMPTY_RESPONSE');
+    assert.equal(error.code, 'AI_TRUNCATED_RESPONSE');
+    assert.equal(publicAiError(error).error, 'ai_truncated_response');
     assert.match(error.message, /finish_reason=length/);
     assert.match(error.message, /reasoning_length=17/);
     assert.doesNotMatch(error.message, /private reasoning/);
@@ -104,6 +106,8 @@ test('generation recovers from one malformed OpenRouter success response', async
   });
   assert.equal(result, 'recovered json');
   assert.equal(attempts, 2);
+  assert.equal(getAiProviderRuntimeStatus().lastSuccessRecovered, true);
+  assert.equal(getAiProviderRuntimeStatus().lastRecoveryReason, 'invalid_response');
 });
 
 test('generation accepts OpenRouter string, block-array, and legacy text responses', async () => {
@@ -151,6 +155,57 @@ test('generation retries one transient empty OpenRouter completion and then succ
     },
   });
   assert.equal(result, 'recovered');
+  assert.equal(attempts, 2);
+  assert.equal(getAiProviderRuntimeStatus().lastRecoveryReason, 'empty_response');
+});
+
+test('generation can disable transport retry for a bounded quality-repair call', async () => {
+  let attempts = 0;
+  await assert.rejects(callAnthropic('system', 'prompt', {
+    env,
+    maxAttempts: 1,
+    fetchImpl: async () => {
+      attempts += 1;
+      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: '' } }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    },
+  }), (error) => error.code === 'AI_EMPTY_RESPONSE');
+  assert.equal(attempts, 1);
+});
+
+test('generation retries truncated content and never returns a partial answer as complete', async () => {
+  let attempts = 0;
+  const recovered = await callAnthropic('system', 'prompt', {
+    env,
+    fetchImpl: async () => {
+      attempts += 1;
+      return new Response(JSON.stringify({
+        choices: [{
+          finish_reason: attempts === 1 ? 'length' : 'stop',
+          message: { content: attempts === 1 ? 'partial answer' : 'complete answer' },
+        }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+  });
+  assert.equal(recovered, 'complete answer');
+  assert.equal(attempts, 2);
+  assert.equal(getAiProviderRuntimeStatus().lastRecoveryReason, 'truncated_response');
+
+  resetAiProviderRuntimeStatus();
+  attempts = 0;
+  await assert.rejects(callAnthropic('system', 'prompt', {
+    env,
+    fetchImpl: async () => {
+      attempts += 1;
+      return new Response(JSON.stringify({
+        choices: [{ finish_reason: 'length', message: { content: 'partial secret answer' } }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+  }), (error) => error.code === 'AI_TRUNCATED_RESPONSE'
+    && /content_length=21/.test(error.message)
+    && !/partial secret answer/.test(error.message));
   assert.equal(attempts, 2);
 });
 

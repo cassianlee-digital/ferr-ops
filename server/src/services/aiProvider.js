@@ -156,6 +156,7 @@ export function publicAiError(error) {
     AI_RATE_LIMITED: 'ai_rate_limited',
     AI_EMPTY_RESPONSE: 'ai_empty_response',
     AI_INVALID_RESPONSE: 'ai_invalid_response',
+    AI_TRUNCATED_RESPONSE: 'ai_truncated_response',
     AI_DNS_FAILED: 'ai_dns_failed',
     AI_CONNECTION_REFUSED: 'ai_connection_refused',
     AI_CONNECTION_RESET: 'ai_connection_reset',
@@ -181,13 +182,24 @@ const runtime = {
   lastFailureAt: null,
   lastError: '',
   consecutiveFailures: 0,
+  lastSuccessRecovered: false,
+  lastRecoveryAt: null,
+  lastRecoveryReason: '',
+  totalRecoveries: 0,
 };
 
-export function recordAiProviderSuccess(at = new Date()) {
+export function recordAiProviderSuccess(at = new Date(), options = {}) {
+  const recoveredReason = compactDetail(options.recoveredReason, 80);
   runtime.version += 1;
   runtime.lastSuccessfulAt = at.toISOString();
   runtime.lastError = '';
   runtime.consecutiveFailures = 0;
+  runtime.lastSuccessRecovered = Boolean(recoveredReason);
+  if (recoveredReason) {
+    runtime.lastRecoveryAt = at.toISOString();
+    runtime.lastRecoveryReason = recoveredReason;
+    runtime.totalRecoveries += 1;
+  }
 }
 
 export function recordAiProviderFailure(error, at = new Date()) {
@@ -195,6 +207,7 @@ export function recordAiProviderFailure(error, at = new Date()) {
   runtime.lastFailureAt = at.toISOString();
   runtime.lastError = publicAiError(error).error;
   runtime.consecutiveFailures += 1;
+  runtime.lastSuccessRecovered = false;
 }
 
 export function getAiProviderRuntimeStatus() {
@@ -207,6 +220,10 @@ export function resetAiProviderRuntimeStatus() {
   runtime.lastFailureAt = null;
   runtime.lastError = '';
   runtime.consecutiveFailures = 0;
+  runtime.lastSuccessRecovered = false;
+  runtime.lastRecoveryAt = null;
+  runtime.lastRecoveryReason = '';
+  runtime.totalRecoveries = 0;
 }
 
 async function responseJson(response) {
@@ -270,7 +287,6 @@ export async function probeAiProvider(options = {}) {
       if (!exists) throw createAiError('AI_MODEL_NOT_FOUND', `AI 模型不可用：${cfg.model}`, { model: cfg.model });
     }
 
-    recordAiProviderSuccess();
     return {
       ...publicAiProviderConfig(options.env || process.env),
       connected: true,
@@ -279,7 +295,6 @@ export async function probeAiProvider(options = {}) {
       elapsedMs: Date.now() - startedAt,
     };
   } catch (error) {
-    recordAiProviderFailure(error);
     const config = publicAiProviderConfig(options.env || process.env);
     const publicError = publicAiError(error);
     return {
