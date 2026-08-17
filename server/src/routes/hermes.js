@@ -24,6 +24,7 @@ import {
   needsEvidenceGuard as needsEvidenceGuardStrict,
   stripEvidenceRefs,
 } from '../services/hermesEvidence.js';
+import { memoryTrustAssessment } from '../services/hermesMemoryPolicy.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -1189,7 +1190,10 @@ export async function hermesRoutes(app) {
   app.get('/api/hermes/session', { preHandler: requireHermesContextAuth }, async (request) => sessionPayload(request));
   app.get('/api/hermes/page-context', { preHandler: requireHermesContextAuth }, async (request) => pageDetailPayload(request));
   app.get('/api/hermes/memories', { preHandler: requireAuth }, async () => ({
-    items: hermesMemoryRepo.list({ activeOnly: true, limit: 100 }),
+    items: hermesMemoryRepo.list({ activeOnly: true, limit: 100 }).map((memory) => ({
+      ...memory,
+      trust: memoryTrustAssessment(memory),
+    })),
   }));
   app.post('/api/hermes/memories', onlyManagerBoss, async (request, reply) => {
     const item = hermesMemoryRepo.create(request.body || {});

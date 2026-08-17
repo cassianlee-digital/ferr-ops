@@ -1670,7 +1670,10 @@
     source.style.fontSize = "11px";
     source.style.marginTop = "6px";
     source.textContent = row.source ? "\u6765\u6E90\uFF1A" + row.source : "";
-    main.append(title, content, source);
+    const trust = document.createElement("div");
+    trust.style.marginTop = "6px";
+    trust.appendChild(row.trust?.trusted ? badge2("\u53EF\u4F5C\u4E3A\u56DE\u7B54\u8BC1\u636E", "b-green") : badge2("\u5F85\u4EBA\u5DE5\u786E\u8BA4 \xB7 \u4E0D\u8FDB\u5165\u56DE\u7B54\u8BC1\u636E", "b-amber"));
+    main.append(title, content, source, trust);
     tr.appendChild(main);
     const evidence = td(row.evidence || "\u2014", "");
     evidence.style.whiteSpace = "pre-wrap";

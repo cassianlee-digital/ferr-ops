@@ -74,7 +74,12 @@ function renderMemory(row) {
   source.style.fontSize = '11px';
   source.style.marginTop = '6px';
   source.textContent = row.source ? '来源：' + row.source : '';
-  main.append(title, content, source);
+  const trust = document.createElement('div');
+  trust.style.marginTop = '6px';
+  trust.appendChild(row.trust?.trusted
+    ? badge('可作为回答证据', 'b-green')
+    : badge('待人工确认 · 不进入回答证据', 'b-amber'));
+  main.append(title, content, source, trust);
   tr.appendChild(main);
 
   const evidence = td(row.evidence || '—', '');

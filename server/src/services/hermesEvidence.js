@@ -18,6 +18,115 @@ const SOURCE_QUALITY = {
 };
 
 const FRESHNESS_QUALITY = { fresh: 100, aging: 65, stale: 25, unknown: 45 };
+const EVIDENCE_REQUIRED_RE = /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|FERR|公司|工厂|产品|材质|质量|交期|价格|目录|证书|案例|客户|市场|认证|资质|地区|国家|采购|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i;
+
+const METRIC_DEFINITIONS = [
+  { token: 'ctr', aliases: ['CTR', '点击率'], keys: ['ctr'] },
+  { token: 'clicks', aliases: ['点击'], keys: ['clicks', 'clicks_current', 'clicks_previous'] },
+  { token: 'impressions', aliases: ['展现', '曝光'], keys: ['impressions', 'impressions_current', 'impressions_previous'] },
+  { token: 'position', aliases: ['平均排名', '排名', '位置'], keys: ['position', 'avg_position', 'position_current', 'position_previous'] },
+  { token: 'cost', aliases: ['花费', '费用', '成本'], keys: ['cost'] },
+  { token: 'conversions', aliases: ['转化'], keys: ['conversions'] },
+  { token: 'cpc', aliases: ['CPC'], keys: ['cpc'] },
+  { token: 'cpa', aliases: ['CPA', '每次转化成本', '每次转化'], keys: ['cpa', 'cost_per_conv', 'costperconversion'] },
+  { token: 'roas', aliases: ['ROAS'], keys: ['roas'] },
+  { token: 'inquiry', aliases: ['询盘', '线索'], keys: ['inquiry', 'inquiries'] },
+  { token: 'quality', aliases: ['质量分'], keys: ['quality', 'quality_score'] },
+  { token: 'indexed', aliases: ['收录页数', '收录'], keys: ['indexed', 'indexed_pages'] },
+  { token: 'validRate', aliases: ['有效询盘率', '有效线索率', '有效率'], keys: ['validrate', 'valid_rate'] },
+  { token: 'ARatio', aliases: ['A级占比', 'A类占比', 'A率'], keys: ['aratio', 'a_ratio'] },
+  { token: 'total', aliases: ['询盘总数', '线索总数', '总询盘', '总线索', '总计', '总数'], keys: ['total'] },
+  { token: 'valid', aliases: ['有效询盘', '有效线索', '有效数'], keys: ['valid'] },
+  { token: 'drop', aliases: ['下降幅度', '下降', '降幅'], keys: ['drop', 'drop_pct'] },
+  { token: 'pages', aliases: ['页面数', '页数'], keys: ['pages'] },
+];
+
+const NUMBER_SOURCE = '[-+]?(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?';
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function parseMetricNumber(rawNumber, rawUnit = '', approximate = false) {
+  const numeric = String(rawNumber || '').replace(/,/g, '');
+  const base = Number(numeric);
+  if (!Number.isFinite(base)) return null;
+  const unit = String(rawUnit || '').toLowerCase();
+  const multiplier = unit === '万' ? 10000 : (unit === '千' || unit === 'k' ? 1000 : 1);
+  const decimals = (numeric.split('.')[1] || '').length;
+  return {
+    value: base * multiplier,
+    percent: unit === '%' || unit === '％',
+    approximate,
+    tolerance: 0.5 * (10 ** -decimals) * multiplier,
+  };
+}
+
+function nonOverlappingMetricMatches(matches) {
+  const selected = [];
+  const bySpecificity = [...matches].sort((a, b) => (b.end - b.start) - (a.end - a.start));
+  for (const candidate of bySpecificity) {
+    const overlaps = selected.some((item) => candidate.start < item.end && candidate.end > item.start);
+    if (!overlaps) selected.push(candidate);
+  }
+  return selected.sort((a, b) => a.start - b.start);
+}
+
+function claimMetricValues(clean) {
+  const matches = [];
+  for (const definition of METRIC_DEFINITIONS) {
+    const aliases = [...definition.aliases].sort((a, b) => b.length - a.length).map(escapeRegex).join('|');
+    const after = new RegExp(`(?:${aliases})\\s*(?:目标|实际|当前|本期|上期|previous|current|target)?\\s*(约为|约|为|是|达到|达|=|:|：)?\\s*(${NUMBER_SOURCE})\\s*(%|％|万|千|k)?`, 'gi');
+    let match;
+    while ((match = after.exec(clean))) {
+      const parsed = parseMetricNumber(match[2], match[3], /^约/.test(match[1] || ''));
+      if (parsed) matches.push({ metric: definition.token, ...parsed, raw: match[0], start: match.index, end: after.lastIndex });
+    }
+  }
+  return nonOverlappingMetricMatches(matches).map(({ start, end, ...match }) => match);
+}
+
+function evidenceMetricValues(items) {
+  const values = new Map(METRIC_DEFINITIONS.map((definition) => [definition.token, []]));
+  const keyToMetric = new Map(METRIC_DEFINITIONS.flatMap((definition) => definition.keys.map((key) => [key.toLowerCase(), definition.token])));
+  for (const item of items) {
+    const text = evidenceText(item);
+    const structured = new RegExp(`(?:^|[;,\\s])([a-z][a-z0-9_]*)\\s*=\\s*(${NUMBER_SOURCE})\\s*(%|％|万|千|k)?`, 'gi');
+    let match;
+    while ((match = structured.exec(text))) {
+      const metric = keyToMetric.get(match[1].toLowerCase());
+      const parsed = metric ? parseMetricNumber(match[2], match[3]) : null;
+      if (parsed) values.get(metric).push(parsed);
+    }
+    for (const parsed of claimMetricValues(text)) values.get(parsed.metric).push(parsed);
+  }
+  return values;
+}
+
+function metricNumbersMatch(claim, evidence) {
+  if (claim.percent !== evidence.percent) return false;
+  const tolerance = claim.approximate
+    ? Math.max(claim.tolerance, Math.abs(evidence.value) * 0.02)
+    : claim.tolerance;
+  return Math.abs(claim.value - evidence.value) <= tolerance + Number.EPSILON;
+}
+
+export function assessNumericConsistency(line, items = []) {
+  const claims = claimMetricValues(normalizeClaimLine(line));
+  if (!claims.length) return { consistent: true, claimCount: 0, mismatches: [] };
+  const evidenceValues = evidenceMetricValues(Array.isArray(items) ? items : []);
+  const mismatches = claims.flatMap((claim) => {
+    const candidates = evidenceValues.get(claim.metric) || [];
+    if (candidates.some((candidate) => metricNumbersMatch(claim, candidate))) return [];
+    return [{
+      metric: claim.metric,
+      claimValue: claim.value,
+      claimUnit: claim.percent ? 'percent' : 'number',
+      evidenceValues: candidates.map((candidate) => ({ value: candidate.value, unit: candidate.percent ? 'percent' : 'number' })),
+    }];
+  });
+  return { consistent: mismatches.length === 0, claimCount: claims.length, mismatches };
+}
 
 export function stripEvidenceRefs(value) {
   return String(value || '')
@@ -84,7 +193,7 @@ function isStructuralAnswerLine(line) {
 export function lineNeedsEvidence(line) {
   if (isStructuralAnswerLine(line)) return false;
   const clean = normalizeClaimLine(line);
-  return /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|客户|市场|认证|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i.test(clean);
+  return EVIDENCE_REQUIRED_RE.test(clean);
 }
 
 function isHypothesis(clean) {
@@ -92,36 +201,78 @@ function isHypothesis(clean) {
 }
 
 function claimDomain(clean) {
-  if (/(客户|市场|认证|资质|地区|国家|采购|询盘偏好)/i.test(clean)) return 'market';
-  if (/(询盘|线索|A级|B级|C级)/i.test(clean)) return 'inquiry';
   if (/(Google Ads|ADS|SEM|ROAS|CPC|CPA|花费|预算|投放|广告|转化)/i.test(clean)) return 'sem';
   if (/(GSC|SEO|自然|排名|收录|展现|页面|查询词)/i.test(clean)) return 'seo';
+  if (/(询盘|线索|A级|B级|C级)/i.test(clean)) return 'inquiry';
   if (/KPI|目标|达标/i.test(clean)) return 'kpi';
+  if (/(FERR|公司|工厂|产品|材质|质量|交期|价格|目录|证书|案例|视频|客户|市场|认证|资质|地区|国家|采购|询盘偏好)/i.test(clean)) return 'market';
   return '';
 }
 
 function evidenceText(item) {
-  return [item?.metric, item?.value, item?.detail, item?.label, item?.summary].filter(Boolean).join(' ').toLowerCase();
+  return [item?.metric, item?.value, item?.detail, item?.label, item?.summary, item?.date].filter(Boolean).join(' ').toLowerCase();
+}
+
+function dateKey(offsetDays = 0) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const part = (type) => parts.find((item) => item.type === type)?.value;
+  const date = new Date(`${part('year')}-${part('month')}-${part('day')}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
+function timeScopeTokens(value) {
+  const text = String(value || '');
+  const tokens = new Set();
+  const relative = /(?:近|过去|最近)\s*(\d+)\s*(天|日)/g;
+  let match;
+  while ((match = relative.exec(text))) tokens.add(`relative:${Number(match[1])}d`);
+  const ranges = /(\d{4}-\d{2}-\d{2})\s*(?:至|到|~|～|—|-{2,})\s*(\d{4}-\d{2}-\d{2})/g;
+  while ((match = ranges.exec(text))) {
+    tokens.add(`range:${match[1]}:${match[2]}`);
+    const start = new Date(`${match[1]}T00:00:00Z`);
+    const end = new Date(`${match[2]}T00:00:00Z`);
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end >= start) {
+      tokens.add(`duration:${Math.round((end - start) / 86400000) + 1}d`);
+    }
+  }
+  if (/今天|今日/.test(text)) tokens.add(`date:${dateKey(0)}`);
+  if (/昨天|昨日/.test(text)) tokens.add(`date:${dateKey(-1)}`);
+  for (const date of text.match(/\d{4}-\d{2}-\d{2}/g) || []) tokens.add(`date:${date}`);
+  for (const label of ['本周', '上周', '本月', '上月']) if (text.includes(label)) tokens.add(`period:${label}`);
+  return [...tokens];
+}
+
+export function assessTimeScopeConsistency(line, items = []) {
+  const claimScopes = timeScopeTokens(normalizeClaimLine(line));
+  if (!claimScopes.length) return { consistent: true, claimCount: 0, mismatches: [] };
+  const evidenceScopes = new Set((Array.isArray(items) ? items : []).flatMap((item) => timeScopeTokens(evidenceText(item))));
+  const mismatches = claimScopes.filter((scope) => !evidenceScopes.has(scope));
+  return { consistent: mismatches.length === 0, claimCount: claimScopes.length, mismatches };
 }
 
 function metricTokens(clean) {
-  const rules = [
-    ['ctr', /CTR|点击率/i], ['clicks', /点击/i], ['impressions', /展现|曝光/i],
-    ['position', /排名|位置/i], ['cost', /花费|费用|成本/i], ['conversions', /转化/i],
-    ['cpc', /CPC/i], ['cpa', /CPA|每次转化/i], ['roas', /ROAS/i],
-    ['inquiry', /询盘|线索/i], ['quality', /质量分/i], ['indexed', /收录/i],
-  ];
-  return rules.filter(([, re]) => re.test(clean)).map(([token]) => token);
+  const normalized = clean.toLowerCase();
+  const matches = [];
+  for (const definition of METRIC_DEFINITIONS) {
+    for (const alias of definition.aliases) {
+      const needle = alias.toLowerCase();
+      let start = normalized.indexOf(needle);
+      while (start >= 0) {
+        matches.push({ metric: definition.token, start, end: start + needle.length });
+        start = normalized.indexOf(needle, start + needle.length);
+      }
+    }
+  }
+  return [...new Set(nonOverlappingMetricMatches(matches).map((match) => match.metric))];
 }
 
 function evidenceHasMetric(item, token) {
   const text = evidenceText(item);
-  const aliases = {
-    ctr: ['ctr', '点击率'], clicks: ['click', '点击'], impressions: ['impression', '展现', '曝光'],
-    position: ['position', '排名'], cost: ['cost', '花费', '费用', '成本'], conversions: ['conversion', '转化'],
-    cpc: ['cpc'], cpa: ['cpa', 'cost_per_conv', 'costperconversion', '每次转化'], roas: ['roas'],
-    inquiry: ['inquiry', '询盘', '线索'], quality: ['quality', '质量分'], indexed: ['indexed', '收录'],
-  }[token] || [token];
+  const definition = METRIC_DEFINITIONS.find((item) => item.token === token);
+  const aliases = definition ? [...definition.aliases, ...definition.keys] : [token];
   return aliases.some((alias) => text.includes(alias));
 }
 
@@ -152,14 +303,14 @@ function granularEntityMatches(clean, items) {
 
 function companyEvidenceMatches(clean, items) {
   if (claimDomain(clean) !== 'market') return true;
-  const companyItems = items.filter((item) => ['company_research', 'internal_memory', 'derived_company_summary'].includes(item?.dataRole));
-  if (!companyItems.length) return true;
-  const concepts = ['客户', '采购', '决策', '认证', '资质', '地区', '国家', '欧洲', '欧美', '东南亚', '巴西', '价格', '成本', '交期', '质量', '目录', 'catalog', '证书', '案例', '视频', '工厂', '产品', '材质'];
+  const companyItems = items.filter((item) => ['company_research', 'internal_memory'].includes(item?.dataRole));
+  if (!companyItems.length) return false;
+  const concepts = ['FERR', '公司', '客户', '采购', '决策', '认证', '资质', '地区', '国家', '欧洲', '欧美', '东南亚', '巴西', '价格', '成本', '交期', '质量', '目录', 'catalog', '证书', '案例', '视频', '工厂', '产品', '材质'];
   const mentioned = concepts.filter((concept) => clean.toLowerCase().includes(concept.toLowerCase()));
   if (!mentioned.length) return false;
   return companyItems.some((item) => {
     const text = evidenceText(item);
-    const specific = mentioned.filter((concept) => ['认证', '资质', '地区', '国家', '欧洲', '欧美', '东南亚', '巴西', '目录', 'catalog', '证书', '案例', '视频', '材质'].includes(concept));
+    const specific = mentioned.filter((concept) => !['FERR', '公司', '客户', '采购', '决策'].includes(concept));
     if (specific.length && !specific.every((concept) => text.includes(concept.toLowerCase()))) return false;
     return mentioned.some((concept) => text.includes(concept.toLowerCase()));
   });
@@ -193,6 +344,8 @@ export function evidenceSupportsClaim(line, items) {
 
   const metrics = metricTokens(clean);
   if (metrics.length && !metrics.every((metric) => items.some((item) => evidenceHasMetric(item, metric)))) return false;
+  if (!assessNumericConsistency(clean, items).consistent) return false;
+  if (!assessTimeScopeConsistency(clean, items).consistent) return false;
 
   if (isSpecificMutation(clean) && !hasGranularEvidence(items)) return false;
   if (!granularEntityMatches(clean, items)) return false;
@@ -216,7 +369,7 @@ function formatPendingClaim(line) {
 export function needsEvidenceGuard(parsed, forceEvidence = false) {
   if (forceEvidence) return true;
   const raw = [parsed?.basis, parsed?.answer].filter(Boolean).join('\n');
-  return /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|客户|市场|认证|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i.test(raw);
+  return EVIDENCE_REQUIRED_RE.test(raw);
 }
 
 export function enforceEvidenceProtocol(parsed, audit, options = {}) {
@@ -227,23 +380,51 @@ export function enforceEvidenceProtocol(parsed, audit, options = {}) {
   const unsupported = [];
   const supported = [];
   const bindingIssues = [];
+  const numericMismatches = [];
+  let numericClaimCount = 0;
+  const timeScopeMismatches = [];
+  let timeScopeClaimCount = 0;
+  let timeScopeMismatchCount = 0;
   const evidenceById = audit._evidenceById || new Map();
   const lines = String(parsed?.answer || '').split('\n');
   const answerLines = lines.filter((line) => {
     if (!lineNeedsEvidence(line)) return true;
     const ids = evidenceRefs(line);
     const cited = ids.filter((id) => knownIds.has(id)).map((id) => evidenceById.get(id)).filter(Boolean);
+    const numeric = cited.length ? assessNumericConsistency(line, cited) : { claimCount: 0, mismatches: [] };
+    const temporal = cited.length ? assessTimeScopeConsistency(line, cited) : { claimCount: 0, mismatches: [] };
+    numericClaimCount += numeric.claimCount;
+    timeScopeClaimCount += temporal.claimCount;
+    timeScopeMismatchCount += temporal.mismatches.length;
     if (evidenceSupportsClaim(line, cited)) {
       supported.push(line);
       return true;
     }
     unsupported.push(line);
-    if (cited.length) bindingIssues.push({ claim: normalizeClaimLine(line), evidenceIds: cited.map((item) => item.id), reason: '证据内容、指标、层级或结论类型不匹配' });
+    if (numeric.mismatches.length) numericMismatches.push(...numeric.mismatches.map((mismatch) => ({ claim: normalizeClaimLine(line), ...mismatch })));
+    if (temporal.mismatches.length) timeScopeMismatches.push({ claim: normalizeClaimLine(line), claimScopes: temporal.mismatches });
+    if (cited.length) bindingIssues.push({
+      claim: normalizeClaimLine(line),
+      evidenceIds: cited.map((item) => item.id),
+      reason: numeric.mismatches.length
+        ? '回答数字或单位与引用证据不一致'
+        : (temporal.mismatches.length ? '回答时间范围与引用证据不一致' : '证据内容、指标、层级或结论类型不匹配'),
+    });
     return false;
   });
 
   audit.claimCount = supported.length + unsupported.length;
   audit.supportedClaimCount = supported.length;
+  audit.numericClaimCount = numericClaimCount;
+  audit.numericMismatches = numericMismatches;
+  audit.numericConsistency = numericClaimCount
+    ? Math.round(((numericClaimCount - numericMismatches.length) / numericClaimCount) * 100)
+    : 100;
+  audit.timeScopeClaimCount = timeScopeClaimCount;
+  audit.timeScopeMismatches = timeScopeMismatches;
+  audit.temporalConsistency = timeScopeClaimCount
+    ? Math.round(((timeScopeClaimCount - timeScopeMismatchCount) / timeScopeClaimCount) * 100)
+    : 100;
   if (!unsupported.length) {
     audit.claimAuditStatus = 'passed';
     return parsed;
@@ -281,7 +462,9 @@ export function buildConfidenceAssessment(audit, parsed, options = {}) {
   const freshness = average(evidence.map((item) => FRESHNESS_QUALITY[item.freshness] || 45), 25);
   const issueCount = (audit?.unknownEvidenceIds?.length || 0) + (audit?.unsupportedClaims?.length || 0) + (audit?.evidenceBindingIssues?.length || 0);
   const inferenceDiscipline = Math.max(0, 100 - (claimCount ? Math.round((issueCount / claimCount) * 75) : issueCount * 35));
-  let score = Math.round(coverage * 0.35 + sourceQuality * 0.25 + freshness * 0.15 + inferenceDiscipline * 0.25);
+  const numericConsistency = Number.isFinite(audit?.numericConsistency) ? audit.numericConsistency : 100;
+  const temporalConsistency = Number.isFinite(audit?.temporalConsistency) ? audit.temporalConsistency : 100;
+  let score = Math.round(coverage * 0.25 + sourceQuality * 0.20 + freshness * 0.15 + inferenceDiscipline * 0.20 + numericConsistency * 0.10 + temporalConsistency * 0.10);
 
   if (audit?.status === 'no_evidence_pool') score = Math.min(score, 20);
   if (audit?.status === 'weak') score = Math.min(score, 30);
@@ -302,7 +485,7 @@ export function buildConfidenceAssessment(audit, parsed, options = {}) {
     level,
     label,
     decision,
-    dimensions: { evidenceCoverage: coverage, sourceQuality, freshness, inferenceDiscipline },
+    dimensions: { evidenceCoverage: coverage, sourceQuality, freshness, inferenceDiscipline, numericConsistency, temporalConsistency },
   };
 }
 

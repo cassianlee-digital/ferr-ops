@@ -13,7 +13,7 @@ import * as googleRepo from '../db/repositories/googleSync.js';
 import * as loopItemsRepo from '../db/repositories/loopItems.js';
 import * as weeklyReportsRepo from '../db/repositories/weeklyReports.js';
 import { resolveProject } from '../sync/googleClient.js';
-import { findMemoryConflicts, trustedMemories } from './hermesMemoryPolicy.js';
+import { findMemoryConflicts, reviewRequiredMemories, trustedMemories } from './hermesMemoryPolicy.js';
 
 function numericValue(value) {
   const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''));
@@ -590,6 +590,7 @@ export function buildEnterpriseMemory() {
 
   const closureAudit = buildClosureAudit({ memories: longTermMemories, actions, reports });
   const trusted = trustedMemories(longTermMemories, closureAudit.memoryConflicts);
+  const reviewRequired = reviewRequiredMemories(longTermMemories);
   const evidencePack = [];
   marketRows.slice(0, 12).forEach((row, index) => {
     evidencePack.push(makeEvidence({
@@ -628,7 +629,7 @@ export function buildEnterpriseMemory() {
       state: brainState,
       summary: marketSummary,
       instruction: marketSummary
-        ? 'Treat this market summary as FERR company background and customer reality.'
+        ? 'This is an AI-derived navigation summary only. Verify every company or customer fact against marketResearch rows or trustedLongTermMemories before using it.'
         : 'Market research exists but AI memory summary is empty or not refreshed. Ask user to click Sync / Update AI memory on Market Analysis.',
     },
     marketResearch: {
@@ -638,6 +639,7 @@ export function buildEnterpriseMemory() {
     },
     longTermMemories,
     trustedLongTermMemories: trusted,
+    reviewRequiredLongTermMemories: reviewRequired,
     evidencePack,
     closureAudit,
     missingData: missing,

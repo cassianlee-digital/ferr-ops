@@ -1,4 +1,13 @@
-const IGNORED_SOURCES = /^hermes_(daily_learning|morning_brief)/i;
+export function memoryTrustAssessment(memory = {}) {
+  const source = String(memory?.source || 'manual').trim().toLowerCase();
+  if (source.startsWith('hermes_auto_preference:')) {
+    return { status: 'trusted', trusted: true, reason: 'explicit_user_preference' };
+  }
+  if (source.startsWith('hermes_')) {
+    return { status: 'review_required', trusted: false, reason: 'hermes_generated_or_feedback_content' };
+  }
+  return { status: 'trusted', trusted: true, reason: 'human_or_external_source' };
+}
 
 export function normalizedMemoryTopic(title) {
   return String(title || '').toLowerCase()
@@ -10,7 +19,7 @@ export function normalizedMemoryTopic(title) {
 export function findMemoryConflicts(memories = []) {
   const groups = new Map();
   for (const memory of Array.isArray(memories) ? memories : []) {
-    if (IGNORED_SOURCES.test(String(memory?.source || ''))) continue;
+    if (!memoryTrustAssessment(memory).trusted) continue;
     const topic = normalizedMemoryTopic(memory?.title);
     if (!topic) continue;
     const group = groups.get(topic) || [];
@@ -41,5 +50,9 @@ export function findMemoryConflicts(memories = []) {
 
 export function trustedMemories(memories = [], conflicts = []) {
   const blockedIds = new Set(conflicts.flatMap((conflict) => conflict.memoryIds || []));
-  return (Array.isArray(memories) ? memories : []).filter((memory) => !blockedIds.has(memory.id));
+  return (Array.isArray(memories) ? memories : []).filter((memory) => memoryTrustAssessment(memory).trusted && !blockedIds.has(memory.id));
+}
+
+export function reviewRequiredMemories(memories = []) {
+  return (Array.isArray(memories) ? memories : []).filter((memory) => !memoryTrustAssessment(memory).trusted);
 }
