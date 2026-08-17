@@ -7,12 +7,14 @@ const NEG_KEY = 'ferr:negs', AD_KEY = 'ferr:ads';
 const NEGMATCH_BADGE = { '精确': 'b-green', '词组': 'b-blue', '广泛': 'b-amber' };
 const NEGSTATUS_BADGE = { '生效': 'b-green', '观察': 'b-amber', '已移除': 'b-gray' };
 const ADSTATUS_BADGE = { '采用中': 'b-green', '测试中': 'b-amber', '已弃用': 'b-gray' };
+function clearLoadState(id) { const row = document.querySelector(`#${id} tr[data-load-state]`); if (row) row.remove(); }
 export function negRowHtml(r) { return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || 'b-blue'}" data-kind="negmatch">${esc(r.match_type || '词组')}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc(r.added_date || '')}</td><td class="editable" contenteditable data-field="reason" style="font-size:11px">${esc(r.reason || '')}</td><td class="editable" contenteditable data-field="source_campaign">${esc(r.source_campaign || '')}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || 'b-green'}" data-kind="negstatus">${esc(r.status || '生效')}<i class="ti ti-chevron-down"></i></span></td>`; }
 export function adRowHtml(r) { return `<td class="editable" contenteditable data-field="title">${esc(r.title)}</td><td class="editable dim" contenteditable data-field="description" style="font-size:11px">${esc(r.description || '')}</td><td class="editable" contenteditable data-field="ctr">${esc(r.ctr || '')}</td><td class="editable dim" contenteditable data-field="ab_conclusion" style="font-size:11px">${esc(r.ab_conclusion || '')}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || 'b-amber'}" data-kind="adstatus">${esc(r.status || '测试中')}<i class="ti ti-chevron-down"></i></span></td>`; }
 // 去弹窗化：直接新增可编辑空行（POST 默认值后原地编辑）
 export async function addNeg() {
   try {
     const { item } = await API.post('/api/neg-keywords', { word: '新否词', reason: '' });
+    clearLoadState('tb-neg');
     prepend('tb-neg', negRowHtml(item)); const tr = document.getElementById('tb-neg').firstChild; tr.dataset.id = item.id; tr.dataset.ep = '/api/neg-keywords';
     const c = tr.querySelector('[data-field="word"]'); if (c) { c.focus(); placeCaretEnd(c); }
     toast('已加一行 · 直接在表格里改');
@@ -21,6 +23,7 @@ export async function addNeg() {
 export async function addAd() {
   try {
     const { item } = await API.post('/api/ad-creatives', { title: '新创意', description: '' });
+    clearLoadState('tb-ad');
     prepend('tb-ad', adRowHtml(item)); const tr = document.getElementById('tb-ad').firstChild; tr.dataset.id = item.id; tr.dataset.ep = '/api/ad-creatives';
     const c = tr.querySelector('[data-field="title"]'); if (c) { c.focus(); placeCaretEnd(c); }
     toast('已加一行 · 直接在表格里改');

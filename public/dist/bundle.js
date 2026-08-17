@@ -16,6 +16,10 @@
   var NEGMATCH_BADGE = { "\u7CBE\u786E": "b-green", "\u8BCD\u7EC4": "b-blue", "\u5E7F\u6CDB": "b-amber" };
   var NEGSTATUS_BADGE = { "\u751F\u6548": "b-green", "\u89C2\u5BDF": "b-amber", "\u5DF2\u79FB\u9664": "b-gray" };
   var ADSTATUS_BADGE = { "\u91C7\u7528\u4E2D": "b-green", "\u6D4B\u8BD5\u4E2D": "b-amber", "\u5DF2\u5F03\u7528": "b-gray" };
+  function clearLoadState(id) {
+    const row = document.querySelector(`#${id} tr[data-load-state]`);
+    if (row) row.remove();
+  }
   function negRowHtml(r) {
     return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc(r.added_date || "")}</td><td class="editable" contenteditable data-field="reason" style="font-size:11px">${esc(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
   }
@@ -25,6 +29,7 @@
   async function addNeg() {
     try {
       const { item } = await API.post("/api/neg-keywords", { word: "\u65B0\u5426\u8BCD", reason: "" });
+      clearLoadState("tb-neg");
       prepend("tb-neg", negRowHtml(item));
       const tr = document.getElementById("tb-neg").firstChild;
       tr.dataset.id = item.id;
@@ -42,6 +47,7 @@
   async function addAd() {
     try {
       const { item } = await API.post("/api/ad-creatives", { title: "\u65B0\u521B\u610F", description: "" });
+      clearLoadState("tb-ad");
       prepend("tb-ad", adRowHtml(item));
       const tr = document.getElementById("tb-ad").firstChild;
       tr.dataset.id = item.id;
