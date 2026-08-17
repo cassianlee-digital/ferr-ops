@@ -39,8 +39,11 @@ import * as weeklyReview from './weekly-review.js';
 import { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed } from './inquiries.js';
 // 已迁移（批次9）：kpi（评分状态由 kpi-view 显式 import；仅 app.js 必需入口挂 window）。
 import { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek } from './kpi.js';
+// 已迁移（批次10）：charts（时间筛选改为事件契约；模块消费者显式 import；仅 app.js 入口挂 window）。
+import { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters } from './charts.js';
 
 const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats,renderInqFeed};
 const kpiCompatibility={TOTAL,SEO,SEM,applyKpiServer,loadMetrics,loadWeeks,submitSeoWeek,submitSemWeek};
+const chartCompatibility={charts,loadDashboardInq,loadDashboardBoards,renderInqDonuts,loadSeoBoardGsc,loadSeoBoardFull,loadSemBoardAds,loadSemBoardFull,loadAttribution,loadDiagnostics,loadDataFreshness,onSemCampaignChange,onSemAdGroupChange,resizeScatters};
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility);

@@ -17,9 +17,11 @@ function seoPrevRange(range) {
 }
 const _pct = (cur, prev) => (prev ? Math.round((cur / prev - 1) * 100) : (cur ? 100 : 0));
 // 自动挑「本周要点」：最大的涨/跌，供老板一眼看走向
-function buildSeoHighlights({ cur, prevTot, queries, pages }) {
+export function buildSeoHighlights({ cur, prevTot, queries, pages }) {
   const H = [];
-  if (cur && prevTot) {
+  const hasObservation = [cur?.clicks, cur?.impressions, prevTot?.clicks, prevTot?.impressions]
+    .some((value) => Number(value) > 0) || (queries || []).length > 0 || (pages || []).length > 0;
+  if (cur && prevTot && hasObservation) {
     if (cur.clicks != null) {
       const dc = _pct(cur.clicks, prevTot.clicks);
       H.push({ tone: dc >= 0 ? 'good' : 'bad', text: `自然点击 ${cur.clicks.toLocaleString()}（${dc >= 0 ? '+' : ''}${dc}% vs 上一周期）` });
@@ -44,9 +46,12 @@ function buildSeoHighlights({ cur, prevTot, queries, pages }) {
 }
 const _m6 = (v) => (v == null ? 0 : v / 1e6);
 // SEM 本周要点：转化/每转化成本环比 + 高花费零转化 + 最佳系列
-function buildAdsHighlights({ cur, prevTot, keywords, campaigns }) {
+export function buildAdsHighlights({ cur, prevTot, keywords, campaigns }) {
   const H = [];
-  if (cur && prevTot) {
+  const hasObservation = [cur?.costMicros, cur?.impressions, cur?.clicks, cur?.conversions,
+    prevTot?.costMicros, prevTot?.impressions, prevTot?.clicks, prevTot?.conversions]
+    .some((value) => Number(value) > 0) || (keywords || []).length > 0 || (campaigns || []).length > 0;
+  if (cur && prevTot && hasObservation) {
     if (cur.conversions != null) {
       const dc = _pct(cur.conversions, prevTot.conversions);
       H.push({ tone: dc >= 0 ? 'good' : 'bad', text: `转化 ${Number(cur.conversions).toFixed(1)}（${dc >= 0 ? '+' : ''}${dc}% vs 上一周期）` });

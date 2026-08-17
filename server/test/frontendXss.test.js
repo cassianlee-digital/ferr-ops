@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Script } from 'node:vm';
 
-const chartsSource = readFileSync(new URL('../../public/charts.js', import.meta.url), 'utf8');
+const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.meta.url), 'utf8');
 const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
@@ -17,6 +17,8 @@ const tagSelectSource = readFileSync(new URL('../../public/src/tagselect.js', im
 const archiveSource = readFileSync(new URL('../../public/src/archive.js', import.meta.url), 'utf8');
 const kpiSource = readFileSync(new URL('../../public/src/kpi.js', import.meta.url), 'utf8');
 const kpiViewSource = readFileSync(new URL('../../public/src/kpi-view.js', import.meta.url), 'utf8');
+const timerangeSource = readFileSync(new URL('../../public/src/timerange.js', import.meta.url), 'utf8');
+const googleProjectsSource = readFileSync(new URL('../../public/src/google-projects.js', import.meta.url), 'utf8');
 const cspUtilitiesSource = readFileSync(new URL('../../public/csp-utilities.css', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
@@ -182,6 +184,44 @@ test('KPI modules use loaded values and expose only required classic-script comp
     .sort();
   assert.deepEqual(viewExports, ['loadOverview', 'renderKPI']);
   assert.doesNotMatch(mainSource, /\b(?:ratio|recomputeScores|company|liScore|chenScore|mapSeoWeek|openSeoWeek|openSemWeek)\b(?=[,}])/);
+});
+
+test('charts are bundled behind events and a narrow classic-script compatibility surface', () => {
+  assert.doesNotMatch(indexSource, /<script src="\/charts\.js"><\/script>/);
+  assert.match(mainSource, /from '\.\/charts\.js';/);
+  assert.match(mainSource, /Object\.assign\(window,[^;]*\bchartCompatibility\b[^;]*\);/);
+  const compatibility = mainSource.match(/const chartCompatibility=\{([^}]*)\};/);
+  assert.ok(compatibility, 'chart compatibility surface is missing');
+  assert.deepEqual(compatibility[1].split(',').map((name) => name.trim()).sort(), [
+    'charts',
+    'loadAttribution',
+    'loadDashboardBoards',
+    'loadDashboardInq',
+    'loadDataFreshness',
+    'loadDiagnostics',
+    'loadSemBoardAds',
+    'loadSemBoardFull',
+    'loadSeoBoardFull',
+    'loadSeoBoardGsc',
+    'onSemAdGroupChange',
+    'onSemCampaignChange',
+    'renderInqDonuts',
+    'resizeScatters'
+  ]);
+  const exports = [...chartsSource.matchAll(/export (?:async )?function ([A-Za-z_$][\w$]*)/g)]
+    .map((match) => match[1])
+    .sort();
+  assert.deepEqual(exports, [...compatibility[1].split(',').map((name) => name.trim()), 'refreshSeoWeekChart'].sort());
+  assert.match(chartsSource, /import \{ formatLocalDate, getCurrentRange, withRange \} from '\.\/timerange\.js';/);
+  assert.match(chartsSource, /addEventListener\('timerange'/);
+  assert.match(chartsSource, /addEventListener\('granularity',rebuildSeoChart\)/);
+  assert.doesNotMatch(timerangeSource, /\b(?:loadSeoChartRange|rebuildSeoChart|loadSeoBoardFull|loadSemBoardAds|loadSemBoardFull|loadAttribution|loadDiagnostics|loadDataFreshness)\b/);
+  assert.match(kpiSource, /import \{ loadSemBoardAds, loadSeoBoardGsc, refreshSeoWeekChart \} from '\.\/charts\.js';/);
+  assert.doesNotMatch(kpiSource, /\b(?:seoFull|seoChart|seoSeriesFromWeeks|buildSeoData)\b/);
+  assert.match(inquiriesSource, /import \{ loadDashboardInq \} from '\.\/charts\.js';/);
+  assert.match(archiveSource, /import \{ loadDashboardInq \} from '\.\/charts\.js';/);
+  assert.match(googleProjectsSource, /import \{ loadDataFreshness \} from '\.\/charts\.js';/);
+  assert.doesNotMatch(appSource, /\b_resizeScatters\b/);
 });
 
 test('login page loads only external CSS and JavaScript', () => {

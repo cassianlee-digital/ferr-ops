@@ -1,12 +1,13 @@
 /* 归档②：行级归档/沉淀委托 + 归档页加载（ES 模块 · esbuild 打包为 IIFE）。
    运行时依赖的全局（均在事件/调用时解析，仍由经典脚本或内联提供）：
    API、esc()、toast()、inlineConfirm()（keywords.js）、persistLoop()/depRowHtml()（closed-loop.js）、
-   loadInquiries()/loadDashboardInq()、window.ME。
+   loadInquiries()、window.ME。
    仅 loadArchive 需挂 window（index.html 路由切换 + inquiries.js 调用）；
    archRowHtml/archInqRowHtml/deriveAk 无外部引用，收进模块作用域。
    两个 click 委托在模块求值时注册（bundle 为经典脚本，时机与旧脚本一致）。 */
 
 import { GRADE_BADGE } from './inquiries.js';
+import { loadDashboardInq } from './charts.js';
 
 /* 归档②：行级「沉淀 / 归档」按钮事件委托——整改/测试/计划 通用 */
 document.addEventListener('click',async e=>{

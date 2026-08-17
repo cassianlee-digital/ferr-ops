@@ -226,6 +226,1489 @@
     renderKPI: () => renderKPI2
   });
 
+  // public/src/timerange.js
+  var timerange_exports = {};
+  __export(timerange_exports, {
+    applyTimeRange: () => applyTimeRange,
+    formatLocalDate: () => formatLocalDate2,
+    getCurrentRange: () => getCurrentRange,
+    openCustomRange: () => openCustomRange,
+    rangeText: () => rangeText,
+    refreshRangeConsumers: () => refreshRangeConsumers,
+    renderTimebar: () => renderTimebar,
+    resolveRange: () => resolveRange,
+    submitCustomRange: () => submitCustomRange,
+    withRange: () => withRange2,
+    ymd: () => ymd
+  });
+  var RANGES = ["\u4ECA\u5929", "\u6628\u5929", "\u8FD17\u5929", "\u8FD130\u5929", "\u8FD190\u5929", "\u8FD1\u4E00\u5E74", "\u81EA\u5B9A\u4E49"];
+  window._customRange = null;
+  try {
+    const cr = JSON.parse(localStorage.getItem("ferr:customRange") || "null");
+    if (cr && /^\d{4}-\d{2}-\d{2}$/.test(cr.start_date) && /^\d{4}-\d{2}-\d{2}$/.test(cr.end_date) && cr.start_date <= cr.end_date) window._customRange = cr;
+  } catch (e) {
+  }
+  try {
+    const t = localStorage.getItem("ferr:timeRange");
+    window._timeRange = RANGES.includes(t) ? t : "\u8FD130\u5929";
+  } catch (e) {
+    window._timeRange = "\u8FD130\u5929";
+  }
+  try {
+    const g = localStorage.getItem("ferr:gran");
+    window._gran = ["day", "week", "month"].includes(g) ? g : "week";
+  } catch (e) {
+    window._gran = "week";
+  }
+  var GRAN_LABEL = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" };
+  function formatLocalDate2(d) {
+    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+  function ymd(v) {
+    v = String(v == null ? "" : v).trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
+  }
+  function resolveRange(label) {
+    const today2 = /* @__PURE__ */ new Date();
+    today2.setHours(0, 0, 0, 0);
+    const back = (n) => {
+      const d = new Date(today2);
+      d.setDate(d.getDate() - n);
+      return d;
+    };
+    const r = (s, e) => ({ start_date: formatLocalDate2(s), end_date: formatLocalDate2(e), period_label: label });
+    switch (label) {
+      case "\u4ECA\u5929":
+        return r(today2, today2);
+      case "\u6628\u5929": {
+        const y = back(1);
+        return r(y, y);
+      }
+      case "\u8FD17\u5929":
+        return r(back(6), today2);
+      case "\u8FD130\u5929":
+        return r(back(29), today2);
+      case "\u8FD190\u5929":
+        return r(back(89), today2);
+      case "\u8FD1\u4E00\u5E74":
+        return r(back(364), today2);
+      case "\u4E0A\u5468": {
+        const day = (today2.getDay() + 6) % 7;
+        const thisMon = back(day);
+        const lastMon = new Date(thisMon);
+        lastMon.setDate(thisMon.getDate() - 7);
+        const lastSun = new Date(lastMon);
+        lastSun.setDate(lastMon.getDate() + 6);
+        return r(lastMon, lastSun);
+      }
+      case "\u4E0A\u534A\u6708": {
+        const first = new Date(today2.getFullYear(), today2.getMonth(), 1);
+        const mid = new Date(today2.getFullYear(), today2.getMonth(), 15);
+        return r(first, mid);
+      }
+      case "\u8FD11\u6708":
+        return r(back(29), today2);
+      case "\u8FD13\u6708":
+        return r(back(89), today2);
+      case "\u8FD1\u534A\u5E74":
+        return r(back(179), today2);
+      case "\u8FD11\u5E74":
+        return r(back(364), today2);
+      case "\u81EA\u5B9A\u4E49": {
+        const cr = window._customRange;
+        if (!cr) return null;
+        return { start_date: cr.start_date, end_date: cr.end_date, period_label: "\u81EA\u5B9A\u4E49 " + cr.start_date + "~" + cr.end_date };
+      }
+      default:
+        return r(back(29), today2);
+    }
+  }
+  var _range = resolveRange(window._timeRange);
+  function getCurrentRange() {
+    return _range;
+  }
+  function withRange2(path, range) {
+    range = range || _range;
+    if (!range || !range.start_date || !range.end_date) return path;
+    const sep = path.includes("?") ? "&" : "?";
+    return path + sep + "start_date=" + encodeURIComponent(range.start_date) + "&end_date=" + encodeURIComponent(range.end_date);
+  }
+  function rangeText(r) {
+    return r && r.start_date ? r.start_date + " ~ " + r.end_date : "\u2014";
+  }
+  function refreshRangeConsumers() {
+    document.dispatchEvent(new CustomEvent("timerange", { detail: { range: _range } }));
+    loadInquiries();
+    if (typeof loadGa4 === "function") loadGa4();
+  }
+  function applyTimeRange(label) {
+    const nr = resolveRange(label);
+    if (!nr) {
+      if (label === "\u81EA\u5B9A\u4E49") openCustomRange();
+      else toast("\u8BE5\u9884\u8BBE\u5C1A\u672A\u5B9E\u73B0\uFF0C\u672A\u6539\u53D8\u7B5B\u9009");
+      return false;
+    }
+    window._timeRange = label;
+    _range = nr;
+    try {
+      localStorage.setItem("ferr:timeRange", label);
+    } catch (e) {
+    }
+    document.querySelectorAll("[data-time] .trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === label));
+    document.querySelectorAll("[data-tauto]").forEach((el) => el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(_range));
+    refreshRangeConsumers();
+    toast("\u65F6\u95F4\u8303\u56F4\uFF1A" + _range.period_label);
+    return true;
+  }
+  function renderTimebar(bar) {
+    const grans = (bar.dataset.gran || "").split(",").map((s) => s.trim()).filter(Boolean);
+    const onlyWeekly = grans.includes("week") && !grans.includes("day");
+    const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${g}"${g === window._gran ? " selected" : ""}>${GRAN_LABEL[g] || g}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
+    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === window._timeRange ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(_range)}</button>` + granHtml;
+  }
+  document.querySelectorAll("[data-time]").forEach((bar) => {
+    renderTimebar(bar);
+    bar.addEventListener("click", (e) => {
+      const dateBtn = e.target.closest(".tauto-btn");
+      if (dateBtn) {
+        openCustomRange();
+        return;
+      }
+      const btn = e.target.closest(".trange");
+      if (!btn) return;
+      const rg = btn.textContent.trim();
+      if (rg === "\u81EA\u5B9A\u4E49" && !window._customRange) {
+        openCustomRange();
+        return;
+      }
+      applyTimeRange(rg);
+    });
+    bar.addEventListener("change", (e) => {
+      const sel = e.target.closest(".tgran");
+      if (!sel) return;
+      window._gran = sel.value;
+      try {
+        localStorage.setItem("ferr:gran", sel.value);
+      } catch (e2) {
+      }
+      document.querySelectorAll("[data-time] .tgran").forEach((s) => {
+        if ([...s.options].some((o) => o.value === sel.value)) s.value = sel.value;
+      });
+      document.dispatchEvent(new CustomEvent("granularity", { detail: { gran: window._gran } }));
+      toast("\u7C92\u5EA6\uFF1A" + (GRAN_LABEL[window._gran] || window._gran));
+    });
+  });
+  function openCustomRange() {
+    const cr = window._customRange || {};
+    const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
+    const back = (n) => {
+      const d = /* @__PURE__ */ new Date();
+      d.setDate(d.getDate() - n);
+      return formatLocalDate2(d);
+    };
+    document.getElementById("cr-start").value = cr.start_date || back(29);
+    document.getElementById("cr-end").value = cr.end_date || today2;
+    openModal("customRangeMask");
+    setTimeout(() => document.getElementById("cr-start").focus(), 50);
+  }
+  function submitCustomRange() {
+    const s = document.getElementById("cr-start").value;
+    const e = document.getElementById("cr-end").value;
+    if (!s || !e) {
+      toast("\u8BF7\u9009\u62E9\u5F00\u59CB\u548C\u7ED3\u675F\u65E5\u671F");
+      return;
+    }
+    if (s > e) {
+      toast("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
+      return;
+    }
+    const days = Math.floor((/* @__PURE__ */ new Date(e + "T00:00") - /* @__PURE__ */ new Date(s + "T00:00")) / 864e5);
+    if (days > 365) {
+      toast("\u533A\u95F4\u6700\u957F 1 \u5E74");
+      return;
+    }
+    window._customRange = { start_date: s, end_date: e };
+    try {
+      localStorage.setItem("ferr:customRange", JSON.stringify(window._customRange));
+    } catch (err) {
+    }
+    window._timeRange = "\u81EA\u5B9A\u4E49";
+    try {
+      localStorage.setItem("ferr:timeRange", "\u81EA\u5B9A\u4E49");
+    } catch (err) {
+    }
+    _range = resolveRange("\u81EA\u5B9A\u4E49");
+    document.querySelectorAll("[data-time] .trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === "\u81EA\u5B9A\u4E49"));
+    document.querySelectorAll("[data-tauto]").forEach((el) => el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(_range));
+    refreshRangeConsumers();
+    closeModal("customRangeMask");
+    toast("\u5DF2\u5E94\u7528\uFF1A" + _range.period_label);
+  }
+
+  // public/src/charts.js
+  window.DEMO_MODE = window.DEMO_MODE || false;
+  var DEMO = {
+    inqTrend: { a: [2, 1, 2, 1, 2, 1, 2, 1], total: [6, 5, 7, 8, 6, 7, 8, 8] },
+    seoMini: [95, 98, 92, 100, 104, 99, 108, 112],
+    semMini: [2.8, 2.9, 3, 2.95, 3.1, 3, 3.15, 3.2],
+    inqDonut: { a: 7, b: 5, c: 43, rate: "22%" },
+    chanDonut: { seo: 42, sem: 33, direct: 17, other: 8 },
+    seoSeries: {
+      labels: Array.from({ length: 14 }, (_, i) => "5/" + (4 + i * 2)),
+      clicks: [95, 98, 92, 100, 104, 99, 108, 112, 109, 115, 118, 114, 120, 124],
+      impr: [120, 128, 124, 132, 140, 134, 145, 150, 148, 155, 160, 156, 165, 170]
+    }
+  };
+  function loadFailureText(label, error) {
+    const reason = error && error.message && error.message !== "unauthorized" ? error.message : "\u767B\u5F55\u72B6\u6001\u5DF2\u5931\u6548\u6216\u670D\u52A1\u4E0D\u53EF\u7528";
+    return label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason;
+  }
+  function loadFailureRow(cols, label, error) {
+    return '<tr><td colspan="' + cols + '" class="dim csp-s-45c174bbec">' + esc(loadFailureText(label, error)) + "</td></tr>";
+  }
+  function chartEmpty(id, detail, title) {
+    const cv = document.getElementById(id);
+    if (!cv) return;
+    const wrap = cv.closest(".chart-wrap") || cv.parentElement;
+    if (!wrap) return;
+    cv.style.display = "none";
+    let box = wrap.querySelector(".chart-empty");
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "chart-empty";
+      box.appendChild(document.createElement("div"));
+      const sub = document.createElement("div");
+      sub.className = "ce-sub";
+      box.appendChild(sub);
+      wrap.appendChild(box);
+    }
+    box.firstElementChild.textContent = title || "\u6682\u65E0\u771F\u5B9E\u6570\u636E";
+    box.querySelector(".ce-sub").textContent = detail || "\u8BF7\u5F55\u5165\u6570\u636E\u6216\u5B8C\u6210\u540C\u6B65";
+  }
+  function setDonutLegend(map) {
+    Object.keys(map).forEach((id) => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = map[id];
+    });
+  }
+  function fillDonutLegendDemo() {
+    setDonutLegend({ lgInqA: DEMO.inqDonut.a, lgInqB: DEMO.inqDonut.b, lgInqC: DEMO.inqDonut.c, lgInqRate: DEMO.inqDonut.rate, lgChSeo: DEMO.chanDonut.seo + "%", lgChSem: DEMO.chanDonut.sem + "%", lgChDirect: DEMO.chanDonut.direct + "%", lgChOther: DEMO.chanDonut.other + "%" });
+  }
+  function blankDonutLegend() {
+    setDonutLegend({ lgInqA: "\u2014", lgInqB: "\u2014", lgInqC: "\u2014", lgInqRate: "\u2014", lgChSeo: "\u2014", lgChSem: "\u2014", lgChDirect: "\u2014", lgChOther: "\u2014" });
+  }
+  var _inqDonutChart = null;
+  var _chanDonutChart = null;
+  function renderInqDonuts() {
+    if (window.DEMO_MODE) return;
+    const rows2 = window._inqCache || [];
+    const cv1 = document.getElementById("inqDonut"), cv2 = document.getElementById("chanDonut");
+    if (_inqDonutChart) {
+      try {
+        _inqDonutChart.destroy();
+      } catch (e) {
+      }
+      _inqDonutChart = null;
+    }
+    if (_chanDonutChart) {
+      try {
+        _chanDonutChart.destroy();
+      } catch (e) {
+      }
+      _chanDonutChart = null;
+    }
+    if (!rows2.length) {
+      if (cv1) chartEmpty("inqDonut");
+      if (cv2) chartEmpty("chanDonut");
+      blankDonutLegend();
+      return;
+    }
+    const q = { A: 0, B: 0, C: 0 };
+    rows2.forEach((r) => {
+      if (q[r.grade] != null) q[r.grade]++;
+    });
+    const total = q.A + q.B + q.C;
+    const eff = q.A + q.B;
+    const rate = total ? Math.round(eff * 100 / total) + "%" : "\u2014";
+    if (cv1) {
+      const w = cv1.closest(".chart-wrap") || cv1.parentElement;
+      if (w) {
+        const ce = w.querySelector(".chart-empty");
+        if (ce) ce.remove();
+      }
+      cv1.style.display = "";
+      _inqDonutChart = new Chart(cv1, { type: "doughnut", data: { labels: ["A", "B", "C"], datasets: [{ data: [q.A, q.B, q.C], backgroundColor: ["#15a85a", "#2f72e8", "#dfe2e8"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
+    }
+    const ch = { SEO: 0, SEM: 0, direct: 0, other: 0 };
+    rows2.forEach((r) => {
+      if (r.grade !== "A" && r.grade !== "B") return;
+      const c = String(r.channel || "").trim();
+      if (/SEO自然|SEO/i.test(c)) ch.SEO++;
+      else if (/SEM付费|SEM/i.test(c)) ch.SEM++;
+      else if (/直接/.test(c)) ch.direct++;
+      else ch.other++;
+    });
+    const chTotal = ch.SEO + ch.SEM + ch.direct + ch.other;
+    const pct2 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
+    if (cv2) {
+      const w = cv2.closest(".chart-wrap") || cv2.parentElement;
+      if (w) {
+        const ce = w.querySelector(".chart-empty");
+        if (ce) ce.remove();
+      }
+      cv2.style.display = "";
+      _chanDonutChart = new Chart(cv2, { type: "doughnut", data: { labels: ["SEO", "SEM", "\u76F4\u63A5", "\u5176\u4ED6"], datasets: [{ data: [ch.SEO, ch.SEM, ch.direct, ch.other], backgroundColor: ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
+    }
+    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct2(ch.SEO), lgChSem: pct2(ch.SEM), lgChDirect: pct2(ch.direct), lgChOther: pct2(ch.other) });
+  }
+  var seoChart = null;
+  var seoFull = null;
+  function seoSeriesFromWeeks() {
+    let w = window._seoWeeksView !== void 0 ? window._seoWeeksView : window._seoWeeks;
+    if (w && w.length) {
+      if (window._gran === "month") {
+        const m = /* @__PURE__ */ new Map();
+        w.forEach((x) => {
+          const k = x.ym || x.date;
+          if (!m.has(k)) m.set(k, { date: k, clicks: 0, impr: 0 });
+          const o = m.get(k);
+          o.clicks += +x.clicks || 0;
+          o.impr += +x.impr || 0;
+        });
+        w = [...m.values()];
+      }
+      return { labels: w.map((x) => x.date), clicks: w.map((x) => x.clicks), impr: w.map((x) => Math.round(x.impr / 20)) };
+    }
+    return window.DEMO_MODE ? DEMO.seoSeries : null;
+  }
+  function buildSeoData(s) {
+    return { labels: s.labels, datasets: [{ label: "\u70B9\u51FB", data: s.clicks, borderColor: "#2f72e8", backgroundColor: "rgba(47,114,232,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }, { label: "\u5C55\u73B0\xF720", data: s.impr, borderColor: "#9aa1ae", borderDash: [4, 3], tension: 0.4, pointRadius: 0, borderWidth: 1.5 }] };
+  }
+  function rebuildSeoChart() {
+    if (window._gscBoard) {
+      renderSeoBoard();
+      return;
+    }
+    const cv = document.getElementById("seoBoard");
+    if (!cv) return;
+    const wrap = cv.closest(".chart-wrap") || cv.parentElement;
+    if (wrap) {
+      const ce = wrap.querySelector(".chart-empty");
+      if (ce) ce.remove();
+    }
+    cv.style.display = "";
+    if (seoChart) {
+      try {
+        seoChart.destroy();
+      } catch (e) {
+      }
+      seoChart = null;
+    }
+    seoFull = seoSeriesFromWeeks();
+    const so = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 7 } } } };
+    if (seoFull && seoFull.labels && seoFull.labels.length) seoChart = new Chart(cv, { type: "line", data: buildSeoData(seoFull), options: so });
+    else chartEmpty("seoBoard");
+  }
+  function refreshSeoWeekChart() {
+    seoFull = seoSeriesFromWeeks();
+    if (seoChart && seoFull) {
+      seoChart.data = buildSeoData(seoFull);
+      seoChart.update();
+    }
+  }
+  async function loadSeoChartRange() {
+    return loadSeoBoardGsc();
+  }
+  window._gscBoard = null;
+  function _shiftRange(r) {
+    const day = 864e5;
+    const s = /* @__PURE__ */ new Date(r.start_date + "T00:00:00"), e = /* @__PURE__ */ new Date(r.end_date + "T00:00:00");
+    const len = Math.round((e - s) / day) + 1;
+    const prevEnd = new Date(s.getTime() - day);
+    const prevStart = new Date(prevEnd.getTime() - (len - 1) * day);
+    return { start_date: formatLocalDate2(prevStart), end_date: formatLocalDate2(prevEnd) };
+  }
+  async function loadSeoBoardGsc() {
+    const cur = getCurrentRange();
+    let data = null, prev = null;
+    try {
+      data = await API.get(withRange2("/api/google/gsc/summary"));
+    } catch (e) {
+      window._gscBoard = { error: e };
+      renderSeoBoard();
+      return;
+    }
+    if (cur) {
+      try {
+        prev = await API.get(withRange2("/api/google/gsc/summary", _shiftRange(cur)));
+      } catch (e) {
+        prev = null;
+      }
+    }
+    window._gscBoard = { data, prev };
+    renderSeoBoard();
+  }
+  function _aggByGran(byDate, gran) {
+    if (!gran || gran === "day") return (byDate || []).map((x) => ({ label: (x.date || "").slice(5), clicks: +x.clicks || 0, impr: +x.impressions || 0 }));
+    const m = /* @__PURE__ */ new Map();
+    (byDate || []).forEach((x) => {
+      const d = (x.date || "").slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+      const k = gran === "month" ? d.slice(0, 7) : _weekStart(d);
+      if (!m.has(k)) m.set(k, { clicks: 0, impr: 0 });
+      const o = m.get(k);
+      o.clicks += +x.clicks || 0;
+      o.impr += +x.impressions || 0;
+    });
+    return [...m.keys()].sort().map((k) => ({ label: gran === "month" ? k : k.slice(5), clicks: m.get(k).clicks, impr: m.get(k).impr }));
+  }
+  function _seoDelta(id, cur, prev, lowerBetter, fmt2) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (prev == null || !isFinite(prev) || prev === 0 || cur == null) {
+      el.textContent = "";
+      el.className = "metric-delta";
+      return;
+    }
+    const diff = cur - prev;
+    const better = lowerBetter ? diff < 0 : diff > 0;
+    const arrow = diff > 0 ? "\u25B2" : diff < 0 ? "\u25BC" : "\u2014";
+    const txt = fmt2 === "pct" ? Math.abs(diff / prev * 100).toFixed(1) + "%" : Math.abs(diff).toFixed(1);
+    el.textContent = arrow + " " + txt;
+    el.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
+  }
+  function _seoPath(u) {
+    try {
+      return new URL(u).pathname || u;
+    } catch (e) {
+      return u || "(\u672A\u77E5)";
+    }
+  }
+  function renderSeoBoard() {
+    const cv = document.getElementById("seoBoard");
+    const board = window._gscBoard, data = board && board.data, prev = board && board.prev;
+    const error = board && board.error;
+    const t = data && data.totals || null;
+    const _t = (id, v) => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = v;
+    };
+    if (t) {
+      _t("sb-clicks", (t.clicks || 0).toLocaleString());
+      _t("sb-impr", (t.impressions || 0).toLocaleString());
+      _t("sb-pos", t.position != null ? Number(t.position).toFixed(1) : "\u2014");
+      _t("sb-cov", (data.queryCount || 0).toLocaleString());
+      const pt = prev && prev.totals;
+      _seoDelta("sb-clicks-d", t.clicks, pt ? pt.clicks : null, false, "pct");
+      _seoDelta("sb-impr-d", t.impressions, pt ? pt.impressions : null, false, "pct");
+      _seoDelta("sb-pos-d", t.position, pt ? pt.position : null, true, "abs");
+      _seoDelta("sb-cov-d", data.queryCount, prev ? prev.queryCount : null, false, "abs");
+    } else {
+      ["sb-clicks", "sb-impr", "sb-pos", "sb-cov"].forEach((id) => _t(id, "\u2014"));
+      ["sb-clicks-d", "sb-impr-d", "sb-pos-d", "sb-cov-d"].forEach((id) => {
+        const e = document.getElementById(id);
+        if (e) {
+          e.textContent = "";
+          e.className = "metric-delta";
+        }
+      });
+    }
+    if (cv) {
+      const wrap = cv.closest(".chart-wrap") || cv.parentElement;
+      if (seoChart) {
+        try {
+          seoChart.destroy();
+        } catch (e) {
+        }
+        seoChart = null;
+      }
+      const gran = window._gran;
+      let labels, clicks, impr;
+      if (!gran || gran === "day") {
+        const rng = board && board.data && board.data.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+        const a = _alignDaily(data && data.byDate, rng, "date");
+        labels = a.labels;
+        clicks = a.rows.map((r) => r ? +r.clicks || 0 : null);
+        impr = a.rows.map((r) => r ? +r.impressions || 0 : null);
+      } else {
+        const s = _aggByGran(data && data.byDate, gran);
+        labels = s.map((x) => x.label);
+        clicks = s.map((x) => x.clicks);
+        impr = s.map((x) => x.impr);
+      }
+      if (labels.length && (clicks.some((v) => v != null) || impr.some((v) => v != null))) {
+        if (wrap) {
+          const ce = wrap.querySelector(".chart-empty");
+          if (ce) ce.remove();
+        }
+        cv.style.display = "";
+        seoChart = new Chart(cv, { type: "line", data: { labels, datasets: [
+          { label: "\u70B9\u51FB", data: clicks, borderColor: "#2f72e8", backgroundColor: "rgba(47,114,232,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2, yAxisID: "y", spanGaps: false },
+          { label: "\u5C55\u73B0", data: impr, borderColor: "#9aa1ae", borderDash: [4, 3], tension: 0.4, pointRadius: 0, borderWidth: 1.5, yAxisID: "y1", spanGaps: false }
+        ] }, options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: { legend: { display: false }, tooltip: { enabled: true } },
+          scales: { x: { ticks: { maxTicksLimit: _xTickLimit(labels.length) } }, y: { position: "left", beginAtZero: true, ticks: { precision: 0 } }, y1: { position: "right", beginAtZero: true, grid: { drawOnChartArea: false } } }
+        } });
+      } else if (error) chartEmpty("seoBoard", loadFailureText("GSC", error), "\u52A0\u8F7D\u5931\u8D25");
+      else chartEmpty("seoBoard");
+    }
+    const tb = document.getElementById("seoPageRows");
+    if (tb) {
+      const pages = data && data.topPages || [];
+      if (error) {
+        tb.innerHTML = loadFailureRow(7, "GSC", error);
+      } else if (!pages.length) {
+        tb.innerHTML = '<tr><td colspan="7" class="dim csp-s-45c174bbec">\u6682\u65E0\u771F\u5B9E\u6570\u636E \xB7 \u8BF7\u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
+      } else {
+        tb.innerHTML = pages.slice(0, 20).map((p) => {
+          const path = _seoPath(p.page);
+          const ctr = p.ctr != null ? (p.ctr * 100).toFixed(1) + "%" : "\u2014";
+          const pos = p.position != null ? Number(p.position).toFixed(1) : "\u2014";
+          const q = "\u5206\u6790\u9875\u9762 " + path + " \u7684SEO\u8868\u73B0\uFF1A\u70B9\u51FB" + (p.clicks || 0) + "\u3001\u5C55\u73B0" + (p.impressions || 0) + "\u3001CTR" + ctr + "\u3001\u5747\u6392\u540D" + pos + "\u3002\u7ED9\u51FA\u6700\u8BE5\u5148\u6539\u76843\u4E2A\u52A8\u4F5C\u3002";
+          const title = path + " \u8BCA\u65AD";
+          return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + pos + '</td><td class="num dim">\u2014</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, title) + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
+        }).join("");
+      }
+    }
+  }
+  function resizeScatters() {
+    setTimeout(() => {
+      [window._seoScatterChart, window._semScatterChart].forEach((c) => {
+        if (c) {
+          try {
+            c.resize();
+          } catch (e) {
+          }
+        }
+      });
+    }, 60);
+  }
+  window._seoSrcDonut = null;
+  window._seoSrcArea = null;
+  window._seoScatterChart = null;
+  function _median(a) {
+    const s = (a || []).filter((x) => x != null).sort((x, y) => x - y);
+    if (!s.length) return 0;
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+  function _deltaHtml(cur, prev, lowerBetter, fmt2) {
+    if (prev == null || !isFinite(prev) || prev === 0 || cur == null) return '<span class="dim">\u2014</span>';
+    const diff = cur - prev;
+    if (diff === 0) return '<span class="dim">\u2014</span>';
+    const better = lowerBetter ? diff < 0 : diff > 0;
+    const arrow = diff > 0 ? "\u25B2" : "\u25BC";
+    const txt = fmt2 === "pct" ? Math.abs(diff / prev * 100).toFixed(0) + "%" : Math.abs(diff).toFixed(fmt2 === "abs1" ? 1 : 0);
+    return '<span class="' + (better ? "delta-pos" : "delta-neg") + '">' + arrow + txt + "</span>";
+  }
+  async function loadSeoBoardFull() {
+    let d = null;
+    try {
+      d = await API.get(withRange2("/api/google/seo/board"));
+    } catch (e) {
+      d = { error: e };
+    }
+    renderSeoHighlights(d);
+    renderSeoDeltaTables(d);
+    renderSeoScatter(d);
+    renderSeoSources(d);
+  }
+  function renderSeoHighlights(d) {
+    const box = document.getElementById("seoHighlights");
+    if (!box) return;
+    if (d && d.error) {
+      box.classList.add("is-hidden");
+      box.innerHTML = "";
+      return;
+    }
+    const hs = d && d.highlights || [];
+    if (!hs.length) {
+      box.classList.add("is-hidden");
+      box.innerHTML = "";
+      return;
+    }
+    box.classList.remove("is-hidden");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc(h.text) + "</span>").join("");
+  }
+  function renderSeoDeltaTables(d) {
+    const error = d && d.error;
+    const pt = document.getElementById("seoPagesDelta");
+    if (pt) {
+      const pages = d && d.pages || [];
+      pt.innerHTML = error ? loadFailureRow(5, "SEO \u770B\u677F", error) : pages.length ? pages.map((p) => {
+        const path = _seoPath(p.page);
+        const q = "\u5206\u6790\u843D\u5730\u9875 " + path + " \u7684SEO\u8868\u73B0\uFF1A\u672C\u671F\u70B9\u51FB" + (p.clicks || 0) + "(\u4E0A\u671F" + (p.clicksPrev || 0) + ")\u3001\u5C55\u73B0" + (p.impressions || 0) + "\u3002\u7ED9\u51FA\u6700\u8BE5\u5148\u6539\u76843\u4E2A\u52A8\u4F5C\u3002";
+        return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(p.clicks, p.clicksPrev, false, "pct") + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u843D\u5730\u9875\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
+      }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
+    }
+    const qt = document.getElementById("seoQueriesDelta");
+    if (qt) {
+      const qs = d && d.queries || [];
+      qt.innerHTML = error ? loadFailureRow(6, "SEO \u770B\u677F", error) : qs.length ? qs.map((q) => {
+        const pos = q.position != null ? Number(q.position).toFixed(1) : "\u2014";
+        return "<tr><td>" + esc(q.query) + '</td><td class="num">' + (q.impressions || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(q.impressions, q.imprPrev, false, "pct") + '</td><td class="num">' + (q.clicks || 0).toLocaleString() + '</td><td class="num">' + pos + '</td><td class="num">' + _deltaHtml(q.position, q.positionPrev, true, "abs1") + "</td></tr>";
+      }).join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
+    }
+  }
+  function _seoScatterTitles(t, s) {
+    const a = document.getElementById("seoScatterTitle"), b = document.getElementById("seoScatterSub");
+    if (a) a.textContent = t;
+    if (b) b.textContent = s;
+  }
+  function renderSeoScatterTargets(list) {
+    const box = document.getElementById("seoScatterTargets");
+    if (!box) return;
+    if (!list || !list.length) {
+      box.innerHTML = "";
+      return;
+    }
+    box.innerHTML = '<div class="scatter-targets"><div class="st-head"><i class="ti ti-target-arrow"></i> \u91CD\u70B9\u4F18\u5316\u5BF9\u8C61 \xB7 \u9AD8\u6D41\u91CF\u9AD8\u8DF3\u51FA\uFF08' + list.length + "\uFF09</div>" + list.slice(0, 8).map((p) => {
+      const path = _seoPath(p.page), b = Math.round((p.bounceRate || 0) * 100), dur = Math.round(p.avgDuration || 0);
+      const q = "\u843D\u5730\u9875 " + path + " \u4F1A\u8BDD" + p.sessions + "\u3001\u8DF3\u51FA\u7387" + b + "%\u3001\u5747\u65F6\u957F" + dur + "s\uFF0C\u6D41\u91CF\u4E0D\u5C0F\u4F46\u8DF3\u51FA\u504F\u9AD8\u3002\u7ED9\u51FA\u964D\u4F4E\u8DF3\u51FA\u3001\u63D0\u5347\u7559\u5B58\u4E0E\u8F6C\u5316\u7684\u5177\u4F53\u4F18\u5316\u52A8\u4F5C\uFF08\u9996\u5C4F/\u5185\u5BB9\u5339\u914D/CTA/\u52A0\u8F7D\u901F\u5EA6\uFF09\u3002";
+      const ti = "\u964D\u8DF3\u51FA\uFF1A" + path, de = "\u843D\u5730\u9875 " + path + " \u9AD8\u6D41\u91CF(" + p.sessions + "\u4F1A\u8BDD)\u9AD8\u8DF3\u51FA(" + b + "%)\uFF0C\u4F18\u5316\u9996\u5C4F/\u5185\u5BB9\u5339\u914D/CTA \u964D\u4F4E\u8DF3\u51FA\u3001\u63D0\u5347\u8F6C\u5316\u3002", ev = "GA4 \u4F1A\u8BDD" + p.sessions + " \u8DF3\u51FA" + b + "% \u65F6\u957F" + dur + "s";
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(path) + '</span><span class="st-meta dim">' + p.sessions.toLocaleString() + ' \u4F1A\u8BDD \xB7 \u8DF3\u51FA <b class="csp-s-371de31267">' + b + "%</b> \xB7 " + dur + 's</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u964D\u8DF3\u51FA\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
+    }).join("") + "</div>";
+  }
+  function renderSeoScatter(d) {
+    const el = document.getElementById("seoScatter"), empty = document.getElementById("seoScatterEmpty");
+    if (!el) return;
+    const _tb = document.getElementById("seoScatterTargets");
+    if (_tb) _tb.innerHTML = "";
+    if (d && d.error) {
+      el.style.display = "none";
+      if (empty) {
+        empty.classList.remove("is-hidden");
+        empty.textContent = loadFailureText("SEO \u6563\u70B9", d.error);
+      }
+      return;
+    }
+    const ps = d && d.pageScatter || [];
+    if (ps.length && typeof echarts !== "undefined") {
+      el.style.display = "";
+      if (empty) empty.classList.add("is-hidden");
+      _seoScatterTitles("\u627E\u51FA\u9700\u8981\u4F18\u5316\u7684\u9875\u9762 \xB7 \u4F1A\u8BDD \xD7 \u8DF3\u51FA\u7387", "\u53F3\u4E0A\u7EA2\u533A=\u9AD8\u6D41\u91CF+\u9AD8\u8DF3\u51FA=\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61\uFF1B\u4E2D\u4F4D\u7EBF\u5206\u56DB\u8C61\u9650\uFF1B\u70B9=\u843D\u5730\u9875");
+      if (window._seoScatterChart) {
+        try {
+          window._seoScatterChart.dispose();
+        } catch (e) {
+        }
+      }
+      window._seoScatterChart = echarts.init(el);
+      const medS = _median(ps.map((p) => p.sessions)), medB = _median(ps.map((p) => (p.bounceRate || 0) * 100));
+      const maxS = Math.max(...ps.map((p) => p.sessions), 1) * 1.6;
+      const isTarget = (p) => p.sessions >= medS && (p.bounceRate || 0) * 100 >= medB;
+      const short = (u) => {
+        const s = _seoPath(u);
+        return s.length > 22 ? "\u2026" + s.slice(-21) : s;
+      };
+      const data2 = ps.map((p) => {
+        const t = isTarget(p);
+        return {
+          value: [p.sessions, +((p.bounceRate || 0) * 100).toFixed(1), _seoPath(p.page), p.avgDuration || 0],
+          itemStyle: { color: t ? "#e5484d" : "#2f72e8", opacity: t ? 0.85 : 0.6 },
+          label: { show: t, position: "right", fontSize: 9, color: "#c93338", formatter: (o) => short(o.value[2]) }
+        };
+      });
+      window._seoScatterChart.setOption({
+        grid: { left: 52, right: 120, top: 16, bottom: 44 },
+        xAxis: { type: "log", name: "\u4F1A\u8BDD", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
+        yAxis: { type: "value", name: "\u8DF3\u51FA\u7387%", min: 0, max: 100, nameGap: 30, axisLabel: { fontSize: 10 } },
+        tooltip: { formatter: (o) => esc(o.value[2]) + "<br/>\u4F1A\u8BDD " + o.value[0].toLocaleString() + " \xB7 \u8DF3\u51FA\u7387 " + o.value[1] + "% \xB7 \u5747\u65F6\u957F " + Math.round(o.value[3]) + "s" },
+        series: [{
+          type: "scatter",
+          symbolSize: (v) => Math.min(32, 8 + Math.sqrt(v[0] || 0)),
+          data: data2,
+          markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: true, fontSize: 9, color: "#9aa1ae", formatter: (o) => o.dataType === "max" ? "" : "\u4E2D\u4F4D" }, data: [{ xAxis: medS }, { yAxis: medB }] },
+          markArea: { silent: true, itemStyle: { color: "rgba(229,72,77,.07)" }, label: { show: true, position: ["85%", "6%"], color: "#e5484d", fontSize: 11, fontWeight: "bold", formatter: "\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61" }, data: [[{ xAxis: medS, yAxis: medB }, { xAxis: maxS, yAxis: 100 }]] }
+        }]
+      });
+      renderSeoScatterTargets(ps.filter(isTarget).sort((a, b) => b.sessions - a.sessions));
+      return;
+    }
+    const pts = d && d.scatter || [];
+    if (typeof echarts === "undefined" || !pts.length) {
+      el.style.display = "none";
+      if (empty) empty.classList.remove("is-hidden");
+      return;
+    }
+    el.style.display = "";
+    if (empty) empty.classList.add("is-hidden");
+    _seoScatterTitles("\u673A\u4F1A\u8BCD\u8C61\u9650 \xB7 \u5C55\u73B0 \xD7 \u6392\u540D", "\uFF08GA4 \u8DF3\u51FA\u7387\u5F85\u91CD\u65B0\u540C\u6B65\u540E\u5207\u6362\u4E3A\u201C\u4F1A\u8BDD\xD7\u8DF3\u51FA\u7387\u201D\uFF09\u53F3\u4E0A=\u9AD8\u5C55\u73B0\u5DEE\u6392\u540D=\u91CD\u70B9\u653B\uFF1B\u70B9=\u5173\u952E\u8BCD");
+    if (window._seoScatterChart) {
+      try {
+        window._seoScatterChart.dispose();
+      } catch (e) {
+      }
+    }
+    window._seoScatterChart = echarts.init(el);
+    const data = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
+    const medImpr = _median(pts.map((p) => p.impressions)), medPos = _median(pts.map((p) => p.position));
+    window._seoScatterChart.setOption({
+      grid: { left: 52, right: 24, top: 16, bottom: 44 },
+      xAxis: { type: "log", name: "\u5C55\u73B0", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
+      yAxis: { type: "value", name: "\u6392\u540D(\u8D8A\u4F4E\u8D8A\u597D)", inverse: true, min: 1, nameGap: 30, axisLabel: { fontSize: 10 } },
+      tooltip: { formatter: (o) => esc(o.data[3]) + "<br/>\u5C55\u73B0 " + o.data[0].toLocaleString() + " \xB7 \u6392\u540D " + o.data[1].toFixed(1) + " \xB7 \u70B9\u51FB " + o.data[2] },
+      series: [{
+        type: "scatter",
+        symbolSize: (v) => Math.min(30, 7 + Math.sqrt(v[2] || 0) * 2.2),
+        data,
+        itemStyle: { color: "#2f72e8", opacity: 0.68 },
+        markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: false }, data: [{ xAxis: medImpr }, { yAxis: medPos }] }
+      }]
+    });
+  }
+  function renderSeoSources(d) {
+    const palette = ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514", "#e5484d", "#9aa1ae"];
+    const paletteClasses = ["chart-color-blue", "chart-color-purple", "chart-color-teal", "chart-color-amber", "chart-color-red", "chart-color-muted"];
+    const srcs = d && d.sources || [];
+    const error = d && d.error;
+    const donutCv = document.getElementById("seoSrcDonut"), legend = document.getElementById("seoSrcLegend");
+    if (donutCv) {
+      if (window._seoSrcDonut) {
+        try {
+          window._seoSrcDonut.destroy();
+        } catch (e) {
+        }
+        window._seoSrcDonut = null;
+      }
+      const top = srcs.slice(0, 6);
+      if (top.length) {
+        window._seoSrcDonut = new Chart(donutCv, { type: "doughnut", data: { labels: top.map((s) => s.source), datasets: [{ data: top.map((s) => s.sessions), backgroundColor: palette, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "62%" } });
+        const total = top.reduce((a, s) => a + (s.sessions || 0), 0) || 1;
+        if (legend) legend.innerHTML = top.map((s, i) => {
+          const b = s.bounceRate != null ? '<span class="dim csp-s-128d24435a"> \xB7 \u8DF3\u51FA' + Math.round(s.bounceRate * 100) + "%</span>" : "";
+          return '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc(s.source) + b + "</span><b>" + Math.round((s.sessions || 0) / total * 100) + "%</b></div>";
+        }).join("");
+      } else if (legend) {
+        legend.innerHTML = '<span class="dim">' + (error ? esc(loadFailureText("SEO \u6765\u6E90", error)) : "\u6682\u65E0 GA4 \u6765\u6E90\u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
+      }
+    }
+    const areaCv = document.getElementById("seoSrcArea");
+    if (areaCv) {
+      if (window._seoSrcArea) {
+        try {
+          window._seoSrcArea.destroy();
+        } catch (e) {
+        }
+        window._seoSrcArea = null;
+      }
+      const ss = d && d.sourceSeries;
+      if (ss && ss.dates && ss.dates.length) {
+        const rng = d && d.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+        const dRows = ss.dates.map((x, i) => ({ date: x, _i: i }));
+        const aligned = _alignDaily(dRows, rng, "date");
+        const datasets = ss.series.map((se, i) => ({ label: se.source, data: aligned.rows.map((r) => r ? se.values[r._i] || 0 : 0), borderColor: palette[i % palette.length], backgroundColor: palette[i % palette.length] + "55", fill: true, stack: "s", tension: 0.3, pointRadius: 0, borderWidth: 1.4 }));
+        window._seoSrcArea = new Chart(areaCv, { type: "line", data: { labels: aligned.labels, datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { ticks: { maxTicksLimit: _xTickLimit(aligned.labels.length), font: { size: 10 } } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } } });
+      } else if (error) chartEmpty("seoSrcArea", loadFailureText("SEO \u6765\u6E90\u8D8B\u52BF", error), "\u52A0\u8F7D\u5931\u8D25");
+      else chartEmpty("seoSrcArea");
+    }
+  }
+  window._adsBoard = null;
+  function _money(m) {
+    return m == null ? "\u2014" : (m / 1e6).toLocaleString(void 0, { maximumFractionDigits: 2 });
+  }
+  function _conv(v) {
+    return v == null ? "\u2014" : Number(v).toLocaleString(void 0, { maximumFractionDigits: 2 });
+  }
+  function _adsBadge(cost, conv) {
+    if ((cost || 0) === 0) return '<span class="badge b-gray">\u65E0\u82B1\u8D39</span>';
+    if ((conv || 0) > 0) return '<span class="badge b-green">\u6709\u8F6C\u5316</span>';
+    return '<span class="badge b-red">\u96F6\u6709\u6548</span>';
+  }
+  window._semCampaign = "";
+  window._semAdGroup = "";
+  function withSemCampaign(path) {
+    let p = path;
+    const add = (k, v) => {
+      if (v) p += (p.includes("?") ? "&" : "?") + k + "=" + encodeURIComponent(v);
+    };
+    add("campaign_id", window._semCampaign);
+    add("ad_group_id", window._semAdGroup);
+    return p;
+  }
+  function _semScopeNote() {
+    const el = document.getElementById("semAttrScope");
+    if (el) el.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
+  }
+  function onSemCampaignChange(v) {
+    window._semCampaign = v || "";
+    window._semAdGroup = "";
+    const ag = document.getElementById("semAdGroupFilter");
+    if (ag) {
+      ag.value = "";
+      ag.disabled = !window._semCampaign;
+    }
+    loadSemBoardAds();
+    loadSemBoardFull();
+    _semScopeNote();
+  }
+  function onSemAdGroupChange(v) {
+    window._semAdGroup = v || "";
+    loadSemBoardAds();
+    loadSemBoardFull();
+    _semScopeNote();
+  }
+  function _fillSemAdGroupFilter(list) {
+    const sel = document.getElementById("semAdGroupFilter");
+    if (!sel) return;
+    if (!window._semCampaign) {
+      sel.innerHTML = '<option value="">\u5168\u90E8\u5E7F\u544A\u7EC4</option>';
+      sel.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    const cur = sel.value;
+    sel.innerHTML = ['<option value="">\u5168\u90E8\u5E7F\u544A\u7EC4</option>'].concat((list || []).map((g) => '<option value="' + esc(g.adGroupId) + '">' + esc(g.adGroupName || "(\u672A\u547D\u540D\u5E7F\u544A\u7EC4)") + "</option>")).join("");
+    sel.value = cur;
+  }
+  function _fillSemCampaignFilter(list) {
+    const sel = document.getElementById("semCampFilter");
+    if (!sel || window._semCampaign) return;
+    const cur = sel.value;
+    sel.innerHTML = ['<option value="">\u5168\u90E8\u7CFB\u5217</option>'].concat((list || []).map((c) => '<option value="' + esc(c.campaignId) + '">' + esc(c.campaignName || "(\u672A\u547D\u540D)") + "</option>")).join("");
+    sel.value = cur;
+  }
+  async function loadSemBoardAds() {
+    let data = null;
+    try {
+      data = await API.get(withSemCampaign(withRange2("/api/google/ads/summary")));
+    } catch (e) {
+      window._adsBoard = { error: e };
+      renderSemBoard();
+      return;
+    }
+    window._adsBoard = data;
+    renderSemBoard();
+  }
+  function renderSemBoard() {
+    const data = window._adsBoard, t = data && data.totals;
+    const error = data && data.error;
+    const _t = (id, v) => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = v;
+    };
+    const _int = (v) => v == null ? "\u2014" : Number(v).toLocaleString();
+    const _pct = (v) => v == null ? "\u2014" : (Number(v) * 100).toFixed(2) + "%";
+    const ids = ["sm-cost", "sm-impr", "sm-clicks", "sm-ctr", "sm-cpc", "sm-conv", "sm-cvr", "sm-cpconv"];
+    if (t) {
+      _t("sm-cost", _money(t.costMicros));
+      _t("sm-impr", _int(t.impressions));
+      _t("sm-clicks", _int(t.clicks));
+      _t("sm-ctr", _pct(t.ctr));
+      _t("sm-cpc", _money(t.averageCpcMicros));
+      _t("sm-conv", _conv(t.conversions));
+      _t("sm-cvr", t.clicks > 0 ? _pct(Number(t.conversions || 0) / t.clicks) : "\u2014");
+      _t("sm-cpconv", _money(t.costPerConversionMicros));
+    } else {
+      ids.forEach((id) => _t(id, "\u2014"));
+    }
+    if (data) {
+      _fillSemCampaignFilter(data.campaigns);
+      _fillSemAdGroupFilter(data.adGroups);
+    }
+    const tb = document.getElementById("semHierRows");
+    if (!tb) return;
+    const camps = data && data.campaigns || [], kws = data && data.keywords || [];
+    if (error) {
+      tb.innerHTML = loadFailureRow(5, "Ads \u6982\u89C8", error);
+      return;
+    }
+    if (!camps.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u771F\u5B9E\u6570\u636E \xB7 \u8BF7\u5B8C\u6210 Google Ads \u540C\u6B65</td></tr>';
+      return;
+    }
+    const byCamp = /* @__PURE__ */ new Map();
+    kws.forEach((k) => {
+      const n = k.campaignName || "";
+      if (!byCamp.has(n)) byCamp.set(n, []);
+      byCamp.get(n).push(k);
+    });
+    const cpc = (cost, conv) => conv && conv > 0 ? _money(cost / conv) : "\u2014";
+    let html = "";
+    camps.forEach((c) => {
+      html += '<tr class="h-camp" data-chart-action="toggle-hier"><td><i class="ti ti-chevron-down hicon"></i> <b>' + esc(c.campaignName || "(\u672A\u547D\u540D)") + '</b></td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
+      (byCamp.get(c.campaignName || "") || []).forEach((k) => {
+        const mt = k.matchType ? " \xB7 " + esc(k.matchType) : "";
+        html += '<tr class="h-kw"><td>\u3000\u2022 ' + esc(k.keyword || "") + '<span class="dim csp-s-33ee298127">' + mt + '</span></td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>";
+      });
+    });
+    tb.innerHTML = html;
+  }
+  async function loadAttribution() {
+    let d = null;
+    try {
+      d = await API.get(withRange2("/api/attribution"));
+    } catch (e) {
+      d = { error: e };
+    }
+    renderAttribution(d);
+  }
+  function renderAttribution(d) {
+    const card = document.getElementById("semAttrCard"), body = document.getElementById("semAttrBody");
+    if (!card || !body) return;
+    if (d && d.error) {
+      card.classList.remove("is-hidden");
+      body.innerHTML = '<div class="dim">' + esc(loadFailureText("\u8BE2\u76D8\u5F52\u56E0", d.error)) + "</div>";
+      return;
+    }
+    const sem = d && d.sem;
+    if (!sem || !sem.costMicros && !sem.inquiriesTotal) {
+      card.classList.add("is-hidden");
+      return;
+    }
+    card.classList.remove("is-hidden");
+    const cost = sem.costMicros / 1e6;
+    const real = sem.costPerEffective != null ? Math.round(sem.costPerEffective).toLocaleString() : "\u2014";
+    const adsCpa = sem.adsConversions > 0 ? Math.round(cost / sem.adsConversions).toLocaleString() : "\u2014";
+    const gap = sem.costPerEffective != null && sem.adsConversions > 0 ? sem.costPerEffective / (cost / sem.adsConversions) : null;
+    body.innerHTML = '<div class="attr-report-grid"><div class="attr-box"><div class="attr-num">' + (sem.inquiriesEffective || 0) + '<span class="dim csp-s-a49cca52be">/' + (sem.inquiriesTotal || 0) + '</span></div><div class="attr-lbl">\u771F\u5B9E\u6709\u6548\u8BE2\u76D8 (A/B)</div></div><div class="attr-box"><div class="attr-num">' + (sem.inquiriesA || 0) + '</div><div class="attr-lbl">A \u7EA7\u8BE2\u76D8\u6570\u91CF</div></div><div class="attr-box"><div class="attr-num">' + real + '</div><div class="attr-lbl">\u771F\u5B9E\u6BCF\u6709\u6548\u8BE2\u76D8\u6210\u672C \xB7 Ads \u81EA\u62A5 ' + adsCpa + "</div></div></div>" + (gap && gap >= 1.3 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u771F\u5B9E\u6BCF\u8BE2\u76D8\u6210\u672C\u7EA6\u4E3A Ads \u81EA\u62A5\u7684 ' + gap.toFixed(1) + " \u500D\u2014\u2014Ads \u8F6C\u5316\u7EDF\u8BA1\u53EF\u80FD\u865A\u9AD8\uFF0C\u522B\u53EA\u770B Ads \u540E\u53F0\u6570\u5B57\u3002</div>" : "") + (sem.inquiriesEffective === 0 && sem.costMicros > 0 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u672C\u533A\u95F4 SEM \u4ED8\u8D39\u82B1\u4E86 ' + _money(sem.costMicros) + " \u4F46\u771F\u5B9E\u6709\u6548\u8BE2\u76D8\u4E3A 0\u2014\u2014\u68C0\u67E5\u6E20\u9053\u6807\u6CE8\u6216\u6295\u653E\u6548\u679C\u3002</div>" : "");
+  }
+  window._semCostDonut = null;
+  window._semTrend = null;
+  window._semScatterChart = null;
+  async function loadSemBoardFull() {
+    let d = null;
+    try {
+      d = await API.get(withSemCampaign(withRange2("/api/google/ads/board")));
+    } catch (e) {
+      d = { error: e };
+    }
+    renderSemHighlights(d);
+    renderSemDeltaTables(d);
+    renderSemScatter(d);
+    renderSemCostCharts(d);
+  }
+  function renderSemHighlights(d) {
+    const box = document.getElementById("semHighlights");
+    if (!box) return;
+    if (d && d.error) {
+      box.classList.add("is-hidden");
+      box.innerHTML = "";
+      return;
+    }
+    const hs = d && d.highlights || [];
+    if (!hs.length) {
+      box.classList.add("is-hidden");
+      box.innerHTML = "";
+      return;
+    }
+    box.classList.remove("is-hidden");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc(h.text) + "</span>").join("");
+  }
+  function renderSemDeltaTables(d) {
+    const error = d && d.error;
+    const cpc = (cost, conv) => conv && conv > 0 ? _money(cost / conv) : "\u2014";
+    const rate = (a, b) => b && b > 0 ? (a / b * 100).toFixed(1) + "%" : "\u2014";
+    const ct = document.getElementById("semCampFull");
+    if (ct) {
+      const cs = d && d.campaigns || [];
+      ct.innerHTML = error ? loadFailureRow(10, "SEM \u770B\u677F", error) : cs.length ? cs.map((c) => {
+        const ctr = rate(c.clicks, c.impressions), cvr = rate(Number(c.conversions || 0), c.clicks);
+        const cpcCost = c.clicks && c.clicks > 0 ? _money(c.costMicros / c.clicks) : "\u2014";
+        return "<tr><td>" + esc(c.name || "(\u672A\u547D\u540D)") + '</td><td class="num">' + (c.impressions || 0).toLocaleString() + '</td><td class="num">' + (c.clicks || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + cpcCost + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cvr + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
+      }).join("") : '<tr><td colspan="10" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
+    }
+    const kt = document.getElementById("semKwRows");
+    if (kt) {
+      const ks = d && d.keywords || [];
+      kt.innerHTML = error ? loadFailureRow(6, "SEM \u770B\u677F", error) : ks.length ? ks.map((k) => "<tr><td>" + esc(k.keyword || "") + '</td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + _deltaHtml(k.conversions, k.convPrev, false, "abs1") + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>").join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
+    }
+  }
+  function _semScatterTitles(t, s) {
+    const a = document.getElementById("semScatterTitle"), b = document.getElementById("semScatterSub");
+    if (a) a.textContent = t;
+    if (b) b.textContent = s;
+  }
+  function renderSemScatterTargets(list) {
+    const box = document.getElementById("semScatterTargets");
+    if (!box) return;
+    if (!list || !list.length) {
+      box.innerHTML = "";
+      return;
+    }
+    box.innerHTML = '<div class="scatter-targets"><div class="st-head"><i class="ti ti-scissors"></i> \u96F6\u8F6C\u5316\u70E7\u94B1\u8BCD \xB7 \u8BE5\u780D/\u6682\u505C\uFF08' + list.length + "\uFF09</div>" + list.slice(0, 10).map((p) => {
+      const cost = p.costMicros / 1e6, c = Number(p.conversions || 0);
+      const q = "\u5173\u952E\u8BCD\u300C" + p.keyword + "\u300D\u82B1\u8D39" + cost.toFixed(0) + "\u3001\u8F6C\u5316" + c + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\uFF0C\u82B1\u94B1\u591A\u4F46\u8F6C\u5316\u4F4E\u3002\u5224\u65AD\u8BE5\u6682\u505C/\u964D\u4EF7/\u6539\u7CBE\u51C6\u5339\u914D/\u6362\u843D\u5730\u9875\uFF0C\u7ED9\u51FA\u5177\u4F53\u52A8\u4F5C\u4E0E\u9A8C\u8BC1\u6307\u6807\u3002";
+      const ti = "\u8BE5\u780D\u8BCD\uFF1A" + p.keyword, de = "\u5173\u952E\u8BCD\u300C" + p.keyword + "\u300D(" + (p.campaignName || "") + ") \u82B1" + cost.toFixed(0) + " \u4EC5\u8F6C\u5316" + c + "\uFF0C\u6682\u505C\u6216\u964D\u4EF7/\u6539\u7CBE\u51C6\u5339\u914D\u6B62\u635F\u3002", ev = "Ads \u82B1\u8D39" + cost.toFixed(0) + " \u8F6C\u5316" + c + " \u70B9\u51FB" + (p.clicks || 0);
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(p.keyword) + '</span><span class="st-meta dim">' + esc(p.campaignName || "") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8BE5\u780D\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
+    }).join("") + "</div>";
+  }
+  function renderSemScatter(d) {
+    const el = document.getElementById("semScatter"), empty = document.getElementById("semScatterEmpty");
+    if (!el) return;
+    const _tb = document.getElementById("semScatterTargets");
+    if (_tb) _tb.innerHTML = "";
+    if (d && d.error) {
+      el.style.display = "none";
+      if (empty) {
+        empty.classList.remove("is-hidden");
+        empty.textContent = loadFailureText("SEM \u6563\u70B9", d.error);
+      }
+      return;
+    }
+    const all = d && d.scatter || [];
+    const conv = all.filter((p) => Number(p.conversions || 0) > 0).map((p) => ({ ...p, cost: p.costMicros / 1e6, cpa: p.costMicros / 1e6 / Number(p.conversions) }));
+    const zero = all.filter((p) => Number(p.conversions || 0) === 0 && p.costMicros > 0).sort((a, b) => b.costMicros - a.costMicros);
+    _semScatterTitles("\u82B1\u8D39 \xD7 \u6BCF\u8F6C\u5316\u6210\u672C \xB7 \u627E\u53C8\u8D35\u53C8\u4E0D\u5212\u7B97\u7684\u8BCD", "\u70B9=\u6709\u8F6C\u5316\u7684\u8BCD\uFF1B\u4E0A\u65B9\u7EA2\u5E26=\u6BCF\u8F6C\u5316\u6210\u672C\u504F\u9AD8\u2192\u4F18\u5316\u51FA\u4EF7/\u843D\u5730\u9875\uFF1B\u96F6\u8F6C\u5316\u70E7\u94B1\u8BCD\u89C1\u4E0B\u65B9\u6E05\u5355");
+    if (typeof echarts !== "undefined" && conv.length) {
+      el.style.display = "";
+      if (empty) empty.classList.add("is-hidden");
+      if (window._semScatterChart) {
+        try {
+          window._semScatterChart.dispose();
+        } catch (e) {
+        }
+      }
+      window._semScatterChart = echarts.init(el);
+      const medCpa = _median(conv.map((p) => p.cpa));
+      const short = (s) => {
+        s = String(s || "");
+        return s.length > 20 ? s.slice(0, 19) + "\u2026" : s;
+      };
+      const data = conv.map((p) => {
+        const t = p.cpa >= medCpa;
+        return { value: [+p.cost.toFixed(0), +p.cpa.toFixed(0), p.keyword, p.conversions], itemStyle: { color: t ? "#e5484d" : "#7b54e0", opacity: t ? 0.85 : 0.62 }, label: { show: t, position: "right", fontSize: 9, color: "#c93338", formatter: (o) => short(o.value[2]) } };
+      });
+      window._semScatterChart.setOption({
+        grid: { left: 56, right: 120, top: 16, bottom: 44 },
+        xAxis: { type: "log", name: "\u82B1\u8D39", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
+        yAxis: { type: "log", name: "\u6BCF\u8F6C\u5316\u6210\u672C", nameGap: 8, axisLabel: { fontSize: 10 } },
+        tooltip: { formatter: (o) => esc(o.value[2]) + "<br/>\u82B1\u8D39 " + o.value[0] + " \xB7 \u6BCF\u8F6C\u5316\u6210\u672C " + o.value[1] + " \xB7 \u8F6C\u5316 " + o.value[3] },
+        series: [{
+          type: "scatter",
+          symbolSize: (v) => Math.min(30, 8 + Math.sqrt(v[0] || 0) / 3),
+          data,
+          markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: true, fontSize: 9, color: "#9aa1ae", formatter: "\u4E2D\u4F4D\u6BCF\u8F6C\u5316" }, data: [{ yAxis: medCpa }] },
+          markArea: { silent: true, itemStyle: { color: "rgba(229,72,77,.07)" }, label: { show: true, position: ["50%", "8%"], color: "#e5484d", fontSize: 11, fontWeight: "bold", formatter: "\u6BCF\u8F6C\u5316\u504F\u8D35" }, data: [[{ yAxis: medCpa }, { yAxis: "max" }]] }
+        }]
+      });
+    } else {
+      el.style.display = "none";
+      if (window._semScatterChart) {
+        try {
+          window._semScatterChart.dispose();
+        } catch (e) {
+        }
+        window._semScatterChart = null;
+      }
+      if (empty) {
+        empty.classList.remove("is-hidden");
+        empty.textContent = all.length ? "\u672C\u533A\u95F4\u6682\u65E0\u300C\u6709\u8F6C\u5316\u300D\u7684\u5173\u952E\u8BCD\uFF1B\u96F6\u8F6C\u5316\u70E7\u94B1\u8BCD\u89C1\u4E0B\u65B9\u300C\u8BE5\u780D\u300D\u6E05\u5355" : "\u6682\u65E0\u8DB3\u591F\u6570\u636E \xB7 \u5B8C\u6210 Google Ads \u540C\u6B65\u540E\u663E\u793A";
+      }
+    }
+    renderSemScatterTargets(zero);
+  }
+  function _dayDiff(a, b) {
+    return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 864e5);
+  }
+  function _alignDaily(rows2, range, dateKey) {
+    const key = dateKey || "date";
+    const r = range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+    if (!r || !r.start_date || !r.end_date) return { labels: (rows2 || []).map((x) => String(x[key]).slice(5, 10)), rows: (rows2 || []).slice(), isoDates: (rows2 || []).map((x) => String(x[key]).slice(0, 10)) };
+    const m = new Map((rows2 || []).map((x) => [String(x[key]).slice(0, 10), x]));
+    const labels = [], out = [], iso = [];
+    let d = Date.parse(r.start_date + "T00:00:00Z");
+    const end = Date.parse(r.end_date + "T00:00:00Z");
+    while (d <= end) {
+      const s = new Date(d).toISOString().slice(0, 10);
+      iso.push(s);
+      labels.push(s.slice(5));
+      out.push(m.get(s) || null);
+      d += 864e5;
+    }
+    return { labels, rows: out, isoDates: iso };
+  }
+  function _xTickLimit(n) {
+    if (n <= 14) return n;
+    if (n <= 31) return 10;
+    if (n <= 90) return 12;
+    if (n <= 180) return 12;
+    return 14;
+  }
+  function renderSemCostCharts(d) {
+    const palette = ["#7b54e0", "#2f72e8", "#0b9d8f", "#ef9514", "#e5484d", "#9aa1ae"];
+    const paletteClasses = ["chart-color-purple", "chart-color-blue", "chart-color-teal", "chart-color-amber", "chart-color-red", "chart-color-muted"];
+    const cs = d && d.campaigns || [];
+    const error = d && d.error;
+    const donutCv = document.getElementById("semCostDonut"), legend = document.getElementById("semCostLegend");
+    if (donutCv) {
+      if (window._semCostDonut) {
+        try {
+          window._semCostDonut.destroy();
+        } catch (e) {
+        }
+        window._semCostDonut = null;
+      }
+      const top = cs.slice(0, 6);
+      if (top.length) {
+        window._semCostDonut = new Chart(donutCv, { type: "doughnut", data: { labels: top.map((c) => c.name), datasets: [{ data: top.map((c) => c.costMicros / 1e6), backgroundColor: palette, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "62%" } });
+        const total = top.reduce((a, c) => a + (c.costMicros || 0), 0) || 1;
+        if (legend) legend.innerHTML = top.map((c, i) => '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc(c.name) + "</span><b>" + Math.round((c.costMicros || 0) / total * 100) + "%</b></div>").join("");
+      } else if (legend) {
+        legend.innerHTML = '<span class="dim">' + (error ? esc(loadFailureText("SEM \u82B1\u8D39", error)) : "\u6682\u65E0 Ads \u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
+      }
+    }
+    const trendCv = document.getElementById("semTrend");
+    if (trendCv) {
+      if (window._semTrend) {
+        try {
+          window._semTrend.destroy();
+        } catch (e) {
+        }
+        window._semTrend = null;
+      }
+      const s = d && d.series || [];
+      const rng = d && d.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+      const aligned = _alignDaily(s, rng, "date");
+      if (aligned.rows.some((r) => r)) {
+        const cost = aligned.rows.map((r) => r ? +(r.costMicros / 1e6).toFixed(0) : null);
+        const conv = aligned.rows.map((r) => r ? r.conversions : null);
+        const sp = d && d.seriesPrev || [], pv = d && d.prev;
+        const prevCost = [], prevConv = [], prevDate = [];
+        if (sp.length && rng && pv) {
+          const mCost = /* @__PURE__ */ new Map(), mConv = /* @__PURE__ */ new Map(), mDate = /* @__PURE__ */ new Map();
+          sp.forEach((x) => {
+            const o = _dayDiff(pv.start_date, x.date);
+            mCost.set(o, +(x.costMicros / 1e6).toFixed(0));
+            mConv.set(o, x.conversions);
+            mDate.set(o, x.date);
+          });
+          aligned.isoDates.forEach((iso) => {
+            const o = _dayDiff(rng.start_date, iso);
+            prevCost.push(mCost.has(o) ? mCost.get(o) : null);
+            prevConv.push(mConv.has(o) ? mConv.get(o) : null);
+            prevDate.push(mDate.has(o) ? mDate.get(o) : null);
+          });
+        }
+        const hasPrev = prevCost.some((v) => v != null);
+        const datasets = [
+          { label: "\u82B1\u8D39", data: cost, borderColor: "#7b54e0", backgroundColor: "rgba(123,84,224,.12)", fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2, yAxisID: "y", spanGaps: false },
+          { label: "\u8F6C\u5316", data: conv, borderColor: "#15a85a", tension: 0.3, pointRadius: 0, borderWidth: 1.6, yAxisID: "y1", spanGaps: false }
+        ];
+        if (hasPrev) {
+          datasets.push(
+            { label: "\u82B1\u8D39\xB7\u4E0A\u4E00\u533A\u95F4", data: prevCost, borderColor: "rgba(123,84,224,.45)", borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, tension: 0.3, fill: false, spanGaps: true, yAxisID: "y" },
+            { label: "\u8F6C\u5316\xB7\u4E0A\u4E00\u533A\u95F4", data: prevConv, borderColor: "rgba(21,168,90,.5)", borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, tension: 0.3, fill: false, spanGaps: true, yAxisID: "y1" }
+          );
+        }
+        window._semTrend = new Chart(trendCv, { type: "line", data: { labels: aligned.labels, datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: hasPrev ? { callbacks: { footer: (items) => {
+          const i = items && items[0] && items[0].dataIndex;
+          const pd = i != null ? prevDate[i] : null;
+          return pd ? "\u5BF9\u5E94\u4E0A\u4E00\u533A\u95F4\uFF1A" + pd : "";
+        } } } : {} }, scales: { x: { ticks: { maxTicksLimit: _xTickLimit(aligned.labels.length), font: { size: 10 } } }, y: { position: "left", beginAtZero: true }, y1: { position: "right", beginAtZero: true, grid: { drawOnChartArea: false } } } } });
+      } else if (error) chartEmpty("semTrend", loadFailureText("SEM \u8D8B\u52BF", error), "\u52A0\u8F7D\u5931\u8D25");
+      else chartEmpty("semTrend");
+    }
+  }
+  function _dataActionAttr(name, value) {
+    return " data-" + name + '="' + esc(String(value == null ? "" : value)) + '"';
+  }
+  function _aiActionAttrs(prompt, title) {
+    return _dataActionAttr("ferr-action", "ai") + _dataActionAttr("ai-prompt", prompt) + _dataActionAttr("ai-title", title);
+  }
+  function _adoptActionAttrs(dept, title, detail, evidence) {
+    return _dataActionAttr("ferr-action", "adopt") + _dataActionAttr("dept", dept) + _dataActionAttr("title", title) + _dataActionAttr("detail", detail) + _dataActionAttr("evidence", evidence);
+  }
+  document.addEventListener("click", (e) => {
+    const chartAction = e.target && e.target.closest ? e.target.closest('[data-chart-action="toggle-hier"]') : null;
+    if (chartAction) {
+      toggleHier(chartAction);
+      return;
+    }
+    const btn = e.target && e.target.closest ? e.target.closest("[data-ferr-action]") : null;
+    if (!btn) return;
+    if (btn.dataset.ferrAction === "ai") {
+      runAiAnalysis(btn, btn.dataset.aiPrompt || "", btn.dataset.aiTitle || "AI \u5206\u6790", false);
+      return;
+    }
+    if (btn.dataset.ferrAction === "adopt") adoptFinding(btn, btn.dataset.dept || "SEO", btn.dataset.title || "", btn.dataset.detail || "", btn.dataset.evidence || "");
+  });
+  function _badgeCount(id, n) {
+    const e = document.getElementById(id);
+    if (!e) return;
+    if (n > 0) {
+      e.textContent = n;
+      e.classList.remove("is-hidden");
+    } else {
+      e.textContent = "";
+      e.classList.add("is-hidden");
+    }
+  }
+  async function adoptFinding(btn, dept, title, detail, evidence) {
+    try {
+      const s = typeof sFromDept === "function" ? sFromDept(dept) : { dept, owner: "" };
+      const { item } = await API.post("/api/fixes", { title: typeof clip === "function" ? clip(title, 40) : title, dept: s.dept, detail, evidence, owner: s.owner, due_date: typeof plusDays === "function" ? plusDays(7) : "", status: "\u8BA1\u5212\u4E0B\u5468", source: "\u8BCA\u65AD\u5F15\u64CE" });
+      if (typeof addFixFromObj === "function") addFixFromObj(item);
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-check"></i> \u5DF2\u91C7\u7EB3';
+      if (typeof toastGo === "function") toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355 \xB7 \u5DF2\u5165\u5E93", "fix");
+      else toast("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355");
+    } catch (e) {
+      toast(typeof persistFailMsg === "function" ? persistFailMsg(e) : "\u4FDD\u5B58\u5931\u8D25,\u672A\u5165\u5E93");
+    }
+  }
+  async function loadDataFreshness() {
+    const el = document.getElementById("dataFreshness");
+    if (!el) return;
+    let d = null;
+    try {
+      d = await API.get(withRange2("/api/data-freshness"));
+    } catch (e) {
+      el.innerHTML = '<span class="dim">' + esc(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
+      return;
+    }
+    const fmt2 = (v) => {
+      if (!v) return "\u4ECE\u672A";
+      const s = String(v).replace(" ", "T");
+      const t = new Date(/Z|[+-]\d{2}/.test(s) ? s : s + "Z");
+      if (isNaN(t)) return String(v).slice(5, 16);
+      const p = (n) => String(n).padStart(2, "0");
+      const dif = Math.floor((Date.now() - t.getTime()) / 6e4);
+      if (dif < 60) return dif + " \u5206\u949F\u524D";
+      if (dif < 1440) return Math.floor(dif / 60) + " \u5C0F\u65F6\u524D";
+      return t.getMonth() + 1 + "/" + t.getDate() + " " + p(t.getHours()) + ":" + p(t.getMinutes());
+    };
+    const chip = (name, s) => {
+      if (!s.connected) return '<span class="fresh-chip gray"><b>' + name + "</b> \u672A\u63A5\u5165</span>";
+      const cov = s.days > 0 ? Math.round(s.daysWithData / s.days * 100) : 0;
+      const tone = s.daysWithData === 0 ? "bad" : cov < 70 ? "warn" : "good";
+      return '<span class="fresh-chip ' + tone + '"><b>' + name + "</b> \u6709\u6570\u636E " + s.daysWithData + "/" + s.days + ' \u5929<span class="dim"> \xB7 ' + fmt2(s.lastSync) + (s.status === "failed" ? ' <b class="csp-s-b0e08465c2">\u5931\u8D25</b>' : "") + "</span></span>";
+    };
+    el.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
+  }
+  window._ovSeoMini = null;
+  window._ovSemMini = null;
+  function _ovSpark(id, rows2, valFn, color, emptyDetail) {
+    const cv = document.getElementById(id);
+    if (!cv) return;
+    const key = "_ov" + (id === "seoMini" ? "Seo" : "Sem") + "Mini";
+    if (window[key]) {
+      try {
+        window[key].destroy();
+      } catch (e) {
+      }
+      window[key] = null;
+    }
+    if (!rows2 || !rows2.length) {
+      chartEmpty(id, emptyDetail, emptyDetail ? "\u52A0\u8F7D\u5931\u8D25" : void 0);
+      return;
+    }
+    const wrap = cv.closest(".chart-wrap");
+    if (wrap) {
+      const ce = wrap.querySelector(".chart-empty");
+      if (ce) ce.remove();
+    }
+    cv.style.display = "";
+    window[key] = new Chart(cv, { type: "line", data: { labels: rows2.map((x) => (x.date || "").slice(5)), datasets: [{ data: rows2.map(valFn), borderColor: color, backgroundColor: color + "1a", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: true } }, scales: { x: { display: false }, y: { display: false, beginAtZero: true } } } });
+  }
+  async function loadDashboardBoards() {
+    if (window.DEMO_MODE) return;
+    const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
+    const s = /* @__PURE__ */ new Date();
+    s.setDate(s.getDate() - 29);
+    const r = { start_date: formatLocalDate2(s), end_date: today2 };
+    const _t = (id, v) => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = v;
+    };
+    let g = null, gError = null;
+    try {
+      g = await API.get(withRange2("/api/google/gsc/summary", r));
+    } catch (e) {
+      gError = e;
+    }
+    const gt = g && g.totals;
+    _t("ov-seo-clicks", gt ? (gt.clicks || 0).toLocaleString() : "\u2014");
+    _t("ov-seo-impr", gt ? (gt.impressions || 0).toLocaleString() : "\u2014");
+    _t("ov-seo-pos", gt && gt.position != null ? Number(gt.position).toFixed(1) : "\u2014");
+    _ovSpark("seoMini", g && g.byDate || [], (x) => +x.clicks || 0, "#2f72e8", gError ? loadFailureText("\u603B\u89C8 SEO", gError) : "");
+    let a = null, aError = null;
+    try {
+      a = await API.get(withRange2("/api/google/ads/board", r));
+    } catch (e) {
+      aError = e;
+    }
+    const at = a && a.totals;
+    _t("ov-sem-cost", at ? _money(at.costMicros) : "\u2014");
+    _t("ov-sem-conv", at ? _conv(at.conversions) : "\u2014");
+    _t("ov-sem-cpa", at ? _money(at.costPerConversionMicros) : "\u2014");
+    _ovSpark("semMini", a && a.series || [], (x) => (x.costMicros || 0) / 1e6, "#7b54e0", aError ? loadFailureText("\u603B\u89C8 SEM", aError) : "");
+  }
+  async function loadDiagnostics() {
+    let d = null;
+    try {
+      d = await API.get(withRange2("/api/diagnostics"));
+    } catch (e) {
+      d = { error: e };
+    }
+    renderDiagnostics(d);
+  }
+  function renderDiagnostics(d) {
+    const error = d && d.error;
+    const seo = d && d.seo || {}, opp = seo.opportunities || [], dec = seo.decay || [], can = seo.cannibalization || [];
+    _badgeCount("diag-opp-n", opp.length);
+    _badgeCount("diag-decay-n", dec.length);
+    _badgeCount("diag-cann-n", can.length);
+    const t1 = document.getElementById("diagOppRows");
+    if (t1) {
+      t1.innerHTML = error ? loadFailureRow(5, "SEO \u673A\u4F1A\u8BCA\u65AD", error) : opp.length ? opp.map((o) => {
+        const path = _seoPath(o.page), pos = o.position != null ? Number(o.position).toFixed(1) : "\u2014";
+        const q = "\u5173\u952E\u8BCD\u300C" + o.query + "\u300D\u5F53\u524D\u6392\u540D" + pos + "\u3001\u9875\u9762" + path + "\u3001\u533A\u95F4\u66DD\u5149" + (o.impressions || 0) + "\uFF0C\u7ED9\u51FA\u51B2\u8FDBTop10\u7684\u5177\u4F53\u4F18\u5316\u6E05\u5355\uFF08\u6807\u9898/\u5185\u5BB9/\u5185\u94FE/\u5916\u94FE\uFF09\u3002";
+        const ti = "\u673A\u4F1A\u8BCD\u51B2\u9996\u9875\uFF1A" + o.query, de = "\u5173\u952E\u8BCD\u300C" + o.query + "\u300D\u5F53\u524D\u6392\u540D" + pos + "\uFF08\u9875\u9762" + path + "\uFF09\uFF0C\u533A\u95F4\u66DD\u5149" + (o.impressions || 0) + "\u3002\u4F18\u5316\u6807\u9898/\u5185\u5BB9/\u5185\u94FE\u51B2\u8FDB Top10\u3002", ev = "GSC\u673A\u4F1A\u8BCD \u6392\u540D" + pos + " \u5C55\u73B0" + (o.impressions || 0) + " \u70B9\u51FB" + (o.clicks || 0);
+        return "<tr><td>" + esc(o.query) + '</td><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num"><span class="badge b-amber">' + pos + '</span></td><td class="num">' + (o.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u673A\u4F1A\u8BCD\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u51B2\u9996\u9875</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+      }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u673A\u4F1A\u8BCD \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
+    }
+    const t2 = document.getElementById("diagDecayRows");
+    if (t2) {
+      t2.innerHTML = error ? loadFailureRow(5, "SEO \u8870\u9000\u8BCA\u65AD", error) : dec.length ? dec.map((p) => {
+        const path = _seoPath(p.page);
+        const posChg = p.positionPrev != null && p.positionCur != null ? Number(p.positionPrev).toFixed(1) + "\u2192" + Number(p.positionCur).toFixed(1) : "\u2014";
+        const q = path + " \u70B9\u51FB\u8FD1\u4E00\u7A97\u8DCC" + p.dropPct + "%\uFF08" + p.clicksPrev + "\u2192" + p.clicksCur + "\uFF09\uFF0C\u6392\u540D" + posChg + "\u3002\u7ED9\u51FA\u6392\u67E5\u4E0E\u6B62\u635F\u6B65\u9AA4\u3002";
+        const ti = "\u8870\u9000\u6B62\u635F\uFF1A" + path, de = "\u9875\u9762" + path + " \u70B9\u51FB\u73AF\u6BD4\u8DCC" + p.dropPct + "%\uFF08" + p.clicksPrev + "\u2192" + p.clicksCur + "\uFF09\uFF0C\u6392\u540D" + posChg + "\u3002\u6392\u67E5\u539F\u56E0\u5E76\u6B62\u635F\u3002", ev = "GSC\u73AF\u6BD4 \u70B9\u51FB\u2193" + p.dropPct + "% \u6392\u540D" + posChg;
+        return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num csp-s-b0e08465c2">\u25BC' + p.dropPct + '%</td><td class="num">' + esc(posChg) + '</td><td class="ctr"><span class="badge b-gray">\u9700\u6392\u67E5</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8870\u9000\u6B62\u635F") + '><i class="ti ti-bulb"></i> \u6B62\u635F\u65B9\u6848</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+      }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u660E\u663E\u8870\u9000\u9875 \xB7 \u9700\u22652 \u4E2A\u7B49\u957F\u7A97\u53E3\u6570\u636E\u624D\u80FD\u6BD4\u8F83</td></tr>';
+    }
+    const t3 = document.getElementById("diagCannRows");
+    if (t3) {
+      t3.innerHTML = error ? loadFailureRow(5, "SEO \u8695\u98DF\u8BCA\u65AD", error) : can.length ? can.map((g) => {
+        const urls = g.pages.map((p) => esc(_seoPath(p.page))).join("<br>");
+        const ranks = g.pages.map((p) => p.position != null ? Number(p.position).toFixed(0) : "\u2014").join(" / ");
+        const detail = g.pages.map((p) => _seoPath(p.page) + "(\u6392\u540D" + (p.position != null ? Number(p.position).toFixed(1) : "\u2014") + ")").join("\u3001");
+        const q = "\u5173\u952E\u8BCD\u300C" + g.query + "\u300D\u88AB" + g.pages.length + "\u4E2AURL\u540C\u65F6\u7ADE\u4E89\uFF1A" + detail + "\u3002\u7ED9\u51FA\u5408\u5E76\u65B9\u6848\uFF1A\u4FDD\u7559\u54EA\u4E2A\u4E3A\u4E3B\u9875\u3001\u5176\u4F59\u5982\u4F55301\u6216\u6539\u5199\u5DEE\u5F02\u5316\u610F\u56FE\u3001\u5185\u94FE\u600E\u4E48\u8C03\u3002";
+        const ti = "\u8695\u98DF\u5408\u5E76\uFF1A" + g.query, de = "\u5173\u952E\u8BCD\u300C" + g.query + "\u300D\u88AB" + g.pages.length + "\u4E2AURL\u7ADE\u4E89\uFF1A" + detail + "\u3002\u5408\u5E76/\u5DEE\u5F02\u5316\u610F\u56FE\u3001\u8C03\u6574\u5185\u94FE\u3002", ev = "GSC " + g.pages.length + "\u9875\u5206\u6563\u6392\u540D " + ranks;
+        return "<tr><td>" + esc(g.query) + '</td><td class="dim csp-s-33ee298127">' + urls + '</td><td class="num"><span class="badge b-red">' + esc(ranks) + '</span></td><td class="ctr"><span class="badge b-amber">' + g.pages.length + '\u9875\u62A21\u610F\u56FE</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8695\u98DF\u5408\u5E76\u5EFA\u8BAE") + '><i class="ti ti-git-merge"></i> AI \u5408\u5E76\u5EFA\u8BAE</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+      }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u8695\u98DF\u7EC4 \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
+    }
+  }
+  var inqChart = null;
+  function _weekStart(dateStr) {
+    const d = /* @__PURE__ */ new Date(dateStr + "T00:00:00");
+    const day = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - day);
+    return formatLocalDate2(d);
+  }
+  function inqSeriesByGran(rows2, gran) {
+    const keyOf = (r) => {
+      const d = (r.date || "").slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+      if (gran === "month") return d.slice(0, 7);
+      if (gran === "week") return _weekStart(d);
+      return d;
+    };
+    const m = /* @__PURE__ */ new Map();
+    (rows2 || []).forEach((r) => {
+      const k = keyOf(r);
+      if (!k) return;
+      if (!m.has(k)) m.set(k, { eff: 0, total: 0 });
+      const o = m.get(k);
+      o.total++;
+      if (r.grade === "A" || r.grade === "B") o.eff++;
+    });
+    const keys = [...m.keys()].sort();
+    const lab = (k) => gran === "month" ? k : k.slice(5);
+    return { labels: keys.map(lab), eff: keys.map((k) => m.get(k).eff), total: keys.map((k) => m.get(k).total) };
+  }
+  window._inqMonthCache = [];
+  var _inqMonthError = null;
+  async function loadDashboardInq() {
+    const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
+    const first = today2.slice(0, 7) + "-01";
+    try {
+      const { items } = await API.get(withRange2("/api/inquiries", { start_date: first, end_date: today2 }));
+      window._inqMonthCache = items || [];
+      _inqMonthError = null;
+    } catch (e) {
+      window._inqMonthCache = [];
+      _inqMonthError = e;
+    }
+    renderInqTrend();
+  }
+  function renderInqTrend() {
+    const cv = document.getElementById("inqTrend");
+    if (!cv || window.DEMO_MODE) return;
+    const rows2 = window._inqMonthCache || [];
+    const sub = document.getElementById("inqTrendSub");
+    if (sub) {
+      const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
+      sub.textContent = "\u5F53\u6708 \xB7 \u6309\u65E5\uFF08" + today2.slice(0, 7) + "\uFF09";
+    }
+    if (inqChart) {
+      try {
+        inqChart.destroy();
+      } catch (e) {
+      }
+      inqChart = null;
+    }
+    if (!rows2.length) {
+      if (_inqMonthError) chartEmpty("inqTrend", loadFailureText("\u8BE2\u76D8\u8D8B\u52BF", _inqMonthError), "\u52A0\u8F7D\u5931\u8D25");
+      else chartEmpty("inqTrend");
+      return;
+    }
+    const wrap = cv.closest(".chart-wrap") || cv.parentElement;
+    if (wrap) {
+      const ce = wrap.querySelector(".chart-empty");
+      if (ce) ce.remove();
+    }
+    cv.style.display = "";
+    const s = inqSeriesByGran(rows2, "day");
+    inqChart = new Chart(cv, { type: "line", data: { labels: s.labels, datasets: [
+      { label: "\u6709\u6548\u8BE2\u76D8", data: s.eff, borderColor: "#15a85a", backgroundColor: "rgba(21,168,90,.1)", fill: true, tension: 0.4, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2 },
+      { label: "\u8BE2\u76D8\u603B\u91CF", data: s.total, borderColor: "#9aa1ae", backgroundColor: "rgba(154,161,174,.06)", fill: true, tension: 0.4, pointRadius: 2, pointHoverRadius: 4, borderWidth: 1.5 }
+    ] }, options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      // 鼠标对到 x 轴某天，两条线同时高亮
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true, callbacks: { title: (items) => items[0] ? items[0].label : "", label: (ctx) => ctx.dataset.label + "\uFF1A" + ctx.parsed.y } }
+        // 6.23 文档 2：悬停显示当日
+      },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    } });
+  }
+  function charts() {
+    Chart.defaults.color = "#9aa1ae";
+    Chart.defaults.borderColor = "rgba(128,128,128,.12)";
+    Chart.defaults.font.size = 10;
+    const wk = ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"];
+    const sp = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } };
+    if (window.DEMO_MODE) {
+      new Chart(inqTrend, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.inqTrend.a, borderColor: "#15a85a", backgroundColor: "rgba(21,168,90,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }, { data: DEMO.inqTrend.total, borderColor: "#9aa1ae", backgroundColor: "rgba(154,161,174,.06)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 1.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+      new Chart(seoMini, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.seoMini, borderColor: "#2f72e8", backgroundColor: "rgba(47,114,232,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] }, options: sp });
+      new Chart(semMini, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.semMini, borderColor: "#7b54e0", backgroundColor: "rgba(123,84,224,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] }, options: sp });
+      new Chart(inqDonut, { type: "doughnut", data: { labels: ["A", "B", "C"], datasets: [{ data: [DEMO.inqDonut.a, DEMO.inqDonut.b, DEMO.inqDonut.c], backgroundColor: ["#15a85a", "#2f72e8", "#dfe2e8"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
+      new Chart(chanDonut, { type: "doughnut", data: { labels: ["SEO", "SEM", "\u76F4\u63A5", "\u5176\u4ED6"], datasets: [{ data: [DEMO.chanDonut.seo, DEMO.chanDonut.sem, DEMO.chanDonut.direct, DEMO.chanDonut.other], backgroundColor: ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
+      fillDonutLegendDemo();
+    } else {
+      ["seoMini", "semMini"].forEach(chartEmpty);
+      chartEmpty("inqTrend");
+      chartEmpty("inqDonut");
+      chartEmpty("chanDonut");
+      blankDonutLegend();
+    }
+    seoFull = seoSeriesFromWeeks();
+    const so = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 7 } } } };
+    if (document.getElementById("seoBoard")) {
+      if (seoFull && seoFull.labels && seoFull.labels.length) seoChart = new Chart(seoBoard, { type: "line", data: buildSeoData(seoFull), options: so });
+      else chartEmpty("seoBoard");
+    }
+  }
+  document.addEventListener("timerange", () => {
+    loadSeoChartRange();
+    loadSeoBoardFull();
+    loadSemBoardAds();
+    loadSemBoardFull();
+    loadAttribution();
+    loadDiagnostics();
+    loadDataFreshness();
+  });
+  document.addEventListener("granularity", rebuildSeoChart);
+
   // public/src/kpi.js
   var TOTAL = [{ n: "\u8BE2\u76D8\u603B\u91CF", w: 25, t: 60, a: 0, m: "r", u: "\u5C01" }, { n: "A\u7EA7\u8BE2\u76D8\u6570", w: 35, t: 10, a: 0, m: "r", u: "\u5C01" }, { n: "\u6709\u6548\u8BE2\u76D8\u6210\u672C", w: 25, t: 2e3, a: 0, m: "i", u: "\xA5" }, { n: "\u95ED\u73AF\u6267\u884C\u5EA6", w: 15, t: 5, a: 0, m: "r", u: "\u9879" }];
   var SEO = [{ n: "\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4", w: 25, t: 10, a: 0, m: "r", u: "%" }, { n: "\u6838\u5FC3\u8BCD Top10 \u5360\u6BD4", w: 25, t: 40, a: 0, m: "r", u: "%" }, { n: "\u5173\u952E\u8BCD\u8986\u76D6/\u957F\u5C3E", w: 15, t: 500, a: 0, m: "r", u: "\u8BCD" }, { n: "\u65B0\u589E\u6536\u5F55\u9875\u9762", w: 15, t: 20, a: 0, m: "r", u: "\u9875" }, { n: "\u8DF3\u51FA\u7387", w: 10, t: 55, a: 0, m: "i", u: "%" }, { n: "\u9875\u9762\u505C\u7559\u65F6\u957F", w: 10, t: 150, a: 0, m: "r", u: "s" }];
@@ -363,12 +1846,8 @@
       const rec = mapSeoWeek(item);
       window._seoWeeks.push(rec);
       applySeoActuals();
-      if (typeof loadSeoBoardGsc === "function") loadSeoBoardGsc();
-      seoFull = seoSeriesFromWeeks();
-      if (seoChart) {
-        seoChart.data = buildSeoData(seoFull);
-        seoChart.update();
-      }
+      loadSeoBoardGsc();
+      refreshSeoWeekChart();
       renderKPI();
       closeModal("seoWkMask");
       const wow = window._seoWeeks.length > 1 ? "\uFF0C\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4 " + (SEO[0].a >= 0 ? "+" : "") + SEO[0].a + "%" : "";
@@ -392,7 +1871,7 @@
       const rec = mapSemWeek(item);
       window._semWeeks.push(rec);
       applySemActuals();
-      if (typeof loadSemBoardAds === "function") loadSemBoardAds();
+      loadSemBoardAds();
       renderKPI();
       closeModal("semWkMask");
       toast("\u5DF2\u5BFC\u5165\u672C\u5468 Ads \u6570\u636E \xB7 CPC \xA5" + (rec.cpc ?? "-") + " / CTR " + (rec.ctr ?? "-") + "% / \u6BCF\u8BE2\u76D8 \xA5" + (rec.cpconv ?? "-") + "\uFF08\u540E\u7AEF\u8BA1\u7B97\uFF09, KPI \u5DF2\u66F4\u65B0");
@@ -973,7 +2452,7 @@
       await loadDataSourcesStatus();
       await loadIntegrations();
       if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
-      if (typeof loadDataFreshness === "function") loadDataFreshness();
+      loadDataFreshness();
     } catch (e) {
       const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
       toast(`\u56DE\u8865\u5931\u8D25\uFF1A${e.message}${missing}`);
@@ -1165,234 +2644,6 @@
       }
     }
   });
-
-  // public/src/timerange.js
-  var timerange_exports = {};
-  __export(timerange_exports, {
-    applyTimeRange: () => applyTimeRange,
-    formatLocalDate: () => formatLocalDate2,
-    getCurrentRange: () => getCurrentRange,
-    openCustomRange: () => openCustomRange,
-    rangeText: () => rangeText,
-    refreshRangeConsumers: () => refreshRangeConsumers,
-    renderTimebar: () => renderTimebar,
-    resolveRange: () => resolveRange,
-    submitCustomRange: () => submitCustomRange,
-    withRange: () => withRange2,
-    ymd: () => ymd
-  });
-  var RANGES = ["\u4ECA\u5929", "\u6628\u5929", "\u8FD17\u5929", "\u8FD130\u5929", "\u8FD190\u5929", "\u8FD1\u4E00\u5E74", "\u81EA\u5B9A\u4E49"];
-  window._customRange = null;
-  try {
-    const cr = JSON.parse(localStorage.getItem("ferr:customRange") || "null");
-    if (cr && /^\d{4}-\d{2}-\d{2}$/.test(cr.start_date) && /^\d{4}-\d{2}-\d{2}$/.test(cr.end_date) && cr.start_date <= cr.end_date) window._customRange = cr;
-  } catch (e) {
-  }
-  try {
-    const t = localStorage.getItem("ferr:timeRange");
-    window._timeRange = RANGES.includes(t) ? t : "\u8FD130\u5929";
-  } catch (e) {
-    window._timeRange = "\u8FD130\u5929";
-  }
-  try {
-    const g = localStorage.getItem("ferr:gran");
-    window._gran = ["day", "week", "month"].includes(g) ? g : "week";
-  } catch (e) {
-    window._gran = "week";
-  }
-  var GRAN_LABEL = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" };
-  function formatLocalDate2(d) {
-    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  }
-  function ymd(v) {
-    v = String(v == null ? "" : v).trim();
-    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
-  }
-  function resolveRange(label) {
-    const today2 = /* @__PURE__ */ new Date();
-    today2.setHours(0, 0, 0, 0);
-    const back = (n) => {
-      const d = new Date(today2);
-      d.setDate(d.getDate() - n);
-      return d;
-    };
-    const r = (s, e) => ({ start_date: formatLocalDate2(s), end_date: formatLocalDate2(e), period_label: label });
-    switch (label) {
-      case "\u4ECA\u5929":
-        return r(today2, today2);
-      case "\u6628\u5929": {
-        const y = back(1);
-        return r(y, y);
-      }
-      case "\u8FD17\u5929":
-        return r(back(6), today2);
-      case "\u8FD130\u5929":
-        return r(back(29), today2);
-      case "\u8FD190\u5929":
-        return r(back(89), today2);
-      case "\u8FD1\u4E00\u5E74":
-        return r(back(364), today2);
-      case "\u4E0A\u5468": {
-        const day = (today2.getDay() + 6) % 7;
-        const thisMon = back(day);
-        const lastMon = new Date(thisMon);
-        lastMon.setDate(thisMon.getDate() - 7);
-        const lastSun = new Date(lastMon);
-        lastSun.setDate(lastMon.getDate() + 6);
-        return r(lastMon, lastSun);
-      }
-      case "\u4E0A\u534A\u6708": {
-        const first = new Date(today2.getFullYear(), today2.getMonth(), 1);
-        const mid = new Date(today2.getFullYear(), today2.getMonth(), 15);
-        return r(first, mid);
-      }
-      case "\u8FD11\u6708":
-        return r(back(29), today2);
-      case "\u8FD13\u6708":
-        return r(back(89), today2);
-      case "\u8FD1\u534A\u5E74":
-        return r(back(179), today2);
-      case "\u8FD11\u5E74":
-        return r(back(364), today2);
-      case "\u81EA\u5B9A\u4E49": {
-        const cr = window._customRange;
-        if (!cr) return null;
-        return { start_date: cr.start_date, end_date: cr.end_date, period_label: "\u81EA\u5B9A\u4E49 " + cr.start_date + "~" + cr.end_date };
-      }
-      default:
-        return r(back(29), today2);
-    }
-  }
-  var _range = resolveRange(window._timeRange);
-  function getCurrentRange() {
-    return _range;
-  }
-  function withRange2(path, range) {
-    range = range || _range;
-    if (!range || !range.start_date || !range.end_date) return path;
-    const sep = path.includes("?") ? "&" : "?";
-    return path + sep + "start_date=" + encodeURIComponent(range.start_date) + "&end_date=" + encodeURIComponent(range.end_date);
-  }
-  function rangeText(r) {
-    return r && r.start_date ? r.start_date + " ~ " + r.end_date : "\u2014";
-  }
-  function refreshRangeConsumers() {
-    document.dispatchEvent(new CustomEvent("timerange", { detail: { range: _range } }));
-    loadInquiries();
-    loadSeoChartRange();
-    if (typeof loadSeoBoardFull === "function") loadSeoBoardFull();
-    if (typeof loadSemBoardAds === "function") loadSemBoardAds();
-    if (typeof loadSemBoardFull === "function") loadSemBoardFull();
-    if (typeof loadAttribution === "function") loadAttribution();
-    if (typeof loadDiagnostics === "function") loadDiagnostics();
-    if (typeof loadGa4 === "function") loadGa4();
-    if (typeof loadDataFreshness === "function") loadDataFreshness();
-  }
-  function applyTimeRange(label) {
-    const nr = resolveRange(label);
-    if (!nr) {
-      if (label === "\u81EA\u5B9A\u4E49") openCustomRange();
-      else toast("\u8BE5\u9884\u8BBE\u5C1A\u672A\u5B9E\u73B0\uFF0C\u672A\u6539\u53D8\u7B5B\u9009");
-      return false;
-    }
-    window._timeRange = label;
-    _range = nr;
-    try {
-      localStorage.setItem("ferr:timeRange", label);
-    } catch (e) {
-    }
-    document.querySelectorAll("[data-time] .trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === label));
-    document.querySelectorAll("[data-tauto]").forEach((el) => el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(_range));
-    refreshRangeConsumers();
-    toast("\u65F6\u95F4\u8303\u56F4\uFF1A" + _range.period_label);
-    return true;
-  }
-  function renderTimebar(bar) {
-    const grans = (bar.dataset.gran || "").split(",").map((s) => s.trim()).filter(Boolean);
-    const onlyWeekly = grans.includes("week") && !grans.includes("day");
-    const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${g}"${g === window._gran ? " selected" : ""}>${GRAN_LABEL[g] || g}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
-    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === window._timeRange ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(_range)}</button>` + granHtml;
-  }
-  document.querySelectorAll("[data-time]").forEach((bar) => {
-    renderTimebar(bar);
-    bar.addEventListener("click", (e) => {
-      const dateBtn = e.target.closest(".tauto-btn");
-      if (dateBtn) {
-        openCustomRange();
-        return;
-      }
-      const btn = e.target.closest(".trange");
-      if (!btn) return;
-      const rg = btn.textContent.trim();
-      if (rg === "\u81EA\u5B9A\u4E49" && !window._customRange) {
-        openCustomRange();
-        return;
-      }
-      applyTimeRange(rg);
-    });
-    bar.addEventListener("change", (e) => {
-      const sel = e.target.closest(".tgran");
-      if (!sel) return;
-      window._gran = sel.value;
-      try {
-        localStorage.setItem("ferr:gran", sel.value);
-      } catch (e2) {
-      }
-      document.querySelectorAll("[data-time] .tgran").forEach((s) => {
-        if ([...s.options].some((o) => o.value === sel.value)) s.value = sel.value;
-      });
-      document.dispatchEvent(new CustomEvent("granularity", { detail: { gran: window._gran } }));
-      rebuildSeoChart();
-      toast("\u7C92\u5EA6\uFF1A" + (GRAN_LABEL[window._gran] || window._gran));
-    });
-  });
-  function openCustomRange() {
-    const cr = window._customRange || {};
-    const today2 = formatLocalDate2(/* @__PURE__ */ new Date());
-    const back = (n) => {
-      const d = /* @__PURE__ */ new Date();
-      d.setDate(d.getDate() - n);
-      return formatLocalDate2(d);
-    };
-    document.getElementById("cr-start").value = cr.start_date || back(29);
-    document.getElementById("cr-end").value = cr.end_date || today2;
-    openModal("customRangeMask");
-    setTimeout(() => document.getElementById("cr-start").focus(), 50);
-  }
-  function submitCustomRange() {
-    const s = document.getElementById("cr-start").value;
-    const e = document.getElementById("cr-end").value;
-    if (!s || !e) {
-      toast("\u8BF7\u9009\u62E9\u5F00\u59CB\u548C\u7ED3\u675F\u65E5\u671F");
-      return;
-    }
-    if (s > e) {
-      toast("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
-      return;
-    }
-    const days = Math.floor((/* @__PURE__ */ new Date(e + "T00:00") - /* @__PURE__ */ new Date(s + "T00:00")) / 864e5);
-    if (days > 365) {
-      toast("\u533A\u95F4\u6700\u957F 1 \u5E74");
-      return;
-    }
-    window._customRange = { start_date: s, end_date: e };
-    try {
-      localStorage.setItem("ferr:customRange", JSON.stringify(window._customRange));
-    } catch (err) {
-    }
-    window._timeRange = "\u81EA\u5B9A\u4E49";
-    try {
-      localStorage.setItem("ferr:timeRange", "\u81EA\u5B9A\u4E49");
-    } catch (err) {
-    }
-    _range = resolveRange("\u81EA\u5B9A\u4E49");
-    document.querySelectorAll("[data-time] .trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === "\u81EA\u5B9A\u4E49"));
-    document.querySelectorAll("[data-tauto]").forEach((el) => el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(_range));
-    refreshRangeConsumers();
-    closeModal("customRangeMask");
-    toast("\u5DF2\u5E94\u7528\uFF1A" + _range.period_label);
-  }
 
   // public/src/sop.js
   var sop_exports = {};
@@ -3202,5 +4453,6 @@
   // public/src/main.js
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility);
+  var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility);
 })();

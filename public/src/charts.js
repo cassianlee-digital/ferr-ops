@@ -1,7 +1,8 @@
-/* 图表层：DEMO fixture + 询盘/渠道 donut + SEO 折线 + 总览询盘趋势（拆分自 index.html · 阶段4-B）
-   经典 script + window 全局兼容。依赖（运行时解析）：Chart（CDN）、window.API、toast()、formatLocalDate()/withRange()（timerange 内联）、
-   window._inqCache（inquiries.js）、window._seoWeeks/_seoWeeksView/_semWeeks/_gran（KPI/timerange）、window.DEMO_MODE。
-   charts()/loadDashboardInq()/renderInqDonuts()/rebuildSeoChart()/loadSeoChartRange() 由 window load 初始化、路由、时间筛选、载入流程在运行时调用。 */
+/* 图表与数据看板层（ES 模块 · esbuild 打包为 IIFE）。
+   时间范围工具显式导入；Chart/ECharts、API、esc/toast 与仍未迁移的 AI/整改入口在运行时解析。
+   仅 app.js 仍需的初始化、筛选和加载入口由 main.js 挂到 window，其余状态留在模块内部。 */
+
+import { formatLocalDate, getCurrentRange, withRange } from './timerange.js';
 
 /* ===== 1a: DEMO_MODE —— 真实模式(false)禁止任何硬编码示例数据；仅 true 时展示下方 fixture ===== */
 window.DEMO_MODE = window.DEMO_MODE || false;
@@ -15,23 +16,27 @@ const DEMO = {
               clicks:[95,98,92,100,104,99,108,112,109,115,118,114,120,124],
               impr:[120,128,124,132,140,134,145,150,148,155,160,156,165,170] },
 };
-// 在图表容器内显示「暂无真实数据」空状态(纯静态文案,无外部数据)
-function chartEmpty(id){
+function loadFailureText(label,error){
+  const reason=error&&error.message&&error.message!=='unauthorized'?error.message:'登录状态已失效或服务不可用';
+  return label+'加载失败：'+reason;
+}
+function loadFailureRow(cols,label,error){ return '<tr><td colspan="'+cols+'" class="dim csp-s-45c174bbec">'+esc(loadFailureText(label,error))+'</td></tr>'; }
+// 在图表容器内显示诚实的空状态或失败状态；重复调用必须更新旧文案。
+function chartEmpty(id,detail,title){
   const cv=document.getElementById(id); if(!cv) return;
   const wrap=cv.closest('.chart-wrap')||cv.parentElement; if(!wrap) return;
   cv.style.display='none';
-  if(wrap.querySelector('.chart-empty')) return;
-  const box=document.createElement('div'); box.className='chart-empty';
-  const a=document.createElement('div'); a.textContent='暂无真实数据';
-  const b=document.createElement('div'); b.className='ce-sub'; b.textContent='请录入数据或完成同步';
-  box.appendChild(a); box.appendChild(b); wrap.appendChild(box);
+  let box=wrap.querySelector('.chart-empty');
+  if(!box){ box=document.createElement('div'); box.className='chart-empty'; box.appendChild(document.createElement('div')); const sub=document.createElement('div'); sub.className='ce-sub'; box.appendChild(sub); wrap.appendChild(box); }
+  box.firstElementChild.textContent=title||'暂无真实数据';
+  box.querySelector('.ce-sub').textContent=detail||'请录入数据或完成同步';
 }
 function setDonutLegend(map){ Object.keys(map).forEach(id=>{ const e=document.getElementById(id); if(e)e.textContent=map[id]; }); }
 function fillDonutLegendDemo(){ setDonutLegend({lgInqA:DEMO.inqDonut.a,lgInqB:DEMO.inqDonut.b,lgInqC:DEMO.inqDonut.c,lgInqRate:DEMO.inqDonut.rate,lgChSeo:DEMO.chanDonut.seo+'%',lgChSem:DEMO.chanDonut.sem+'%',lgChDirect:DEMO.chanDonut.direct+'%',lgChOther:DEMO.chanDonut.other+'%'}); }
 function blankDonutLegend(){ setDonutLegend({lgInqA:'—',lgInqB:'—',lgInqC:'—',lgInqRate:'—',lgChSeo:'—',lgChSem:'—',lgChDirect:'—',lgChOther:'—'}); }
 /* BUG-6：KPI 页两个 donut 用真实询盘聚合（_inqCache 按当前 range 已过滤），无数据→诚实空状态 */
 let _inqDonutChart=null,_chanDonutChart=null;
-function renderInqDonuts(){
+export function renderInqDonuts(){
   if(window.DEMO_MODE)return; // DEMO_MODE 仍走 charts() 示例
   const rows=window._inqCache||[];
   const cv1=document.getElementById('inqDonut'), cv2=document.getElementById('chanDonut');
@@ -96,6 +101,11 @@ function rebuildSeoChart(){
   else chartEmpty('seoBoard');
 }
 
+export function refreshSeoWeekChart(){
+  seoFull=seoSeriesFromWeeks();
+  if(seoChart&&seoFull){ seoChart.data=buildSeoData(seoFull); seoChart.update(); }
+}
+
 // 时间范围变化 → SEO 看板按区间重拉 GSC（旧名保留，调用方无需改）
 async function loadSeoChartRange(){ return loadSeoBoardGsc(); }
 
@@ -109,11 +119,11 @@ function _shiftRange(r){
   const prevStart=new Date(prevEnd.getTime()-(len-1)*day);
   return {start_date:formatLocalDate(prevStart), end_date:formatLocalDate(prevEnd)};
 }
-async function loadSeoBoardGsc(){
+export async function loadSeoBoardGsc(){
   const cur=getCurrentRange();
   let data=null, prev=null;
   try{ data=await API.get(withRange('/api/google/gsc/summary')); }
-  catch(e){ window._gscBoard=null; renderSeoBoard(); return; }
+  catch(e){ window._gscBoard={error:e}; renderSeoBoard(); return; }
   if(cur){ try{ prev=await API.get(withRange('/api/google/gsc/summary', _shiftRange(cur))); }catch(e){ prev=null; } }
   window._gscBoard={data,prev};
   renderSeoBoard();
@@ -140,6 +150,7 @@ function _seoPath(u){ try{ return new URL(u).pathname || u; }catch(e){ return u|
 function renderSeoBoard(){
   const cv=document.getElementById('seoBoard');
   const board=window._gscBoard, data=board&&board.data, prev=board&&board.prev;
+  const error=board&&board.error;
   const t=(data&&data.totals)||null;
   const _t=(id,v)=>{ const e=document.getElementById(id); if(e)e.textContent=v; };
   // 顶部卡
@@ -180,13 +191,15 @@ function renderSeoBoard(){
       ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
         plugins:{legend:{display:false},tooltip:{enabled:true}},
         scales:{x:{ticks:{maxTicksLimit:_xTickLimit(labels.length)}},y:{position:'left',beginAtZero:true,ticks:{precision:0}},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
-    } else chartEmpty('seoBoard');
+    } else if(error) chartEmpty('seoBoard',loadFailureText('GSC',error),'加载失败');
+    else chartEmpty('seoBoard');
   }
   // 页面明细
   const tb=document.getElementById('seoPageRows');
   if(tb){
     const pages=(data&&data.topPages)||[];
-    if(!pages.length){ tb.innerHTML='<tr><td colspan="7" class="dim csp-s-45c174bbec">暂无真实数据 · 请完成 GSC 同步</td></tr>'; }
+    if(error){ tb.innerHTML=loadFailureRow(7,'GSC',error); }
+    else if(!pages.length){ tb.innerHTML='<tr><td colspan="7" class="dim csp-s-45c174bbec">暂无真实数据 · 请完成 GSC 同步</td></tr>'; }
     else{
       tb.innerHTML=pages.slice(0,20).map(p=>{
         const path=_seoPath(p.page);
@@ -201,7 +214,7 @@ function renderSeoBoard(){
 }
 
 // 标签切换后重算可见 ECharts 尺寸（隐藏容器里 init 会拿到 0 尺寸→切过来需 resize）
-function _resizeScatters(){
+export function resizeScatters(){
   setTimeout(()=>{ [window._seoScatterChart,window._semScatterChart].forEach(c=>{ if(c){ try{c.resize();}catch(e){} } }); },60);
 }
 
@@ -217,23 +230,25 @@ function _deltaHtml(cur,prev,lowerBetter,fmt){
   const txt=fmt==='pct'?Math.abs(diff/prev*100).toFixed(0)+'%':Math.abs(diff).toFixed(fmt==='abs1'?1:0);
   return '<span class="'+(better?'delta-pos':'delta-neg')+'">'+arrow+txt+'</span>';
 }
-async function loadSeoBoardFull(){
+export async function loadSeoBoardFull(){
   let d=null;
-  try{ d=await API.get(withRange('/api/google/seo/board')); }catch(e){ d=null; }
+  try{ d=await API.get(withRange('/api/google/seo/board')); }catch(e){ d={error:e}; }
   renderSeoHighlights(d); renderSeoDeltaTables(d); renderSeoScatter(d); renderSeoSources(d);
 }
 function renderSeoHighlights(d){
   const box=document.getElementById('seoHighlights'); if(!box)return;
+  if(d&&d.error){ box.classList.add('is-hidden'); box.innerHTML=''; return; }
   const hs=(d&&d.highlights)||[];
   if(!hs.length){ box.classList.add('is-hidden'); box.innerHTML=''; return; }
   box.classList.remove('is-hidden');
   box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':'bad')+'">'+esc(h.text)+'</span>').join('');
 }
 function renderSeoDeltaTables(d){
+  const error=d&&d.error;
   const pt=document.getElementById('seoPagesDelta');
   if(pt){
     const pages=(d&&d.pages)||[];
-    pt.innerHTML=pages.length?pages.map(p=>{
+    pt.innerHTML=error?loadFailureRow(5,'SEO 看板',error):pages.length?pages.map(p=>{
       const path=_seoPath(p.page);
       const q='分析落地页 '+path+' 的SEO表现：本期点击'+(p.clicks||0)+'(上期'+(p.clicksPrev||0)+')、展现'+(p.impressions||0)+'。给出最该先改的3个动作。';
       return '<tr><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(p.clicks,p.clicksPrev,false,'pct')+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'落地页诊断')+'><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
@@ -242,7 +257,7 @@ function renderSeoDeltaTables(d){
   const qt=document.getElementById('seoQueriesDelta');
   if(qt){
     const qs=(d&&d.queries)||[];
-    qt.innerHTML=qs.length?qs.map(q=>{
+    qt.innerHTML=error?loadFailureRow(6,'SEO 看板',error):qs.length?qs.map(q=>{
       const pos=q.position!=null?Number(q.position).toFixed(1):'—';
       return '<tr><td>'+esc(q.query)+'</td><td class="num">'+(q.impressions||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(q.impressions,q.imprPrev,false,'pct')+'</td><td class="num">'+(q.clicks||0).toLocaleString()+'</td><td class="num">'+pos+'</td><td class="num">'+_deltaHtml(q.position,q.positionPrev,true,'abs1')+'</td></tr>';
     }).join(''):'<tr><td colspan="6" class="dim csp-s-45c174bbec">暂无数据 · 完成 GSC 同步</td></tr>';
@@ -262,6 +277,7 @@ function renderSeoScatterTargets(list){
 function renderSeoScatter(d){
   const el=document.getElementById('seoScatter'), empty=document.getElementById('seoScatterEmpty'); if(!el)return;
   const _tb=document.getElementById('seoScatterTargets'); if(_tb)_tb.innerHTML='';
+  if(d&&d.error){ el.style.display='none'; if(empty){ empty.classList.remove('is-hidden'); empty.textContent=loadFailureText('SEO 散点',d.error); } return; }
   const ps=(d&&d.pageScatter)||[];
   // 首选：GA4 页面级 会话 × 跳出率（参考图；高流量+高跳出=重点优化对象，自动标红）
   if(ps.length && typeof echarts!=='undefined'){
@@ -310,6 +326,7 @@ function renderSeoSources(d){
   const palette=['#2f72e8','#7b54e0','#0b9d8f','#ef9514','#e5484d','#9aa1ae'];
   const paletteClasses=['chart-color-blue','chart-color-purple','chart-color-teal','chart-color-amber','chart-color-red','chart-color-muted'];
   const srcs=(d&&d.sources)||[];
+  const error=d&&d.error;
   const donutCv=document.getElementById('seoSrcDonut'), legend=document.getElementById('seoSrcLegend');
   if(donutCv){
     if(window._seoSrcDonut){ try{window._seoSrcDonut.destroy();}catch(e){} window._seoSrcDonut=null; }
@@ -318,7 +335,7 @@ function renderSeoSources(d){
       window._seoSrcDonut=new Chart(donutCv,{type:'doughnut',data:{labels:top.map(s=>s.source),datasets:[{data:top.map(s=>s.sessions),backgroundColor:palette,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'62%'}});
       const total=top.reduce((a,s)=>a+(s.sessions||0),0)||1;
       if(legend)legend.innerHTML=top.map((s,i)=>{ const b=s.bounceRate!=null?'<span class="dim csp-s-128d24435a"> · 跳出'+Math.round(s.bounceRate*100)+'%</span>':''; return '<div class="csp-s-ace6cccdf9"><span><span class="'+paletteClasses[i%paletteClasses.length]+'">●</span> '+esc(s.source)+b+'</span><b>'+Math.round((s.sessions||0)/total*100)+'%</b></div>'; }).join('');
-    } else if(legend){ legend.innerHTML='<span class="dim">暂无 GA4 来源数据 · 完成同步后显示</span>'; }
+    } else if(legend){ legend.innerHTML='<span class="dim">'+(error?esc(loadFailureText('SEO 来源',error)):'暂无 GA4 来源数据 · 完成同步后显示')+'</span>'; }
   }
   const areaCv=document.getElementById('seoSrcArea');
   if(areaCv){
@@ -331,7 +348,8 @@ function renderSeoSources(d){
       const aligned=_alignDaily(dRows,rng,'date');
       const datasets=ss.series.map((se,i)=>({label:se.source,data:aligned.rows.map(r=>r?(se.values[r._i]||0):0),borderColor:palette[i%palette.length],backgroundColor:palette[i%palette.length]+'55',fill:true,stack:'s',tension:.3,pointRadius:0,borderWidth:1.4}));
       window._seoSrcArea=new Chart(areaCv,{type:'line',data:{labels:aligned.labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:_xTickLimit(aligned.labels.length),font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{precision:0}}}}});
-    } else { chartEmpty('seoSrcArea'); }
+    } else if(error) chartEmpty('seoSrcArea',loadFailureText('SEO 来源趋势',error),'加载失败');
+    else chartEmpty('seoSrcArea');
   }
 }
 
@@ -351,12 +369,12 @@ function withSemCampaign(path){ // 带上系列 + 广告组筛选参数
   add('campaign_id',window._semCampaign); add('ad_group_id',window._semAdGroup); return p;
 }
 function _semScopeNote(){ const el=document.getElementById('semAttrScope'); if(el)el.classList.toggle('is-hidden',!(window._semCampaign||window._semAdGroup)); }
-function onSemCampaignChange(v){
+export function onSemCampaignChange(v){
   window._semCampaign=v||''; window._semAdGroup=''; // 系列变→广告组重置（广告组隶属系列）
   const ag=document.getElementById('semAdGroupFilter'); if(ag){ ag.value=''; ag.disabled=!window._semCampaign; }
   loadSemBoardAds(); loadSemBoardFull(); _semScopeNote();
 }
-function onSemAdGroupChange(v){ window._semAdGroup=v||''; loadSemBoardAds(); loadSemBoardFull(); _semScopeNote(); }
+export function onSemAdGroupChange(v){ window._semAdGroup=v||''; loadSemBoardAds(); loadSemBoardFull(); _semScopeNote(); }
 // 广告组下拉：仅在选了系列时启用；用当前系列的广告组列表填充，保持已选
 function _fillSemAdGroupFilter(list){
   const sel=document.getElementById('semAdGroupFilter'); if(!sel)return;
@@ -372,14 +390,15 @@ function _fillSemCampaignFilter(list){
   sel.innerHTML=['<option value="">全部系列</option>'].concat((list||[]).map(c=>'<option value="'+esc(c.campaignId)+'">'+esc(c.campaignName||'(未命名)')+'</option>')).join('');
   sel.value=cur;
 }
-async function loadSemBoardAds(){
+export async function loadSemBoardAds(){
   let data=null;
   try{ data=await API.get(withSemCampaign(withRange('/api/google/ads/summary'))); }
-  catch(e){ window._adsBoard=null; renderSemBoard(); return; }
+  catch(e){ window._adsBoard={error:e}; renderSemBoard(); return; }
   window._adsBoard=data; renderSemBoard();
 }
 function renderSemBoard(){
   const data=window._adsBoard, t=data&&data.totals;
+  const error=data&&data.error;
   const _t=(id,v)=>{ const e=document.getElementById(id); if(e)e.textContent=v; };
   const _int=v=>v==null?'—':Number(v).toLocaleString();
   const _pct=v=>v==null?'—':(Number(v)*100).toFixed(2)+'%';
@@ -398,6 +417,7 @@ function renderSemBoard(){
   const tb=document.getElementById('semHierRows');
   if(!tb)return;
   const camps=(data&&data.campaigns)||[], kws=(data&&data.keywords)||[];
+  if(error){ tb.innerHTML=loadFailureRow(5,'Ads 概览',error); return; }
   if(!camps.length){ tb.innerHTML='<tr><td colspan="5" class="dim csp-s-45c174bbec">暂无真实数据 · 请完成 Google Ads 同步</td></tr>'; return; }
   const byCamp=new Map(); kws.forEach(k=>{ const n=k.campaignName||''; if(!byCamp.has(n))byCamp.set(n,[]); byCamp.get(n).push(k); });
   const cpc=(cost,conv)=> (conv&&conv>0)? _money(cost/conv) : '—';
@@ -415,12 +435,13 @@ function renderSemBoard(){
 }
 
 /* ===== 询盘归因：Ads 花费 ÷ 真实 SEM 有效询盘（对比 Ads 自报转化） ===== */
-async function loadAttribution(){
-  let d=null; try{ d=await API.get(withRange('/api/attribution')); }catch(e){ d=null; }
+export async function loadAttribution(){
+  let d=null; try{ d=await API.get(withRange('/api/attribution')); }catch(e){ d={error:e}; }
   renderAttribution(d);
 }
 function renderAttribution(d){
   const card=document.getElementById('semAttrCard'), body=document.getElementById('semAttrBody'); if(!card||!body)return;
+  if(d&&d.error){ card.classList.remove('is-hidden'); body.innerHTML='<div class="dim">'+esc(loadFailureText('询盘归因',d.error))+'</div>'; return; }
   const sem=d&&d.sem;
   if(!sem || (!sem.costMicros && !sem.inquiriesTotal)){ card.classList.add('is-hidden'); return; }
   card.classList.remove('is-hidden');
@@ -441,24 +462,26 @@ function renderAttribution(d){
 
 /* ===== SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势 ===== */
 window._semCostDonut=null; window._semTrend=null; window._semScatterChart=null;
-async function loadSemBoardFull(){
-  let d=null; try{ d=await API.get(withSemCampaign(withRange('/api/google/ads/board'))); }catch(e){ d=null; }
+export async function loadSemBoardFull(){
+  let d=null; try{ d=await API.get(withSemCampaign(withRange('/api/google/ads/board'))); }catch(e){ d={error:e}; }
   renderSemHighlights(d); renderSemDeltaTables(d); renderSemScatter(d); renderSemCostCharts(d);
 }
 function renderSemHighlights(d){
   const box=document.getElementById('semHighlights'); if(!box)return;
+  if(d&&d.error){ box.classList.add('is-hidden'); box.innerHTML=''; return; }
   const hs=(d&&d.highlights)||[];
   if(!hs.length){ box.classList.add('is-hidden'); box.innerHTML=''; return; }
   box.classList.remove('is-hidden');
   box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':'bad')+'">'+esc(h.text)+'</span>').join('');
 }
 function renderSemDeltaTables(d){
+  const error=d&&d.error;
   const cpc=(cost,conv)=> (conv&&conv>0)? _money(cost/conv) : '—';
   const rate=(a,b)=> (b&&b>0)? (a/b*100).toFixed(1)+'%' : '—';
   // 投放中广告系列 · 全量（像 Ads 后台）
   const ct=document.getElementById('semCampFull');
   if(ct){ const cs=(d&&d.campaigns)||[];
-    ct.innerHTML=cs.length?cs.map(c=>{
+    ct.innerHTML=error?loadFailureRow(10,'SEM 看板',error):cs.length?cs.map(c=>{
       const ctr=rate(c.clicks,c.impressions), cvr=rate(Number(c.conversions||0),c.clicks);
       const cpcCost=(c.clicks&&c.clicks>0)?_money(c.costMicros/c.clicks):'—';
       return '<tr><td>'+esc(c.name||'(未命名)')+'</td><td class="num">'+(c.impressions||0).toLocaleString()+'</td><td class="num">'+(c.clicks||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+_money(c.costMicros)+'</td><td class="num">'+cpcCost+'</td><td class="num">'+_conv(c.conversions)+'</td><td class="num">'+cvr+'</td><td class="num">'+cpc(c.costMicros,c.conversions)+'</td><td class="ctr">'+_adsBadge(c.costMicros,c.conversions)+'</td></tr>';
@@ -467,7 +490,7 @@ function renderSemDeltaTables(d){
   // 关键词 · 花费/转化 环比
   const kt=document.getElementById('semKwRows');
   if(kt){ const ks=(d&&d.keywords)||[];
-    kt.innerHTML=ks.length?ks.map(k=>'<tr><td>'+esc(k.keyword||'')+'</td><td class="num">'+_money(k.costMicros)+'</td><td class="num">'+_conv(k.conversions)+'</td><td class="num">'+_deltaHtml(k.conversions,k.convPrev,false,'abs1')+'</td><td class="num">'+cpc(k.costMicros,k.conversions)+'</td><td class="ctr">'+_adsBadge(k.costMicros,k.conversions)+'</td></tr>').join(''):'<tr><td colspan="6" class="dim csp-s-45c174bbec">暂无数据 · 完成 Ads 同步</td></tr>';
+    kt.innerHTML=error?loadFailureRow(6,'SEM 看板',error):ks.length?ks.map(k=>'<tr><td>'+esc(k.keyword||'')+'</td><td class="num">'+_money(k.costMicros)+'</td><td class="num">'+_conv(k.conversions)+'</td><td class="num">'+_deltaHtml(k.conversions,k.convPrev,false,'abs1')+'</td><td class="num">'+cpc(k.costMicros,k.conversions)+'</td><td class="ctr">'+_adsBadge(k.costMicros,k.conversions)+'</td></tr>').join(''):'<tr><td colspan="6" class="dim csp-s-45c174bbec">暂无数据 · 完成 Ads 同步</td></tr>';
   }
 }
 function _semScatterTitles(t,s){ const a=document.getElementById('semScatterTitle'),b=document.getElementById('semScatterSub'); if(a)a.textContent=t; if(b)b.textContent=s; }
@@ -484,6 +507,7 @@ function renderSemScatterTargets(list){
 function renderSemScatter(d){
   const el=document.getElementById('semScatter'), empty=document.getElementById('semScatterEmpty'); if(!el)return;
   const _tb=document.getElementById('semScatterTargets'); if(_tb)_tb.innerHTML='';
+  if(d&&d.error){ el.style.display='none'; if(empty){ empty.classList.remove('is-hidden'); empty.textContent=loadFailureText('SEM 散点',d.error); } return; }
   const all=(d&&d.scatter)||[];
   // 有转化的词进散点(按每转化成本散开)；零转化烧钱词进下方「该砍」清单
   const conv=all.filter(p=>Number(p.conversions||0)>0).map(p=>({...p,cost:p.costMicros/1e6,cpa:(p.costMicros/1e6)/Number(p.conversions)}));
@@ -535,6 +559,7 @@ function renderSemCostCharts(d){
   const palette=['#7b54e0','#2f72e8','#0b9d8f','#ef9514','#e5484d','#9aa1ae'];
   const paletteClasses=['chart-color-purple','chart-color-blue','chart-color-teal','chart-color-amber','chart-color-red','chart-color-muted'];
   const cs=(d&&d.campaigns)||[];
+  const error=d&&d.error;
   const donutCv=document.getElementById('semCostDonut'), legend=document.getElementById('semCostLegend');
   if(donutCv){
     if(window._semCostDonut){ try{window._semCostDonut.destroy();}catch(e){} window._semCostDonut=null; }
@@ -543,7 +568,7 @@ function renderSemCostCharts(d){
       window._semCostDonut=new Chart(donutCv,{type:'doughnut',data:{labels:top.map(c=>c.name),datasets:[{data:top.map(c=>c.costMicros/1e6),backgroundColor:palette,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'62%'}});
       const total=top.reduce((a,c)=>a+(c.costMicros||0),0)||1;
       if(legend)legend.innerHTML=top.map((c,i)=>'<div class="csp-s-ace6cccdf9"><span><span class="'+paletteClasses[i%paletteClasses.length]+'">●</span> '+esc(c.name)+'</span><b>'+Math.round((c.costMicros||0)/total*100)+'%</b></div>').join('');
-    } else if(legend){ legend.innerHTML='<span class="dim">暂无 Ads 数据 · 完成同步后显示</span>'; }
+    } else if(legend){ legend.innerHTML='<span class="dim">'+(error?esc(loadFailureText('SEM 花费',error)):'暂无 Ads 数据 · 完成同步后显示')+'</span>'; }
   }
   const trendCv=document.getElementById('semTrend');
   if(trendCv){
@@ -573,7 +598,8 @@ function renderSemCostCharts(d){
         {label:'转化·上一区间',data:prevConv,borderColor:'rgba(21,168,90,.5)',borderDash:[5,4],borderWidth:1.2,pointRadius:0,tension:.3,fill:false,spanGaps:true,yAxisID:'y1'}
       ); }
       window._semTrend=new Chart(trendCv,{type:'line',data:{labels:aligned.labels,datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},tooltip:hasPrev?{callbacks:{footer:items=>{ const i=items&&items[0]&&items[0].dataIndex; const pd=(i!=null)?prevDate[i]:null; return pd?('对应上一区间：'+pd):''; }}}:{}},scales:{x:{ticks:{maxTicksLimit:_xTickLimit(aligned.labels.length),font:{size:10}}},y:{position:'left',beginAtZero:true},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}});
-    } else { chartEmpty('semTrend'); }
+    } else if(error) chartEmpty('semTrend',loadFailureText('SEM 趋势',error),'加载失败');
+    else chartEmpty('semTrend');
   }
 }
 
@@ -599,9 +625,9 @@ async function adoptFinding(btn,dept,title,detail,evidence){
   }catch(e){ toast((typeof persistFailMsg==='function')?persistFailMsg(e):'保存失败,未入库'); }
 }
 /* 阶段5：数据新鲜度条——三源实际有数据天数 / 区间总天数 + 最后同步时间 + 连接态 */
-async function loadDataFreshness(){
+export async function loadDataFreshness(){
   const el=document.getElementById('dataFreshness'); if(!el)return;
-  let d=null; try{ d=await API.get(withRange('/api/data-freshness')); }catch(e){ el.innerHTML='<span class="dim">数据新鲜度读取失败</span>'; return; }
+  let d=null; try{ d=await API.get(withRange('/api/data-freshness')); }catch(e){ el.innerHTML='<span class="dim">'+esc(loadFailureText('数据新鲜度',e))+'</span>'; return; }
   const fmt=v=>{ if(!v)return '从未'; const s=String(v).replace(' ','T'); const t=new Date(/Z|[+-]\d{2}/.test(s)?s:s+'Z'); if(isNaN(t))return String(v).slice(5,16);
     const p=n=>String(n).padStart(2,'0'); const dif=Math.floor((Date.now()-t.getTime())/60000);
     if(dif<60)return dif+' 分钟前'; if(dif<1440)return Math.floor(dif/60)+' 小时前';
@@ -617,46 +643,47 @@ async function loadDataFreshness(){
 }
 /* 总览 SEO/SEM 两卡：接真实当月数据（本月 1 号~今天），替换原写死的 demo 数字。独立于全局时间范围（固定当月） */
 window._ovSeoMini=null; window._ovSemMini=null;
-function _ovSpark(id, rows, valFn, color){
+function _ovSpark(id, rows, valFn, color, emptyDetail){
   const cv=document.getElementById(id); if(!cv)return;
   const key='_ov'+(id==='seoMini'?'Seo':'Sem')+'Mini';
   if(window[key]){ try{window[key].destroy();}catch(e){} window[key]=null; }
-  if(!rows||!rows.length){ chartEmpty(id); return; }
+  if(!rows||!rows.length){ chartEmpty(id,emptyDetail,emptyDetail?'加载失败':undefined); return; }
   const wrap=cv.closest('.chart-wrap'); if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
   window[key]=new Chart(cv,{type:'line',data:{labels:rows.map(x=>(x.date||'').slice(5)),datasets:[{data:rows.map(valFn),borderColor:color,backgroundColor:color+'1a',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:true}},scales:{x:{display:false},y:{display:false,beginAtZero:true}}}});
 }
-async function loadDashboardBoards(){
+export async function loadDashboardBoards(){
   if(window.DEMO_MODE)return;
   // 「当月」在月初几乎无数据 + GSC 有 2-3 天延迟 → 用近30天滚动窗口，保证总览始终有真实数据
   const today=formatLocalDate(new Date());
   const s=new Date(); s.setDate(s.getDate()-29);
   const r={start_date:formatLocalDate(s),end_date:today};
   const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  let g=null; try{ g=await API.get(withRange('/api/google/gsc/summary',r)); }catch(e){}
+  let g=null,gError=null; try{ g=await API.get(withRange('/api/google/gsc/summary',r)); }catch(e){ gError=e; }
   const gt=g&&g.totals;
   _t('ov-seo-clicks', gt?(gt.clicks||0).toLocaleString():'—');
   _t('ov-seo-impr',   gt?(gt.impressions||0).toLocaleString():'—');
   _t('ov-seo-pos',    gt&&gt.position!=null?Number(gt.position).toFixed(1):'—');
-  _ovSpark('seoMini', (g&&g.byDate)||[], x=>+x.clicks||0, '#2f72e8');
-  let a=null; try{ a=await API.get(withRange('/api/google/ads/board',r)); }catch(e){}
+  _ovSpark('seoMini', (g&&g.byDate)||[], x=>+x.clicks||0, '#2f72e8',gError?loadFailureText('总览 SEO',gError):'');
+  let a=null,aError=null; try{ a=await API.get(withRange('/api/google/ads/board',r)); }catch(e){ aError=e; }
   const at=a&&a.totals;
   _t('ov-sem-cost', at?_money(at.costMicros):'—');
   _t('ov-sem-conv', at?_conv(at.conversions):'—');
   _t('ov-sem-cpa',  at?_money(at.costPerConversionMicros):'—');
-  _ovSpark('semMini', (a&&a.series)||[], x=>(x.costMicros||0)/1e6, '#7b54e0');
+  _ovSpark('semMini', (a&&a.series)||[], x=>(x.costMicros||0)/1e6, '#7b54e0',aError?loadFailureText('总览 SEM',aError):'');
 }
-async function loadDiagnostics(){
+export async function loadDiagnostics(){
   let d=null;
-  try{ d=await API.get(withRange('/api/diagnostics')); }catch(e){ d=null; }
+  try{ d=await API.get(withRange('/api/diagnostics')); }catch(e){ d={error:e}; }
   renderDiagnostics(d);
 }
 function renderDiagnostics(d){
+  const error=d&&d.error;
   const seo=(d&&d.seo)||{}, opp=seo.opportunities||[], dec=seo.decay||[], can=seo.cannibalization||[];
   _badgeCount('diag-opp-n',opp.length); _badgeCount('diag-decay-n',dec.length); _badgeCount('diag-cann-n',can.length);
   // 站点机会
   const t1=document.getElementById('diagOppRows');
   if(t1){
-    t1.innerHTML = opp.length ? opp.map(o=>{
+    t1.innerHTML = error ? loadFailureRow(5,'SEO 机会诊断',error) : opp.length ? opp.map(o=>{
       const path=_seoPath(o.page), pos=o.position!=null?Number(o.position).toFixed(1):'—';
       const q='关键词「'+o.query+'」当前排名'+pos+'、页面'+path+'、区间曝光'+(o.impressions||0)+'，给出冲进Top10的具体优化清单（标题/内容/内链/外链）。';
       const ti='机会词冲首页：'+o.query, de='关键词「'+o.query+'」当前排名'+pos+'（页面'+path+'），区间曝光'+(o.impressions||0)+'。优化标题/内容/内链冲进 Top10。', ev='GSC机会词 排名'+pos+' 展现'+(o.impressions||0)+' 点击'+(o.clicks||0);
@@ -666,7 +693,7 @@ function renderDiagnostics(d){
   // 流量衰退
   const t2=document.getElementById('diagDecayRows');
   if(t2){
-    t2.innerHTML = dec.length ? dec.map(p=>{
+    t2.innerHTML = error ? loadFailureRow(5,'SEO 衰退诊断',error) : dec.length ? dec.map(p=>{
       const path=_seoPath(p.page);
       const posChg=(p.positionPrev!=null&&p.positionCur!=null)?(Number(p.positionPrev).toFixed(1)+'→'+Number(p.positionCur).toFixed(1)):'—';
       const q=path+' 点击近一窗跌'+p.dropPct+'%（'+p.clicksPrev+'→'+p.clicksCur+'），排名'+posChg+'。给出排查与止损步骤。';
@@ -677,7 +704,7 @@ function renderDiagnostics(d){
   // 关键词蚕食
   const t3=document.getElementById('diagCannRows');
   if(t3){
-    t3.innerHTML = can.length ? can.map(g=>{
+    t3.innerHTML = error ? loadFailureRow(5,'SEO 蚕食诊断',error) : can.length ? can.map(g=>{
       const urls=g.pages.map(p=>esc(_seoPath(p.page))).join('<br>');
       const ranks=g.pages.map(p=>p.position!=null?Number(p.position).toFixed(0):'—').join(' / ');
       const detail=g.pages.map(p=>_seoPath(p.page)+'(排名'+(p.position!=null?Number(p.position).toFixed(1):'—')+')').join('、');
@@ -702,13 +729,14 @@ function inqSeriesByGran(rows,gran){
 /* 6.23 文档 2：总览询盘趋势 = 当月、按日，独立于全局 _range/_gran；启用悬停 tooltip 显示当日有效/总量。
    独立缓存 window._inqMonthCache，由 loadDashboardInq() 拉取（始终拉当月 1 号 ~ 今天）。 */
 window._inqMonthCache=[];
-async function loadDashboardInq(){
+let _inqMonthError=null;
+export async function loadDashboardInq(){
   const today=formatLocalDate(new Date());
   const first=today.slice(0,7)+'-01';
   try{
     const {items}=await API.get(withRange('/api/inquiries',{start_date:first,end_date:today}));
-    window._inqMonthCache=items||[];
-  }catch(e){ window._inqMonthCache=[]; }
+    window._inqMonthCache=items||[]; _inqMonthError=null;
+  }catch(e){ window._inqMonthCache=[]; _inqMonthError=e; }
   renderInqTrend();
 }
 function renderInqTrend(){
@@ -719,7 +747,7 @@ function renderInqTrend(){
     sub.textContent='当月 · 按日（'+today.slice(0,7)+'）';
   }
   if(inqChart){ try{inqChart.destroy();}catch(e){} inqChart=null; }
-  if(!rows.length){ chartEmpty('inqTrend'); return; }
+  if(!rows.length){ if(_inqMonthError)chartEmpty('inqTrend',loadFailureText('询盘趋势',_inqMonthError),'加载失败'); else chartEmpty('inqTrend'); return; }
   const wrap=cv.closest('.chart-wrap')||cv.parentElement; if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
   const s=inqSeriesByGran(rows,'day');
   inqChart=new Chart(cv,{type:'line',data:{labels:s.labels,datasets:[
@@ -735,7 +763,7 @@ function renderInqTrend(){
     scales:{y:{beginAtZero:true,ticks:{precision:0}}}
   }});
 }
-function charts(){
+export function charts(){
   Chart.defaults.color='#9aa1ae';Chart.defaults.borderColor='rgba(128,128,128,.12)';Chart.defaults.font.size=10;
   const wk=['W1','W2','W3','W4','W5','W6','W7','W8'];
   const sp={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
@@ -761,3 +789,14 @@ function charts(){
     else chartEmpty('seoBoard');
   }
 }
+
+document.addEventListener('timerange',()=>{
+  loadSeoChartRange();
+  loadSeoBoardFull();
+  loadSemBoardAds();
+  loadSemBoardFull();
+  loadAttribution();
+  loadDiagnostics();
+  loadDataFreshness();
+});
+document.addEventListener('granularity',rebuildSeoChart);

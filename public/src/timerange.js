@@ -1,6 +1,6 @@
 /* 时间范围筛选（ES 模块 · esbuild 打包为 IIFE）。
-   运行时依赖的全局：toast()、openModal()/closeModal()（内联）、loadInquiries()（inquiries.js）、
-   loadSeoChartRange()/rebuildSeoChart()（charts.js）、以及一批 typeof 守卫的 loadXxx（charts/ga4 等）。
+   运行时依赖的全局：toast()、openModal()/closeModal()（内联）、loadInquiries()（inquiries.js）和 loadGa4()。
+   图表消费者监听 timerange/granularity 事件，避免时间模块反向依赖图表实现。
    必须挂 window（main.js 统一处理）：
      - formatLocalDate/ymd —— closed-loop.js 运行时真实调用（仍是经典脚本）；
      - withRange/getCurrentRange —— charts.js 与 index.html 真实调用；
@@ -55,14 +55,7 @@ export function rangeText(r){ return (r&&r.start_date)?(r.start_date+' ~ '+r.end
 export function refreshRangeConsumers(){
   document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
   loadInquiries();                 // 1e-a：询盘真实按区间重拉
-  loadSeoChartRange();             // 1e-b：SEO 看板按区间重拉 GSC
-  if(typeof loadSeoBoardFull==='function') loadSeoBoardFull(); // SEO 富看板按区间重拉
-  if(typeof loadSemBoardAds==='function') loadSemBoardAds(); // SEM 看板按区间重拉 Ads
-  if(typeof loadSemBoardFull==='function') loadSemBoardFull(); // SEM 富看板按区间重拉
-  if(typeof loadAttribution==='function') loadAttribution(); // 询盘归因按区间重算
-  if(typeof loadDiagnostics==='function') loadDiagnostics(); // 诊断按区间重算
   if(typeof loadGa4==='function') loadGa4(); // 阶段5：GA4 按区间重算
-  if(typeof loadDataFreshness==='function') loadDataFreshness(); // 阶段5：数据新鲜度条按区间重算
 }
 export function applyTimeRange(label){
   const nr=resolveRange(label);
@@ -111,7 +104,6 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     try{ localStorage.setItem('ferr:gran',sel.value); }catch(e){} // BUG-31 B-1
     document.querySelectorAll('[data-time] .tgran').forEach(s=>{ if([...s.options].some(o=>o.value===sel.value)) s.value=sel.value; }); // 多条粒度联动
     document.dispatchEvent(new CustomEvent('granularity',{detail:{gran:window._gran}}));
-    rebuildSeoChart();               // C-2a：粒度只重画 SEO 折线(数据已在区间视图)，周/月切换
     // 6.23 文档 2：总览询盘趋势固定「当月按日」，不再响应全局粒度切换
     toast('粒度：'+(GRAN_LABEL[window._gran]||window._gran));
   });

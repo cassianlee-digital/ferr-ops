@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const html = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.meta.url), 'utf8');
+const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -60,4 +61,10 @@ test('empty and failed live loads remain observable and retryable', () => {
   assert.match(appSource, /loadAdCreatives\(\)/);
   assert.match(negAdsSource, /clearLoadState\('tb-neg'\)/);
   assert.match(negAdsSource, /clearLoadState\('tb-ad'\)/);
+  assert.match(chartsSource, /function loadFailureText\(/);
+  assert.match(chartsSource, /function loadFailureRow\(/);
+  assert.match(chartsSource, /chartEmpty\('seoBoard',loadFailureText\('GSC',error\),'加载失败'\)/);
+  assert.match(chartsSource, /window\._adsBoard=\{error:e\}/);
+  assert.match(chartsSource, /d=\{error:e\}/);
+  assert.doesNotMatch(chartsSource, /await API\.get\([^;]+\); \}catch\(e\)\{\}/);
 });

@@ -1,8 +1,9 @@
 /* KPI 引擎 + 周数据（ES 模块 · esbuild 打包为 IIFE）。
-   运行时依赖：window.API、toast()、openModal()/closeModal()、renderKPI()（kpi-view.js 兼容入口）、
-   seoFull/seoChart/seoSeriesFromWeeks()/buildSeoData()（charts.js）。
+   运行时依赖：window.API、toast()、openModal()/closeModal()、renderKPI()（kpi-view.js 兼容入口）。
    TOTAL/SEO/SEM/applyKpiServer/loadMetrics/loadWeeks 与两个提交入口由 main.js 挂到 window，
    供仍是经典脚本的 app.js 调用；评分内部状态仅供 kpi-view.js 显式导入。 */
+
+import { loadSemBoardAds, loadSeoBoardGsc, refreshSeoWeekChart } from './charts.js';
 
 /* ================= KPI ENGINE ================= */
 export const TOTAL=[{n:'询盘总量',w:25,t:60,a:0,m:'r',u:'封'},{n:'A级询盘数',w:35,t:10,a:0,m:'r',u:'封'},{n:'有效询盘成本',w:25,t:2000,a:0,m:'i',u:'¥'},{n:'闭环执行度',w:15,t:5,a:0,m:'r',u:'项'}];
@@ -85,8 +86,8 @@ export async function submitSeoWeek(){
   try{
     const {item}=await API.post('/api/seo-weeks',body);
     const rec=mapSeoWeek(item); window._seoWeeks.push(rec); applySeoActuals();
-    if(typeof loadSeoBoardGsc==='function')loadSeoBoardGsc(); // 顶部卡由 GSC 同步单一驱动，录入后刷新（人工周报仍回写 KPI 与趋势）
-    seoFull=seoSeriesFromWeeks(); if(seoChart){seoChart.data=buildSeoData(seoFull);seoChart.update();}
+    loadSeoBoardGsc(); // 顶部卡由 GSC 同步单一驱动，录入后刷新（人工周报仍回写 KPI 与趋势）
+    refreshSeoWeekChart();
     renderKPI(); closeModal('seoWkMask');
     const wow=window._seoWeeks.length>1?('，自然流量环比 '+(SEO[0].a>=0?'+':'')+SEO[0].a+'%'):'';
     toast('已录入本周 GSC 数据 · 已入库, 图表+KPI 已更新'+wow);
@@ -101,7 +102,7 @@ export async function submitSemWeek(){
   try{
     const {item}=await API.post('/api/sem-weeks',body); // CPC/CTR/每次转化费用由后端计算
     const rec=mapSemWeek(item); window._semWeeks.push(rec); applySemActuals();
-    if(typeof loadSemBoardAds==='function')loadSemBoardAds(); // 账户体检卡由 Ads 同步单一驱动，导入后刷新（人工周报仅回写 KPI）
+    loadSemBoardAds(); // 账户体检卡由 Ads 同步单一驱动，导入后刷新（人工周报仅回写 KPI）
     renderKPI(); closeModal('semWkMask');
     toast('已导入本周 Ads 数据 · CPC ¥'+(rec.cpc??'-')+' / CTR '+(rec.ctr??'-')+'% / 每询盘 ¥'+(rec.cpconv??'-')+'（后端计算）, KPI 已更新');
   }catch(e){ toast(e.status===403?'无权录入（仅陈/SEM 可录）':'保存失败：'+e.message); }

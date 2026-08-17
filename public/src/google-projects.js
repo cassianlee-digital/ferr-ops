@@ -1,10 +1,12 @@
 /* Google 接入 / 数据源状态（ES 模块 · esbuild 打包为 IIFE）。
-   运行时依赖的全局（调用时解析）：API、esc()、toast()、window.DEMO_MODE（index.html 内联）、
-   loadGa4()（已迁入本包）、loadDataFreshness()（charts.js，仍为经典脚本；已用 typeof 守卫）。
+   运行时依赖的全局（调用时解析）：API、esc()、toast()、window.DEMO_MODE（timerange 初始化）、
+   loadGa4()（已迁入本包）。数据新鲜度刷新显式导入 charts.js。
    必须挂 window（main.js 统一处理）：
      - startGoogleAuth/backfillGoogle/syncGoogle —— Google 接入卡的局部事件委托调用；
      - loadDataSourcesStatus/loadIntegrations —— index.html 初始化调用。
    INTEG_LABEL、DS_LABEL/DS_ORDER/DS_TYPE_LABEL、dsRow、dsStatusMeta、googleProviderRow 无外部引用，收进模块作用域。 */
+
+import { loadDataFreshness } from './charts.js';
 
 const INTEG_LABEL={gsc:'Google Search Console',ga4:'Google Analytics 4 (GA4)',ads:'Google Ads'};
 const GOOGLE_PROVIDER_ORDER=['gsc','ga4','ads'];
@@ -127,7 +129,7 @@ export async function backfillGoogle(provider,days,btn){
     toast(`${INTEG_LABEL[provider]||provider} 回补 ${days} 天完成，写入 ${r.rowsWritten||0} 行`);
     await loadDataSourcesStatus(); await loadIntegrations();
     if(provider==='ga4'&&typeof loadGa4==='function') await loadGa4();
-    if(typeof loadDataFreshness==='function') loadDataFreshness();
+    loadDataFreshness();
   }catch(e){
     const missing=e&&e.body&&e.body.missing&&e.body.missing.length ? `，缺少：${e.body.missing.join(', ')}` : '';
     toast(`回补失败：${e.message}${missing}`);

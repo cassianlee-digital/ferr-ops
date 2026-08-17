@@ -157,7 +157,7 @@ function mountGa4IntoData(){
   ga4.classList.add('ga4-embedded');
   if(ga4.parentElement!==host)host.appendChild(ga4);
 }
-function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data'&&typeof _resizeScatters==='function')_resizeScatters();
+function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
   if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
   if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结
@@ -165,7 +165,7 @@ function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','dat
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>go(n.dataset.tab)));
 document.querySelectorAll('.planning-tab').forEach(btn=>btn.addEventListener('click',()=>setPlanningTab(btn.dataset.planTab)));
 document.querySelectorAll('.action-tab').forEach(btn=>btn.addEventListener('click',()=>setActionTab(btn.dataset.actionTab)));
-document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} if(typeof _resizeScatters==='function')_resizeScatters(); }));
+document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} resizeScatters(); }));
 /* 刷新后恢复上次所在页签 + 子页签（修复刷新回总览的 Bug）*/
 function restoreRoute(){
   let tab='dashboard'; try{ tab=localStorage.getItem('ferr:tab')||'dashboard'; }catch(e){}
@@ -218,7 +218,7 @@ document.querySelectorAll('.minitab[data-mini]').forEach(t=>t.addEventListener('
   wrap.querySelectorAll('.minipanel').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');
   const mp=wrap.querySelector('#mp-'+t.dataset.mini); if(mp)mp.classList.add('active');
-  if(typeof _resizeScatters==='function')_resizeScatters();
+  resizeScatters();
 }));
 
 /* ================= 近6周排名迷你折线 (sparkline) ================= */
@@ -528,8 +528,8 @@ function renderRankTrend(arr){
 /* KPI 看板渲染：ES 模块 public/src/kpi-view.js（打包进 /dist/bundle.js）
    — 仅 loadOverview/renderKPI 保留全局兼容入口 */
 
-/* 图表层已拆分至 /charts.js（阶段4-B）
-   — DEMO fixture / chartEmpty / renderInqDonuts / SEO 折线(seoSeriesFromWeeks/rebuildSeoChart/loadSeoChartRange) / loadDashboardInq / renderInqTrend / charts() */
+/* 图表层已迁移至 ES 模块 public/src/charts.js（打包进 /dist/bundle.js）
+   — 内部状态不再暴露；仅 app.js 初始化、筛选和加载入口保留全局兼容。 */
 
 window.addEventListener('load',async()=>{
   await ensureAuth();          // 未登录会跳 /login.html
