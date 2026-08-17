@@ -20,12 +20,6 @@ function numericValue(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function kpiDirection(name) {
-  const text = String(name || '').toLowerCase();
-  if (/cpc|成本|费用|跳出|cost|bounce/.test(text)) return 'lower';
-  return 'higher';
-}
-
 function evidenceId(source, title) {
   const base = String(source || 'source') + '-' + String(title || 'evidence');
   const slug = String(source || 'source').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'source';
@@ -52,6 +46,9 @@ function evidenceDataRole(source, value) {
   if (sourceKey === 'sem_weeks.latest' || sourceKey === 'seo_weeks.latest' || sourceKey === 'seo_weeks.latesttwo') return 'manual_weekly_report';
   if (sourceKey === 'keywords') return 'keyword_registry';
   if (sourceKey === 'inquiries.stats') return 'crm_observation';
+  if (sourceKey === 'market_research') return 'company_research';
+  if (sourceKey === 'market_brain') return 'derived_company_summary';
+  if (sourceKey.startsWith('hermes_memory')) return 'internal_memory';
   if (sourceKey.endsWith('.sync')) return 'synced_observation';
   return 'operational_observation';
 }
@@ -86,6 +83,15 @@ function moneyMicros(value) {
   return (Number(value || 0) / 1e6).toFixed(2);
 }
 
+function previousRange(range) {
+  const start = new Date(`${range.start_date}T00:00:00Z`);
+  const end = new Date(`${range.end_date}T00:00:00Z`);
+  const days = Math.max(1, Math.round((end - start) / 86400000) + 1);
+  const prevEnd = new Date(start.getTime() - 86400000);
+  const prevStart = new Date(prevEnd.getTime() - ((days - 1) * 86400000));
+  return { start_date: prevStart.toISOString().slice(0, 10), end_date: prevEnd.toISOString().slice(0, 10) };
+}
+
 function hasAdsTotals(t) {
   return Boolean(Number(t?.costMicros || 0) || Number(t?.impressions || 0) || Number(t?.clicks || 0) || Number(t?.conversions || 0));
 }
@@ -94,11 +100,15 @@ function hasGscTotals(t) {
   return Boolean(Number(t?.clicks || 0) || Number(t?.impressions || 0));
 }
 
-function makeEvidence({ source, title, metric, date, value, detail }) {
+export function makeEvidence({ source, title, metric, date, value, detail, dataRole, granularity = 'aggregate', domain = '', label, summary }) {
   return {
     id: evidenceId(source, title),
     source: source || 'unknown',
-    dataRole: evidenceDataRole(source, value),
+    dataRole: dataRole || evidenceDataRole(source, value),
+    granularity,
+    domain,
+    label: label || title || '数据证据',
+    summary: summary || detail || '',
     metric: metric || '',
     date: date || '',
     freshness: freshnessFromDate(date),
@@ -115,6 +125,11 @@ function makeCard({ area, severity = 'medium', title, evidence, judgment, action
     date: evidenceMeta.date || '',
     value: evidenceMeta.value,
     detail: evidence,
+    dataRole: evidenceMeta.dataRole,
+    granularity: evidenceMeta.granularity,
+    domain: evidenceMeta.domain || area,
+    label: evidenceMeta.label || title,
+    summary: evidenceMeta.summary || evidence,
   });
   return {
     area,
@@ -148,8 +163,11 @@ export function buildOpsDiagnosis(operator, contextText = '') {
       area: 'sem',
       severity: hasAdsSyncEvidence ? 'medium' : 'high',
       title: `Ads 同步数据：${range.label}`,
-      evidence: `range=${range.start_date}~${range.end_date}, status=${hasAdsSyncEvidence ? 'has_data' : 'no_synced_rows'}, cost=${moneyMicros(t.costMicros)}, impressions=${t.impressions || 0}, clicks=${t.clicks || 0}, conversions=${Number(t.conversions || 0).toFixed(1)}, ctr=${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'}`,
-      evidenceMeta: { metric: 'google_ads_synced_summary', date: range.end_date, value: `status=${hasAdsSyncEvidence ? 'has_data' : 'no_synced_rows'}; cost=${moneyMicros(t.costMicros)}; clicks=${t.clicks || 0}; conversions=${Number(t.conversions || 0).toFixed(1)}` },
+      evidence: `${range.start_date} 至 ${range.end_date}：${hasAdsSyncEvidence ? '已有同步数据' : '没有同步明细'}；花费 ${moneyMicros(t.costMicros)}，展现 ${t.impressions || 0}，点击 ${t.clicks || 0}，转化 ${Number(t.conversions || 0).toFixed(1)}，CTR ${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'}`,
+      evidenceMeta: {
+        metric: 'google_ads_synced_summary', date: range.end_date, granularity: 'aggregate', domain: 'sem',
+        value: `status=${hasAdsSyncEvidence ? 'has_data' : 'no_synced_rows'}; cost=${moneyMicros(t.costMicros)}; impressions=${t.impressions || 0}; clicks=${t.clicks || 0}; conversions=${Number(t.conversions || 0).toFixed(1)}; ctr=${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'}`,
+      },
       judgment: hasAdsSyncEvidence
         ? '系统已经有该范围的 Google Ads 同步数据，应基于这组数据分析 SEM，而不是只看 KPI 目标表或人工周报。'
         : '该范围在本地同步表中没有 Ads 明细，不能声称已经看到了真实投放表现；应检查同步任务、授权或 Ads 后台当天是否有投放。',
@@ -161,6 +179,22 @@ export function buildOpsDiagnosis(operator, contextText = '') {
       reviewWindow: '当天或同步完成后复核',
       source: 'google_ads.sync',
     }));
+
+    if (hasAdsSyncEvidence) {
+      const waste = googleRepo.adsWasteKeywords({ ...range, ads_customer_id: project.ads_customer_id }, { limit: 6 });
+      waste.slice(0, 4).forEach((row) => cards.push(makeCard({
+        area: 'sem', severity: 'high', title: `高花费零转化词：${row.keyword}`,
+        evidence: `${range.start_date} 至 ${range.end_date}，关键词“${row.keyword}”（${row.matchType || '匹配方式未知'}，${row.campaignName || '系列未知'}）花费 ${moneyMicros(row.costMicros)}，点击 ${row.clicks || 0}，转化 ${Number(row.conversions || 0).toFixed(1)}。`,
+        evidenceMeta: {
+          metric: 'ads_keyword_cost_clicks_conversions', date: range.end_date, dataRole: 'synced_keyword_observation',
+          granularity: 'keyword', domain: 'sem', value: `keyword=${row.keyword}; cost=${moneyMicros(row.costMicros)}; clicks=${row.clicks || 0}; conversions=${Number(row.conversions || 0).toFixed(1)}`,
+        },
+        judgment: '这条关键词在当前区间产生花费但没有 Ads 转化；是否暂停仍需核对搜索词、有效询盘归因和样本量。',
+        action: '先核对搜索词与询盘归因，再决定否词、降价、调整匹配方式或暂停。',
+        owner: 'SEM', verifyMetric: '关键词花费、转化、有效询盘', reviewWindow: '3-7 天复盘',
+        source: 'google_ads.keyword_sync',
+      })));
+    }
   } catch {
     missing.push('google_ads_sync');
   }
@@ -175,8 +209,11 @@ export function buildOpsDiagnosis(operator, contextText = '') {
       area: 'seo',
       severity: hasGscSyncEvidence ? 'medium' : 'high',
       title: `GSC 同步数据：${range.label}`,
-      evidence: `range=${range.start_date}~${range.end_date}, status=${hasGscSyncEvidence ? 'has_data' : 'no_synced_rows'}, clicks=${t.clicks || 0}, impressions=${t.impressions || 0}, ctr=${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'}, position=${t.position != null ? t.position.toFixed(1) : '-'}`,
-      evidenceMeta: { metric: 'gsc_synced_summary', date: range.end_date, value: `status=${hasGscSyncEvidence ? 'has_data' : 'no_synced_rows'}; clicks=${t.clicks || 0}; impressions=${t.impressions || 0}` },
+      evidence: `${range.start_date} 至 ${range.end_date}：${hasGscSyncEvidence ? '已有同步数据' : '没有同步明细'}；点击 ${t.clicks || 0}，展现 ${t.impressions || 0}，CTR ${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'}，平均排名 ${t.position != null ? t.position.toFixed(1) : '-'}。`,
+      evidenceMeta: {
+        metric: 'gsc_synced_summary', date: range.end_date, granularity: 'aggregate', domain: 'seo',
+        value: `status=${hasGscSyncEvidence ? 'has_data' : 'no_synced_rows'}; clicks=${t.clicks || 0}; impressions=${t.impressions || 0}; ctr=${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'}; position=${t.position != null ? t.position.toFixed(1) : '-'}`,
+      },
       judgment: hasGscSyncEvidence
         ? '系统已经有该范围的 GSC 同步数据，可以基于点击、展现、CTR 和排名判断 SEO。'
         : '该范围在本地同步表中没有 GSC 数据；GSC 通常有延迟，不能把 0 当作真实搜索表现。',
@@ -188,34 +225,78 @@ export function buildOpsDiagnosis(operator, contextText = '') {
       reviewWindow: '同步完成后复核',
       source: 'gsc.sync',
     }));
+
+    if (hasGscSyncEvidence) {
+      const opportunities = googleRepo.gscOpportunities({ ...range, gsc_site_url: project.gsc_site_url }, { limit: 6 });
+      opportunities.slice(0, 4).forEach((row) => cards.push(makeCard({
+        area: 'seo', severity: 'medium', title: `排名 11-20 机会词：${row.query}`,
+        evidence: `${range.start_date} 至 ${range.end_date}，查询词“${row.query}”对应页面 ${row.page || '-'}，展现 ${row.impressions || 0}，点击 ${row.clicks || 0}，CTR ${row.ctr != null ? (row.ctr * 100).toFixed(2) + '%' : '-'}，平均排名 ${row.position != null ? row.position.toFixed(1) : '-'}。`,
+        evidenceMeta: {
+          metric: 'gsc_query_opportunity', date: range.end_date, dataRole: 'synced_query_observation',
+          granularity: 'query', domain: 'seo', value: `query=${row.query}; page=${row.page || ''}; impressions=${row.impressions || 0}; clicks=${row.clicks || 0}; ctr=${row.ctr != null ? (row.ctr * 100).toFixed(2) + '%' : '-'}; position=${row.position != null ? row.position.toFixed(1) : '-'}`,
+        },
+        judgment: '该查询词已有展现且平均排名在 11-20，可作为优先核查对象；不能仅凭排名断言修改后一定增长。',
+        action: '核对搜索意图、对应页面覆盖和内部链接，再决定补内容、改标题或增强内链。',
+        owner: 'SEO', verifyMetric: '查询词排名、展现、点击、CTR', reviewWindow: '7-14 天复盘',
+        source: 'gsc.query_sync',
+      })));
+
+      const cannibalization = googleRepo.gscCannibalization({ ...range, gsc_site_url: project.gsc_site_url }, { limit: 4 });
+      cannibalization.slice(0, 3).forEach((row) => cards.push(makeCard({
+        area: 'seo', severity: 'medium', title: `疑似关键词蚕食：${row.query}`,
+        evidence: `${range.start_date} 至 ${range.end_date}，查询词“${row.query}”由 ${row.pages.length} 个页面获得有效展现，总展现 ${row.totalImpressions || 0}。`,
+        evidenceMeta: {
+          metric: 'gsc_query_multiple_pages', date: range.end_date, dataRole: 'synced_query_observation',
+          granularity: 'query', domain: 'seo', value: `query=${row.query}; pages=${row.pages.length}; impressions=${row.totalImpressions || 0}`,
+        },
+        judgment: '同一查询词分散到多个页面属于蚕食风险信号，但合并页面前必须核对各页面意图是否真的重复。',
+        action: '先比较页面意图、排名和转化角色，再决定合并、规范主页面或调整内链。',
+        owner: 'SEO', verifyMetric: '主页面排名、点击、被收录页面数', reviewWindow: '14 天复盘',
+        source: 'gsc.query_sync',
+      })));
+
+      const decay = googleRepo.gscDecayPages({ ...range, gsc_site_url: project.gsc_site_url }, { ...previousRange(range), gsc_site_url: project.gsc_site_url }, { limit: 4 });
+      decay.slice(0, 3).forEach((row) => cards.push(makeCard({
+        area: 'seo', severity: 'high', title: `点击衰退页：${row.page}`,
+        evidence: `页面 ${row.page} 当前区间点击 ${row.clicksCur || 0}，上一等长区间点击 ${row.clicksPrev || 0}，下降 ${row.dropPct || 0}%；平均排名由 ${row.positionPrev == null ? '-' : row.positionPrev.toFixed(1)} 变为 ${row.positionCur == null ? '-' : row.positionCur.toFixed(1)}。`,
+        evidenceMeta: {
+          metric: 'gsc_page_click_decline', date: range.end_date, dataRole: 'synced_page_observation',
+          granularity: 'page', domain: 'seo', value: `page=${row.page}; clicks_current=${row.clicksCur || 0}; clicks_previous=${row.clicksPrev || 0}; drop=${row.dropPct || 0}%; position_current=${row.positionCur ?? ''}; position_previous=${row.positionPrev ?? ''}`,
+        },
+        judgment: '该页面点击较上一等长区间下滑；原因仍需结合查询词、排名、CTR、收录和页面变更核查。',
+        action: '先拆查询词与排名/CTR 变化，再决定内容更新、标题调整或技术排查。',
+        owner: 'SEO', verifyMetric: '页面点击、查询词排名、CTR', reviewWindow: '7-14 天复盘',
+        source: 'gsc.page_sync',
+      })));
+    }
   } catch {
     missing.push('gsc_sync');
   }
 
   try {
     const rows = kpiRepo.list();
-    for (const row of rows) {
-      const target = numericValue(row.target);
-      const actual = numericValue(row.actual);
-      if (target == null || actual == null) continue;
-      const direction = kpiDirection(row.name);
-      const offTarget = direction === 'lower' ? actual > target : actual < target;
-      if (!offTarget) continue;
-      const gap = direction === 'lower' ? actual - target : target - actual;
+    const groups = { total: '公司', seo: 'SEO', sem: 'SEM' };
+    Object.entries(groups).forEach(([group, label]) => {
+      const targets = rows.filter((row) => row.grp === group && numericValue(row.target) != null);
+      if (!targets.length) return;
+      const summary = targets.map((row) => `${row.name} ${row.target}${row.unit || ''}`).join('；');
       cards.push(makeCard({
-        area: row.grp || 'kpi',
-        severity: gap / Math.max(Math.abs(target), 1) >= 0.3 ? 'high' : 'medium',
-        title: `${row.name} 未达标`,
-        evidence: `KPI ${row.name}: target=${row.target}, actual=${row.actual}`,
-        evidenceMeta: { metric: row.name, value: `target=${row.target}; actual=${row.actual}` },
-        judgment: direction === 'lower' ? '该指标越低越好，当前实际值高于目标。' : '该指标越高越好，当前实际值低于目标。',
-        action: '优先定位影响该 KPI 的页面、关键词、计划或询盘来源，并拆成 1-2 个本周可执行动作。',
-        owner: row.grp === 'seo' ? 'SEO' : row.grp === 'sem' ? 'SEM' : '主管/老板',
-        verifyMetric: row.name,
-        reviewWindow: '下一次周报或 7 天后复盘',
+        area: group === 'total' ? 'kpi' : group,
+        severity: 'medium',
+        title: `${label} KPI 目标配置`,
+        evidence: `${label}当前配置的目标值：${summary}。这些值只代表目标/阈值，不代表实际业绩。`,
+        evidenceMeta: {
+          metric: `${group}_kpi_targets`, dataRole: 'target_only', granularity: 'target', domain: group === 'total' ? 'kpi' : group,
+          value: targets.map((row) => `${row.name} target=${row.target}${row.unit || ''}`).join('; '),
+        },
+        judgment: '目标值只能用于设定判断基准，必须与相同口径、相同周期的真实观测数据一起使用。',
+        action: '先确认指标口径和统计周期，再与 GSC、Ads、询盘或周报实绩比较。',
+        owner: group === 'seo' ? 'SEO' : group === 'sem' ? 'SEM' : '主管/老板',
+        verifyMetric: 'KPI 目标口径与周期',
+        reviewWindow: '目标调整或月度复盘时',
         source: 'kpi_targets',
       }));
-    }
+    });
   } catch {
     missing.push('KPI targets');
   }
@@ -341,8 +422,9 @@ export function buildOpsDiagnosis(operator, contextText = '') {
     missing.push('keywords');
   }
 
-  const priorityCards = cards.slice(0, 10);
-  const evidencePack = priorityCards.flatMap((card) => card.evidencePack || []);
+  const severityOrder = { high: 0, medium: 1, low: 2 };
+  const priorityCards = cards.slice().sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9)).slice(0, 12);
+  const evidencePack = cards.flatMap((card) => card.evidencePack || []).slice(0, 40);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -507,6 +589,38 @@ export function buildEnterpriseMemory() {
   }
 
   const closureAudit = buildClosureAudit({ memories: longTermMemories, actions, reports });
+  const trusted = trustedMemories(longTermMemories, closureAudit.memoryConflicts);
+  const evidencePack = [];
+  marketRows.slice(0, 12).forEach((row, index) => {
+    evidencePack.push(makeEvidence({
+      source: 'market_research',
+      title: `${row.section || '市场调研'}：${row.question || `记录 ${index + 1}`}`,
+      label: `${row.section || '市场调研'}：${row.question || `记录 ${index + 1}`}`,
+      metric: 'company_market_research',
+      value: JSON.stringify(row.answers || ''),
+      detail: `公司市场调研记录：${JSON.stringify(row.answers || '')}`,
+      dataRole: 'company_research', granularity: 'research_row', domain: 'market',
+    }));
+  });
+  trusted.slice(0, 12).forEach((memory) => {
+    evidencePack.push(makeEvidence({
+      source: `hermes_memory:${memory.source || memory.id}`,
+      title: memory.title || `长期记忆 ${memory.id}`,
+      label: `公司记忆：${memory.title || memory.id}`,
+      metric: 'trusted_internal_memory',
+      date: memory.updated_at || memory.created_at || '',
+      value: memory.content || '',
+      detail: [memory.content, memory.evidence].filter(Boolean).join('；'),
+      dataRole: 'internal_memory', granularity: 'memory', domain: ['customer', 'market', 'company'].includes(memory.kind) ? 'market' : '',
+    }));
+  });
+  if (marketSummary) {
+    evidencePack.push(makeEvidence({
+      source: 'market_brain', title: '市场分析 AI 摘要', label: '市场分析摘要', metric: 'market_summary',
+      date: brainState?.updatedAt || brainState?.updated_at || '', value: marketSummary, detail: marketSummary,
+      dataRole: 'derived_company_summary', granularity: 'summary', domain: 'market',
+    }));
+  }
   return {
     generatedAt: new Date().toISOString(),
     purpose: 'Long-lived enterprise memory for Hermes. Use this before generic marketing assumptions.',
@@ -523,7 +637,8 @@ export function buildEnterpriseMemory() {
       instruction: 'Use market research rows as customer/ICP evidence. Do not quote rows not present in this payload.',
     },
     longTermMemories,
-    trustedLongTermMemories: trustedMemories(longTermMemories, closureAudit.memoryConflicts),
+    trustedLongTermMemories: trusted,
+    evidencePack,
     closureAudit,
     missingData: missing,
   };

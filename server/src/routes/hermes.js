@@ -10,6 +10,12 @@ import * as hermesConversationRepo from '../db/repositories/hermesConversations.
 import { buildOpsDiagnosis, buildEnterpriseMemory, buildDailyLearningMemory, requestedRangeFromText } from '../services/hermesBrain.js';
 import { executeTrustedReadAction } from '../services/hermesActions.js';
 import { getHermesStatus } from '../services/hermesStatus.js';
+import {
+  auditHermesAnswer as auditHermesAnswerStrict,
+  buildConfidenceAssessment,
+  guardHermesAnswer as guardHermesAnswerStrict,
+  stripEvidenceRefs,
+} from '../services/hermesEvidence.js';
 
 const ROLE_PERSONAS = {
   seo: {
@@ -283,177 +289,14 @@ function splitHermesText(text) {
   return { basis: clean(m[1]), answer: clean(m[2]) || clean(raw) };
 }
 
-function auditHermesAnswer(parsed, context) {
-  const pack = Array.isArray(context?.opsDiagnosis?.evidencePack) ? context.opsDiagnosis.evidencePack : [];
-  const byId = new Map(pack.map((item) => [String(item.id || '').toUpperCase(), item]));
-  const raw = [parsed?.basis, parsed?.answer].filter(Boolean).join('\n');
-  const evidenceIds = [...new Set((raw.match(/\[EV-[a-z0-9-]+\]/gi) || []).map((id) => id.slice(1, -1).toUpperCase()))];
-  const evidence = evidenceIds.map((id) => byId.get(id)).filter(Boolean).slice(0, 8);
-  const unknownEvidenceIds = evidenceIds.filter((id) => !byId.has(id));
-  const status = !pack.length
-    ? 'no_evidence_pool'
-    : evidence.length
-      ? (unknownEvidenceIds.length ? 'partial' : 'supported')
-      : 'weak';
-  return {
-    status,
-    evidence,
-    evidenceIds,
-    unknownEvidenceIds,
-    knownEvidenceIds: pack.map((item) => String(item.id || '').toUpperCase()).filter(Boolean),
-    evidencePoolSize: pack.length,
-    checkedAt: new Date().toISOString(),
-  };
-}
-
-function evidenceRefs(value) {
-  return [...new Set((String(value || '').match(/\[EV-[a-z0-9-]+\]/gi) || []).map((id) => id.slice(1, -1).toUpperCase()))];
-}
-
-function normalizeClaimLine(value) {
-  return String(value || '')
-    .replace(/<\/?[^>]+>/g, '')
-    .replace(/\[EV-[a-z0-9-]+\]/gi, '')
-    .replace(/^[\s>*-]*(?:\d+[.)、]\s*)?/, '')
-    .replace(/\*\*/g, '')
-    .trim();
-}
-
-function isStructuralAnswerLine(line) {
-  const clean = normalizeClaimLine(line).replace(/[：:]\s*$/, '');
-  if (!clean) return true;
-  if (/^(待验证|假设|缺失数据|不确定|需补充|证据不足|证据校验)/.test(clean)) return true;
-  if (/^(判断|依据|下一步|结论|建议|今日判断|关键证据|今天先做|复盘指标|可沉淀记忆|风险)$/.test(clean)) return true;
-  return clean.length <= 16 && /^(判断|依据|下一步|结论|建议|今日判断|关键证据|今天先做|复盘指标|可沉淀记忆)$/i.test(clean);
-}
-
-function lineNeedsEvidence(line) {
-  if (isStructuralAnswerLine(line)) return false;
-  const clean = normalizeClaimLine(line);
-  return /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i.test(clean);
-}
-
-function evidenceSupportsClaim(line, evidence) {
-  const clean = normalizeClaimLine(line);
-  const role = String(evidence?.dataRole || '');
-  if (role === 'data_gap') {
-    return /(缺失|没有|无|未接入|未同步|抓取不到|核对|检查|排查|同步|数据不足|不能判断)/.test(clean)
-      && !/(提高|降低|暂停|加预算|减预算|放量|效果|转化率|真实表现|实际表现|为\s*0|=\s*0)/i.test(clean);
-  }
-  if (role === 'target_only') {
-    return /(KPI|目标|未达标|差距|达标)/i.test(clean)
-      && !/(真实|实际|当前表现|投放表现|花费|点击|转化|流量|排名|收录|CTR|CPC|ROAS|为\s*0|=\s*0)/i.test(clean);
-  }
-  if (role === 'keyword_registry') {
-    return /(关键词|关键字|词库|否词)/.test(clean)
-      && !/(点击|花费|转化|CTR|CPC|CPA|ROAS|排名|效果|表现|机会|浪费)/i.test(clean);
-  }
-  return true;
-}
-
-function formatPendingClaim(line) {
-  return `- ${normalizeClaimLine(line).replace(/^[-•]\s*/, '')}`;
-}
-
-function enforceEvidenceProtocol(parsed, audit, options = {}) {
-  if (!audit || !needsEvidenceGuard(parsed, options.forceEvidence)) return parsed;
-  const knownIds = new Set(audit.knownEvidenceIds || []);
-  if (!knownIds.size) return parsed;
-
-  const unsupported = [];
-  const supported = [];
-  const bindingIssues = [];
-  const evidenceById = new Map((audit.evidence || []).map((item) => [String(item.id || '').toUpperCase(), item]));
-  const lines = String(parsed?.answer || '').split('\n');
-  const answerLines = lines.filter((line) => {
-    if (!lineNeedsEvidence(line)) return true;
-    const ids = evidenceRefs(line);
-    const citedEvidence = ids.filter((id) => knownIds.has(id)).map((id) => evidenceById.get(id)).filter(Boolean);
-    const hasSupportedEvidence = citedEvidence.some((item) => evidenceSupportsClaim(line, item));
-    if (hasSupportedEvidence) {
-      supported.push(line);
-      return true;
-    }
-    unsupported.push(line);
-    if (citedEvidence.length) {
-      bindingIssues.push({ claim: normalizeClaimLine(line), evidenceIds: citedEvidence.map((item) => item.id), reason: '证据性质与结论不匹配' });
-    }
-    return false;
-  });
-
-  if (!unsupported.length) {
-    audit.claimAuditStatus = 'passed';
-    audit.supportedClaimCount = supported.length;
-    return parsed;
-  }
-
-  audit.guardApplied = true;
-  audit.claimAuditStatus = 'downgraded';
-  audit.unsupportedClaims = unsupported.map(normalizeClaimLine).filter(Boolean);
-  audit.evidenceBindingIssues = bindingIssues;
-  if (!audit.unsupportedClaims.length) {
-    audit.claimAuditStatus = 'passed';
-    audit.supportedClaimCount = supported.length;
-    return parsed;
-  }
-  audit.supportedClaimCount = supported.length;
-  audit.guardMessage = `强证据协议：已将 ${audit.unsupportedClaims.length} 条未被证据内容支持的判断或动作降级为待验证。`;
-  if (audit.status === 'supported') audit.status = 'partial';
-
-  const pendingLines = audit.unsupportedClaims.map(formatPendingClaim).join('\n');
-  const keptAnswer = answerLines.join('\n').trim();
-  const answer = keptAnswer
-    ? `${keptAnswer}\n\n待验证：\n${pendingLines}\n\n这些内容需要补充或核对公司数据后再执行。`
-    : `证据不足，以下判断不能作为已验证结论执行。\n\n待验证：\n${pendingLines}\n\n这些内容需要补充或核对公司数据后再执行。`;
-  const basis = [String(parsed?.basis || '').trim(), audit.guardMessage].filter(Boolean).join('\n');
-  return { basis, answer };
-}
-
-function needsEvidenceGuard(parsed, forceEvidence = false) {
-  if (forceEvidence) return true;
-  const raw = [parsed?.basis, parsed?.answer].filter(Boolean).join('\n');
-  return /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i.test(raw);
-}
-
-function evidenceGuardMessage(audit, parsed, forceEvidence = false) {
-  if (!audit) return '';
-  if (!needsEvidenceGuard(parsed, forceEvidence)) return '';
-  if (audit.status === 'partial') {
-    return '证据校验：部分证据编号无法匹配，未匹配内容不能作为事实；请只执行证据核验中已匹配证据支持的动作。';
-  }
-  if (audit.status === 'weak') {
-    return '证据校验：这条回答没有引用可匹配的公司数据证据，只能作为待验证建议；执行前请先补充或打开证据来源核对。';
-  }
-  if (audit.status === 'no_evidence_pool') {
-    return '证据校验：当前没有可用证据池，不能把这条回答当作已验证结论；请先补录 KPI、周报、询盘或关键词等数据。';
-  }
-  return '';
-}
-
-function guardHermesAnswer(parsed, audit, options = {}) {
-  const enforced = enforceEvidenceProtocol(parsed, audit, options);
-  if (enforced !== parsed) return enforced;
-
-  const message = evidenceGuardMessage(audit, parsed, options.forceEvidence);
-  if (!message) return parsed;
-  audit.guardApplied = true;
-  audit.guardMessage = message;
-  const answer = String(parsed?.answer || '').trim();
-  const basis = String(parsed?.basis || '').trim();
-  return {
-    basis: [basis, message].filter(Boolean).join('\n'),
-    answer: answer.includes(message) ? answer : [answer, message].filter(Boolean).join('\n\n'),
-  };
-}
-
 function composeHermesText(parsed) {
   const clean = (value) => String(value || '').replace(/<\/?hermes_(basis|answer)>/gi, '').trim();
   return [
     '<hermes_basis>',
-    clean(parsed?.basis),
+    stripEvidenceRefs(clean(parsed?.basis)),
     '</hermes_basis>',
     '<hermes_answer>',
-    clean(parsed?.answer),
+    stripEvidenceRefs(clean(parsed?.answer)),
     '</hermes_answer>',
   ].join('\n');
 }
@@ -701,12 +544,18 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     operator: context.operator,
     session: context.session,
     pageContext: context.pageContext,
-    opsDiagnosis: diagnosis,
-    evidencePack: diagnosis.evidencePack || [],
+    opsDiagnosis: {
+      generatedAt: diagnosis.generatedAt,
+      priorityCards: diagnosis.priorityCards,
+      missingData: diagnosis.missingData,
+      usage: diagnosis.usage,
+    },
+    evidencePack: context.evidencePack || diagnosis.evidencePack || [],
     operatingPrinciples: OPERATING_PRINCIPLES,
     responseStyle: RESPONSE_STYLE,
     enterpriseMemory: {
       marketBrain: memory.marketBrain,
+      marketResearch: memory.marketResearch,
       longTermMemories: memory.trustedLongTermMemories || memory.longTermMemories,
       missingData: memory.missingData,
     },
@@ -739,6 +588,9 @@ function hermesChatPrompt({ context, message, history, attachments, skillKey, wo
     '5. 如果适合沉淀，最终回答里可追加“可沉淀记忆”，但不要声称已经写入，除非用户点击沉淀。',
     '6. 运营判断必须引用 evidencePack 里的证据编号，例如 [EV-...]；没有证据编号支撑的内容只能写成假设、风险或缺失数据。',
     '7. 每条运营判断、建议或动作必须在同一句/同一条里绑定有效 [EV-...]；无法绑定证据的内容统一放进“待验证”，不得混在已验证结论里。',
+    '8. 一条只写一个可核验判断。严格分开“数据事实”“原因假设”“建议动作”；不要用“说明、证明、必然、根因”把相关性写成因果。',
+    '9. 汇总数据只能支持汇总结论；要评价或操作具体关键词、查询词、页面、系列、广告组，必须引用相同层级的明细证据。',
+    '10. KPI target_only 只代表目标值，不能把 actual=0 或缺失值当实际表现；公司特色、客户偏好和认证判断必须引用 market_research 或可信长期记忆。',
   ].filter(Boolean).join('\n');
 }
 
@@ -754,7 +606,7 @@ function morningBriefPrompt(context) {
     operator: context.operator,
     session: context.session,
     priorityCards: (diagnosis.priorityCards || []).slice(0, 8),
-    evidencePack: (diagnosis.evidencePack || []).slice(0, 12),
+    evidencePack: (context.evidencePack || diagnosis.evidencePack || []).slice(0, 30),
     missingData: [...new Set(missing)],
     enterpriseMemory: {
       marketBrain: memory.marketBrain,
@@ -774,6 +626,7 @@ function morningBriefPrompt(context) {
     '4. 不要写空泛建议，例如“持续优化”“加强关注”。每个动作必须可执行、可复盘。',
     '5. 简报要慎重，宁可说数据不足，也不要做没有证据的判断。',
     '6. 每个关键判断都要引用 evidencePack 的 [EV-...] 编号；没有编号支撑时必须标成待验证。',
+    '7. 汇总数据不能直接推出具体关键词、页面或根因；事实、假设和动作必须分开写。',
     '7. 每条今日动作必须能追溯到同一句/同一条里的有效 [EV-...]；无法追溯的动作只能放入“待验证”。',
     '',
     '[Hermes 上下文]',
@@ -931,6 +784,18 @@ function contextPayload(request, options = {}) {
     const pageContext = latestPageContext(operator);
     const opsDiagnosis = buildOpsDiagnosis(operator, message);
     const enterpriseMemory = buildEnterpriseMemory();
+    const allEvidence = [
+      ...(opsDiagnosis.evidencePack || []),
+      ...(enterpriseMemory.evidencePack || []),
+    ];
+    const focusDomain = /(客户|市场|特色|认证|资质|采购)/i.test(message) ? 'market'
+      : /(SEM|Ads|广告|投放|花费|预算|CPC|CPA|ROAS)/i.test(message) ? 'sem'
+        : /(SEO|GSC|自然|排名|收录|页面|查询词)/i.test(message) ? 'seo'
+          : /(询盘|线索)/i.test(message) ? 'inquiry' : '';
+    const evidencePack = allEvidence.slice().sort((a, b) => {
+      if (!focusDomain) return 0;
+      return Number(b.domain === focusDomain) - Number(a.domain === focusDomain);
+    }).slice(0, 40);
     return {
       ok: true,
       generatedAt: new Date().toISOString(),
@@ -946,6 +811,7 @@ function contextPayload(request, options = {}) {
       pageContext,
       opsDiagnosis,
       enterpriseMemory,
+      evidencePack,
       closureAudit: enterpriseMemory.closureAudit,
       dataRefresh: options.dataRefresh || null,
       operatingPrinciples: OPERATING_PRINCIPLES,
@@ -958,7 +824,7 @@ function contextPayload(request, options = {}) {
         'Do not expose internal field names such as assistantPlaybook, operatingPrinciples, opsDiagnosis, priorityCards, pageContext, or responseContract.',
         'For SEM: prioritize spend, conversions, CPC, CPA, CTR, quality score, ROAS, negative keywords, and budget allocation.',
         'For SEO: prioritize clicks, impressions, CTR, ranking, decay pages, opportunity keywords, cannibalization, and content tasks.',
-        'Use opsDiagnosis.evidencePack ids as citation anchors before giving recommendations.',
+        'Use the combined evidencePack ids as citation anchors before giving recommendations, including market research and trusted company memory when the question concerns FERR characteristics.',
         'If dataRefresh exists, report the requested range and sync result accurately; synced with rowsWritten=0 means no rows were written, not that business data exists.',
         'Unsupported claims must be labeled as assumptions, risks, or missing data.',
         'Use enterpriseMemory.longTermMemories as FERR company/customer background. Conflicting memories are excluded until a human confirms the valid candidate.',
@@ -1031,8 +897,11 @@ export async function hermesRoutes(app) {
         morningBriefPrompt(context),
       );
       let parsed = splitHermesText(text);
-      const audit = auditHermesAnswer(parsed, context);
-      parsed = guardHermesAnswer(parsed, audit, { forceEvidence: true });
+      const audit = auditHermesAnswerStrict(parsed, context);
+      parsed = guardHermesAnswerStrict(parsed, audit, { forceEvidence: true });
+      const confidenceAssessment = buildConfidenceAssessment(audit, parsed, { forceEvidence: true });
+      delete audit._evidenceById;
+      parsed = { basis: stripEvidenceRefs(parsed.basis), answer: stripEvidenceRefs(parsed.answer) };
       const responseText = composeHermesText(parsed);
       const missing = [
         ...(context.opsDiagnosis?.missingData || []),
@@ -1048,6 +917,7 @@ export async function hermesRoutes(app) {
         missingData,
         dataGapTasks: buildDataGapTasks(missingData),
         evidenceAudit: audit,
+        confidenceAssessment,
         closureAudit: context.closureAudit || context.enterpriseMemory?.closureAudit || null,
       };
       const memory = hermesMemoryRepo.upsertBySourceTitle({
@@ -1179,8 +1049,11 @@ export async function hermesRoutes(app) {
         { attachments },
       );
       let parsed = splitHermesText(text);
-      const audit = auditHermesAnswer(parsed, context);
-      parsed = guardHermesAnswer(parsed, audit);
+      const audit = auditHermesAnswerStrict(parsed, context);
+      parsed = guardHermesAnswerStrict(parsed, audit);
+      const confidenceAssessment = buildConfidenceAssessment(audit, parsed);
+      delete audit._evidenceById;
+      parsed = { basis: stripEvidenceRefs(parsed.basis), answer: stripEvidenceRefs(parsed.answer) };
       const responseText = composeHermesText(parsed);
       const hermes = {
         mode: 'ferr_hermes_gateway',
@@ -1194,6 +1067,7 @@ export async function hermesRoutes(app) {
         ],
         dataRefresh: context.dataRefresh || null,
         evidenceAudit: audit,
+        confidenceAssessment,
         closureAudit: context.closureAudit || context.enterpriseMemory?.closureAudit || null,
       };
       hermes.missingData = [...new Set(hermes.missingData)];

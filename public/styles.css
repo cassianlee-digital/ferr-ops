@@ -4013,6 +4013,48 @@ table.dt td.editable:focus,
   font-size: 12px;
 }
 
+.hermes-confidence {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid #dbe5f5;
+  border-left: 3px solid #2563eb;
+  border-radius: var(--radius);
+  background: #f8fbff;
+  color: #334155;
+  font-size: 12px;
+}
+
+.hermes-confidence.high { border-left-color: #16884a; background: #f0fdf4; }
+.hermes-confidence.medium { border-left-color: #b7791f; background: #fffbeb; }
+.hermes-confidence.low { border-left-color: #c2410c; background: #fff7ed; }
+
+.hermes-confidence-head {
+  display: grid;
+  gap: 3px;
+  line-height: 1.45;
+}
+
+.hermes-confidence-head strong { color: #1e293b; }
+.hermes-confidence-head span { color: #64748b; }
+
+.hermes-confidence-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.hermes-confidence-grid span {
+  min-width: 0;
+  padding: 4px 5px;
+  border: 1px solid rgba(148, 163, 184, .28);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .7);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
 .hermes-evidence {
   margin-top: 10px;
   border: 1px solid #dbe5f5;
@@ -4947,6 +4989,7 @@ body.dark .hermes-msg .ai-render strong {
 
 body.dark .hermes-msg .ai-render li,
 body.dark .hermes-basis,
+body.dark .hermes-confidence,
 body.dark .hermes-evidence,
 body.dark .hermes-evidence-row {
   border-color: #273142;
@@ -4955,9 +4998,17 @@ body.dark .hermes-evidence-row {
 
 body.dark .hermes-basis summary,
 body.dark .hermes-basis-body,
+body.dark .hermes-confidence-head strong,
+body.dark .hermes-confidence-head span,
 body.dark .hermes-evidence summary,
 body.dark .hermes-evidence-body,
 body.dark .hermes-evidence-row strong {
+  color: #cbd5e1;
+}
+
+body.dark .hermes-confidence-grid span {
+  border-color: #334155;
+  background: #111827;
   color: #cbd5e1;
 }
 
@@ -5056,6 +5107,12 @@ body.dark .hermes-evidence-actions button {
 body.dark .hermes-evidence-actions button:hover {
   border-color: #3b82f6;
   color: #93c5fd;
+}
+
+@media (max-width: 600px) {
+  .hermes-confidence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 body.dark .hermes-gap-title {

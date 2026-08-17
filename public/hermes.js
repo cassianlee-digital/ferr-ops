@@ -35,8 +35,11 @@
   function currentUser() { return window.ME || {}; }
   function roleLabel(role) { return ROLE_LABEL[role] || role || '未识别'; }
   function escapeText(s) { return window.esc ? window.esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function stripInternalEvidenceRefs(value) {
+    return String(value || '').replace(/\[EV-[a-z0-9-]+\]/gi, '').replace(/[ \t]+([，。；、,.!?])/g, '$1').replace(/[ \t]{2,}/g, ' ').trim();
+  }
   function renderMarkdown(s) {
-    const lines = String(s || '').split(/\n/);
+    const lines = stripInternalEvidenceRefs(s).split(/\n/);
     let html = '';
     let listOpen = false;
     const closeList = () => {
@@ -79,9 +82,9 @@
   function splitHermesResponse(text) {
     const raw = String(text || '').trim();
     const m = raw.match(/<hermes_basis>([\s\S]*?)<\/hermes_basis>\s*<hermes_answer>([\s\S]*?)<\/hermes_answer>/i);
-    const clean = (value) => String(value || '')
+    const clean = (value) => stripInternalEvidenceRefs(String(value || '')
       .replace(/<\/?hermes_(basis|answer)>/gi, '')
-      .trim();
+      .trim());
     if (m) return { basis: clean(m[1]), answer: clean(m[2]) || clean(raw) };
     return { basis: '', answer: clean(raw) };
   }
@@ -830,7 +833,7 @@
 
   function evidenceStatusLabel(status, audit) {
     if (audit && audit.claimAuditStatus === 'downgraded') return '结论待验证';
-    if (audit && audit.claimAuditStatus === 'passed' && status === 'supported') return '证据通过';
+    if (audit && audit.claimAuditStatus === 'passed' && status === 'supported') return '证据核验通过';
     return {
       supported: '已引用证据',
       partial: '部分证据需核对',
@@ -842,28 +845,33 @@
   function evidenceLine(item) {
     const roleLabel = {
       synced_observation: '同步观测',
+      synced_keyword_observation: '关键词明细',
+      synced_query_observation: '查询词明细',
+      synced_page_observation: '页面明细',
+      synced_campaign_observation: '系列明细',
       crm_observation: 'CRM观测',
       manual_weekly_report: '人工周报',
       target_only: '目标值',
       keyword_registry: '关键词库',
       data_gap: '数据缺口',
+      company_research: '公司调研',
+      internal_memory: '公司记忆',
+      derived_company_summary: '分析摘要',
       operational_observation: '运营观测',
     }[item.dataRole] || item.dataRole || '';
+    const freshnessLabel = { fresh: '近期数据', aging: '数据渐旧', stale: '数据过期', unknown: '时间未确认' }[item.freshness] || '';
     return [
-      item.id,
-      item.source ? 'source=' + item.source : '',
-      roleLabel ? '性质=' + roleLabel : '',
-      item.metric ? 'metric=' + item.metric : '',
-      item.date ? 'date=' + item.date : '',
-      item.freshness ? 'freshness=' + item.freshness : '',
-      item.value ? 'value=' + item.value : '',
+      item.label || '数据证据',
+      roleLabel,
+      item.date || '',
+      freshnessLabel,
     ].filter(Boolean).join(' · ');
   }
 
   function evidenceCopyText(item) {
     return [
       evidenceLine(item),
-      item.detail || '',
+      item.summary || item.detail || '',
     ].filter(Boolean).join('\n');
   }
 
@@ -872,9 +880,53 @@
     if (key.startsWith('kpi_')) return { tab: 'kpi', label: 'KPI 考核' };
     if (key.startsWith('inquiries')) return { tab: 'inquiry', label: '询盘评级' };
     if (key.startsWith('sem_')) return { tab: 'data', sub: 'data-sem', label: '数据看板 · SEM' };
+    if (key.startsWith('google_ads')) return { tab: 'data', sub: 'data-sem', label: '数据看板 · SEM' };
     if (key.startsWith('seo_')) return { tab: 'data', sub: 'data-seo', label: '数据看板 · SEO' };
+    if (key.startsWith('gsc.')) return { tab: 'data', sub: 'data-seo', label: '数据看板 · SEO' };
     if (key === 'keywords') return { tab: 'keywords', label: '关键词库' };
+    if (key === 'market_research' || key === 'market_brain') return { tab: 'market', label: '市场分析' };
     return null;
+  }
+
+  function appendHermesConfidence(bubble, hermes) {
+    let assessment = hermes && hermes.confidenceAssessment;
+    if (!assessment && hermes && hermes.evidenceAudit) {
+      assessment = {
+        applicable: false,
+        level: 'not_applicable',
+        label: '历史回答未评分',
+        decision: '这条回答生成时尚未启用置信度模型，建议重新提问后再决定是否执行。',
+        dimensions: {},
+      };
+    }
+    if (!assessment) return;
+    const box = document.createElement('div');
+    box.className = 'hermes-confidence ' + (assessment.level || 'not_applicable');
+    const head = document.createElement('div');
+    head.className = 'hermes-confidence-head';
+    const title = document.createElement('strong');
+    title.textContent = assessment.applicable ? `置信度 ${assessment.score}/100 · ${assessment.label}` : assessment.label;
+    const decision = document.createElement('span');
+    decision.textContent = assessment.decision || '';
+    head.append(title, decision);
+    box.appendChild(head);
+
+    const dimensions = assessment.dimensions || {};
+    const labels = {
+      evidenceCoverage: '证据覆盖', sourceQuality: '来源质量', freshness: '数据时效', inferenceDiscipline: '推理约束',
+    };
+    const entries = Object.entries(labels).filter(([key]) => Number.isFinite(Number(dimensions[key])));
+    if (entries.length) {
+      const grid = document.createElement('div');
+      grid.className = 'hermes-confidence-grid';
+      entries.forEach(([key, label]) => {
+        const item = document.createElement('span');
+        item.textContent = `${label} ${Number(dimensions[key])}`;
+        grid.appendChild(item);
+      });
+      box.appendChild(grid);
+    }
+    bubble.appendChild(box);
   }
 
   async function copyText(text, okMessage) {
@@ -1252,7 +1304,7 @@
         const main = document.createElement('strong');
         main.textContent = evidenceLine(item);
         const detail = document.createElement('span');
-        detail.textContent = item.detail || '';
+        detail.textContent = item.summary || item.detail || '';
         row.appendChild(main);
         if (detail.textContent) row.appendChild(detail);
         const actions = document.createElement('div');
@@ -1285,7 +1337,7 @@
     if (unknown.length) {
       const warn = document.createElement('div');
       warn.className = 'hermes-evidence-warn';
-      warn.textContent = '未知证据编号：' + unknown.slice(0, 5).join('、');
+      warn.textContent = `有 ${unknown.length} 条引用无法匹配公司数据，相关结论已按待验证处理。`;
       body.appendChild(warn);
     }
 
@@ -1570,6 +1622,7 @@
       renderAttachmentChips(files, message.attachments, { removable: false });
       bubble.appendChild(files);
     }
+    appendHermesConfidence(bubble, message.hermes);
     appendHermesEvidenceAudit(bubble, message.hermes);
     appendHermesClosureAudit(bubble, message.hermes);
     if (message.hermes) {
@@ -1727,7 +1780,7 @@
   async function copyHermesMessage(index) {
     const item = messages[Number(index)];
     if (!item || !item.content) return;
-    await copyText(item.content, '已复制');
+    await copyText(stripInternalEvidenceRefs(item.content), '已复制');
   }
 
   function openHermesPanel() {

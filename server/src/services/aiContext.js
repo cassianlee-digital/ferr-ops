@@ -125,17 +125,13 @@ function appendSyncedContext(lines) {
   } catch (e) { /* 跳过 */ }
 }
 
-const MARKET =
-  '目标客户=欧美来图定制工厂/中间商；欧洲毛利高最在意资质，东南亚/巴西薄难成交；' +
-  '现仅 SMETA 验厂、缺欧洲认证是短板；客户索要频率 catalog>材质证书>检测报告>案例>工厂视频。';
-
 export function buildContext(options = {}) {
   const rows = kpiRepo.list();
-  const fmt = (r) => `${r.name} 目标${r.target}(实际${r.actual})`;
+  const fmt = (r) => `${r.name} 目标${r.target}${r.unit || ''}`;
   const lines = [];
-  lines.push('【公司KPI(目标/实际)】' + rows.filter((r) => r.grp === 'total').map(fmt).join('；'));
-  lines.push('【SEO·李】' + rows.filter((r) => r.grp === 'seo').map(fmt).join('；'));
-  lines.push('【SEM·陈】' + rows.filter((r) => r.grp === 'sem').map(fmt).join('；'));
+  lines.push('【公司KPI目标·仅目标值，不代表实际表现】' + rows.filter((r) => r.grp === 'total').map(fmt).join('；'));
+  lines.push('【SEO KPI目标·仅目标值，不代表实际表现】' + rows.filter((r) => r.grp === 'seo').map(fmt).join('；'));
+  lines.push('【SEM KPI目标·仅目标值，不代表实际表现】' + rows.filter((r) => r.grp === 'sem').map(fmt).join('；'));
 
   const s = inqRepo.stats();
   lines.push(`【询盘】总量${s.total} 有效${s.valid}(A${s.a}/B${s.b}/C${s.c}) A级占比${s.aRatio}% 有效率${s.rate}%`);
@@ -163,6 +159,5 @@ export function buildContext(options = {}) {
   appendSyncedContext(lines); // 注入真实 GSC/Ads 同步汇总 + 诊断 findings
   appendRequestedRangeContext(lines, options.message); // 用户问昨天/今天/近7天时，追加对应范围真实同步摘要
 
-  lines.push('【市场】' + MARKET);
   return lines.join('\n');
 }
