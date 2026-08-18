@@ -288,7 +288,7 @@ test('AI is bundled with internal state and only the classic-script compatibilit
   assert.match(keywordsSource, /import \{ runAiAnalysis \} from '\.\/ai\.js';/);
   assert.doesNotMatch(aiSource, /window\._(?:aiAnalyses|activeAi|aiViewIdx|lastAi)|window\.event|callClaude|function aiAsk\(|function ai\(/);
   assert.doesNotMatch(appSource, /function adoptAi\(|\b_lastAi\b|function callClaude\(/);
-  assert.match(aiSource, /activeAi=null; aiViewIdx=-1; splitActionItems=\[\]; lastAi=\{text:'',dept:meta\.dept\};/);
+  assert.match(aiSource, /activeAi=null; aiViewIdx=-1; splitActionItems=\[\]; lastAi=\{text:'',dept:meta\.dept,quality:null\};/);
   assert.match(aiSource, /const requestVersion=\+\+modalRequestVersion;[\s\S]*if\(requestVersion!==modalRequestVersion\)return;/);
   assert.match(aiSource, /finally\{ if\(requestVersion===modalRequestVersion&&btn\)btn\.disabled=false; \}/);
   assert.doesNotMatch(aiSource, /btn\.classList\.contains\('analyzed'\)/);

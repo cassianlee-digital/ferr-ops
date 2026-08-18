@@ -484,6 +484,56 @@ test('Hermes 对完全未引用证据的快速回答只做一次有界纠偏，�
   assert.equal(attempts, 2);
 });
 
+test('仪表盘 AI 的无证据结论会降级并禁止采纳、沉淀和拆动作', async () => {
+  const originalFetch = globalThis.fetch;
+  let attempts = 0;
+  globalThis.fetch = async () => {
+    attempts += 1;
+    return new Response(JSON.stringify({
+      choices: [{
+        finish_reason: 'stop',
+        message: {
+          content: '<hermes_basis>根据当前数据。</hermes_basis><hermes_answer>SEM 实际 CTR 为 0，说明广告没有效果，应立即暂停全部广告。</hermes_answer>',
+        },
+      }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  let item;
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/ai/analyze',
+      headers: auth('boss'),
+      payload: {
+        scope_key: 'test:verified-dashboard-ai', scope_type: 'data-sem', title: 'SEM 检查',
+        prompt: '根据后台真实数据判断是否要暂停广告', context: { page: { tab: 'data-sem' } }, force: true,
+      },
+    });
+    assert.equal(response.statusCode, 200);
+    item = response.json().item;
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(attempts, 2);
+  assert.equal(item.quality.confidenceAssessment.level, 'low');
+  assert.match(item.result_text, /待验证/);
+
+  for (const action of ['adopted', 'deposited']) {
+    const response = await app.inject({
+      method: 'POST', url: `/api/ai/analyses/${item.id}/action`, headers: auth('boss'), payload: { action },
+    });
+    assert.equal(response.statusCode, 409);
+  }
+  const split = await app.inject({
+    method: 'POST', url: `/api/ai/analyses/${item.id}/actions`, headers: auth('boss'), payload: {},
+  });
+  assert.equal(split.statusCode, 200);
+  assert.equal(split.json().blocked, true);
+  assert.deepEqual(split.json().actions, []);
+});
+
 test('未知 /api 路径回 404 JSON，而不是把前端 index.html 当 API 响应吐回来', async () => {
   const res = await app.inject({ method: 'GET', url: '/api/nope-not-a-route' });
   assert.equal(res.statusCode, 404);

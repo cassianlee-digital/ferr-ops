@@ -13,6 +13,7 @@ function decode(row) {
     context: safeJson(row.context_json, null),
     messages: safeJson(row.messages_json, []),
     history: safeJson(row.history_json, []),
+    quality: safeJson(row.quality_json, null),
   };
 }
 
@@ -39,9 +40,9 @@ export function create(rec) {
   const messages = rec.messages || [];
   const info = db.prepare(
     `INSERT INTO ai_analyses
-      (scope_key, scope_type, title, prompt, context_json, result_text, messages_json, state, action_state)
+      (scope_key, scope_type, title, prompt, context_json, result_text, messages_json, quality_json, state, action_state)
      VALUES
-      (@scope_key, @scope_type, @title, @prompt, @context_json, @result_text, @messages_json, @state, @action_state)`
+      (@scope_key, @scope_type, @title, @prompt, @context_json, @result_text, @messages_json, @quality_json, @state, @action_state)`
   ).run({
     scope_key: rec.scope_key,
     scope_type: rec.scope_type || null,
@@ -50,6 +51,7 @@ export function create(rec) {
     context_json: encode(rec.context || null),
     result_text: rec.result_text || '',
     messages_json: encode(messages),
+    quality_json: encode(rec.quality || null),
     state: rec.state || 'analyzed',
     action_state: rec.action_state || null,
   });
@@ -62,7 +64,7 @@ export function replaceResult(id, fields) {
   let history = (prev && prev.history) || [];
   if (prev && prev.result_text) {
     history = [
-      { at: prev.updated_at || prev.created_at, result_text: prev.result_text, messages: prev.messages || [] },
+      { at: prev.updated_at || prev.created_at, result_text: prev.result_text, messages: prev.messages || [], quality: prev.quality || null },
       ...history,
     ].slice(0, 12);
   }
@@ -72,6 +74,7 @@ export function replaceResult(id, fields) {
            messages_json = @messages_json,
            context_json = @context_json,
            history_json = @history_json,
+           quality_json = @quality_json,
            state = 'analyzed',
            updated_at = datetime('now'),
            archived_at = NULL
@@ -82,11 +85,12 @@ export function replaceResult(id, fields) {
     messages_json: encode(fields.messages || []),
     context_json: encode(fields.context || null),
     history_json: encode(history),
+    quality_json: encode(fields.quality || null),
   });
   return get(id);
 }
 
-export function appendMessages(id, additions) {
+export function appendMessages(id, additions, quality = null) {
   const row = get(id);
   if (!row) return null;
   const messages = [...(row.messages || []), ...(additions || [])];
@@ -94,12 +98,14 @@ export function appendMessages(id, additions) {
     `UPDATE ai_analyses
        SET messages_json = @messages_json,
            result_text = @result_text,
+           quality_json = @quality_json,
            updated_at = datetime('now')
      WHERE id = @id`
   ).run({
     id,
     messages_json: encode(messages),
     result_text: [...messages].reverse().find((m) => m.role === 'assistant')?.content || row.result_text || '',
+    quality_json: encode(quality || row.quality || null),
   });
   return get(id);
 }

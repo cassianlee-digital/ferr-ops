@@ -11,6 +11,7 @@ const SOURCE_QUALITY = {
   manual_weekly_report: 62,
   internal_memory: 58,
   derived_company_summary: 52,
+  client_page_context: 45,
   operational_observation: 50,
   target_only: 35,
   keyword_registry: 32,
@@ -375,10 +376,10 @@ export function needsEvidenceGuard(parsed, forceEvidence = false) {
 export function enforceEvidenceProtocol(parsed, audit, options = {}) {
   if (!audit || !needsEvidenceGuard(parsed, options.forceEvidence)) return parsed;
   const knownIds = new Set(audit.knownEvidenceIds || []);
-  if (!knownIds.size) return parsed;
 
   const unsupported = [];
   const supported = [];
+  const supportedEvidenceIds = new Set();
   const bindingIssues = [];
   const numericMismatches = [];
   let numericClaimCount = 0;
@@ -398,6 +399,7 @@ export function enforceEvidenceProtocol(parsed, audit, options = {}) {
     timeScopeMismatchCount += temporal.mismatches.length;
     if (evidenceSupportsClaim(line, cited)) {
       supported.push(line);
+      cited.forEach((item) => supportedEvidenceIds.add(String(item?.id || '').toUpperCase()));
       return true;
     }
     unsupported.push(line);
@@ -415,6 +417,7 @@ export function enforceEvidenceProtocol(parsed, audit, options = {}) {
 
   audit.claimCount = supported.length + unsupported.length;
   audit.supportedClaimCount = supported.length;
+  audit.supportedEvidenceIds = [...supportedEvidenceIds].filter(Boolean);
   audit.numericClaimCount = numericClaimCount;
   audit.numericMismatches = numericMismatches;
   audit.numericConsistency = numericClaimCount
@@ -454,10 +457,14 @@ export function buildConfidenceAssessment(audit, parsed, options = {}) {
     return { applicable: false, score: null, level: 'not_applicable', label: '非数据型回答', decision: '本回答不包含需要公司数据验证的运营结论。', dimensions: {} };
   }
 
-  const evidence = Array.isArray(audit?.evidence) ? audit.evidence : [];
+  const allEvidence = Array.isArray(audit?.evidence) ? audit.evidence : [];
+  const supportedEvidenceIds = new Set(audit?.supportedEvidenceIds || []);
+  const evidence = supportedEvidenceIds.size
+    ? allEvidence.filter((item) => supportedEvidenceIds.has(String(item?.id || '').toUpperCase()))
+    : [];
   const claimCount = Number(audit?.claimCount || 0);
   const supportedCount = Number(audit?.supportedClaimCount || 0);
-  const coverage = claimCount ? Math.round((supportedCount / claimCount) * 100) : (audit?.status === 'supported' ? 100 : 0);
+  const coverage = claimCount ? Math.round((supportedCount / claimCount) * 100) : 0;
   const sourceQuality = average(evidence.map((item) => SOURCE_QUALITY[item.dataRole] || 45), 15);
   const freshness = average(evidence.map((item) => FRESHNESS_QUALITY[item.freshness] || 45), 25);
   const issueCount = (audit?.unknownEvidenceIds?.length || 0) + (audit?.unsupportedClaims?.length || 0) + (audit?.evidenceBindingIssues?.length || 0);
@@ -471,6 +478,7 @@ export function buildConfidenceAssessment(audit, parsed, options = {}) {
   if (audit?.status === 'partial' || audit?.claimAuditStatus === 'downgraded') score = Math.min(score, 55);
   if (evidence.length && evidence.every((item) => ['target_only', 'keyword_registry', 'data_gap'].includes(item.dataRole))) score = Math.min(score, 45);
   if (evidence.length && evidence.every((item) => ['internal_memory', 'derived_company_summary'].includes(item.dataRole))) score = Math.min(score, 70);
+  if (evidence.length && evidence.every((item) => item.dataRole === 'client_page_context')) score = Math.min(score, 70);
 
   const level = score >= 80 ? 'high' : score >= 60 ? 'medium' : 'low';
   const label = level === 'high' ? '高置信' : level === 'medium' ? '中等置信' : '低置信';

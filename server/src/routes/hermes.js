@@ -1,7 +1,6 @@
 import { editor, onlyManagerBoss, requireAuth } from '../auth/middleware.js';
 import { config } from '../config.js';
 import { buildContext } from '../services/aiContext.js';
-import { callAnthropic } from '../services/anthropic.js';
 import { aiErrorHttpStatus, publicAiError } from '../services/aiProvider.js';
 import { attachmentPromptBlock, cleanAiAttachments } from '../services/aiAttachments.js';
 import * as marketBrain from '../services/marketBrain.js';
@@ -17,13 +16,7 @@ import {
   compactHermesPageContext,
   serializeHermesPayload,
 } from '../services/hermesPrompt.js';
-import {
-  auditHermesAnswer as auditHermesAnswerStrict,
-  buildConfidenceAssessment,
-  guardHermesAnswer as guardHermesAnswerStrict,
-  needsEvidenceGuard as needsEvidenceGuardStrict,
-  stripEvidenceRefs,
-} from '../services/hermesEvidence.js';
+import { generateVerifiedAiAnswer } from '../services/verifiedAiAnswer.js';
 import { memoryTrustAssessment } from '../services/hermesMemoryPolicy.js';
 
 const ROLE_PERSONAS = {
@@ -61,8 +54,6 @@ const RESPONSE_CONTRACT = [
 
 const hermesRefreshCache = new Map();
 const HERMES_REFRESH_TTL_MS = 60 * 1000;
-const HERMES_QUALITY_REPAIR_ELIGIBLE_MS = 60_000;
-const HERMES_QUALITY_REPAIR_TIMEOUT_MS = 45_000;
 
 const OPERATING_PRINCIPLES = {
   source: '审查原理.docx',
@@ -294,92 +285,6 @@ function chatHistoryBlock(history) {
     .map((m) => `${m?.role === 'assistant' ? 'AI' : '用户'}：${trimText(m?.content, 1600)}`)
     .filter((line) => line.replace(/^.*?：/, '').trim())
     .join('\n');
-}
-
-function splitHermesText(text) {
-  const raw = String(text || '').trim();
-  const m = raw.match(/<hermes_basis>([\s\S]*?)<\/hermes_basis>\s*<hermes_answer>([\s\S]*?)<\/hermes_answer>/i);
-  const clean = (value) => String(value || '').replace(/<\/?hermes_(basis|answer)>/gi, '').trim();
-  if (!m) return { basis: '', answer: clean(raw) };
-  return { basis: clean(m[1]), answer: clean(m[2]) || clean(raw) };
-}
-
-function composeHermesText(parsed) {
-  const clean = (value) => String(value || '').replace(/<\/?hermes_(basis|answer)>/gi, '').trim();
-  return [
-    '<hermes_basis>',
-    stripEvidenceRefs(clean(parsed?.basis)),
-    '</hermes_basis>',
-    '<hermes_answer>',
-    stripEvidenceRefs(clean(parsed?.answer)),
-    '</hermes_answer>',
-  ].join('\n');
-}
-
-function finalizeHermesAnswer(text, context, options = {}) {
-  let parsed = splitHermesText(text);
-  const requiresEvidence = needsEvidenceGuardStrict(parsed, options.forceEvidence);
-  const audit = auditHermesAnswerStrict(parsed, context);
-  parsed = guardHermesAnswerStrict(parsed, audit, { forceEvidence: options.forceEvidence });
-  const confidenceAssessment = buildConfidenceAssessment(audit, parsed, { forceEvidence: options.forceEvidence });
-  return { parsed, audit, confidenceAssessment, requiresEvidence };
-}
-
-function repairedAnswerIsBetter(current, candidate) {
-  if (!candidate?.audit?.evidence?.length) return false;
-  if (candidate.audit.evidence.length <= (current?.audit?.evidence?.length || 0)) return false;
-  return Number(candidate.confidenceAssessment?.score || 0) > Number(current?.confidenceAssessment?.score || 0);
-}
-
-async function generateVerifiedHermesAnswer({ system, prompt, context, attachments, forceEvidence = false }) {
-  const startedAt = Date.now();
-  const firstText = await callAnthropic(system, prompt, { attachments });
-  let result = finalizeHermesAnswer(firstText, context, { forceEvidence });
-  const answerQualityRepair = { attempted: false, used: false, error: '' };
-  const shouldRepair = result.requiresEvidence
-    && result.audit.evidencePoolSize > 0
-    && result.audit.evidence.length === 0
-    && Date.now() - startedAt < HERMES_QUALITY_REPAIR_ELIGIBLE_MS;
-
-  if (shouldRepair) {
-    answerQualityRepair.attempted = true;
-    try {
-      const repairPrompt = [
-        prompt,
-        '',
-        '[必须纠正]',
-        '上一次草稿没有绑定任何有效证据，不能交付。请重新生成，并严格遵守：',
-        '1. 每条数据事实、判断和动作都在同一句引用“本轮可引用证据”中的匹配 [EV-...]。',
-        '2. 只保留证据在主题、指标和粒度上能直接支持的内容；其余放入“待验证”。',
-        '3. 少而准确，不要为了完整而扩写更多判断。',
-      ].join('\n');
-      const repairText = await callAnthropic(system, repairPrompt, {
-        attachments,
-        timeoutMs: HERMES_QUALITY_REPAIR_TIMEOUT_MS,
-        maxAttempts: 1,
-      });
-      const candidate = finalizeHermesAnswer(repairText, context, { forceEvidence });
-      if (repairedAnswerIsBetter(result, candidate)) {
-        result = candidate;
-        answerQualityRepair.used = true;
-      }
-    } catch (error) {
-      answerQualityRepair.error = publicAiError(error).error;
-    }
-  }
-
-  delete result.audit._evidenceById;
-  result.parsed = {
-    basis: stripEvidenceRefs(result.parsed.basis),
-    answer: stripEvidenceRefs(result.parsed.answer),
-  };
-  return {
-    parsed: result.parsed,
-    responseText: composeHermesText(result.parsed),
-    audit: result.audit,
-    confidenceAssessment: result.confidenceAssessment,
-    answerQualityRepair,
-  };
 }
 
 function dataGapTaskFor(name) {
@@ -979,7 +884,7 @@ export async function hermesRoutes(app) {
     const activeConversation = existingConversation?.state === 'active' ? existingConversation : null;
 
     try {
-      const generated = await generateVerifiedHermesAnswer({
+      const generated = await generateVerifiedAiAnswer({
         system: hermesSystem(context),
         prompt: morningBriefPrompt(context),
         context,
@@ -1127,7 +1032,7 @@ export async function hermesRoutes(app) {
     if (!context.ok) return reply.code(500).send({ error: context.error || 'hermes_context_failed', detail: context.detail || '' });
 
     try {
-      const generated = await generateVerifiedHermesAnswer({
+      const generated = await generateVerifiedAiAnswer({
         system: hermesSystem(context),
         prompt: hermesChatPrompt({ context, message, history, attachments, skillKey, workflowKey }),
         context,

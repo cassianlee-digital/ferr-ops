@@ -8,7 +8,7 @@ const apiUnavailableMsg='<div class="api-warn"><i class="ti ti-plug-connected-x"
 let aiAnalyses=new Map();
 let activeAi=null;
 let aiViewIdx=-1;
-let lastAi={text:'',dept:'SEO'};
+let lastAi={text:'',dept:'SEO',quality:null};
 let splitActionItems=[];
 let modalRequestVersion=0;
 function hashText(s){ let h=5381; s=String(s||''); for(let i=0;i<s.length;i++)h=((h<<5)+h)+s.charCodeAt(i); return (h>>>0).toString(36); }
@@ -39,9 +39,20 @@ function setupAiFooter(){
   foot.className='ai-chat-compose'; foot.style.display='block';
   foot.innerHTML='<textarea id="aiChatInput" placeholder="继续追问、补充判断或让 AI 重写成整改动作"></textarea><div class="ai-chat-tools"><label class="btn-ghost" for="aiChatFiles"><i class="ti ti-paperclip"></i> 上传文件/图片</label><input class="csp-s-6aa34d7432" id="aiChatFiles" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xlsx,.csv,.txt"><span class="csp-s-ed524873cf" id="aiFileList"></span><button type="button" class="btn-ghost" data-ai-command="reanalyze"><i class="ti ti-refresh"></i> 重新分析</button><button type="button" class="btn-ghost" data-ai-command="split"><i class="ti ti-list-check"></i> 拆成整改动作</button><button type="button" class="btn-ghost" data-ai-command="archive"><i class="ti ti-archive"></i> 归档</button><button type="button" class="btn-ghost" data-ai-command="deposit"><i class="ti ti-database-heart"></i> 沉淀</button><button type="button" class="btn-primary" id="aiAdoptBtn" data-ai-command="adopt"><i class="ti ti-clipboard-check"></i> 采纳到整改清单</button><button type="button" class="btn-primary csp-s-ca6fc035af" data-ai-command="send"><i class="ti ti-send"></i> 发送</button></div>';
   if(!foot.dataset.aiBound){ foot.addEventListener('click',onAiFooterClick); foot.dataset.aiBound='1'; }
+  const blocked=!aiIsActionable(activeAi);
+  ['adopt','deposit','split'].forEach(cmd=>{ const btn=foot.querySelector('[data-ai-command="'+cmd+'"]'); if(btn&&blocked){ btn.disabled=true; btn.title='该结论未通过可执行性评分，需重新分析或补充数据'; } });
   const files=document.getElementById('aiChatFiles'); if(files)files.addEventListener('change',()=>{ const list=document.getElementById('aiFileList'); if(list)list.innerHTML=[...files.files].slice(0,5).map(f=>'<span class="ai-file-chip">'+esc(f.name)+'</span>').join(''); });
 }
 function aiMessages(item){ const msgs=(item&&item.messages&&item.messages.length)?item.messages:[{role:'assistant',content:item&&item.result_text||''}]; return msgs.filter(m=>m.content).map(m=>'<div class="ai-chat-item '+(m.role==='user'?'user':'assistant')+'"><div class="bubble ai-render">'+mdToHtml(m.content)+'</div></div>').join(''); }
+function aiQualityBanner(quality,historical){
+  const q=quality&&quality.confidenceAssessment;
+  if(!q)return '<div class="hermes-confidence not_applicable"><div class="hermes-confidence-head"><strong>'+(historical?'历史回答未评分':'当前回答未评分')+'</strong><span>该回答生成时尚未启用证据评分，需重新分析后再决定是否执行。</span></div></div>';
+  const dims=q.dimensions||{}; const labels={evidenceCoverage:'证据覆盖',sourceQuality:'来源质量',freshness:'数据时效',inferenceDiscipline:'推理约束',numericConsistency:'数字一致',temporalConsistency:'时间一致'};
+  const entries=Object.keys(labels).filter(k=>Number.isFinite(Number(dims[k]))).map(k=>'<span>'+labels[k]+' '+Number(dims[k])+'</span>').join('');
+  const title=q.applicable?'置信度 '+Number(q.score||0)+'/100 · '+esc(q.label||'') : esc(q.label||'非数据型回答');
+  return '<div class="hermes-confidence '+esc(q.level||'not_applicable')+'"><div class="hermes-confidence-head"><strong>'+title+'</strong><span>'+esc(q.decision||'')+'</span></div>'+(entries?'<div class="hermes-confidence-grid">'+entries+'</div>':'')+'</div>';
+}
+function aiIsActionable(item){ const q=item&&item.quality&&item.quality.confidenceAssessment; return !!(q&&q.level&&q.level!=='low'); }
 function fmtAiTime(v){ if(!v)return ''; const d=new Date(String(v).replace(' ','T')+(/[Z+]/.test(String(v))?'':'Z')); if(isNaN(d))return String(v).slice(5,16); const p=n=>String(n).padStart(2,'0'); return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes()); }
 function aiTimeline(item){
   const hist=(item&&item.history)||[]; if(!hist.length)return '';
@@ -62,15 +73,17 @@ function renderAiBody(){
   splitActionItems=[];
   let html=aiTimeline(item)+'<div id="aiActionsBox"></div>';
   if(idx>=0 && item.history && item.history[idx]){
+    html+=aiQualityBanner(item.history[idx].quality,true);
     html+='<div class="ai-snap-note dim">— 历史快照（'+fmtAiTime(item.history[idx].at)+'）· 只读，点「本次」回到最新 —</div>';
     html+='<div class="ai-chat-item assistant"><div class="bubble ai-render">'+mdToHtml(item.history[idx].result_text||'')+'</div></div>';
   } else {
+    html+=aiQualityBanner(item.quality,false);
     html+=aiMessages(item);
   }
   body.innerHTML=html;
   if(!body.dataset.aiBound){ body.addEventListener('click',onAiBodyClick); body.dataset.aiBound='1'; }
 }
-function renderAiItem(item){ activeAi=item; aiViewIdx=-1; lastAi={text:item.result_text||'',dept:aiDeptFromText((item.title||'')+' '+(item.prompt||''))}; document.getElementById('aiModalTitle').textContent=item.title||'AI 分析'; renderAiBody(); setupAiFooter(); setTimeout(()=>{ const b=document.getElementById('aiModalBody'); if(b)b.scrollTop=b.scrollHeight; },30); }
+function renderAiItem(item){ activeAi=item; aiViewIdx=-1; lastAi={text:item.result_text||'',dept:aiDeptFromText((item.title||'')+' '+(item.prompt||'')),quality:item.quality||null}; document.getElementById('aiModalTitle').textContent=item.title||'AI 分析'; renderAiBody(); setupAiFooter(); setTimeout(()=>{ const b=document.getElementById('aiModalBody'); if(b)b.scrollTop=b.scrollHeight; },30); }
 // 对当前页最新数据重新分析（旧结论自动存为历史快照）
 async function reanalyzeActive(){
   const item=activeAi; if(!item){toast('暂无可重新分析的项');return;}
@@ -94,12 +107,14 @@ async function adoptSplitAction(btn,action){
 // 把当前分析结论拆成可逐条采纳的整改动作
 async function splitActions(){
   const item=activeAi; if(!item){toast('暂无可拆解的分析');return;}
+  if(!aiIsActionable(item)){toast('当前结论未通过可执行性评分，需重新分析或补充数据，不能拆成可执行动作');return;}
   let box=document.getElementById('aiActionsBox'); if(!box){ renderAiBody(); box=document.getElementById('aiActionsBox'); }
   if(box)box.innerHTML='<div class="ai-loading"><span class="spin"></span> 正在拆解成整改动作…</div>';
   try{
-    const {actions}=await API.post('/api/ai/analyses/'+item.id+'/actions',{});
+    const {actions,blocked}=await API.post('/api/ai/analyses/'+item.id+'/actions',{});
     if(!box)return;
-    splitActionItems=(actions||[]).map(a=>({dept:a&&a.dept==='SEM'?'SEM':'SEO',title:String(a&&a.title||'AI 整改动作'),detail:String(a&&a.detail||''),evidence:String(a&&a.evidence||'')}));
+    if(blocked){ box.innerHTML='<div class="dim csp-s-46909fa053">当前结论置信度低，不能拆成可执行动作。</div>'; return; }
+    splitActionItems=(actions||[]).map(a=>({dept:a&&a.dept==='SEM'?'SEM':'SEO',title:String(a&&a.title||'AI 整改动作'),detail:String(a&&a.detail||''),evidence:String(a&&a.evidence||''),confidence:a&&a.confidence||null}));
     if(!splitActionItems.length){ box.innerHTML='<div class="dim csp-s-46909fa053">未能从结论中提取到明确可执行的动作。</div>'; return; }
     box.innerHTML='<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> 可采纳的整改动作（逐条）</div>'+splitActionItems.map((a,i)=>'<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge '+(a.dept==='SEM'?'b-purple':'b-blue')+'">'+a.dept+'</span> '+esc(a.title)+'</div><div class="ai-action-d">'+esc(a.detail)+'</div>'+(a.evidence?'<div class="ai-action-e dim">依据：'+esc(a.evidence)+'</div>':'')+'</div><button type="button" class="btn-mini" data-ai-split-index="'+i+'"><i class="ti ti-clipboard-check"></i> 采纳</button></div>').join('')+'</div>';
   }catch(e){ splitActionItems=[]; if(box)box.innerHTML='<div class="dim csp-s-46909fa053">拆解失败：'+esc(e.message||'ai_failed')+'</div>'; }
@@ -107,7 +122,7 @@ async function splitActions(){
 export async function runAiAnalysis(btn,prompt,title,force){
   const meta=aiMeta(btn,prompt,title);
   const requestVersion=++modalRequestVersion;
-  activeAi=null; aiViewIdx=-1; splitActionItems=[]; lastAi={text:'',dept:meta.dept};
+  activeAi=null; aiViewIdx=-1; splitActionItems=[]; lastAi={text:'',dept:meta.dept,quality:null};
   document.getElementById('aiModalTitle').textContent=meta.title;
   document.getElementById('aiModalBody').innerHTML='<div class="ai-loading"><span class="spin"></span> AI 正在结合当前页面数据和市场记忆分析...</div>';
   document.getElementById('aiModalFoot').style.display='none';
@@ -137,10 +152,11 @@ async function sendAiChat(){
     aiAnalyses.set(next.scope_key,next); renderAiItem(next);
   }catch(e){ if(requestVersion!==modalRequestVersion)return; if(input)input.value=msg; renderAiBody(); toast('AI 追问失败：'+(e.message||'ai_failed')); }
 }
-async function archiveAiAnalysis(){ const item=activeAi; if(!item)return; const requestVersion=++modalRequestVersion; try{ await API.post('/api/ai/analyses/'+item.id+'/archive',{}); if(requestVersion!==modalRequestVersion)return; aiAnalyses.delete(item.scope_key); activeAi=null; lastAi={text:'',dept:'SEO'}; closeModal('aiMask'); toast('已归档 AI 分析'); }catch(e){ if(requestVersion===modalRequestVersion)toast(persistFailMsg(e)); } }
-async function depositAi(){ const item=activeAi; if(!item||!item.result_text){toast('暂无可沉淀的 AI 内容');return;} const s=aiDeptFromText((item.title||'')+' '+(item.prompt||''))==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'}; try{ await persistLoop('deposit',s,item.result_text,'沉淀'); addDeposit(s,item.result_text,'沉淀'); await API.post('/api/ai/analyses/'+item.id+'/action',{action:'deposited'}); toastGo('已沉淀到沉淀表 · 已入库','deposit'); }catch(e){ toast(persistFailMsg(e)); } }
+async function archiveAiAnalysis(){ const item=activeAi; if(!item)return; const requestVersion=++modalRequestVersion; try{ await API.post('/api/ai/analyses/'+item.id+'/archive',{}); if(requestVersion!==modalRequestVersion)return; aiAnalyses.delete(item.scope_key); activeAi=null; lastAi={text:'',dept:'SEO',quality:null}; closeModal('aiMask'); toast('已归档 AI 分析'); }catch(e){ if(requestVersion===modalRequestVersion)toast(persistFailMsg(e)); } }
+async function depositAi(){ const item=activeAi; if(!item||!item.result_text){toast('暂无可沉淀的 AI 内容');return;} if(!aiIsActionable(item)){toast('当前结论未通过可执行性评分，需重新分析或补充数据，不能沉淀');return;} const s=aiDeptFromText((item.title||'')+' '+(item.prompt||''))==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'}; try{ await API.post('/api/ai/analyses/'+item.id+'/action',{action:'deposited'}); await persistLoop('deposit',s,item.result_text,'沉淀'); addDeposit(s,item.result_text,'沉淀'); toastGo('已沉淀到沉淀表 · 已入库','deposit'); }catch(e){ toast(persistFailMsg(e)); } }
 export async function adoptAi(){
   if(!lastAi.text){toast('暂无可采纳的 AI 内容');return;}
+  if(!lastAi.quality||!lastAi.quality.confidenceAssessment||lastAi.quality.confidenceAssessment.level==='low'){toast('当前结论未通过可执行性评分，需重新分析或补充数据，不能采纳');return;}
   const s=lastAi.dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};
   const first=lastAi.text.split('\n').map(x=>x.trim().replace(/^[•\-\*\d\.、:：\s]+/,'')).filter(Boolean)[0]||lastAi.text;
   const fixText=clip(first.replace(/\*\*/g,''),140), depText=clip(first.replace(/\*\*/g,''),40);

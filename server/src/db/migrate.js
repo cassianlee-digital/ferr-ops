@@ -9,7 +9,7 @@ import { db } from './connection.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // schema 版本仅作记录与未来增量迁移的挂钩点；不再触发任何自动清库。
-const SCHEMA_VERSION = '9';
+const SCHEMA_VERSION = '10';
 
 const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
@@ -204,6 +204,7 @@ CREATE TABLE IF NOT EXISTS ai_analyses (
   result_text   TEXT,
   messages_json TEXT,
   history_json  TEXT,
+  quality_json  TEXT,
   state         TEXT NOT NULL DEFAULT 'analyzed',
   action_state  TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
@@ -535,6 +536,7 @@ export function migrate() {
   ]);
   ensureColumns('ai_analyses', [
     ['history_json', 'TEXT'], // 重新分析时把旧结论存为历史快照（时间线对比）
+    ['quality_json', 'TEXT'], // 证据审计、置信度、修复状态和缺失数据
   ]);
   ensureColumns('ga4_dimension_daily', [
     ['bounce_rate', 'REAL'], ['avg_session_duration', 'REAL'], // 页面级跳出率散点 + 来源级跳出/时长

@@ -262,7 +262,7 @@
   var aiAnalyses = /* @__PURE__ */ new Map();
   var activeAi = null;
   var aiViewIdx = -1;
-  var lastAi = { text: "", dept: "SEO" };
+  var lastAi = { text: "", dept: "SEO", quality: null };
   var splitActionItems = [];
   var modalRequestVersion = 0;
   function hashText(s) {
@@ -360,6 +360,14 @@
       foot.addEventListener("click", onAiFooterClick);
       foot.dataset.aiBound = "1";
     }
+    const blocked = !aiIsActionable(activeAi);
+    ["adopt", "deposit", "split"].forEach((cmd) => {
+      const btn = foot.querySelector('[data-ai-command="' + cmd + '"]');
+      if (btn && blocked) {
+        btn.disabled = true;
+        btn.title = "\u8BE5\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E";
+      }
+    });
     const files = document.getElementById("aiChatFiles");
     if (files) files.addEventListener("change", () => {
       const list = document.getElementById("aiFileList");
@@ -369,6 +377,19 @@
   function aiMessages(item) {
     const msgs = item && item.messages && item.messages.length ? item.messages : [{ role: "assistant", content: item && item.result_text || "" }];
     return msgs.filter((m) => m.content).map((m) => '<div class="ai-chat-item ' + (m.role === "user" ? "user" : "assistant") + '"><div class="bubble ai-render">' + mdToHtml(m.content) + "</div></div>").join("");
+  }
+  function aiQualityBanner(quality, historical) {
+    const q = quality && quality.confidenceAssessment;
+    if (!q) return '<div class="hermes-confidence not_applicable"><div class="hermes-confidence-head"><strong>' + (historical ? "\u5386\u53F2\u56DE\u7B54\u672A\u8BC4\u5206" : "\u5F53\u524D\u56DE\u7B54\u672A\u8BC4\u5206") + "</strong><span>\u8BE5\u56DE\u7B54\u751F\u6210\u65F6\u5C1A\u672A\u542F\u7528\u8BC1\u636E\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u540E\u518D\u51B3\u5B9A\u662F\u5426\u6267\u884C\u3002</span></div></div>";
+    const dims = q.dimensions || {};
+    const labels = { evidenceCoverage: "\u8BC1\u636E\u8986\u76D6", sourceQuality: "\u6765\u6E90\u8D28\u91CF", freshness: "\u6570\u636E\u65F6\u6548", inferenceDiscipline: "\u63A8\u7406\u7EA6\u675F", numericConsistency: "\u6570\u5B57\u4E00\u81F4", temporalConsistency: "\u65F6\u95F4\u4E00\u81F4" };
+    const entries = Object.keys(labels).filter((k) => Number.isFinite(Number(dims[k]))).map((k) => "<span>" + labels[k] + " " + Number(dims[k]) + "</span>").join("");
+    const title = q.applicable ? "\u7F6E\u4FE1\u5EA6 " + Number(q.score || 0) + "/100 \xB7 " + esc(q.label || "") : esc(q.label || "\u975E\u6570\u636E\u578B\u56DE\u7B54");
+    return '<div class="hermes-confidence ' + esc(q.level || "not_applicable") + '"><div class="hermes-confidence-head"><strong>' + title + "</strong><span>" + esc(q.decision || "") + "</span></div>" + (entries ? '<div class="hermes-confidence-grid">' + entries + "</div>" : "") + "</div>";
+  }
+  function aiIsActionable(item) {
+    const q = item && item.quality && item.quality.confidenceAssessment;
+    return !!(q && q.level && q.level !== "low");
   }
   function fmtAiTime(v) {
     if (!v) return "";
@@ -409,9 +430,11 @@
     splitActionItems = [];
     let html = aiTimeline(item) + '<div id="aiActionsBox"></div>';
     if (idx >= 0 && item.history && item.history[idx]) {
+      html += aiQualityBanner(item.history[idx].quality, true);
       html += '<div class="ai-snap-note dim">\u2014 \u5386\u53F2\u5FEB\u7167\uFF08' + fmtAiTime(item.history[idx].at) + "\uFF09\xB7 \u53EA\u8BFB\uFF0C\u70B9\u300C\u672C\u6B21\u300D\u56DE\u5230\u6700\u65B0 \u2014</div>";
       html += '<div class="ai-chat-item assistant"><div class="bubble ai-render">' + mdToHtml(item.history[idx].result_text || "") + "</div></div>";
     } else {
+      html += aiQualityBanner(item.quality, false);
       html += aiMessages(item);
     }
     body.innerHTML = html;
@@ -423,7 +446,7 @@
   function renderAiItem(item) {
     activeAi = item;
     aiViewIdx = -1;
-    lastAi = { text: item.result_text || "", dept: aiDeptFromText((item.title || "") + " " + (item.prompt || "")) };
+    lastAi = { text: item.result_text || "", dept: aiDeptFromText((item.title || "") + " " + (item.prompt || "")), quality: item.quality || null };
     document.getElementById("aiModalTitle").textContent = item.title || "AI \u5206\u6790";
     renderAiBody();
     setupAiFooter();
@@ -470,6 +493,10 @@
       toast("\u6682\u65E0\u53EF\u62C6\u89E3\u7684\u5206\u6790");
       return;
     }
+    if (!aiIsActionable(item)) {
+      toast("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u62C6\u6210\u53EF\u6267\u884C\u52A8\u4F5C");
+      return;
+    }
     let box = document.getElementById("aiActionsBox");
     if (!box) {
       renderAiBody();
@@ -477,9 +504,13 @@
     }
     if (box) box.innerHTML = '<div class="ai-loading"><span class="spin"></span> \u6B63\u5728\u62C6\u89E3\u6210\u6574\u6539\u52A8\u4F5C\u2026</div>';
     try {
-      const { actions } = await API.post("/api/ai/analyses/" + item.id + "/actions", {});
+      const { actions, blocked } = await API.post("/api/ai/analyses/" + item.id + "/actions", {});
       if (!box) return;
-      splitActionItems = (actions || []).map((a) => ({ dept: a && a.dept === "SEM" ? "SEM" : "SEO", title: String(a && a.title || "AI \u6574\u6539\u52A8\u4F5C"), detail: String(a && a.detail || ""), evidence: String(a && a.evidence || "") }));
+      if (blocked) {
+        box.innerHTML = '<div class="dim csp-s-46909fa053">\u5F53\u524D\u7ED3\u8BBA\u7F6E\u4FE1\u5EA6\u4F4E\uFF0C\u4E0D\u80FD\u62C6\u6210\u53EF\u6267\u884C\u52A8\u4F5C\u3002</div>';
+        return;
+      }
+      splitActionItems = (actions || []).map((a) => ({ dept: a && a.dept === "SEM" ? "SEM" : "SEO", title: String(a && a.title || "AI \u6574\u6539\u52A8\u4F5C"), detail: String(a && a.detail || ""), evidence: String(a && a.evidence || ""), confidence: a && a.confidence || null }));
       if (!splitActionItems.length) {
         box.innerHTML = '<div class="dim csp-s-46909fa053">\u672A\u80FD\u4ECE\u7ED3\u8BBA\u4E2D\u63D0\u53D6\u5230\u660E\u786E\u53EF\u6267\u884C\u7684\u52A8\u4F5C\u3002</div>';
         return;
@@ -496,7 +527,7 @@
     activeAi = null;
     aiViewIdx = -1;
     splitActionItems = [];
-    lastAi = { text: "", dept: meta.dept };
+    lastAi = { text: "", dept: meta.dept, quality: null };
     document.getElementById("aiModalTitle").textContent = meta.title;
     document.getElementById("aiModalBody").innerHTML = '<div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7ED3\u5408\u5F53\u524D\u9875\u9762\u6570\u636E\u548C\u5E02\u573A\u8BB0\u5FC6\u5206\u6790...</div>';
     document.getElementById("aiModalFoot").style.display = "none";
@@ -554,7 +585,7 @@
       if (requestVersion !== modalRequestVersion) return;
       aiAnalyses.delete(item.scope_key);
       activeAi = null;
-      lastAi = { text: "", dept: "SEO" };
+      lastAi = { text: "", dept: "SEO", quality: null };
       closeModal("aiMask");
       toast("\u5DF2\u5F52\u6863 AI \u5206\u6790");
     } catch (e) {
@@ -567,11 +598,15 @@
       toast("\u6682\u65E0\u53EF\u6C89\u6DC0\u7684 AI \u5185\u5BB9");
       return;
     }
+    if (!aiIsActionable(item)) {
+      toast("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u6C89\u6DC0");
+      return;
+    }
     const s = aiDeptFromText((item.title || "") + " " + (item.prompt || "")) === "SEM" ? { dept: "SEM", owner: "\u9648", c: "b-purple" } : { dept: "SEO", owner: "\u674E", c: "b-blue" };
     try {
+      await API.post("/api/ai/analyses/" + item.id + "/action", { action: "deposited" });
       await persistLoop("deposit", s, item.result_text, "\u6C89\u6DC0");
       addDeposit(s, item.result_text, "\u6C89\u6DC0");
-      await API.post("/api/ai/analyses/" + item.id + "/action", { action: "deposited" });
       toastGo("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "deposit");
     } catch (e) {
       toast(persistFailMsg(e));
@@ -580,6 +615,10 @@
   async function adoptAi() {
     if (!lastAi.text) {
       toast("\u6682\u65E0\u53EF\u91C7\u7EB3\u7684 AI \u5185\u5BB9");
+      return;
+    }
+    if (!lastAi.quality || !lastAi.quality.confidenceAssessment || lastAi.quality.confidenceAssessment.level === "low") {
+      toast("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u91C7\u7EB3");
       return;
     }
     const s = lastAi.dept === "SEM" ? { dept: "SEM", owner: "\u9648", c: "b-purple" } : { dept: "SEO", owner: "\u674E", c: "b-blue" };

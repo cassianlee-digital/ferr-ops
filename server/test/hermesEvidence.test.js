@@ -156,6 +156,26 @@ test('新鲜的关键词明细事实通过核验并获得高置信度', () => {
   assert.ok(confidence.score >= 80);
 });
 
+test('仅由浏览器回传的当前页证据不能获得高置信度', () => {
+  const item = evidence({
+    id: 'EV-PAGE-ROW', source: 'current_page', dataRole: 'client_page_context',
+    granularity: 'keyword', domain: 'sem', metric: 'current_page_context',
+    value: 'keyword=custom casting; cost=600; clicks=80; conversions=0',
+  });
+  const synced = evidence({ id: 'EV-GSC-SUMMARY', dataRole: 'synced_observation' });
+  const parsed = {
+    basis: '另有服务端同步汇总。[EV-GSC-SUMMARY]',
+    answer: '- 关键词 custom casting 花费 600、点击 80、转化 0。[EV-PAGE-ROW]',
+  };
+  const audit = auditHermesAnswer(parsed, context([item, synced]));
+  const guarded = guardHermesAnswer(parsed, audit);
+  const confidence = buildConfidenceAssessment(audit, guarded);
+  assert.equal(audit.claimAuditStatus, 'passed');
+  assert.deepEqual(audit.supportedEvidenceIds, ['EV-PAGE-ROW']);
+  assert.equal(confidence.level, 'medium');
+  assert.ok(confidence.score <= 70);
+});
+
 test('面向用户的回答会移除内部证据编号', () => {
   assert.equal(stripEvidenceRefs('结论 [EV-GSC-SUMMARY]，下一步。'), '结论，下一步。');
 });
