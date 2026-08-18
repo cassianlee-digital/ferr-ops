@@ -80,6 +80,17 @@ test('公开端点确实公开（否则说明 PUBLIC 名单已过期）', async 
   }
 });
 
+test('风险清单对所有登录角色只读可见，且不返回服务器密钥值', async () => {
+  for (const role of ['seo', 'sem', 'manager', 'boss']) {
+    const res = await app.inject({ method: 'GET', url: '/api/risks', headers: auth(role) });
+    assert.equal(res.statusCode, 200, `${role} 应可读取风险清单`);
+    const body = res.json();
+    assert.ok(Array.isArray(body.items));
+    assert.ok(body.items.every((item) => item.severity && item.owner && item.updatedAt && item.nextAction));
+    assert.doesNotMatch(res.body, /OPENROUTER_API_KEY|ANTHROPIC_API_KEY|GOOGLE_OAUTH_CLIENT_SECRET/);
+  }
+});
+
 test('权限分档在真实路由上生效：KPI 目标仅 manager/boss', async () => {
   const put = (role) => app.inject({
     method: 'PUT', url: '/api/kpi-targets', headers: auth(role), payload: { updates: [] },

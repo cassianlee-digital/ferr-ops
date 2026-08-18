@@ -23,6 +23,7 @@ const kpiViewSource = readFileSync(new URL('../../public/src/kpi-view.js', impor
 const timerangeSource = readFileSync(new URL('../../public/src/timerange.js', import.meta.url), 'utf8');
 const googleProjectsSource = readFileSync(new URL('../../public/src/google-projects.js', import.meta.url), 'utf8');
 const sopSource = readFileSync(new URL('../../public/src/sop.js', import.meta.url), 'utf8');
+const risksSource = readFileSync(new URL('../../public/src/risks.js', import.meta.url), 'utf8');
 const cspUtilitiesSource = readFileSync(new URL('../../public/csp-utilities.css', import.meta.url), 'utf8');
 const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
 
@@ -76,6 +77,13 @@ test('AI split actions keep untrusted payloads in module state instead of event 
   assert.match(aiSource, /splitActionItems=\(actions\|\|\[\]\)\.map\(/);
   assert.match(aiSource, /adoptSplitAction\(adopt,splitActionItems\[Number\(/);
   assert.doesNotMatch(aiSource, /onclick=|window\.event|sendOrToast/);
+});
+
+test('risk register renders backend text through DOM text nodes only', () => {
+  assert.doesNotMatch(risksSource, /innerHTML|insertAdjacentHTML|outerHTML/);
+  assert.match(risksSource, /element\.textContent=String\(text\)/);
+  assert.match(risksSource, /tbody\.replaceChildren\(\)/);
+  assert.match(risksSource, /document\.createElement\('tr'\)/);
 });
 
 test('runtime-generated frontend markup contains no inline event handlers', () => {
@@ -220,9 +228,9 @@ test('charts are bundled behind events and a narrow classic-script compatibility
     .map((match) => match[1])
     .sort();
   assert.deepEqual(exports, [...compatibility[1].split(',').map((name) => name.trim()), 'refreshSeoWeekChart'].sort());
-  assert.match(chartsSource, /import \{ formatLocalDate, getCurrentRange, withRange \} from '\.\/timerange\.js';/);
+  assert.match(chartsSource, /import \{ formatLocalDate, getCurrentRange, getRangeRevision, rangeText, withRange \} from '\.\/timerange\.js';/);
   assert.match(chartsSource, /addEventListener\('timerange'/);
-  assert.match(chartsSource, /addEventListener\('granularity',rebuildSeoChart\)/);
+  assert.match(chartsSource, /addEventListener\('granularity',[^;]*rebuildSeoChart\(\); renderInqTrend\(\);/);
   assert.doesNotMatch(timerangeSource, /\b(?:loadSeoChartRange|rebuildSeoChart|loadSeoBoardFull|loadSemBoardAds|loadSemBoardFull|loadAttribution|loadDiagnostics|loadDataFreshness)\b/);
   assert.match(kpiSource, /import \{ loadSemBoardAds, loadSeoBoardGsc, refreshSeoWeekChart \} from '\.\/charts\.js';/);
   assert.doesNotMatch(kpiSource, /\b(?:seoFull|seoChart|seoSeriesFromWeeks|buildSeoData)\b/);

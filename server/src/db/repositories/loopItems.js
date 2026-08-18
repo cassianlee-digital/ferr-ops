@@ -125,6 +125,21 @@ export function planStatusByFix() {
   ).all();
 }
 
+// 所选区间内真正完成的顶层任务数，供 KPI 的「闭环执行度」按范围计算。
+// done_at 是完成事实；不能用当前 state 代替，否则已归档任务会从历史统计中消失。
+export function completedTaskCount(range) {
+  if (!range?.start_date || !range?.end_date) return 0;
+  return db.prepare(
+    `SELECT COUNT(*) AS count
+       FROM loop_items
+      WHERE kind = 'task'
+        AND parent_id IS NULL
+        AND done_at IS NOT NULL
+        AND date(done_at) BETWEEN @start_date AND @end_date
+        AND (state IS NULL OR state <> 'deleted')`
+  ).get(range).count || 0;
+}
+
 // 归档：幂等。已 archived 直接返回当前行。
 // kind 从 dept 推导：SEM→sem / SEO→seo / 公司→company；调用方也可显式传入。
 export function archive(id, archiveKind) {

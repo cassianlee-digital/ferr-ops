@@ -3,7 +3,9 @@ import * as kpiRepo from '../db/repositories/kpi.js';
 import * as seoRepo from '../db/repositories/seoWeeks.js';
 import * as semRepo from '../db/repositories/semWeeks.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
+import * as loopRepo from '../db/repositories/loopItems.js';
 import { seoWow } from './derive.js';
+import { computeAttribution } from './attribution.js';
 
 // 单指标达成率：反向(i)指标越小越好
 export function ratio(k) {
@@ -46,6 +48,68 @@ export function computeScores(rows = kpiRepo.list()) {
       company: Math.round(company),
       grade: grade(company),
     },
+  };
+}
+
+function setRangeActual(rows, grp, name, actual, source) {
+  const row = rows.find((item) => item.grp === grp && item.name === name);
+  if (!row) return;
+  row.actual = actual == null || !Number.isFinite(Number(actual)) ? null : Number(actual);
+  row.actual_available = row.actual != null;
+  row.actual_source = source;
+}
+
+// 日期筛选只生成一次性的 KPI 快照，不回写 kpi_targets.actual。
+// 这样不同用户查看不同区间时，不会互相覆盖共享的 KPI 实际值。
+export function deriveRangeRows(range) {
+  const rows = kpiRepo.list().map((row) => ({
+    ...row,
+    actual: null,
+    actual_available: false,
+    actual_source: 'selected_range_no_evidence',
+  }));
+
+  const inquiryRows = inqRepo.list(range);
+  const inquiryStats = inqRepo.stats(range);
+  setRangeActual(rows, 'total', '询盘总量', inquiryStats.total, 'inquiries.date');
+  setRangeActual(rows, 'total', 'A级询盘数', inquiryStats.a, 'inquiries.date');
+  setRangeActual(rows, 'total', '闭环执行度', loopRepo.completedTaskCount(range), 'loop_items.done_at');
+
+  const seoWeeks = seoRepo.list(range);
+  const latestSeo = seoWeeks.at(-1);
+  const previousSeo = seoWeeks.at(-2);
+  if (latestSeo) {
+    if (previousSeo) setRangeActual(rows, 'seo', '自然流量环比', seoWow(latestSeo.clicks, previousSeo.clicks), 'seo_weeks.week_date');
+    setRangeActual(rows, 'seo', '核心词 Top10 占比', latestSeo.top10_ratio, 'seo_weeks.week_date');
+    setRangeActual(rows, 'seo', '关键词覆盖/长尾', latestSeo.coverage, 'seo_weeks.week_date');
+    setRangeActual(rows, 'seo', '新增收录页面', latestSeo.indexed_pages, 'seo_weeks.week_date');
+    setRangeActual(rows, 'seo', '跳出率', latestSeo.bounce_rate, 'seo_weeks.week_date');
+    setRangeActual(rows, 'seo', '页面停留时长', latestSeo.dwell_seconds, 'seo_weeks.week_date');
+  }
+
+  const semWeeks = semRepo.list(range);
+  const latestSem = semWeeks.at(-1);
+  if (latestSem) {
+    setRangeActual(rows, 'sem', 'CPC', latestSem.cpc, 'sem_weeks.week_date');
+    setRangeActual(rows, 'sem', 'CTR', latestSem.ctr, 'sem_weeks.week_date');
+    setRangeActual(rows, 'sem', '质量分', latestSem.quality_score, 'sem_weeks.week_date');
+    setRangeActual(rows, 'sem', 'ROAS', latestSem.roas, 'sem_weeks.week_date');
+    setRangeActual(rows, 'sem', '转化次数', latestSem.conversions, 'sem_weeks.week_date');
+    setRangeActual(rows, 'sem', '每次转化费用', latestSem.cost_per_conv, 'sem_weeks.week_date');
+
+    const cost = semWeeks.reduce((sum, row) => sum + (Number(row.cost) || 0), 0);
+    const attribution = computeAttribution(inquiryRows, { costMicros: Math.round(cost * 1_000_000) });
+    setRangeActual(rows, 'total', '有效询盘成本', attribution.sem.costPerEffective, 'sem_weeks.cost + inquiries.channel/grade');
+  }
+
+  return rows;
+}
+
+export function computeScoresForRange(range) {
+  return {
+    ...computeScores(deriveRangeRows(range)),
+    range,
+    targetBasis: 'configured_monthly_target_unprorated',
   };
 }
 

@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/page-fixes.css">
 <link rel="stylesheet" href="/page-settings.css">
+<link rel="stylesheet" href="/page-risks.css">
 <link rel="stylesheet" href="/page-market.css">
 <link rel="stylesheet" href="/page-kpi.css">
 <link rel="stylesheet" href="/page-inquiry.css">
@@ -51,6 +52,7 @@
       <div class="nav-item" data-tab="deposit"><i class="ti ti-database-heart"></i> 沉淀表</div>
       <div class="nav-item" data-tab="archive"><i class="ti ti-archive"></i> 归档</div></div>
     <div class="nav-section"><div class="nav-label">系统</div>
+      <div class="nav-item" data-tab="risks"><i class="ti ti-shield-exclamation"></i> 风险清单<span class="dot dot-red is-hidden" id="nav-risks-dot"></span></div>
       <div class="nav-item" data-tab="settings"><i class="ti ti-settings"></i> 设置<span class="dot dot-gray"></span></div></div>
   </div>
 
@@ -61,6 +63,7 @@
       <div class="kpi-pill"><span class="kpi-label">A级占比</span><span class="kpi-val" id="topAratio">—</span><span class="kpi-delta" id="topAratioMoM"></span></div>
       <div class="kpi-pill"><span class="kpi-label">有效询盘率</span><span class="kpi-val" id="topRate">—</span><span class="kpi-delta" id="topRateMoM"></span></div>
       <div class="topbar-right">
+        <span class="sync-note" id="topRange"><i class="ti ti-calendar"></i> —</span>
         <button class="theme-btn" id="themeBtn" data-ui-action="toggle-theme" title="浅色/深色切换"><i class="ti ti-moon"></i></button>
       </div>
     </div>
@@ -97,12 +100,13 @@
       <!-- ============ 总览 ============ -->
       <div class="panel active" id="panel-dashboard">
         <div class="page-head"><div><div class="page-title">运营总览</div><div class="page-sub">询盘 · SEO · SEM 三块趋势一眼掌握</div></div></div>
+        <div class="timebar-inline" data-time data-gran="day,week,month"></div>
         <div class="grid32">
-          <div class="card"><div class="card-head"><span class="card-title">本月 KPI 考核总分</span><span class="card-link" data-ui-action="go" data-tab="kpi">查看明细 →</span></div>
+          <div class="card"><div class="card-head"><span class="card-title" id="overviewKpiTitle">所选区间 KPI 考核总分</span><span class="card-link" data-ui-action="go" data-tab="kpi">查看明细 →</span></div>
             <div class="score-hero"><div class="gauge"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g1" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g1s">0</div><div class="gauge-max">/ 100</div></div></div>
             <div class="csp-s-83725d2c6e"><div class="grade-badge" id="g1b"></div><div class="csp-s-734b996f5e" id="miniScores"></div></div></div>
           </div>
-          <div class="card"><div class="card-head"><span class="card-title">有效询盘趋势</span><span class="card-sub" id="inqTrendSub">近 8 周</span></div>
+          <div class="card"><div class="card-head"><span class="card-title">有效询盘趋势</span><span class="card-sub" id="inqTrendSub">所选区间</span></div>
             <div class="legend"><div class="legend-item"><div class="legend-dot csp-s-2eeb30cb25"></div>有效询盘</div><div class="legend-item"><div class="legend-dot csp-s-9a7b826d35"></div>询盘总量</div></div>
             <div class="chart-wrap csp-s-f6f4334f92"><canvas id="inqTrend"></canvas></div></div>
         </div>
@@ -117,11 +121,11 @@
           </div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search csp-s-e1bc9acca5"></i> SEO 总览</span><span class="card-sub">GSC · 近30天</span></div>
+          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search csp-s-e1bc9acca5"></i> SEO 总览</span><span class="card-sub" id="ov-seo-range">GSC · 所选区间</span></div>
             <div class="csp-s-0b1204e7ba"><div><div class="metric-num csp-s-3b4a6452bb" id="ov-seo-clicks">—</div><div class="metric-lbl">自然点击</div></div><div><div class="metric-num csp-s-3b4a6452bb" id="ov-seo-impr">—</div><div class="metric-lbl">自然展现</div></div><div><div class="metric-num csp-s-3b4a6452bb" id="ov-seo-pos">—</div><div class="metric-lbl">平均排名</div></div></div>
             <div class="chart-wrap csp-s-584921563c"><canvas id="seoMini"></canvas></div>
             <div class="csp-s-e7c2d4c829"><button class="btn-ai" data-ui-action="ai" data-ai-prompt="给SEO本月总览级AI诊断，按优先级列最该先做的3件事" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> SEO AI 诊断 ↗</button></div></div>
-          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-ad-2 csp-s-0fbc2fe745"></i> SEM 总览</span><span class="card-sub">Ads · 近30天</span></div>
+          <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-ad-2 csp-s-0fbc2fe745"></i> SEM 总览</span><span class="card-sub" id="ov-sem-range">Ads · 所选区间</span></div>
             <div class="csp-s-0b1204e7ba"><div><div class="metric-num csp-s-3b4a6452bb" id="ov-sem-cost">—</div><div class="metric-lbl">花费</div></div><div><div class="metric-num csp-s-3b4a6452bb" id="ov-sem-conv">—</div><div class="metric-lbl">转化</div></div><div><div class="metric-num csp-s-3b4a6452bb" id="ov-sem-cpa">—</div><div class="metric-lbl">每转化成本</div></div></div>
             <div class="chart-wrap csp-s-584921563c"><canvas id="semMini"></canvas></div>
             <div class="csp-s-e7c2d4c829"><button class="btn-ai" data-ui-action="ai" data-ai-prompt="给SEM本月总览级AI诊断，按优先级列最该先做的3件事" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> SEM AI 诊断 ↗</button></div></div>
@@ -132,15 +136,16 @@
           </tbody></table>
         </div>
         <!-- 新增: 总览级 AI 诊断 (达标判断+整改思路) -->
-        <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 总诊断 · 本月考核达标研判</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台当前真实的KPI、询盘、SEO/SEM周报和已同步数据判断本月是否达标；逐条说明数据依据和置信度，数据不足时明确说明，不得补造结论。">重新研判 ↗</button></div>
+        <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 总诊断 · 所选区间达标研判</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台所选时间范围内真实的KPI、询盘、SEO/SEM周报和已同步数据判断表现；逐条说明数据依据和置信度，数据不足时明确说明，不得补造结论。">重新研判 ↗</button></div>
           <div class="ai-render" data-ai-state="not-generated"><div class="ai-item"><i class="ti ti-search"></i><div class="body">尚未生成研判。点击“重新研判”后，仅展示可追溯到后台真实数据的结论。</div></div></div>
         </div>
       </div>
 
       <!-- ============ KPI ============ -->
       <div class="panel" id="panel-kpi">
-        <div class="page-head"><div><div class="page-title">KPI 考核</div><div class="page-sub">公司总分 + 李 + 陈 · 目标值与权重在「设置」可改</div></div><button class="btn-ghost"><i class="ti ti-calendar"></i> 2026-06 ▾</button></div>
-        <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-info-circle"></i> KPI 评分按月度目标与全量实际值计算，不受顶部时间范围影响。</div>
+        <div class="page-head"><div><div class="page-title">KPI 考核</div><div class="page-sub">公司总分 + 李 + 陈 · 目标值与权重在「设置」可改</div></div><span class="card-sub" id="kpiRangeLabel">当前区间 —</span></div>
+        <div class="timebar-inline" data-time data-gran="day,week,month"></div>
+        <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-info-circle"></i> 实际值按所选区间重新查询；目标仍采用设置中的月度目标，不自动折算，区间较短时请结合实际进度判断。</div>
         <div class="grid3">
           <div class="card csp-s-905008530c"><div class="card-head csp-s-99b9ba53aa"><span class="card-title">公司总分</span></div>
             <div class="gauge csp-s-4a5cbbd240"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g2" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g2s">0</div><div class="gauge-max">/ 100</div></div></div>
@@ -174,7 +179,7 @@
             <div class="inq-feed-head">
               <div><span class="card-title">最新询盘</span> <span class="card-sub" id="inqFeedCount">—</span></div>
             </div>
-            <div class="inq-feed-tip"><i class="ti ti-clock"></i> 本月询盘 · 随时间范围筛选；历史月份见下方明细表</div>
+            <div class="inq-feed-tip"><i class="ti ti-clock"></i> 展示所选区间最新月份；更早月份见下方明细表</div>
             <div class="inq-feed-list" id="inqFeedList">
               <table class="dt inq-cur-table">
                 <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr csp-s-2d09dd5b97">跟踪反馈</th><th class="ctr csp-s-0b3b13b1db">操作</th></tr></thead>
@@ -696,6 +701,33 @@
         <div class="grid2">
           <div class="card"><div class="card-head"><span class="card-title">广告系列</span><span class="card-sub">GA4 session campaign</span></div><table class="dt"><thead><tr><th>广告系列</th><th class="num">会话</th><th class="num">用户（日累计）</th><th class="num">关键事件</th></tr></thead><tbody id="ga4-campaigns"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e" id="ga4-campaigns-empty">暂无数据</div></div>
           <div class="card"><div class="card-head"><span class="card-title">转化事件</span><span class="card-sub">事件需与 CRM 有效询盘核对</span></div><table class="dt"><thead><tr><th>事件</th><th class="num">触发次数</th><th class="num">关键事件</th><th class="num">触发用户（日累计）</th></tr></thead><tbody id="ga4-events"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e" id="ga4-events-empty">事件尚未同步</div></div>
+        </div>
+      </div>
+
+      <!-- ============ 风险清单 ============ -->
+      <div class="panel" id="panel-risks">
+        <div class="page-head">
+          <div><div class="page-title">P0 / P1 风险清单</div><div class="page-sub">当前配置、真实数据证据与最近一次生产验收统一核对；历史通过记录不会覆盖当前配置故障。</div></div>
+          <button class="btn-ghost" id="risk-refresh" type="button"><i class="ti ti-refresh"></i> 重新核对</button>
+        </div>
+        <div class="risk-summary" aria-label="风险统计">
+          <div class="risk-summary-item" data-tone="critical"><span class="risk-summary-value" id="risk-p0-open">—</span><span class="risk-summary-label">P0 未关闭</span></div>
+          <div class="risk-summary-item" data-tone="warn"><span class="risk-summary-value" id="risk-p1-open">—</span><span class="risk-summary-label">P1 未关闭</span></div>
+          <div class="risk-summary-item" data-tone="fail"><span class="risk-summary-value" id="risk-fail-count">—</span><span class="risk-summary-label">检查失败</span></div>
+          <div class="risk-summary-item"><span class="risk-summary-value" id="risk-unverified-count">—</span><span class="risk-summary-label">尚待验证</span></div>
+          <div class="risk-summary-item" data-tone="pass"><span class="risk-summary-value" id="risk-pass-count">—</span><span class="risk-summary-label">已经通过</span></div>
+        </div>
+        <div class="risk-meta"><strong>生产验收证据</strong><span id="risk-acceptance-status" data-state="unverified">生产实测：正在读取…</span></div>
+        <div class="risk-toolbar" aria-label="风险筛选">
+          <div class="risk-filter"><label for="risk-filter-severity">严重级别</label><select id="risk-filter-severity"><option value="all">全部级别</option><option value="P0">仅 P0</option><option value="P1">仅 P1</option></select></div>
+          <div class="risk-filter"><label for="risk-filter-status">检查状态</label><select id="risk-filter-status"><option value="open">仅未关闭</option><option value="fail">失败</option><option value="unverified">待验证</option><option value="warn">警告</option><option value="pass">通过</option><option value="all">全部状态</option></select></div>
+        </div>
+        <div id="risk-state" aria-live="polite"><div class="risk-state-message">进入本页后读取风险清单。</div></div>
+        <div class="risk-table-wrap" id="risk-table-wrap" hidden>
+          <table class="risk-table">
+            <thead><tr><th>级别</th><th>状态</th><th>检查项</th><th>当前证据</th><th>责任角色</th><th>更新时间</th><th>下一步动作</th></tr></thead>
+            <tbody id="risk-rows"></tbody>
+          </table>
         </div>
       </div>
 

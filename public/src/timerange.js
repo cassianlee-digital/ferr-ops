@@ -49,11 +49,20 @@ export function resolveRange(label){
   }
 }
 let _range=resolveRange(window._timeRange); // BUG-31 B-1：跟随持久化值初始化
+let _rangeRevision=0;
 export function getCurrentRange(){ return _range; }
+export function getRangeRevision(){ return _rangeRevision; }
 export function withRange(path,range){ range=range||_range; if(!range||!range.start_date||!range.end_date) return path; const sep=path.includes('?')?'&':'?'; return path+sep+'start_date='+encodeURIComponent(range.start_date)+'&end_date='+encodeURIComponent(range.end_date); }
 export function rangeText(r){ return (r&&r.start_date)?(r.start_date+' ~ '+r.end_date):'—'; }
+function syncRangeUi(){
+  document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent.trim()===window._timeRange));
+  document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
+  const top=document.getElementById('topRange');
+  if(top){ top.textContent=rangeText(_range); top.title='当前全局时间范围：'+rangeText(_range); }
+}
 export function refreshRangeConsumers(){
-  document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range}}));
+  _rangeRevision++;
+  document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range,revision:_rangeRevision}}));
   loadInquiries();                 // 1e-a：询盘真实按区间重拉
   if(typeof loadGa4==='function') loadGa4(); // 阶段5：GA4 按区间重算
 }
@@ -67,8 +76,7 @@ export function applyTimeRange(label){
   window._timeRange=label;
   _range=nr;
   try{ localStorage.setItem('ferr:timeRange',label); }catch(e){}
-  document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent.trim()===label));
-  document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
+  syncRangeUi();
   refreshRangeConsumers();
   toast('时间范围：'+_range.period_label);
   return true;
@@ -108,6 +116,7 @@ document.querySelectorAll('[data-time]').forEach(bar=>{
     toast('粒度：'+(GRAN_LABEL[window._gran]||window._gran));
   });
 });
+syncRangeUi();
 
 /* 6.23 文档 26：自定义时间区间弹框 - 打开/提交 */
 export function openCustomRange(){
@@ -132,8 +141,7 @@ export function submitCustomRange(){
   try{ localStorage.setItem('ferr:timeRange','自定义'); }catch(err){}
   _range=resolveRange('自定义');
   // 同步 UI：所有时间条按钮态 + 自动日期框
-  document.querySelectorAll('[data-time] .trange').forEach(x=>x.classList.toggle('active', x.textContent.trim()==='自定义'));
-  document.querySelectorAll('[data-tauto]').forEach(el=>el.innerHTML='<i class="ti ti-calendar"></i> '+rangeText(_range));
+  syncRangeUi();
   refreshRangeConsumers();
   closeModal('customRangeMask'); toast('已应用：'+_range.period_label);
 }

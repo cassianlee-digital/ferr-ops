@@ -152,7 +152,8 @@ function mountGa4IntoData(){
   ga4.classList.add('ga4-embedded');
   if(ga4.parentElement!==host)host.appendChild(ga4);
 }
-function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n)n.classList.add('active'); document.querySelector('.main').scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
+function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n){n.classList.add('active');if(window.matchMedia('(max-width:760px)').matches)n.scrollIntoView({block:'nearest',inline:'center'});} document.querySelector('.main').scrollTo({top:0}); window.scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
+  if(tab==='risks'){try{loadRisks();}catch(e){}}
   if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
   if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结
@@ -236,9 +237,13 @@ function tableLoadState(id,colspan,state,message,retryAction){
   const retryBtn=tb.querySelector('.table-retry'); if(retryBtn)retryBtn.addEventListener('click',retryAction);
 }
 // 询盘加载（带当前时间区间）。供首屏 hydrate 与时间切换共用。
+let inquiryRequestSequence=0;
 async function loadInquiries(){
+  const requestId=++inquiryRequestSequence;
+  const revision=typeof getRangeRevision==='function'?getRangeRevision():0;
   try{
     const {items,stats}=await API.get(withRange('/api/inquiries'));
+    if(requestId!==inquiryRequestSequence||(typeof getRangeRevision==='function'&&revision!==getRangeRevision()))return;
     window._inqCache=items||[];
     renderInqList(); // C组：按月分组渲染（清掉旧行/静态示例行，当月展开、上月折叠）
     try{ renderInqFeed(); }catch(_){} // Hero 左栏「最新询盘」同步刷新
@@ -246,7 +251,7 @@ async function loadInquiries(){
     // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
     renderInqDonuts();  // BUG-6：KPI 页两个 donut 同步真实重绘
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
-  }catch(e){ if(e&&e.message!=='unauthorized'){
+  }catch(e){ if(requestId===inquiryRequestSequence&&e&&e.message!=='unauthorized'){
     window._inqCache=[];
     window._inqStats=null;
     const reason=e.message||'未知错误';
@@ -398,8 +403,8 @@ window.addEventListener('load',async()=>{
   bindSettings();              // 设置页目标值回写
   renderSparklines();
   await hydrate();             // 询盘/否词/广告/排名快照
-  loadDashboardInq();          // 6.23 文档 2：总览询盘趋势独立拉当月，与全局时间范围解耦
-  loadDashboardBoards();       // 总览 SEO/SEM 两卡：接真实当月 GSC/Ads 数据（替换写死 demo）
+  loadDashboardInq();          // 总览询盘趋势按当前时间范围重算
+  loadDashboardBoards();       // 总览 SEO/SEM 两卡按当前时间范围重算
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目 + 沉淀表
   await loadAiAnalyses();      // AI 分析记录：恢复“已分析”状态和历史文档

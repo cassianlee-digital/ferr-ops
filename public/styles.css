@@ -5752,23 +5752,56 @@ body.dark .dim {
 
   .sidebar {
     position: relative !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch;
     width: 100% !important;
     min-width: 0 !important;
-    height: auto !important;
-    max-height: none !important;
+    height: 58px !important;
+    max-height: 58px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: thin;
   }
 
   .logo {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    flex: 0 0 150px;
     min-height: 58px;
+    padding: 8px 10px;
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+    background: var(--bg2);
+  }
+
+  .logo-text small,
+  .nav-label {
+    display: none;
   }
 
   .nav-section {
-    padding-right: 10px;
-    padding-left: 10px;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: stretch;
+    padding: 0 !important;
+    border: 0 !important;
   }
 
   .nav-section .nav-item {
-    min-height: 38px;
+    min-height: 58px;
+    height: 58px;
+    margin: 0;
+    padding: 0 12px;
+    border-radius: 0;
+    white-space: nowrap;
+  }
+
+  .nav-section .nav-item.active {
+    box-shadow: inset 0 -3px 0 var(--primary);
   }
 
   .topbar {

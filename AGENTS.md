@@ -13,24 +13,27 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 ## Current Architecture
 
 - **后端不是单文件**:Fastify,模块化良好。
-  - `server/src/routes/`(19 个路由)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端集中在 `public/index.html`**,约 **1836 行 / 191KB**,所有页面+逻辑+CSS 挤在一个文件 —— **当前最大的维护风险**(辅助文件:`public/api.js`、`public/login.html`)。
+  - `server/src/routes/`(模块化路由)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密/验收)、`server/src/sync/`(第三方真实同步)。
+- 前端页面骨架仍在 `public/index.html`,但主要业务逻辑已逐步拆入 `public/src/` ES 模块,样式也按页面拆分；修改模块后需运行 `npm run build:web`。
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
 - `server/src/db/repositories/integrations.js` 对密钥做 **AES 加密**存储,**绝不返回前端**。
 - `server/src/db/seed.js` 只插入**用户 / KPI / 市场调研**,**不注入假业务数据**。
 
-## API / Sync Reality(真实状态,禁止把未实现描述成已完成)
+## API / Sync Reality(真实状态,禁止把未验收描述成已通过)
 
-- **GSC 同步:未实现。** `server/src/sync/gsc.js` 仍是 `not_implemented`。
-- **GA4 同步:未实现。** `server/src/routes/ga4.js` 当前只返回**空结构 + 连接状态**(诚实空状态,非假数据)。
-- **Google Ads 同步:未实现。** `server/src/sync/ads.js` 仍是 `not_implemented`。
-- `seo_weeks` / `sem_weeks` 当前**主要依赖人工录入**,无自动同步。
-- **前端图表存在「无数据时显示内置示例」的问题**(`public/index.html` 约 1745 行),必须后续修复 —— 会冒充真实趋势。
-- **时间筛选目前只停留在前端变量**(`window._timeRange`),**未真正传后端重算**,KPI/询盘/总览不受所选区间影响。
-- **目前没有自动诊断规则引擎**(机会词/衰退页/CTR 异常/蚕食/高花费零有效等全靠人工)。
-- **AI 目前是单 provider**,仅通过 Anthropic(`server/src/services/anthropic.js`)。
+- **GSC 真实同步已实现**:每日汇总与搜索词/页面明细写入事实表。
+- **GA4 真实同步已实现**:每日汇总、维度、广告系列和事件级事实可供 Hermes 与看板使用；GA4 事件不冒充 CRM 有效询盘。
+- **Google Ads 真实同步已实现**:广告系列、关键词和 `search_term_view` 搜索词明细分别入库；否词/Hermes 不再用关键词数据冒充搜索词。
+- `seo_weeks` / `sem_weeks` 仍保留人工周报录入,与 Google 事实表是不同口径,不得混为同一来源。
+- 真实模式无数据时显示诚实空状态或失败原因,不使用内置示例冒充趋势。
+- 时间范围已贯通 KPI、总览、询盘、GSC、Ads、GA4、周报和图表；快速切换有过期响应保护。
+- 自动诊断规则已覆盖机会词、衰退页、关键词蚕食和高花费零有效搜索词等真实数据场景。
+- AI Provider 支持 Anthropic 与 OpenRouter；前端不接触密钥。
+- `npm run verify:production` 提供生产验收工具；只有 `NODE_ENV=production` 且显式 `--live` 才执行真实探测、三源同步和备份恢复验证。
+- 最近一次生产 `--live` 验收会脱敏保存到 `meta`,后台“风险清单”将当前静态检查与最近生产实测合并展示。
+- **截至当前工作区状态,生产服务器尚未执行本轮 `--live` 验收**,因此不能声称生产接入、OAuth、真实同步和备份恢复已通过。
 
 ## Low Token Working Rules
 
@@ -65,10 +68,10 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 密钥只存**服务器环境变量**或**加密存储**(参考 `integrations.js` 的 AES 方案)。
 - **前端不能直接接触密钥。**
 - 所有**用户输入和 API 返回文本**渲染前必须 **escape**。
-- **谨慎使用 `innerHTML`**(当前前端 47 处,属 XSS 高风险面)。
+- **谨慎使用 `innerHTML`**；新增动态页面优先使用 DOM API + `textContent`,并由 CSP/XSS 测试守住边界。
 
 ## 协作流程约定
 
 - 修改本地源文件 → 跑必要检查 → commit → push(GitHub: `cassianlee-digital/ferr-ops`,凭据走本机 GCM)。
 - **不操作服务器、不索要服务器密码。** 部署由用户在服务器侧执行,Codex 只提供部署指令。
-- **项目真实路径:`E:\Codex`**(E 盘卷标为「资料」,非目录)。
+- **项目真实路径:`E:\Claude Code`**。

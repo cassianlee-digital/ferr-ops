@@ -51,6 +51,7 @@ import { bindSettings, openPwd, submitPwd } from './settings.js';
 import { bindTableEditor } from './table-editor.js';
 // 已迁移（批次15）：SEO 机会词排名快照与趋势渲染。
 import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
+import { loadRisks } from './risks.js';
 
 bindTableEditor();
 
@@ -61,5 +62,6 @@ const closedLoopCompatibility={prepend,refreshTaskCols,addFixRow,addDepositRow,a
 const aiCompatibility={runAiAnalysis,aiBox,loadAiAnalyses,adoptAi};
 const settingsCompatibility={bindSettings,openPwd,submitPwd};
 const rankSnapshotCompatibility={loadRankSnapshots,snapshotRanks};
+const riskCompatibility={loadRisks};
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility);

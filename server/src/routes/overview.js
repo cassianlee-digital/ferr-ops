@@ -1,8 +1,9 @@
 // 总览数据：公司评分 + 询盘汇总 + 与上月环比。
 import { requireAuth } from '../auth/middleware.js';
-import { computeScores } from '../services/kpi.js';
+import { computeScores, computeScoresForRange } from '../services/kpi.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
 import * as snap from '../db/repositories/snapshots.js';
+import { parseDateRange, previousRange } from '../lib/parseDateRange.js';
 
 const currentMonth = () => {
   const d = new Date();
@@ -11,7 +12,46 @@ const currentMonth = () => {
 const round1 = (n) => (n == null ? null : Math.round(n * 10) / 10);
 
 export async function overviewRoutes(app) {
-  app.get('/api/overview', { preHandler: requireAuth }, async () => {
+  app.get('/api/overview', { preHandler: requireAuth }, async (request, reply) => {
+    const parsed = parseDateRange(request.query || {});
+    if (parsed.error) return reply.code(400).send({ error: parsed.error });
+    if (parsed.range) {
+      const range = parsed.range;
+      const prevRange = previousRange(range);
+      const currentScores = computeScoresForRange(range).scores;
+      const previousScores = computeScoresForRange(prevRange).scores;
+      const currentStats = inqRepo.stats(range);
+      const previousStats = inqRepo.stats(prevRange);
+      const delta = (current, previous) => round1(current - previous);
+      return {
+        range,
+        previousRange: prevRange,
+        comparison: 'previous_equal_period',
+        comparisonLabel: 'vs 前一等长区间',
+        targetBasis: 'configured_monthly_target_unprorated',
+        current: {
+          company: currentScores.company,
+          grade: currentScores.grade,
+          aRatio: currentStats.aRatio,
+          validRate: currentStats.rate,
+          valid: currentStats.valid,
+          total: currentStats.total,
+        },
+        previous: {
+          company: previousScores.company,
+          aRatio: previousStats.aRatio,
+          validRate: previousStats.rate,
+          valid: previousStats.valid,
+          total: previousStats.total,
+        },
+        delta: {
+          company: delta(currentScores.company, previousScores.company),
+          aRatio: delta(currentStats.aRatio, previousStats.aRatio),
+          validRate: delta(currentStats.rate, previousStats.rate),
+        },
+      };
+    }
+
     const month = currentMonth();
     const sc = computeScores().scores;
     const s = inqRepo.stats();

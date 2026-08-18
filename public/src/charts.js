@@ -2,7 +2,7 @@
    时间范围工具显式导入；Chart/ECharts、API、esc/toast 与仍未迁移的 AI/整改入口在运行时解析。
    仅 app.js 仍需的初始化、筛选和加载入口由 main.js 挂到 window，其余状态留在模块内部。 */
 
-import { formatLocalDate, getCurrentRange, withRange } from './timerange.js';
+import { formatLocalDate, getCurrentRange, getRangeRevision, rangeText, withRange } from './timerange.js';
 import { createEvidenceFix, persistFailMsg } from './closed-loop.js';
 import { runAiAnalysis } from './ai.js';
 
@@ -643,7 +643,7 @@ export async function loadDataFreshness(){
   el.innerHTML='<i class="ti ti-database"></i> '+chip('GSC',d.gsc)+chip('GA4',d.ga4)+chip('Ads',d.ads)
     +'<span class="dim fresh-help">区间实际有数据天数 / 所选总天数 · 时间范围影响：询盘、SEO(GSC)、SEM(Ads)、GA4</span>';
 }
-/* 总览 SEO/SEM 两卡：接真实当月数据（本月 1 号~今天），替换原写死的 demo 数字。独立于全局时间范围（固定当月） */
+/* 总览 SEO/SEM 两卡：只读取所选区间真实数据。请求序号防止快速切换时旧响应覆盖新范围。 */
 window._ovSeoMini=null; window._ovSemMini=null;
 function _ovSpark(id, rows, valFn, color, emptyDetail){
   const cv=document.getElementById(id); if(!cv)return;
@@ -653,25 +653,33 @@ function _ovSpark(id, rows, valFn, color, emptyDetail){
   const wrap=cv.closest('.chart-wrap'); if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
   window[key]=new Chart(cv,{type:'line',data:{labels:rows.map(x=>(x.date||'').slice(5)),datasets:[{data:rows.map(valFn),borderColor:color,backgroundColor:color+'1a',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:true}},scales:{x:{display:false},y:{display:false,beginAtZero:true}}}});
 }
+let dashboardBoardsRequestSequence=0;
 export async function loadDashboardBoards(){
   if(window.DEMO_MODE)return;
-  // 「当月」在月初几乎无数据 + GSC 有 2-3 天延迟 → 用近30天滚动窗口，保证总览始终有真实数据
-  const today=formatLocalDate(new Date());
-  const s=new Date(); s.setDate(s.getDate()-29);
-  const r={start_date:formatLocalDate(s),end_date:today};
+  const requestId=++dashboardBoardsRequestSequence, revision=getRangeRevision(), r=getCurrentRange();
   const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  let g=null,gError=null; try{ g=await API.get(withRange('/api/google/gsc/summary',r)); }catch(e){ gError=e; }
+  const [gscResult,adsResult]=await Promise.allSettled([
+    API.get(withRange('/api/google/gsc/summary',r)),
+    API.get(withRange('/api/google/ads/board',r))
+  ]);
+  if(requestId!==dashboardBoardsRequestSequence||revision!==getRangeRevision())return false;
+  const g=gscResult.status==='fulfilled'?gscResult.value:null;
+  const gError=gscResult.status==='rejected'?gscResult.reason:null;
   const gt=g&&g.totals;
   _t('ov-seo-clicks', gt?(gt.clicks||0).toLocaleString():'—');
   _t('ov-seo-impr',   gt?(gt.impressions||0).toLocaleString():'—');
   _t('ov-seo-pos',    gt&&gt.position!=null?Number(gt.position).toFixed(1):'—');
   _ovSpark('seoMini', (g&&g.byDate)||[], x=>+x.clicks||0, '#2f72e8',gError?loadFailureText('总览 SEO',gError):'');
-  let a=null,aError=null; try{ a=await API.get(withRange('/api/google/ads/board',r)); }catch(e){ aError=e; }
+  const a=adsResult.status==='fulfilled'?adsResult.value:null;
+  const aError=adsResult.status==='rejected'?adsResult.reason:null;
   const at=a&&a.totals;
   _t('ov-sem-cost', at?_money(at.costMicros):'—');
   _t('ov-sem-conv', at?_conv(at.conversions):'—');
   _t('ov-sem-cpa',  at?_money(at.costPerConversionMicros):'—');
   _ovSpark('semMini', (a&&a.series)||[], x=>(x.costMicros||0)/1e6, '#7b54e0',aError?loadFailureText('总览 SEM',aError):'');
+  _t('ov-seo-range','GSC · '+rangeText(r));
+  _t('ov-sem-range','Ads · '+rangeText(r));
+  return true;
 }
 export async function loadDiagnostics(){
   let d=null;
@@ -728,30 +736,34 @@ function inqSeriesByGran(rows,gran){
   const lab=k=> gran==='month'?k:k.slice(5); // 月:YYYY-MM；天/周:MM-DD
   return {labels:keys.map(lab), eff:keys.map(k=>m.get(k).eff), total:keys.map(k=>m.get(k).total)};
 }
-/* 6.23 文档 2：总览询盘趋势 = 当月、按日，独立于全局 _range/_gran；启用悬停 tooltip 显示当日有效/总量。
-   独立缓存 window._inqMonthCache，由 loadDashboardInq() 拉取（始终拉当月 1 号 ~ 今天）。 */
-window._inqMonthCache=[];
-let _inqMonthError=null;
+/* 总览询盘趋势按全局范围和粒度重算；启用悬停 tooltip 显示有效/总量。 */
+window._inqDashboardCache=[];
+let _inqDashboardError=null;
+let dashboardInqRequestSequence=0;
 export async function loadDashboardInq(){
-  const today=formatLocalDate(new Date());
-  const first=today.slice(0,7)+'-01';
+  const requestId=++dashboardInqRequestSequence, revision=getRangeRevision();
   try{
-    const {items}=await API.get(withRange('/api/inquiries',{start_date:first,end_date:today}));
-    window._inqMonthCache=items||[]; _inqMonthError=null;
-  }catch(e){ window._inqMonthCache=[]; _inqMonthError=e; }
+    const {items}=await API.get(withRange('/api/inquiries'));
+    if(requestId!==dashboardInqRequestSequence||revision!==getRangeRevision())return false;
+    window._inqDashboardCache=items||[]; _inqDashboardError=null;
+  }catch(e){
+    if(requestId!==dashboardInqRequestSequence||revision!==getRangeRevision())return false;
+    window._inqDashboardCache=[]; _inqDashboardError=e;
+  }
   renderInqTrend();
+  return true;
 }
 function renderInqTrend(){
   const cv=document.getElementById('inqTrend'); if(!cv||window.DEMO_MODE)return;
-  const rows=window._inqMonthCache||[];
+  const rows=window._inqDashboardCache||[], gran=window._gran||'day', r=getCurrentRange();
   const sub=document.getElementById('inqTrendSub'); if(sub){
-    const today=formatLocalDate(new Date());
-    sub.textContent='当月 · 按日（'+today.slice(0,7)+'）';
+    const granLabel={day:'按天',week:'按周',month:'按月'}[gran]||gran;
+    sub.textContent=rangeText(r)+' · '+granLabel;
   }
   if(inqChart){ try{inqChart.destroy();}catch(e){} inqChart=null; }
-  if(!rows.length){ if(_inqMonthError)chartEmpty('inqTrend',loadFailureText('询盘趋势',_inqMonthError),'加载失败'); else chartEmpty('inqTrend'); return; }
+  if(!rows.length){ if(_inqDashboardError)chartEmpty('inqTrend',loadFailureText('询盘趋势',_inqDashboardError),'加载失败'); else chartEmpty('inqTrend'); return; }
   const wrap=cv.closest('.chart-wrap')||cv.parentElement; if(wrap){ const ce=wrap.querySelector('.chart-empty'); if(ce)ce.remove(); } cv.style.display='';
-  const s=inqSeriesByGran(rows,'day');
+  const s=inqSeriesByGran(rows,gran);
   inqChart=new Chart(cv,{type:'line',data:{labels:s.labels,datasets:[
     {label:'有效询盘',data:s.eff,borderColor:'#15a85a',backgroundColor:'rgba(21,168,90,.1)',fill:true,tension:.4,pointRadius:3,pointHoverRadius:5,borderWidth:2},
     {label:'询盘总量',data:s.total,borderColor:'#9aa1ae',backgroundColor:'rgba(154,161,174,.06)',fill:true,tension:.4,pointRadius:2,pointHoverRadius:4,borderWidth:1.5}
@@ -778,7 +790,7 @@ export function charts(){
     new Chart(chanDonut,{type:'doughnut',data:{labels:['SEO','SEM','直接','其他'],datasets:[{data:[DEMO.chanDonut.seo,DEMO.chanDonut.sem,DEMO.chanDonut.direct,DEMO.chanDonut.other],backgroundColor:['#2f72e8','#7b54e0','#0b9d8f','#ef9514'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
     fillDonutLegendDemo();
   }else{
-    // 真实模式：询盘趋势(C-2b)、KPI 两个 donut(BUG-6) 由 loadInquiries 真实重绘；seoMini/semMini 仍待后续接入
+    // 真实模式：询盘趋势由 loadDashboardInq 重绘，KPI 两个 donut 由 loadInquiries 重绘。
     ['seoMini','semMini'].forEach(chartEmpty);
     // 首屏先占位(诚实空状态)，待 hydrate→loadInquiries 末尾真实重绘，避免 _inqCache 未就绪闪烁
     chartEmpty('inqTrend'); chartEmpty('inqDonut'); chartEmpty('chanDonut'); blankDonutLegend();
@@ -793,6 +805,8 @@ export function charts(){
 }
 
 document.addEventListener('timerange',()=>{
+  loadDashboardInq();
+  loadDashboardBoards();
   loadSeoChartRange();
   loadSeoBoardFull();
   loadSemBoardAds();
@@ -801,4 +815,4 @@ document.addEventListener('timerange',()=>{
   loadDiagnostics();
   loadDataFreshness();
 });
-document.addEventListener('granularity',rebuildSeoChart);
+document.addEventListener('granularity',()=>{ rebuildSeoChart(); renderInqTrend(); });

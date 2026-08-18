@@ -11,11 +11,16 @@ const closedLoopSource = readFileSync(new URL('../../public/src/closed-loop.js',
 const aiSource = readFileSync(new URL('../../public/src/ai.js', import.meta.url), 'utf8');
 const editableSource = readFileSync(new URL('../../public/src/editable.js', import.meta.url), 'utf8');
 const settingsSource = readFileSync(new URL('../../public/src/settings.js', import.meta.url), 'utf8');
+const kpiSource = readFileSync(new URL('../../public/src/kpi.js', import.meta.url), 'utf8');
+const kpiViewSource = readFileSync(new URL('../../public/src/kpi-view.js', import.meta.url), 'utf8');
+const timerangeSource = readFileSync(new URL('../../public/src/timerange.js', import.meta.url), 'utf8');
 const keywordsSource = readFileSync(new URL('../../public/src/keywords.js', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
 const tableEditorSource = readFileSync(new URL('../../public/src/table-editor.js', import.meta.url), 'utf8');
 const rankSnapshotsSource = readFileSync(new URL('../../public/src/rank-snapshots.js', import.meta.url), 'utf8');
 const ga4Source = readFileSync(new URL('../../public/src/ga4-view.js', import.meta.url), 'utf8');
+const risksSource = readFileSync(new URL('../../public/src/risks.js', import.meta.url), 'utf8');
+const stylesSource = readFileSync(new URL('../../public/styles.css', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -88,6 +93,25 @@ test('GA4 view exposes real campaign and event evidence with understandable labe
   assert.match(ga4Source, /new Chart\(canvas/);
   assert.doesNotMatch(ga4Source, /catch\s*\([^)]*\)\s*\{\s*\}/);
   assert.doesNotMatch(ga4Source, /\.style\./);
+});
+
+test('all dashboard date consumers use the shared range and reject stale responses', () => {
+  assert.match(appSource, /API\.get\(withRange\('\/api\/inquiries'\)\)/);
+  assert.match(appSource, /const requestId=\+\+inquiryRequestSequence/);
+  assert.match(kpiSource, /API\.get\(withRange\('\/api\/kpi-targets'\)\)/);
+  assert.match(kpiSource, /API\.get\(withRange\('\/api\/seo-weeks'\)\)/);
+  assert.match(kpiSource, /API\.get\(withRange\('\/api\/sem-weeks'\)\)/);
+  assert.match(kpiViewSource, /API\.get\(withRange\('\/api\/overview'\)\)/);
+  assert.match(settingsSource, /API\.put\(withRange\('\/api\/kpi-targets'\)/);
+  assert.match(chartsSource, /r=getCurrentRange\(\)/);
+  assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/gsc\/summary',r\)\)/);
+  assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/ads\/board',r\)\)/);
+  assert.match(chartsSource, /API\.get\(withRange\('\/api\/inquiries'\)\)/);
+  assert.match(chartsSource, /requestId!==dashboardBoardsRequestSequence\|\|revision!==getRangeRevision\(\)/);
+  assert.match(chartsSource, /requestId!==dashboardInqRequestSequence\|\|revision!==getRangeRevision\(\)/);
+  assert.match(chartsSource, /loadDashboardInq\(\);[\s\S]*loadDashboardBoards\(\);/);
+  assert.match(timerangeSource, /_rangeRevision\+\+;/);
+  assert.match(timerangeSource, /detail:\{range:_range,revision:_rangeRevision\}/);
 });
 
 test('empty and failed live loads remain observable and retryable', () => {
@@ -246,4 +270,24 @@ test('rank snapshots are owned by one module with a narrow compatibility surface
   assert.match(rankSnapshotsSource, /API\.post\('\/api\/rank-snapshots',\{items\}\)/);
   const exports=[...rankSnapshotsSource.matchAll(/export async function ([A-Za-z_$][\w$]*)/g)].map(match=>match[1]).sort();
   assert.deepEqual(exports,['loadRankSnapshots','snapshotRanks']);
+});
+
+test('P0/P1 risk register is a real authenticated data surface with explicit states', () => {
+  assert.match(html, /data-tab="risks"/);
+  assert.match(html, /id="panel-risks"/);
+  assert.match(html, /id="risk-filter-severity"/);
+  assert.match(html, /id="risk-filter-status"/);
+  assert.match(html, /href="\/page-risks\.css"/);
+  assert.match(mainSource, /import \{ loadRisks \} from '\.\/risks\.js';/);
+  assert.match(mainSource, /const riskCompatibility=\{loadRisks\};/);
+  assert.match(appSource, /if\(tab==='risks'\)\{try\{loadRisks\(\);\}/);
+  assert.match(appSource, /document\.querySelector\('\.main'\)\.scrollTo\(\{top:0\}\); window\.scrollTo\(\{top:0\}\);/);
+  assert.match(appSource, /matchMedia\('\(max-width:760px\)'\)\.matches\)n\.scrollIntoView/);
+  assert.match(stylesSource, /\.sidebar \{[\s\S]*height: 58px !important;[\s\S]*overflow-x: auto !important;/);
+  assert.match(risksSource, /API\.get\('\/api\/risks'\)/);
+  assert.match(risksSource, /正在核对当前配置、数据库证据和最近生产验收/);
+  assert.match(risksSource, /风险清单加载失败/);
+  assert.match(risksSource, /当前筛选条件下没有风险项/);
+  assert.match(risksSource, /requestId!==requestSequence/);
+  assert.match(risksSource, /SOURCE_LABELS=\{production_live:'最近生产验收',current_static:'当前配置与数据库'\}/);
 });

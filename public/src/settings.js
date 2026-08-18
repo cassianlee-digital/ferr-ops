@@ -1,6 +1,7 @@
 /* Settings page: persisted KPI targets and account password changes. */
 import { TOTAL, SEO, SEM, applyKpiServer } from './kpi.js';
 import { renderKPI } from './kpi-view.js';
+import { withRange } from './timerange.js';
 import { validateEditableValue, setSavingState, rollbackEditable, showSaveError } from './editable.js';
 
 export function bindSettings(){
@@ -32,7 +33,7 @@ export function bindSettings(){
       }
       setSavingState(el,'saving');
       try{
-        const {rows}=await API.put('/api/kpi-targets',{updates:[{id:item.id,target:result.value}]});
+        const {rows}=await API.put(withRange('/api/kpi-targets'),{updates:[{id:item.id,target:result.value}]});
         applyKpiServer(rows);
         renderKPI();
         el.textContent=String(item.t);
