@@ -467,6 +467,12 @@ export async function addFixRow(){
 export function sFromDept(dept){return dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};}
 export function persistFix(s,text){return API.post('/api/fixes',{title:clip(text,24),dept:s.dept,detail:text,owner:s.owner,due_date:futureDate(7),status:'计划下周',source:'AI诊断'});}
 export function persistLoop(kind,s,content,status){return API.post('/api/loop-items',{kind,dept:s.dept,content,owner:s.owner,status:status||''});}
+export async function createEvidenceFix(dept,title,detail,evidence,source='诊断引擎'){
+  const s=sFromDept(dept);
+  const {item}=await API.post('/api/fixes',{title:clip(String(title||''),40),dept:s.dept,detail:String(detail||''),evidence:String(evidence||''),owner:s.owner,due_date:futureDate(7),status:'计划下周',source});
+  addFixFromObj(item);
+  return item;
+}
 // 全站最常用的失败文案（11 处复用：ai/charts/closed-loop/weekly-review）。403 有专属文案；
 // 其余必须带上后端给的原因（api.js 已把 400 的 detail 放进 e.message，如「字段 due_date 需要字符串」），
 // 否则用户只看到「保存失败」，违背 CLAUDE.md「API 失败必须显示失败原因」。

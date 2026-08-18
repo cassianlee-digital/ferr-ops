@@ -257,6 +257,350 @@
     toast("\u5DF2\u5E94\u7528\uFF1A" + _range.period_label);
   }
 
+  // public/src/ai.js
+  var apiUnavailableMsg = '<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF1A\u8BF7\u68C0\u67E5\u540E\u53F0 AI Provider\u3001API Key \u4E0E\u6A21\u578B\u914D\u7F6E\uFF0C\u6216\u7A0D\u540E\u91CD\u8BD5\u3002</div>';
+  var aiAnalyses = /* @__PURE__ */ new Map();
+  var activeAi = null;
+  var aiViewIdx = -1;
+  var lastAi = { text: "", dept: "SEO" };
+  var splitActionItems = [];
+  var modalRequestVersion = 0;
+  function hashText(s) {
+    let h = 5381;
+    s = String(s || "");
+    for (let i = 0; i < s.length; i++) h = (h << 5) + h + s.charCodeAt(i);
+    return (h >>> 0).toString(36);
+  }
+  function currentAiPage() {
+    const p = document.querySelector(".panel.active");
+    return { tab: (p && p.id || "").replace("panel-", ""), title: (p && p.querySelector(".page-title") || {}).textContent || "", sub: (p && p.querySelector(".page-sub") || {}).textContent || "" };
+  }
+  function rowContext(btn) {
+    const tr = btn && btn.closest && btn.closest("tr");
+    if (!tr) return null;
+    const th = [...(tr.closest("table") || document).querySelectorAll("thead th")].map((x) => x.innerText.trim());
+    const td2 = [...tr.children].map((x) => x.innerText.trim());
+    const cells = {};
+    td2.forEach((v, i) => cells[th[i] || "col" + (i + 1)] = v);
+    return { text: td2.join(" | "), cells };
+  }
+  function aiDeptFromText(t) {
+    return /SEM|Ads|广告|CPC|CTR|ROAS|否词|出价|系列|预算/i.test(t || "") ? "SEM" : "SEO";
+  }
+  function aiMeta(btn, prompt, title) {
+    const page = currentAiPage();
+    const row = rowContext(btn);
+    const box = btn && btn.closest && btn.closest(".ai-box");
+    const boxTitle = box ? (box.querySelector(".ai-title") || {}).textContent : "";
+    const finalTitle = title || boxTitle || "AI \u5206\u6790";
+    const scope_type = page.tab || "general";
+    const seed = [scope_type, finalTitle, prompt, row && row.text].filter(Boolean).join("|");
+    return { scope_key: scope_type + ":" + hashText(seed), scope_type, title: finalTitle, prompt, context: { page, row, boxTitle }, dept: aiDeptFromText((finalTitle || "") + " " + (prompt || "")) };
+  }
+  function triggerPrompt(btn) {
+    if (!btn || !btn.dataset || !btn.dataset.aiPrompt) return null;
+    return { prompt: btn.dataset.aiPrompt, title: btn.dataset.aiTitle || null };
+  }
+  function markAiTrigger(btn, item) {
+    if (!btn || !item || !btn.classList) return;
+    btn.classList.add("analyzed");
+    btn.innerHTML = '<i class="ti ti-check"></i> \u5DF2\u5206\u6790';
+    const tr = btn.closest("tr");
+    if (tr) tr.classList.add("ai-analyzed-row");
+  }
+  function applyAiAnalysisStates(root) {
+    const base = root || document;
+    base.querySelectorAll("button[data-ai-prompt]").forEach((btn) => {
+      const p = triggerPrompt(btn);
+      if (!p) return;
+      const meta = aiMeta(btn, p.prompt, p.title);
+      const item = aiAnalyses.get(meta.scope_key);
+      if (item) markAiTrigger(btn, item);
+    });
+    base.querySelectorAll(".kw-ai").forEach((btn) => {
+      const tr = btn.closest("tr");
+      if (!tr) return;
+      const n = tr.querySelector(".kw-name");
+      const kw = (n ? n.textContent : tr.cells[0].textContent).trim();
+      const prompt = "\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE";
+      const title = "\u300C" + kw + "\u300D\u610F\u56FE";
+      const item = aiAnalyses.get(aiMeta(btn, prompt, title).scope_key);
+      if (item) markAiTrigger(btn, item);
+    });
+  }
+  async function loadAiAnalyses() {
+    try {
+      const { items } = await API.get("/api/ai/analyses");
+      aiAnalyses = new Map((items || []).filter((x) => x && x.scope_key).map((x) => [x.scope_key, x]));
+      applyAiAnalysisStates();
+    } catch (e) {
+      aiAnalyses = /* @__PURE__ */ new Map();
+      if (e && e.message !== "unauthorized") toast("AI \u5206\u6790\u8BB0\u5F55\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF") + "\uFF0C\u53EF\u5237\u65B0\u9875\u9762\u91CD\u8BD5");
+    }
+  }
+  function onAiFooterClick(e) {
+    const foot = e.currentTarget;
+    const btn = e.target.closest("[data-ai-command]");
+    if (!btn || !foot.contains(btn)) return;
+    const cmd = btn.dataset.aiCommand;
+    if (cmd === "reanalyze") reanalyzeActive();
+    else if (cmd === "split") splitActions();
+    else if (cmd === "archive") archiveAiAnalysis();
+    else if (cmd === "deposit") depositAi();
+    else if (cmd === "adopt") adoptAi();
+    else if (cmd === "send") sendAiChat();
+  }
+  function setupAiFooter() {
+    const foot = document.getElementById("aiModalFoot");
+    if (!foot) return;
+    foot.className = "ai-chat-compose";
+    foot.style.display = "block";
+    foot.innerHTML = '<textarea id="aiChatInput" placeholder="\u7EE7\u7EED\u8FFD\u95EE\u3001\u8865\u5145\u5224\u65AD\u6216\u8BA9 AI \u91CD\u5199\u6210\u6574\u6539\u52A8\u4F5C"></textarea><div class="ai-chat-tools"><label class="btn-ghost" for="aiChatFiles"><i class="ti ti-paperclip"></i> \u4E0A\u4F20\u6587\u4EF6/\u56FE\u7247</label><input class="csp-s-6aa34d7432" id="aiChatFiles" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xlsx,.csv,.txt"><span class="csp-s-ed524873cf" id="aiFileList"></span><button type="button" class="btn-ghost" data-ai-command="reanalyze"><i class="ti ti-refresh"></i> \u91CD\u65B0\u5206\u6790</button><button type="button" class="btn-ghost" data-ai-command="split"><i class="ti ti-list-check"></i> \u62C6\u6210\u6574\u6539\u52A8\u4F5C</button><button type="button" class="btn-ghost" data-ai-command="archive"><i class="ti ti-archive"></i> \u5F52\u6863</button><button type="button" class="btn-ghost" data-ai-command="deposit"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button><button type="button" class="btn-primary" id="aiAdoptBtn" data-ai-command="adopt"><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3\u5230\u6574\u6539\u6E05\u5355</button><button type="button" class="btn-primary csp-s-ca6fc035af" data-ai-command="send"><i class="ti ti-send"></i> \u53D1\u9001</button></div>';
+    if (!foot.dataset.aiBound) {
+      foot.addEventListener("click", onAiFooterClick);
+      foot.dataset.aiBound = "1";
+    }
+    const files = document.getElementById("aiChatFiles");
+    if (files) files.addEventListener("change", () => {
+      const list = document.getElementById("aiFileList");
+      if (list) list.innerHTML = [...files.files].slice(0, 5).map((f) => '<span class="ai-file-chip">' + esc(f.name) + "</span>").join("");
+    });
+  }
+  function aiMessages(item) {
+    const msgs = item && item.messages && item.messages.length ? item.messages : [{ role: "assistant", content: item && item.result_text || "" }];
+    return msgs.filter((m) => m.content).map((m) => '<div class="ai-chat-item ' + (m.role === "user" ? "user" : "assistant") + '"><div class="bubble ai-render">' + mdToHtml(m.content) + "</div></div>").join("");
+  }
+  function fmtAiTime(v) {
+    if (!v) return "";
+    const d = /* @__PURE__ */ new Date(String(v).replace(" ", "T") + (/[Z+]/.test(String(v)) ? "" : "Z"));
+    if (isNaN(d)) return String(v).slice(5, 16);
+    const p = (n) => String(n).padStart(2, "0");
+    return d.getMonth() + 1 + "/" + d.getDate() + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  function aiTimeline(item) {
+    const hist = item && item.history || [];
+    if (!hist.length) return "";
+    const idx = aiViewIdx;
+    let chips = '<button type="button" class="ai-tl-chip' + (idx < 0 ? " active" : "") + '" data-ai-snapshot="-1">\u672C\u6B21 \xB7 ' + fmtAiTime(item.updated_at) + "</button>";
+    hist.forEach((h, i) => {
+      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h.at) + "</button>";
+    });
+    return '<div class="ai-timeline"><span class="ai-tl-label"><i class="ti ti-history"></i> \u5386\u53F2\u5BF9\u6BD4</span>' + chips + "</div>";
+  }
+  function showAiSnapshot(i) {
+    aiViewIdx = i;
+    renderAiBody();
+  }
+  function onAiBodyClick(e) {
+    const body = e.currentTarget;
+    const chip = e.target.closest("[data-ai-snapshot]");
+    if (chip && body.contains(chip)) {
+      showAiSnapshot(Number(chip.dataset.aiSnapshot));
+      return;
+    }
+    const adopt = e.target.closest("[data-ai-split-index]");
+    if (adopt && body.contains(adopt)) adoptSplitAction(adopt, splitActionItems[Number(adopt.dataset.aiSplitIndex)]);
+  }
+  function renderAiBody() {
+    const item = activeAi;
+    const body = document.getElementById("aiModalBody");
+    if (!item || !body) return;
+    const idx = aiViewIdx;
+    splitActionItems = [];
+    let html = aiTimeline(item) + '<div id="aiActionsBox"></div>';
+    if (idx >= 0 && item.history && item.history[idx]) {
+      html += '<div class="ai-snap-note dim">\u2014 \u5386\u53F2\u5FEB\u7167\uFF08' + fmtAiTime(item.history[idx].at) + "\uFF09\xB7 \u53EA\u8BFB\uFF0C\u70B9\u300C\u672C\u6B21\u300D\u56DE\u5230\u6700\u65B0 \u2014</div>";
+      html += '<div class="ai-chat-item assistant"><div class="bubble ai-render">' + mdToHtml(item.history[idx].result_text || "") + "</div></div>";
+    } else {
+      html += aiMessages(item);
+    }
+    body.innerHTML = html;
+    if (!body.dataset.aiBound) {
+      body.addEventListener("click", onAiBodyClick);
+      body.dataset.aiBound = "1";
+    }
+  }
+  function renderAiItem(item) {
+    activeAi = item;
+    aiViewIdx = -1;
+    lastAi = { text: item.result_text || "", dept: aiDeptFromText((item.title || "") + " " + (item.prompt || "")) };
+    document.getElementById("aiModalTitle").textContent = item.title || "AI \u5206\u6790";
+    renderAiBody();
+    setupAiFooter();
+    setTimeout(() => {
+      const b = document.getElementById("aiModalBody");
+      if (b) b.scrollTop = b.scrollHeight;
+    }, 30);
+  }
+  async function reanalyzeActive() {
+    const item = activeAi;
+    if (!item) {
+      toast("\u6682\u65E0\u53EF\u91CD\u65B0\u5206\u6790\u7684\u9879");
+      return;
+    }
+    const requestVersion = ++modalRequestVersion;
+    document.getElementById("aiModalBody").innerHTML = '<div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u57FA\u4E8E\u5F53\u524D\u6700\u65B0\u6570\u636E\u91CD\u65B0\u5206\u6790\u2026</div>';
+    try {
+      const { item: next } = await API.post("/api/ai/analyze", { scope_key: item.scope_key, scope_type: item.scope_type, title: item.title, prompt: item.prompt, context: item.context, force: true });
+      if (requestVersion !== modalRequestVersion) return;
+      aiAnalyses.set(next.scope_key, next);
+      renderAiItem(next);
+      toast("\u5DF2\u57FA\u4E8E\u6700\u65B0\u6570\u636E\u91CD\u65B0\u5206\u6790\uFF0C\u4E0A\u6B21\u7ED3\u8BBA\u5DF2\u5B58\u5165\u5386\u53F2");
+    } catch (e) {
+      if (requestVersion !== modalRequestVersion) return;
+      renderAiBody();
+      toast("\u91CD\u65B0\u5206\u6790\u5931\u8D25\uFF1A" + (e.message || "ai_failed"));
+    }
+  }
+  async function adoptSplitAction(btn, action) {
+    if (!action || !btn) return;
+    btn.disabled = true;
+    try {
+      await createEvidenceFix(action.dept, action.title, action.detail, action.evidence, "AI\u52A8\u4F5C\u62C6\u89E3");
+      btn.innerHTML = '<i class="ti ti-check"></i> \u5DF2\u91C7\u7EB3';
+      toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355 \xB7 \u5DF2\u5165\u5E93", "fix");
+    } catch (e) {
+      btn.disabled = false;
+      toast(persistFailMsg(e));
+    }
+  }
+  async function splitActions() {
+    const item = activeAi;
+    if (!item) {
+      toast("\u6682\u65E0\u53EF\u62C6\u89E3\u7684\u5206\u6790");
+      return;
+    }
+    let box = document.getElementById("aiActionsBox");
+    if (!box) {
+      renderAiBody();
+      box = document.getElementById("aiActionsBox");
+    }
+    if (box) box.innerHTML = '<div class="ai-loading"><span class="spin"></span> \u6B63\u5728\u62C6\u89E3\u6210\u6574\u6539\u52A8\u4F5C\u2026</div>';
+    try {
+      const { actions } = await API.post("/api/ai/analyses/" + item.id + "/actions", {});
+      if (!box) return;
+      splitActionItems = (actions || []).map((a) => ({ dept: a && a.dept === "SEM" ? "SEM" : "SEO", title: String(a && a.title || "AI \u6574\u6539\u52A8\u4F5C"), detail: String(a && a.detail || ""), evidence: String(a && a.evidence || "") }));
+      if (!splitActionItems.length) {
+        box.innerHTML = '<div class="dim csp-s-46909fa053">\u672A\u80FD\u4ECE\u7ED3\u8BBA\u4E2D\u63D0\u53D6\u5230\u660E\u786E\u53EF\u6267\u884C\u7684\u52A8\u4F5C\u3002</div>';
+        return;
+      }
+      box.innerHTML = '<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> \u53EF\u91C7\u7EB3\u7684\u6574\u6539\u52A8\u4F5C\uFF08\u9010\u6761\uFF09</div>' + splitActionItems.map((a, i) => '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge ' + (a.dept === "SEM" ? "b-purple" : "b-blue") + '">' + a.dept + "</span> " + esc(a.title) + '</div><div class="ai-action-d">' + esc(a.detail) + "</div>" + (a.evidence ? '<div class="ai-action-e dim">\u4F9D\u636E\uFF1A' + esc(a.evidence) + "</div>" : "") + '</div><button type="button" class="btn-mini" data-ai-split-index="' + i + '"><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div>').join("") + "</div>";
+    } catch (e) {
+      splitActionItems = [];
+      if (box) box.innerHTML = '<div class="dim csp-s-46909fa053">\u62C6\u89E3\u5931\u8D25\uFF1A' + esc(e.message || "ai_failed") + "</div>";
+    }
+  }
+  async function runAiAnalysis(btn, prompt, title, force) {
+    const meta = aiMeta(btn, prompt, title);
+    const requestVersion = ++modalRequestVersion;
+    activeAi = null;
+    aiViewIdx = -1;
+    splitActionItems = [];
+    lastAi = { text: "", dept: meta.dept };
+    document.getElementById("aiModalTitle").textContent = meta.title;
+    document.getElementById("aiModalBody").innerHTML = '<div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7ED3\u5408\u5F53\u524D\u9875\u9762\u6570\u636E\u548C\u5E02\u573A\u8BB0\u5FC6\u5206\u6790...</div>';
+    document.getElementById("aiModalFoot").style.display = "none";
+    if (btn) btn.disabled = true;
+    openModal("aiMask");
+    try {
+      const { item } = await API.post("/api/ai/analyze", { ...meta, force: force === true });
+      if (requestVersion !== modalRequestVersion) return;
+      aiAnalyses.set(item.scope_key, item);
+      markAiTrigger(btn, item);
+      renderAiItem(item);
+    } catch (e) {
+      if (requestVersion !== modalRequestVersion) return;
+      document.getElementById("aiModalBody").innerHTML = apiUnavailableMsg + '<p class="dim">\u5931\u8D25\u539F\u56E0\uFF1A' + esc(e.message || "ai_failed") + "</p>";
+      setupAiFooter();
+    } finally {
+      if (requestVersion === modalRequestVersion && btn) btn.disabled = false;
+    }
+  }
+  function aiBox(btn, prompt) {
+    const box = btn && btn.closest(".ai-box");
+    runAiAnalysis(btn, prompt, (box && box.querySelector(".ai-title") || {}).textContent, false);
+  }
+  async function sendAiChat() {
+    const item = activeAi;
+    if (!item) return;
+    const input = document.getElementById("aiChatInput");
+    const msg = (input && input.value || "").trim();
+    if (!msg) {
+      toast("\u8BF7\u8F93\u5165\u8981\u7EE7\u7EED\u95EE AI \u7684\u5185\u5BB9");
+      return;
+    }
+    const files = [...(document.getElementById("aiChatFiles") || {}).files || []].slice(0, 5).map((f) => ({ name: f.name, type: f.type, size: f.size }));
+    const requestVersion = ++modalRequestVersion;
+    if (input) input.value = "";
+    document.getElementById("aiModalBody").insertAdjacentHTML("beforeend", '<div class="ai-chat-item user"><div class="bubble">' + esc(msg) + '</div></div><div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7EE7\u7EED\u5206\u6790...</div>');
+    try {
+      const { item: next } = await API.post("/api/ai/analyses/" + item.id + "/chat", { message: msg, attachments: files });
+      if (requestVersion !== modalRequestVersion) return;
+      aiAnalyses.set(next.scope_key, next);
+      renderAiItem(next);
+    } catch (e) {
+      if (requestVersion !== modalRequestVersion) return;
+      if (input) input.value = msg;
+      renderAiBody();
+      toast("AI \u8FFD\u95EE\u5931\u8D25\uFF1A" + (e.message || "ai_failed"));
+    }
+  }
+  async function archiveAiAnalysis() {
+    const item = activeAi;
+    if (!item) return;
+    const requestVersion = ++modalRequestVersion;
+    try {
+      await API.post("/api/ai/analyses/" + item.id + "/archive", {});
+      if (requestVersion !== modalRequestVersion) return;
+      aiAnalyses.delete(item.scope_key);
+      activeAi = null;
+      lastAi = { text: "", dept: "SEO" };
+      closeModal("aiMask");
+      toast("\u5DF2\u5F52\u6863 AI \u5206\u6790");
+    } catch (e) {
+      if (requestVersion === modalRequestVersion) toast(persistFailMsg(e));
+    }
+  }
+  async function depositAi() {
+    const item = activeAi;
+    if (!item || !item.result_text) {
+      toast("\u6682\u65E0\u53EF\u6C89\u6DC0\u7684 AI \u5185\u5BB9");
+      return;
+    }
+    const s = aiDeptFromText((item.title || "") + " " + (item.prompt || "")) === "SEM" ? { dept: "SEM", owner: "\u9648", c: "b-purple" } : { dept: "SEO", owner: "\u674E", c: "b-blue" };
+    try {
+      await persistLoop("deposit", s, item.result_text, "\u6C89\u6DC0");
+      addDeposit(s, item.result_text, "\u6C89\u6DC0");
+      await API.post("/api/ai/analyses/" + item.id + "/action", { action: "deposited" });
+      toastGo("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "deposit");
+    } catch (e) {
+      toast(persistFailMsg(e));
+    }
+  }
+  async function adoptAi() {
+    if (!lastAi.text) {
+      toast("\u6682\u65E0\u53EF\u91C7\u7EB3\u7684 AI \u5185\u5BB9");
+      return;
+    }
+    const s = lastAi.dept === "SEM" ? { dept: "SEM", owner: "\u9648", c: "b-purple" } : { dept: "SEO", owner: "\u674E", c: "b-blue" };
+    const first = lastAi.text.split("\n").map((x) => x.trim().replace(/^[•\-\*\d\.、:：\s]+/, "")).filter(Boolean)[0] || lastAi.text;
+    const fixText = clip(first.replace(/\*\*/g, ""), 140), depText = clip(first.replace(/\*\*/g, ""), 40);
+    const btn = document.getElementById("aiAdoptBtn");
+    if (btn) btn.disabled = true;
+    try {
+      const [fx] = await Promise.all([persistFix(s, fixText), persistLoop("deposit", s, depText, "\u91C7\u7EB3")]);
+      addFixFromObj(fx.item);
+      addDeposit(s, depText, "\u91C7\u7EB3");
+      if (activeAi && activeAi.id) await API.post("/api/ai/analyses/" + activeAi.id + "/action", { action: "adopted" });
+      closeModal("aiMask");
+      toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355\uFF08" + s.dept + "\uFF09\xB7 \u5DF2\u5165\u5E93", "fix");
+    } catch (e) {
+      toast(persistFailMsg(e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
   // public/src/charts.js
   window.DEMO_MODE = window.DEMO_MODE || false;
   var DEMO = {
@@ -1251,9 +1595,7 @@
   }
   async function adoptFinding(btn, dept, title, detail, evidence) {
     try {
-      const s = sFromDept(dept);
-      const { item } = await API.post("/api/fixes", { title: clip(title, 40), dept: s.dept, detail, evidence, owner: s.owner, due_date: futureDate(7), status: "\u8BA1\u5212\u4E0B\u5468", source: "\u8BCA\u65AD\u5F15\u64CE" });
-      addFixFromObj(item);
+      await createEvidenceFix(dept, title, detail, evidence, "\u8BCA\u65AD\u5F15\u64CE");
       btn.disabled = true;
       btn.innerHTML = '<i class="ti ti-check"></i> \u5DF2\u91C7\u7EB3';
       if (typeof toastGo === "function") toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355 \xB7 \u5DF2\u5165\u5E93", "fix");
@@ -2098,7 +2440,7 @@
       const tr = ai.closest("tr");
       const n = tr.querySelector(".kw-name");
       const kw = (n ? n.textContent : tr.cells[0].textContent).trim();
-      aiAsk("\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE", "\u300C" + kw + "\u300D\u610F\u56FE");
+      runAiAnalysis(ai, "\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE", "\u300C" + kw + "\u300D\u610F\u56FE", false);
       return;
     }
     const del = e.target.closest(".kw-del");
@@ -3077,6 +3419,12 @@
   }
   function persistLoop(kind, s, content, status) {
     return API.post("/api/loop-items", { kind, dept: s.dept, content, owner: s.owner, status: status || "" });
+  }
+  async function createEvidenceFix(dept, title, detail, evidence, source = "\u8BCA\u65AD\u5F15\u64CE") {
+    const s = sFromDept(dept);
+    const { item } = await API.post("/api/fixes", { title: clip(String(title || ""), 40), dept: s.dept, detail: String(detail || ""), evidence: String(evidence || ""), owner: s.owner, due_date: futureDate(7), status: "\u8BA1\u5212\u4E0B\u5468", source });
+    addFixFromObj(item);
+    return item;
   }
   function persistFailMsg(e) {
     return e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u672A\u5165\u5E93\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25");
@@ -5479,6 +5827,7 @@
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
   var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
-  var closedLoopCompatibility = { prepend, clip, persistFix, persistLoop, addFixFromObj, addDeposit, persistFailMsg, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent, injectAiActions };
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility);
+  var closedLoopCompatibility = { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent };
+  var aiCompatibility = { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi };
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility);
 })();

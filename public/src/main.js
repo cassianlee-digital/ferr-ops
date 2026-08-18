@@ -41,12 +41,15 @@ import { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats
 import { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek } from './kpi.js';
 // 已迁移（批次10）：charts（时间筛选改为事件契约；模块消费者显式 import；仅 app.js 入口挂 window）。
 import { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters } from './charts.js';
-// 已迁移（批次11）：closed-loop（模块消费者显式 import；经典 app.js / ai.js / hermes.js 仅保留必要入口）。
-import { prepend, clip, persistFix, persistLoop, addFixFromObj, addDeposit, persistFailMsg, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent, injectAiActions } from './closed-loop.js';
+// 已迁移（批次11）：closed-loop（模块消费者显式 import；经典 app.js / hermes.js 仅保留必要入口）。
+import { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent } from './closed-loop.js';
+// 已迁移（批次12）：ai（状态收回模块；keywords / charts 显式 import；仅 app.js 的动作分发和初始化保留兼容入口）。
+import { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi } from './ai.js';
 
 const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats,renderInqFeed};
 const kpiCompatibility={TOTAL,SEO,SEM,applyKpiServer,loadMetrics,loadWeeks,submitSeoWeek,submitSemWeek};
 const chartCompatibility={charts,loadDashboardInq,loadDashboardBoards,renderInqDonuts,loadSeoBoardGsc,loadSeoBoardFull,loadSemBoardAds,loadSemBoardFull,loadAttribution,loadDiagnostics,loadDataFreshness,onSemCampaignChange,onSemAdGroupChange,resizeScatters};
-const closedLoopCompatibility={prepend,clip,persistFix,persistLoop,addFixFromObj,addDeposit,persistFailMsg,refreshTaskCols,addFixRow,addDepositRow,addPlanRow,addTestRow,addContent,openTaskModal,submitTask,submitSubtask,loadClosedLoop,loadContent,injectAiActions};
+const closedLoopCompatibility={prepend,refreshTaskCols,addFixRow,addDepositRow,addPlanRow,addTestRow,addContent,openTaskModal,submitTask,submitSubtask,loadClosedLoop,loadContent};
+const aiCompatibility={runAiAnalysis,aiBox,loadAiAnalyses,adoptAi};
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility);

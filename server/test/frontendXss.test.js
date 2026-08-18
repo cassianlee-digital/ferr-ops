@@ -8,13 +8,14 @@ import { Script } from 'node:vm';
 const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.meta.url), 'utf8');
 const closedLoopSource = readFileSync(new URL('../../public/src/closed-loop.js', import.meta.url), 'utf8');
 const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.meta.url), 'utf8');
-const aiSource = readFileSync(new URL('../../public/ai.js', import.meta.url), 'utf8');
+const aiSource = readFileSync(new URL('../../public/src/ai.js', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
 const loginSource = readFileSync(new URL('../../public/login.html', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
 const weeklyReviewSource = readFileSync(new URL('../../public/src/weekly-review.js', import.meta.url), 'utf8');
 const inquiriesSource = readFileSync(new URL('../../public/src/inquiries.js', import.meta.url), 'utf8');
+const keywordsSource = readFileSync(new URL('../../public/src/keywords.js', import.meta.url), 'utf8');
 const tagSelectSource = readFileSync(new URL('../../public/src/tagselect.js', import.meta.url), 'utf8');
 const archiveSource = readFileSync(new URL('../../public/src/archive.js', import.meta.url), 'utf8');
 const kpiSource = readFileSync(new URL('../../public/src/kpi.js', import.meta.url), 'utf8');
@@ -46,7 +47,9 @@ test('dynamic action payloads use escaped data attributes and delegated handlers
   assert.match(chartsSource, /function _dataActionAttr\(name,value\).*esc\(String\(/);
   assert.match(chartsSource, /_aiActionAttrs\(q,title\)/);
   assert.match(chartsSource, /_adoptActionAttrs\('SEO',ti,de,ev\)/);
-  assert.match(aiSource, /_adoptActionAttrs\(dp,a\.title,a\.detail,a\.evidence\)/);
+  assert.match(aiSource, /data-ai-split-index="'\+i\+'"/);
+  assert.match(aiSource, /closest\('\[data-ai-split-index\]'\)/);
+  assert.doesNotMatch(aiSource, /_adoptActionAttrs|data-(?:title|detail|evidence)=/);
   assert.match(chartsSource, /closest\('\[data-ferr-action\]'\)/);
   assert.match(chartsSource, /runAiAnalysis\(btn,btn\.dataset\.aiPrompt/);
   assert.match(chartsSource, /adoptFinding\(btn,btn\.dataset\.dept/);
@@ -68,10 +71,11 @@ test('attribute encoding preserves hostile text as data instead of executable ma
   assert.match(html, /&#39;\);alert\(1\)/);
 });
 
-test('legacy AI fallback keeps prompts out of inline handlers', () => {
-  assert.doesNotMatch(aiSource, /onclick="sendOrToast\(/);
-  assert.doesNotMatch(aiSource, /JSON\.stringify\(prompt\).*&quot;/);
-  assert.match(aiSource, /addEventListener\('click',\(\)=>sendOrToast\(prompt\)\)/);
+test('AI split actions keep untrusted payloads in module state instead of event attributes', () => {
+  assert.match(aiSource, /let splitActionItems=\[\]/);
+  assert.match(aiSource, /splitActionItems=\(actions\|\|\[\]\)\.map\(/);
+  assert.match(aiSource, /adoptSplitAction\(adopt,splitActionItems\[Number\(/);
+  assert.doesNotMatch(aiSource, /onclick=|window\.event|sendOrToast/);
 });
 
 test('runtime-generated frontend markup contains no inline event handlers', () => {
@@ -106,8 +110,9 @@ test('every static UI action is registered and external application JavaScript r
 
 test('main page loads app.js after its dependencies and contains no inline scripts', () => {
   assert.doesNotMatch(indexSource, /<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i);
+  assert.doesNotMatch(indexSource, /<script src="\/ai\.js"><\/script>/);
   assert.match(indexSource, /<script src="\/app\.js"><\/script>/);
-  assert.ok(indexSource.indexOf('<script src="/app.js">') > indexSource.indexOf('<script src="/ai.js">'));
+  assert.ok(indexSource.indexOf('<script src="/app.js">') > indexSource.indexOf('<script src="/dist/bundle.js">'));
 });
 
 test('weekly review is bundled with a narrow global compatibility surface', () => {
@@ -236,20 +241,13 @@ test('closed-loop is bundled with explicit module dependencies and a narrow comp
   const compatibilityNames = compatibility[1].split(',').map((name) => name.trim()).sort();
   assert.deepEqual(compatibilityNames, [
     'addContent',
-    'addDeposit',
     'addDepositRow',
-    'addFixFromObj',
     'addFixRow',
     'addPlanRow',
     'addTestRow',
-    'clip',
-    'injectAiActions',
     'loadClosedLoop',
     'loadContent',
     'openTaskModal',
-    'persistFailMsg',
-    'persistFix',
-    'persistLoop',
     'prepend',
     'refreshTaskCols',
     'submitSubtask',
@@ -258,7 +256,7 @@ test('closed-loop is bundled with explicit module dependencies and a narrow comp
   const exports = [...closedLoopSource.matchAll(/export (?:async )?function ([A-Za-z_$][\w$]*)/g)]
     .map((match) => match[1])
     .sort();
-  assert.deepEqual(exports, [...compatibilityNames, 'addTest', 'depRowHtml', 'futureDate', 'sFromDept'].sort());
+  assert.deepEqual(exports, [...compatibilityNames, 'addDeposit', 'addFixFromObj', 'addTest', 'clip', 'createEvidenceFix', 'depRowHtml', 'futureDate', 'injectAiActions', 'persistFailMsg', 'persistFix', 'persistLoop', 'sFromDept'].sort());
   assert.match(closedLoopSource, /import \{ inlineConfirm \} from '\.\/keywords\.js';/);
   assert.match(closedLoopSource, /import \{ loadSops, loadUrgent, updateSopCounts \} from '\.\/sop\.js';/);
   assert.match(closedLoopSource, /import \{ formatLocalDate, ymd \} from '\.\/timerange\.js';/);
@@ -268,13 +266,36 @@ test('closed-loop is bundled with explicit module dependencies and a narrow comp
   assert.match(inquiriesSource, /import \{ inlineConfirm \} from '\.\/keywords\.js';/);
   assert.match(sopSource, /import \{ inlineConfirm \} from '\.\/keywords\.js';/);
   assert.match(weeklyReviewSource, /import \{ addDeposit, addTest, persistFailMsg, persistLoop, sFromDept \} from '\.\/closed-loop\.js';/);
-  assert.match(chartsSource, /import \{ addFixFromObj, clip, futureDate, persistFailMsg, sFromDept \} from '\.\/closed-loop\.js';/);
+  assert.match(chartsSource, /import \{ createEvidenceFix, persistFailMsg \} from '\.\/closed-loop\.js';/);
   assert.doesNotMatch(closedLoopSource, /window\._(?:aiDone|taskCheckins)/);
 
   const declarations = [...closedLoopSource.matchAll(/^(?:export )?(?:async )?function ([A-Za-z_$][\w$]*)/gm)]
     .map((match) => match[1]);
   const duplicates = declarations.filter((name, index) => declarations.indexOf(name) !== index);
   assert.deepEqual(duplicates, []);
+});
+
+test('AI is bundled with internal state and only the classic-script compatibility it needs', () => {
+  assert.doesNotMatch(indexSource, /<script src="\/ai\.js"><\/script>/);
+  assert.match(mainSource, /import \{ runAiAnalysis, aiBox, loadAiAnalyses, adoptAi \} from '\.\/ai\.js';/);
+  const compatibility = mainSource.match(/const aiCompatibility=\{([^}]*)\};/);
+  assert.ok(compatibility, 'AI compatibility surface is missing');
+  assert.deepEqual(compatibility[1].split(',').map((name) => name.trim()).sort(), ['adoptAi', 'aiBox', 'loadAiAnalyses', 'runAiAnalysis']);
+  const exports = [...aiSource.matchAll(/export (?:async )?function ([A-Za-z_$][\w$]*)/g)].map((match) => match[1]).sort();
+  assert.deepEqual(exports, ['adoptAi', 'aiBox', 'loadAiAnalyses', 'runAiAnalysis']);
+  assert.match(aiSource, /from '\.\/closed-loop\.js';/);
+  assert.match(chartsSource, /import \{ runAiAnalysis \} from '\.\/ai\.js';/);
+  assert.match(keywordsSource, /import \{ runAiAnalysis \} from '\.\/ai\.js';/);
+  assert.doesNotMatch(aiSource, /window\._(?:aiAnalyses|activeAi|aiViewIdx|lastAi)|window\.event|callClaude|function aiAsk\(|function ai\(/);
+  assert.doesNotMatch(appSource, /function adoptAi\(|\b_lastAi\b|function callClaude\(/);
+  assert.match(aiSource, /activeAi=null; aiViewIdx=-1; splitActionItems=\[\]; lastAi=\{text:'',dept:meta\.dept\};/);
+  assert.match(aiSource, /const requestVersion=\+\+modalRequestVersion;[\s\S]*if\(requestVersion!==modalRequestVersion\)return;/);
+  assert.match(aiSource, /finally\{ if\(requestVersion===modalRequestVersion&&btn\)btn\.disabled=false; \}/);
+  assert.doesNotMatch(aiSource, /btn\.classList\.contains\('analyzed'\)/);
+  assert.match(aiSource, /if\(input\)input\.value=msg; renderAiBody\(\); toast\('AI 追问失败：'/);
+
+  const declarations = [...aiSource.matchAll(/^(?:export )?(?:async )?function ([A-Za-z_$][\w$]*)/gm)].map((match) => match[1]);
+  assert.deepEqual(declarations.filter((name, index) => declarations.indexOf(name) !== index), []);
 });
 
 test('login page loads only external CSS and JavaScript', () => {

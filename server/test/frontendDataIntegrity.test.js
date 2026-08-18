@@ -7,6 +7,7 @@ const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 
 const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.meta.url), 'utf8');
 const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.meta.url), 'utf8');
 const closedLoopSource = readFileSync(new URL('../../public/src/closed-loop.js', import.meta.url), 'utf8');
+const aiSource = readFileSync(new URL('../../public/src/ai.js', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -75,6 +76,9 @@ test('empty and failed live loads remain observable and retryable', () => {
   assert.match(closedLoopSource, /showTableFailure\('tb-fix',8,'整改清单',e,loadClosedLoop\)/);
   assert.match(closedLoopSource, /showTableFailure\('tb-content',9,'内容资产',e,loadContent\)/);
   assert.doesNotMatch(closedLoopSource, /catch\s*\([^)]*\)\s*\{\s*\}/);
+  assert.match(aiSource, /AI 分析记录加载失败：/);
+  assert.match(aiSource, /可刷新页面重试/);
+  assert.doesNotMatch(aiSource, /loadAiAnalyses\(\)\{[^}]*catch\(e\)\{\}/);
 });
 
 test('closed-loop reloads are idempotent and new fix dates use full local ISO dates', () => {

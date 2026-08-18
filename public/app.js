@@ -16,12 +16,6 @@ const Store={
   }
 };
 
-/* ================= AI 代理 =================
-   走后端 /api/ai：密钥只在后端 .env，上下文由后端基于数据库实时组装。*/
-async function callClaude(userPrompt){
-  const {text}=await API.post('/api/ai',{prompt:userPrompt});
-  return text;
-}
 /* 极简 markdown → html */
 /* ===== 1b-a: 统一安全工具 ===== */
 // 全站唯一转义入口：& < > " ' ；null/undefined → ''
@@ -44,8 +38,8 @@ function mdToHtml(t){
   flushP(); flushL();
   return html;
 }
-/* AI 协同已拆分至 /ai.js（阶段4-B）
-   — aiAsk/aiBox/ai / runAiAnalysis / loadAiAnalyses / applyAiAnalysisStates / renderAiItem / sendAiChat / archiveAiAnalysis / depositAi（esc/mdToHtml/callClaude 由本文件提供）*/
+/* AI 协同已迁移至 ES 模块 public/src/ai.js（打包进 /dist/bundle.js）。
+   app.js 仅通过 main.js 暴露的动作分发与初始化入口调用；esc/mdToHtml 仍由本文件提供。 */
 
 /* ================= MODALS ================= */
 function openModal(id){ document.getElementById(id).classList.add('show'); }
@@ -485,23 +479,6 @@ document.addEventListener('keydown',e=>{
     while(row){ const c=row.cells&&row.cells[ci]; if(c&&c.isContentEditable){ e.preventDefault(); cell.blur(); c.focus(); placeCaretEnd(c); return; } row=row[e.key==='ArrowDown'?'nextElementSibling':'previousElementSibling']; }
   }
 });
-
-/* AI 弹框结果 → 一键采纳进 ④整改清单（复用 addFix）*/
-let _lastAi={text:'',dept:'SEO'};
-async function adoptAi(){
-  if(!_lastAi.text){toast('暂无可采纳的 AI 内容');return;}
-  const s=_lastAi.dept==='SEM'?{dept:'SEM',owner:'陈',c:'b-purple'}:{dept:'SEO',owner:'李',c:'b-blue'};
-  const first=_lastAi.text.split('\n').map(x=>x.trim().replace(/^[•\-\*\d\.、:：\s]+/,'')).filter(Boolean)[0]||_lastAi.text;
-  const fixText=clip(first.replace(/\*\*/g,''),140), depText=clip(first.replace(/\*\*/g,''),40);
-  const btn=document.getElementById('aiAdoptBtn'); if(btn)btn.disabled=true;
-  try{
-    const [fx]=await Promise.all([persistFix(s,fixText),persistLoop('deposit',s,depText,'采纳')]);
-    addFixFromObj(fx.item); addDeposit(s,depText,'采纳');
-    if(window._activeAi&&window._activeAi.id)await API.post('/api/ai/analyses/'+window._activeAi.id+'/action',{action:'adopted'});
-    closeModal('aiMask'); toastGo('已采纳 → 整改清单（'+s.dept+'）· 已入库','fix');
-  }catch(e){ toast(persistFailMsg(e)); }
-  finally{ if(btn)btn.disabled=false; }
-}
 
 /* 机会词排名 · 每周快照 + 趋势回显（P3）*/
 async function snapshotRanks(){

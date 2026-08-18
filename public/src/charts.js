@@ -3,7 +3,8 @@
    仅 app.js 仍需的初始化、筛选和加载入口由 main.js 挂到 window，其余状态留在模块内部。 */
 
 import { formatLocalDate, getCurrentRange, withRange } from './timerange.js';
-import { addFixFromObj, clip, futureDate, persistFailMsg, sFromDept } from './closed-loop.js';
+import { createEvidenceFix, persistFailMsg } from './closed-loop.js';
+import { runAiAnalysis } from './ai.js';
 
 /* ===== 1a: DEMO_MODE —— 真实模式(false)禁止任何硬编码示例数据；仅 true 时展示下方 fixture ===== */
 window.DEMO_MODE = window.DEMO_MODE || false;
@@ -618,9 +619,7 @@ function _badgeCount(id,n){ const e=document.getElementById(id); if(!e)return; i
 // 诊断 finding 一键采纳进整改清单（依据数据证据,source=诊断引擎）。
 async function adoptFinding(btn,dept,title,detail,evidence){
   try{
-    const s=sFromDept(dept);
-    const {item}=await API.post('/api/fixes',{title:clip(title,40),dept:s.dept,detail,evidence,owner:s.owner,due_date:futureDate(7),status:'计划下周',source:'诊断引擎'});
-    addFixFromObj(item);
+    await createEvidenceFix(dept,title,detail,evidence,'诊断引擎');
     btn.disabled=true; btn.innerHTML='<i class="ti ti-check"></i> 已采纳';
     if(typeof toastGo==='function') toastGo('已采纳 → 整改清单 · 已入库','fix'); else toast('已采纳 → 整改清单');
   }catch(e){ toast(persistFailMsg(e)); }

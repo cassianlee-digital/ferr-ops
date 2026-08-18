@@ -1,7 +1,7 @@
 /* 关键词库（4 类 · 增删改入库 · FR-9）（ES 模块 · esbuild 打包为 IIFE）。
    显式模块依赖：OPT 来自 ./tagselect.js —— 不再靠全局碰运气。
    运行时仍依赖的全局（尚未迁移的经典脚本/内联提供，调用/事件时解析）：
-   esc()、toast()、API、renderSparklines()、placeCaretEnd()、aiAsk()（ai.js）、
+   esc()、toast()、API、renderSparklines()、placeCaretEnd()、
    validateEditableValue()/rollbackEditable()/showSaveError()/setSavingState()（Excel 化基建，内联）。
    必须挂 window（main.js 统一处理）：
      - inlineConfirm —— inquiries / closed-loop / archive / sop 显式导入；经典兼容层暂仍暴露。
@@ -9,6 +9,7 @@
      - 其余函数保持原有全局暴露面，零行为差异。
    KW_TB/KW_PAGE_OPTS/_kwPage/_kwSize 无外部引用，收进模块作用域。 */
 import { OPT } from './tagselect.js';
+import { runAiAnalysis } from './ai.js';
 
 /* ================= 关键词库（4 类 · 增删改入库 · FR-9）================= */
 const KW_TB={seo:'tb-kw-seo',sem:'tb-kw-sem',high:'tb-kw-high',customer:'tb-kw-cust'};
@@ -157,7 +158,7 @@ export async function kwDelete(tr,btn){
 }
 /* 关键词行：AI 按钮 / 删除 / 词文本编辑 委托处理 */
 document.addEventListener('click',e=>{
-  const ai=e.target.closest('.kw-ai'); if(ai){ const tr=ai.closest('tr'); const n=tr.querySelector('.kw-name'); const kw=(n?n.textContent:tr.cells[0].textContent).trim(); aiAsk('分析关键词「'+kw+'」的搜索意图与落地建议','「'+kw+'」意图'); return; }
+  const ai=e.target.closest('.kw-ai'); if(ai){ const tr=ai.closest('tr'); const n=tr.querySelector('.kw-name'); const kw=(n?n.textContent:tr.cells[0].textContent).trim(); runAiAnalysis(ai,'分析关键词「'+kw+'」的搜索意图与落地建议','「'+kw+'」意图',false); return; }
   const del=e.target.closest('.kw-del'); if(del){ kwDelete(del.closest('tr'),del); return; }
 });
 // 关键词名编辑:focusin 缓存旧值 → Enter 触发 blur → 校验/保存中/成功/失败回滚
