@@ -49,6 +49,8 @@ import { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi } from './ai.js';
 import { bindSettings, openPwd, submitPwd } from './settings.js';
 // 已迁移（批次14）：通用表格编辑、日期保存和键盘导航；模块自行幂等初始化。
 import { bindTableEditor } from './table-editor.js';
+// 已迁移（批次15）：SEO 机会词排名快照与趋势渲染。
+import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
 
 bindTableEditor();
 
@@ -58,5 +60,6 @@ const chartCompatibility={charts,loadDashboardInq,loadDashboardBoards,renderInqD
 const closedLoopCompatibility={prepend,refreshTaskCols,addFixRow,addDepositRow,addPlanRow,addTestRow,addContent,openTaskModal,submitTask,submitSubtask,loadClosedLoop,loadContent};
 const aiCompatibility={runAiAnalysis,aiBox,loadAiAnalyses,adoptAi};
 const settingsCompatibility={bindSettings,openPwd,submitPwd};
+const rankSnapshotCompatibility={loadRankSnapshots,snapshotRanks};
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility);

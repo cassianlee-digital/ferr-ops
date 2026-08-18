@@ -291,7 +291,7 @@ async function hydrate(){
   // 广告创意库：从后端读取
   await loadAdCreatives();
   // 排名快照趋势：从后端读取
-  try{ const {snapshots}=await API.get('/api/rank-snapshots'); if(snapshots&&snapshots.length>=2)renderRankTrend(snapshots); }catch(e){}
+  await loadRankSnapshots();
 }
 
 /* ⓪ 闭环步骤条渲染 */
@@ -376,26 +376,7 @@ function chk(el){
 
 /* 通用单元格保存、日期回滚和表格键盘导航已迁移至 public/src/table-editor.js。 */
 
-/* 机会词排名 · 每周快照 + 趋势回显（P3）*/
-async function snapshotRanks(){
-  const trs=[...document.querySelectorAll('#mp-seo-opp tbody tr')];
-  const items=trs.map(r=>({keyword:r.cells[0].textContent.trim(),rank:parseInt(r.cells[2].textContent)||null}));
-  try{
-    const {weeks,snapshots}=await API.post('/api/rank-snapshots',{items});
-    renderRankTrend(snapshots);
-    toast('已记录本周排名快照（'+items.length+' 词）· 共 '+weeks+' 周，可看趋势');
-  }catch(e){ toast(e.status===403?'无权操作（仅李/SEO 可记录快照）':'保存失败：'+e.message); }
-}
-function renderRankTrend(arr){
-  if(!arr||arr.length<2)return; const first=arr[0],last=arr[arr.length-1];
-  [...document.querySelectorAll('#mp-seo-opp tbody tr')].forEach(r=>{
-    const kw=r.cells[0].textContent.trim(); const a=first.items.find(x=>x.keyword===kw),b=last.items.find(x=>x.keyword===kw);
-    if(!a||!b||a.rank==null||b.rank==null)return; const d=a.rank-b.rank;
-    let tag=r.querySelector('.rk-trend'); if(!tag){tag=document.createElement('span');tag.className='rk-trend';tag.style.marginLeft='6px';tag.style.fontSize='11px';tag.style.fontWeight='800';r.cells[2].appendChild(tag);}
-    tag.textContent=d>0?('▲'+d):d<0?('▼'+(-d)):'—'; tag.style.color=d>0?'var(--green)':d<0?'var(--primary)':'var(--text3)';
-  });
-  const note=document.getElementById('rankTrendNote'); if(note)note.textContent='已记录 '+arr.length+' 周 · 对比首末快照（▲升 ▼降）';
-}
+/* 机会词排名快照与趋势渲染已迁移至 public/src/rank-snapshots.js。 */
 /* 关键词库（4 类）已拆分至 /keywords.js（阶段4-A）
    — kwRow / loadKeywords / addKeyword / kwDelete / 分页 / 分类 tab / inlineConfirm（全局共享） / 单元格保存 */
 /* KPI 看板渲染：ES 模块 public/src/kpi-view.js（打包进 /dist/bundle.js）

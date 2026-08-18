@@ -6126,6 +6126,54 @@
     document.addEventListener("keydown", handleKeyDown);
   }
 
+  // public/src/rank-snapshots.js
+  function renderRankTrend(snapshots) {
+    if (!snapshots || snapshots.length < 2) return;
+    const first = snapshots[0];
+    const latest = snapshots[snapshots.length - 1];
+    [...document.querySelectorAll("#mp-seo-opp tbody tr")].forEach((row) => {
+      const keyword = row.cells[0].textContent.trim();
+      const start = first.items.find((item) => item.keyword === keyword);
+      const end = latest.items.find((item) => item.keyword === keyword);
+      if (!start || !end || start.rank == null || end.rank == null) return;
+      const difference = start.rank - end.rank;
+      let trend = row.querySelector(".rk-trend");
+      if (!trend) {
+        trend = document.createElement("span");
+        trend.className = "rk-trend";
+        trend.style.marginLeft = "6px";
+        trend.style.fontSize = "11px";
+        trend.style.fontWeight = "800";
+        row.cells[2].appendChild(trend);
+      }
+      trend.textContent = difference > 0 ? "\u25B2" + difference : difference < 0 ? "\u25BC" + -difference : "\u2014";
+      trend.style.color = difference > 0 ? "var(--green)" : difference < 0 ? "var(--primary)" : "var(--text3)";
+    });
+    const note = document.getElementById("rankTrendNote");
+    if (note) note.textContent = "\u5DF2\u8BB0\u5F55 " + snapshots.length + " \u5468 \xB7 \u5BF9\u6BD4\u9996\u672B\u5FEB\u7167\uFF08\u25B2\u5347 \u25BC\u964D\uFF09";
+  }
+  async function loadRankSnapshots() {
+    try {
+      const { snapshots } = await API.get("/api/rank-snapshots");
+      if (snapshots && snapshots.length >= 2) renderRankTrend(snapshots);
+    } catch (error) {
+    }
+  }
+  async function snapshotRanks() {
+    const rows2 = [...document.querySelectorAll("#mp-seo-opp tbody tr")];
+    const items = rows2.map((row) => ({
+      keyword: row.cells[0].textContent.trim(),
+      rank: parseInt(row.cells[2].textContent, 10) || null
+    }));
+    try {
+      const { weeks, snapshots } = await API.post("/api/rank-snapshots", { items });
+      renderRankTrend(snapshots);
+      toast("\u5DF2\u8BB0\u5F55\u672C\u5468\u6392\u540D\u5FEB\u7167\uFF08" + items.length + " \u8BCD\uFF09\xB7 \u5171 " + weeks + " \u5468\uFF0C\u53EF\u770B\u8D8B\u52BF");
+    } catch (error) {
+      toast(error && error.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u674E/SEO \u53EF\u8BB0\u5F55\u5FEB\u7167\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (error && error.message || "\u672A\u77E5\u9519\u8BEF"));
+    }
+  }
+
   // public/src/main.js
   bindTableEditor();
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
@@ -6134,5 +6182,6 @@
   var closedLoopCompatibility = { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent };
   var aiCompatibility = { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi };
   var settingsCompatibility = { bindSettings, openPwd, submitPwd };
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility);
+  var rankSnapshotCompatibility = { loadRankSnapshots, snapshotRanks };
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility);
 })();

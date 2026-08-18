@@ -14,6 +14,7 @@ const settingsSource = readFileSync(new URL('../../public/src/settings.js', impo
 const keywordsSource = readFileSync(new URL('../../public/src/keywords.js', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
 const tableEditorSource = readFileSync(new URL('../../public/src/table-editor.js', import.meta.url), 'utf8');
+const rankSnapshotsSource = readFileSync(new URL('../../public/src/rank-snapshots.js', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -206,4 +207,15 @@ test('table editor restores failed date and text saves at runtime', async () => 
     globalThis.API=previousApi;
     globalThis.toast=previousToast;
   }
+});
+
+test('rank snapshots are owned by one module with a narrow compatibility surface', () => {
+  assert.doesNotMatch(appSource, /function (?:snapshotRanks|renderRankTrend)\(/);
+  assert.match(appSource, /await loadRankSnapshots\(\);/);
+  assert.match(mainSource, /import \{ loadRankSnapshots, snapshotRanks \} from '\.\/rank-snapshots\.js';/);
+  assert.match(mainSource, /const rankSnapshotCompatibility=\{loadRankSnapshots,snapshotRanks\};/);
+  assert.match(rankSnapshotsSource, /API\.get\('\/api\/rank-snapshots'\)/);
+  assert.match(rankSnapshotsSource, /API\.post\('\/api\/rank-snapshots',\{items\}\)/);
+  const exports=[...rankSnapshotsSource.matchAll(/export async function ([A-Za-z_$][\w$]*)/g)].map(match=>match[1]).sort();
+  assert.deepEqual(exports,['loadRankSnapshots','snapshotRanks']);
 });
