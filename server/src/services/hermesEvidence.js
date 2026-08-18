@@ -282,13 +282,13 @@ function isSpecificMutation(clean) {
 }
 
 function hasGranularEvidence(items) {
-  return items.some((item) => ['keyword', 'query', 'page', 'campaign', 'ad_group'].includes(String(item?.granularity || '')));
+  return items.some((item) => ['keyword', 'search_term', 'query', 'page', 'campaign', 'ad_group'].includes(String(item?.granularity || '')));
 }
 
 function evidenceEntity(item) {
   const text = [item?.value, item?.detail].filter(Boolean).join('; ');
   const key = String(item?.granularity || '');
-  const field = { keyword: 'keyword', query: 'query', page: 'page', campaign: 'campaign', ad_group: 'ad_group' }[key];
+  const field = { keyword: 'keyword', search_term: 'search_term', query: 'query', page: 'page', campaign: 'campaign', ad_group: 'ad_group' }[key];
   if (!field) return '';
   const match = text.match(new RegExp(`(?:^|;)\\s*${field}=([^;]+)`, 'i'));
   return String(match?.[1] || '').trim().toLowerCase();
@@ -297,7 +297,7 @@ function evidenceEntity(item) {
 function granularEntityMatches(clean, items) {
   const relevant = items.filter((item) => evidenceEntity(item));
   if (!relevant.length) return true;
-  if (!/(关键词|查询词|页面|系列|广告组|keyword|query|page|campaign|ad group)/i.test(clean)) return true;
+  if (!/(关键词|搜索词|查询词|页面|系列|广告组|keyword|search term|query|page|campaign|ad group)/i.test(clean)) return true;
   const claim = clean.toLowerCase();
   return relevant.some((item) => claim.includes(evidenceEntity(item)));
 }

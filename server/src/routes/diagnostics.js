@@ -16,18 +16,19 @@ export async function diagnosticsRoutes(app) {
       const opportunities = googleRepo.gscOpportunities(gsc);
       const cannibalization = googleRepo.gscCannibalization(gsc);
       const decay = googleRepo.gscDecayPages(gsc, prev);
-      const wasteKeywords = googleRepo.adsWasteKeywords(ads);
+      const searchTermCoverage = googleRepo.adsSearchTermSummary(ads);
+      const wasteSearchTerms = googleRepo.adsWasteSearchTerms(ads);
 
       return {
         project,
         range,
         seo: { opportunities, cannibalization, decay },
-        sem: { wasteKeywords },
+        sem: { searchTermCoverage, wasteSearchTerms },
         counts: {
           opportunities: opportunities.length,
           cannibalization: cannibalization.length,
           decay: decay.length,
-          wasteKeywords: wasteKeywords.length,
+          wasteSearchTerms: wasteSearchTerms.length,
         },
       };
     } catch (e) {

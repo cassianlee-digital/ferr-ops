@@ -404,6 +404,24 @@ export function upsertAdsKeywords(rows) {
   return rows.length;
 }
 
+export function upsertAdsSearchTerms(rows) {
+  const stmt = db.prepare(
+    `INSERT INTO google_ads_search_term_daily
+     (date, customer_id, campaign_id, campaign_name, ad_group_id, ad_group_name, search_term, match_type, status,
+      cost_micros, impressions, clicks, conversions, ctr, average_cpc_micros, cost_per_conversion_micros, sync_run_id, updated_at)
+     VALUES (@date, @customer_id, @campaign_id, @campaign_name, @ad_group_id, @ad_group_name, @search_term, @match_type, @status,
+      @cost_micros, @impressions, @clicks, @conversions, @ctr, @average_cpc_micros, @cost_per_conversion_micros, @sync_run_id, datetime('now'))
+     ON CONFLICT(date, customer_id, campaign_id, ad_group_id, search_term) DO UPDATE SET
+      campaign_name=excluded.campaign_name, ad_group_name=excluded.ad_group_name, match_type=excluded.match_type,
+      status=excluded.status, cost_micros=excluded.cost_micros, impressions=excluded.impressions,
+      clicks=excluded.clicks, conversions=excluded.conversions, ctr=excluded.ctr,
+      average_cpc_micros=excluded.average_cpc_micros, cost_per_conversion_micros=excluded.cost_per_conversion_micros,
+      sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
+  );
+  db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
+  return rows.length;
+}
+
 export function adsSummary(range) {
   const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null, adGroupId: range.ads_ad_group_id || null };
   const byAdGroup = !!range.ads_ad_group_id;
@@ -536,17 +554,58 @@ export function gscDecayPages(range, prevRange, { minPrevClicks = 10, dropRatio 
   return out.slice(0, limit);
 }
 
-// 高花费零有效：区间内 cost>0 且 conversions=0 的关键词（按花费降序）。
-export function adsWasteKeywords(range, { limit = 50 } = {}) {
+export function adsSearchTermSummary(range) {
+  const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null, adGroupId: range.ads_ad_group_id || null };
+  return db
+    .prepare(
+      `SELECT COUNT(*) rowCount, COUNT(DISTINCT search_term) distinctTerms,
+              COALESCE(SUM(cost_micros),0) costMicros, COALESCE(SUM(clicks),0) clicks,
+              COALESCE(SUM(conversions),0) conversions, MAX(date) lastDate
+       FROM google_ads_search_term_daily
+       WHERE date BETWEEN @start AND @end
+         AND (@customerId IS NULL OR customer_id = @customerId)
+         AND (@campaignId IS NULL OR campaign_id = @campaignId)
+         AND (@adGroupId IS NULL OR ad_group_id = @adGroupId)`
+    )
+    .get(params);
+}
+
+// 候选否词：只使用真实 search_term_view 明细，不拿投放关键词冒充用户搜索词。
+// 已经处于 EXCLUDED / ADDED_EXCLUDED 的搜索词不再重复建议。
+export function adsWasteSearchTerms(range, { limit = 50 } = {}) {
   const params = { start: range.start_date, end: range.end_date, customerId: range.ads_customer_id || null, campaignId: range.ads_campaign_id || null, adGroupId: range.ads_ad_group_id || null, limit };
   return db
     .prepare(
-      `SELECT keyword_text keyword, match_type matchType, campaign_name campaignName,
-              SUM(cost_micros) costMicros, SUM(clicks) clicks, SUM(conversions) conversions
-       FROM google_ads_keyword_daily
-       WHERE date BETWEEN @start AND @end AND (@customerId IS NULL OR customer_id = @customerId) AND (@campaignId IS NULL OR campaign_id = @campaignId) AND (@adGroupId IS NULL OR ad_group_id = @adGroupId)
-       GROUP BY keyword_text, match_type, campaign_name
-       HAVING SUM(conversions) = 0 AND SUM(cost_micros) > 0
+      `WITH scoped AS (
+         SELECT * FROM google_ads_search_term_daily
+         WHERE date BETWEEN @start AND @end
+           AND (@customerId IS NULL OR customer_id = @customerId)
+           AND (@campaignId IS NULL OR campaign_id = @campaignId)
+           AND (@adGroupId IS NULL OR ad_group_id = @adGroupId)
+       ), latest_status AS (
+         SELECT customer_id, campaign_id, ad_group_id, search_term, status,
+                ROW_NUMBER() OVER (
+                  PARTITION BY customer_id, campaign_id, ad_group_id, search_term
+                  ORDER BY date DESC
+                ) AS row_num
+         FROM scoped
+       )
+       SELECT s.search_term searchTerm, s.match_type matchType, latest.status,
+              s.campaign_id campaignId, s.campaign_name campaignName,
+              s.ad_group_id adGroupId, s.ad_group_name adGroupName,
+              SUM(s.cost_micros) costMicros, SUM(s.impressions) impressions,
+              SUM(s.clicks) clicks, SUM(s.conversions) conversions
+       FROM scoped s
+       JOIN latest_status latest
+         ON latest.customer_id = s.customer_id
+        AND latest.campaign_id = s.campaign_id
+        AND latest.ad_group_id = s.ad_group_id
+        AND latest.search_term = s.search_term
+        AND latest.row_num = 1
+       WHERE COALESCE(latest.status, '') NOT IN ('EXCLUDED', 'ADDED_EXCLUDED')
+       GROUP BY s.search_term, s.match_type, latest.status,
+                s.campaign_id, s.campaign_name, s.ad_group_id, s.ad_group_name
+       HAVING SUM(s.conversions) = 0 AND SUM(s.cost_micros) > 0
        ORDER BY costMicros DESC LIMIT @limit`
     )
     .all(params);

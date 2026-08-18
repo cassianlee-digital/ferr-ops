@@ -233,8 +233,25 @@ export async function googleRoutes(app) {
       const scatter = googleRepo.adsScatter(ads);
       const series = googleRepo.adsSeries(ads);
       const seriesPrev = googleRepo.adsSeries(adsPrev); // 上一等长区间日趋势，前端按天偏移对齐画对比虚影线
+      const searchTermCoverage = googleRepo.adsSearchTermSummary(ads);
+      const wasteSearchTerms = googleRepo.adsWasteSearchTerms(ads, { limit: 50 });
       const highlights = buildAdsHighlights({ cur, prevTot, keywords, campaigns });
-      return { connected: googleRepo.tokenStatus().ads.authorized, project, range, prev, totals: cur, totalsPrev: prevTot, campaigns, keywords, scatter, series, seriesPrev, highlights };
+      return {
+        connected: googleRepo.tokenStatus().ads.authorized,
+        project,
+        range,
+        prev,
+        totals: cur,
+        totalsPrev: prevTot,
+        campaigns,
+        keywords,
+        scatter,
+        series,
+        seriesPrev,
+        searchTermCoverage,
+        wasteSearchTerms,
+        highlights,
+      };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
     }

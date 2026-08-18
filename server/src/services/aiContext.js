@@ -120,8 +120,15 @@ function appendSyncedContext(lines) {
     if (can.length) lines.push('【关键词蚕食】' + can.map((c) => `${c.query}(${c.pages.length}页)`).join('；'));
     const dec = googleRepo.gscDecayPages({ ...w.cur, gsc_site_url: project.gsc_site_url }, w.prev, { limit: 8 });
     if (dec.length) lines.push('【流量衰退页】' + dec.map((d) => `${d.page}(↓${d.dropPct}%)`).join('；'));
-    const waste = googleRepo.adsWasteKeywords({ ...w.cur, ads_customer_id: project.ads_customer_id }, { limit: 12 });
-    if (waste.length) lines.push('【高花费零有效·Ads词】' + waste.map((k) => `${k.keyword}(花${m6(k.costMicros)}/点${k.clicks}/0转化)`).join('；'));
+    const adsRange = { ...w.cur, ads_customer_id: project.ads_customer_id };
+    const searchTermCoverage = googleRepo.adsSearchTermSummary(adsRange);
+    const waste = googleRepo.adsWasteSearchTerms(adsRange, { limit: 12 });
+    if (searchTermCoverage.rowCount > 0) {
+      lines.push(`【Ads真实搜索词覆盖】${searchTermCoverage.rowCount}条日明细/${searchTermCoverage.distinctTerms}个搜索词，最近数据日${searchTermCoverage.lastDate || '-'}`);
+    } else {
+      lines.push('【Ads搜索词证据缺口】当前区间没有真实 search_term_view 明细，不能提出具体否词。');
+    }
+    if (waste.length) lines.push('【高花费零转化·真实搜索词】' + waste.map((k) => `${k.searchTerm}(花${m6(k.costMicros)}/点${k.clicks}/0转化/${k.campaignName || '系列未知'})`).join('；'));
   } catch (e) { /* 跳过 */ }
 }
 

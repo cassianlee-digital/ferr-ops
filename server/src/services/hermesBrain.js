@@ -172,8 +172,8 @@ export function buildOpsDiagnosis(operator, contextText = '') {
         ? '系统已经有该范围的 Google Ads 同步数据，应基于这组数据分析 SEM，而不是只看 KPI 目标表或人工周报。'
         : '该范围在本地同步表中没有 Ads 明细，不能声称已经看到了真实投放表现；应检查同步任务、授权或 Ads 后台当天是否有投放。',
       action: hasAdsSyncEvidence
-        ? '按系列、关键词、花费、点击和转化继续拆解浪费点或放量机会。'
-        : '先核对 Google Ads 同步状态和该日期是否写入 google_ads_campaign_daily / keyword_daily，再分析运营动作。',
+        ? '按系列、关键词、真实搜索词、花费、点击和转化继续拆解浪费点或放量机会。'
+        : '先核对 Google Ads 同步状态和该日期是否写入 campaign / keyword / search term 三层明细，再分析运营动作。',
       owner: 'SEM',
       verifyMetric: 'Google Ads synced cost/clicks/conversions',
       reviewWindow: '当天或同步完成后复核',
@@ -181,18 +181,44 @@ export function buildOpsDiagnosis(operator, contextText = '') {
     }));
 
     if (hasAdsSyncEvidence) {
-      const waste = googleRepo.adsWasteKeywords({ ...range, ads_customer_id: project.ads_customer_id }, { limit: 6 });
-      waste.slice(0, 4).forEach((row) => cards.push(makeCard({
-        area: 'sem', severity: 'high', title: `高花费零转化词：${row.keyword}`,
-        evidence: `${range.start_date} 至 ${range.end_date}，关键词“${row.keyword}”（${row.matchType || '匹配方式未知'}，${row.campaignName || '系列未知'}）花费 ${moneyMicros(row.costMicros)}，点击 ${row.clicks || 0}，转化 ${Number(row.conversions || 0).toFixed(1)}。`,
+      const adsRange = { ...range, ads_customer_id: project.ads_customer_id };
+      const searchTermCoverage = googleRepo.adsSearchTermSummary(adsRange);
+      const hasSearchTerms = Number(searchTermCoverage?.rowCount || 0) > 0;
+      cards.push(makeCard({
+        area: 'sem', severity: hasSearchTerms ? 'medium' : 'high',
+        title: hasSearchTerms ? `Ads 搜索词明细：${range.label}` : `Ads 搜索词证据缺失：${range.label}`,
+        evidence: hasSearchTerms
+          ? `${range.start_date} 至 ${range.end_date}，已同步 ${searchTermCoverage.rowCount} 条搜索词日明细、${searchTermCoverage.distinctTerms} 个可报告搜索词，最近数据日 ${searchTermCoverage.lastDate || '-'}。`
+          : `${range.start_date} 至 ${range.end_date}，Ads 汇总有数据，但 google_ads_search_term_daily 没有搜索词明细。`,
         evidenceMeta: {
-          metric: 'ads_keyword_cost_clicks_conversions', date: range.end_date, dataRole: 'synced_keyword_observation',
-          granularity: 'keyword', domain: 'sem', value: `keyword=${row.keyword}; cost=${moneyMicros(row.costMicros)}; clicks=${row.clicks || 0}; conversions=${Number(row.conversions || 0).toFixed(1)}`,
+          metric: 'ads_search_term_coverage', date: range.end_date,
+          dataRole: hasSearchTerms ? 'synced_search_term_coverage' : 'data_gap',
+          granularity: 'aggregate', domain: 'sem',
+          value: `status=${hasSearchTerms ? 'has_search_terms' : 'missing_search_terms'}; rows=${searchTermCoverage?.rowCount || 0}; distinct_terms=${searchTermCoverage?.distinctTerms || 0}; last_date=${searchTermCoverage?.lastDate || '-'}`,
         },
-        judgment: '这条关键词在当前区间产生花费但没有 Ads 转化；是否暂停仍需核对搜索词、有效询盘归因和样本量。',
-        action: '先核对搜索词与询盘归因，再决定否词、降价、调整匹配方式或暂停。',
-        owner: 'SEM', verifyMetric: '关键词花费、转化、有效询盘', reviewWindow: '3-7 天复盘',
-        source: 'google_ads.keyword_sync',
+        judgment: hasSearchTerms
+          ? '否词排查已有真实用户搜索词证据，但仍需结合询盘质量和样本量，不能仅凭零 Ads 转化自动否定。'
+          : '当前只能评价系列和投放关键词表现，不能把关键词当成用户实际搜索词，也不能生成具体否词结论。',
+        action: hasSearchTerms
+          ? '优先核对高花费零转化搜索词的询盘归因，再决定加否词或保留。'
+          : '重新执行 Ads 同步并确认 search_term_view 有返回后，再做否词排查。',
+        owner: 'SEM', verifyMetric: '搜索词明细数、搜索词花费、Ads 转化、有效询盘', reviewWindow: '同步完成后或 3-7 天复盘',
+        source: 'google_ads.search_term_sync',
+      }));
+      if (!hasSearchTerms) missing.push('google_ads_search_terms');
+
+      const waste = hasSearchTerms ? googleRepo.adsWasteSearchTerms(adsRange, { limit: 6 }) : [];
+      waste.slice(0, 4).forEach((row) => cards.push(makeCard({
+        area: 'sem', severity: 'high', title: `高花费零转化搜索词：${row.searchTerm}`,
+        evidence: `${range.start_date} 至 ${range.end_date}，真实搜索词“${row.searchTerm}”（${row.matchType || '匹配方式未知'}，${row.campaignName || '系列未知'} / ${row.adGroupName || '广告组未知'}）花费 ${moneyMicros(row.costMicros)}，点击 ${row.clicks || 0}，转化 ${Number(row.conversions || 0).toFixed(1)}。`,
+        evidenceMeta: {
+          metric: 'ads_search_term_cost_clicks_conversions', date: range.end_date, dataRole: 'synced_search_term_observation',
+          granularity: 'search_term', domain: 'sem', value: `search_term=${row.searchTerm}; campaign=${row.campaignName || ''}; ad_group=${row.adGroupName || ''}; cost=${moneyMicros(row.costMicros)}; clicks=${row.clicks || 0}; conversions=${Number(row.conversions || 0).toFixed(1)}; inquiry_attribution=not_checked`,
+        },
+        judgment: '该用户搜索词在当前区间产生花费但没有 Ads 转化，是候选否词，不等于已经证明无商业价值。',
+        action: '先核对该搜索词对应的有效询盘、意图和样本量，再决定加否词或保留观察。',
+        owner: 'SEM', verifyMetric: '搜索词花费、Ads 转化、有效询盘', reviewWindow: '3-7 天复盘',
+        source: 'google_ads.search_term_sync',
       })));
     }
   } catch {

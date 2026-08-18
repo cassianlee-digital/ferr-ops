@@ -62,6 +62,18 @@ function keywordRow(r, project, runId) {
   };
 }
 
+function searchTermRow(r, project, runId) {
+  const base = campaignRow(r, project, runId);
+  return {
+    ...base,
+    ad_group_id: String(r.adGroup?.id || ''),
+    ad_group_name: r.adGroup?.name || '',
+    search_term: r.searchTermView?.searchTerm || '',
+    match_type: r.segments?.searchTermMatchType || '',
+    status: r.searchTermView?.status || '',
+  };
+}
+
 export async function syncAds(input = {}) {
   const project = resolveProject(input);
   const pc = projectProviderConfig('ads', project);
@@ -115,7 +127,34 @@ export async function syncAds(input = {}) {
     `;
     const keywords = (await searchStream(project.ads_customer_id, keywordQuery)).map((r) => keywordRow(r, project, runId)).filter((r) => r.date && r.criterion_id);
 
-    const rowsWritten = repo.upsertAdsCampaigns(campaigns) + repo.upsertAdsKeywords(keywords);
+    const searchTermQuery = `
+      SELECT
+        segments.date,
+        campaign.id,
+        campaign.name,
+        ad_group.id,
+        ad_group.name,
+        search_term_view.search_term,
+        search_term_view.status,
+        segments.search_term_match_type,
+        metrics.cost_micros,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.conversions,
+        metrics.ctr,
+        metrics.average_cpc,
+        metrics.cost_per_conversion
+      FROM search_term_view
+      WHERE segments.date BETWEEN '${range.start_date}' AND '${range.end_date}'
+      ORDER BY segments.date ASC
+    `;
+    const searchTerms = (await searchStream(project.ads_customer_id, searchTermQuery))
+      .map((r) => searchTermRow(r, project, runId))
+      .filter((r) => r.date && r.campaign_id && r.ad_group_id && r.search_term);
+
+    const rowsWritten = repo.upsertAdsCampaigns(campaigns)
+      + repo.upsertAdsKeywords(keywords)
+      + repo.upsertAdsSearchTerms(searchTerms);
     repo.finishRun(runId, rowsWritten);
     return { provider: 'ads', project, runId, range, rowsWritten };
   } catch (e) {

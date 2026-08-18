@@ -62,6 +62,15 @@ test('AI entry points require evidence, confidence, and explicit insufficient-da
   assert.match(aiSource, /当前结论未通过可执行性评分，需重新分析或补充数据，不能拆成可执行动作/);
 });
 
+test('SEM negative-keyword candidates use real search terms instead of keyword-level fallback', () => {
+  assert.match(chartsSource, /wasteSearchTerms/);
+  assert.match(chartsSource, /searchTermCoverage/);
+  assert.match(chartsSource, /真实搜索词明细，不能生成否词候选/);
+  assert.match(chartsSource, /p\.searchTerm/);
+  assert.doesNotMatch(chartsSource, /零转化烧钱词 · 该砍\/暂停/);
+  assert.doesNotMatch(chartsSource, /renderSemScatterTargets\(zero\)/);
+});
+
 test('empty and failed live loads remain observable and retryable', () => {
   assert.match(appSource, /function tableLoadState\(/);
   assert.match(appSource, /\$\{esc\(message\)\}/);

@@ -57,6 +57,16 @@ test('汇总证据不能支持关键词暂停等具体动作', () => {
   assert.equal(evidenceSupportsClaim('关键词 ductile iron casting 花费 600、点击 80、转化 0，先暂停。', [keyword]), false);
 });
 
+test('真实搜索词证据按 search_term 实体核验，不能串到另一个搜索词', () => {
+  const searchTerm = evidence({
+    id: 'EV-ADS-SEARCH-TERM', source: 'google_ads.search_term_sync', dataRole: 'synced_search_term_observation',
+    granularity: 'search_term', domain: 'sem', metric: 'ads_search_term_cost_clicks_conversions',
+    value: 'search_term=free casting drawing; campaign=Foundry; ad_group=General; cost=320; clicks=14; conversions=0; inquiry_attribution=not_checked',
+  });
+  assert.equal(evidenceSupportsClaim('搜索词 free casting drawing 花费 320、点击 14、转化 0，应先核对询盘后决定是否加否词。', [searchTerm]), true);
+  assert.equal(evidenceSupportsClaim('搜索词 casting supplier 花费 320、点击 14、转化 0，应加否词。', [searchTerm]), false);
+});
+
 test('回答数字必须与同一指标的引用证据一致', () => {
   const item = evidence({
     id: 'EV-ADS-KEYWORD', source: 'google_ads.keyword_sync', dataRole: 'synced_keyword_observation',

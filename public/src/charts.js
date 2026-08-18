@@ -496,14 +496,17 @@ function renderSemDeltaTables(d){
   }
 }
 function _semScatterTitles(t,s){ const a=document.getElementById('semScatterTitle'),b=document.getElementById('semScatterSub'); if(a)a.textContent=t; if(b)b.textContent=s; }
-function renderSemScatterTargets(list){
+function renderSemScatterTargets(list,coverage){
   const box=document.getElementById('semScatterTargets'); if(!box)return;
-  if(!list||!list.length){ box.innerHTML=''; return; }
-  box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-scissors"></i> 零转化烧钱词 · 该砍/暂停（'+list.length+'）</div>'+list.slice(0,10).map(p=>{
+  const rows=Number((coverage&&coverage.rowCount)||0), terms=Number((coverage&&coverage.distinctTerms)||0);
+  if(!rows){ box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-alert-circle"></i> 未同步到真实搜索词明细，不能生成否词候选</div></div>'; return; }
+  if(!list||!list.length){ box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-circle-check"></i> 已检查 '+terms+' 个真实搜索词，本区间暂无高花费零转化候选</div></div>'; return; }
+  box.innerHTML='<div class="scatter-targets"><div class="st-head"><i class="ti ti-filter-search"></i> 零转化真实搜索词 · 候选否词/排查（'+list.length+'）</div>'+list.slice(0,10).map(p=>{
     const cost=(p.costMicros/1e6), c=Number(p.conversions||0);
-    const q='关键词「'+p.keyword+'」花费'+cost.toFixed(0)+'、转化'+c+'、点击'+(p.clicks||0)+'，花钱多但转化低。判断该暂停/降价/改精准匹配/换落地页，给出具体动作与验证指标。';
-    const ti='该砍词：'+p.keyword, de='关键词「'+p.keyword+'」('+(p.campaignName||'')+') 花'+cost.toFixed(0)+' 仅转化'+c+'，暂停或降价/改精准匹配止损。', ev='Ads 花费'+cost.toFixed(0)+' 转化'+c+' 点击'+(p.clicks||0);
-    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(p.keyword)+'</span><span class="st-meta dim">'+esc(p.campaignName||'')+' · 花 <b class="csp-s-371de31267">'+cost.toFixed(0)+'</b> · 转化 '+c+'</span></div><div class="st-acts"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'该砍诊断')+'><i class="ti ti-bulb"></i> 诊断</button><button type="button" class="btn-mini"'+_adoptActionAttrs('SEM',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
+    const scope=[p.campaignName,p.adGroupName,p.matchType].filter(Boolean).join(' · ');
+    const q='真实搜索词「'+p.searchTerm+'」在所选区间花费'+cost.toFixed(0)+'、点击'+(p.clicks||0)+'、Ads转化'+c+'。结合有效询盘归因和买家意图，判断应加否词还是继续观察；不要仅凭零Ads转化直接否定。';
+    const ti='核验候选否词：'+p.searchTerm, de='真实搜索词「'+p.searchTerm+'」('+(scope||'范围未知')+') 花费'+cost.toFixed(0)+'、点击'+(p.clicks||0)+'、Ads转化'+c+'。核对询盘归因和意图后决定是否加否词。', ev='Ads真实搜索词 花费'+cost.toFixed(0)+' 转化'+c+' 点击'+(p.clicks||0);
+    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(p.searchTerm)+'</span><span class="st-meta dim">'+esc(scope||'范围未知')+' · 花 <b class="csp-s-371de31267">'+cost.toFixed(0)+'</b> · 转化 '+c+'</span></div><div class="st-acts"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'搜索词核验')+'><i class="ti ti-bulb"></i> 核验</button><button type="button" class="btn-mini"'+_adoptActionAttrs('SEM',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 转任务</button></div></div>';
   }).join('')+'</div>';
 }
 function renderSemScatter(d){
@@ -511,10 +514,9 @@ function renderSemScatter(d){
   const _tb=document.getElementById('semScatterTargets'); if(_tb)_tb.innerHTML='';
   if(d&&d.error){ el.style.display='none'; if(empty){ empty.classList.remove('is-hidden'); empty.textContent=loadFailureText('SEM 散点',d.error); } return; }
   const all=(d&&d.scatter)||[];
-  // 有转化的词进散点(按每转化成本散开)；零转化烧钱词进下方「该砍」清单
+  // 投放关键词只用于表现散点；候选否词必须来自真实 search_term_view，不能拿关键词冒充搜索词。
   const conv=all.filter(p=>Number(p.conversions||0)>0).map(p=>({...p,cost:p.costMicros/1e6,cpa:(p.costMicros/1e6)/Number(p.conversions)}));
-  const zero=all.filter(p=>Number(p.conversions||0)===0 && p.costMicros>0).sort((a,b)=>b.costMicros-a.costMicros);
-  _semScatterTitles('花费 × 每转化成本 · 找又贵又不划算的词','点=有转化的词；上方红带=每转化成本偏高→优化出价/落地页；零转化烧钱词见下方清单');
+  _semScatterTitles('花费 × 每转化成本 · 找又贵又不划算的词','点=有转化的投放关键词；下方候选否词只使用真实搜索词明细');
   if(typeof echarts!=='undefined' && conv.length){
     el.style.display=''; if(empty)empty.classList.add('is-hidden');
     if(window._semScatterChart){ try{window._semScatterChart.dispose();}catch(e){} }
@@ -533,9 +535,9 @@ function renderSemScatter(d){
     });
   } else {
     el.style.display='none'; if(window._semScatterChart){ try{window._semScatterChart.dispose();}catch(e){} window._semScatterChart=null; }
-    if(empty){ empty.classList.remove('is-hidden'); empty.textContent=all.length?'本区间暂无「有转化」的关键词；零转化烧钱词见下方「该砍」清单':'暂无足够数据 · 完成 Google Ads 同步后显示'; }
+    if(empty){ empty.classList.remove('is-hidden'); empty.textContent=all.length?'本区间暂无有转化的投放关键词；搜索词候选见下方':'暂无足够数据 · 完成 Google Ads 同步后显示'; }
   }
-  renderSemScatterTargets(zero);
+  renderSemScatterTargets((d&&d.wasteSearchTerms)||[],d&&d.searchTermCoverage);
 }
 // 两个 YYYY-MM-DD 相差天数（用于把上一区间日趋势按天偏移对齐到当前区间）
 function _dayDiff(a,b){ return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000); }

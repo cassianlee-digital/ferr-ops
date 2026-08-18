@@ -1417,18 +1417,24 @@
     if (a) a.textContent = t;
     if (b) b.textContent = s;
   }
-  function renderSemScatterTargets(list) {
+  function renderSemScatterTargets(list, coverage) {
     const box = document.getElementById("semScatterTargets");
     if (!box) return;
-    if (!list || !list.length) {
-      box.innerHTML = "";
+    const rows2 = Number(coverage && coverage.rowCount || 0), terms = Number(coverage && coverage.distinctTerms || 0);
+    if (!rows2) {
+      box.innerHTML = '<div class="scatter-targets"><div class="st-head"><i class="ti ti-alert-circle"></i> \u672A\u540C\u6B65\u5230\u771F\u5B9E\u641C\u7D22\u8BCD\u660E\u7EC6\uFF0C\u4E0D\u80FD\u751F\u6210\u5426\u8BCD\u5019\u9009</div></div>';
       return;
     }
-    box.innerHTML = '<div class="scatter-targets"><div class="st-head"><i class="ti ti-scissors"></i> \u96F6\u8F6C\u5316\u70E7\u94B1\u8BCD \xB7 \u8BE5\u780D/\u6682\u505C\uFF08' + list.length + "\uFF09</div>" + list.slice(0, 10).map((p) => {
+    if (!list || !list.length) {
+      box.innerHTML = '<div class="scatter-targets"><div class="st-head"><i class="ti ti-circle-check"></i> \u5DF2\u68C0\u67E5 ' + terms + " \u4E2A\u771F\u5B9E\u641C\u7D22\u8BCD\uFF0C\u672C\u533A\u95F4\u6682\u65E0\u9AD8\u82B1\u8D39\u96F6\u8F6C\u5316\u5019\u9009</div></div>";
+      return;
+    }
+    box.innerHTML = '<div class="scatter-targets"><div class="st-head"><i class="ti ti-filter-search"></i> \u96F6\u8F6C\u5316\u771F\u5B9E\u641C\u7D22\u8BCD \xB7 \u5019\u9009\u5426\u8BCD/\u6392\u67E5\uFF08' + list.length + "\uFF09</div>" + list.slice(0, 10).map((p) => {
       const cost = p.costMicros / 1e6, c = Number(p.conversions || 0);
-      const q = "\u5173\u952E\u8BCD\u300C" + p.keyword + "\u300D\u82B1\u8D39" + cost.toFixed(0) + "\u3001\u8F6C\u5316" + c + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\uFF0C\u82B1\u94B1\u591A\u4F46\u8F6C\u5316\u4F4E\u3002\u5224\u65AD\u8BE5\u6682\u505C/\u964D\u4EF7/\u6539\u7CBE\u51C6\u5339\u914D/\u6362\u843D\u5730\u9875\uFF0C\u7ED9\u51FA\u5177\u4F53\u52A8\u4F5C\u4E0E\u9A8C\u8BC1\u6307\u6807\u3002";
-      const ti = "\u8BE5\u780D\u8BCD\uFF1A" + p.keyword, de = "\u5173\u952E\u8BCD\u300C" + p.keyword + "\u300D(" + (p.campaignName || "") + ") \u82B1" + cost.toFixed(0) + " \u4EC5\u8F6C\u5316" + c + "\uFF0C\u6682\u505C\u6216\u964D\u4EF7/\u6539\u7CBE\u51C6\u5339\u914D\u6B62\u635F\u3002", ev = "Ads \u82B1\u8D39" + cost.toFixed(0) + " \u8F6C\u5316" + c + " \u70B9\u51FB" + (p.clicks || 0);
-      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(p.keyword) + '</span><span class="st-meta dim">' + esc(p.campaignName || "") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8BE5\u780D\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
+      const scope = [p.campaignName, p.adGroupName, p.matchType].filter(Boolean).join(" \xB7 ");
+      const q = "\u771F\u5B9E\u641C\u7D22\u8BCD\u300C" + p.searchTerm + "\u300D\u5728\u6240\u9009\u533A\u95F4\u82B1\u8D39" + cost.toFixed(0) + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\u3001Ads\u8F6C\u5316" + c + "\u3002\u7ED3\u5408\u6709\u6548\u8BE2\u76D8\u5F52\u56E0\u548C\u4E70\u5BB6\u610F\u56FE\uFF0C\u5224\u65AD\u5E94\u52A0\u5426\u8BCD\u8FD8\u662F\u7EE7\u7EED\u89C2\u5BDF\uFF1B\u4E0D\u8981\u4EC5\u51ED\u96F6Ads\u8F6C\u5316\u76F4\u63A5\u5426\u5B9A\u3002";
+      const ti = "\u6838\u9A8C\u5019\u9009\u5426\u8BCD\uFF1A" + p.searchTerm, de = "\u771F\u5B9E\u641C\u7D22\u8BCD\u300C" + p.searchTerm + "\u300D(" + (scope || "\u8303\u56F4\u672A\u77E5") + ") \u82B1\u8D39" + cost.toFixed(0) + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\u3001Ads\u8F6C\u5316" + c + "\u3002\u6838\u5BF9\u8BE2\u76D8\u5F52\u56E0\u548C\u610F\u56FE\u540E\u51B3\u5B9A\u662F\u5426\u52A0\u5426\u8BCD\u3002", ev = "Ads\u771F\u5B9E\u641C\u7D22\u8BCD \u82B1\u8D39" + cost.toFixed(0) + " \u8F6C\u5316" + c + " \u70B9\u51FB" + (p.clicks || 0);
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(p.searchTerm) + '</span><span class="st-meta dim">' + esc(scope || "\u8303\u56F4\u672A\u77E5") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u641C\u7D22\u8BCD\u6838\u9A8C") + '><i class="ti ti-bulb"></i> \u6838\u9A8C</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u8F6C\u4EFB\u52A1</button></div></div>';
     }).join("") + "</div>";
   }
   function renderSemScatter(d) {
@@ -1446,8 +1452,7 @@
     }
     const all = d && d.scatter || [];
     const conv = all.filter((p) => Number(p.conversions || 0) > 0).map((p) => ({ ...p, cost: p.costMicros / 1e6, cpa: p.costMicros / 1e6 / Number(p.conversions) }));
-    const zero = all.filter((p) => Number(p.conversions || 0) === 0 && p.costMicros > 0).sort((a, b) => b.costMicros - a.costMicros);
-    _semScatterTitles("\u82B1\u8D39 \xD7 \u6BCF\u8F6C\u5316\u6210\u672C \xB7 \u627E\u53C8\u8D35\u53C8\u4E0D\u5212\u7B97\u7684\u8BCD", "\u70B9=\u6709\u8F6C\u5316\u7684\u8BCD\uFF1B\u4E0A\u65B9\u7EA2\u5E26=\u6BCF\u8F6C\u5316\u6210\u672C\u504F\u9AD8\u2192\u4F18\u5316\u51FA\u4EF7/\u843D\u5730\u9875\uFF1B\u96F6\u8F6C\u5316\u70E7\u94B1\u8BCD\u89C1\u4E0B\u65B9\u6E05\u5355");
+    _semScatterTitles("\u82B1\u8D39 \xD7 \u6BCF\u8F6C\u5316\u6210\u672C \xB7 \u627E\u53C8\u8D35\u53C8\u4E0D\u5212\u7B97\u7684\u8BCD", "\u70B9=\u6709\u8F6C\u5316\u7684\u6295\u653E\u5173\u952E\u8BCD\uFF1B\u4E0B\u65B9\u5019\u9009\u5426\u8BCD\u53EA\u4F7F\u7528\u771F\u5B9E\u641C\u7D22\u8BCD\u660E\u7EC6");
     if (typeof echarts !== "undefined" && conv.length) {
       el.style.display = "";
       if (empty) empty.classList.add("is-hidden");
@@ -1491,10 +1496,10 @@
       }
       if (empty) {
         empty.classList.remove("is-hidden");
-        empty.textContent = all.length ? "\u672C\u533A\u95F4\u6682\u65E0\u300C\u6709\u8F6C\u5316\u300D\u7684\u5173\u952E\u8BCD\uFF1B\u96F6\u8F6C\u5316\u70E7\u94B1\u8BCD\u89C1\u4E0B\u65B9\u300C\u8BE5\u780D\u300D\u6E05\u5355" : "\u6682\u65E0\u8DB3\u591F\u6570\u636E \xB7 \u5B8C\u6210 Google Ads \u540C\u6B65\u540E\u663E\u793A";
+        empty.textContent = all.length ? "\u672C\u533A\u95F4\u6682\u65E0\u6709\u8F6C\u5316\u7684\u6295\u653E\u5173\u952E\u8BCD\uFF1B\u641C\u7D22\u8BCD\u5019\u9009\u89C1\u4E0B\u65B9" : "\u6682\u65E0\u8DB3\u591F\u6570\u636E \xB7 \u5B8C\u6210 Google Ads \u540C\u6B65\u540E\u663E\u793A";
       }
     }
-    renderSemScatterTargets(zero);
+    renderSemScatterTargets(d && d.wasteSearchTerms || [], d && d.searchTermCoverage);
   }
   function _dayDiff(a, b) {
     return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 864e5);

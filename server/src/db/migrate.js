@@ -9,7 +9,7 @@ import { db } from './connection.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // schema 版本仅作记录与未来增量迁移的挂钩点；不再触发任何自动清库。
-const SCHEMA_VERSION = '10';
+const SCHEMA_VERSION = '11';
 
 const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
@@ -20,7 +20,7 @@ const ALL_TABLES = [
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily',
-  'google_ads_campaign_daily', 'google_ads_keyword_daily',
+  'google_ads_campaign_daily', 'google_ads_keyword_daily', 'google_ads_search_term_daily',
 ];
 
 const SCHEMA = `
@@ -352,6 +352,30 @@ CREATE TABLE IF NOT EXISTS google_ads_keyword_daily (
   PRIMARY KEY (date, customer_id, campaign_id, ad_group_id, criterion_id)
 );
 CREATE INDEX IF NOT EXISTS idx_google_ads_keyword_daily_text ON google_ads_keyword_daily(keyword_text, date);
+
+CREATE TABLE IF NOT EXISTS google_ads_search_term_daily (
+  date                       TEXT NOT NULL,
+  customer_id                TEXT NOT NULL,
+  campaign_id                TEXT NOT NULL,
+  campaign_name              TEXT,
+  ad_group_id                TEXT NOT NULL,
+  ad_group_name              TEXT,
+  search_term                TEXT NOT NULL,
+  match_type                 TEXT,
+  status                     TEXT,
+  cost_micros                INTEGER NOT NULL DEFAULT 0,
+  impressions                INTEGER NOT NULL DEFAULT 0,
+  clicks                     INTEGER NOT NULL DEFAULT 0,
+  conversions                REAL NOT NULL DEFAULT 0,
+  ctr                        REAL,
+  average_cpc_micros         INTEGER,
+  cost_per_conversion_micros INTEGER,
+  sync_run_id                INTEGER REFERENCES google_sync_runs(id),
+  updated_at                 TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (date, customer_id, campaign_id, ad_group_id, search_term)
+);
+CREATE INDEX IF NOT EXISTS idx_google_ads_search_term_daily_scope
+  ON google_ads_search_term_daily(customer_id, date, campaign_id, ad_group_id);
 
 -- V7：市场 AI 记忆体（单行，id=1）
 CREATE TABLE IF NOT EXISTS market_brain (
