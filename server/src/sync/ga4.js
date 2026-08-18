@@ -25,7 +25,10 @@ async function dimensionReport(type, dimensionName, project, range, runId) {
   const res = await runReport(project.ga4_property_id, {
     dateRanges: [{ startDate: range.start_date, endDate: range.end_date }],
     dimensions: [{ name: 'date' }, { name: dimensionName }],
-    metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }, { name: 'bounceRate' }, { name: 'averageSessionDuration' }],
+    metrics: [
+      { name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' },
+      { name: 'bounceRate' }, { name: 'averageSessionDuration' }, { name: 'keyEvents' },
+    ],
     limit: 25000,
   });
   return (res.rows || []).map((r) => ({
@@ -38,6 +41,25 @@ async function dimensionReport(type, dimensionName, project, range, runId) {
     page_views: Math.round(metric(r, 2)),
     bounce_rate: metric(r, 3),
     avg_session_duration: metric(r, 4),
+    key_events: metric(r, 5),
+    sync_run_id: runId,
+  })).filter((r) => r.date);
+}
+
+async function eventReport(project, range, runId) {
+  const res = await runReport(project.ga4_property_id, {
+    dateRanges: [{ startDate: range.start_date, endDate: range.end_date }],
+    dimensions: [{ name: 'date' }, { name: 'eventName' }],
+    metrics: [{ name: 'eventCount' }, { name: 'totalUsers' }, { name: 'keyEvents' }],
+    limit: 25000,
+  });
+  return (res.rows || []).map((r) => ({
+    date: gaDate(dimension(r, 0)),
+    property_id: project.ga4_property_id,
+    event_name: dimension(r, 1) || '(not set)',
+    event_count: Math.round(metric(r, 0)),
+    total_users: Math.round(metric(r, 1)),
+    key_events: metric(r, 2),
     sync_run_id: runId,
   })).filter((r) => r.date);
 }
@@ -63,6 +85,7 @@ export async function syncGa4(input = {}) {
         { name: 'screenPageViews' },
         { name: 'bounceRate' },
         { name: 'averageSessionDuration' },
+        { name: 'keyEvents' },
       ],
       limit: 25000,
     });
@@ -74,6 +97,7 @@ export async function syncGa4(input = {}) {
       page_views: Math.round(metric(r, 2)),
       bounce_rate: metric(r, 3),
       avg_session_duration: metric(r, 4),
+      key_events: metric(r, 5),
       sync_run_id: runId,
     })).filter((r) => r.date);
 
@@ -82,11 +106,23 @@ export async function syncGa4(input = {}) {
       ...(await dimensionReport('country', 'country', project, range, runId)),
       ...(await dimensionReport('device', 'deviceCategory', project, range, runId)),
       ...(await dimensionReport('landing_page', 'landingPagePlusQueryString', project, range, runId)),
+      ...(await dimensionReport('campaign', 'sessionCampaignName', project, range, runId)),
     ];
+    const events = await eventReport(project, range, runId);
 
-    const rowsWritten = repo.upsertGa4Daily(dailyRows) + repo.upsertGa4Dimensions(dims);
+    const rowsWritten = repo.replaceGa4Range({
+      propertyId: project.ga4_property_id,
+      startDate: range.start_date,
+      endDate: range.end_date,
+      dailyRows,
+      dimensionRows: dims,
+      eventRows: events,
+    });
     repo.finishRun(runId, rowsWritten);
-    return { provider: 'ga4', project, runId, range, rowsWritten };
+    return {
+      provider: 'ga4', project, runId, range, rowsWritten,
+      rowCounts: { daily: dailyRows.length, dimensions: dims.length, events: events.length },
+    };
   } catch (e) {
     repo.failRun(runId, e.message || e);
     throw e;

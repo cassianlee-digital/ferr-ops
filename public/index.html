@@ -676,21 +676,26 @@
         <div class="page-head"><div><div class="page-title">GA4 流量</div><div class="page-sub">专业 GA4 看板 · 授权并同步后自动填充</div></div><span id="ga4-status" class="badge b-gray">未接入</span></div>
         <div class="timebar-inline" data-time></div>
         <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-clock-off"></i> GA4 看板读取本地同步数据；授权后请在「设置 · API 接入」执行一次同步。</div>
-        <div id="ga4-hint" class="banner banner-red csp-s-6aa34d7432"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">暂无 GA4 数据，请前往「设置 · API 接入」授权并同步</div><div class="banner-s">后台不会展示示例流量；只有 Google 同步写入数据库后，下列模块才会填充真实数据。</div></div></div>
+        <div id="ga4-hint" class="banner banner-red csp-s-6aa34d7432"><i id="ga4-hint-icon" class="ti ti-plug-connected-x csp-s-fd44150866"></i><div class="ga4-hint-copy"><div class="banner-t" id="ga4-hint-title">暂无 GA4 数据，请前往「设置 · API 接入」授权并同步</div><div class="banner-s" id="ga4-hint-detail">后台不会展示示例流量；只有 Google 同步写入数据库后，下列模块才会填充真实数据。</div></div><button class="btn-ghost ga4-retry is-hidden" id="ga4-retry" type="button" data-ui-action="reload-ga4"><i class="ti ti-refresh"></i> 重试</button></div>
         <div class="metric-row csp-s-91144dcb46">
-          <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-users">—</div><div class="metric-lbl">活跃用户</div></div>
+          <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-users">—</div><div class="metric-lbl">活跃用户（日累计）</div></div>
           <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-sessions">—</div><div class="metric-lbl">会话</div></div>
           <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-views">—</div><div class="metric-lbl">浏览量</div></div>
+          <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-key-events">—</div><div class="metric-lbl">关键事件</div></div>
           <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-bounce">—</div><div class="metric-lbl">跳出率</div></div>
           <div class="metric-card"><div class="metric-num csp-s-5306f18f74" id="ga4-dur">—</div><div class="metric-lbl">平均会话时长</div></div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title">流量来源 / 媒介</span></div><table class="dt"><thead><tr><th>来源/媒介</th><th class="num">会话</th><th class="num">用户</th></tr></thead><tbody id="ga4-sources"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e">暂无数据</div></div>
-          <div class="card"><div class="card-head"><span class="card-title">国家 / 地区分布</span></div><table class="dt"><thead><tr><th>国家</th><th class="num">会话</th><th class="num">用户</th></tr></thead><tbody id="ga4-countries"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">流量来源 / 媒介</span></div><table class="dt"><thead><tr><th>来源/媒介</th><th class="num">会话</th><th class="num">用户（日累计）</th></tr></thead><tbody id="ga4-sources"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e" id="ga4-sources-empty">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">国家 / 地区分布</span></div><table class="dt"><thead><tr><th>国家</th><th class="num">会话</th><th class="num">用户（日累计）</th></tr></thead><tbody id="ga4-countries"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e" id="ga4-countries-empty">暂无数据</div></div>
         </div>
         <div class="grid2">
-          <div class="card"><div class="card-head"><span class="card-title">设备占比</span></div><div class="chart-wrap csp-s-767250db37"><canvas id="ga4Devices"></canvas></div><div class="ga4-empty csp-s-adba8a2d1e">暂无数据</div></div>
-          <div class="card"><div class="card-head"><span class="card-title">热门入口页面</span></div><table class="dt"><thead><tr><th>入口页面</th><th class="num">会话</th><th class="num">转化</th></tr></thead><tbody id="ga4-landing"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">设备占比</span><span class="card-sub">按会话</span></div><div class="chart-wrap csp-s-767250db37" id="ga4-devices-chart"><canvas id="ga4Devices"></canvas></div><div class="ga4-empty csp-s-adba8a2d1e" id="ga4-devices-empty">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">热门入口页面</span><span class="card-sub">转化 = GA4 关键事件</span></div><table class="dt"><thead><tr><th>入口页面</th><th class="num">会话</th><th class="num">关键事件</th></tr></thead><tbody id="ga4-landing"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e" id="ga4-landing-empty">暂无数据</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-head"><span class="card-title">广告系列</span><span class="card-sub">GA4 session campaign</span></div><table class="dt"><thead><tr><th>广告系列</th><th class="num">会话</th><th class="num">用户（日累计）</th><th class="num">关键事件</th></tr></thead><tbody id="ga4-campaigns"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e" id="ga4-campaigns-empty">暂无数据</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">转化事件</span><span class="card-sub">事件需与 CRM 有效询盘核对</span></div><table class="dt"><thead><tr><th>事件</th><th class="num">触发次数</th><th class="num">关键事件</th><th class="num">触发用户（日累计）</th></tr></thead><tbody id="ga4-events"></tbody></table><div class="ga4-empty csp-s-adba8a2d1e" id="ga4-events-empty">事件尚未同步</div></div>
         </div>
       </div>
 

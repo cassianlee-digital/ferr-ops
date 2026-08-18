@@ -15,6 +15,7 @@ const keywordsSource = readFileSync(new URL('../../public/src/keywords.js', impo
 const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
 const tableEditorSource = readFileSync(new URL('../../public/src/table-editor.js', import.meta.url), 'utf8');
 const rankSnapshotsSource = readFileSync(new URL('../../public/src/rank-snapshots.js', import.meta.url), 'utf8');
+const ga4Source = readFileSync(new URL('../../public/src/ga4-view.js', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -69,6 +70,24 @@ test('SEM negative-keyword candidates use real search terms instead of keyword-l
   assert.match(chartsSource, /p\.searchTerm/);
   assert.doesNotMatch(chartsSource, /零转化烧钱词 · 该砍\/暂停/);
   assert.doesNotMatch(chartsSource, /renderSemScatterTargets\(zero\)/);
+});
+
+test('GA4 view exposes real campaign and event evidence with understandable labels and honest states', () => {
+  for (const id of ['ga4-key-events', 'ga4-campaigns', 'ga4-events', 'ga4-devices-empty']) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(html, /转化 = GA4 关键事件/);
+  assert.match(html, /事件需与 CRM 有效询盘核对/);
+  assert.match(ga4Source, /row\.label \|\| '自定义事件'/);
+  assert.match(ga4Source, /row\.eventName \|\| ''/);
+  assert.match(ga4Source, /关键事件尚未同步，请重新执行 GA4 同步/);
+  assert.match(ga4Source, /已同步事件，但没有匹配的转化或关键事件/);
+  assert.match(ga4Source, /GA4 数据读取失败/);
+  assert.match(appSource, /'reload-ga4':\(\)=>loadGa4\(\)/);
+  assert.match(ga4Source, /const requestId = \+\+requestSequence/);
+  assert.match(ga4Source, /new Chart\(canvas/);
+  assert.doesNotMatch(ga4Source, /catch\s*\([^)]*\)\s*\{\s*\}/);
+  assert.doesNotMatch(ga4Source, /\.style\./);
 });
 
 test('empty and failed live loads remain observable and retryable', () => {

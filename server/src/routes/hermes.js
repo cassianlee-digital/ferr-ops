@@ -726,12 +726,15 @@ function pageDetailPayload(request) {
 function refreshProvidersForMessage(message) {
   const raw = String(message || '');
   if (!/(昨天|昨日|今天|今日|近\s*7\s*天|过去\s*7\s*天|最近\s*7\s*天|yesterday|today|last\s*7\s*days)/i.test(raw)) return [];
-  const wantsAds = /(SEM|广告|Ads|花费|点击|转化|投放|CPC|CPA|ROAS)/i.test(raw);
+  const wantsGa4 = /(GA4|Google Analytics|Analytics|会话|活跃用户|浏览量|关键事件|表单|下载|邮件点击|WhatsApp|落地页)/i.test(raw);
+  const wantsAds = /(SEM|广告|Ads|花费|投放|CPC|CPA|ROAS)/i.test(raw) || (!wantsGa4 && /(点击|转化)/i.test(raw));
   const wantsGsc = /(SEO|GSC|自然|排名|收录|展现|流量|CTR)/i.test(raw);
-  if (!wantsAds && !wantsGsc && !/(数据|指标|报表|表现|效果|异常|分析|趋势|运营)/i.test(raw)) return [];
-  if (wantsAds && !wantsGsc) return ['ads'];
-  if (wantsGsc && !wantsAds) return ['gsc'];
-  return ['ads', 'gsc'];
+  if (!wantsAds && !wantsGsc && !wantsGa4 && !/(数据|指标|报表|表现|效果|异常|分析|趋势|运营)/i.test(raw)) return [];
+  const providers = [];
+  if (wantsAds) providers.push('ads');
+  if (wantsGsc) providers.push('gsc');
+  if (wantsGa4) providers.push('ga4');
+  return providers.length ? providers : ['ads', 'gsc', 'ga4'];
 }
 
 async function refreshHermesProvider(provider, range, userId) {
@@ -739,7 +742,8 @@ async function refreshHermesProvider(provider, range, userId) {
   const cached = hermesRefreshCache.get(key);
   if (cached && cached.expiresAt > Date.now()) return cached.result;
 
-  const actionType = provider === 'ads' ? 'sync_ads' : 'sync_gsc';
+  const actionType = { ads: 'sync_ads', gsc: 'sync_gsc', ga4: 'sync_ga4' }[provider];
+  if (!actionType) throw new Error('unsupported_google_provider');
   const result = executeTrustedReadAction({
     userId,
     actionType,
@@ -781,6 +785,7 @@ function contextPayload(request, options = {}) {
       ...(enterpriseMemory.evidencePack || []),
     ];
     const focusDomain = /(客户|市场|特色|认证|资质|采购)/i.test(message) ? 'market'
+      : /(GA4|Google Analytics|Analytics|会话|活跃用户|浏览量|关键事件|事件|表单|下载|邮件点击|WhatsApp|落地页)/i.test(message) ? 'analytics'
       : /(SEM|Ads|广告|投放|花费|预算|CPC|CPA|ROAS)/i.test(message) ? 'sem'
         : /(SEO|GSC|自然|排名|收录|页面|查询词)/i.test(message) ? 'seo'
           : /(询盘|线索)/i.test(message) ? 'inquiry' : '';
@@ -816,6 +821,7 @@ function contextPayload(request, options = {}) {
         'Do not expose internal field names such as assistantPlaybook, operatingPrinciples, opsDiagnosis, priorityCards, pageContext, or responseContract.',
         'For SEM: prioritize spend, conversions, CPC, CPA, CTR, quality score, ROAS, negative keywords, and budget allocation.',
         'For SEO: prioritize clicks, impressions, CTR, ranking, decay pages, opportunity keywords, cannibalization, and content tasks.',
+        'For GA4: use campaign, landing-page, and event-level evidence. A GA4 event is a tracked site behavior, not proof of a valid inquiry; verify it against CRM inquiry records before recommending action.',
         'Use the combined evidencePack ids as citation anchors before giving recommendations, including market research and trusted company memory when the question concerns FERR characteristics.',
         'If dataRefresh exists, report the requested range and sync result accurately; synced with rowsWritten=0 means no rows were written, not that business data exists.',
         'Unsupported claims must be labeled as assumptions, risks, or missing data.',

@@ -300,6 +300,96 @@ export function buildOpsDiagnosis(operator, contextText = '') {
   }
 
   try {
+    const project = resolveProject({});
+    const range = requestedRangeFromText(contextText);
+    const ga4 = googleRepo.ga4Overview({ ...range, ga4_property_id: project.ga4_property_id });
+    const t = ga4?.metrics;
+    const hasGa4Data = Boolean(t);
+    cards.push(makeCard({
+      area: 'analytics',
+      severity: hasGa4Data ? 'medium' : 'high',
+      title: `GA4 同步数据：${range.label}`,
+      evidence: `${range.start_date} 至 ${range.end_date}：${hasGa4Data ? '已有同步数据' : '没有同步明细'}；活跃用户（日累计）${t?.activeUsers || 0}，会话 ${t?.sessions || 0}，浏览量 ${t?.pageViews || 0}，关键事件 ${Number(t?.keyEvents || 0).toFixed(1)}。`,
+      evidenceMeta: {
+        metric: 'ga4_synced_summary', date: range.end_date,
+        dataRole: hasGa4Data ? 'synced_observation' : 'data_gap',
+        granularity: 'aggregate', domain: 'analytics',
+        value: `status=${hasGa4Data ? 'has_data' : 'no_synced_rows'}; active_users=${t?.activeUsers || 0}; sessions=${t?.sessions || 0}; page_views=${t?.pageViews || 0}; key_events=${Number(t?.keyEvents || 0).toFixed(1)}`,
+      },
+      judgment: hasGa4Data
+        ? 'GA4 已提供流量与关键事件汇总，可用于观察站内行为；这些事件仍不能自动等同于有效询盘。'
+        : '该范围没有 GA4 同步明细，不能用空值推断网站没有流量或转化。',
+      action: hasGa4Data
+        ? '继续按广告系列、入口页和事件拆解，并与 CRM 有效询盘逐项核对。'
+        : '先核对 GA4 授权、Property ID 和同步记录，再分析站内行为。',
+      owner: 'SEO/SEM',
+      verifyMetric: 'GA4 sessions, page views, key events, CRM valid inquiries',
+      reviewWindow: '同步完成后或每周复盘',
+      source: 'ga4.sync',
+    }));
+
+    if (!hasGa4Data) {
+      missing.push('ga4_sync');
+    } else {
+      const events = ga4.conversionEvents || [];
+      const eventRows = Number(ga4.eventCoverage?.rowCount || 0);
+      const hasConversionEvents = events.length > 0;
+      cards.push(makeCard({
+        area: 'analytics', severity: hasConversionEvents ? 'medium' : 'high',
+        title: hasConversionEvents ? `GA4 转化事件：${range.label}` : `GA4 转化事件证据缺失：${range.label}`,
+        evidence: hasConversionEvents
+          ? `${range.start_date} 至 ${range.end_date}，已同步 ${eventRows} 条事件日明细，识别出 ${events.length} 个表单、线索、下载、邮件、WhatsApp 或自定义关键事件。`
+          : `${range.start_date} 至 ${range.end_date}，${eventRows > 0 ? `已同步 ${eventRows} 条事件日明细，但没有匹配到已知转化事件或 GA4 关键事件` : 'ga4_event_daily 没有事件明细'}。`,
+        evidenceMeta: {
+          metric: 'ga4_event_coverage', date: range.end_date,
+          dataRole: hasConversionEvents ? 'synced_observation' : 'data_gap',
+          granularity: 'aggregate', domain: 'analytics',
+          value: `status=${hasConversionEvents ? 'has_conversion_events' : (eventRows > 0 ? 'no_conversion_candidates' : 'no_event_rows')}; event_rows=${eventRows}; distinct_events=${ga4.eventCoverage?.distinctEvents || 0}; matched_events=${events.length}; key_events=${Number(ga4.eventCoverage?.keyEvents || 0).toFixed(1)}`,
+        },
+        judgment: hasConversionEvents
+          ? '已有可核验的站内转化事件明细，但仍需与 CRM 询盘去重和归因后才能判断业务价值。'
+          : '当前没有足够的事件级证据，不能把会话、页面浏览或 Ads 转化直接当作表单询盘。',
+        action: hasConversionEvents
+          ? '逐项核对事件定义、重复触发和对应 CRM 询盘，再决定优化来源、系列或入口页。'
+          : '重新同步 GA4；若仍没有匹配事件，检查 GA4 关键事件配置及 form_submit、generate_lead、下载和联系方式点击埋点。',
+        owner: 'SEO/SEM/网站', verifyMetric: 'GA4 event count, key events, CRM valid inquiries', reviewWindow: '同步完成后或每周复盘',
+        source: 'ga4.event_sync',
+      }));
+      if (!hasConversionEvents) missing.push(eventRows > 0 ? 'ga4_conversion_events' : 'ga4_events');
+
+      (ga4.campaigns || []).slice(0, 2).forEach((row) => cards.push(makeCard({
+        area: 'analytics', severity: 'medium', title: `GA4 广告系列：${row.campaign}`,
+        evidence: `${range.start_date} 至 ${range.end_date}，广告系列“${row.campaign}”记录会话 ${row.sessions || 0}、活跃用户（日累计）${row.users || 0}、关键事件 ${Number(row.conversions || 0).toFixed(1)}。`,
+        evidenceMeta: {
+          metric: 'ga4_campaign_sessions_key_events', date: range.end_date, dataRole: 'synced_campaign_observation',
+          granularity: 'campaign', domain: 'analytics',
+          value: `campaign=${row.campaign}; sessions=${row.sessions || 0}; active_users=${row.users || 0}; key_events=${Number(row.conversions || 0).toFixed(1)}; crm_attribution=not_checked`,
+        },
+        judgment: '该系列带来站内会话和关键事件，但关键事件数量本身不能证明带来了有效询盘或成交。',
+        action: '按该系列核对事件类型、入口页和 CRM 有效询盘，再评价流量质量。',
+        owner: 'SEM', verifyMetric: '系列会话、关键事件、有效询盘', reviewWindow: '7 天复盘',
+        source: 'ga4.campaign_sync',
+      })));
+
+      events.slice(0, 4).forEach((row) => cards.push(makeCard({
+        area: 'analytics', severity: 'medium', title: `GA4 事件：${row.label}`,
+        evidence: `${range.start_date} 至 ${range.end_date}，${row.label}（${row.eventName}）触发 ${row.eventCount || 0} 次，触发用户（日累计）${row.users || 0}，其中 GA4 关键事件 ${Number(row.keyEvents || 0).toFixed(1)}。`,
+        evidenceMeta: {
+          metric: 'ga4_event_count_key_events', date: range.end_date, dataRole: 'synced_event_observation',
+          granularity: 'event', domain: 'analytics',
+          value: `event_name=${row.eventName}; event_label=${row.label}; event_count=${row.eventCount || 0}; active_users=${row.users || 0}; key_events=${Number(row.keyEvents || 0).toFixed(1)}; crm_attribution=not_checked`,
+        },
+        judgment: '该事件证明站内发生了对应行为，不证明每次触发都是独立、有效或可归因的询盘。',
+        action: '抽查事件触发规则、重复计数和 CRM 对应询盘，再决定是否据此调整广告或页面。',
+        owner: 'SEO/SEM/网站', verifyMetric: '事件次数、关键事件、去重后有效询盘', reviewWindow: '7 天复盘',
+        source: 'ga4.event_sync',
+      })));
+    }
+  } catch {
+    missing.push('ga4_sync');
+  }
+
+  try {
     const rows = kpiRepo.list();
     const groups = { total: '公司', seo: 'SEO', sem: 'SEM' };
     Object.entries(groups).forEach(([group, label]) => {

@@ -55,6 +55,7 @@ const STATIC_UI_ACTIONS={
   'add-plan':el=>addPlanRow(el.dataset.dept),
   'add-test':el=>addTestRow(el.dataset.dept),
   'snapshot-ranks':()=>snapshotRanks(),
+  'reload-ga4':()=>loadGa4(),
   'add-fix':()=>addFixRow(),
   'add-keyword':el=>addKeyword(el.dataset.keywordType),
   'add-neg':()=>addNeg(),

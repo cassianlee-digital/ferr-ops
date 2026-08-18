@@ -5,6 +5,7 @@ const SOURCE_QUALITY = {
   synced_query_observation: 92,
   synced_page_observation: 92,
   synced_campaign_observation: 90,
+  synced_event_observation: 90,
   synced_observation: 82,
   crm_observation: 82,
   company_research: 76,
@@ -19,7 +20,7 @@ const SOURCE_QUALITY = {
 };
 
 const FRESHNESS_QUALITY = { fresh: 100, aging: 65, stale: 25, unknown: 45 };
-const EVIDENCE_REQUIRED_RE = /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|FERR|公司|工厂|产品|材质|质量|交期|价格|目录|证书|案例|客户|市场|认证|资质|地区|国家|采购|询盘|关键词|周报|转化|点击|花费|排名|收录|流量|预算|投放|账户|页面|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i;
+const EVIDENCE_REQUIRED_RE = /(SEO|SEM|KPI|GSC|GA4|ADS|ROAS|CTR|CPC|CPA|ROI|FERR|公司|工厂|产品|材质|质量|交期|价格|目录|证书|案例|客户|市场|认证|资质|地区|国家|采购|询盘|关键词|周报|转化|关键事件|事件|会话|浏览量|表单|下载|邮件点击|WhatsApp|点击|花费|排名|收录|流量|预算|投放|账户|页面|数据|证据|建议|判断|动作|优化|复盘|整改|补齐|检查|排查|暂停|提高|降低)/i;
 
 const METRIC_DEFINITIONS = [
   { token: 'ctr', aliases: ['CTR', '点击率'], keys: ['ctr'] },
@@ -28,6 +29,11 @@ const METRIC_DEFINITIONS = [
   { token: 'position', aliases: ['平均排名', '排名', '位置'], keys: ['position', 'avg_position', 'position_current', 'position_previous'] },
   { token: 'cost', aliases: ['花费', '费用', '成本'], keys: ['cost'] },
   { token: 'conversions', aliases: ['转化'], keys: ['conversions'] },
+  { token: 'keyEvents', aliases: ['关键事件'], keys: ['key_events', 'keyevents'] },
+  { token: 'eventCount', aliases: ['事件次数', '触发次数'], keys: ['event_count', 'eventcount'] },
+  { token: 'sessions', aliases: ['会话'], keys: ['sessions'] },
+  { token: 'activeUsers', aliases: ['活跃用户', '触发用户', '用户（日累计）'], keys: ['active_users', 'total_users'] },
+  { token: 'pageViews', aliases: ['浏览量', '页面浏览'], keys: ['page_views', 'pageviews'] },
   { token: 'cpc', aliases: ['CPC'], keys: ['cpc'] },
   { token: 'cpa', aliases: ['CPA', '每次转化成本', '每次转化'], keys: ['cpa', 'cost_per_conv', 'costperconversion'] },
   { token: 'roas', aliases: ['ROAS'], keys: ['roas'] },
@@ -202,6 +208,7 @@ function isHypothesis(clean) {
 }
 
 function claimDomain(clean) {
+  if (/(GA4|Google Analytics|Analytics|关键事件|事件次数|会话|活跃用户|浏览量|表单提交|文件下载|邮件点击|WhatsApp)/i.test(clean)) return 'analytics';
   if (/(Google Ads|ADS|SEM|ROAS|CPC|CPA|花费|预算|投放|广告|转化)/i.test(clean)) return 'sem';
   if (/(GSC|SEO|自然|排名|收录|展现|页面|查询词)/i.test(clean)) return 'seo';
   if (/(询盘|线索|A级|B级|C级)/i.test(clean)) return 'inquiry';
@@ -282,24 +289,29 @@ function isSpecificMutation(clean) {
 }
 
 function hasGranularEvidence(items) {
-  return items.some((item) => ['keyword', 'search_term', 'query', 'page', 'campaign', 'ad_group'].includes(String(item?.granularity || '')));
+  return items.some((item) => ['keyword', 'search_term', 'query', 'page', 'campaign', 'ad_group', 'event'].includes(String(item?.granularity || '')));
 }
 
-function evidenceEntity(item) {
+function evidenceEntities(item) {
   const text = [item?.value, item?.detail].filter(Boolean).join('; ');
   const key = String(item?.granularity || '');
-  const field = { keyword: 'keyword', search_term: 'search_term', query: 'query', page: 'page', campaign: 'campaign', ad_group: 'ad_group' }[key];
-  if (!field) return '';
+  const field = { keyword: 'keyword', search_term: 'search_term', query: 'query', page: 'page', campaign: 'campaign', ad_group: 'ad_group', event: 'event_name' }[key];
+  if (!field) return [];
   const match = text.match(new RegExp(`(?:^|;)\\s*${field}=([^;]+)`, 'i'));
-  return String(match?.[1] || '').trim().toLowerCase();
+  const entities = [String(match?.[1] || '').trim().toLowerCase()].filter(Boolean);
+  if (key === 'event') {
+    const label = text.match(/(?:^|;)\s*event_label=([^;]+)/i);
+    if (label?.[1]) entities.push(String(label[1]).trim().toLowerCase());
+  }
+  return [...new Set(entities)];
 }
 
 function granularEntityMatches(clean, items) {
-  const relevant = items.filter((item) => evidenceEntity(item));
+  const relevant = items.flatMap((item) => evidenceEntities(item));
   if (!relevant.length) return true;
-  if (!/(关键词|搜索词|查询词|页面|系列|广告组|keyword|search term|query|page|campaign|ad group)/i.test(clean)) return true;
+  if (!/(关键词|搜索词|查询词|页面|系列|广告组|事件|表单|下载|邮件点击|WhatsApp|keyword|search term|query|page|campaign|ad group|event)/i.test(clean)) return true;
   const claim = clean.toLowerCase();
-  return relevant.some((item) => claim.includes(evidenceEntity(item)));
+  return relevant.some((entity) => claim.includes(entity));
 }
 
 function companyEvidenceMatches(clean, items) {

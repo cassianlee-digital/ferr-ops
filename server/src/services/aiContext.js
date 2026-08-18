@@ -80,9 +80,27 @@ function appendRequestedRangeContext(lines, text) {
   } catch (e) {
     lines.push(`【用户指定范围·GSC·${range.label} ${range.start_date}~${range.end_date}】读取失败：${e.message || 'gsc_context_failed'}`);
   }
+
+  try {
+    const g = googleRepo.ga4Overview({ ...range, ga4_property_id: project.ga4_property_id });
+    const t = g?.metrics;
+    lines.push(
+      `【用户指定范围·GA4·${range.label} ${range.start_date}~${range.end_date}】` +
+        `状态${t ? '有同步数据' : '无同步数据'}；活跃用户（日累计）${t?.activeUsers || 0} 会话${t?.sessions || 0} ` +
+        `浏览量${t?.pageViews || 0} 关键事件${Number(t?.keyEvents || 0).toFixed(1)}。`
+    );
+    if (g?.conversionEvents?.length) {
+      lines.push('【GA4转化事件】' + g.conversionEvents.slice(0, 8)
+        .map((event) => `${event.label}[${event.eventName}](触发${event.eventCount}/关键事件${Number(event.keyEvents || 0).toFixed(1)})`).join('；'));
+    } else if (t) {
+      lines.push('【GA4事件证据缺口】当前区间没有可识别的表单、线索、下载、邮件或 WhatsApp 事件；不能用流量汇总推断询盘转化。');
+    }
+  } catch (e) {
+    lines.push(`【用户指定范围·GA4·${range.label} ${range.start_date}~${range.end_date}】读取失败：${e.message || 'ga4_context_failed'}`);
+  }
 }
 
-// 把已同步的真实 GSC/Ads 汇总 + 诊断 findings 注入上下文（无数据/未授权则静默跳过）。
+// 把已同步的真实 GSC/GA4/Ads 汇总 + 诊断 findings 注入上下文。
 function appendSyncedContext(lines) {
   let project;
   try { project = resolveProject({}); } catch (e) { return; }
@@ -97,6 +115,24 @@ function appendSyncedContext(lines) {
         `【GSC同步·近${w.days}天】点击${t.clicks} 展现${t.impressions} ` +
           `CTR${t.ctr != null ? (t.ctr * 100).toFixed(2) + '%' : '-'} 均排名${t.position != null ? t.position.toFixed(1) : '-'} 覆盖词${g.queryCount}`
       );
+    }
+  } catch (e) { /* 跳过 */ }
+
+  try {
+    const g = googleRepo.ga4Overview({ ...w.cur, ga4_property_id: project.ga4_property_id });
+    const t = g?.metrics;
+    if (t) {
+      lines.push(
+        `【GA4同步·近${w.days}天】活跃用户（日累计）${t.activeUsers || 0} 会话${t.sessions || 0} ` +
+          `浏览量${t.pageViews || 0} 关键事件${Number(t.keyEvents || 0).toFixed(1)}`
+      );
+      const campaigns = (g.campaigns || []).slice(0, 6)
+        .map((campaign) => `${campaign.campaign}(会话${campaign.sessions}/关键事件${Number(campaign.conversions || 0).toFixed(1)})`);
+      if (campaigns.length) lines.push('【GA4广告系列】' + campaigns.join('；'));
+      const events = (g.conversionEvents || []).slice(0, 8)
+        .map((event) => `${event.label}[${event.eventName}](触发${event.eventCount}/关键事件${Number(event.keyEvents || 0).toFixed(1)})`);
+      if (events.length) lines.push('【GA4转化事件】' + events.join('；'));
+      else lines.push('【GA4事件证据缺口】已有流量汇总，但没有可识别转化事件；不能把会话或浏览量当成有效询盘。');
     }
   } catch (e) { /* 跳过 */ }
 
@@ -163,7 +199,7 @@ export function buildContext(options = {}) {
   const high = kwRepo.list('high');
   if (high.length) lines.push('【高价值词】' + high.map((k) => k.keyword).join('、'));
 
-  appendSyncedContext(lines); // 注入真实 GSC/Ads 同步汇总 + 诊断 findings
+  appendSyncedContext(lines); // 注入真实 GSC/GA4/Ads 同步汇总 + 诊断 findings
   appendRequestedRangeContext(lines, options.message); // 用户问昨天/今天/近7天时，追加对应范围真实同步摘要
 
   return lines.join('\n');

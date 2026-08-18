@@ -67,6 +67,18 @@ test('真实搜索词证据按 search_term 实体核验，不能串到另一个�
   assert.equal(evidenceSupportsClaim('搜索词 casting supplier 花费 320、点击 14、转化 0，应加否词。', [searchTerm]), false);
 });
 
+test('GA4 事件证据支持中文标签或原始事件名，但不能串事件或冒充有效询盘', () => {
+  const event = evidence({
+    id: 'EV-GA4-EVENT', source: 'ga4.event_sync', dataRole: 'synced_event_observation',
+    granularity: 'event', domain: 'analytics', metric: 'ga4_event_count_key_events',
+    value: 'event_name=form_submit; event_label=表单提交; event_count=5; active_users=4; key_events=4; crm_attribution=not_checked',
+  });
+  assert.equal(evidenceSupportsClaim('GA4 表单提交触发次数 5，关键事件 4。', [event]), true);
+  assert.equal(evidenceSupportsClaim('GA4 form_submit 触发次数 5，关键事件 4。', [event]), true);
+  assert.equal(evidenceSupportsClaim('GA4 文件下载触发次数 5，关键事件 4。', [event]), false);
+  assert.equal(evidenceSupportsClaim('GA4 表单提交 5 次，所以有 5 个有效询盘。', [event]), false);
+});
+
 test('回答数字必须与同一指标的引用证据一致', () => {
   const item = evidence({
     id: 'EV-ADS-KEYWORD', source: 'google_ads.keyword_sync', dataRole: 'synced_keyword_observation',

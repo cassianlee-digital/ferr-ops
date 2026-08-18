@@ -9,7 +9,7 @@ import { db } from './connection.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // schema 版本仅作记录与未来增量迁移的挂钩点；不再触发任何自动清库。
-const SCHEMA_VERSION = '11';
+const SCHEMA_VERSION = '12';
 
 const ALL_TABLES = [
   'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
@@ -19,7 +19,7 @@ const ALL_TABLES = [
   'sop_definitions', 'sop_completions', 'task_checkins', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
-  'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily',
+  'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily', 'ga4_event_daily',
   'google_ads_campaign_daily', 'google_ads_keyword_daily', 'google_ads_search_term_daily',
 ];
 
@@ -290,6 +290,7 @@ CREATE TABLE IF NOT EXISTS ga4_daily (
   active_users         INTEGER NOT NULL DEFAULT 0,
   sessions             INTEGER NOT NULL DEFAULT 0,
   page_views           INTEGER NOT NULL DEFAULT 0,
+  key_events           REAL NOT NULL DEFAULT 0,
   bounce_rate          REAL,
   avg_session_duration REAL,
   sync_run_id          INTEGER REFERENCES google_sync_runs(id),
@@ -305,6 +306,7 @@ CREATE TABLE IF NOT EXISTS ga4_dimension_daily (
   active_users    INTEGER NOT NULL DEFAULT 0,
   sessions        INTEGER NOT NULL DEFAULT 0,
   page_views      INTEGER NOT NULL DEFAULT 0,
+  key_events      REAL NOT NULL DEFAULT 0,
   bounce_rate     REAL,
   avg_session_duration REAL,
   sync_run_id     INTEGER REFERENCES google_sync_runs(id),
@@ -312,6 +314,19 @@ CREATE TABLE IF NOT EXISTS ga4_dimension_daily (
   PRIMARY KEY (date, property_id, dimension_type, dimension_value)
 );
 CREATE INDEX IF NOT EXISTS idx_ga4_dimension_daily_type ON ga4_dimension_daily(dimension_type, date);
+
+CREATE TABLE IF NOT EXISTS ga4_event_daily (
+  date          TEXT NOT NULL,
+  property_id   TEXT NOT NULL,
+  event_name    TEXT NOT NULL,
+  event_count   INTEGER NOT NULL DEFAULT 0,
+  total_users   INTEGER NOT NULL DEFAULT 0,
+  key_events    REAL NOT NULL DEFAULT 0,
+  sync_run_id   INTEGER REFERENCES google_sync_runs(id),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (date, property_id, event_name)
+);
+CREATE INDEX IF NOT EXISTS idx_ga4_event_daily_name ON ga4_event_daily(event_name, date);
 
 CREATE TABLE IF NOT EXISTS google_ads_campaign_daily (
   date                       TEXT NOT NULL,
@@ -564,6 +579,10 @@ export function migrate() {
   ]);
   ensureColumns('ga4_dimension_daily', [
     ['bounce_rate', 'REAL'], ['avg_session_duration', 'REAL'], // 页面级跳出率散点 + 来源级跳出/时长
+    ['key_events', 'REAL NOT NULL DEFAULT 0'],
+  ]);
+  ensureColumns('ga4_daily', [
+    ['key_events', 'REAL NOT NULL DEFAULT 0'],
   ]);
   // 6.23 修改文档 7/9/12：inquiries 加客户姓名 / 跟踪反馈 / 原始等级
   ensureColumns('inquiries', [

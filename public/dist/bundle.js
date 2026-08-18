@@ -3933,44 +3933,190 @@
   __export(ga4_view_exports, {
     loadGa4: () => loadGa42
   });
-  async function loadGa42() {
-    let r = { connected: false };
-    try {
-      r = await API.get(withRange("/api/ga4/overview"));
-    } catch (e) {
-    }
-    const st = document.getElementById("ga4-status");
-    if (st) {
-      st.className = "badge " + (r.connected ? "b-green" : "b-gray");
-      st.textContent = r.connected ? "\u5DF2\u63A5\u5165" : "\u672A\u63A5\u5165";
-    }
+  var devicesChart = null;
+  var requestSequence = 0;
+  function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value == null ? "\u2014" : String(value);
+  }
+  function formatNumber(value, maximumFractionDigits = 0) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "\u2014";
+    return number.toLocaleString("zh-CN", { maximumFractionDigits });
+  }
+  function formatDuration(value) {
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds)) return "\u2014";
+    const minutes = Math.floor(seconds / 60);
+    const remainder = Math.round(seconds % 60);
+    return minutes ? `${minutes}\u5206${String(remainder).padStart(2, "0")}\u79D2` : `${remainder}\u79D2`;
+  }
+  function setHint({ visible, mode = "warning", title = "", detail = "", retry = false }) {
     const hint = document.getElementById("ga4-hint");
-    if (hint) hint.style.display = r.connected ? "none" : "flex";
-    const set = (id, v) => {
-      const e = document.getElementById(id);
-      if (e) e.textContent = v == null ? "\u2014" : v;
-    };
-    const m = r.metrics;
-    if (m) {
-      set("ga4-users", m.activeUsers);
-      set("ga4-sessions", m.sessions);
-      set("ga4-views", m.pageViews);
-      set("ga4-bounce", m.bounceRate != null ? m.bounceRate + "%" : "\u2014");
-      set("ga4-dur", m.avgDuration);
+    if (!hint) return;
+    hint.classList.toggle("ga4-hint-visible", visible);
+    hint.classList.toggle("ga4-hint-error", mode === "error");
+    setText("ga4-hint-title", title);
+    setText("ga4-hint-detail", detail);
+    const icon = document.getElementById("ga4-hint-icon");
+    if (icon) icon.className = `ti ${mode === "error" ? "ti-alert-triangle" : "ti-plug-connected-x"} csp-s-fd44150866`;
+    const button = document.getElementById("ga4-retry");
+    if (button) button.classList.toggle("is-hidden", !retry);
+  }
+  function setStatus(connected, failed = false) {
+    const status = document.getElementById("ga4-status");
+    if (!status) return;
+    status.className = `badge ${failed ? "b-red" : connected ? "b-green" : "b-gray"}`;
+    status.textContent = failed ? "\u8BFB\u53D6\u5931\u8D25" : connected ? "\u5DF2\u63A5\u5165" : "\u672A\u63A5\u5165";
+  }
+  function clearMetrics() {
+    ["ga4-users", "ga4-sessions", "ga4-views", "ga4-key-events", "ga4-bounce", "ga4-dur"].forEach((id) => setText(id, "\u2014"));
+  }
+  function fillTable(tableId, emptyId, rows2, renderCells, emptyText) {
+    const body = document.getElementById(tableId);
+    const empty = document.getElementById(emptyId);
+    if (!body) return;
+    const items = Array.isArray(rows2) ? rows2 : [];
+    body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell) => {
+      const value = cell.html == null ? esc(cell.value ?? "") : cell.html;
+      return `<td class="${cell.cls || ""}">${value}</td>`;
+    }).join("")}</tr>`).join("");
+    if (empty) {
+      empty.textContent = emptyText || "\u6682\u65E0\u6570\u636E";
+      empty.classList.toggle("is-hidden", items.length > 0);
     }
-    const fill = (tbId, rows2, cols) => {
-      const tb = document.getElementById(tbId);
-      if (!tb) return;
-      if (rows2 && rows2.length) {
-        tb.innerHTML = rows2.map((x) => "<tr>" + cols.map((c) => `<td class="${c.cls || ""}">${esc(x[c.k] ?? "")}</td>`).join("") + "</tr>").join("");
-        const card = tb.closest(".card");
-        const e = card && card.querySelector(".ga4-empty");
-        if (e) e.style.display = "none";
+  }
+  function clearTables(message = "\u6682\u65E0\u6570\u636E") {
+    const pairs = [
+      ["ga4-sources", "ga4-sources-empty"],
+      ["ga4-countries", "ga4-countries-empty"],
+      ["ga4-landing", "ga4-landing-empty"],
+      ["ga4-campaigns", "ga4-campaigns-empty"],
+      ["ga4-events", "ga4-events-empty"]
+    ];
+    pairs.forEach(([tableId, emptyId]) => fillTable(tableId, emptyId, [], () => [], message));
+    renderDevices([], message);
+  }
+  function renderDevices(rows2, emptyText = "\u6682\u65E0\u6570\u636E") {
+    const wrap = document.getElementById("ga4-devices-chart");
+    const empty = document.getElementById("ga4-devices-empty");
+    const canvas = document.getElementById("ga4Devices");
+    const items = Array.isArray(rows2) ? rows2.filter((row) => Number(row.sessions || 0) > 0) : [];
+    if (devicesChart) {
+      devicesChart.destroy();
+      devicesChart = null;
+    }
+    if (!items.length || !canvas || typeof Chart === "undefined") {
+      if (wrap) wrap.classList.add("is-hidden");
+      if (empty) {
+        empty.textContent = items.length ? "\u56FE\u8868\u7EC4\u4EF6\u672A\u52A0\u8F7D" : emptyText;
+        empty.classList.remove("is-hidden");
       }
-    };
-    fill("ga4-sources", r.sources, [{ k: "source" }, { k: "sessions", cls: "num" }, { k: "users", cls: "num" }]);
-    fill("ga4-countries", r.countries, [{ k: "country" }, { k: "sessions", cls: "num" }, { k: "users", cls: "num" }]);
-    fill("ga4-landing", r.landingPages, [{ k: "page" }, { k: "sessions", cls: "num" }, { k: "conversions", cls: "num" }]);
+      return;
+    }
+    if (wrap) wrap.classList.remove("is-hidden");
+    if (empty) empty.classList.add("is-hidden");
+    devicesChart = new Chart(canvas, {
+      type: "doughnut",
+      data: {
+        labels: items.map((row) => row.device || "\u672A\u77E5\u8BBE\u5907"),
+        datasets: [{
+          data: items.map((row) => Number(row.sessions || 0)),
+          backgroundColor: ["#1677ff", "#00b42a", "#f59e0b", "#86909c", "#722ed1"],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "64%",
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, usePointStyle: true } } }
+      }
+    });
+  }
+  function renderGa4(data) {
+    const connected = Boolean(data.connected);
+    const metrics = data.metrics;
+    setStatus(connected);
+    if (!connected) {
+      setHint({
+        visible: true,
+        title: "GA4 \u5C1A\u672A\u63A5\u5165",
+        detail: "\u8BF7\u524D\u5F80\u300C\u8BBE\u7F6E \xB7 API \u63A5\u5165\u300D\u914D\u7F6E Google OAuth \u4E0E Property ID\uFF0C\u6388\u6743\u540E\u6267\u884C\u4E00\u6B21\u540C\u6B65\u3002"
+      });
+    } else if (!metrics) {
+      setHint({
+        visible: true,
+        title: "GA4 \u5DF2\u6388\u6743\uFF0C\u4F46\u6240\u9009\u533A\u95F4\u6CA1\u6709\u540C\u6B65\u6570\u636E",
+        detail: "\u8BF7\u5728\u300C\u8BBE\u7F6E \xB7 API \u63A5\u5165\u300D\u6267\u884C GA4 \u540C\u6B65\uFF1B\u540E\u53F0\u4E0D\u4F1A\u7528\u793A\u4F8B\u6570\u636E\u586B\u5145\u7A7A\u767D\u3002",
+        retry: true
+      });
+    } else {
+      setHint({ visible: false });
+    }
+    clearMetrics();
+    if (metrics) {
+      setText("ga4-users", formatNumber(metrics.activeUsers));
+      setText("ga4-sessions", formatNumber(metrics.sessions));
+      setText("ga4-views", formatNumber(metrics.pageViews));
+      setText("ga4-key-events", formatNumber(metrics.keyEvents, 1));
+      setText("ga4-bounce", metrics.bounceRate == null ? "\u2014" : `${formatNumber(metrics.bounceRate, 1)}%`);
+      setText("ga4-dur", formatDuration(metrics.avgDuration));
+    }
+    const baseEmpty = connected ? "\u6240\u9009\u533A\u95F4\u6682\u65E0\u6570\u636E" : "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A";
+    fillTable("ga4-sources", "ga4-sources-empty", data.sources, (row) => [
+      { value: row.source || "(not set)" },
+      { value: formatNumber(row.sessions), cls: "num" },
+      { value: formatNumber(row.users), cls: "num" }
+    ], baseEmpty);
+    fillTable("ga4-countries", "ga4-countries-empty", data.countries, (row) => [
+      { value: row.country || "(not set)" },
+      { value: formatNumber(row.sessions), cls: "num" },
+      { value: formatNumber(row.users), cls: "num" }
+    ], baseEmpty);
+    fillTable("ga4-landing", "ga4-landing-empty", data.landingPages, (row) => [
+      { value: row.page || "(not set)" },
+      { value: formatNumber(row.sessions), cls: "num" },
+      { value: formatNumber(row.conversions, 1), cls: "num" }
+    ], baseEmpty);
+    fillTable("ga4-campaigns", "ga4-campaigns-empty", data.campaigns, (row) => [
+      { value: row.campaign || "(not set)" },
+      { value: formatNumber(row.sessions), cls: "num" },
+      { value: formatNumber(row.users), cls: "num" },
+      { value: formatNumber(row.conversions, 1), cls: "num" }
+    ], metrics ? "\u6240\u9009\u533A\u95F4\u6CA1\u6709\u5E7F\u544A\u7CFB\u5217\u6570\u636E" : baseEmpty);
+    const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
+    fillTable("ga4-events", "ga4-events-empty", data.conversionEvents, (row) => [
+      { html: `<div class="ga4-event-label">${esc(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc(row.eventName || "")}</div>` },
+      { value: formatNumber(row.eventCount), cls: "num" },
+      { value: formatNumber(row.keyEvents, 1), cls: "num" },
+      { value: formatNumber(row.users), cls: "num" }
+    ], eventEmpty);
+    renderDevices(data.devices, baseEmpty);
+  }
+  async function loadGa42() {
+    const requestId = ++requestSequence;
+    const retry = document.getElementById("ga4-retry");
+    if (retry) retry.disabled = true;
+    try {
+      const data = await API.get(withRange("/api/ga4/overview"));
+      if (requestId !== requestSequence) return;
+      renderGa4(data || { connected: false });
+    } catch (error) {
+      if (requestId !== requestSequence) return;
+      setStatus(false, true);
+      clearMetrics();
+      clearTables("\u8BFB\u53D6\u5931\u8D25");
+      setHint({
+        visible: true,
+        mode: "error",
+        title: "GA4 \u6570\u636E\u8BFB\u53D6\u5931\u8D25",
+        detail: `\u539F\u56E0\uFF1A${error?.message || "\u63A5\u53E3\u8BF7\u6C42\u5931\u8D25"}\u3002\u8BF7\u68C0\u67E5\u767B\u5F55\u72B6\u6001\u3001\u540E\u7AEF\u670D\u52A1\u548C GA4 \u914D\u7F6E\u540E\u91CD\u8BD5\u3002`,
+        retry: true
+      });
+    } finally {
+      if (requestId === requestSequence && retry) retry.disabled = false;
+    }
   }
 
   // public/src/market-brain.js
@@ -4737,7 +4883,7 @@
   function text(value) {
     return value == null ? "" : String(value);
   }
-  function setText(el, value) {
+  function setText2(el, value) {
     if (el) el.textContent = text(value);
   }
   function toastSafe(message) {
@@ -4821,16 +4967,16 @@
     const count = byId("hm-count");
     if (!tbody || !window.API) return;
     tbody.textContent = "";
-    setText(count, "\u52A0\u8F7D\u4E2D...");
+    setText2(count, "\u52A0\u8F7D\u4E2D...");
     try {
       const data = await window.API.get("/api/hermes/memories");
       const items = data.items || [];
       items.forEach((item) => tbody.appendChild(renderMemory(item)));
       if (empty) empty.style.display = items.length ? "none" : "block";
-      setText(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
+      setText2(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
       if (manual) toastSafe("AI \u8BB0\u5FC6\u5DF2\u5237\u65B0");
     } catch (e) {
-      setText(count, "\u52A0\u8F7D\u5931\u8D25");
+      setText2(count, "\u52A0\u8F7D\u5931\u8D25");
       if (empty) empty.style.display = "block";
       toastSafe("AI \u8BB0\u5FC6\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
@@ -4846,7 +4992,7 @@
     if (importance) importance.value = "3";
     const source = byId("hm-source");
     if (source) source.value = "manual";
-    setText(byId("hm-submit-label"), "\u5B58\u5165 AI \u8BB0\u5FC6");
+    setText2(byId("hm-submit-label"), "\u5B58\u5165 AI \u8BB0\u5FC6");
   }
   function editHermesMemory(row) {
     const id = byId("hm-id");
@@ -4863,7 +5009,7 @@
     if (evidence) evidence.value = text(row.evidence);
     const source = byId("hm-source");
     if (source) source.value = text(row.source || "manual");
-    setText(byId("hm-submit-label"), "\u66F4\u65B0 AI \u8BB0\u5FC6");
+    setText2(byId("hm-submit-label"), "\u66F4\u65B0 AI \u8BB0\u5FC6");
     const panel = byId("panel-ai-memory");
     if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
   }

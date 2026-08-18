@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { db } from '../connection.js';
 import { encrypt, decryptSafe } from '../../services/crypto.js';
+import { ga4EventMeta, isGa4ConversionCandidate } from '../../lib/ga4Events.js';
 
 export const PROVIDERS = ['gsc', 'ga4', 'ads'];
 
@@ -314,29 +315,55 @@ export function gscSummary(range) {
 export function upsertGa4Daily(rows) {
   const stmt = db.prepare(
     `INSERT INTO ga4_daily
-     (date, property_id, active_users, sessions, page_views, bounce_rate, avg_session_duration, sync_run_id, updated_at)
-     VALUES (@date, @property_id, @active_users, @sessions, @page_views, @bounce_rate, @avg_session_duration, @sync_run_id, datetime('now'))
+     (date, property_id, active_users, sessions, page_views, key_events, bounce_rate, avg_session_duration, sync_run_id, updated_at)
+     VALUES (@date, @property_id, @active_users, @sessions, @page_views, @key_events, @bounce_rate, @avg_session_duration, @sync_run_id, datetime('now'))
      ON CONFLICT(date, property_id) DO UPDATE SET
        active_users=excluded.active_users, sessions=excluded.sessions, page_views=excluded.page_views,
+       key_events=excluded.key_events,
        bounce_rate=excluded.bounce_rate, avg_session_duration=excluded.avg_session_duration,
        sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
   );
-  db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
+  db.transaction((items) => items.forEach((r) => stmt.run({ key_events: 0, ...r })))(rows);
   return rows.length;
 }
 
 export function upsertGa4Dimensions(rows) {
   const stmt = db.prepare(
     `INSERT INTO ga4_dimension_daily
-     (date, property_id, dimension_type, dimension_value, active_users, sessions, page_views, bounce_rate, avg_session_duration, sync_run_id, updated_at)
-     VALUES (@date, @property_id, @dimension_type, @dimension_value, @active_users, @sessions, @page_views, @bounce_rate, @avg_session_duration, @sync_run_id, datetime('now'))
+     (date, property_id, dimension_type, dimension_value, active_users, sessions, page_views, key_events, bounce_rate, avg_session_duration, sync_run_id, updated_at)
+     VALUES (@date, @property_id, @dimension_type, @dimension_value, @active_users, @sessions, @page_views, @key_events, @bounce_rate, @avg_session_duration, @sync_run_id, datetime('now'))
      ON CONFLICT(date, property_id, dimension_type, dimension_value) DO UPDATE SET
        active_users=excluded.active_users, sessions=excluded.sessions, page_views=excluded.page_views,
+       key_events=excluded.key_events,
        bounce_rate=excluded.bounce_rate, avg_session_duration=excluded.avg_session_duration,
+       sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
+  );
+  db.transaction((items) => items.forEach((r) => stmt.run({ key_events: 0, ...r })))(rows);
+  return rows.length;
+}
+
+export function upsertGa4Events(rows) {
+  const stmt = db.prepare(
+    `INSERT INTO ga4_event_daily
+     (date, property_id, event_name, event_count, total_users, key_events, sync_run_id, updated_at)
+     VALUES (@date, @property_id, @event_name, @event_count, @total_users, @key_events, @sync_run_id, datetime('now'))
+     ON CONFLICT(date, property_id, event_name) DO UPDATE SET
+       event_count=excluded.event_count, total_users=excluded.total_users, key_events=excluded.key_events,
        sync_run_id=excluded.sync_run_id, updated_at=excluded.updated_at`
   );
   db.transaction((items) => items.forEach((r) => stmt.run(r)))(rows);
   return rows.length;
+}
+
+export function replaceGa4Range({ propertyId, startDate, endDate, dailyRows = [], dimensionRows = [], eventRows = [] }) {
+  if (!propertyId || !startDate || !endDate || startDate > endDate) throw new Error('invalid_ga4_replace_range');
+  return db.transaction(() => {
+    const params = { propertyId, startDate, endDate };
+    db.prepare('DELETE FROM ga4_event_daily WHERE property_id=@propertyId AND date BETWEEN @startDate AND @endDate').run(params);
+    db.prepare('DELETE FROM ga4_dimension_daily WHERE property_id=@propertyId AND date BETWEEN @startDate AND @endDate').run(params);
+    db.prepare('DELETE FROM ga4_daily WHERE property_id=@propertyId AND date BETWEEN @startDate AND @endDate').run(params);
+    return upsertGa4Daily(dailyRows) + upsertGa4Dimensions(dimensionRows) + upsertGa4Events(eventRows);
+  })();
 }
 
 export function ga4Overview(range) {
@@ -344,15 +371,20 @@ export function ga4Overview(range) {
   const m = db
     .prepare(
       `SELECT COALESCE(SUM(active_users),0) activeUsers, COALESCE(SUM(sessions),0) sessions,
-              COALESCE(SUM(page_views),0) pageViews, AVG(bounce_rate) * 100 bounceRate,
-              AVG(avg_session_duration) avgDuration
+              COALESCE(SUM(page_views),0) pageViews, COALESCE(SUM(key_events),0) keyEvents,
+              CASE WHEN SUM(CASE WHEN bounce_rate IS NULL THEN 0 ELSE sessions END) > 0
+                   THEN SUM(bounce_rate * sessions) * 100.0 / SUM(CASE WHEN bounce_rate IS NULL THEN 0 ELSE sessions END) END bounceRate,
+              CASE WHEN SUM(CASE WHEN avg_session_duration IS NULL THEN 0 ELSE sessions END) > 0
+                   THEN SUM(avg_session_duration * sessions) / SUM(CASE WHEN avg_session_duration IS NULL THEN 0 ELSE sessions END) END avgDuration,
+              COUNT(*) dataDays, MAX(date) lastDate
        FROM ga4_daily WHERE date BETWEEN @start AND @end AND (@propertyId IS NULL OR property_id = @propertyId)`
     )
     .get(params);
   const dim = (type) =>
     db
       .prepare(
-        `SELECT dimension_value value, SUM(sessions) sessions, SUM(active_users) users, SUM(page_views) pageViews
+        `SELECT dimension_value value, SUM(sessions) sessions, SUM(active_users) users,
+                SUM(page_views) pageViews, SUM(key_events) keyEvents
          FROM ga4_dimension_daily
          WHERE date BETWEEN @start AND @end AND dimension_type = @type AND (@propertyId IS NULL OR property_id = @propertyId)
          GROUP BY dimension_value
@@ -360,12 +392,37 @@ export function ga4Overview(range) {
          LIMIT 50`
       )
       .all({ ...params, type });
+  const eventCoverage = db.prepare(
+    `SELECT COUNT(*) rowCount, COUNT(DISTINCT event_name) distinctEvents, MAX(date) lastDate,
+            COALESCE(SUM(key_events),0) keyEvents
+     FROM ga4_event_daily
+     WHERE date BETWEEN @start AND @end AND (@propertyId IS NULL OR property_id = @propertyId)`
+  ).get(params);
+  const events = db.prepare(
+    `SELECT event_name eventName, SUM(event_count) eventCount, SUM(total_users) users,
+            SUM(key_events) keyEvents, MAX(date) lastDate
+     FROM ga4_event_daily
+     WHERE date BETWEEN @start AND @end AND (@propertyId IS NULL OR property_id = @propertyId)
+     GROUP BY event_name
+     ORDER BY keyEvents DESC, eventCount DESC
+     LIMIT 100`
+  ).all(params);
+  const conversionEvents = events
+    .filter((row) => isGa4ConversionCandidate(row.eventName, row.keyEvents))
+    .map((row) => ({ ...row, usersAggregation: 'daily_sum', ...ga4EventMeta(row.eventName, row.keyEvents) }));
   return {
-    metrics: m && (m.activeUsers || m.sessions || m.pageViews) ? m : null,
+    metrics: m?.dataDays ? { ...m, activeUsersAggregation: 'daily_sum' } : null,
     sources: dim('source_medium').map((r) => ({ source: r.value, sessions: r.sessions, users: r.users })),
     countries: dim('country').map((r) => ({ country: r.value, sessions: r.sessions, users: r.users })),
     devices: dim('device').map((r) => ({ device: r.value, sessions: r.sessions, users: r.users })),
-    landingPages: dim('landing_page').map((r) => ({ page: r.value, sessions: r.sessions, conversions: null })),
+    landingPages: dim('landing_page').map((r) => ({ page: r.value, sessions: r.sessions, conversions: r.keyEvents || 0 })),
+    campaigns: dim('campaign').map((r) => ({ campaign: r.value, sessions: r.sessions, users: r.users, usersAggregation: 'daily_sum', conversions: r.keyEvents || 0 })),
+    conversionEvents,
+    eventCoverage: {
+      ...eventCoverage,
+      synced: Number(eventCoverage?.rowCount || 0) > 0,
+      matchedEvents: conversionEvents.length,
+    },
   };
 }
 
