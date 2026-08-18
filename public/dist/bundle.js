@@ -5994,13 +5994,145 @@
     }
   }
 
+  // public/src/table-editor.js
+  var EDITABLE_CELL = "td[contenteditable][data-field]";
+  var DATE_INPUT = "input.cell-date[data-field]";
+  var tableEditorBound = false;
+  function closest(target, selector) {
+    return target && target.closest ? target.closest(selector) : null;
+  }
+  function setCellBusy(cell, busy, previousEditable) {
+    if (busy) {
+      cell.setAttribute("contenteditable", "false");
+      cell.setAttribute("aria-busy", "true");
+      return;
+    }
+    if (previousEditable == null) cell.removeAttribute("contenteditable");
+    else cell.setAttribute("contenteditable", previousEditable);
+    cell.removeAttribute("aria-busy");
+  }
+  function setDateInputsBusy(inputs, busy) {
+    inputs.forEach((input) => {
+      if (busy) {
+        input._tableEditorWasDisabled = input.disabled;
+        input.disabled = true;
+        input.setAttribute("aria-busy", "true");
+      } else {
+        input.disabled = Boolean(input._tableEditorWasDisabled);
+        delete input._tableEditorWasDisabled;
+        input.removeAttribute("aria-busy");
+      }
+    });
+  }
+  function dateFieldValue(inputs) {
+    return inputs.length === 2 ? (inputs[0].value || "") + "~" + (inputs[1].value || "") : inputs[0].value;
+  }
+  function handleFocusIn(event) {
+    const cell = closest(event.target, EDITABLE_CELL);
+    if (cell) {
+      cell._old = cell.innerText;
+      return;
+    }
+    const input = closest(event.target, DATE_INPUT);
+    if (input) input._oldValue = input.value;
+  }
+  async function handleDateChange(event) {
+    const input = closest(event.target, DATE_INPUT);
+    if (!input) return;
+    const row = input.closest("tr");
+    const endpoint = row && row.dataset.ep;
+    const id = row && row.dataset.id;
+    if (!endpoint || !id) return;
+    const container = input.closest("td");
+    const inputs = [...container.querySelectorAll("input.cell-date")];
+    const oldValue = input._oldValue != null ? input._oldValue : input.defaultValue;
+    setDateInputsBusy(inputs, true);
+    try {
+      await API.patch(endpoint + "/" + id, { [input.dataset.field]: dateFieldValue(inputs) });
+      inputs.forEach((item) => {
+        item._oldValue = item.value;
+        item.defaultValue = item.value;
+      });
+      toast("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93");
+    } catch (error) {
+      input.value = oldValue || "";
+      toast(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+    } finally {
+      setDateInputsBusy(inputs, false);
+    }
+  }
+  async function handleFocusOut(event) {
+    const cell = closest(event.target, EDITABLE_CELL);
+    if (!cell) return;
+    const row = cell.closest("tr");
+    const id = row && row.dataset.id;
+    const endpoint = row && row.dataset.ep;
+    if (!id || !endpoint) return;
+    const value = cell.innerText.trim();
+    const oldValue = cell._old != null ? cell._old : cell.innerText;
+    if (value === String(oldValue).trim()) return;
+    const previousEditable = cell.getAttribute("contenteditable");
+    setCellBusy(cell, true, previousEditable);
+    try {
+      await API.patch(endpoint + "/" + id, { [cell.dataset.field]: value });
+      cell._old = value;
+    } catch (error) {
+      rollbackEditable(cell, oldValue);
+      toast(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+    } finally {
+      setCellBusy(cell, false, previousEditable);
+    }
+  }
+  function handleKeyDown(event) {
+    const cell = closest(event.target, "td[contenteditable]");
+    if (!cell) return;
+    const table = cell.closest("table");
+    if (!table) return;
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const cells = [...table.querySelectorAll("td[contenteditable]")];
+      const current = cells.indexOf(cell);
+      const next = cells[current + (event.shiftKey ? -1 : 1)];
+      if (next) {
+        cell.blur();
+        next.focus();
+        placeCaretEnd(next);
+      }
+      return;
+    }
+    if (cell.classList.contains("mkt-ans")) return;
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    const direction = event.key === "ArrowDown" ? "nextElementSibling" : "previousElementSibling";
+    const column = cell.cellIndex;
+    let row = cell.parentElement[direction];
+    while (row) {
+      const next = row.cells && row.cells[column];
+      if (next && next.isContentEditable) {
+        event.preventDefault();
+        cell.blur();
+        next.focus();
+        placeCaretEnd(next);
+        return;
+      }
+      row = row[direction];
+    }
+  }
+  function bindTableEditor() {
+    if (tableEditorBound) return;
+    tableEditorBound = true;
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("change", handleDateChange);
+    document.addEventListener("focusout", handleFocusOut);
+    document.addEventListener("keydown", handleKeyDown);
+  }
+
   // public/src/main.js
+  bindTableEditor();
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
   var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
   var closedLoopCompatibility = { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent };
   var aiCompatibility = { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi };
-  var editableCompatibility = { rollbackEditable, placeCaretEnd };
   var settingsCompatibility = { bindSettings, openPwd, submitPwd };
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, editableCompatibility, settingsCompatibility);
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility);
 })();

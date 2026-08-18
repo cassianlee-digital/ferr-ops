@@ -46,15 +46,17 @@ import { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTest
 // 已迁移（批次12）：ai（状态收回模块；keywords / charts 显式 import；仅 app.js 的动作分发和初始化保留兼容入口）。
 import { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi } from './ai.js';
 // 已迁移（批次13）：通用可编辑工具 + 设置/账户逻辑。
-import { rollbackEditable, placeCaretEnd } from './editable.js';
 import { bindSettings, openPwd, submitPwd } from './settings.js';
+// 已迁移（批次14）：通用表格编辑、日期保存和键盘导航；模块自行幂等初始化。
+import { bindTableEditor } from './table-editor.js';
+
+bindTableEditor();
 
 const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats,renderInqFeed};
 const kpiCompatibility={TOTAL,SEO,SEM,applyKpiServer,loadMetrics,loadWeeks,submitSeoWeek,submitSemWeek};
 const chartCompatibility={charts,loadDashboardInq,loadDashboardBoards,renderInqDonuts,loadSeoBoardGsc,loadSeoBoardFull,loadSemBoardAds,loadSemBoardFull,loadAttribution,loadDiagnostics,loadDataFreshness,onSemCampaignChange,onSemAdGroupChange,resizeScatters};
 const closedLoopCompatibility={prepend,refreshTaskCols,addFixRow,addDepositRow,addPlanRow,addTestRow,addContent,openTaskModal,submitTask,submitSubtask,loadClosedLoop,loadContent};
 const aiCompatibility={runAiAnalysis,aiBox,loadAiAnalyses,adoptAi};
-const editableCompatibility={rollbackEditable,placeCaretEnd};
 const settingsCompatibility={bindSettings,openPwd,submitPwd};
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, editableCompatibility, settingsCompatibility);
+Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility);

@@ -363,7 +363,7 @@ function chk(el){
    — 仅 TOTAL/SEO/SEM/applyKpiServer/loadMetrics/loadWeeks/submitSeoWeek/submitSemWeek 保留全局兼容入口 */
 
 /* 设置页 KPI 目标与修改密码已迁移至 ES 模块 public/src/settings.js。 */
-/* 编辑校验、回滚与光标工具已迁移至 public/src/editable.js；经典脚本仅保留必要兼容入口。 */
+/* 编辑校验、回滚与光标工具已迁移至 public/src/editable.js，由各模块显式导入。 */
 
 /* Google 接入 / 数据源状态卡已拆分至 /google-projects.js（阶段2）
    — INTEG_LABEL / DS_* / dsStatusMeta / dsRow / loadDataSourcesStatus / loadIntegrations / saveIntegration */
@@ -374,44 +374,7 @@ function chk(el){
 /* 复盘周报已迁移至 src/weekly-review.js（阶段4-A / 批次7）
    — 周报工作区已迁入 src/weekly-review.js，仅 renderReview/renderMonthReview 保留全局兼容入口 */
 
-/* ===== V7 Excel 化基建：通用单元格保存 + 键盘导航 ===== */
-/* 通用：带 data-field 的可编辑单元格，失焦即保存到该行 data-ep/:id（否词/广告等）。
-   focusin 缓存旧值；无变化不请求；保存失败回滚旧值并提示，杜绝「屏上已改、库里没改」的假成功。 */
-document.addEventListener('focusin',e=>{ const cell=e.target.closest&&e.target.closest('td[contenteditable][data-field]'); if(cell)cell._old=cell.innerText; });
-// A组：单元格日期选择器(整改截止/测试起止) change 即存到 该行 data-ep/:id；范围型同格两个 input 合成 start~end
-document.addEventListener('change',e=>{
-  const inp=e.target.closest&&e.target.closest('input.cell-date[data-field]'); if(!inp)return;
-  const tr=inp.closest('tr'); const ep=tr&&tr.dataset.ep,id=tr&&tr.dataset.id; if(!ep||!id)return;
-  const pair=[...inp.closest('td').querySelectorAll('input.cell-date')];
-  const val=pair.length===2?((pair[0].value||'')+'~'+(pair[1].value||'')):inp.value;
-  API.patch(ep+'/'+id,{[inp.dataset.field]:val}).then(()=>toast('已保存 · 已入库')).catch(err=>toast(err.status===403?'无权修改':'保存失败，未入库'));
-});
-document.addEventListener('focusout',async e=>{
-  const cell=e.target.closest&&e.target.closest('td[contenteditable][data-field]'); if(!cell)return;
-  const tr=cell.closest('tr'); if(!tr)return; const id=tr.dataset.id, ep=tr.dataset.ep; if(!id||!ep)return;
-  const val=cell.innerText.trim(); const oldVal=cell._old!=null?cell._old:cell.innerText;
-  if(val===String(oldVal).trim())return; // 无变化:不请求
-  const body={}; body[cell.dataset.field]=val;
-  try{ await API.patch(ep+'/'+id,body); cell._old=val; }
-  catch(err){ rollbackEditable(cell,oldVal); toast(err.status===403?'无权修改，已恢复旧值':'保存失败，已恢复旧值'); }
-});
-/* 通用键盘导航：Tab/Shift+Tab 横向；↑↓ 纵向（多行单元格如市场答案不拦截，保留原生换行/移动）*/
-document.addEventListener('keydown',e=>{
-  const cell=e.target.closest&&e.target.closest('td[contenteditable]'); if(!cell)return;
-  const table=cell.closest('table'); if(!table)return;
-  const multiline=cell.classList.contains('mkt-ans');
-  if(e.key==='Tab'){
-    e.preventDefault();
-    const cells=[...table.querySelectorAll('td[contenteditable]')]; const i=cells.indexOf(cell);
-    const next=cells[i+(e.shiftKey?-1:1)]; if(next){ cell.blur(); next.focus(); placeCaretEnd(next); }
-    return;
-  }
-  if(multiline) return; // 多行单元格保留原生 ↑↓/Enter
-  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
-    const ci=cell.cellIndex; let row=cell.parentElement[e.key==='ArrowDown'?'nextElementSibling':'previousElementSibling'];
-    while(row){ const c=row.cells&&row.cells[ci]; if(c&&c.isContentEditable){ e.preventDefault(); cell.blur(); c.focus(); placeCaretEnd(c); return; } row=row[e.key==='ArrowDown'?'nextElementSibling':'previousElementSibling']; }
-  }
-});
+/* 通用单元格保存、日期回滚和表格键盘导航已迁移至 public/src/table-editor.js。 */
 
 /* 机会词排名 · 每周快照 + 趋势回显（P3）*/
 async function snapshotRanks(){

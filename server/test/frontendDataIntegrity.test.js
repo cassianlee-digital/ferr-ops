@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { bindTableEditor } from '../../public/src/table-editor.js';
 
 const html = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
@@ -12,6 +13,7 @@ const editableSource = readFileSync(new URL('../../public/src/editable.js', impo
 const settingsSource = readFileSync(new URL('../../public/src/settings.js', import.meta.url), 'utf8');
 const keywordsSource = readFileSync(new URL('../../public/src/keywords.js', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
+const tableEditorSource = readFileSync(new URL('../../public/src/table-editor.js', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -111,8 +113,97 @@ test('settings and editable behavior are modular with explicit dependencies', ()
   assert.match(keywordsSource, /import \{[^}]*placeCaretEnd[^}]*\} from '\.\/editable\.js';/);
   assert.match(closedLoopSource, /import \{ placeCaretEnd \} from '\.\/editable\.js';/);
   assert.match(negAdsSource, /import \{ placeCaretEnd \} from '\.\/editable\.js';/);
-  assert.match(mainSource, /const editableCompatibility=\{rollbackEditable,placeCaretEnd\};/);
+  assert.doesNotMatch(mainSource, /editableCompatibility/);
   assert.match(mainSource, /const settingsCompatibility=\{bindSettings,openPwd,submitPwd\};/);
   assert.equal((appSource.match(/\bbindSettings\(\)/g)||[]).length,1);
   assert.match(editableSource, /Number\.isFinite\(value\)/);
+});
+
+test('generic table editing has one idempotent owner and rolls back failed date saves', () => {
+  assert.doesNotMatch(appSource, /td\[contenteditable\]\[data-field\]|input\.cell-date\[data-field\]|\bplaceCaretEnd\b|\brollbackEditable\b/);
+  assert.match(mainSource, /import \{ bindTableEditor \} from '\.\/table-editor\.js';/);
+  assert.equal((mainSource.match(/\bbindTableEditor\(\)/g)||[]).length,1);
+  assert.match(tableEditorSource, /if\(tableEditorBound\)return;/);
+  assert.match(tableEditorSource, /document\.addEventListener\('focusin',handleFocusIn\)/);
+  assert.match(tableEditorSource, /document\.addEventListener\('change',handleDateChange\)/);
+  assert.match(tableEditorSource, /input\.value=oldValue\|\|'';/);
+  assert.match(tableEditorSource, /保存失败，已恢复旧值/);
+  assert.match(tableEditorSource, /setDateInputsBusy\(inputs,true\);[\s\S]*finally\{[\s\S]*setDateInputsBusy\(inputs,false\);/);
+  assert.match(tableEditorSource, /setCellBusy\(cell,true,previousEditable\);[\s\S]*finally\{[\s\S]*setCellBusy\(cell,false,previousEditable\);/);
+});
+
+test('table editor restores failed date and text saves at runtime', async () => {
+  const listeners={};
+  const previousDocument=globalThis.document;
+  const previousApi=globalThis.API;
+  const previousToast=globalThis.toast;
+  const messages=[];
+  globalThis.document={
+    addEventListener(type,handler){
+      listeners[type]??=[];
+      listeners[type].push(handler);
+    }
+  };
+  globalThis.API={patch:async()=>{ throw null; }};
+  globalThis.toast=message=>messages.push(message);
+
+  try{
+    bindTableEditor();
+    bindTableEditor();
+    assert.deepEqual(Object.fromEntries(Object.entries(listeners).map(([type,items])=>[type,items.length])),{
+      focusin:1,
+      change:1,
+      focusout:1,
+      keydown:1
+    });
+
+    const dateAttributes=new Map();
+    const row={dataset:{ep:'/api/fixes',id:'7'}};
+    const input={
+      value:'2026-08-20',
+      defaultValue:'2026-08-19',
+      _oldValue:'2026-08-19',
+      disabled:false,
+      dataset:{field:'due_date'},
+      closest(selector){
+        if(selector==='input.cell-date[data-field]')return this;
+        if(selector==='tr')return row;
+        if(selector==='td')return container;
+        return null;
+      },
+      setAttribute(name,value){ dateAttributes.set(name,value); },
+      removeAttribute(name){ dateAttributes.delete(name); }
+    };
+    const container={querySelectorAll:()=>[input]};
+    await listeners.change[0]({target:input});
+    assert.equal(input.value,'2026-08-19');
+    assert.equal(input.disabled,false);
+    assert.equal(dateAttributes.has('aria-busy'),false);
+
+    const cellAttributes=new Map([['contenteditable','true']]);
+    const cellRow={dataset:{ep:'/api/loop-items',id:'9'}};
+    const cell={
+      innerText:'new text',
+      textContent:'new text',
+      _old:'old text',
+      dataset:{field:'content'},
+      closest(selector){
+        if(selector==='td[contenteditable][data-field]')return this;
+        if(selector==='tr')return cellRow;
+        return null;
+      },
+      getAttribute:name=>cellAttributes.get(name)??null,
+      setAttribute:(name,value)=>cellAttributes.set(name,value),
+      removeAttribute:name=>cellAttributes.delete(name)
+    };
+    await listeners.focusout[0]({target:cell});
+    assert.equal(cell.textContent,'old text');
+    assert.equal(cellAttributes.get('contenteditable'),'true');
+    assert.equal(cellAttributes.has('aria-busy'),false);
+    assert.deepEqual(messages,['保存失败，已恢复旧值','保存失败，已恢复旧值']);
+  }finally{
+    globalThis.document=previousDocument;
+    globalThis.API=previousApi;
+    globalThis.toast=previousToast;
+  }
 });
