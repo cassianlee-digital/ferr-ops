@@ -1,8 +1,8 @@
 /* 关键词库（4 类 · 增删改入库 · FR-9）（ES 模块 · esbuild 打包为 IIFE）。
    显式模块依赖：OPT 来自 ./tagselect.js —— 不再靠全局碰运气。
    运行时仍依赖的全局（尚未迁移的经典脚本/内联提供，调用/事件时解析）：
-   esc()、toast()、API、renderSparklines()、placeCaretEnd()、
-   validateEditableValue()/rollbackEditable()/showSaveError()/setSavingState()（Excel 化基建，内联）。
+   esc()、toast()、API、renderSparklines() 仍由经典脚本提供。
+   placeCaretEnd()/validateEditableValue()/rollbackEditable()/showSaveError()/setSavingState() 显式导入。
    必须挂 window（main.js 统一处理）：
      - inlineConfirm —— inquiries / closed-loop / archive / sop 显式导入；经典兼容层暂仍暴露。
      - addKeyword —— 内联 onclick（加词按钮 ×4）；filterKwByCat —— index.html:1135/1138 真实调用；
@@ -10,6 +10,7 @@
    KW_TB/KW_PAGE_OPTS/_kwPage/_kwSize 无外部引用，收进模块作用域。 */
 import { OPT } from './tagselect.js';
 import { runAiAnalysis } from './ai.js';
+import { validateEditableValue, setSavingState, rollbackEditable, showSaveError, placeCaretEnd } from './editable.js';
 
 /* ================= 关键词库（4 类 · 增删改入库 · FR-9）================= */
 const KW_TB={seo:'tb-kw-seo',sem:'tb-kw-sem',high:'tb-kw-high',customer:'tb-kw-cust'};

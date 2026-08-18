@@ -3,6 +3,7 @@
    main.js 只为 app.js / ai.js / hermes.js 保留必要兼容入口，其余状态和辅助函数留在模块内。 */
 
 import { inlineConfirm } from './keywords.js';
+import { placeCaretEnd } from './editable.js';
 import { loadSops, loadUrgent, updateSopCounts } from './sop.js';
 import { formatLocalDate, ymd } from './timerange.js';
 

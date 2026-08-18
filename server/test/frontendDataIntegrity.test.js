@@ -8,6 +8,10 @@ const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.
 const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.meta.url), 'utf8');
 const closedLoopSource = readFileSync(new URL('../../public/src/closed-loop.js', import.meta.url), 'utf8');
 const aiSource = readFileSync(new URL('../../public/src/ai.js', import.meta.url), 'utf8');
+const editableSource = readFileSync(new URL('../../public/src/editable.js', import.meta.url), 'utf8');
+const settingsSource = readFileSync(new URL('../../public/src/settings.js', import.meta.url), 'utf8');
+const keywordsSource = readFileSync(new URL('../../public/src/keywords.js', import.meta.url), 'utf8');
+const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -95,4 +99,20 @@ test('closed-loop reloads are idempotent and new fix dates use full local ISO da
   assert.match(closedLoopSource, /querySelector\('tr\[data-load-state\]'\)/);
   assert.match(closedLoopSource, /function futureDate\(days\)\{ return formatLocalDate\(/);
   assert.doesNotMatch(closedLoopSource, /\bplusDays\b/);
+});
+
+test('settings and editable behavior are modular with explicit dependencies', () => {
+  assert.doesNotMatch(appSource, /function (?:validateEditableValue|setSavingState|showSaveError|bindSettings|openPwd|submitPwd|placeCaretEnd)\(/);
+  assert.match(settingsSource, /from '\.\/kpi\.js';/);
+  assert.match(settingsSource, /from '\.\/kpi-view\.js';/);
+  assert.match(settingsSource, /from '\.\/editable\.js';/);
+  assert.match(settingsSource, /dataset\.settingsBound==='1'/);
+  assert.match(keywordsSource, /from '\.\/editable\.js';/);
+  assert.match(keywordsSource, /import \{[^}]*placeCaretEnd[^}]*\} from '\.\/editable\.js';/);
+  assert.match(closedLoopSource, /import \{ placeCaretEnd \} from '\.\/editable\.js';/);
+  assert.match(negAdsSource, /import \{ placeCaretEnd \} from '\.\/editable\.js';/);
+  assert.match(mainSource, /const editableCompatibility=\{rollbackEditable,placeCaretEnd\};/);
+  assert.match(mainSource, /const settingsCompatibility=\{bindSettings,openPwd,submitPwd\};/);
+  assert.equal((appSource.match(/\bbindSettings\(\)/g)||[]).length,1);
+  assert.match(editableSource, /Number\.isFinite\(value\)/);
 });

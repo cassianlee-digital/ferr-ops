@@ -1741,10 +1741,10 @@
   }
   function renderDiagnostics(d) {
     const error = d && d.error;
-    const seo = d && d.seo || {}, opp = seo.opportunities || [], dec = seo.decay || [], can = seo.cannibalization || [];
+    const seo = d && d.seo || {}, opp = seo.opportunities || [], dec = seo.decay || [], can2 = seo.cannibalization || [];
     _badgeCount("diag-opp-n", opp.length);
     _badgeCount("diag-decay-n", dec.length);
-    _badgeCount("diag-cann-n", can.length);
+    _badgeCount("diag-cann-n", can2.length);
     const t1 = document.getElementById("diagOppRows");
     if (t1) {
       t1.innerHTML = error ? loadFailureRow(5, "SEO \u673A\u4F1A\u8BCA\u65AD", error) : opp.length ? opp.map((o) => {
@@ -1766,7 +1766,7 @@
     }
     const t3 = document.getElementById("diagCannRows");
     if (t3) {
-      t3.innerHTML = error ? loadFailureRow(5, "SEO \u8695\u98DF\u8BCA\u65AD", error) : can.length ? can.map((g) => {
+      t3.innerHTML = error ? loadFailureRow(5, "SEO \u8695\u98DF\u8BCA\u65AD", error) : can2.length ? can2.map((g) => {
         const urls = g.pages.map((p) => esc(_seoPath(p.page))).join("<br>");
         const ranks = g.pages.map((p) => p.position != null ? Number(p.position).toFixed(0) : "\u2014").join(" / ");
         const detail = g.pages.map((p) => _seoPath(p.page) + "(\u6392\u540D" + (p.position != null ? Number(p.position).toFixed(1) : "\u2014") + ")").join("\u3001");
@@ -2208,6 +2208,53 @@
       }
     } catch (err) {
       toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  }
+
+  // public/src/editable.js
+  function validateEditableValue(raw, type, opts) {
+    opts = opts || {};
+    if (type === "number") {
+      const s = String(raw == null ? "" : raw).trim();
+      if (s === "") return { ok: false, msg: opts.emptyMsg || "KPI \u76EE\u6807\u503C\u4E0D\u80FD\u4E3A\u7A7A" };
+      if (!/^\d+(\.\d+)?$/.test(s)) return { ok: false, msg: "\u8BF7\u8F93\u5165\u6709\u6548\u6570\u5B57" };
+      const value2 = Number(s);
+      if (!Number.isFinite(value2)) return { ok: false, msg: "\u8BF7\u8F93\u5165\u6709\u6548\u6570\u5B57" };
+      if (opts.min != null && value2 < opts.min) return { ok: false, msg: opts.minMsg || "KPI \u76EE\u6807\u503C\u4E0D\u80FD\u4E3A\u8D1F\u6570" };
+      return { ok: true, value: value2 };
+    }
+    const value = String(raw == null ? "" : raw).trim();
+    if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
+    return { ok: true, value };
+  }
+  function setSavingState(el, state) {
+    if (!el) return;
+    el.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
+    if (state === "saving") el.classList.add("kpi-saving");
+    else if (state === "ok") {
+      el.classList.add("kpi-ok");
+      setTimeout(() => el.classList.remove("kpi-ok"), 1200);
+    } else if (state === "error") {
+      el.classList.add("kpi-error");
+      setTimeout(() => el.classList.remove("kpi-error"), 2e3);
+    }
+  }
+  function rollbackEditable(el, oldValue) {
+    if (el) el.textContent = oldValue == null ? "" : String(oldValue);
+  }
+  function showSaveError(el, msg) {
+    setSavingState(el, "error");
+    toast(msg);
+  }
+  function placeCaretEnd(el) {
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const selection = getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } catch (e) {
     }
   }
 
@@ -5862,11 +5909,98 @@
     rvSectionSave(t.closest(".rv-sec"));
   });
 
+  // public/src/settings.js
+  function bindSettings() {
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
+      if (el.dataset.settingsBound === "1") return;
+      el.dataset.settingsBound = "1";
+      el.addEventListener("focusin", () => {
+        el.dataset.kpiOld = el.textContent;
+      });
+      const commit = async () => {
+        if (!can("kpiTarget")) {
+          rollbackEditable(el, el.dataset.kpiOld != null ? el.dataset.kpiOld : el.textContent);
+          toast("\u4EC5\u8001\u677F/\u4E3B\u7BA1\u53EF\u6539 KPI \u76EE\u6807");
+          return;
+        }
+        const parts = el.dataset.kpi.split(":");
+        const values = { TOTAL, SEO, SEM }[parts[0]];
+        const item = values && values[Number(parts[1])];
+        if (!item) return;
+        const oldValue = el.dataset.kpiOld != null ? el.dataset.kpiOld : String(item.t);
+        const result = validateEditableValue(el.textContent, "number", { min: 0 });
+        if (!result.ok) {
+          rollbackEditable(el, oldValue);
+          showSaveError(el, result.msg);
+          return;
+        }
+        if (result.value === item.t) {
+          el.textContent = String(result.value);
+          setSavingState(el, null);
+          return;
+        }
+        setSavingState(el, "saving");
+        try {
+          const { rows: rows2 } = await API.put("/api/kpi-targets", { updates: [{ id: item.id, target: result.value }] });
+          applyKpiServer(rows2);
+          renderKPI2();
+          el.textContent = String(item.t);
+          el.dataset.kpiOld = String(item.t);
+          setSavingState(el, "ok");
+          toast("\u5DF2\u66F4\u65B0\u300C" + item.n + "\u300D\u76EE\u6807 \u2192 " + item.t + " \xB7 \u5DF2\u5165\u5E93, \u8BC4\u5206\u5DF2\u91CD\u7B97");
+        } catch (error) {
+          rollbackEditable(el, oldValue);
+          showSaveError(el, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+        }
+      };
+      el.addEventListener("blur", commit);
+      el.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          el.blur();
+        }
+      });
+    });
+  }
+  function openPwd() {
+    ["pwd-old", "pwd-new", "pwd-new2"].forEach((id) => {
+      const input = document.getElementById(id);
+      if (input) input.value = "";
+    });
+    openModal("pwdMask");
+  }
+  async function submitPwd() {
+    const oldPassword = document.getElementById("pwd-old").value;
+    const newPassword = document.getElementById("pwd-new").value;
+    const confirmation = document.getElementById("pwd-new2").value;
+    if (!oldPassword || !newPassword) {
+      toast("\u8BF7\u586B\u5199\u5F53\u524D\u5BC6\u7801\u4E0E\u65B0\u5BC6\u7801");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast("\u65B0\u5BC6\u7801\u81F3\u5C11 6 \u4F4D");
+      return;
+    }
+    if (newPassword !== confirmation) {
+      toast("\u4E24\u6B21\u8F93\u5165\u7684\u65B0\u5BC6\u7801\u4E0D\u4E00\u81F4");
+      return;
+    }
+    try {
+      await API.post("/api/change-password", { oldPassword, newPassword });
+      closeModal("pwdMask");
+      toast("\u5BC6\u7801\u5DF2\u4FEE\u6539\uFF0C\u4E0B\u6B21\u767B\u5F55\u7528\u65B0\u5BC6\u7801");
+    } catch (error) {
+      toast(error.status === 401 ? "\u5F53\u524D\u5BC6\u7801\u4E0D\u6B63\u786E" : "\u4FEE\u6539\u5931\u8D25\uFF1A" + error.message);
+    }
+  }
+
   // public/src/main.js
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
   var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
   var closedLoopCompatibility = { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent };
   var aiCompatibility = { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi };
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility);
+  var editableCompatibility = { rollbackEditable, placeCaretEnd };
+  var settingsCompatibility = { bindSettings, openPwd, submitPwd };
+  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, editableCompatibility, settingsCompatibility);
 })();

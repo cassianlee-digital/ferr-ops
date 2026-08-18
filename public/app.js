@@ -362,74 +362,8 @@ function chk(el){
 /* KPI 引擎 + 周数据已迁移至 ES 模块 public/src/kpi.js（打包进 /dist/bundle.js）
    — 仅 TOTAL/SEO/SEM/applyKpiServer/loadMetrics/loadWeeks/submitSeoWeek/submitSemWeek 保留全局兼容入口 */
 
-/* 设置页：目标值 contenteditable → 回写 KPI 数组 + 重算 */
-/* ===== 1c-a: 可编辑保存通用小工具(本轮仅服务 KPI 设置)===== */
-// 校验：number 拒绝 空/非数字/负数/多小数点;允许 0 与小数。返回 {ok,value,msg}
-function validateEditableValue(raw, type, opts){
-  opts=opts||{};
-  if(type==='number'){
-    const s=String(raw==null?'':raw).trim();
-    if(s==='') return {ok:false, msg:'KPI 目标值不能为空'};
-    if(!/^\d+(\.\d+)?$/.test(s)) return {ok:false, msg:'请输入有效数字'}; // 拒 abc / -5 / 1.2.3
-    const v=Number(s);
-    if(isNaN(v)) return {ok:false, msg:'请输入有效数字'};
-    if(opts.min!=null && v<opts.min) return {ok:false, msg:'KPI 目标值不能为负数'};
-    return {ok:true, value:v};
-  }
-  const s=String(raw==null?'':raw).trim();
-  if(opts.nonempty && s==='') return {ok:false, msg:opts.emptyMsg||'内容不能为空'};
-  return {ok:true, value:s};
-}
-function setSavingState(el, state){
-  if(!el) return;
-  el.classList.remove('kpi-saving','kpi-ok','kpi-error');
-  if(state==='saving') el.classList.add('kpi-saving');
-  else if(state==='ok'){ el.classList.add('kpi-ok'); setTimeout(()=>el.classList.remove('kpi-ok'),1200); }
-  else if(state==='error'){ el.classList.add('kpi-error'); setTimeout(()=>el.classList.remove('kpi-error'),2000); }
-}
-function rollbackEditable(el, oldValue){ if(el) el.textContent=(oldValue==null?'':String(oldValue)); }
-function showSaveError(el, msg){ setSavingState(el,'error'); toast(msg); }
-
-/* 设置页：目标值 contenteditable → 校验 + 保存中/成功/失败回滚 + 回写 KPI 数组 + 重算 */
-function bindSettings(){
-  document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{
-    el.addEventListener('focusin',()=>{ el.dataset.kpiOld=el.textContent; }); // 缓存旧值
-    const commit=async()=>{ if(!can('kpiTarget')){ rollbackEditable(el, el.dataset.kpiOld!=null?el.dataset.kpiOld:el.textContent); toast('仅老板/主管可改 KPI 目标'); return; } // 不静默：给明确提示并回滚
-      const p=el.dataset.kpi.split(':'),arr=({TOTAL,SEO,SEM})[p[0]],idx=+p[1];
-      if(!arr||!arr[idx])return;
-      const oldVal=el.dataset.kpiOld!=null?el.dataset.kpiOld:String(arr[idx].t);
-      const vr=validateEditableValue(el.textContent,'number',{min:0});
-      if(!vr.ok){ rollbackEditable(el,oldVal); showSaveError(el,vr.msg); return; } // 非法 → 回滚 + 提示
-      const v=vr.value;
-      if(v===arr[idx].t){ el.textContent=String(v); setSavingState(el,null); return; } // 无变化:规范化显示,不请求
-      setSavingState(el,'saving');
-      try{
-        const {rows}=await API.put('/api/kpi-targets',{updates:[{id:arr[idx].id,target:v}]});
-        applyKpiServer(rows); renderKPI();                 // arr[idx].t 已更新为服务端确认值
-        el.textContent=String(arr[idx].t); el.dataset.kpiOld=String(arr[idx].t); // 用服务端值回写 DOM
-        setSavingState(el,'ok');
-        toast('已更新「'+arr[idx].n+'」目标 → '+arr[idx].t+' · 已入库, 评分已重算');
-      }catch(e){ rollbackEditable(el,oldVal); showSaveError(el,e.status===403?'仅老板可改 KPI 目标':'保存失败，已恢复旧值'); }
-    };
-    el.addEventListener('blur',commit);
-    el.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();el.blur();} });
-  });
-}
-
-/* 修改密码（后端 /api/change-password 强制校验旧密码）*/
-function openPwd(){ ['pwd-old','pwd-new','pwd-new2'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';}); openModal('pwdMask'); }
-async function submitPwd(){
-  const oldPassword=document.getElementById('pwd-old').value;
-  const newPassword=document.getElementById('pwd-new').value;
-  const confirm2=document.getElementById('pwd-new2').value;
-  if(!oldPassword||!newPassword){ toast('请填写当前密码与新密码'); return; }
-  if(newPassword.length<6){ toast('新密码至少 6 位'); return; }
-  if(newPassword!==confirm2){ toast('两次输入的新密码不一致'); return; }
-  try{
-    await API.post('/api/change-password',{oldPassword,newPassword});
-    closeModal('pwdMask'); toast('密码已修改，下次登录用新密码');
-  }catch(e){ toast(e.status===401?'当前密码不正确':'修改失败：'+e.message); }
-}
+/* 设置页 KPI 目标与修改密码已迁移至 ES 模块 public/src/settings.js。 */
+/* 编辑校验、回滚与光标工具已迁移至 public/src/editable.js；经典脚本仅保留必要兼容入口。 */
 
 /* Google 接入 / 数据源状态卡已拆分至 /google-projects.js（阶段2）
    — INTEG_LABEL / DS_* / dsStatusMeta / dsRow / loadDataSourcesStatus / loadIntegrations / saveIntegration */
@@ -441,7 +375,6 @@ async function submitPwd(){
    — 周报工作区已迁入 src/weekly-review.js，仅 renderReview/renderMonthReview 保留全局兼容入口 */
 
 /* ===== V7 Excel 化基建：通用单元格保存 + 键盘导航 ===== */
-function placeCaretEnd(el){ try{ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
 /* 通用：带 data-field 的可编辑单元格，失焦即保存到该行 data-ep/:id（否词/广告等）。
    focusin 缓存旧值；无变化不请求；保存失败回滚旧值并提示，杜绝「屏上已改、库里没改」的假成功。 */
 document.addEventListener('focusin',e=>{ const cell=e.target.closest&&e.target.closest('td[contenteditable][data-field]'); if(cell)cell._old=cell.innerText; });
