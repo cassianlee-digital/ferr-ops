@@ -61,7 +61,9 @@ function archInqRowHtml(it){
   const isBoss=(window.ME||{}).role==='boss';
   const ops='<button class="btn-mini arch-restore" title="恢复到询盘列表"><i class="ti ti-rotate"></i> 恢复</button>'
     +(isBoss?' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="彻底删除（不可恢复）"><i class="ti ti-trash"></i> 彻底删除</button>':'');
-  const cust=(it.customer_name?esc(it.customer_name)+' · ':'')+esc(it.country||'');
+  // 录入改版：优先客户编码；老数据仍有客户姓名时按原样显示，不丢历史
+  const label=it.customer_code||it.customer_name;
+  const cust=(label?esc(label)+' · ':'')+esc(it.country||'');
   const source=esc(it.source||'');
   return `<td class="archive-date num">${esc(date||'—')}</td><td class="archive-short-date num">${esc((it.date||'').slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade]||'b-gray'}">${esc(it.grade||'')}</span></td><td class="archive-channel ctr dim">${esc(it.channel||'')}</td><td class="archive-actions ctr">${ops}</td>`;
 }

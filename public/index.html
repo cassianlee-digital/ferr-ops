@@ -182,8 +182,8 @@
             <div class="inq-feed-tip"><i class="ti ti-clock"></i> 展示所选区间最新月份；更早月份见下方明细表</div>
             <div class="inq-feed-list" id="inqFeedList">
               <table class="dt inq-cur-table">
-                <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr csp-s-2d09dd5b97">跟踪反馈</th><th class="ctr csp-s-0b3b13b1db">操作</th></tr></thead>
-                <tbody id="tb-inq-cur" class="inq-tb"><tr data-load-state="loading"><td colspan="11" class="dim csp-s-651d52088e">正在加载真实询盘…</td></tr></tbody>
+                <thead><tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-2d09dd5b97">跟踪反馈</th><th class="ctr csp-s-0b3b13b1db">操作</th></tr></thead>
+                <tbody id="tb-inq-cur" class="inq-tb"><tr data-load-state="loading"><td colspan="13" class="dim csp-s-651d52088e">正在加载真实询盘…</td></tr></tbody>
               </table>
             </div>
           </aside>
@@ -197,11 +197,11 @@
         <div>
           <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；上方地图按表格数据实时高亮各国并画青岛飞线</span></div>
           <div class="card"><table class="dt">
-          <!-- 6.23 文档 11/12/7：删销售确认列；加客户姓名（日期后）+ 跟踪反馈（备注后）；总列数 = 10（colspan 同步） -->
-          <!-- P3：末尾加「操作」删除列；总列数 10 → 11（colspan 同步） -->
-          <thead><tr><th>日期</th><th>客户姓名</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr></thead>
+          <!-- 6.23 文档 11/12/7：删销售确认列；加跟踪反馈（备注后）；P3 末尾加「操作」删除列 -->
+          <!-- 录入改版：客户姓名 → 客户编码，等级后加 业务员 / 是否成交；总列数 = 13（colspan 同步） -->
+          <thead><tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr></thead>
           <tbody id="tb-inq" class="inq-tb">
-            <tr data-load-state="loading"><td colspan="11" class="dim csp-s-d48bfa87bb">正在加载真实询盘…</td></tr>
+            <tr data-load-state="loading"><td colspan="13" class="dim csp-s-d48bfa87bb">正在加载真实询盘…</td></tr>
           </tbody>
         </table></div>
           </div>
@@ -893,7 +893,7 @@
     <div class="modal-body">
       <div class="fld-row">
         <div class="fld"><label>日期</label><input type="date" id="f-date"></div>
-        <div class="fld"><label>客户姓名（可选）</label><input id="f-customer" placeholder="Mr. Schmidt / 张三"></div>
+        <div class="fld"><label>客户编码（可选）</label><input id="f-code" placeholder="DE-2026-018"></div>
       </div>
       <div class="fld"><label>国家</label><input id="f-country" placeholder="🇩🇪 德国"></div>
       <div class="fld-row">
@@ -904,6 +904,10 @@
       <div class="fld-row">
         <div class="fld"><label>产品</label><select id="f-product"><option>铸造</option><option>锻造</option><option>机加工</option><option>阀门</option><option>管件</option></select></div>
         <div class="fld"><label>等级</label><select id="f-grade"><option value="A">A · 有效优质</option><option value="B">B · 有效合格</option><option value="C">C · 无效</option></select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>业务员（可选）</label><input id="f-sales" placeholder="张伟 / Amy"></div>
+        <div class="fld"><label>是否成交</label><select id="f-deal"><option>未成交</option><option>已成交</option></select></div>
       </div>
       <div class="fld"><label>备注（可选）</label><textarea id="f-note" placeholder="客户原话、需求要点…"></textarea></div>
     </div>

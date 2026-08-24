@@ -40,18 +40,21 @@ export function restore(id) {
 }
 
 export function create(rec, userId) {
-  // 6.23 文档 12/7/9：customer_name + tracking_feedback(录入时通常 null) + original_grade(=入库时的等级，用于上调标红)
+  // 录入改版：customer_code/salesperson/deal_status 取代 customer_name（老行的 customer_name 留库不动）
+  // + tracking_feedback(录入时通常 null) + original_grade(=入库时的等级，用于上调标红)
   const info = db
     .prepare(
       `INSERT INTO inquiries (date, country, region, channel, source, product, grade, note, created_by,
-                              customer_name, tracking_feedback, original_grade)
+                              customer_code, salesperson, deal_status, tracking_feedback, original_grade)
        VALUES (@date, @country, @region, @channel, @source, @product, @grade, @note, @created_by,
-               @customer_name, @tracking_feedback, @original_grade)`
+               @customer_code, @salesperson, @deal_status, @tracking_feedback, @original_grade)`
     )
     .run({
       ...rec,
       created_by: userId ?? null,
-      customer_name: rec.customer_name ?? null,
+      customer_code: rec.customer_code ?? null,
+      salesperson: rec.salesperson ?? null,
+      deal_status: rec.deal_status ?? null,
       tracking_feedback: rec.tracking_feedback ?? null,
       original_grade: rec.original_grade ?? rec.grade ?? null,
     });
@@ -67,7 +70,7 @@ export function lockOriginalGradeIfNull(id) {
 export function update(id, fields) {
   // original_grade 显式不在 allowed：服务端硬阻止前端改写「最初等级」，确保上调标红判定可靠
   const allowed = ['date', 'country', 'region', 'channel', 'source', 'product', 'grade', 'note',
-    'customer_name', 'tracking_feedback'];
+    'customer_code', 'salesperson', 'deal_status', 'tracking_feedback'];
   updateById('inquiries', id, fields, allowed);
   return get(id);
 }

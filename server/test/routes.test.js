@@ -170,6 +170,42 @@ test('改密码拒绝少于 12 位的新密码', async () => {
   assert.equal(res.json().error, 'invalid_input');
 });
 
+test('询盘录入落库新字段（客户编码/业务员/是否成交），是否成交只认合法值', async () => {
+  const created = await app.inject({
+    method: 'POST', url: '/api/inquiries', headers: auth('boss'),
+    payload: { date: '2026-08-24', country: '德国', region: '西欧', channel: 'SEO自然',
+      source: 'ductile iron casting', product: '铸造', grade: 'A',
+      customer_code: 'DE-2026-018', salesperson: '张伟', deal_status: '已成交' },
+  });
+  assert.equal(created.statusCode, 201);
+  const item = created.json().item;
+  assert.equal(item.customer_code, 'DE-2026-018');
+  assert.equal(item.salesperson, '张伟');
+  assert.equal(item.deal_status, '已成交');
+
+  // 不传是否成交 → 默认「未成交」，不留 NULL 让前端猜
+  const bare = await app.inject({
+    method: 'POST', url: '/api/inquiries', headers: auth('boss'),
+    payload: { date: '2026-08-24', country: '法国', grade: 'B' },
+  });
+  assert.equal(bare.json().item.deal_status, '未成交');
+
+  // 表格里改：编码/业务员可改，是否成交只认两个值
+  const patched = await app.inject({
+    method: 'PATCH', url: `/api/inquiries/${item.id}`, headers: auth('boss'),
+    payload: { customer_code: 'DE-2026-019', salesperson: 'Amy', deal_status: '未成交' },
+  });
+  assert.equal(patched.statusCode, 200);
+  assert.equal(patched.json().item.customer_code, 'DE-2026-019');
+  assert.equal(patched.json().item.deal_status, '未成交');
+
+  const dirty = await app.inject({
+    method: 'PATCH', url: `/api/inquiries/${item.id}`, headers: auth('boss'), payload: { deal_status: '差不多成了' },
+  });
+  assert.equal(dirty.statusCode, 400);
+  assert.equal(dirty.json().error, 'invalid_deal_status');
+});
+
 test('整改 CRUD 走通（建→改→读→软删），并验类型闸门在真实路由上生效', async () => {
   const created = await app.inject({
     method: 'POST', url: '/api/fixes', headers: auth('boss'),

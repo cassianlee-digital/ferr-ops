@@ -14,6 +14,7 @@ export const OPT={
  status:[['待开始','b-gray'],['进行中','b-amber'],['已完成','b-green']],
  result:[['已改','b-green'],['进行中','b-amber'],['计划下周','b-blue'],['放弃','b-gray']],
  grade:[['A','b-green'],['B','b-blue'],['C','b-gray']], // 6.23 文档 8：询盘等级 tagselect 可点改
+ deal:[['已成交','b-green'],['未成交','b-gray']], // 录入改版：询盘是否成交，点一下切换
  owner:[['李','b-blue'],['陈','b-purple']],
  dept:[['SEO','b-blue'],['SEM','b-purple']],
  match:[['完全匹配','b-green'],['词组匹配','b-blue'],['广泛匹配','b-amber']],
@@ -51,16 +52,19 @@ export async function persistTagChange(el,value){
   // 任意带 data-ep 的行：标签 kind → 字段名 通用映射
   const ep=tr.dataset.ep; if(!ep)return;
   const fieldMap={negmatch:'match_type',negstatus:'status',adstatus:'status',match:'match_type',
-    priority:'priority',owner:'owner',status:'status',result:'status',dept:'dept',grade:'grade'}; // 6.23 文档 8
+    priority:'priority',owner:'owner',status:'status',result:'status',dept:'dept',grade:'grade',
+    deal:'deal_status'}; // 6.23 文档 8 + 录入改版：是否成交
   const field=fieldMap[kind]; if(!field)return;
   try{
     await API.patch(ep+'/'+id,{[field]:value});
-    // 6.23 文档 9：询盘等级改完后，同步 _inqCache + 重渲染该行（上调标红 / ⚠️ 即时反映）
-    if(ep==='/api/inquiries'&&field==='grade'){
+    // 6.23 文档 9：询盘标签改完后同步 _inqCache；等级还要重渲该行（上调标红 / ⚠️ 即时反映）
+    if(ep==='/api/inquiries'){
       const it=(window._inqCache||[]).find(x=>String(x.id)===String(id));
       if(it){
-        it.grade=value;
-        if(tr){
+        it[field]=value;
+        if(field==='grade'&&tr){
+          // 重渲会用缓存覆盖整行：先把行内已手改的可编辑单元格(客户编码/业务员)收回缓存，否则显示回滚
+          tr.querySelectorAll('td[contenteditable][data-field]').forEach(td=>{ it[td.dataset.field]=td.innerText.trim(); });
           tr.innerHTML=inqRowHtml(it);
           tr.classList.toggle('inq-upgraded',isUpgraded(it));
         }

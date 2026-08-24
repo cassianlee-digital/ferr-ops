@@ -145,7 +145,7 @@ function tooltipHtml(group){
   const aRatio = valid ? Math.round((group.A || 0) / valid * 100) : 0;
   const rows = group.rows.slice(0, 4).map(r => `
     <div class="inq-map-tip-row">
-      <b>${inqMapEsc(r.customer_name || r.country || '未填客户')}</b>
+      <b>${inqMapEsc(r.customer_code || r.customer_name || r.country || '未填客户')}</b>
       <span>${inqMapEsc(r.product || '未填产品')} · ${inqMapEsc(r.grade || '—')}级 · ${inqMapEsc(r.channel || '未填渠道')}</span>
       <em>${inqMapEsc(r.source || r.note || '')}</em>
     </div>

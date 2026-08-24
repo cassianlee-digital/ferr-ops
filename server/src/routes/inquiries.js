@@ -5,6 +5,8 @@ import { recomputeActuals } from '../services/kpi.js';
 import { parseDateRange } from '../lib/parseDateRange.js';
 
 const GRADES = ['A', 'B', 'C'];
+// 是否成交：只认这两个值，前端传别的一律落回「未成交」（避免脏值污染统计）
+const DEALS = ['未成交', '已成交'];
 
 function clean(body) {
   const s = (v) => (v == null ? null : String(v).slice(0, 500));
@@ -17,8 +19,10 @@ function clean(body) {
     product: s(body.product),
     grade: GRADES.includes(body.grade) ? body.grade : 'C',
     note: s(body.note),
-    // 6.23 文档 12：客户姓名可在录入弹框填；文档 10：录入时不写 tracking_feedback，后期点开编辑
-    customer_name: s(body.customer_name),
+    // 录入改版：客户编码 / 业务员 / 是否成交（取代客户姓名）；文档 10：录入时不写 tracking_feedback，后期点开编辑
+    customer_code: s(body.customer_code),
+    salesperson: s(body.salesperson),
+    deal_status: DEALS.includes(body.deal_status) ? body.deal_status : '未成交',
     // original_grade 强制 = grade，前端传也无视（语义保护）
     original_grade: GRADES.includes(body.grade) ? body.grade : 'C',
   };
@@ -43,9 +47,13 @@ export async function inquiriesRoutes(app) {
     return { item, stats: repo.stats() };
   });
 
-  app.patch('/api/inquiries/:id', editor, async (request) => {
+  app.patch('/api/inquiries/:id', editor, async (request, reply) => {
     const id = Number(request.params.id);
     const body = request.body || {};
+    // 是否成交只有两个合法值：脏值直接 400，别悄悄写进库
+    if (body.deal_status != null && !DEALS.includes(body.deal_status)) {
+      return reply.code(400).send({ error: 'invalid_deal_status' });
+    }
     // 6.23 文档 9：若本次 PATCH 改 grade 且历史数据 original_grade=NULL，
     // 先把「修改前的旧 grade」锁为 original_grade（必须在 update 之前调用，否则锁到的就是新 grade）
     if (body.grade != null) repo.lockOriginalGradeIfNull(id);

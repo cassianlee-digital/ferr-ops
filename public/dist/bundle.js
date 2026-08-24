@@ -1931,18 +1931,23 @@
   var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
   var PROD_BADGE = { "\u94F8\u9020": "b-amber", "\u953B\u9020": "b-red", "\u673A\u52A0\u5DE5": "b-blue", "\u9600\u95E8": "b-purple", "\u7BA1\u4EF6": "b-teal" };
   var GRADE_BADGE = { A: "b-green", B: "b-blue", C: "b-gray" };
+  var DEAL_BADGE = { "\u5DF2\u6210\u4EA4": "b-green", "\u672A\u6210\u4EA4": "b-gray" };
   window._inqCache = [];
   function openInquiry() {
     document.getElementById("f-date").value = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-    ["f-country", "f-customer", "f-source", "f-note"].forEach((i) => document.getElementById(i).value = "");
+    ["f-country", "f-code", "f-sales", "f-source", "f-note"].forEach((i) => document.getElementById(i).value = "");
+    document.getElementById("f-deal").value = "\u672A\u6210\u4EA4";
     openModal("inqMask");
   }
   async function submitInquiry() {
     const g = (id) => document.getElementById(id).value.trim();
     const rec = {
       date: document.getElementById("f-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
-      customer_name: g("f-customer"),
-      // 6.23 文档 12：客户姓名（可选）
+      customer_code: g("f-code"),
+      // 录入改版：客户编码（可选，取代客户姓名）
+      salesperson: g("f-sales"),
+      deal_status: g("f-deal"),
+      // 业务员 / 是否成交
       country: g("f-country") || "\u{1F3F3}\uFE0F \u672A\u586B",
       region: g("f-region"),
       channel: g("f-channel"),
@@ -1978,7 +1983,7 @@
     const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
     if (!it) return;
     _trackEditing = it;
-    document.getElementById("track-cust").textContent = it.customer_name || it.country || "#" + it.id;
+    document.getElementById("track-cust").textContent = it.customer_code || it.customer_name || it.country || "#" + it.id;
     document.getElementById("track-text").value = it.tracking_feedback || "";
     openModal("trackMask");
     setTimeout(() => document.getElementById("track-text").focus(), 50);
@@ -2015,7 +2020,7 @@
   function inqRowHtml(r) {
     const up = isUpgraded(r);
     const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc(r.original_grade)} \u2192 \u73B0 ${esc(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
-    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_name">${esc(r.customer_name || "")}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region] || "b-gray"}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product] || "b-gray"}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code || "")}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region] || "b-gray"}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product] || "b-gray"}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson || "")}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
@@ -2053,7 +2058,7 @@
     const latestMonth = latestVisibleMonth();
     const rows2 = (window._inqCache || []).filter((r) => r && r.date && r.date.slice(0, 7) !== latestMonth).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
     if (!rows2.length) {
-      tb.innerHTML = '<tr><td colspan="11" class="dim csp-s-d48bfa87bb">\u6240\u9009\u533A\u95F4\u6682\u65E0\u66F4\u65E9\u6708\u4EFD\u8BE2\u76D8</td></tr>';
+      tb.innerHTML = '<tr><td colspan="13" class="dim csp-s-d48bfa87bb">\u6240\u9009\u533A\u95F4\u6682\u65E0\u66F4\u65E9\u6708\u4EFD\u8BE2\u76D8</td></tr>';
       return;
     }
     const groups = [];
@@ -2070,7 +2075,7 @@
       const sep = document.createElement("tr");
       sep.className = "inq-msep collapsed";
       sep.dataset.month = g.ym;
-      sep.innerHTML = `<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${g.items.length} \u6761</span></td>`;
+      sep.innerHTML = `<td colspan="13" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${g.items.length} \u6761</span></td>`;
       sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
       tb.appendChild(sep);
       g.items.forEach((r) => {
@@ -2110,14 +2115,14 @@
     const cnt = document.getElementById("inqFeedCount");
     if (cnt) cnt.textContent = rows2.length ? monthLabel(latestMonth) + " \xB7 " + rows2.length + " \u6761" : "\u6240\u9009\u533A\u95F4\u6682\u65E0";
     if (!rows2.length) {
-      tb.innerHTML = '<tr><td colspan="11" class="dim csp-s-651d52088e">\u6240\u9009\u533A\u95F4\u6682\u65E0\u8BE2\u76D8</td></tr>';
+      tb.innerHTML = '<tr><td colspan="13" class="dim csp-s-651d52088e">\u6240\u9009\u533A\u95F4\u6682\u65E0\u8BE2\u76D8</td></tr>';
       return;
     }
     const p = latestMonth.split("-");
     const sep = document.createElement("tr");
     sep.className = "inq-msep";
     sep.dataset.month = latestMonth;
-    sep.innerHTML = `<td colspan="11" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}\u5E74${+p[1]}\u6708 <span class="dim csp-s-8bde36d0d6">\xB7 ${rows2.length} \u6761</span><span class="badge b-green csp-s-4b17347c23">\u533A\u95F4\u6700\u65B0</span></td>`;
+    sep.innerHTML = `<td colspan="13" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}\u5E74${+p[1]}\u6708 <span class="dim csp-s-8bde36d0d6">\xB7 ${rows2.length} \u6761</span><span class="badge b-green csp-s-4b17347c23">\u533A\u95F4\u6700\u65B0</span></td>`;
     sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
     tb.appendChild(sep);
     rows2.forEach((r) => {
@@ -2141,6 +2146,8 @@
     result: [["\u5DF2\u6539", "b-green"], ["\u8FDB\u884C\u4E2D", "b-amber"], ["\u8BA1\u5212\u4E0B\u5468", "b-blue"], ["\u653E\u5F03", "b-gray"]],
     grade: [["A", "b-green"], ["B", "b-blue"], ["C", "b-gray"]],
     // 6.23 文档 8：询盘等级 tagselect 可点改
+    deal: [["\u5DF2\u6210\u4EA4", "b-green"], ["\u672A\u6210\u4EA4", "b-gray"]],
+    // 录入改版：询盘是否成交，点一下切换
     owner: [["\u674E", "b-blue"], ["\u9648", "b-purple"]],
     dept: [["SEO", "b-blue"], ["SEM", "b-purple"]],
     match: [["\u5B8C\u5168\u5339\u914D", "b-green"], ["\u8BCD\u7EC4\u5339\u914D", "b-blue"], ["\u5E7F\u6CDB\u5339\u914D", "b-amber"]],
@@ -2210,17 +2217,21 @@
       status: "status",
       result: "status",
       dept: "dept",
-      grade: "grade"
+      grade: "grade",
+      deal: "deal_status"
     };
     const field2 = fieldMap[kind];
     if (!field2) return;
     try {
       await API.patch(ep + "/" + id, { [field2]: value });
-      if (ep === "/api/inquiries" && field2 === "grade") {
+      if (ep === "/api/inquiries") {
         const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
         if (it) {
-          it.grade = value;
-          if (tr) {
+          it[field2] = value;
+          if (field2 === "grade" && tr) {
+            tr.querySelectorAll("td[contenteditable][data-field]").forEach((td2) => {
+              it[td2.dataset.field] = td2.innerText.trim();
+            });
             tr.innerHTML = inqRowHtml(it);
             tr.classList.toggle("inq-upgraded", isUpgraded(it));
           }
@@ -4790,7 +4801,8 @@
     const date = (it.archived_at || "").slice(0, 10);
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u8BE2\u76D8\u5217\u8868"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
-    const cust = (it.customer_name ? esc(it.customer_name) + " \xB7 " : "") + esc(it.country || "");
+    const label = it.customer_code || it.customer_name;
+    const cust = (label ? esc(label) + " \xB7 " : "") + esc(it.country || "");
     const source = esc(it.source || "");
     return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-short-date num">${esc((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
   }
@@ -5388,7 +5400,7 @@
     const aRatio = valid ? Math.round((group.A || 0) / valid * 100) : 0;
     const rows2 = group.rows.slice(0, 4).map((r) => `
     <div class="inq-map-tip-row">
-      <b>${inqMapEsc(r.customer_name || r.country || "\u672A\u586B\u5BA2\u6237")}</b>
+      <b>${inqMapEsc(r.customer_code || r.customer_name || r.country || "\u672A\u586B\u5BA2\u6237")}</b>
       <span>${inqMapEsc(r.product || "\u672A\u586B\u4EA7\u54C1")} \xB7 ${inqMapEsc(r.grade || "\u2014")}\u7EA7 \xB7 ${inqMapEsc(r.channel || "\u672A\u586B\u6E20\u9053")}</span>
       <em>${inqMapEsc(r.source || r.note || "")}</em>
     </div>
