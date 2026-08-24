@@ -14,19 +14,21 @@ const CH_BADGE={'SEO自然':'b-blue','SEM付费':'b-purple','直接':'b-teal','�
 const PROD_BADGE={'铸造':'b-amber','锻造':'b-red','机加工':'b-blue','阀门':'b-purple','管件':'b-teal'};
 export const GRADE_BADGE={A:'b-green',B:'b-blue',C:'b-gray'};
 export const DEAL_BADGE={'已成交':'b-green','未成交':'b-gray'};
+export const COMPANY_BADGE={'贝孚特':'b-teal','费尔瑞':'b-purple'};
 window._inqCache=[];
 
 export function openInquiry(){
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   ['f-country','f-code','f-sales','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('f-deal').value='未成交'; // 每次打开都回默认，避免沿用上一条
+  document.getElementById('f-company').value=''; // 公司不给默认值：没选就是没选，别替业务瞎归属
   openModal('inqMask');
 }
 export async function submitInquiry(){
   const g=id=>document.getElementById(id).value.trim();
   const rec={date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10),
     customer_code:g('f-code'), // 录入改版：客户编码（可选，取代客户姓名）
-    salesperson:g('f-sales'),deal_status:g('f-deal'), // 业务员 / 是否成交
+    company:g('f-company'),salesperson:g('f-sales'),deal_status:g('f-deal'), // 公司 / 业务员 / 是否成交
     country:g('f-country')||'🏳️ 未填',region:g('f-region'),channel:g('f-channel'),
     source:g('f-source')||'待补',product:g('f-product'),grade:g('f-grade'),note:g('f-note')};
   try{
@@ -38,7 +40,7 @@ export async function submitInquiry(){
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
   }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
 }
-// 6.23 文档 7/8/9 + 录入改版：客户编码/业务员(editable) + 等级/是否成交 tagselect 可点改 + 上调标红(⚠️) + 跟踪反馈点开编辑。共 13 td。
+// 6.23 文档 7/8/9 + 录入改版：客户编码/业务员(editable) + 等级/是否成交 tagselect 可点改 + 上调标红(⚠️) + 跟踪反馈点开编辑。共 14 td。
 export function isUpgraded(r){ const ord={A:3,B:2,C:1}; return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade]<ord[r.grade]; }
 /* 6.23 文档 7：跟踪反馈点开弹框 → PATCH → 同步缓存 + 重渲该 td */
 let _trackEditing=null;
@@ -88,6 +90,7 @@ export function inqRowHtml(r){
     +`<td>${esc(r.source)}</td>`
     +`<td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
+    +`<td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company]||'b-gray'}" data-kind="company">${esc(r.company||'未标注')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson||'')}</td>`
     +`<td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status]||'b-gray'}" data-kind="deal">${esc(r.deal_status||'未标记')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="dim csp-s-33ee298127">${esc(r.note||'')}</td>`
@@ -117,12 +120,12 @@ export function renderInqList(){
   const tb=document.getElementById('tb-inq'); if(!tb)return; tb.innerHTML='';
   const latestMonth=latestVisibleMonth();
   const rows=(window._inqCache||[]).filter(r=>r&&r.date&&r.date.slice(0,7)!==latestMonth).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="13" class="dim csp-s-d48bfa87bb">所选区间暂无更早月份询盘</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="14" class="dim csp-s-d48bfa87bb">所选区间暂无更早月份询盘</td></tr>'; return; }
   const groups=[]; const idx={};
   rows.forEach(r=>{ const ym=r.date.slice(0,7); if(idx[ym]==null){ idx[ym]=groups.length; groups.push({ym,items:[]}); } groups[idx[ym]].items.push(r); });
   groups.forEach(g=>{
     const sep=document.createElement('tr'); sep.className='inq-msep collapsed'; sep.dataset.month=g.ym;
-    sep.innerHTML=`<td colspan="13" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">· ${g.items.length} 条</span></td>`;
+    sep.innerHTML=`<td colspan="14" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">· ${g.items.length} 条</span></td>`;
     sep.querySelector('.inq-month-toggle').addEventListener('click',e=>toggleInqMonth(e.currentTarget));
     tb.appendChild(sep);
     g.items.forEach(r=>{
@@ -155,10 +158,10 @@ export function renderInqFeed(){
   const latestMonth=latestVisibleMonth();
   const rows=(window._inqCache||[]).filter(r=>r&&r.date&&r.date.slice(0,7)===latestMonth).slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
   const cnt=document.getElementById('inqFeedCount'); if(cnt)cnt.textContent=rows.length?(monthLabel(latestMonth)+' · '+rows.length+' 条'):'所选区间暂无';
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="13" class="dim csp-s-651d52088e">所选区间暂无询盘</td></tr>'; return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="14" class="dim csp-s-651d52088e">所选区间暂无询盘</td></tr>'; return; }
   const p=latestMonth.split('-');
   const sep=document.createElement('tr'); sep.className='inq-msep'; sep.dataset.month=latestMonth;
-  sep.innerHTML=`<td colspan="13" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}年${(+p[1])}月 <span class="dim csp-s-8bde36d0d6">· ${rows.length} 条</span><span class="badge b-green csp-s-4b17347c23">区间最新</span></td>`;
+  sep.innerHTML=`<td colspan="14" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}年${(+p[1])}月 <span class="dim csp-s-8bde36d0d6">· ${rows.length} 条</span><span class="badge b-green csp-s-4b17347c23">区间最新</span></td>`;
   sep.querySelector('.inq-month-toggle').addEventListener('click',e=>toggleInqMonth(e.currentTarget));
   tb.appendChild(sep);
   rows.forEach(r=>{

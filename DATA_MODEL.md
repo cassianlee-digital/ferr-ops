@@ -101,7 +101,8 @@
 ## inquiry attribution fields —— 询盘归因(补充到 inquiries 或关联表)
 
 > 现有 inquiries 已有:date / country / region / channel / source / product / grade / note /
-> customer_code(客户编码) / salesperson(业务员) / deal_status(是否成交:未成交 | 已成交) /
+> customer_code(客户编码) / company(询价通过哪个主体:贝孚特 | 费尔瑞,未选留 NULL) /
+> salesperson(业务员) / deal_status(是否成交:未成交 | 已成交) /
 > tracking_feedback / original_grade。customer_name 已从录入与表格下线,列保留只为不丢历史数据。
 > 以下为归因增强字段:
 

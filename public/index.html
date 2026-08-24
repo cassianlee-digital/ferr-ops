@@ -182,8 +182,8 @@
             <div class="inq-feed-tip"><i class="ti ti-clock"></i> 展示所选区间最新月份；更早月份见下方明细表</div>
             <div class="inq-feed-list" id="inqFeedList">
               <table class="dt inq-cur-table">
-                <thead><tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-2d09dd5b97">跟踪反馈</th><th class="ctr csp-s-0b3b13b1db">操作</th></tr></thead>
-                <tbody id="tb-inq-cur" class="inq-tb"><tr data-load-state="loading"><td colspan="13" class="dim csp-s-651d52088e">正在加载真实询盘…</td></tr></tbody>
+                <thead><tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-2d09dd5b97">跟踪反馈</th><th class="ctr csp-s-0b3b13b1db">操作</th></tr></thead>
+                <tbody id="tb-inq-cur" class="inq-tb"><tr data-load-state="loading"><td colspan="14" class="dim csp-s-651d52088e">正在加载真实询盘…</td></tr></tbody>
               </table>
             </div>
           </aside>
@@ -198,10 +198,10 @@
           <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；上方地图按表格数据实时高亮各国并画青岛飞线</span></div>
           <div class="card"><table class="dt">
           <!-- 6.23 文档 11/12/7：删销售确认列；加跟踪反馈（备注后）；P3 末尾加「操作」删除列 -->
-          <!-- 录入改版：客户姓名 → 客户编码，等级后加 业务员 / 是否成交；总列数 = 13（colspan 同步） -->
-          <thead><tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr></thead>
+          <!-- 录入改版：客户姓名 → 客户编码，等级后加 公司 / 业务员 / 是否成交；总列数 = 14（colspan 同步） -->
+          <thead><tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr></thead>
           <tbody id="tb-inq" class="inq-tb">
-            <tr data-load-state="loading"><td colspan="13" class="dim csp-s-d48bfa87bb">正在加载真实询盘…</td></tr>
+            <tr data-load-state="loading"><td colspan="14" class="dim csp-s-d48bfa87bb">正在加载真实询盘…</td></tr>
           </tbody>
         </table></div>
           </div>
@@ -895,7 +895,10 @@
         <div class="fld"><label>日期</label><input type="date" id="f-date"></div>
         <div class="fld"><label>客户编码（可选）</label><input id="f-code" placeholder="DE-2026-018"></div>
       </div>
-      <div class="fld"><label>国家</label><input id="f-country" placeholder="🇩🇪 德国"></div>
+      <div class="fld-row">
+        <div class="fld"><label>国家</label><input id="f-country" placeholder="🇩🇪 德国"></div>
+        <div class="fld"><label>公司（询价通过哪家）</label><select id="f-company"><option value="">未标注</option><option>贝孚特</option><option>费尔瑞</option></select></div>
+      </div>
       <div class="fld-row">
         <div class="fld"><label>大区</label><select id="f-region"><option>西欧</option><option>南欧</option><option>北欧</option><option>中东欧</option><option>东欧/俄罗斯</option><option>北美</option><option>拉美</option><option>中东</option><option>北非</option><option>撒哈拉以南非洲</option><option>南亚</option><option>东南亚</option><option>东亚</option><option>中亚</option><option>大洋洲</option><option>其他</option></select></div>
         <div class="fld"><label>渠道</label><select id="f-channel"><option>SEO自然</option><option>SEM付费</option><option>直接</option><option>其他</option></select></div>

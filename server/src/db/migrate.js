@@ -46,8 +46,9 @@ CREATE TABLE IF NOT EXISTS inquiries (
   created_by  INTEGER REFERENCES users(id),
   -- 6.23 修改文档 7/9/12：客户姓名（录入已下线，保留历史数据）/ 跟踪反馈 / 原始等级（用于上调标红判定）
   customer_name      TEXT,
-  -- 询盘录入改版：客户编码 / 业务员 / 是否成交（客户编码取代客户姓名）
+  -- 询盘录入改版：客户编码 / 公司(询价通过哪个主体来的) / 业务员 / 是否成交（客户编码取代客户姓名）
   customer_code      TEXT,
+  company            TEXT,
   salesperson        TEXT,
   deal_status        TEXT,
   tracking_feedback  TEXT,
@@ -592,8 +593,8 @@ export function migrate() {
   ensureColumns('inquiries', [
     ['customer_name', 'TEXT'], ['tracking_feedback', 'TEXT'], ['original_grade', 'TEXT'],
     ['state', 'TEXT'], ['archived_at', 'TEXT'], // P3：询盘软删→归档
-    // 询盘录入改版：客户编码 / 业务员 / 是否成交（老库补列，老行留 NULL，不补假值）
-    ['customer_code', 'TEXT'], ['salesperson', 'TEXT'], ['deal_status', 'TEXT'],
+    // 询盘录入改版：客户编码 / 公司 / 业务员 / 是否成交（老库补列，老行留 NULL，不补假值）
+    ['customer_code', 'TEXT'], ['company', 'TEXT'], ['salesperson', 'TEXT'], ['deal_status', 'TEXT'],
   ]);
   ensureColumns('google_sync_runs', [
     ['project_id', 'INTEGER'],

@@ -170,16 +170,17 @@ test('改密码拒绝少于 12 位的新密码', async () => {
   assert.equal(res.json().error, 'invalid_input');
 });
 
-test('询盘录入落库新字段（客户编码/业务员/是否成交），是否成交只认合法值', async () => {
+test('询盘录入落库新字段（客户编码/公司/业务员/是否成交），公司与是否成交只认合法值', async () => {
   const created = await app.inject({
     method: 'POST', url: '/api/inquiries', headers: auth('boss'),
     payload: { date: '2026-08-24', country: '德国', region: '西欧', channel: 'SEO自然',
       source: 'ductile iron casting', product: '铸造', grade: 'A',
-      customer_code: 'DE-2026-018', salesperson: '张伟', deal_status: '已成交' },
+      customer_code: 'DE-2026-018', company: '费尔瑞', salesperson: '张伟', deal_status: '已成交' },
   });
   assert.equal(created.statusCode, 201);
   const item = created.json().item;
   assert.equal(item.customer_code, 'DE-2026-018');
+  assert.equal(item.company, '费尔瑞');
   assert.equal(item.salesperson, '张伟');
   assert.equal(item.deal_status, '已成交');
 
@@ -189,21 +190,30 @@ test('询盘录入落库新字段（客户编码/业务员/是否成交），是
     payload: { date: '2026-08-24', country: '法国', grade: 'B' },
   });
   assert.equal(bare.json().item.deal_status, '未成交');
+  // 公司相反：没选就留 NULL，不替业务归属到某一家
+  assert.equal(bare.json().item.company, null);
 
   // 表格里改：编码/业务员可改，是否成交只认两个值
   const patched = await app.inject({
     method: 'PATCH', url: `/api/inquiries/${item.id}`, headers: auth('boss'),
-    payload: { customer_code: 'DE-2026-019', salesperson: 'Amy', deal_status: '未成交' },
+    payload: { customer_code: 'DE-2026-019', company: '贝孚特', salesperson: 'Amy', deal_status: '未成交' },
   });
   assert.equal(patched.statusCode, 200);
   assert.equal(patched.json().item.customer_code, 'DE-2026-019');
   assert.equal(patched.json().item.deal_status, '未成交');
+  assert.equal(patched.json().item.company, '贝孚特');
 
   const dirty = await app.inject({
     method: 'PATCH', url: `/api/inquiries/${item.id}`, headers: auth('boss'), payload: { deal_status: '差不多成了' },
   });
   assert.equal(dirty.statusCode, 400);
   assert.equal(dirty.json().error, 'invalid_deal_status');
+
+  const dirtyCompany = await app.inject({
+    method: 'PATCH', url: `/api/inquiries/${item.id}`, headers: auth('boss'), payload: { company: '别的公司' },
+  });
+  assert.equal(dirtyCompany.statusCode, 400);
+  assert.equal(dirtyCompany.json().error, 'invalid_company');
 });
 
 test('整改 CRUD 走通（建→改→读→软删），并验类型闸门在真实路由上生效', async () => {

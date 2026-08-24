@@ -1932,11 +1932,13 @@
   var PROD_BADGE = { "\u94F8\u9020": "b-amber", "\u953B\u9020": "b-red", "\u673A\u52A0\u5DE5": "b-blue", "\u9600\u95E8": "b-purple", "\u7BA1\u4EF6": "b-teal" };
   var GRADE_BADGE = { A: "b-green", B: "b-blue", C: "b-gray" };
   var DEAL_BADGE = { "\u5DF2\u6210\u4EA4": "b-green", "\u672A\u6210\u4EA4": "b-gray" };
+  var COMPANY_BADGE = { "\u8D1D\u5B5A\u7279": "b-teal", "\u8D39\u5C14\u745E": "b-purple" };
   window._inqCache = [];
   function openInquiry() {
     document.getElementById("f-date").value = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     ["f-country", "f-code", "f-sales", "f-source", "f-note"].forEach((i) => document.getElementById(i).value = "");
     document.getElementById("f-deal").value = "\u672A\u6210\u4EA4";
+    document.getElementById("f-company").value = "";
     openModal("inqMask");
   }
   async function submitInquiry() {
@@ -1945,9 +1947,10 @@
       date: document.getElementById("f-date").value || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
       customer_code: g("f-code"),
       // 录入改版：客户编码（可选，取代客户姓名）
+      company: g("f-company"),
       salesperson: g("f-sales"),
       deal_status: g("f-deal"),
-      // 业务员 / 是否成交
+      // 公司 / 业务员 / 是否成交
       country: g("f-country") || "\u{1F3F3}\uFE0F \u672A\u586B",
       region: g("f-region"),
       channel: g("f-channel"),
@@ -2020,7 +2023,7 @@
   function inqRowHtml(r) {
     const up = isUpgraded(r);
     const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc(r.original_grade)} \u2192 \u73B0 ${esc(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
-    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code || "")}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region] || "b-gray"}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product] || "b-gray"}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson || "")}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code || "")}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region] || "b-gray"}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product] || "b-gray"}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson || "")}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
@@ -2058,7 +2061,7 @@
     const latestMonth = latestVisibleMonth();
     const rows2 = (window._inqCache || []).filter((r) => r && r.date && r.date.slice(0, 7) !== latestMonth).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
     if (!rows2.length) {
-      tb.innerHTML = '<tr><td colspan="13" class="dim csp-s-d48bfa87bb">\u6240\u9009\u533A\u95F4\u6682\u65E0\u66F4\u65E9\u6708\u4EFD\u8BE2\u76D8</td></tr>';
+      tb.innerHTML = '<tr><td colspan="14" class="dim csp-s-d48bfa87bb">\u6240\u9009\u533A\u95F4\u6682\u65E0\u66F4\u65E9\u6708\u4EFD\u8BE2\u76D8</td></tr>';
       return;
     }
     const groups = [];
@@ -2075,7 +2078,7 @@
       const sep = document.createElement("tr");
       sep.className = "inq-msep collapsed";
       sep.dataset.month = g.ym;
-      sep.innerHTML = `<td colspan="13" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${g.items.length} \u6761</span></td>`;
+      sep.innerHTML = `<td colspan="14" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${g.items.length} \u6761</span></td>`;
       sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
       tb.appendChild(sep);
       g.items.forEach((r) => {
@@ -2115,14 +2118,14 @@
     const cnt = document.getElementById("inqFeedCount");
     if (cnt) cnt.textContent = rows2.length ? monthLabel(latestMonth) + " \xB7 " + rows2.length + " \u6761" : "\u6240\u9009\u533A\u95F4\u6682\u65E0";
     if (!rows2.length) {
-      tb.innerHTML = '<tr><td colspan="13" class="dim csp-s-651d52088e">\u6240\u9009\u533A\u95F4\u6682\u65E0\u8BE2\u76D8</td></tr>';
+      tb.innerHTML = '<tr><td colspan="14" class="dim csp-s-651d52088e">\u6240\u9009\u533A\u95F4\u6682\u65E0\u8BE2\u76D8</td></tr>';
       return;
     }
     const p = latestMonth.split("-");
     const sep = document.createElement("tr");
     sep.className = "inq-msep";
     sep.dataset.month = latestMonth;
-    sep.innerHTML = `<td colspan="13" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}\u5E74${+p[1]}\u6708 <span class="dim csp-s-8bde36d0d6">\xB7 ${rows2.length} \u6761</span><span class="badge b-green csp-s-4b17347c23">\u533A\u95F4\u6700\u65B0</span></td>`;
+    sep.innerHTML = `<td colspan="14" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}\u5E74${+p[1]}\u6708 <span class="dim csp-s-8bde36d0d6">\xB7 ${rows2.length} \u6761</span><span class="badge b-green csp-s-4b17347c23">\u533A\u95F4\u6700\u65B0</span></td>`;
     sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
     tb.appendChild(sep);
     rows2.forEach((r) => {
@@ -2148,6 +2151,8 @@
     // 6.23 文档 8：询盘等级 tagselect 可点改
     deal: [["\u5DF2\u6210\u4EA4", "b-green"], ["\u672A\u6210\u4EA4", "b-gray"]],
     // 录入改版：询盘是否成交，点一下切换
+    company: [["\u8D1D\u5B5A\u7279", "b-teal"], ["\u8D39\u5C14\u745E", "b-purple"]],
+    // 录入改版：询价通过哪个主体来的
     owner: [["\u674E", "b-blue"], ["\u9648", "b-purple"]],
     dept: [["SEO", "b-blue"], ["SEM", "b-purple"]],
     match: [["\u5B8C\u5168\u5339\u914D", "b-green"], ["\u8BCD\u7EC4\u5339\u914D", "b-blue"], ["\u5E7F\u6CDB\u5339\u914D", "b-amber"]],
@@ -2218,7 +2223,8 @@
       result: "status",
       dept: "dept",
       grade: "grade",
-      deal: "deal_status"
+      deal: "deal_status",
+      company: "company"
     };
     const field2 = fieldMap[kind];
     if (!field2) return;

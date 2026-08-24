@@ -15,6 +15,7 @@ export const OPT={
  result:[['已改','b-green'],['进行中','b-amber'],['计划下周','b-blue'],['放弃','b-gray']],
  grade:[['A','b-green'],['B','b-blue'],['C','b-gray']], // 6.23 文档 8：询盘等级 tagselect 可点改
  deal:[['已成交','b-green'],['未成交','b-gray']], // 录入改版：询盘是否成交，点一下切换
+ company:[['贝孚特','b-teal'],['费尔瑞','b-purple']], // 录入改版：询价通过哪个主体来的
  owner:[['李','b-blue'],['陈','b-purple']],
  dept:[['SEO','b-blue'],['SEM','b-purple']],
  match:[['完全匹配','b-green'],['词组匹配','b-blue'],['广泛匹配','b-amber']],
@@ -53,7 +54,7 @@ export async function persistTagChange(el,value){
   const ep=tr.dataset.ep; if(!ep)return;
   const fieldMap={negmatch:'match_type',negstatus:'status',adstatus:'status',match:'match_type',
     priority:'priority',owner:'owner',status:'status',result:'status',dept:'dept',grade:'grade',
-    deal:'deal_status'}; // 6.23 文档 8 + 录入改版：是否成交
+    deal:'deal_status',company:'company'}; // 6.23 文档 8 + 录入改版：是否成交 / 公司
   const field=fieldMap[kind]; if(!field)return;
   try{
     await API.patch(ep+'/'+id,{[field]:value});
