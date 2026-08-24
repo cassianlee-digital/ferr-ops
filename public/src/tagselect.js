@@ -10,7 +10,7 @@ import { inqRowHtml, isUpgraded } from './inquiries.js';
 /* ---------- colored tag-select ---------- */
 export const OPT={
  channel:[['SEO自然','b-blue'],['SEM付费','b-purple'],['直接','b-teal'],['其他','b-gray']],
- product:[['铸造','b-amber'],['锻造','b-red'],['机加工','b-blue'],['阀门','b-purple'],['管件','b-teal']],
+ product:[['铸造','b-amber'],['锻造','b-red'],['机加工','b-blue'],['阀门','b-purple'],['管件','b-teal'],['电力金具','b-green']],
  status:[['待开始','b-gray'],['进行中','b-amber'],['已完成','b-green']],
  result:[['已改','b-green'],['进行中','b-amber'],['计划下周','b-blue'],['放弃','b-gray']],
  grade:[['A','b-green'],['B','b-blue'],['C','b-gray']], // 6.23 文档 8：询盘等级 tagselect 可点改

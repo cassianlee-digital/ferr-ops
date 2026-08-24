@@ -11,7 +11,7 @@ import { inlineConfirm } from './keywords.js';
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
 const REGION_BADGE={'欧洲':'b-blue','西欧':'b-blue','南欧':'b-blue','北欧':'b-blue','中东欧':'b-teal','东欧/俄罗斯':'b-amber','俄罗斯':'b-amber','北美':'b-purple','拉美':'b-red','中东':'b-amber','北非':'b-amber','撒哈拉以南非洲':'b-gray','南亚':'b-teal','东南亚':'b-red','东南亚/巴西':'b-red','东亚':'b-green','中亚':'b-gray','大洋洲':'b-teal','其他':'b-gray'};
 const CH_BADGE={'SEO自然':'b-blue','SEM付费':'b-purple','直接':'b-teal','其他':'b-gray'};
-const PROD_BADGE={'铸造':'b-amber','锻造':'b-red','机加工':'b-blue','阀门':'b-purple','管件':'b-teal'};
+const PROD_BADGE={'铸造':'b-amber','锻造':'b-red','机加工':'b-blue','阀门':'b-purple','管件':'b-teal','电力金具':'b-green'};
 export const GRADE_BADGE={A:'b-green',B:'b-blue',C:'b-gray'};
 export const DEAL_BADGE={'已成交':'b-green','未成交':'b-gray'};
 export const COMPANY_BADGE={'贝孚特':'b-teal','费尔瑞':'b-purple'};
