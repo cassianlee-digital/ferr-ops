@@ -6,6 +6,8 @@
 import * as inqRepo from '../db/repositories/inquiries.js';
 import * as semRepo from '../db/repositories/semWeeks.js';
 import * as kpiRepo from '../db/repositories/kpi.js';
+import { adsSummary } from '../db/repositories/googleSync.js';
+import { resolveProject } from '../sync/googleClient.js';
 import { classify } from './attribution.js';
 
 // 渠道口径与前端 renderInqDonuts / services/attribution.js 完全一致
@@ -35,23 +37,52 @@ function emptyBucket(key, label) {
   };
 }
 
+// 花费来源说明。同一个「SEM 区间花费」后台有两个可能来源，必须让人一眼看出这次用的是哪个，
+// 否则和 SEM 看板/询盘归因的数字对不上时无从判断。
+export const SPEND_SOURCE_NOTE = {
+  google_ads: 'Google Ads 同步真实花费（与 SEM 看板、询盘归因同源）',
+  sem_weeks: '人工周报录入（sem_weeks.cost）—— 所选区间无 Ads 同步数据，已回退',
+};
+// 币种：人工周报按人民币录入；Ads 是账户币种（同步未存币种字段）→ 不臆造符号，与 SEM 看板一致
+const SPEND_CURRENCY = { google_ads: null, sem_weeks: 'CNY' };
+
+// spendByChannel 的值可以是数字（默认按人工周报口径），也可以是 { value, source } 对象
+function normalizeSpend(raw) {
+  if (raw != null && typeof raw === 'object') return { value: raw.value, source: raw.source || 'sem_weeks' };
+  return { value: raw, source: 'sem_weeks' };
+}
+
 // 花费口径：只有付费渠道才有金额；付费渠道无花费记录 = 缺数据，不是 0
 function spendCell(key, raw) {
   if (!PAID_CHANNELS.has(key)) {
-    return { value: null, status: 'NOT_APPLICABLE', note: '自然/直接渠道无媒体花费口径（人力成本未计入本表）' };
+    return {
+      value: null, status: 'NOT_APPLICABLE', source: null, currency: null,
+      note: '自然/直接渠道无媒体花费口径（人力成本未计入本表）',
+    };
   }
-  if (raw == null || !Number.isFinite(Number(raw))) {
-    return { value: null, status: 'MISSING_DATA', note: '所选区间无 SEM 周报花费记录（sem_weeks.cost）' };
+  const { value, source } = normalizeSpend(raw);
+  if (value == null || !Number.isFinite(Number(value))) {
+    return {
+      value: null, status: 'MISSING_DATA', source: null, currency: null,
+      note: '所选区间既无 Ads 同步花费，也无 SEM 周报记录（sem_weeks.cost）',
+    };
   }
-  return { value: money(Number(raw)), status: 'VALID', note: null };
+  return {
+    value: money(Number(value)),
+    status: 'VALID',
+    source,
+    currency: SPEND_CURRENCY[source] === undefined ? null : SPEND_CURRENCY[source],
+    note: SPEND_SOURCE_NOTE[source] || null,
+  };
 }
 
 // 单位成本：分母为 0 时返回 null + 原因，绝不写 Infinity（「有花费零成交」是结论，不是数字错误）
 function unitCost(spend, count, zeroReason) {
-  if (spend.status !== 'VALID') return { value: null, status: spend.status, reason: null };
-  if (spend.value === 0) return { value: null, status: 'NO_SPEND', reason: 'ZERO_SPEND' };
-  if (count > 0) return { value: money(spend.value / count), status: 'VALID', reason: null };
-  return { value: null, status: 'SPEND_WITH_ZERO_RESULT', reason: zeroReason };
+  const currency = spend.currency || null;
+  if (spend.status !== 'VALID') return { value: null, status: spend.status, reason: null, currency: null };
+  if (spend.value === 0) return { value: null, status: 'NO_SPEND', reason: 'ZERO_SPEND', currency };
+  if (count > 0) return { value: money(spend.value / count), status: 'VALID', reason: null, currency };
+  return { value: null, status: 'SPEND_WITH_ZERO_RESULT', reason: zeroReason, currency };
 }
 
 /**
@@ -97,13 +128,18 @@ export function computeLedger(inquiryRows = [], options = {}) {
 
   const sum = (pick) => channels.reduce((s, c) => s + pick(c), 0);
   const validSpends = channels.filter((c) => c.spend.status === 'VALID');
+  const spendSources = [...new Set(validSpends.map((c) => c.spend.source))];
+  const spendCurrencies = [...new Set(validSpends.map((c) => c.spend.currency))];
   const totalSpend = validSpends.length
     ? {
         value: money(validSpends.reduce((s, c) => s + c.spend.value, 0)),
         status: 'VALID',
-        note: '仅含 SEM 媒体花费；SEO/直接/其他为人力投入，未计入',
+        source: spendSources.length === 1 ? spendSources[0] : 'mixed',
+        currency: spendCurrencies.length === 1 ? spendCurrencies[0] : null,
+        note: '仅含 SEM 媒体花费；SEO/直接/其他为人力投入，未计入'
+          + (spendSources.length === 1 && SPEND_SOURCE_NOTE[spendSources[0]] ? ' · ' + SPEND_SOURCE_NOTE[spendSources[0]] : ''),
       }
-    : { value: null, status: 'MISSING_DATA', note: '所选区间无任何渠道花费记录' };
+    : { value: null, status: 'MISSING_DATA', source: null, currency: null, note: '所选区间无任何渠道花费记录' };
 
   const t = {
     key: 'total', label: '合计',
@@ -153,6 +189,10 @@ const TARGET_MAP = [
       const sem = l.channels.find((c) => c.key === 'SEM');
       return sem ? sem.costPerQuality.value : null;
     },
+    currency: (l) => {
+      const sem = l.channels.find((c) => c.key === 'SEM');
+      return sem ? sem.costPerQuality.currency : null;
+    },
   },
 ];
 
@@ -167,8 +207,11 @@ export function buildTargetProgress(ledger, kpiRows = []) {
       const raw = inverse ? (actual > 0 ? Math.min(target / actual, 1) : null) : Math.min(actual / target, 1);
       progress = raw == null ? null : Math.round(raw * 10000) / 10000;
     }
+    // 金额型目标：实际值可能来自 Ads（账户币种），目标是人工按人民币设的 → 币种不一致要说清楚
+    const currency = m.currency ? m.currency(ledger) : null;
+    const currencyMismatch = m.unit === '¥' && actual != null && currency !== 'CNY';
     return {
-      key: m.key, label: m.label, unit: m.unit,
+      key: m.key, label: m.label, unit: m.unit, currency, currency_mismatch: currencyMismatch,
       target, actual, inverse, progress,
       status: target == null ? 'NO_TARGET' : (actual == null ? 'NO_ACTUAL' : 'VALID'),
       // 目标是设置里的月度目标，不按区间折算 —— 与 KPI 页同一提示口径
@@ -177,21 +220,42 @@ export function buildTargetProgress(ledger, kpiRows = []) {
   });
 }
 
-// 带 DB 的组装：区间内询盘 + 区间内 SEM 周报花费 + 现有 KPI 目标
+// SEM 区间花费的取数顺序：先 Google Ads 同步真实花费（与 SEM 看板 /api/attribution 同源，
+// 避免同一指标两个数），该区间没有同步数据才回退人工周报；两者都没有 = 缺数据，不是花了 0 元。
+export function resolveSemSpend(range) {
+  if (range) {
+    try {
+      const project = resolveProject({});
+      const ads = adsSummary({ ...range, ads_customer_id: project.ads_customer_id });
+      // campaigns 未做 COALESCE：有行才说明该区间真同步过（totals.costMicros 恒有值，不能用来判断有无数据）
+      if (Array.isArray(ads.campaigns) && ads.campaigns.length) {
+        return { value: (Number(ads.totals?.costMicros) || 0) / 1e6, source: 'google_ads' };
+      }
+    } catch (e) {
+      // Google 未接入/未配置项目 → 静默回退人工周报，不让总账因此报错
+    }
+  }
+  const semWeeks = semRepo.list(range);
+  if (semWeeks.length) {
+    return { value: semWeeks.reduce((s, w) => s + (Number(w.cost) || 0), 0), source: 'sem_weeks' };
+  }
+  return { value: null, source: null };
+}
+
+// 带 DB 的组装：区间内询盘 + 区间内 SEM 花费 + 现有 KPI 目标
 export function buildLedger(range) {
   const inquiryRows = inqRepo.list(range);
-  const semWeeks = semRepo.list(range);
-  const semCost = semWeeks.length
-    ? semWeeks.reduce((s, w) => s + (Number(w.cost) || 0), 0)
-    : null; // 没有周报 = 没数据，不是花了 0 元
-  const ledger = computeLedger(inquiryRows, { spendByChannel: { SEM: semCost } });
+  const semSpend = resolveSemSpend(range);
+  const ledger = computeLedger(inquiryRows, { spendByChannel: { SEM: semSpend } });
   return {
     ...ledger,
     range: range || null,
     targets: buildTargetProgress(ledger, kpiRepo.list()),
     sources: {
       inquiries: 'inquiries.date / channel / grade / deal_status',
-      spend: 'sem_weeks.cost（人工周报，未接 Ads 自动同步）',
+      spend: semSpend.source === 'google_ads'
+        ? 'google_ads_campaign_daily.cost_micros（Ads 同步，账户币种）'
+        : (semSpend.source === 'sem_weeks' ? 'sem_weeks.cost（人工周报，人民币）' : '无花费数据源'),
       targets: 'kpi_targets.target（设置页月度目标，不按区间折算）',
     },
   };

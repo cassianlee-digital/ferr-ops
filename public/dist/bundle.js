@@ -4453,12 +4453,14 @@
     if (title) el.title = title;
     return el;
   }
-  var money = (v) => v == null || !Number.isFinite(Number(v)) ? null : "\xA5" + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  var money = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  var CURRENCY_HINT = "\u91D1\u989D\u4E3A\u5E7F\u544A\u8D26\u6237\u5E01\u79CD\uFF08Ads \u540C\u6B65\u672A\u5B58\u5E01\u79CD\uFF09\uFF0C\u6545\u4E0D\u52A0\u8D27\u5E01\u7B26\u53F7";
   var pct = (v) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(1) + "%";
-  function metricCell(item, format, extraTitle) {
+  function metricCell(item, extraTitle) {
     if (!item) return cell("td", "num dim", "\u2014", extraTitle || "");
     if (item.status === "VALID" && item.value != null) {
-      return cell("td", "num", format(item.value), extraTitle || item.note || "");
+      const parts = [item.note, item.currency === "CNY" ? null : CURRENCY_HINT, extraTitle].filter(Boolean);
+      return cell("td", "num", money(item.value, item.currency), parts.join(" \xB7 "));
     }
     const key = item.reason || item.status;
     const text2 = CELL_TEXT[key] || "\u2014";
@@ -4476,14 +4478,14 @@
   function channelRow(row, isTotal) {
     const tr = make("tr", isTotal ? "ledger-total" : "");
     tr.appendChild(cell("td", "ledger-ch", row.label, ""));
-    tr.appendChild(metricCell(row.spend, money));
+    tr.appendChild(metricCell(row.spend));
     tr.appendChild(numCell(row.inquiries));
     tr.appendChild(numCell(row.quality));
     tr.appendChild(numCell(row.deals));
     tr.appendChild(rateCell(row.qualityRate, "\u4F18\u8D28(A/B) \xF7 \u8BE2\u76D8"));
     tr.appendChild(rateCell(row.dealRate, "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8" + (row.dealRateOverall != null ? "\uFF1B\u603B\u53E3\u5F84 " + pct(row.dealRateOverall) : "")));
-    tr.appendChild(metricCell(row.costPerQuality, money, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09" : ""));
-    tr.appendChild(metricCell(row.cac, money, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
+    tr.appendChild(metricCell(row.costPerQuality, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09" : ""));
+    tr.appendChild(metricCell(row.cac, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
     return tr;
   }
   function buildTable(data) {
@@ -4492,7 +4494,7 @@
     const htr = make("tr");
     [
       ["\u6E20\u9053", "ledger-ch", ""],
-      ["\u82B1\u8D39", "num", "\u4EC5 SEM \u6709\u771F\u5B9E\u5A92\u4F53\u82B1\u8D39\uFF08sem_weeks.cost\uFF09"],
+      ["\u82B1\u8D39", "num", "\u4EC5 SEM \u6709\u771F\u5B9E\u5A92\u4F53\u82B1\u8D39\uFF1A\u4F18\u5148\u53D6 Google Ads \u540C\u6B65\uFF0C\u65E0\u540C\u6B65\u6570\u636E\u624D\u56DE\u9000\u4EBA\u5DE5\u5468\u62A5\uFF08\u60AC\u505C\u5355\u5143\u683C\u770B\u672C\u6B21\u7528\u7684\u662F\u54EA\u4E2A\uFF09"],
       ["\u8BE2\u76D8", "num", "\u533A\u95F4\u5185\u8BE5\u6E20\u9053\u8BE2\u76D8\u6570"],
       ["\u4F18\u8D28 A/B", "num", "\u7B49\u7EA7 A \u6216 B\uFF0C\u4E0E\u300C\u6709\u6548\u8BE2\u76D8\u300D\u540C\u53E3\u5F84"],
       ["\u6210\u4EA4", "num", "\u8BE2\u76D8\u5F55\u5165\u91CC\u6807\u6CE8\u300C\u5DF2\u6210\u4EA4\u300D\u7684\u6570\u91CF \xB7 \u6EDE\u540E\u7ED3\u679C"],
@@ -4515,9 +4517,14 @@
     (targets || []).forEach((t) => {
       const line = make("div", "ledger-target");
       line.appendChild(make("div", "ledger-target-name", t.label));
-      const actualText = t.actual == null ? "\u2014" : t.unit === "\xA5" ? money(t.actual) : Number(t.actual).toLocaleString("zh-CN") + t.unit;
-      const targetText = t.target == null ? "\u76EE\u6807\u5F85\u5B9A" : "\u76EE\u6807 " + (t.unit === "\xA5" ? money(t.target) : Number(t.target).toLocaleString("zh-CN") + t.unit);
-      line.appendChild(make("div", "ledger-target-val", actualText + " / " + targetText));
+      const actualText = t.actual == null ? "\u2014" : t.unit === "\xA5" ? money(t.actual, t.currency) : Number(t.actual).toLocaleString("zh-CN") + t.unit;
+      const targetText = t.target == null ? "\u76EE\u6807\u5F85\u5B9A" : "\u76EE\u6807 " + (t.unit === "\xA5" ? money(t.target, "CNY") : Number(t.target).toLocaleString("zh-CN") + t.unit);
+      line.appendChild(cell(
+        "div",
+        "ledger-target-val" + (t.currency_mismatch ? " ledger-warn" : ""),
+        actualText + " / " + targetText,
+        t.currency_mismatch ? "\u5B9E\u9645\u503C\u6765\u81EA Ads\uFF08\u8D26\u6237\u5E01\u79CD\uFF09\uFF0C\u76EE\u6807\u6309\u4EBA\u6C11\u5E01\u8BBE\u5B9A \u2014\u2014 \u5E01\u79CD\u53EF\u80FD\u4E0D\u4E00\u81F4\uFF0C\u8FDB\u5EA6\u4EC5\u4F9B\u53C2\u8003" : ""
+      ));
       const bar = make("div", "progress-bar ledger-progress");
       const fill = make("div", "progress-fill");
       const p = t.progress == null ? 0 : Math.max(0, Math.min(100, t.progress * 100));
@@ -4542,6 +4549,9 @@
     [notes.deal, notes.spend, notes.quality, notes.dealRate].forEach((text2) => {
       if (text2) box.appendChild(make("div", "ledger-note", "\xB7 " + text2));
     });
+    if (data.sources && data.sources.spend) {
+      box.appendChild(make("div", "ledger-note", "\xB7 \u82B1\u8D39\u53D6\u6570\uFF1A" + data.sources.spend));
+    }
     const missing = data.meta && data.meta.dealStatusMissing;
     if (missing) box.appendChild(make("div", "ledger-note ledger-warn", "\xB7 \u6709 " + missing + " \u5C01\u8BE2\u76D8\u672A\u6807\u6CE8\u662F\u5426\u6210\u4EA4\uFF0C\u672A\u8BA1\u5165\u6210\u4EA4\u6570\uFF08\u4E5F\u672A\u5F53\u4F5C\u672A\u6210\u4EA4\uFF09"));
     box.appendChild(make("div", "ledger-note", "\xB7 \u672C\u8868\u4E3A\u4E1A\u52A1\u603B\u8D26\uFF0C\u53EA\u8BFB\uFF1B\u4E0D\u53C2\u4E0E KPI \u7EE9\u6548\u8BC4\u5206"));

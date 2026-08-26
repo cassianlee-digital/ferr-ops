@@ -30,17 +30,21 @@ function cell(tag, className, text, title) {
   return el;
 }
 
-const money = (v) => (v == null || !Number.isFinite(Number(v))
+/* 金额：只有确知是人民币（人工周报）才加 ¥；Ads 花费是账户币种，与 SEM 看板一致——不臆造符号 */
+const money = (v, currency) => (v == null || !Number.isFinite(Number(v))
   ? null
-  : '¥' + Number(v).toLocaleString('zh-CN', { maximumFractionDigits: 2 }));
+  : (currency === 'CNY' ? '¥' : '') + Number(v).toLocaleString('zh-CN', { maximumFractionDigits: 2 }));
+
+const CURRENCY_HINT = '金额为广告账户币种（Ads 同步未存币种），故不加货币符号';
 
 const pct = (v) => (v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(1) + '%');
 
-/* 金额/单位成本单元格：VALID 出数字，其余出状态文案 + title 说明原因 */
-function metricCell(item, format, extraTitle) {
+/* 金额/单位成本单元格：VALID 出数字，其余出状态文案 + title 说明原因（含花费来源） */
+function metricCell(item, extraTitle) {
   if (!item) return cell('td', 'num dim', '—', extraTitle || '');
   if (item.status === 'VALID' && item.value != null) {
-    return cell('td', 'num', format(item.value), extraTitle || item.note || '');
+    const parts = [item.note, item.currency === 'CNY' ? null : CURRENCY_HINT, extraTitle].filter(Boolean);
+    return cell('td', 'num', money(item.value, item.currency), parts.join(' · '));
   }
   const key = item.reason || item.status;
   const text = CELL_TEXT[key] || '—';
@@ -61,15 +65,15 @@ function numCell(value) {
 function channelRow(row, isTotal) {
   const tr = make('tr', isTotal ? 'ledger-total' : '');
   tr.appendChild(cell('td', 'ledger-ch', row.label, ''));
-  tr.appendChild(metricCell(row.spend, money));
+  tr.appendChild(metricCell(row.spend));
   tr.appendChild(numCell(row.inquiries));
   tr.appendChild(numCell(row.quality));
   tr.appendChild(numCell(row.deals));
   tr.appendChild(rateCell(row.qualityRate, '优质(A/B) ÷ 询盘'));
   tr.appendChild(rateCell(row.dealRate, '优质成交 ÷ 优质询盘'
     + (row.dealRateOverall != null ? '；总口径 ' + pct(row.dealRateOverall) : '')));
-  tr.appendChild(metricCell(row.costPerQuality, money, isTotal ? '合计为混合口径（分子仅 SEM 花费）' : ''));
-  tr.appendChild(metricCell(row.cac, money, isTotal ? '合计为混合口径（分子仅 SEM 花费），只能当下限看' : ''));
+  tr.appendChild(metricCell(row.costPerQuality, isTotal ? '合计为混合口径（分子仅 SEM 花费）' : ''));
+  tr.appendChild(metricCell(row.cac, isTotal ? '合计为混合口径（分子仅 SEM 花费），只能当下限看' : ''));
   return tr;
 }
 
@@ -79,7 +83,7 @@ function buildTable(data) {
   const htr = make('tr');
   [
     ['渠道', 'ledger-ch', ''],
-    ['花费', 'num', '仅 SEM 有真实媒体花费（sem_weeks.cost）'],
+    ['花费', 'num', '仅 SEM 有真实媒体花费：优先取 Google Ads 同步，无同步数据才回退人工周报（悬停单元格看本次用的是哪个）'],
     ['询盘', 'num', '区间内该渠道询盘数'],
     ['优质 A/B', 'num', '等级 A 或 B，与「有效询盘」同口径'],
     ['成交', 'num', '询盘录入里标注「已成交」的数量 · 滞后结果'],
@@ -108,11 +112,13 @@ function buildTargets(targets) {
 
     const actualText = t.actual == null
       ? '—'
-      : (t.unit === '¥' ? money(t.actual) : Number(t.actual).toLocaleString('zh-CN') + t.unit);
+      : (t.unit === '¥' ? money(t.actual, t.currency) : Number(t.actual).toLocaleString('zh-CN') + t.unit);
     const targetText = t.target == null
       ? '目标待定'
-      : '目标 ' + (t.unit === '¥' ? money(t.target) : Number(t.target).toLocaleString('zh-CN') + t.unit);
-    line.appendChild(make('div', 'ledger-target-val', actualText + ' / ' + targetText));
+      : '目标 ' + (t.unit === '¥' ? money(t.target, 'CNY') : Number(t.target).toLocaleString('zh-CN') + t.unit);
+    line.appendChild(cell('div', 'ledger-target-val' + (t.currency_mismatch ? ' ledger-warn' : ''),
+      actualText + ' / ' + targetText,
+      t.currency_mismatch ? '实际值来自 Ads（账户币种），目标按人民币设定 —— 币种可能不一致，进度仅供参考' : ''));
 
     const bar = make('div', 'progress-bar ledger-progress');
     const fill = make('div', 'progress-fill');
@@ -138,6 +144,9 @@ function buildNotes(data) {
   [notes.deal, notes.spend, notes.quality, notes.dealRate].forEach((text) => {
     if (text) box.appendChild(make('div', 'ledger-note', '· ' + text));
   });
+  if (data.sources && data.sources.spend) {
+    box.appendChild(make('div', 'ledger-note', '· 花费取数：' + data.sources.spend));
+  }
   const missing = data.meta && data.meta.dealStatusMissing;
   if (missing) box.appendChild(make('div', 'ledger-note ledger-warn', '· 有 ' + missing + ' 封询盘未标注是否成交，未计入成交数（也未当作未成交）'));
   box.appendChild(make('div', 'ledger-note', '· 本表为业务总账，只读；不参与 KPI 绩效评分'));

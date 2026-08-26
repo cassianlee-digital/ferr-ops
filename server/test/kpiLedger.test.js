@@ -192,3 +192,44 @@ test('buildTargetProgress：目标存在但实际算不出（SEM 无花费）→
   assert.equal(cpq.status, 'NO_ACTUAL');
   assert.equal(cpq.progress, null);
 });
+
+test('computeLedger：花费来源为 Ads 时不标人民币（账户币种，不臆造符号）', () => {
+  const l = computeLedger(rows, { spendByChannel: { SEM: { value: 4500, source: 'google_ads' } } });
+  const sem = pick(l, 'SEM');
+  assert.equal(sem.spend.value, 4500);
+  assert.equal(sem.spend.source, 'google_ads');
+  assert.equal(sem.spend.currency, null);
+  assert.match(sem.spend.note, /Ads/);
+  // 单位成本继承币种，前端据此决定加不加 ¥
+  assert.equal(sem.costPerQuality.currency, null);
+  assert.equal(sem.cac.currency, null);
+  assert.equal(l.totals.spend.source, 'google_ads');
+  assert.equal(l.totals.spend.currency, null);
+});
+
+test('computeLedger：回退人工周报时标 CNY，并说明为何回退', () => {
+  const l = computeLedger(rows, { spendByChannel: { SEM: { value: 9000, source: 'sem_weeks' } } });
+  const sem = pick(l, 'SEM');
+  assert.equal(sem.spend.source, 'sem_weeks');
+  assert.equal(sem.spend.currency, 'CNY');
+  assert.match(sem.spend.note, /人工周报/);
+  assert.equal(sem.cac.currency, 'CNY');
+});
+
+test('computeLedger：裸数字仍按人工周报口径解析（旧调用不破）', () => {
+  const l = computeLedger(rows, { spendByChannel: { SEM: 9000 } });
+  assert.equal(pick(l, 'SEM').spend.source, 'sem_weeks');
+  assert.equal(pick(l, 'SEM').spend.currency, 'CNY');
+});
+
+test('buildTargetProgress：实际值来自 Ads 而目标按人民币 → currency_mismatch 标出来', () => {
+  const kpiRows = [{ grp: 'total', name: '有效询盘成本', target: 2000, mode: 'i' }];
+  const ads = buildTargetProgress(
+    computeLedger(rows, { spendByChannel: { SEM: { value: 4500, source: 'google_ads' } } }), kpiRows);
+  const manual = buildTargetProgress(
+    computeLedger(rows, { spendByChannel: { SEM: { value: 4500, source: 'sem_weeks' } } }), kpiRows);
+  assert.equal(ads.find((x) => x.key === 'cost_per_quality').currency_mismatch, true);
+  assert.equal(manual.find((x) => x.key === 'cost_per_quality').currency_mismatch, false);
+  // 计数型指标不受币种影响
+  assert.equal(ads.find((x) => x.key === 'inquiries').currency_mismatch, false);
+});
