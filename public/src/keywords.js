@@ -1,7 +1,7 @@
 /* 关键词库（4 类 · 增删改入库 · FR-9）（ES 模块 · esbuild 打包为 IIFE）。
    显式模块依赖：OPT 来自 ./tagselect.js —— 不再靠全局碰运气。
    运行时仍依赖的全局（尚未迁移的经典脚本/内联提供，调用/事件时解析）：
-   esc()、toast()、API、renderSparklines() 仍由经典脚本提供。
+   API 仍由经典脚本 api.js 提供；esc/toast 显式 import 自 ui-kit；renderSparklines 已迁入本模块。
    placeCaretEnd()/validateEditableValue()/rollbackEditable()/showSaveError()/setSavingState() 显式导入。
    必须挂 window（main.js 统一处理）：
      - inlineConfirm —— inquiries / closed-loop / archive / sop 显式导入；经典兼容层暂仍暴露。
@@ -179,3 +179,16 @@ document.addEventListener('focusout',async e=>{
     cell.textContent=v; cell.dataset.kwOld=v; setSavingState(cell,'ok'); toast('已更新关键词 · 已入库');
   }catch(err){ rollbackEditable(cell,oldVal); showSaveError(cell,err.status===403?'无权限修改':'保存失败，已恢复旧值'); }
 });
+
+/* 近6周排名迷你折线 sparkline（2026-08-26 从 app.js 迁来：调用者是本模块的关键词表，纯 DOM 无依赖）。
+   排名越小越好，故末值小于首值算「涨」用绿色。 */
+export function renderSparklines(){
+  document.querySelectorAll('[data-spark]').forEach(td=>{
+    const v=td.dataset.spark.split(',').map(Number); // 排名:越小越好
+    const w=58,h=18,max=Math.max(...v),min=Math.min(...v),rng=Math.max(max-min,1);
+    const pts=v.map((d,i)=>{const x=i/(v.length-1)*(w-4)+2; const y=(d-min)/rng*(h-6)+3; return x.toFixed(1)+','+y.toFixed(1);}).join(' ');
+    const up=v[v.length-1]<v[0]; const col=up?'var(--green)':(v[v.length-1]>v[0]?'var(--primary)':'var(--text3)');
+    const last=v[v.length-1],lx=(w-4)+2,ly=((last-min)/rng*(h-6)+3);
+    td.innerHTML=`<svg class="spark" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
+  });
+}

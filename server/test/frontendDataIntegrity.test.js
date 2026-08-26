@@ -20,6 +20,9 @@ const tableEditorSource = readFileSync(new URL('../../public/src/table-editor.js
 const rankSnapshotsSource = readFileSync(new URL('../../public/src/rank-snapshots.js', import.meta.url), 'utf8');
 const ga4Source = readFileSync(new URL('../../public/src/ga4-view.js', import.meta.url), 'utf8');
 const risksSource = readFileSync(new URL('../../public/src/risks.js', import.meta.url), 'utf8');
+// loadInquiries / tableLoadState 于 2026-08-26 从 app.js 迁到各自归属模块，以下断言随之改指向（强度不变）
+const inquiriesSource = readFileSync(new URL('../../public/src/inquiries.js', import.meta.url), 'utf8');
+const uiKitSource = readFileSync(new URL('../../public/src/ui-kit.js', import.meta.url), 'utf8');
 const stylesSource = readFileSync(new URL('../../public/styles.css', import.meta.url), 'utf8');
 
 function tbody(id) {
@@ -96,8 +99,12 @@ test('GA4 view exposes real campaign and event evidence with understandable labe
 });
 
 test('all dashboard date consumers use the shared range and reject stale responses', () => {
-  assert.match(appSource, /API\.get\(withRange\('\/api\/inquiries'\)\)/);
-  assert.match(appSource, /const requestId=\+\+inquiryRequestSequence/);
+  assert.match(inquiriesSource, /API\.get\(withRange\('\/api\/inquiries'\)\)/);
+  assert.match(inquiriesSource, /const requestId=\+\+inquiryRequestSequence/);
+  // 询盘自己订阅 timerange 重拉；timerange.js 不得反向调用 loadInquiries()
+  //（那与其文件头写明的「消费者订阅事件」设计相悖，且会形成 timerange→inquiries→charts→timerange 环）
+  assert.match(inquiriesSource, /document\.addEventListener\('timerange'/);
+  assert.doesNotMatch(timerangeSource, /^\s*loadInquiries\(\);/m);
   assert.match(kpiSource, /API\.get\(withRange\('\/api\/kpi-targets'\)\)/);
   assert.match(kpiSource, /API\.get\(withRange\('\/api\/seo-weeks'\)\)/);
   assert.match(kpiSource, /API\.get\(withRange\('\/api\/sem-weeks'\)\)/);
@@ -115,12 +122,13 @@ test('all dashboard date consumers use the shared range and reject stale respons
 });
 
 test('empty and failed live loads remain observable and retryable', () => {
-  assert.match(appSource, /function tableLoadState\(/);
-  assert.match(appSource, /\$\{esc\(message\)\}/);
-  assert.match(appSource, /data-load-state="\$\{state\}"/);
+  assert.match(uiKitSource, /export function tableLoadState\(/);
+  assert.match(uiKitSource, /\$\{esc\(message\)\}/);
+  assert.match(uiKitSource, /data-load-state="\$\{state\}"/);
   assert.match(appSource, /否词加载失败：/);
   assert.match(appSource, /广告创意加载失败：/);
-  assert.match(appSource, /window\._inqStats=null;[\s\S]*renderInqDonuts\(\);/);
+  assert.match(inquiriesSource, /window\._inqStats=null;[\s\S]*renderInqDonuts\(\);/);
+  assert.match(inquiriesSource, /询盘加载失败：/);
   assert.match(appSource, /loadInquiries\(\)/);
   assert.match(appSource, /loadNegKeywords\(\)/);
   assert.match(appSource, /loadAdCreatives\(\)/);

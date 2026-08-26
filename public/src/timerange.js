@@ -1,5 +1,6 @@
 /* 时间范围筛选（ES 模块 · esbuild 打包为 IIFE）。
-   运行时依赖的全局：toast()、openModal()/closeModal()（内联）、loadInquiries()（inquiries.js）和 loadGa4()。
+   运行时依赖的全局：loadGa4()（ga4-view.js，尚未改成订阅事件）。询盘已改为自己监听 timerange 事件，
+   本模块不再反向调用 loadInquiries() —— 那与「消费者订阅事件」的设计相悖，且会成环。
    图表消费者监听 timerange/granularity 事件，避免时间模块反向依赖图表实现。
    必须挂 window（main.js 统一处理）：
      - formatLocalDate/ymd —— closed-loop.js 显式导入；
@@ -64,7 +65,6 @@ function syncRangeUi(){
 export function refreshRangeConsumers(){
   _rangeRevision++;
   document.dispatchEvent(new CustomEvent('timerange',{detail:{range:_range,revision:_rangeRevision}}));
-  loadInquiries();                 // 1e-a：询盘真实按区间重拉
   if(typeof loadGa4==='function') loadGa4(); // 阶段5：GA4 按区间重算
 }
 export function applyTimeRange(label){

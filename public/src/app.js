@@ -9,14 +9,14 @@
    显式 import 的模块调用 —— 那是下一刀要收的方向。 */
 import { adoptAi, aiBox, loadAiAnalyses, runAiAnalysis } from './ai.js';
 import { loadArchive } from './archive.js';
-import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, renderInqDonuts, resizeScatters } from './charts.js';
+import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, renderInqDonuts, resizeScatters, toggleHier } from './charts.js';
 import { addContent, addDepositRow, addFixRow, addPlanRow, addTestRow, loadClosedLoop, loadContent, openTaskModal, prepend, refreshTaskCols, submitSubtask, submitTask } from './closed-loop.js';
 import { loadGa4 } from './ga4-view.js';
 import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
-import { openInquiry, refreshInqStats, renderInqFeed, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
+import { loadInquiries, openInquiry, refreshInqStats, renderInqFeed, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
-import { addKeyword, filterKwByCat, loadKeywords } from './keywords.js';
+import { addKeyword, filterKwByCat, loadKeywords, renderSparklines } from './keywords.js';
 import { loadOverview, renderKPI } from './kpi-view.js';
 import { loadMetrics, loadWeeks, submitSemWeek, submitSeoWeek } from './kpi.js';
 import { loadBrain, loadMarket, refreshBrain } from './market-brain.js';
@@ -26,7 +26,7 @@ import { loadRisks } from './risks.js';
 import { bindSettings, openPwd, submitPwd } from './settings.js';
 import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, updateSopCounts } from './sop.js';
 import { getRangeRevision, submitCustomRange, withRange } from './timerange.js';
-import { closeModal, esc, toast, toastUndo } from './ui-kit.js';
+import { closeModal, esc, tableLoadState, toast, toastUndo } from './ui-kit.js';
 import { renderMonthReview, renderReview } from './weekly-review.js';
 
 /* ---------- helpers ---------- */
@@ -166,7 +166,7 @@ document.querySelectorAll('.planning-tab').forEach(btn=>btn.addEventListener('cl
 document.querySelectorAll('.action-tab').forEach(btn=>btn.addEventListener('click',()=>setActionTab(btn.dataset.actionTab)));
 document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} resizeScatters(); }));
 /* 刷新后恢复上次所在页签 + 子页签（修复刷新回总览的 Bug）*/
-export function restoreRoute(){
+function restoreRoute(){
   let tab='dashboard'; try{ tab=localStorage.getItem('ferr:tab')||'dashboard'; }catch(e){}
   if(tab==='ga4'){ tab='data'; try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} }
   if(tab!=='planning'&&tab!=='action'&&!document.getElementById('panel-'+tab))tab='dashboard';
@@ -203,12 +203,6 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 /* 否词库 / 广告创意库 录入：ES 模块 public/src/neg-ads.js（打包进 /dist/bundle.js）— addNeg/addAd/negRowHtml/adRowHtml 等 */
 
 /* ================= SEM 层级展开/收起 ================= */
-export function toggleHier(row){
-  row.classList.toggle('collapsed');
-  const hidden=row.classList.contains('collapsed');
-  let n=row.nextElementSibling;
-  while(n&&!n.classList.contains('h-camp')){ n.style.display=hidden?'none':''; n=n.nextElementSibling; }
-}
 
 /* ================= minitabs (数据看板 二级标签) ================= */
 document.querySelectorAll('.minitab[data-mini]').forEach(t=>t.addEventListener('click',()=>{
@@ -221,51 +215,8 @@ document.querySelectorAll('.minitab[data-mini]').forEach(t=>t.addEventListener('
 }));
 
 /* ================= 近6周排名迷你折线 (sparkline) ================= */
-export function renderSparklines(){
-  document.querySelectorAll('[data-spark]').forEach(td=>{
-    const v=td.dataset.spark.split(',').map(Number); // 排名:越小越好
-    const w=58,h=18,max=Math.max(...v),min=Math.min(...v),rng=Math.max(max-min,1);
-    const pts=v.map((d,i)=>{const x=i/(v.length-1)*(w-4)+2; const y=(d-min)/rng*(h-6)+3; return x.toFixed(1)+','+y.toFixed(1);}).join(' ');
-    const up=v[v.length-1]<v[0]; const col=up?'var(--green)':(v[v.length-1]>v[0]?'var(--primary)':'var(--text3)');
-    const last=v[v.length-1],lx=(w-4)+2,ly=((last-min)/rng*(h-6)+3);
-    td.innerHTML=`<svg class="spark" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
-  });
-}
 
 /* ================= 载入持久化数据 ================= */
-function tableLoadState(id,colspan,state,message,retryAction){
-  const tb=document.getElementById(id); if(!tb)return;
-  const retry=typeof retryAction==='function'?' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> 重试</button>':'';
-  tb.innerHTML=`<tr data-load-state="${state}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
-  const retryBtn=tb.querySelector('.table-retry'); if(retryBtn)retryBtn.addEventListener('click',retryAction);
-}
-// 询盘加载（带当前时间区间）。供首屏 hydrate 与时间切换共用。
-let inquiryRequestSequence=0;
-export async function loadInquiries(){
-  const requestId=++inquiryRequestSequence;
-  const revision=typeof getRangeRevision==='function'?getRangeRevision():0;
-  try{
-    const {items,stats}=await API.get(withRange('/api/inquiries'));
-    if(requestId!==inquiryRequestSequence||(typeof getRangeRevision==='function'&&revision!==getRangeRevision()))return;
-    window._inqCache=items||[];
-    renderInqList(); // C组：按月分组渲染（清掉旧行/静态示例行，当月展开、上月折叠）
-    try{ renderInqFeed(); }catch(_){} // Hero 左栏「最新询盘」同步刷新
-    refreshInqStats(stats);
-    // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
-    renderInqDonuts();  // BUG-6：KPI 页两个 donut 同步真实重绘
-    if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
-  }catch(e){ if(requestId===inquiryRequestSequence&&e&&e.message!=='unauthorized'){
-    window._inqCache=[];
-    window._inqStats=null;
-    const reason=e.message||'未知错误';
-    tableLoadState('tb-inq-cur',11,'error','询盘加载失败：'+reason,loadInquiries);
-    tableLoadState('tb-inq',11,'error','询盘加载失败：'+reason,loadInquiries);
-    const count=document.getElementById('inqFeedCount'); if(count)count.textContent='加载失败';
-    renderInqDonuts();
-    if(window._curTab==='inquiry'){try{renderGlobe();}catch(_){}}
-    toast('询盘加载失败：'+reason);
-  } }
-}
 async function loadNegKeywords(){
   try{
     const {items}=await API.get('/api/neg-keywords');
@@ -292,7 +243,7 @@ async function loadAdCreatives(){
     toast('广告创意加载失败：'+reason);
   } }
 }
-export async function hydrate(){
+async function hydrate(){
   // 询盘：从后端读取（多人共享、服务重启不丢）；带当前时间区间
   await loadInquiries();
   // 否词库：从后端读取
@@ -434,7 +385,7 @@ window.addEventListener('load',async()=>{
 
 /* 顶栏显示当前用户 + 登出；按角色做前端控件提示（后端才是权威校验）*/
 const ROLE_LABEL={seo:'李 · SEO',sem:'陈 · SEM',manager:'主管',boss:'老板'};
-export function applyRoleUi(){
+function applyRoleUi(){
   const me=window.ME||{};
   // B-6：个人信息（姓名/角色/用户名）移入设置「个人资料」，不再放顶栏
   const pn=document.getElementById('prof-name'); if(pn)pn.textContent=me.name||'—';

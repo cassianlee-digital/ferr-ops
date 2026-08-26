@@ -15,6 +15,7 @@ const loginSource = readFileSync(new URL('../../public/login.html', import.meta.
 const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
 const weeklyReviewSource = readFileSync(new URL('../../public/src/weekly-review.js', import.meta.url), 'utf8');
 const inquiriesSource = readFileSync(new URL('../../public/src/inquiries.js', import.meta.url), 'utf8');
+const uiKitSource = readFileSync(new URL('../../public/src/ui-kit.js', import.meta.url), 'utf8');
 const keywordsSource = readFileSync(new URL('../../public/src/keywords.js', import.meta.url), 'utf8');
 const tagSelectSource = readFileSync(new URL('../../public/src/tagselect.js', import.meta.url), 'utf8');
 const archiveSource = readFileSync(new URL('../../public/src/archive.js', import.meta.url), 'utf8');
@@ -91,8 +92,9 @@ test('runtime-generated frontend markup contains no inline event handlers', () =
     assert.doesNotMatch(source, /\bon[a-z]+\s*=\s*(?:["']|\$\{)/i, `generated inline event handler remains in ${file}`);
   }
   assert.doesNotMatch(indexSource, /onclick="\$\{retryAction\}"/);
-  assert.match(appSource, /tableLoadState\([^;]+,loadInquiries\)/);
-  assert.match(appSource, /retryBtn\.addEventListener\('click',retryAction\)/);
+  // tableLoadState 已迁入 ui-kit.js，重试按钮仍必须用 addEventListener 绑定而非内联 handler
+  assert.match(inquiriesSource, /tableLoadState\([^;]+,loadInquiries\)/);
+  assert.match(uiKitSource, /retryBtn\.addEventListener\('click', retryAction\)/);
 });
 
 test('static frontend markup contains no inline event handlers', () => {
@@ -169,7 +171,8 @@ test('inquiries are bundled with explicit module dependencies and a narrow globa
     'submitTrack'
   ]);
   assert.match(tagSelectSource, /import \{ inqRowHtml, isUpgraded \} from '\.\/inquiries\.js';/);
-  assert.match(archiveSource, /import \{ GRADE_BADGE \} from '\.\/inquiries\.js';/);
+  // loadInquiries 已迁入 inquiries.js，archive 改为显式 import（原先是裸全局）
+  assert.match(archiveSource, /import \{ GRADE_BADGE, loadInquiries \} from '\.\/inquiries\.js';/);
   assert.doesNotMatch(mainSource, /\b(?:GRADE_BADGE|inqRowHtml|isUpgraded|openTrack|trackCellHtml|toggleInqMonth|toggleInqFeed)\b(?=[,}])/);
   assert.match(inquiriesSource, /export const GRADE_BADGE=/);
   assert.match(inquiriesSource, /class="ctr inq-track-feedback"/);
@@ -181,6 +184,9 @@ test('inquiries are bundled with explicit module dependencies and a narrow globa
   assert.deepEqual(exportedFunctions, [
     'inqRowHtml',
     'isUpgraded',
+    // loadInquiries 2026-08-26 从 app.js 迁回本模块（它渲染的三个函数本来就在这里）；
+    // archive 显式 import 它，timerange 改为让本模块订阅事件，故无需再挂 window。
+    'loadInquiries',
     'openInquiry',
     'refreshInqStats',
     'renderInqFeed',
@@ -242,14 +248,15 @@ test('charts are bundled behind events and a narrow classic-script compatibility
   const exports = [...chartsSource.matchAll(/export (?:async )?function ([A-Za-z_$][\w$]*)/g)]
     .map((match) => match[1])
     .sort();
-  assert.deepEqual(exports, [...compatibility[1].split(',').map((name) => name.trim()), 'refreshSeoWeekChart'].sort());
+  // toggleHier 2026-08-26 从 app.js 迁入（唯一调用者是本模块的委托），不进 window 兼容层
+  assert.deepEqual(exports, [...compatibility[1].split(',').map((name) => name.trim()), 'refreshSeoWeekChart', 'toggleHier'].sort());
   assert.match(chartsSource, /import \{ formatLocalDate, getCurrentRange, getRangeRevision, rangeText, withRange \} from '\.\/timerange\.js';/);
   assert.match(chartsSource, /addEventListener\('timerange'/);
   assert.match(chartsSource, /addEventListener\('granularity',[^;]*rebuildSeoChart\(\); renderInqTrend\(\);/);
   assert.doesNotMatch(timerangeSource, /\b(?:loadSeoChartRange|rebuildSeoChart|loadSeoBoardFull|loadSemBoardAds|loadSemBoardFull|loadAttribution|loadDiagnostics|loadDataFreshness)\b/);
   assert.match(kpiSource, /import \{ loadSemBoardAds, loadSeoBoardGsc, refreshSeoWeekChart \} from '\.\/charts\.js';/);
   assert.doesNotMatch(kpiSource, /\b(?:seoFull|seoChart|seoSeriesFromWeeks|buildSeoData)\b/);
-  assert.match(inquiriesSource, /import \{ loadDashboardInq \} from '\.\/charts\.js';/);
+  assert.match(inquiriesSource, /import \{ loadDashboardInq, renderInqDonuts \} from '\.\/charts\.js';/);
   assert.match(archiveSource, /import \{ loadDashboardInq \} from '\.\/charts\.js';/);
   assert.match(googleProjectsSource, /import \{ loadDataFreshness \} from '\.\/charts\.js';/);
   assert.doesNotMatch(appSource, /\b_resizeScatters\b/);

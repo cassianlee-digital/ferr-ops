@@ -24,6 +24,7 @@
     openModal: () => openModal,
     renderText: () => renderText,
     showToast: () => showToast,
+    tableLoadState: () => tableLoadState,
     toast: () => toast,
     toastGo: () => toastGo,
     toastUndo: () => toastUndo
@@ -81,6 +82,14 @@
     document.querySelectorAll(".modal-mask").forEach((m) => m.addEventListener("click", (e) => {
       if (e.target === m) m.classList.remove("show");
     }));
+  }
+  function tableLoadState(id, colspan, state, message, retryAction) {
+    const tb = document.getElementById(id);
+    if (!tb) return;
+    const retry = typeof retryAction === "function" ? ' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> \u91CD\u8BD5</button>' : "";
+    tb.innerHTML = `<tr data-load-state="${state}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
+    const retryBtn = tb.querySelector(".table-retry");
+    if (retryBtn) retryBtn.addEventListener("click", retryAction);
   }
   var tt;
   var toastEl = () => typeof document === "undefined" ? null : document.getElementById("toast");
@@ -153,7 +162,8 @@
     kwRow: () => kwRow,
     loadKeywords: () => loadKeywords,
     renderCatTabs: () => renderCatTabs,
-    renderKwPager: () => renderKwPager
+    renderKwPager: () => renderKwPager,
+    renderSparklines: () => renderSparklines
   });
 
   // public/src/tagselect.js
@@ -291,7 +301,6 @@
   function refreshRangeConsumers() {
     _rangeRevision++;
     document.dispatchEvent(new CustomEvent("timerange", { detail: { range: _range, revision: _rangeRevision } }));
-    loadInquiries();
     if (typeof loadGa4 === "function") loadGa4();
   }
   function applyTimeRange(label) {
@@ -2051,6 +2060,520 @@
     rebuildSeoChart();
     renderInqTrend();
   });
+  function toggleHier(row) {
+    row.classList.toggle("collapsed");
+    const hidden = row.classList.contains("collapsed");
+    let n = row.nextElementSibling;
+    while (n && !n.classList.contains("h-camp")) {
+      n.style.display = hidden ? "none" : "";
+      n = n.nextElementSibling;
+    }
+  }
+
+  // public/src/inquiry-globe.js
+  var inquiry_globe_exports = {};
+  __export(inquiry_globe_exports, {
+    renderGlobe: () => renderGlobe
+  });
+  var QINGDAO = [120.38, 36.07];
+  var WORLD_MAP_NAME = "ferrWorld";
+  var WORLD_MAP_URLS = [
+    "/world.geo.json"
+  ];
+  var COUNTRY_GEO = {
+    "\u5FB7\u56FD": [10.45, 51.17],
+    "\u7F8E\u56FD": [-98.5, 39.8],
+    "\u897F\u73ED\u7259": [-3.7, 40.4],
+    "\u5370\u5EA6": [78.96, 20.59],
+    "\u610F\u5927\u5229": [12.57, 41.87],
+    "\u52A0\u62FF\u5927": [-106.3, 56.13],
+    "\u8377\u5170": [5.29, 52.13],
+    "\u58A8\u897F\u54E5": [-102.55, 23.63],
+    "\u65B0\u897F\u5170": [174, -40.9],
+    "\u54E5\u4F26\u6BD4\u4E9A": [-74.3, 4.6],
+    "\u514B\u7F57\u5730\u4E9A": [15.2, 45.1],
+    "\u4FC4\u7F57\u65AF": [105, 61.5],
+    "\u745E\u5178": [18.6, 60.1],
+    "\u5DF4\u897F": [-51.9, -14.2],
+    "\u82F1\u56FD": [-1.5, 52.4],
+    "\u6CD5\u56FD": [2.2, 46.2],
+    "\u6FB3\u5927\u5229\u4E9A": [133.8, -25.3],
+    "\u65E5\u672C": [138.25, 36.2],
+    "\u97E9\u56FD": [127.8, 36.5],
+    "\u571F\u8033\u5176": [35.2, 39],
+    "\u8D8A\u5357": [108.3, 14.1],
+    "\u5370\u5EA6\u5C3C\u897F\u4E9A": [113.9, -0.8],
+    "\u5370\u5C3C": [113.9, -0.8],
+    "\u6CE2\u5170": [19.1, 51.9],
+    "\u6BD4\u5229\u65F6": [4.5, 50.5],
+    "\u745E\u58EB": [8.2, 46.8],
+    "\u5965\u5730\u5229": [14.6, 47.5],
+    "\u8461\u8404\u7259": [-8.2, 39.4],
+    "\u5E0C\u814A": [21.8, 39.1],
+    "\u963F\u8054\u914B": [54, 24],
+    "\u6C99\u7279": [45, 24],
+    "\u57C3\u53CA": [30.8, 26.8],
+    "\u5357\u975E": [24, -29],
+    "\u963F\u6839\u5EF7": [-64, -34],
+    "\u667A\u5229": [-71.5, -35.7],
+    "\u6CF0\u56FD": [101, 15],
+    "\u9A6C\u6765\u897F\u4E9A": [101.97, 4.2],
+    "\u4E4C\u514B\u5170": [31.2, 49],
+    "\u6377\u514B": [15.5, 49.8],
+    "\u4E39\u9EA6": [9.5, 56.3],
+    "\u632A\u5A01": [8.5, 60.5],
+    "\u82AC\u5170": [26, 64],
+    "\u7231\u5C14\u5170": [-8.2, 53.4],
+    // 拉美(本站主力市场)
+    "\u4E4C\u62C9\u572D": [-56, -32.8],
+    "\u79D8\u9C81": [-75, -9.2],
+    "\u5384\u74DC\u591A\u5C14": [-78.2, -1.5],
+    "\u59D4\u5185\u745E\u62C9": [-66.6, 6.4],
+    "\u73BB\u5229\u7EF4\u4E9A": [-64.7, -16.3],
+    "\u5DF4\u62C9\u572D": [-58.4, -23.4],
+    "\u5371\u5730\u9A6C\u62C9": [-90.4, 15.7],
+    "\u54E5\u65AF\u8FBE\u9ECE\u52A0": [-84.1, 9.9],
+    "\u5DF4\u62FF\u9A6C": [-80.1, 8.5],
+    "\u5C3C\u52A0\u62C9\u74DC": [-85.2, 12.9],
+    "\u6D2A\u90FD\u62C9\u65AF": [-86.6, 15],
+    "\u8428\u5C14\u74E6\u591A": [-88.9, 13.8],
+    "\u591A\u7C73\u5C3C\u52A0": [-70.2, 18.7],
+    "\u53E4\u5DF4": [-79, 21.5],
+    "\u6CE2\u591A\u9ECE\u5404": [-66.5, 18.2],
+    // 非洲 / 中东
+    "\u4E4C\u5E72\u8FBE": [32.3, 1.4],
+    "\u80AF\u5C3C\u4E9A": [37.9, 0],
+    "\u5C3C\u65E5\u5229\u4E9A": [8.7, 9.1],
+    "\u52A0\u7EB3": [-1, 7.9],
+    "\u6469\u6D1B\u54E5": [-7.1, 31.8],
+    "\u963F\u5C14\u53CA\u5229\u4E9A": [2.6, 28],
+    "\u7A81\u5C3C\u65AF": [9.5, 33.9],
+    "\u57C3\u585E\u4FC4\u6BD4\u4E9A": [40.5, 9.1],
+    "\u5766\u6851\u5C3C\u4E9A": [34.9, -6.4],
+    "\u4EE5\u8272\u5217": [34.9, 31],
+    "\u4F0A\u6717": [53.7, 32.4],
+    "\u4F0A\u62C9\u514B": [43.7, 33.2],
+    "\u5361\u5854\u5C14": [51.2, 25.3],
+    "\u79D1\u5A01\u7279": [47.5, 29.3],
+    "\u7EA6\u65E6": [36.2, 31.2],
+    "\u9ECE\u5DF4\u5AE9": [35.9, 33.9],
+    "\u963F\u66FC": [56, 21.5],
+    "\u5DF4\u6797": [50.6, 26.1],
+    // 亚洲 / 其他
+    "\u5DF4\u57FA\u65AF\u5766": [69.3, 30.4],
+    "\u5B5F\u52A0\u62C9\u56FD": [90.4, 23.7],
+    "\u5B5F\u52A0\u62C9": [90.4, 23.7],
+    "\u65AF\u91CC\u5170\u5361": [80.8, 7.9],
+    "\u83F2\u5F8B\u5BBE": [122.9, 12.9],
+    "\u65B0\u52A0\u5761": [103.8, 1.35],
+    "\u7F05\u7538": [96, 21.9],
+    "\u67EC\u57D4\u5BE8": [104.9, 12.6],
+    "\u5C3C\u6CCA\u5C14": [84.1, 28.4],
+    "\u54C8\u8428\u514B\u65AF\u5766": [66.9, 48],
+    "\u8499\u53E4": [103.8, 46.9],
+    "\u5308\u7259\u5229": [19.5, 47.2],
+    "\u7F57\u9A6C\u5C3C\u4E9A": [24.97, 45.9],
+    "\u4FDD\u52A0\u5229\u4E9A": [25.5, 42.7],
+    "\u585E\u5C14\u7EF4\u4E9A": [20.8, 44],
+    "\u65AF\u6D1B\u4F10\u514B": [19.7, 48.7],
+    "\u65AF\u6D1B\u6587\u5C3C\u4E9A": [14.8, 46.1],
+    "\u7ACB\u9676\u5B9B": [23.9, 55.2]
+  };
+  var COUNTRY_ALIAS = {
+    Germany: "\u5FB7\u56FD",
+    USA: "\u7F8E\u56FD",
+    "UnitedStates": "\u7F8E\u56FD",
+    "UnitedStatesofAmerica": "\u7F8E\u56FD",
+    Spain: "\u897F\u73ED\u7259",
+    India: "\u5370\u5EA6",
+    Italy: "\u610F\u5927\u5229",
+    Canada: "\u52A0\u62FF\u5927",
+    Netherlands: "\u8377\u5170",
+    Mexico: "\u58A8\u897F\u54E5",
+    Russia: "\u4FC4\u7F57\u65AF",
+    Sweden: "\u745E\u5178",
+    Brazil: "\u5DF4\u897F",
+    UK: "\u82F1\u56FD",
+    UnitedKingdom: "\u82F1\u56FD",
+    France: "\u6CD5\u56FD",
+    Australia: "\u6FB3\u5927\u5229\u4E9A",
+    Japan: "\u65E5\u672C",
+    Korea: "\u97E9\u56FD",
+    SouthKorea: "\u97E9\u56FD",
+    Turkey: "\u571F\u8033\u5176",
+    Vietnam: "\u8D8A\u5357",
+    Indonesia: "\u5370\u5EA6\u5C3C\u897F\u4E9A",
+    Poland: "\u6CE2\u5170",
+    Belgium: "\u6BD4\u5229\u65F6",
+    Switzerland: "\u745E\u58EB",
+    Austria: "\u5965\u5730\u5229",
+    Portugal: "\u8461\u8404\u7259",
+    Greece: "\u5E0C\u814A",
+    UAE: "\u963F\u8054\u914B",
+    SaudiArabia: "\u6C99\u7279",
+    Egypt: "\u57C3\u53CA",
+    SouthAfrica: "\u5357\u975E",
+    Argentina: "\u963F\u6839\u5EF7",
+    Chile: "\u667A\u5229",
+    Thailand: "\u6CF0\u56FD",
+    Malaysia: "\u9A6C\u6765\u897F\u4E9A",
+    Ukraine: "\u4E4C\u514B\u5170",
+    Czech: "\u6377\u514B",
+    Denmark: "\u4E39\u9EA6",
+    Norway: "\u632A\u5A01",
+    Finland: "\u82AC\u5170",
+    Ireland: "\u7231\u5C14\u5170",
+    Uruguay: "\u4E4C\u62C9\u572D",
+    Peru: "\u79D8\u9C81",
+    Ecuador: "\u5384\u74DC\u591A\u5C14",
+    Venezuela: "\u59D4\u5185\u745E\u62C9",
+    Bolivia: "\u73BB\u5229\u7EF4\u4E9A",
+    Paraguay: "\u5DF4\u62C9\u572D",
+    Guatemala: "\u5371\u5730\u9A6C\u62C9",
+    CostaRica: "\u54E5\u65AF\u8FBE\u9ECE\u52A0",
+    Panama: "\u5DF4\u62FF\u9A6C",
+    Nicaragua: "\u5C3C\u52A0\u62C9\u74DC",
+    Honduras: "\u6D2A\u90FD\u62C9\u65AF",
+    ElSalvador: "\u8428\u5C14\u74E6\u591A",
+    DominicanRepublic: "\u591A\u7C73\u5C3C\u52A0",
+    Cuba: "\u53E4\u5DF4",
+    PuertoRico: "\u6CE2\u591A\u9ECE\u5404",
+    Uganda: "\u4E4C\u5E72\u8FBE",
+    Kenya: "\u80AF\u5C3C\u4E9A",
+    Nigeria: "\u5C3C\u65E5\u5229\u4E9A",
+    Ghana: "\u52A0\u7EB3",
+    Morocco: "\u6469\u6D1B\u54E5",
+    Algeria: "\u963F\u5C14\u53CA\u5229\u4E9A",
+    Tunisia: "\u7A81\u5C3C\u65AF",
+    Ethiopia: "\u57C3\u585E\u4FC4\u6BD4\u4E9A",
+    Tanzania: "\u5766\u6851\u5C3C\u4E9A",
+    Israel: "\u4EE5\u8272\u5217",
+    Iran: "\u4F0A\u6717",
+    Iraq: "\u4F0A\u62C9\u514B",
+    Qatar: "\u5361\u5854\u5C14",
+    Kuwait: "\u79D1\u5A01\u7279",
+    Jordan: "\u7EA6\u65E6",
+    Lebanon: "\u9ECE\u5DF4\u5AE9",
+    Oman: "\u963F\u66FC",
+    Bahrain: "\u5DF4\u6797",
+    Pakistan: "\u5DF4\u57FA\u65AF\u5766",
+    Bangladesh: "\u5B5F\u52A0\u62C9\u56FD",
+    SriLanka: "\u65AF\u91CC\u5170\u5361",
+    Philippines: "\u83F2\u5F8B\u5BBE",
+    Singapore: "\u65B0\u52A0\u5761",
+    Myanmar: "\u7F05\u7538",
+    Cambodia: "\u67EC\u57D4\u5BE8",
+    Nepal: "\u5C3C\u6CCA\u5C14",
+    Kazakhstan: "\u54C8\u8428\u514B\u65AF\u5766",
+    Mongolia: "\u8499\u53E4",
+    Hungary: "\u5308\u7259\u5229",
+    Romania: "\u7F57\u9A6C\u5C3C\u4E9A",
+    Bulgaria: "\u4FDD\u52A0\u5229\u4E9A",
+    Serbia: "\u585E\u5C14\u7EF4\u4E9A",
+    Slovakia: "\u65AF\u6D1B\u4F10\u514B",
+    Slovenia: "\u65AF\u6D1B\u6587\u5C3C\u4E9A",
+    Lithuania: "\u7ACB\u9676\u5B9B"
+  };
+  var inqGlobeChart = null;
+  var worldMapPromise = null;
+  var worldMapReady = false;
+  var renderSeq = 0;
+  var resizeBound = false;
+  function inqMapEsc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[ch]);
+  }
+  function countryName(raw) {
+    const cleaned = String(raw || "").replace(/[\uD800-\uDFFF]/g, "").replace(/[^\u4e00-\u9fa5A-Za-z]/g, "").trim();
+    return COUNTRY_ALIAS[cleaned] || cleaned;
+  }
+  function modeOf(arr) {
+    const counts = {};
+    let best = "\u2014";
+    let bestCount = 0;
+    (arr || []).forEach((v) => {
+      if (!v) return;
+      counts[v] = (counts[v] || 0) + 1;
+      if (counts[v] > bestCount) {
+        best = v;
+        bestCount = counts[v];
+      }
+    });
+    return best;
+  }
+  function collectMapData() {
+    const map = {};
+    const unmapped = {};
+    (window._inqCache || []).forEach((row) => {
+      const name = countryName(row.country);
+      const geo = COUNTRY_GEO[name];
+      if (!name) return;
+      if (!geo) {
+        unmapped[name] = (unmapped[name] || 0) + 1;
+        return;
+      }
+      const group = map[name] || (map[name] = {
+        country: name,
+        geo,
+        total: 0,
+        A: 0,
+        B: 0,
+        C: 0,
+        products: [],
+        channels: [],
+        rows: []
+      });
+      group.total += 1;
+      group[row.grade] = (group[row.grade] || 0) + 1;
+      group.products.push(row.product);
+      group.channels.push(row.channel);
+      group.rows.push(row);
+    });
+    const groups = Object.values(map).sort((a, b) => b.total - a.total || a.country.localeCompare(b.country));
+    const unmappedList = Object.entries(unmapped).map(([country, count]) => ({ country, count })).sort((a, b) => b.count - a.count);
+    const unmappedTotal = unmappedList.reduce((sum, u) => sum + u.count, 0);
+    return { groups, unmappedList, unmappedTotal };
+  }
+  function tooltipHtml(group) {
+    const valid = (group.A || 0) + (group.B || 0);
+    const aRatio = valid ? Math.round((group.A || 0) / valid * 100) : 0;
+    const rows2 = group.rows.slice(0, 4).map((r) => `
+    <div class="inq-map-tip-row">
+      <b>${inqMapEsc(r.customer_code || r.customer_name || r.country || "\u672A\u586B\u5BA2\u6237")}</b>
+      <span>${inqMapEsc(r.product || "\u672A\u586B\u4EA7\u54C1")} \xB7 ${inqMapEsc(r.grade || "\u2014")}\u7EA7 \xB7 ${inqMapEsc(r.channel || "\u672A\u586B\u6E20\u9053")}</span>
+      <em>${inqMapEsc(r.source || r.note || "")}</em>
+    </div>
+  `).join("");
+    const more = group.rows.length > 4 ? `<div class="inq-map-tip-more">\u8FD8\u6709 ${group.rows.length - 4} \u6761\u8BE2\u76D8</div>` : "";
+    return `
+    <div class="inq-map-tip-title">${inqMapEsc(group.country)} \xB7 ${group.total} \u6761\u8BE2\u76D8</div>
+    <div class="inq-map-tip-stats">
+      <span>A\u7EA7 ${group.A || 0}</span><span>B\u7EA7 ${group.B || 0}</span><span>C\u7EA7 ${group.C || 0}</span><span>A\u7EA7\u5360\u6BD4 ${aRatio}%</span>
+    </div>
+    <div class="inq-map-tip-meta">\u4E3B\u8BE2\u4EA7\u54C1\uFF1A${inqMapEsc(modeOf(group.products))} \xB7 \u4E3B\u8981\u6E20\u9053\uFF1A${inqMapEsc(modeOf(group.channels))}</div>
+    ${rows2}${more}
+  `;
+  }
+  async function ensureWorldMap() {
+    if (!window.echarts) throw new Error("\u56FE\u8868\u7EC4\u4EF6\u6CA1\u6709\u52A0\u8F7D\u6210\u529F");
+    if (worldMapReady) return;
+    if (!worldMapPromise) {
+      worldMapPromise = (async () => {
+        let lastError = null;
+        for (const url of WORLD_MAP_URLS) {
+          try {
+            const res = await fetch(url, { cache: "force-cache" });
+            if (!res.ok) throw new Error(`\u5730\u56FE\u6570\u636E\u8FD4\u56DE ${res.status}`);
+            const geoJson = await res.json();
+            window.echarts.registerMap(WORLD_MAP_NAME, geoJson);
+            worldMapReady = true;
+            return;
+          } catch (err) {
+            lastError = err;
+          }
+        }
+        throw lastError || new Error("\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
+      })();
+    }
+    await worldMapPromise;
+  }
+  function unmappedNoteHtml(unmappedList, unmappedTotal) {
+    if (!unmappedTotal) return "";
+    const names = unmappedList.map((u) => `${inqMapEsc(u.country)}${u.count > 1 ? ` \xD7${u.count}` : ""}`).join("\u3001");
+    return `
+    <div class="inq-map-note">
+      \u6709 ${unmappedTotal} \u6761\u8BE2\u76D8\u56E0\u56FD\u5BB6\u6682\u65E0\u5730\u56FE\u5750\u6807\u672A\u753B\u4E0A\u98DE\u7EBF:${names}\u3002\u6570\u636E\u6CA1\u4E22,\u53EA\u662F\u5730\u56FE\u7F3A\u8BE5\u56FD\u5750\u6807,\u8BF7\u8865\u5145\u5750\u6807\u8868\u3002
+    </div>
+  `;
+  }
+  function renderShell(el, groups, bodyHtml, unmappedList, unmappedTotal) {
+    el.innerHTML = `
+    <div class="inq-flat-map inq-blue-map">
+      <div class="inq-map-head">
+        <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
+        <div class="inq-map-total">${groups.length} \u4E2A\u56FD\u5BB6 \xB7 ${(window._inqCache || []).length} \u6761\u8BE2\u76D8</div>
+      </div>
+      ${unmappedNoteHtml(unmappedList, unmappedTotal)}
+      ${bodyHtml}
+    </div>
+  `;
+  }
+  function disposeMap() {
+    try {
+      if (window.echarts && inqGlobeChart) inqGlobeChart.dispose();
+    } catch (_) {
+    }
+    inqGlobeChart = null;
+  }
+  function bindResize() {
+    if (resizeBound) return;
+    resizeBound = true;
+    window.addEventListener("resize", () => {
+      try {
+        if (inqGlobeChart) inqGlobeChart.resize();
+      } catch (_) {
+      }
+    });
+  }
+  async function renderGlobe() {
+    const el = document.getElementById("inqGlobe");
+    if (!el) return;
+    const seq = ++renderSeq;
+    const { groups, unmappedList, unmappedTotal } = collectMapData();
+    const empty = document.getElementById("inqGlobe-empty");
+    if (empty) empty.style.display = "none";
+    disposeMap();
+    renderShell(el, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
+    try {
+      await ensureWorldMap();
+      if (seq !== renderSeq) return;
+    } catch (err) {
+      if (seq !== renderSeq) return;
+      const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
+      renderShell(el, groups, `
+      <div class="inq-map-error">
+        <b>\u4E16\u754C\u5730\u56FE\u52A0\u8F7D\u5931\u8D25</b>
+        <span>${msg}</span>
+        <em>\u8BF7\u786E\u8BA4 public/world.geo.json \u5DF2\u968F\u9879\u76EE\u4E00\u8D77\u90E8\u7F72\u3002\u8BE2\u76D8\u6570\u636E\u6CA1\u6709\u4E22\uFF0C\u53EA\u662F\u5730\u56FE\u5E95\u56FE\u6CA1\u6709\u52A0\u8F7D\u3002</em>
+      </div>
+    `, unmappedList, unmappedTotal);
+      return;
+    }
+    renderShell(el, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
+    const chartEl = el.querySelector(".inq-echarts-map");
+    if (!chartEl || !window.echarts) return;
+    inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "svg" });
+    bindResize();
+    const lineData = groups.map((group) => ({
+      name: `\u9752\u5C9B \u2192 ${group.country}`,
+      coords: [QINGDAO, group.geo],
+      value: group.total,
+      group,
+      lineStyle: { width: Math.min(4.8, 2 + group.total * 0.35) }
+    }));
+    const pointData = groups.map((group) => ({
+      name: group.country,
+      value: [group.geo[0], group.geo[1], group.total],
+      group
+    }));
+    inqGlobeChart.setOption({
+      backgroundColor: "transparent",
+      tooltip: {
+        trigger: "item",
+        confine: true,
+        borderWidth: 1,
+        borderColor: "#d8e3ec",
+        backgroundColor: "rgba(255,255,255,.96)",
+        extraCssText: "border-radius:8px;box-shadow:0 18px 42px rgba(38,57,79,.20);",
+        textStyle: { color: "#243244", fontSize: 12 },
+        formatter: (params) => {
+          const group = params && params.data && params.data.group;
+          if (group) return tooltipHtml(group);
+          if (params && params.name === "\u9752\u5C9B") return "<b>\u9752\u5C9B</b><br/>\u8BE2\u76D8\u98DE\u7EBF\u51FA\u53D1\u70B9";
+          return "";
+        }
+      },
+      geo: {
+        map: WORLD_MAP_NAME,
+        roam: false,
+        aspectScale: 1,
+        left: 18,
+        right: 18,
+        top: 40,
+        bottom: 16,
+        silent: false,
+        selectedMode: false,
+        label: { show: false },
+        itemStyle: {
+          areaColor: "#ffffff",
+          borderColor: "#1a1a1a",
+          borderWidth: 0.8
+        },
+        emphasis: {
+          disabled: false,
+          itemStyle: { areaColor: "#eef1f5", borderColor: "#000" }
+        },
+        regions: [
+          { name: "Antarctica", itemStyle: { areaColor: "#ffffff", borderColor: "rgba(0,0,0,.28)" } },
+          { name: "Greenland", itemStyle: { areaColor: "#ffffff", borderColor: "rgba(0,0,0,.28)" } }
+        ]
+      },
+      series: [
+        {
+          type: "lines",
+          name: "\u8BE2\u76D8\u98DE\u7EBF",
+          coordinateSystem: "geo",
+          zlevel: 3,
+          data: lineData,
+          symbol: ["none", "arrow"],
+          symbolSize: 9,
+          effect: {
+            show: true,
+            period: 4.2,
+            trailLength: 0.05,
+            symbol: "arrow",
+            symbolSize: 8,
+            color: "#7dd3fc"
+          },
+          lineStyle: {
+            color: "#38bdf8",
+            width: 1.8,
+            opacity: 0.85,
+            curveness: 0.28
+          },
+          emphasis: {
+            lineStyle: { opacity: 1, width: 3.2 }
+          }
+        },
+        {
+          type: "effectScatter",
+          name: "\u8BE2\u76D8\u56FD\u5BB6",
+          coordinateSystem: "geo",
+          zlevel: 4,
+          data: pointData,
+          symbolSize: (value) => Math.min(20, 10 + (value[2] || 0) * 1.4),
+          rippleEffect: { brushType: "stroke", scale: 2.5, period: 3.6 },
+          itemStyle: { color: "#38bdf8", borderColor: "rgba(255,255,255,.9)", borderWidth: 1.6, shadowBlur: 12, shadowColor: "rgba(56,189,248,.7)" },
+          label: {
+            show: true,
+            formatter: (params) => `${params.name} ${params.value[2] || ""}`,
+            position: "right",
+            color: "#172033",
+            fontSize: 14,
+            fontWeight: 800,
+            fontFamily: "Inter, Microsoft YaHei, Arial, sans-serif",
+            textBorderColor: "rgba(255,255,255,.95)",
+            textBorderWidth: 3
+          }
+        },
+        {
+          type: "scatter",
+          name: "\u9752\u5C9B",
+          coordinateSystem: "geo",
+          zlevel: 5,
+          data: [{ name: "\u9752\u5C9B", value: [QINGDAO[0], QINGDAO[1], 1] }],
+          symbolSize: 19,
+          itemStyle: { color: "#fbbf24", borderColor: "rgba(255,255,255,.9)", borderWidth: 2.4, shadowBlur: 14, shadowColor: "rgba(251,191,36,.7)" },
+          label: {
+            show: true,
+            formatter: "\u9752\u5C9B",
+            position: "left",
+            color: "#b45309",
+            fontSize: 15,
+            fontWeight: 800,
+            fontFamily: "Inter, Microsoft YaHei, Arial, sans-serif",
+            textBorderColor: "#ffffff",
+            textBorderWidth: 3
+          }
+        }
+      ]
+    }, true);
+  }
 
   // public/src/inquiries.js
   var REGION_BADGE = { "\u6B27\u6D32": "b-blue", "\u897F\u6B27": "b-blue", "\u5357\u6B27": "b-blue", "\u5317\u6B27": "b-blue", "\u4E2D\u4E1C\u6B27": "b-teal", "\u4E1C\u6B27/\u4FC4\u7F57\u65AF": "b-amber", "\u4FC4\u7F57\u65AF": "b-amber", "\u5317\u7F8E": "b-purple", "\u62C9\u7F8E": "b-red", "\u4E2D\u4E1C": "b-amber", "\u5317\u975E": "b-amber", "\u6492\u54C8\u62C9\u4EE5\u5357\u975E\u6D32": "b-gray", "\u5357\u4E9A": "b-teal", "\u4E1C\u5357\u4E9A": "b-red", "\u4E1C\u5357\u4E9A/\u5DF4\u897F": "b-red", "\u4E1C\u4E9A": "b-green", "\u4E2D\u4E9A": "b-gray", "\u5927\u6D0B\u6D32": "b-teal", "\u5176\u4ED6": "b-gray" };
@@ -2266,6 +2789,50 @@
       tb.appendChild(tr);
     });
   }
+  var inquiryRequestSequence = 0;
+  async function loadInquiries() {
+    const requestId = ++inquiryRequestSequence;
+    const revision = getRangeRevision();
+    try {
+      const { items, stats } = await API.get(withRange2("/api/inquiries"));
+      if (requestId !== inquiryRequestSequence || revision !== getRangeRevision()) return;
+      window._inqCache = items || [];
+      renderInqList();
+      try {
+        renderInqFeed();
+      } catch (_) {
+      }
+      refreshInqStats(stats);
+      renderInqDonuts();
+      if (window._curTab === "inquiry") {
+        try {
+          renderGlobe();
+        } catch (e) {
+        }
+      }
+    } catch (e) {
+      if (requestId === inquiryRequestSequence && e && e.message !== "unauthorized") {
+        window._inqCache = [];
+        window._inqStats = null;
+        const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
+        tableLoadState("tb-inq-cur", 11, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries);
+        tableLoadState("tb-inq", 11, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries);
+        const count = document.getElementById("inqFeedCount");
+        if (count) count.textContent = "\u52A0\u8F7D\u5931\u8D25";
+        renderInqDonuts();
+        if (window._curTab === "inquiry") {
+          try {
+            renderGlobe();
+          } catch (_) {
+          }
+        }
+        toast("\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
+      }
+    }
+  }
+  document.addEventListener("timerange", () => {
+    loadInquiries();
+  });
 
   // public/src/tagselect.js
   var OPT = {
@@ -2749,6 +3316,21 @@
       showSaveError(cell2, err.status === 403 ? "\u65E0\u6743\u9650\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     }
   });
+  function renderSparklines() {
+    document.querySelectorAll("[data-spark]").forEach((td2) => {
+      const v = td2.dataset.spark.split(",").map(Number);
+      const w = 58, h = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
+      const pts = v.map((d, i) => {
+        const x = i / (v.length - 1) * (w - 4) + 2;
+        const y = (d - min) / rng * (h - 6) + 3;
+        return x.toFixed(1) + "," + y.toFixed(1);
+      }).join(" ");
+      const up = v[v.length - 1] < v[0];
+      const col = up ? "var(--green)" : v[v.length - 1] > v[0] ? "var(--primary)" : "var(--text3)";
+      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h - 6) + 3;
+      td2.innerHTML = `<svg class="spark" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
+    });
+  }
 
   // public/src/sop.js
   var sop_exports = {};
@@ -5456,511 +6038,6 @@
     }
   }
 
-  // public/src/inquiry-globe.js
-  var inquiry_globe_exports = {};
-  __export(inquiry_globe_exports, {
-    renderGlobe: () => renderGlobe2
-  });
-  var QINGDAO = [120.38, 36.07];
-  var WORLD_MAP_NAME = "ferrWorld";
-  var WORLD_MAP_URLS = [
-    "/world.geo.json"
-  ];
-  var COUNTRY_GEO = {
-    "\u5FB7\u56FD": [10.45, 51.17],
-    "\u7F8E\u56FD": [-98.5, 39.8],
-    "\u897F\u73ED\u7259": [-3.7, 40.4],
-    "\u5370\u5EA6": [78.96, 20.59],
-    "\u610F\u5927\u5229": [12.57, 41.87],
-    "\u52A0\u62FF\u5927": [-106.3, 56.13],
-    "\u8377\u5170": [5.29, 52.13],
-    "\u58A8\u897F\u54E5": [-102.55, 23.63],
-    "\u65B0\u897F\u5170": [174, -40.9],
-    "\u54E5\u4F26\u6BD4\u4E9A": [-74.3, 4.6],
-    "\u514B\u7F57\u5730\u4E9A": [15.2, 45.1],
-    "\u4FC4\u7F57\u65AF": [105, 61.5],
-    "\u745E\u5178": [18.6, 60.1],
-    "\u5DF4\u897F": [-51.9, -14.2],
-    "\u82F1\u56FD": [-1.5, 52.4],
-    "\u6CD5\u56FD": [2.2, 46.2],
-    "\u6FB3\u5927\u5229\u4E9A": [133.8, -25.3],
-    "\u65E5\u672C": [138.25, 36.2],
-    "\u97E9\u56FD": [127.8, 36.5],
-    "\u571F\u8033\u5176": [35.2, 39],
-    "\u8D8A\u5357": [108.3, 14.1],
-    "\u5370\u5EA6\u5C3C\u897F\u4E9A": [113.9, -0.8],
-    "\u5370\u5C3C": [113.9, -0.8],
-    "\u6CE2\u5170": [19.1, 51.9],
-    "\u6BD4\u5229\u65F6": [4.5, 50.5],
-    "\u745E\u58EB": [8.2, 46.8],
-    "\u5965\u5730\u5229": [14.6, 47.5],
-    "\u8461\u8404\u7259": [-8.2, 39.4],
-    "\u5E0C\u814A": [21.8, 39.1],
-    "\u963F\u8054\u914B": [54, 24],
-    "\u6C99\u7279": [45, 24],
-    "\u57C3\u53CA": [30.8, 26.8],
-    "\u5357\u975E": [24, -29],
-    "\u963F\u6839\u5EF7": [-64, -34],
-    "\u667A\u5229": [-71.5, -35.7],
-    "\u6CF0\u56FD": [101, 15],
-    "\u9A6C\u6765\u897F\u4E9A": [101.97, 4.2],
-    "\u4E4C\u514B\u5170": [31.2, 49],
-    "\u6377\u514B": [15.5, 49.8],
-    "\u4E39\u9EA6": [9.5, 56.3],
-    "\u632A\u5A01": [8.5, 60.5],
-    "\u82AC\u5170": [26, 64],
-    "\u7231\u5C14\u5170": [-8.2, 53.4],
-    // 拉美(本站主力市场)
-    "\u4E4C\u62C9\u572D": [-56, -32.8],
-    "\u79D8\u9C81": [-75, -9.2],
-    "\u5384\u74DC\u591A\u5C14": [-78.2, -1.5],
-    "\u59D4\u5185\u745E\u62C9": [-66.6, 6.4],
-    "\u73BB\u5229\u7EF4\u4E9A": [-64.7, -16.3],
-    "\u5DF4\u62C9\u572D": [-58.4, -23.4],
-    "\u5371\u5730\u9A6C\u62C9": [-90.4, 15.7],
-    "\u54E5\u65AF\u8FBE\u9ECE\u52A0": [-84.1, 9.9],
-    "\u5DF4\u62FF\u9A6C": [-80.1, 8.5],
-    "\u5C3C\u52A0\u62C9\u74DC": [-85.2, 12.9],
-    "\u6D2A\u90FD\u62C9\u65AF": [-86.6, 15],
-    "\u8428\u5C14\u74E6\u591A": [-88.9, 13.8],
-    "\u591A\u7C73\u5C3C\u52A0": [-70.2, 18.7],
-    "\u53E4\u5DF4": [-79, 21.5],
-    "\u6CE2\u591A\u9ECE\u5404": [-66.5, 18.2],
-    // 非洲 / 中东
-    "\u4E4C\u5E72\u8FBE": [32.3, 1.4],
-    "\u80AF\u5C3C\u4E9A": [37.9, 0],
-    "\u5C3C\u65E5\u5229\u4E9A": [8.7, 9.1],
-    "\u52A0\u7EB3": [-1, 7.9],
-    "\u6469\u6D1B\u54E5": [-7.1, 31.8],
-    "\u963F\u5C14\u53CA\u5229\u4E9A": [2.6, 28],
-    "\u7A81\u5C3C\u65AF": [9.5, 33.9],
-    "\u57C3\u585E\u4FC4\u6BD4\u4E9A": [40.5, 9.1],
-    "\u5766\u6851\u5C3C\u4E9A": [34.9, -6.4],
-    "\u4EE5\u8272\u5217": [34.9, 31],
-    "\u4F0A\u6717": [53.7, 32.4],
-    "\u4F0A\u62C9\u514B": [43.7, 33.2],
-    "\u5361\u5854\u5C14": [51.2, 25.3],
-    "\u79D1\u5A01\u7279": [47.5, 29.3],
-    "\u7EA6\u65E6": [36.2, 31.2],
-    "\u9ECE\u5DF4\u5AE9": [35.9, 33.9],
-    "\u963F\u66FC": [56, 21.5],
-    "\u5DF4\u6797": [50.6, 26.1],
-    // 亚洲 / 其他
-    "\u5DF4\u57FA\u65AF\u5766": [69.3, 30.4],
-    "\u5B5F\u52A0\u62C9\u56FD": [90.4, 23.7],
-    "\u5B5F\u52A0\u62C9": [90.4, 23.7],
-    "\u65AF\u91CC\u5170\u5361": [80.8, 7.9],
-    "\u83F2\u5F8B\u5BBE": [122.9, 12.9],
-    "\u65B0\u52A0\u5761": [103.8, 1.35],
-    "\u7F05\u7538": [96, 21.9],
-    "\u67EC\u57D4\u5BE8": [104.9, 12.6],
-    "\u5C3C\u6CCA\u5C14": [84.1, 28.4],
-    "\u54C8\u8428\u514B\u65AF\u5766": [66.9, 48],
-    "\u8499\u53E4": [103.8, 46.9],
-    "\u5308\u7259\u5229": [19.5, 47.2],
-    "\u7F57\u9A6C\u5C3C\u4E9A": [24.97, 45.9],
-    "\u4FDD\u52A0\u5229\u4E9A": [25.5, 42.7],
-    "\u585E\u5C14\u7EF4\u4E9A": [20.8, 44],
-    "\u65AF\u6D1B\u4F10\u514B": [19.7, 48.7],
-    "\u65AF\u6D1B\u6587\u5C3C\u4E9A": [14.8, 46.1],
-    "\u7ACB\u9676\u5B9B": [23.9, 55.2]
-  };
-  var COUNTRY_ALIAS = {
-    Germany: "\u5FB7\u56FD",
-    USA: "\u7F8E\u56FD",
-    "UnitedStates": "\u7F8E\u56FD",
-    "UnitedStatesofAmerica": "\u7F8E\u56FD",
-    Spain: "\u897F\u73ED\u7259",
-    India: "\u5370\u5EA6",
-    Italy: "\u610F\u5927\u5229",
-    Canada: "\u52A0\u62FF\u5927",
-    Netherlands: "\u8377\u5170",
-    Mexico: "\u58A8\u897F\u54E5",
-    Russia: "\u4FC4\u7F57\u65AF",
-    Sweden: "\u745E\u5178",
-    Brazil: "\u5DF4\u897F",
-    UK: "\u82F1\u56FD",
-    UnitedKingdom: "\u82F1\u56FD",
-    France: "\u6CD5\u56FD",
-    Australia: "\u6FB3\u5927\u5229\u4E9A",
-    Japan: "\u65E5\u672C",
-    Korea: "\u97E9\u56FD",
-    SouthKorea: "\u97E9\u56FD",
-    Turkey: "\u571F\u8033\u5176",
-    Vietnam: "\u8D8A\u5357",
-    Indonesia: "\u5370\u5EA6\u5C3C\u897F\u4E9A",
-    Poland: "\u6CE2\u5170",
-    Belgium: "\u6BD4\u5229\u65F6",
-    Switzerland: "\u745E\u58EB",
-    Austria: "\u5965\u5730\u5229",
-    Portugal: "\u8461\u8404\u7259",
-    Greece: "\u5E0C\u814A",
-    UAE: "\u963F\u8054\u914B",
-    SaudiArabia: "\u6C99\u7279",
-    Egypt: "\u57C3\u53CA",
-    SouthAfrica: "\u5357\u975E",
-    Argentina: "\u963F\u6839\u5EF7",
-    Chile: "\u667A\u5229",
-    Thailand: "\u6CF0\u56FD",
-    Malaysia: "\u9A6C\u6765\u897F\u4E9A",
-    Ukraine: "\u4E4C\u514B\u5170",
-    Czech: "\u6377\u514B",
-    Denmark: "\u4E39\u9EA6",
-    Norway: "\u632A\u5A01",
-    Finland: "\u82AC\u5170",
-    Ireland: "\u7231\u5C14\u5170",
-    Uruguay: "\u4E4C\u62C9\u572D",
-    Peru: "\u79D8\u9C81",
-    Ecuador: "\u5384\u74DC\u591A\u5C14",
-    Venezuela: "\u59D4\u5185\u745E\u62C9",
-    Bolivia: "\u73BB\u5229\u7EF4\u4E9A",
-    Paraguay: "\u5DF4\u62C9\u572D",
-    Guatemala: "\u5371\u5730\u9A6C\u62C9",
-    CostaRica: "\u54E5\u65AF\u8FBE\u9ECE\u52A0",
-    Panama: "\u5DF4\u62FF\u9A6C",
-    Nicaragua: "\u5C3C\u52A0\u62C9\u74DC",
-    Honduras: "\u6D2A\u90FD\u62C9\u65AF",
-    ElSalvador: "\u8428\u5C14\u74E6\u591A",
-    DominicanRepublic: "\u591A\u7C73\u5C3C\u52A0",
-    Cuba: "\u53E4\u5DF4",
-    PuertoRico: "\u6CE2\u591A\u9ECE\u5404",
-    Uganda: "\u4E4C\u5E72\u8FBE",
-    Kenya: "\u80AF\u5C3C\u4E9A",
-    Nigeria: "\u5C3C\u65E5\u5229\u4E9A",
-    Ghana: "\u52A0\u7EB3",
-    Morocco: "\u6469\u6D1B\u54E5",
-    Algeria: "\u963F\u5C14\u53CA\u5229\u4E9A",
-    Tunisia: "\u7A81\u5C3C\u65AF",
-    Ethiopia: "\u57C3\u585E\u4FC4\u6BD4\u4E9A",
-    Tanzania: "\u5766\u6851\u5C3C\u4E9A",
-    Israel: "\u4EE5\u8272\u5217",
-    Iran: "\u4F0A\u6717",
-    Iraq: "\u4F0A\u62C9\u514B",
-    Qatar: "\u5361\u5854\u5C14",
-    Kuwait: "\u79D1\u5A01\u7279",
-    Jordan: "\u7EA6\u65E6",
-    Lebanon: "\u9ECE\u5DF4\u5AE9",
-    Oman: "\u963F\u66FC",
-    Bahrain: "\u5DF4\u6797",
-    Pakistan: "\u5DF4\u57FA\u65AF\u5766",
-    Bangladesh: "\u5B5F\u52A0\u62C9\u56FD",
-    SriLanka: "\u65AF\u91CC\u5170\u5361",
-    Philippines: "\u83F2\u5F8B\u5BBE",
-    Singapore: "\u65B0\u52A0\u5761",
-    Myanmar: "\u7F05\u7538",
-    Cambodia: "\u67EC\u57D4\u5BE8",
-    Nepal: "\u5C3C\u6CCA\u5C14",
-    Kazakhstan: "\u54C8\u8428\u514B\u65AF\u5766",
-    Mongolia: "\u8499\u53E4",
-    Hungary: "\u5308\u7259\u5229",
-    Romania: "\u7F57\u9A6C\u5C3C\u4E9A",
-    Bulgaria: "\u4FDD\u52A0\u5229\u4E9A",
-    Serbia: "\u585E\u5C14\u7EF4\u4E9A",
-    Slovakia: "\u65AF\u6D1B\u4F10\u514B",
-    Slovenia: "\u65AF\u6D1B\u6587\u5C3C\u4E9A",
-    Lithuania: "\u7ACB\u9676\u5B9B"
-  };
-  var inqGlobeChart = null;
-  var worldMapPromise = null;
-  var worldMapReady = false;
-  var renderSeq = 0;
-  var resizeBound = false;
-  function inqMapEsc(value) {
-    return String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    })[ch]);
-  }
-  function countryName(raw) {
-    const cleaned = String(raw || "").replace(/[\uD800-\uDFFF]/g, "").replace(/[^\u4e00-\u9fa5A-Za-z]/g, "").trim();
-    return COUNTRY_ALIAS[cleaned] || cleaned;
-  }
-  function modeOf(arr) {
-    const counts = {};
-    let best = "\u2014";
-    let bestCount = 0;
-    (arr || []).forEach((v) => {
-      if (!v) return;
-      counts[v] = (counts[v] || 0) + 1;
-      if (counts[v] > bestCount) {
-        best = v;
-        bestCount = counts[v];
-      }
-    });
-    return best;
-  }
-  function collectMapData() {
-    const map = {};
-    const unmapped = {};
-    (window._inqCache || []).forEach((row) => {
-      const name = countryName(row.country);
-      const geo = COUNTRY_GEO[name];
-      if (!name) return;
-      if (!geo) {
-        unmapped[name] = (unmapped[name] || 0) + 1;
-        return;
-      }
-      const group = map[name] || (map[name] = {
-        country: name,
-        geo,
-        total: 0,
-        A: 0,
-        B: 0,
-        C: 0,
-        products: [],
-        channels: [],
-        rows: []
-      });
-      group.total += 1;
-      group[row.grade] = (group[row.grade] || 0) + 1;
-      group.products.push(row.product);
-      group.channels.push(row.channel);
-      group.rows.push(row);
-    });
-    const groups = Object.values(map).sort((a, b) => b.total - a.total || a.country.localeCompare(b.country));
-    const unmappedList = Object.entries(unmapped).map(([country, count]) => ({ country, count })).sort((a, b) => b.count - a.count);
-    const unmappedTotal = unmappedList.reduce((sum, u) => sum + u.count, 0);
-    return { groups, unmappedList, unmappedTotal };
-  }
-  function tooltipHtml(group) {
-    const valid = (group.A || 0) + (group.B || 0);
-    const aRatio = valid ? Math.round((group.A || 0) / valid * 100) : 0;
-    const rows2 = group.rows.slice(0, 4).map((r) => `
-    <div class="inq-map-tip-row">
-      <b>${inqMapEsc(r.customer_code || r.customer_name || r.country || "\u672A\u586B\u5BA2\u6237")}</b>
-      <span>${inqMapEsc(r.product || "\u672A\u586B\u4EA7\u54C1")} \xB7 ${inqMapEsc(r.grade || "\u2014")}\u7EA7 \xB7 ${inqMapEsc(r.channel || "\u672A\u586B\u6E20\u9053")}</span>
-      <em>${inqMapEsc(r.source || r.note || "")}</em>
-    </div>
-  `).join("");
-    const more = group.rows.length > 4 ? `<div class="inq-map-tip-more">\u8FD8\u6709 ${group.rows.length - 4} \u6761\u8BE2\u76D8</div>` : "";
-    return `
-    <div class="inq-map-tip-title">${inqMapEsc(group.country)} \xB7 ${group.total} \u6761\u8BE2\u76D8</div>
-    <div class="inq-map-tip-stats">
-      <span>A\u7EA7 ${group.A || 0}</span><span>B\u7EA7 ${group.B || 0}</span><span>C\u7EA7 ${group.C || 0}</span><span>A\u7EA7\u5360\u6BD4 ${aRatio}%</span>
-    </div>
-    <div class="inq-map-tip-meta">\u4E3B\u8BE2\u4EA7\u54C1\uFF1A${inqMapEsc(modeOf(group.products))} \xB7 \u4E3B\u8981\u6E20\u9053\uFF1A${inqMapEsc(modeOf(group.channels))}</div>
-    ${rows2}${more}
-  `;
-  }
-  async function ensureWorldMap() {
-    if (!window.echarts) throw new Error("\u56FE\u8868\u7EC4\u4EF6\u6CA1\u6709\u52A0\u8F7D\u6210\u529F");
-    if (worldMapReady) return;
-    if (!worldMapPromise) {
-      worldMapPromise = (async () => {
-        let lastError = null;
-        for (const url of WORLD_MAP_URLS) {
-          try {
-            const res = await fetch(url, { cache: "force-cache" });
-            if (!res.ok) throw new Error(`\u5730\u56FE\u6570\u636E\u8FD4\u56DE ${res.status}`);
-            const geoJson = await res.json();
-            window.echarts.registerMap(WORLD_MAP_NAME, geoJson);
-            worldMapReady = true;
-            return;
-          } catch (err) {
-            lastError = err;
-          }
-        }
-        throw lastError || new Error("\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
-      })();
-    }
-    await worldMapPromise;
-  }
-  function unmappedNoteHtml(unmappedList, unmappedTotal) {
-    if (!unmappedTotal) return "";
-    const names = unmappedList.map((u) => `${inqMapEsc(u.country)}${u.count > 1 ? ` \xD7${u.count}` : ""}`).join("\u3001");
-    return `
-    <div class="inq-map-note">
-      \u6709 ${unmappedTotal} \u6761\u8BE2\u76D8\u56E0\u56FD\u5BB6\u6682\u65E0\u5730\u56FE\u5750\u6807\u672A\u753B\u4E0A\u98DE\u7EBF:${names}\u3002\u6570\u636E\u6CA1\u4E22,\u53EA\u662F\u5730\u56FE\u7F3A\u8BE5\u56FD\u5750\u6807,\u8BF7\u8865\u5145\u5750\u6807\u8868\u3002
-    </div>
-  `;
-  }
-  function renderShell(el, groups, bodyHtml, unmappedList, unmappedTotal) {
-    el.innerHTML = `
-    <div class="inq-flat-map inq-blue-map">
-      <div class="inq-map-head">
-        <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
-        <div class="inq-map-total">${groups.length} \u4E2A\u56FD\u5BB6 \xB7 ${(window._inqCache || []).length} \u6761\u8BE2\u76D8</div>
-      </div>
-      ${unmappedNoteHtml(unmappedList, unmappedTotal)}
-      ${bodyHtml}
-    </div>
-  `;
-  }
-  function disposeMap() {
-    try {
-      if (window.echarts && inqGlobeChart) inqGlobeChart.dispose();
-    } catch (_) {
-    }
-    inqGlobeChart = null;
-  }
-  function bindResize() {
-    if (resizeBound) return;
-    resizeBound = true;
-    window.addEventListener("resize", () => {
-      try {
-        if (inqGlobeChart) inqGlobeChart.resize();
-      } catch (_) {
-      }
-    });
-  }
-  async function renderGlobe2() {
-    const el = document.getElementById("inqGlobe");
-    if (!el) return;
-    const seq = ++renderSeq;
-    const { groups, unmappedList, unmappedTotal } = collectMapData();
-    const empty = document.getElementById("inqGlobe-empty");
-    if (empty) empty.style.display = "none";
-    disposeMap();
-    renderShell(el, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
-    try {
-      await ensureWorldMap();
-      if (seq !== renderSeq) return;
-    } catch (err) {
-      if (seq !== renderSeq) return;
-      const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
-      renderShell(el, groups, `
-      <div class="inq-map-error">
-        <b>\u4E16\u754C\u5730\u56FE\u52A0\u8F7D\u5931\u8D25</b>
-        <span>${msg}</span>
-        <em>\u8BF7\u786E\u8BA4 public/world.geo.json \u5DF2\u968F\u9879\u76EE\u4E00\u8D77\u90E8\u7F72\u3002\u8BE2\u76D8\u6570\u636E\u6CA1\u6709\u4E22\uFF0C\u53EA\u662F\u5730\u56FE\u5E95\u56FE\u6CA1\u6709\u52A0\u8F7D\u3002</em>
-      </div>
-    `, unmappedList, unmappedTotal);
-      return;
-    }
-    renderShell(el, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
-    const chartEl = el.querySelector(".inq-echarts-map");
-    if (!chartEl || !window.echarts) return;
-    inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "svg" });
-    bindResize();
-    const lineData = groups.map((group) => ({
-      name: `\u9752\u5C9B \u2192 ${group.country}`,
-      coords: [QINGDAO, group.geo],
-      value: group.total,
-      group,
-      lineStyle: { width: Math.min(4.8, 2 + group.total * 0.35) }
-    }));
-    const pointData = groups.map((group) => ({
-      name: group.country,
-      value: [group.geo[0], group.geo[1], group.total],
-      group
-    }));
-    inqGlobeChart.setOption({
-      backgroundColor: "transparent",
-      tooltip: {
-        trigger: "item",
-        confine: true,
-        borderWidth: 1,
-        borderColor: "#d8e3ec",
-        backgroundColor: "rgba(255,255,255,.96)",
-        extraCssText: "border-radius:8px;box-shadow:0 18px 42px rgba(38,57,79,.20);",
-        textStyle: { color: "#243244", fontSize: 12 },
-        formatter: (params) => {
-          const group = params && params.data && params.data.group;
-          if (group) return tooltipHtml(group);
-          if (params && params.name === "\u9752\u5C9B") return "<b>\u9752\u5C9B</b><br/>\u8BE2\u76D8\u98DE\u7EBF\u51FA\u53D1\u70B9";
-          return "";
-        }
-      },
-      geo: {
-        map: WORLD_MAP_NAME,
-        roam: false,
-        aspectScale: 1,
-        left: 18,
-        right: 18,
-        top: 40,
-        bottom: 16,
-        silent: false,
-        selectedMode: false,
-        label: { show: false },
-        itemStyle: {
-          areaColor: "#ffffff",
-          borderColor: "#1a1a1a",
-          borderWidth: 0.8
-        },
-        emphasis: {
-          disabled: false,
-          itemStyle: { areaColor: "#eef1f5", borderColor: "#000" }
-        },
-        regions: [
-          { name: "Antarctica", itemStyle: { areaColor: "#ffffff", borderColor: "rgba(0,0,0,.28)" } },
-          { name: "Greenland", itemStyle: { areaColor: "#ffffff", borderColor: "rgba(0,0,0,.28)" } }
-        ]
-      },
-      series: [
-        {
-          type: "lines",
-          name: "\u8BE2\u76D8\u98DE\u7EBF",
-          coordinateSystem: "geo",
-          zlevel: 3,
-          data: lineData,
-          symbol: ["none", "arrow"],
-          symbolSize: 9,
-          effect: {
-            show: true,
-            period: 4.2,
-            trailLength: 0.05,
-            symbol: "arrow",
-            symbolSize: 8,
-            color: "#7dd3fc"
-          },
-          lineStyle: {
-            color: "#38bdf8",
-            width: 1.8,
-            opacity: 0.85,
-            curveness: 0.28
-          },
-          emphasis: {
-            lineStyle: { opacity: 1, width: 3.2 }
-          }
-        },
-        {
-          type: "effectScatter",
-          name: "\u8BE2\u76D8\u56FD\u5BB6",
-          coordinateSystem: "geo",
-          zlevel: 4,
-          data: pointData,
-          symbolSize: (value) => Math.min(20, 10 + (value[2] || 0) * 1.4),
-          rippleEffect: { brushType: "stroke", scale: 2.5, period: 3.6 },
-          itemStyle: { color: "#38bdf8", borderColor: "rgba(255,255,255,.9)", borderWidth: 1.6, shadowBlur: 12, shadowColor: "rgba(56,189,248,.7)" },
-          label: {
-            show: true,
-            formatter: (params) => `${params.name} ${params.value[2] || ""}`,
-            position: "right",
-            color: "#172033",
-            fontSize: 14,
-            fontWeight: 800,
-            fontFamily: "Inter, Microsoft YaHei, Arial, sans-serif",
-            textBorderColor: "rgba(255,255,255,.95)",
-            textBorderWidth: 3
-          }
-        },
-        {
-          type: "scatter",
-          name: "\u9752\u5C9B",
-          coordinateSystem: "geo",
-          zlevel: 5,
-          data: [{ name: "\u9752\u5C9B", value: [QINGDAO[0], QINGDAO[1], 1] }],
-          symbolSize: 19,
-          itemStyle: { color: "#fbbf24", borderColor: "rgba(255,255,255,.9)", borderWidth: 2.4, shadowBlur: 14, shadowColor: "rgba(251,191,36,.7)" },
-          label: {
-            show: true,
-            formatter: "\u9752\u5C9B",
-            position: "left",
-            color: "#b45309",
-            fontSize: 15,
-            fontWeight: 800,
-            fontFamily: "Inter, Microsoft YaHei, Arial, sans-serif",
-            textBorderColor: "#ffffff",
-            textBorderWidth: 3
-          }
-        }
-      ]
-    }, true);
-  }
-
   // public/src/plan-history.js
   var plan_history_exports = {};
   __export(plan_history_exports, {
@@ -6903,16 +6980,10 @@
   // public/src/app.js
   var app_exports = {};
   __export(app_exports, {
-    applyRoleUi: () => applyRoleUi,
     chk: () => chk2,
     go: () => go2,
-    hydrate: () => hydrate,
-    loadInquiries: () => loadInquiries2,
-    renderSparklines: () => renderSparklines2,
-    restoreRoute: () => restoreRoute,
     setActionTab: () => setActionTab2,
-    setPlanningTab: () => setPlanningTab2,
-    toggleHier: () => toggleHier2
+    setPlanningTab: () => setPlanningTab2
   });
   var STATIC_UI_ACTIONS = {
     "toggle-theme": () => toggleTheme(),
@@ -7109,7 +7180,7 @@
     }
     if (tab === "inquiry") setTimeout(() => {
       try {
-        renderGlobe2();
+        renderGlobe();
       } catch (e) {
       }
     }, 80);
@@ -7196,15 +7267,6 @@
     t.classList.add("active");
     filterKwByCat(type, t.classList.contains("cat-all") ? null : t.textContent.trim());
   }));
-  function toggleHier2(row) {
-    row.classList.toggle("collapsed");
-    const hidden = row.classList.contains("collapsed");
-    let n = row.nextElementSibling;
-    while (n && !n.classList.contains("h-camp")) {
-      n.style.display = hidden ? "none" : "";
-      n = n.nextElementSibling;
-    }
-  }
   document.querySelectorAll(".minitab[data-mini]").forEach((t) => t.addEventListener("click", () => {
     const wrap = t.closest(".subpanel");
     wrap.querySelectorAll(".minitab").forEach((x) => x.classList.remove("active"));
@@ -7214,70 +7276,6 @@
     if (mp) mp.classList.add("active");
     resizeScatters();
   }));
-  function renderSparklines2() {
-    document.querySelectorAll("[data-spark]").forEach((td2) => {
-      const v = td2.dataset.spark.split(",").map(Number);
-      const w = 58, h = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
-      const pts = v.map((d, i) => {
-        const x = i / (v.length - 1) * (w - 4) + 2;
-        const y = (d - min) / rng * (h - 6) + 3;
-        return x.toFixed(1) + "," + y.toFixed(1);
-      }).join(" ");
-      const up = v[v.length - 1] < v[0];
-      const col = up ? "var(--green)" : v[v.length - 1] > v[0] ? "var(--primary)" : "var(--text3)";
-      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h - 6) + 3;
-      td2.innerHTML = `<svg class="spark" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
-    });
-  }
-  function tableLoadState(id, colspan, state, message, retryAction) {
-    const tb = document.getElementById(id);
-    if (!tb) return;
-    const retry = typeof retryAction === "function" ? ' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> \u91CD\u8BD5</button>' : "";
-    tb.innerHTML = `<tr data-load-state="${state}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
-    const retryBtn = tb.querySelector(".table-retry");
-    if (retryBtn) retryBtn.addEventListener("click", retryAction);
-  }
-  var inquiryRequestSequence = 0;
-  async function loadInquiries2() {
-    const requestId = ++inquiryRequestSequence;
-    const revision = typeof getRangeRevision === "function" ? getRangeRevision() : 0;
-    try {
-      const { items, stats } = await API.get(withRange2("/api/inquiries"));
-      if (requestId !== inquiryRequestSequence || typeof getRangeRevision === "function" && revision !== getRangeRevision()) return;
-      window._inqCache = items || [];
-      renderInqList();
-      try {
-        renderInqFeed();
-      } catch (_) {
-      }
-      refreshInqStats(stats);
-      renderInqDonuts();
-      if (window._curTab === "inquiry") {
-        try {
-          renderGlobe2();
-        } catch (e) {
-        }
-      }
-    } catch (e) {
-      if (requestId === inquiryRequestSequence && e && e.message !== "unauthorized") {
-        window._inqCache = [];
-        window._inqStats = null;
-        const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
-        tableLoadState("tb-inq-cur", 11, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries2);
-        tableLoadState("tb-inq", 11, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries2);
-        const count = document.getElementById("inqFeedCount");
-        if (count) count.textContent = "\u52A0\u8F7D\u5931\u8D25";
-        renderInqDonuts();
-        if (window._curTab === "inquiry") {
-          try {
-            renderGlobe2();
-          } catch (_) {
-          }
-        }
-        toast("\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
-      }
-    }
-  }
   async function loadNegKeywords() {
     try {
       const { items } = await API.get("/api/neg-keywords");
@@ -7327,7 +7325,7 @@
     }
   }
   async function hydrate() {
-    await loadInquiries2();
+    await loadInquiries();
     await loadNegKeywords();
     await loadAdCreatives();
     await loadRankSnapshots();
@@ -7434,7 +7432,7 @@
     await loadOverview();
     charts();
     bindSettings();
-    renderSparklines2();
+    renderSparklines();
     await hydrate();
     loadDashboardInq();
     loadDashboardBoards();

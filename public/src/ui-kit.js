@@ -41,6 +41,16 @@ if (typeof document !== 'undefined') {
   document.querySelectorAll('.modal-mask').forEach((m) => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('show'); }));
 }
 
+/* ===== 表格加载态 ===== */
+// 列表加载中/为空/失败时统一占位。失败必须能看出原因并可重试（项目规则：API 失败要显示失败原因）。
+// message 走 esc()，retryAction 用 addEventListener 绑定，不进 HTML 字符串。
+export function tableLoadState(id, colspan, state, message, retryAction) {
+  const tb = document.getElementById(id); if (!tb) return;
+  const retry = typeof retryAction === 'function' ? ' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> 重试</button>' : '';
+  tb.innerHTML = `<tr data-load-state="${state}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
+  const retryBtn = tb.querySelector('.table-retry'); if (retryBtn) retryBtn.addEventListener('click', retryAction);
+}
+
 /* ===== TOAST ===== */
 let tt;
 // #toast 不存在就安静退场（登录页等没有它；3.4 秒后触发的隐藏定时器也可能在 DOM 已消失时才跑）。

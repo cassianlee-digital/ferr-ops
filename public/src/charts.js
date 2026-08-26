@@ -817,3 +817,11 @@ document.addEventListener('timerange',()=>{
   loadDataFreshness();
 });
 document.addEventListener('granularity',()=>{ rebuildSeoChart(); renderInqTrend(); });
+
+/* SEM 层级展开/收起（2026-08-26 从 app.js 迁来：唯一调用者就在本模块，纯 DOM 无依赖） */
+export function toggleHier(row){
+  row.classList.toggle('collapsed');
+  const hidden=row.classList.contains('collapsed');
+  let n=row.nextElementSibling;
+  while(n&&!n.classList.contains('h-camp')){ n.style.display=hidden?'none':''; n=n.nextElementSibling; }
+}

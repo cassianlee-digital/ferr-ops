@@ -1,13 +1,17 @@
-/* 询盘录入（真实弹框 + 持久化）（ES 模块 · esbuild 打包为 IIFE）。
-   依赖（运行时解析，均由经典脚本或其他模块提供）：
-   openModal()/closeModal()、window.API、esc()、toast()、formatLocalDate()、
-   loadInquiries()、renderGlobe()（inquiry-globe.js）、loadArchive()（archive.js）。
-   window._inqCache 由本模块初始化、loadInquiries() 填充，被 inquiry-globe.js / 图表 读取。
-   仅 app.js 真实调用的 6 个入口由 main.js 挂到 window；行渲染辅助只供模块间显式导入。 */
+/* 询盘录入（真实弹框 + 持久化）+ 询盘列表加载（ES 模块 · esbuild 打包为 IIFE）。
+   loadInquiries 2026-08-26 从 app.js 迁来：它渲染的 renderInqList/renderInqFeed/refreshInqStats
+   本来就在本模块，放在 app.js 属于错位；迁回后 archive/timerange 不必再靠 window 拿它。
+   本模块**自己监听 timerange 事件**重拉，而不是让 timerange.js 反向调用 loadInquiries()
+   —— 那与 timerange.js 文件头写明的设计意图（消费者订阅事件，时间模块不依赖业务实现）相悖，
+   且会形成 timerange → inquiries → charts → timerange 的循环依赖。
+   运行时仍靠 window 解析的：window.API（经典脚本 api.js）、window._curTab、window._inqCache。
+   window._inqCache 由本模块初始化并由 loadInquiries() 填充，被 inquiry-globe.js / 图表 读取。 */
 
-import { esc, openModal, closeModal, toast } from './ui-kit.js';
-import { loadDashboardInq } from './charts.js';
+import { esc, openModal, closeModal, toast, tableLoadState } from './ui-kit.js';
+import { loadDashboardInq, renderInqDonuts } from './charts.js';
 import { inlineConfirm } from './keywords.js';
+import { renderGlobe } from './inquiry-globe.js';
+import { getRangeRevision, withRange } from './timerange.js';
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
 const REGION_BADGE={'欧洲':'b-blue','西欧':'b-blue','南欧':'b-blue','北欧':'b-blue','中东欧':'b-teal','东欧/俄罗斯':'b-amber','俄罗斯':'b-amber','北美':'b-purple','拉美':'b-red','中东':'b-amber','北非':'b-amber','撒哈拉以南非洲':'b-gray','南亚':'b-teal','东南亚':'b-red','东南亚/巴西':'b-red','东亚':'b-green','中亚':'b-gray','大洋洲':'b-teal','其他':'b-gray'};
@@ -174,3 +178,34 @@ export function renderInqFeed(){
     tb.appendChild(tr);
   });
 }
+
+/* ================= 询盘加载（带当前时间区间）=================
+   首屏 hydrate() 与时间范围切换共用。requestId + revision 双保险丢弃过期响应。 */
+let inquiryRequestSequence=0;
+export async function loadInquiries(){
+  const requestId=++inquiryRequestSequence;
+  const revision=getRangeRevision();
+  try{
+    const {items,stats}=await API.get(withRange('/api/inquiries'));
+    if(requestId!==inquiryRequestSequence||revision!==getRangeRevision())return;
+    window._inqCache=items||[];
+    renderInqList(); // C组：按月分组渲染（清掉旧行/静态示例行，当月展开、上月折叠）
+    try{ renderInqFeed(); }catch(_){} // Hero 左栏「最新询盘」同步刷新
+    refreshInqStats(stats);
+    // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
+    renderInqDonuts();  // BUG-6：KPI 页两个 donut 同步真实重绘
+    if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
+  }catch(e){ if(requestId===inquiryRequestSequence&&e&&e.message!=='unauthorized'){
+    window._inqCache=[];
+    window._inqStats=null;
+    const reason=e.message||'未知错误';
+    tableLoadState('tb-inq-cur',11,'error','询盘加载失败：'+reason,loadInquiries);
+    tableLoadState('tb-inq',11,'error','询盘加载失败：'+reason,loadInquiries);
+    const count=document.getElementById('inqFeedCount'); if(count)count.textContent='加载失败';
+    renderInqDonuts();
+    if(window._curTab==='inquiry'){try{renderGlobe();}catch(_){}}
+    toast('询盘加载失败：'+reason);
+  } }
+}
+// 时间范围变了自己重拉（原来是 timerange.js 反向调用本函数，见文件头说明）
+document.addEventListener('timerange',()=>{ loadInquiries(); });
