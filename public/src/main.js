@@ -59,6 +59,10 @@ import * as uiKit from './ui-kit.js';
 // 新增（不是迁移，是新写的）：ledger —— KPI 页「运营总账」只读业务漏斗。
 // 自己插进 #panel-kpi、自己听 timerange，零内联 handler，故不挂 window（由 kpi-view 显式 import）。
 import './ledger.js';
+// 应用组装层（原经典脚本 public/app.js，2026-08-26 迁入）。**必须放在最后一个 import**：
+// 它的模块求值期会做 DOM 绑定并注册 window load 启动序列，顺序等价于原来「bundle.js 之后加载 app.js」。
+// 它 import 所有业务模块、没有模块 import 它，是依赖图顶点，故排在末尾不会造成前向引用。
+import * as app from './app.js';
 
 bindTableEditor();
 
@@ -71,4 +75,4 @@ const settingsCompatibility={bindSettings,openPwd,submitPwd};
 const rankSnapshotCompatibility={loadRankSnapshots,snapshotRanks};
 const riskCompatibility={loadRisks};
 
-Object.assign(window, uiKit, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility);
+Object.assign(window, uiKit, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility, app);

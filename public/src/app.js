@@ -1,3 +1,34 @@
+/* 应用组装层（ES 模块 · esbuild 打包为 IIFE，由 main.js **最后** import）。
+   这里不是遗留垃圾堆，是 composition root：data-ui-action 委托表 + 导航 go() +
+   window load 启动序列 + applyRoleUi()。原为经典脚本 public/app.js，2026-08-26 迁入。
+   依赖方向：本模块 import 所有业务模块，**没有任何模块 import 本模块** —— 依赖图的顶点，无环。
+   仍靠 window 解析的只有两类，都由尚未模块化的经典脚本提供：
+     - api.js：API / ensureAuth / can / ME；
+     - hermes.js：openHermesPanel / sendHermesPrompt 等 Hermes 面板函数（它自己挂 window）。
+   本模块导出的 go/chk/hydrate/loadInquiries 等由 main.js 挂 window，供 hermes.js 与尚未改成
+   显式 import 的模块调用 —— 那是下一刀要收的方向。 */
+import { adoptAi, aiBox, loadAiAnalyses, runAiAnalysis } from './ai.js';
+import { loadArchive } from './archive.js';
+import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, renderInqDonuts, resizeScatters } from './charts.js';
+import { addContent, addDepositRow, addFixRow, addPlanRow, addTestRow, loadClosedLoop, loadContent, openTaskModal, prepend, refreshTaskCols, submitSubtask, submitTask } from './closed-loop.js';
+import { loadGa4 } from './ga4-view.js';
+import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
+import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
+import { openInquiry, refreshInqStats, renderInqFeed, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
+import { renderGlobe } from './inquiry-globe.js';
+import { addKeyword, filterKwByCat, loadKeywords } from './keywords.js';
+import { loadOverview, renderKPI } from './kpi-view.js';
+import { loadMetrics, loadWeeks, submitSemWeek, submitSeoWeek } from './kpi.js';
+import { loadBrain, loadMarket, refreshBrain } from './market-brain.js';
+import { adRowHtml, addAd, addNeg, negRowHtml } from './neg-ads.js';
+import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
+import { loadRisks } from './risks.js';
+import { bindSettings, openPwd, submitPwd } from './settings.js';
+import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, updateSopCounts } from './sop.js';
+import { getRangeRevision, submitCustomRange, withRange } from './timerange.js';
+import { closeModal, esc, toast, toastUndo } from './ui-kit.js';
+import { renderMonthReview, renderReview } from './weekly-review.js';
+
 /* ---------- helpers ---------- */
 /* ================= STORAGE LAYER (universal) =================
    优先 Artifact 持久存储(window.storage) → 退 localStorage → 退内存。
@@ -98,7 +129,7 @@ function toggleTheme(){ document.body.classList.toggle('dark'); const dk=documen
 (function(){ try{ if(localStorage.getItem('ferr:theme')==='dark'){ document.body.classList.add('dark'); const b=document.getElementById('themeBtn'); if(b)b.innerHTML='<i class="ti ti-sun"></i>'; } }catch(e){} })();
 
 /* ---------- nav ---------- */
-function setPlanningTab(tab){
+export function setPlanningTab(tab){
   const content=document.querySelector('.content');
   if(!content)return;
   const active=tab||'daily';
@@ -108,7 +139,7 @@ function setPlanningTab(tab){
   if(active==='week'){try{renderReview();}catch(e){}}
   if(active==='month-summary'){try{renderMonthReview();}catch(e){}}
 }
-function setActionTab(tab){
+export function setActionTab(tab){
   const content=document.querySelector('.content');
   if(!content)return;
   const active=tab||'test';
@@ -124,7 +155,7 @@ function mountGa4IntoData(){
   ga4.classList.add('ga4-embedded');
   if(ga4.parentElement!==host)host.appendChild(ga4);
 }
-function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n){n.classList.add('active');if(window.matchMedia('(max-width:760px)').matches)n.scrollIntoView({block:'nearest',inline:'center'});} document.querySelector('.main').scrollTo({top:0}); window.scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
+export function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n){n.classList.add('active');if(window.matchMedia('(max-width:760px)').matches)n.scrollIntoView({block:'nearest',inline:'center'});} document.querySelector('.main').scrollTo({top:0}); window.scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
   if(tab==='risks'){try{loadRisks();}catch(e){}}
   if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
@@ -135,7 +166,7 @@ document.querySelectorAll('.planning-tab').forEach(btn=>btn.addEventListener('cl
 document.querySelectorAll('.action-tab').forEach(btn=>btn.addEventListener('click',()=>setActionTab(btn.dataset.actionTab)));
 document.querySelectorAll('.subtab[data-sub]').forEach(t=>t.addEventListener('click',()=>{ const g=t.closest('.panel'); const id=t.dataset.sub; g.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active')); g.querySelectorAll('.subpanel').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const sp=g.querySelector('#sub-'+id); if(sp)sp.classList.add('active'); const tab=(g.id||'').replace('panel-',''); try{localStorage.setItem('ferr:sub:'+tab,id);}catch(e){} resizeScatters(); }));
 /* 刷新后恢复上次所在页签 + 子页签（修复刷新回总览的 Bug）*/
-function restoreRoute(){
+export function restoreRoute(){
   let tab='dashboard'; try{ tab=localStorage.getItem('ferr:tab')||'dashboard'; }catch(e){}
   if(tab==='ga4'){ tab='data'; try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} }
   if(tab!=='planning'&&tab!=='action'&&!document.getElementById('panel-'+tab))tab='dashboard';
@@ -172,7 +203,7 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 /* 否词库 / 广告创意库 录入：ES 模块 public/src/neg-ads.js（打包进 /dist/bundle.js）— addNeg/addAd/negRowHtml/adRowHtml 等 */
 
 /* ================= SEM 层级展开/收起 ================= */
-function toggleHier(row){
+export function toggleHier(row){
   row.classList.toggle('collapsed');
   const hidden=row.classList.contains('collapsed');
   let n=row.nextElementSibling;
@@ -190,7 +221,7 @@ document.querySelectorAll('.minitab[data-mini]').forEach(t=>t.addEventListener('
 }));
 
 /* ================= 近6周排名迷你折线 (sparkline) ================= */
-function renderSparklines(){
+export function renderSparklines(){
   document.querySelectorAll('[data-spark]').forEach(td=>{
     const v=td.dataset.spark.split(',').map(Number); // 排名:越小越好
     const w=58,h=18,max=Math.max(...v),min=Math.min(...v),rng=Math.max(max-min,1);
@@ -210,7 +241,7 @@ function tableLoadState(id,colspan,state,message,retryAction){
 }
 // 询盘加载（带当前时间区间）。供首屏 hydrate 与时间切换共用。
 let inquiryRequestSequence=0;
-async function loadInquiries(){
+export async function loadInquiries(){
   const requestId=++inquiryRequestSequence;
   const revision=typeof getRangeRevision==='function'?getRangeRevision():0;
   try{
@@ -261,7 +292,7 @@ async function loadAdCreatives(){
     toast('广告创意加载失败：'+reason);
   } }
 }
-async function hydrate(){
+export async function hydrate(){
   // 询盘：从后端读取（多人共享、服务重启不丢）；带当前时间区间
   await loadInquiries();
   // 否词库：从后端读取
@@ -282,7 +313,7 @@ renderLoopbars();
 
 /* ---------- task check ---------- */
 /* BUG-23 / SOP-B：动态任务卡(loop_items id) PATCH state；SOP 卡(sopId+freq) POST/DELETE sop completions */
-function chk(el){
+export function chk(el){
   el.classList.toggle('on'); const c=el.closest('.tcard');
   const on=el.classList.contains('on');
   if(on){el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
@@ -403,7 +434,7 @@ window.addEventListener('load',async()=>{
 
 /* 顶栏显示当前用户 + 登出；按角色做前端控件提示（后端才是权威校验）*/
 const ROLE_LABEL={seo:'李 · SEO',sem:'陈 · SEM',manager:'主管',boss:'老板'};
-function applyRoleUi(){
+export function applyRoleUi(){
   const me=window.ME||{};
   // B-6：个人信息（姓名/角色/用户名）移入设置「个人资料」，不再放顶栏
   const pn=document.getElementById('prof-name'); if(pn)pn.textContent=me.name||'—';

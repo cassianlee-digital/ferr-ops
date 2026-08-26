@@ -427,15 +427,15 @@
   function aiDeptFromText(t) {
     return /SEM|Ads|广告|CPC|CTR|ROAS|否词|出价|系列|预算/i.test(t || "") ? "SEM" : "SEO";
   }
-  function aiMeta(btn, prompt, title) {
+  function aiMeta(btn, prompt2, title) {
     const page = currentAiPage();
     const row = rowContext(btn);
     const box = btn && btn.closest && btn.closest(".ai-box");
     const boxTitle = box ? (box.querySelector(".ai-title") || {}).textContent : "";
     const finalTitle = title || boxTitle || "AI \u5206\u6790";
     const scope_type = page.tab || "general";
-    const seed = [scope_type, finalTitle, prompt, row && row.text].filter(Boolean).join("|");
-    return { scope_key: scope_type + ":" + hashText(seed), scope_type, title: finalTitle, prompt, context: { page, row, boxTitle }, dept: aiDeptFromText((finalTitle || "") + " " + (prompt || "")) };
+    const seed = [scope_type, finalTitle, prompt2, row && row.text].filter(Boolean).join("|");
+    return { scope_key: scope_type + ":" + hashText(seed), scope_type, title: finalTitle, prompt: prompt2, context: { page, row, boxTitle }, dept: aiDeptFromText((finalTitle || "") + " " + (prompt2 || "")) };
   }
   function triggerPrompt(btn) {
     if (!btn || !btn.dataset || !btn.dataset.aiPrompt) return null;
@@ -462,9 +462,9 @@
       if (!tr) return;
       const n = tr.querySelector(".kw-name");
       const kw = (n ? n.textContent : tr.cells[0].textContent).trim();
-      const prompt = "\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE";
+      const prompt2 = "\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE";
       const title = "\u300C" + kw + "\u300D\u610F\u56FE";
-      const item = aiAnalyses.get(aiMeta(btn, prompt, title).scope_key);
+      const item = aiAnalyses.get(aiMeta(btn, prompt2, title).scope_key);
       if (item) markAiTrigger(btn, item);
     });
   }
@@ -661,8 +661,8 @@
       if (box) box.innerHTML = '<div class="dim csp-s-46909fa053">\u62C6\u89E3\u5931\u8D25\uFF1A' + esc(e.message || "ai_failed") + "</div>";
     }
   }
-  async function runAiAnalysis(btn, prompt, title, force) {
-    const meta = aiMeta(btn, prompt, title);
+  async function runAiAnalysis(btn, prompt2, title, force) {
+    const meta = aiMeta(btn, prompt2, title);
     const requestVersion = ++modalRequestVersion;
     activeAi = null;
     aiViewIdx = -1;
@@ -687,9 +687,9 @@
       if (requestVersion === modalRequestVersion && btn) btn.disabled = false;
     }
   }
-  function aiBox(btn, prompt) {
+  function aiBox(btn, prompt2) {
     const box = btn && btn.closest(".ai-box");
-    runAiAnalysis(btn, prompt, (box && box.querySelector(".ai-title") || {}).textContent, false);
+    runAiAnalysis(btn, prompt2, (box && box.querySelector(".ai-title") || {}).textContent, false);
   }
   async function sendAiChat() {
     const item = activeAi;
@@ -1746,8 +1746,8 @@
   function _dataActionAttr(name, value) {
     return " data-" + name + '="' + esc(String(value == null ? "" : value)) + '"';
   }
-  function _aiActionAttrs(prompt, title) {
-    return _dataActionAttr("ferr-action", "ai") + _dataActionAttr("ai-prompt", prompt) + _dataActionAttr("ai-title", title);
+  function _aiActionAttrs(prompt2, title) {
+    return _dataActionAttr("ferr-action", "ai") + _dataActionAttr("ai-prompt", prompt2) + _dataActionAttr("ai-title", title);
   }
   function _adoptActionAttrs(dept, title, detail, evidence) {
     return _dataActionAttr("ferr-action", "adopt") + _dataActionAttr("dept", dept) + _dataActionAttr("title", title) + _dataActionAttr("detail", detail) + _dataActionAttr("evidence", evidence);
@@ -6900,6 +6900,595 @@
     }
   }
 
+  // public/src/app.js
+  var app_exports = {};
+  __export(app_exports, {
+    applyRoleUi: () => applyRoleUi,
+    chk: () => chk2,
+    go: () => go2,
+    hydrate: () => hydrate,
+    loadInquiries: () => loadInquiries2,
+    renderSparklines: () => renderSparklines2,
+    restoreRoute: () => restoreRoute,
+    setActionTab: () => setActionTab2,
+    setPlanningTab: () => setPlanningTab2,
+    toggleHier: () => toggleHier2
+  });
+  var STATIC_UI_ACTIONS = {
+    "toggle-theme": () => toggleTheme(),
+    go: (el) => go2(el.dataset.tab),
+    ai: (el) => runAiAnalysis(el, el.dataset.aiPrompt, el.dataset.aiTitle || "AI \u5206\u6790", false),
+    "ai-box": (el) => aiBox(el, el.dataset.aiPrompt),
+    "ai-ask": (el) => runAiAnalysis(el, el.dataset.aiPrompt, el.dataset.aiTitle, false),
+    "open-inquiry": () => openInquiry(),
+    "add-plan": (el) => addPlanRow(el.dataset.dept),
+    "add-test": (el) => addTestRow(el.dataset.dept),
+    "snapshot-ranks": () => snapshotRanks(),
+    "reload-ga4": () => loadGa42(),
+    "add-fix": () => addFixRow(),
+    "add-keyword": (el) => addKeyword(el.dataset.keywordType),
+    "add-neg": () => addNeg(),
+    "add-ad": () => addAd(),
+    "add-content": () => addContent(),
+    "refresh-brain": (el) => refreshBrain(el),
+    "create-hermes-daily-learning": () => createHermesDailyLearning(),
+    "load-hermes-memories": () => loadHermesMemories(true),
+    "reset-hermes-memory-form": () => resetHermesMemoryForm(),
+    "save-hermes-memory": () => saveHermesMemory(),
+    "reset-hermes-feedback-form": () => resetHermesFeedbackForm(),
+    "save-hermes-feedback": () => saveHermesFeedback(),
+    "add-deposit": () => addDepositRow(),
+    "open-task": (el) => openTaskModal(el.dataset.dept),
+    "open-password": () => openPwd(),
+    logout: () => API.logout(),
+    "open-sop": () => openSopModal(),
+    "open-hermes-panel": () => openHermesPanel(),
+    toast: (el) => toast(el.dataset.message),
+    "close-hermes-panel": () => closeHermesPanel(),
+    "toggle-hermes-maximize": () => toggleHermesMaximize(),
+    "load-hermes-morning-brief": () => loadHermesMorningBrief(),
+    "ask-hermes-starter": (el) => askHermesStarter(el.dataset.prompt),
+    "sync-hermes-page-detail": () => syncHermesPageDetail(true),
+    "toggle-hermes-deep-thinking": () => toggleHermesDeepThinking(),
+    "send-hermes-prompt": () => sendHermesPrompt(),
+    "clear-hermes-chat": () => clearHermesChat(),
+    "toggle-hermes-history": () => toggleHermesHistory(),
+    "load-hermes-latest": () => loadHermesLatest(true),
+    "learn-hermes-conversation": () => learnHermesConversation(),
+    "archive-hermes-conversation": () => archiveHermesConversation(),
+    "refresh-hermes-status": () => refreshHermesStatus(true),
+    "reset-hermes-window": () => resetHermesWindow(),
+    "close-modal": (el) => closeModal(el.dataset.modal),
+    "submit-inquiry": () => submitInquiry(),
+    "submit-custom-range": () => submitCustomRange(),
+    "submit-track": () => submitTrack(),
+    "submit-seo-week": () => submitSeoWeek(),
+    "submit-sem-week": () => submitSemWeek(),
+    "submit-password": () => submitPwd(),
+    "submit-task": () => submitTask(),
+    "submit-subtask": () => submitSubtask(),
+    "submit-sop": () => submitSop(),
+    "adopt-ai": () => adoptAi()
+  };
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest && e.target.closest("[data-ui-action]");
+    if (!el) return;
+    const action = STATIC_UI_ACTIONS[el.dataset.uiAction];
+    if (action) action(el);
+  });
+  var semCampFilter = document.getElementById("semCampFilter");
+  if (semCampFilter) semCampFilter.addEventListener("change", (e) => onSemCampaignChange(e.target.value));
+  var semAdGroupFilter = document.getElementById("semAdGroupFilter");
+  if (semAdGroupFilter) semAdGroupFilter.addEventListener("change", (e) => onSemAdGroupChange(e.target.value));
+  function toggleTheme() {
+    document.body.classList.toggle("dark");
+    const dk = document.body.classList.contains("dark");
+    document.getElementById("themeBtn").innerHTML = '<i class="ti ti-' + (dk ? "sun" : "moon") + '"></i>';
+    try {
+      localStorage.setItem("ferr:theme", dk ? "dark" : "light");
+    } catch (e) {
+    }
+  }
+  (function() {
+    try {
+      if (localStorage.getItem("ferr:theme") === "dark") {
+        document.body.classList.add("dark");
+        const b = document.getElementById("themeBtn");
+        if (b) b.innerHTML = '<i class="ti ti-sun"></i>';
+      }
+    } catch (e) {
+    }
+  })();
+  function setPlanningTab2(tab) {
+    const content = document.querySelector(".content");
+    if (!content) return;
+    const active = tab || "daily";
+    content.dataset.planTab = active;
+    document.querySelectorAll(".planning-tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.planTab === active));
+    try {
+      localStorage.setItem("ferr:planningTab", active);
+    } catch (e) {
+    }
+    if (active === "week") {
+      try {
+        renderReview();
+      } catch (e) {
+      }
+    }
+    if (active === "month-summary") {
+      try {
+        renderMonthReview();
+      } catch (e) {
+      }
+    }
+  }
+  function setActionTab2(tab) {
+    const content = document.querySelector(".content");
+    if (!content) return;
+    const active = tab || "test";
+    content.dataset.actionTab = active;
+    document.querySelectorAll(".action-tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.actionTab === active));
+    try {
+      localStorage.setItem("ferr:actionTab", active);
+    } catch (e) {
+    }
+  }
+  function mountGa4IntoData() {
+    const host = document.getElementById("sub-data-ga4");
+    const ga4 = document.getElementById("panel-ga4");
+    if (!host || !ga4) return;
+    ga4.classList.remove("panel", "active");
+    ga4.classList.add("ga4-embedded");
+    if (ga4.parentElement !== host) host.appendChild(ga4);
+  }
+  function go2(tab) {
+    if (tab === "ga4") {
+      try {
+        localStorage.setItem("ferr:sub:data", "data-ga4");
+      } catch (e) {
+      }
+      tab = "data";
+    }
+    mountGa4IntoData();
+    const planCombo = tab === "planning";
+    const actionCombo = tab === "action";
+    const p = planCombo ? document.getElementById("panel-tasks") : actionCombo ? document.getElementById("panel-test") : document.getElementById("panel-" + tab);
+    if (!p) return;
+    const content = document.querySelector(".content");
+    if (content) {
+      content.classList.toggle("planning-composite", planCombo);
+      content.classList.toggle("action-composite", actionCombo);
+      if (!planCombo) delete content.dataset.planTab;
+      if (!actionCombo) delete content.dataset.actionTab;
+    }
+    document.querySelectorAll(".panel").forEach((x) => x.classList.remove("active"));
+    document.querySelectorAll(".nav-item").forEach((n2) => n2.classList.remove("active"));
+    if (planCombo) {
+      ["tasks", "plan", "review", "month-review"].forEach((id) => {
+        const panel = document.getElementById("panel-" + id);
+        if (panel) panel.classList.add("active");
+      });
+      let planTab = "daily";
+      try {
+        planTab = localStorage.getItem("ferr:planningTab") || "daily";
+      } catch (e) {
+      }
+      setPlanningTab2(planTab);
+    } else if (actionCombo) {
+      ["test", "fix"].forEach((id) => {
+        const panel = document.getElementById("panel-" + id);
+        if (panel) panel.classList.add("active");
+      });
+      let actionTab = "test";
+      try {
+        actionTab = localStorage.getItem("ferr:actionTab") || "test";
+      } catch (e) {
+      }
+      setActionTab2(actionTab);
+    } else {
+      p.classList.add("active");
+    }
+    const n = document.querySelector('.nav-item[data-tab="' + tab + '"]');
+    if (n) {
+      n.classList.add("active");
+      if (window.matchMedia("(max-width:760px)").matches) n.scrollIntoView({ block: "nearest", inline: "center" });
+    }
+    document.querySelector(".main").scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 });
+    window._curTab = tab;
+    try {
+      localStorage.setItem("ferr:tab", tab);
+    } catch (e) {
+    }
+    if (tab === "data") resizeScatters();
+    if (tab === "risks") {
+      try {
+        loadRisks();
+      } catch (e) {
+      }
+    }
+    if (tab === "inquiry") setTimeout(() => {
+      try {
+        renderGlobe2();
+      } catch (e) {
+      }
+    }, 80);
+    if (tab === "archive") {
+      try {
+        loadArchive2();
+      } catch (e) {
+      }
+    }
+    if (tab === "tasks" || planCombo) {
+      try {
+        loadUrgent();
+        renderSopOverdueBanner();
+        renderReview();
+      } catch (e) {
+      }
+    }
+  }
+  document.querySelectorAll(".nav-item").forEach((n) => n.addEventListener("click", () => go2(n.dataset.tab)));
+  document.querySelectorAll(".planning-tab").forEach((btn) => btn.addEventListener("click", () => setPlanningTab2(btn.dataset.planTab)));
+  document.querySelectorAll(".action-tab").forEach((btn) => btn.addEventListener("click", () => setActionTab2(btn.dataset.actionTab)));
+  document.querySelectorAll(".subtab[data-sub]").forEach((t) => t.addEventListener("click", () => {
+    const g = t.closest(".panel");
+    const id = t.dataset.sub;
+    g.querySelectorAll(".subtab").forEach((x) => x.classList.remove("active"));
+    g.querySelectorAll(".subpanel").forEach((x) => x.classList.remove("active"));
+    t.classList.add("active");
+    const sp = g.querySelector("#sub-" + id);
+    if (sp) sp.classList.add("active");
+    const tab = (g.id || "").replace("panel-", "");
+    try {
+      localStorage.setItem("ferr:sub:" + tab, id);
+    } catch (e) {
+    }
+    resizeScatters();
+  }));
+  function restoreRoute() {
+    let tab = "dashboard";
+    try {
+      tab = localStorage.getItem("ferr:tab") || "dashboard";
+    } catch (e) {
+    }
+    if (tab === "ga4") {
+      tab = "data";
+      try {
+        localStorage.setItem("ferr:sub:data", "data-ga4");
+      } catch (e) {
+      }
+    }
+    if (tab !== "planning" && tab !== "action" && !document.getElementById("panel-" + tab)) tab = "dashboard";
+    go2(tab);
+    let sub = null;
+    try {
+      sub = localStorage.getItem("ferr:sub:" + tab);
+    } catch (e) {
+    }
+    if (sub) {
+      const panel = document.getElementById("panel-" + tab);
+      const st = panel && panel.querySelector('.subtab[data-sub="' + sub + '"]');
+      if (st) st.click();
+    }
+  }
+  document.querySelectorAll(".cat-tabs").forEach((box) => box.addEventListener("click", (e) => {
+    const t = e.target.closest(".cat-tab");
+    if (!t) return;
+    const sub = box.closest(".subpanel");
+    const type = sub && sub.id === "sub-kw-sem" ? "sem" : "seo";
+    if (t.classList.contains("add")) {
+      const name = (prompt("\u65B0\u5EFA\u5206\u7C7B\u540D\u79F0\uFF1A") || "").trim();
+      if (!name) return;
+      if (![...box.querySelectorAll(".cat-tab")].some((x) => x.textContent.trim() === name)) {
+        const span = document.createElement("span");
+        span.className = "cat-tab";
+        span.textContent = name;
+        box.insertBefore(span, t);
+      }
+      box.querySelectorAll(".cat-tab").forEach((x) => x.classList.remove("active"));
+      const target = [...box.querySelectorAll(".cat-tab")].find((x) => x.textContent.trim() === name);
+      if (target) target.classList.add("active");
+      filterKwByCat(type, name);
+      return;
+    }
+    box.querySelectorAll(".cat-tab").forEach((x) => x.classList.remove("active"));
+    t.classList.add("active");
+    filterKwByCat(type, t.classList.contains("cat-all") ? null : t.textContent.trim());
+  }));
+  function toggleHier2(row) {
+    row.classList.toggle("collapsed");
+    const hidden = row.classList.contains("collapsed");
+    let n = row.nextElementSibling;
+    while (n && !n.classList.contains("h-camp")) {
+      n.style.display = hidden ? "none" : "";
+      n = n.nextElementSibling;
+    }
+  }
+  document.querySelectorAll(".minitab[data-mini]").forEach((t) => t.addEventListener("click", () => {
+    const wrap = t.closest(".subpanel");
+    wrap.querySelectorAll(".minitab").forEach((x) => x.classList.remove("active"));
+    wrap.querySelectorAll(".minipanel").forEach((x) => x.classList.remove("active"));
+    t.classList.add("active");
+    const mp = wrap.querySelector("#mp-" + t.dataset.mini);
+    if (mp) mp.classList.add("active");
+    resizeScatters();
+  }));
+  function renderSparklines2() {
+    document.querySelectorAll("[data-spark]").forEach((td2) => {
+      const v = td2.dataset.spark.split(",").map(Number);
+      const w = 58, h = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
+      const pts = v.map((d, i) => {
+        const x = i / (v.length - 1) * (w - 4) + 2;
+        const y = (d - min) / rng * (h - 6) + 3;
+        return x.toFixed(1) + "," + y.toFixed(1);
+      }).join(" ");
+      const up = v[v.length - 1] < v[0];
+      const col = up ? "var(--green)" : v[v.length - 1] > v[0] ? "var(--primary)" : "var(--text3)";
+      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h - 6) + 3;
+      td2.innerHTML = `<svg class="spark" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
+    });
+  }
+  function tableLoadState(id, colspan, state, message, retryAction) {
+    const tb = document.getElementById(id);
+    if (!tb) return;
+    const retry = typeof retryAction === "function" ? ' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> \u91CD\u8BD5</button>' : "";
+    tb.innerHTML = `<tr data-load-state="${state}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
+    const retryBtn = tb.querySelector(".table-retry");
+    if (retryBtn) retryBtn.addEventListener("click", retryAction);
+  }
+  var inquiryRequestSequence = 0;
+  async function loadInquiries2() {
+    const requestId = ++inquiryRequestSequence;
+    const revision = typeof getRangeRevision === "function" ? getRangeRevision() : 0;
+    try {
+      const { items, stats } = await API.get(withRange2("/api/inquiries"));
+      if (requestId !== inquiryRequestSequence || typeof getRangeRevision === "function" && revision !== getRangeRevision()) return;
+      window._inqCache = items || [];
+      renderInqList();
+      try {
+        renderInqFeed();
+      } catch (_) {
+      }
+      refreshInqStats(stats);
+      renderInqDonuts();
+      if (window._curTab === "inquiry") {
+        try {
+          renderGlobe2();
+        } catch (e) {
+        }
+      }
+    } catch (e) {
+      if (requestId === inquiryRequestSequence && e && e.message !== "unauthorized") {
+        window._inqCache = [];
+        window._inqStats = null;
+        const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
+        tableLoadState("tb-inq-cur", 11, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries2);
+        tableLoadState("tb-inq", 11, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries2);
+        const count = document.getElementById("inqFeedCount");
+        if (count) count.textContent = "\u52A0\u8F7D\u5931\u8D25";
+        renderInqDonuts();
+        if (window._curTab === "inquiry") {
+          try {
+            renderGlobe2();
+          } catch (_) {
+          }
+        }
+        toast("\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
+      }
+    }
+  }
+  async function loadNegKeywords() {
+    try {
+      const { items } = await API.get("/api/neg-keywords");
+      const tb = document.getElementById("tb-neg");
+      if (!tb) return;
+      tb.innerHTML = "";
+      const rows2 = items || [];
+      if (!rows2.length) {
+        tableLoadState("tb-neg", 6, "empty", "\u6682\u65E0\u5426\u8BCD\u8BB0\u5F55\uFF0C\u70B9\u51FB\u201C\u52A0\u5426\u8BCD\u201D\u5F00\u59CB\u8BB0\u5F55\u3002");
+        return;
+      }
+      rows2.slice().reverse().forEach((r) => {
+        prepend("tb-neg", negRowHtml(r));
+        tb.firstChild.dataset.id = r.id;
+        tb.firstChild.dataset.ep = "/api/neg-keywords";
+      });
+    } catch (e) {
+      if (e && e.message !== "unauthorized") {
+        const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
+        tableLoadState("tb-neg", 6, "error", "\u5426\u8BCD\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadNegKeywords);
+        toast("\u5426\u8BCD\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
+      }
+    }
+  }
+  async function loadAdCreatives() {
+    try {
+      const { items } = await API.get("/api/ad-creatives");
+      const tb = document.getElementById("tb-ad");
+      if (!tb) return;
+      tb.innerHTML = "";
+      const rows2 = items || [];
+      if (!rows2.length) {
+        tableLoadState("tb-ad", 5, "empty", "\u6682\u65E0\u5E7F\u544A\u521B\u610F\u8BB0\u5F55\uFF0C\u70B9\u51FB\u201C\u52A0\u521B\u610F\u201D\u5F00\u59CB\u8BB0\u5F55\u3002");
+        return;
+      }
+      rows2.slice().reverse().forEach((r) => {
+        prepend("tb-ad", adRowHtml(r));
+        tb.firstChild.dataset.id = r.id;
+        tb.firstChild.dataset.ep = "/api/ad-creatives";
+      });
+    } catch (e) {
+      if (e && e.message !== "unauthorized") {
+        const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
+        tableLoadState("tb-ad", 5, "error", "\u5E7F\u544A\u521B\u610F\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadAdCreatives);
+        toast("\u5E7F\u544A\u521B\u610F\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
+      }
+    }
+  }
+  async function hydrate() {
+    await loadInquiries2();
+    await loadNegKeywords();
+    await loadAdCreatives();
+    await loadRankSnapshots();
+  }
+  var LOOP = [["\u2460 \u8BA1\u5212", "plan"], ["\u2461 \u6D4B\u8BD5", "test"], ["\u2462 \u6570\u636E", "data"], ["\u2463 \u6574\u6539", "fix"], ["\u2464 \u590D\u76D8", "review"]];
+  function renderLoopbars() {
+    document.querySelectorAll(".loopbar").forEach((bar) => {
+      const cur = +bar.dataset.step;
+      bar.innerHTML = LOOP.map((x, i) => {
+        const n = i + 1;
+        const cls = n === cur ? "active" : n < cur ? "done" : "";
+        return `<span class="loopstep ${cls}" data-loop-tab="${esc(x[1])}">${x[0]}</span>` + (n < LOOP.length ? '<span class="loopsep"></span>' : "");
+      }).join("");
+      bar.onclick = (e) => {
+        const step = e.target.closest("[data-loop-tab]");
+        if (step && bar.contains(step)) go2(step.dataset.loopTab);
+      };
+    });
+  }
+  renderLoopbars();
+  function chk2(el) {
+    el.classList.toggle("on");
+    const c = el.closest(".tcard");
+    const on = el.classList.contains("on");
+    if (on) {
+      el.innerHTML = '<i class="ti ti-check"></i>';
+      c.classList.add("done");
+    } else {
+      el.innerHTML = "";
+      c.classList.remove("done");
+    }
+    if (c) {
+      c.classList.add("nofold");
+      if (typeof refreshTaskCols === "function") refreshTaskCols();
+    }
+    const id = c && c.dataset.id;
+    const sopId = c && c.dataset.sopId;
+    const recount = () => {
+      if (typeof refreshTaskCols === "function") refreshTaskCols();
+    };
+    const rollback = () => {
+      el.classList.toggle("on");
+      if (on) {
+        el.innerHTML = "";
+        c.classList.remove("done");
+      } else {
+        el.innerHTML = '<i class="ti ti-check"></i>';
+        c.classList.add("done");
+      }
+      recount();
+    };
+    if (id) {
+      if (on && c.classList.contains("cotask")) {
+        API.post("/api/loop-items/" + id + "/archive", { archive_kind: "company" }).then(() => {
+          toast("\u5927\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5F52\u6863\uFF08\u542B\u5B50\u4EFB\u52A1\uFF09");
+          c.remove();
+          recount();
+          loadUrgent();
+          if (typeof updateSopCounts === "function") updateSopCounts();
+        }).catch((e) => {
+          rollback();
+          toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
+        });
+        return;
+      }
+      API.patch("/api/loop-items/" + id, { state: on ? "done" : "todo", status: on ? "done" : "\u5F85\u529E" }).then(() => {
+        const fx = c._item && c._item.fix_id;
+        if (on) toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el));
+        else toast("\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u56DE\u5230\u300C\u8FDB\u884C\u4E2D\u300D" : ""));
+        loadUrgent();
+      }).catch((e) => {
+        rollback();
+        toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
+      });
+    } else if (sopId) {
+      const freq = c.dataset.sopFreq || "daily";
+      const pk = sopPeriodKey(freq);
+      const req = on ? API.post("/api/sop/completions", { sop_id: Number(sopId), period_key: pk }) : API.del("/api/sop/completions/" + sopId + "?period_key=" + encodeURIComponent(pk));
+      req.then(() => {
+        toast(on ? "SOP \u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" : "\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93");
+        const set = window._sopDone && window._sopDone[freq];
+        if (set) {
+          if (on) set.add(Number(sopId));
+          else set.delete(Number(sopId));
+        }
+        updateSopCounts();
+        renderSopOverdueBanner();
+        refreshNavTaskDot();
+      }).catch((e) => {
+        rollback();
+        toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
+      });
+    } else {
+      toast(on ? "\u5DF2\u5B8C\u6210" : "");
+    }
+  }
+  window.addEventListener("load", async () => {
+    await ensureAuth();
+    applyRoleUi();
+    restoreRoute();
+    await loadMetrics();
+    await loadWeeks();
+    renderKPI2();
+    await loadOverview();
+    charts();
+    bindSettings();
+    renderSparklines2();
+    await hydrate();
+    loadDashboardInq();
+    loadDashboardBoards();
+    await loadKeywords();
+    await loadClosedLoop();
+    await loadAiAnalyses();
+    await loadArchive2();
+    await loadSops();
+    await loadUrgent();
+    await loadContent();
+    await loadGa42();
+    loadSeoBoardGsc();
+    loadSeoBoardFull();
+    loadSemBoardAds();
+    loadSemBoardFull();
+    loadAttribution();
+    loadDiagnostics();
+    loadDataFreshness();
+    await loadDataSourcesStatus();
+    await loadIntegrations();
+    await loadMarket();
+    if (typeof loadHermesMemories === "function") await loadHermesMemories(false);
+    await loadBrain();
+    await renderReview();
+    refreshInqStats();
+  });
+  var ROLE_LABEL = { seo: "\u674E \xB7 SEO", sem: "\u9648 \xB7 SEM", manager: "\u4E3B\u7BA1", boss: "\u8001\u677F" };
+  function applyRoleUi() {
+    const me = window.ME || {};
+    const pn = document.getElementById("prof-name");
+    if (pn) pn.textContent = me.name || "\u2014";
+    const pr = document.getElementById("prof-role");
+    if (pr) pr.textContent = ROLE_LABEL[me.role] || me.role || "\u2014";
+    const pu = document.getElementById("prof-user");
+    if (pu) pu.textContent = me.username || "\u2014";
+    if (!can("kpiTarget")) {
+      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
+        el.removeAttribute("contenteditable");
+        el.style.opacity = ".7";
+      });
+    }
+    if (!can("inquiry")) {
+      document.querySelectorAll('[data-ui-action="open-inquiry"]').forEach((b) => b.style.display = "none");
+    }
+    if (!can("seo")) document.querySelectorAll('[data-ui-action="open-seo-week"]').forEach((b) => b.style.display = "none");
+    if (!can("sem")) document.querySelectorAll('[data-ui-action="open-sem-week"]').forEach((b) => b.style.display = "none");
+    if (!can("sem")) {
+      document.querySelectorAll('[data-ui-action="add-neg"],[data-ui-action="add-ad"]').forEach((b) => b.style.display = "none");
+    }
+    if (!can("seo")) document.querySelectorAll('[data-ui-action="snapshot-ranks"]').forEach((b) => b.style.display = "none");
+    if (!can("seo")) document.querySelectorAll('[data-ui-action="add-keyword"][data-keyword-type="seo"],[data-ui-action="add-keyword"][data-keyword-type="high"],[data-ui-action="add-keyword"][data-keyword-type="customer"]').forEach((b) => b.style.display = "none");
+    if (!can("sem")) document.querySelectorAll('[data-ui-action="add-keyword"][data-keyword-type="sem"]').forEach((b) => b.style.display = "none");
+  }
+
   // public/src/main.js
   bindTableEditor();
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
@@ -6910,5 +7499,5 @@
   var settingsCompatibility = { bindSettings, openPwd, submitPwd };
   var rankSnapshotCompatibility = { loadRankSnapshots, snapshotRanks };
   var riskCompatibility = { loadRisks };
-  Object.assign(window, ui_kit_exports, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility);
+  Object.assign(window, ui_kit_exports, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility, app_exports);
 })();

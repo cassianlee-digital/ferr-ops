@@ -14,7 +14,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **后端不是单文件**:Fastify,模块化良好。
   - `server/src/routes/`(**30 个路由文件**,2026-08-26 复测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1070 行 / 107KB**(2026-08-26 复测,比 8-13 的 1539 行又瘦一圈),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分三层:**经典脚本只剩 4 个**(`app.js`/`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1070 行 / 107KB**(2026-08-26 复测,比 8-13 的 1539 行又瘦一圈),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -23,12 +23,15 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 ### 前端全局面与「模块化地板」(2026-07-15 实测,别重新推导)
 
-- **自有函数约 285 个挂在 `window` 上**(实测:空 iframe 差集 = 338 名字 / 302 函数,含 vendor;其中经典脚本顶层函数 217 + `main.js` 挂上去的模块导出 68)。
-  - **别用 grep 数 `window.X =` 去估全局面**——那样只得 56,**低 6 倍**:经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量。
-- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **114 处 `data-ui-action=`**(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo/loop-tab 委托、`google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
+- **全局面已腰斩:实测 191 名字 / 155 函数**(2026-08-26 活站 iframe 差集,含 vendor;2026-07-15 同口径是 338/302)。降幅主要来自 `app.js` 迁入 ES 模块 —— 它原有 **35 个顶层符号自动是全局**,现在只导出 10 个给兼容层。
+  - **别用 grep 数 `window.X =` 去估全局面**——经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量(建空 iframe 取 `Object.getOwnPropertyNames` 做差集)。
+- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **114 处 `data-ui-action=`**(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo 已随 ui-kit 迁走,现为 `src/app.js` 的 loop-tab 委托 + `google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
 - **`public/src/ui-kit.js` 是全站 UI 基础工具的唯一实现**(2026-08-26 新增):`esc`/`renderText`/`mdToHtml`/`openModal`/`closeModal`/`toast`/`toastUndo`/`toastGo`/`showToast`/`hideToast` 从 app.js 搬来。**22 个 ES 模块已全部改为显式 `import { esc, toast } from './ui-kit.js'`,模块侧不再读 `window`**(校验脚本口径:模块里出现这些名字却没 import = 漏网)。收益是**编译期保护**:名字写错 esbuild 当场报错;此前它们是隐式全局,对打包器完全隐形。⚠ **本模块必须保持「无 DOM 也能被 import」**——`table-editor.js` 会被 `node --test` 真实 import,求值期碰 `document` 会让整个测试文件崩(已踩过);故遮罩绑定带 `typeof document` 守卫、toast 系列取不到 `#toast` 就安静退场。
-- **`Object.assign(window, …)` 兼容层仍要留,但只剩两个真实消费者**:经典脚本 `public/app.js` 与 `public/hermes.js`(`api.js`/`login.js` 不用)。`app.js` 的启动序列直接调 `loadMetrics()`/`renderKPI()`/`loadClosedLoop()`,`hermes.js` 用 `window.esc`/`window.toast`(带兜底)。**想真正清零全局,下一步是把 `app.js` 搬进 ES 模块** —— 它已不是「一堆遗留函数」,而是**组装层**:`STATIC_UI_ACTIONS` 委托表 + 导航 `go()` + `window load` 启动序列 + `applyRoleUi()`。
-- **隐形风险降级但没消失**:经典脚本裸引用同样对打包器/静态分析隐形,改名依旧**没有编译期报错**。但排查方式变了 —— **改前端函数名前该 grep 的是 4 个经典脚本,不再是 `onclick=`**;`data-ui-action` 的动作名由 `app.js` 的 `STATIC_UI_ACTIONS` 表集中分发,改名会在表里露出来。
+- **`public/src/app.js` 是应用组装层**(2026-08-26 由经典脚本迁入 ES 模块):`STATIC_UI_ACTIONS` 委托表 + 导航 `go()` + `window load` 启动序列 + `applyRoleUi()`。**依赖方向单向**:它 import 21 个业务模块,**没有任何模块 import 它** —— 依赖图顶点,无环。故 `main.js` 里它**必须是最后一个 import**(模块求值期要做 DOM 绑定并注册 window load,等价于原来「bundle.js 之后再加载 app.js」),`Object.assign(window, …, app)` 里也**必须最后合并**(还原它的全局后定义、同名覆盖的语义)。这两条已被 `frontendXss.test.js` 焊死。它调用的 ~90 个模块函数现在**全部编译期校验**,写错 esbuild 当场失败。
+- **`Object.assign(window, …)` 兼容层仍要留,但只剩两个真实消费者**:`public/hermes.js`(只读 `window.API`/`ME`/`_curTab`/`esc`/`toast`/`go`/`loadClosedLoop`,全部带 `window.` 前缀且有兜底)和**尚未改成显式 import 的模块**(它们仍裸调用 `go()`/`chk()`/`loadInquiries()` 等 app.js 导出)。**下一刀就是收这个方向**:把这几个名字也改成从 app.js 显式 import(注意会形成环,需先把 `go`/`chk` 拆成独立叶子模块)。
+- **app.js 里仍靠隐式全局解析的只剩 16 个**(已审计,零漏网):`api.js` 的 `API`/`ensureAuth`/`can`/`ME`,以及 `hermes.js` 自己挂 window 的 14 个面板函数(`openHermesPanel`/`sendHermesPrompt` 等)。这两个经典脚本在 `bundle.js` **之前**加载,故运行时一定就绪。
+- **隐形风险降级但没消失**:经典脚本裸引用同样对打包器/静态分析隐形,改名依旧**没有编译期报错**。但排查方式变了 —— **改前端函数名前该 grep 的是 3 个经典脚本**(`hermes.js`/`api.js`/`login.js`),**不再是 `onclick=`**;`data-ui-action` 的动作名由 `app.js` 的 `STATIC_UI_ACTIONS` 表集中分发,改名会在表里露出来(且有测试校验 HTML 里每个动作都已注册)。
+- **已知死代码**:`app.js` 的 `renderLoopbars()` + `LOOP` 常量是 no-op —— `.loopbar` 元素早在 commit `e138dfd`「drop loop numbering」从 HTML 删光,2026-08-26 活站实测命中 0 个。清理时可直接删。
 
 ## API / Sync Reality(真实状态,禁止把未实现描述成已完成)
 
@@ -108,7 +111,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 数据建议必须能**追溯到数据证据**。
 - AI 建议必须**结构化**,不能只是漂亮文字。
 - 任务必须能被**复盘验证**。
-- **改前端函数名前先搜 4 个经典脚本**(`public/app.js`/`hermes.js`/`api.js`/`login.js`):它们裸调用挂在 `window` 上的模块函数,改了**不会有任何报错**,直到跑到那行才 ReferenceError。改完在活站上验 `typeof window.<name>==='function'`。(内联 `onclick=` 那条老规矩已作废,见 Current Architecture:HTML 内联 handler 已清零。)
+- **改前端函数名前先搜 3 个经典脚本**(`public/hermes.js`/`api.js`/`login.js`)+ **仍裸调用 app.js 导出的模块**(grep `go(`/`chk(`/`loadInquiries(` 等):这些引用对打包器隐形,改了**不会有任何报错**,直到跑到那行才 ReferenceError。改完在活站上验 `typeof window.<name>==='function'`。(两条老规矩已作废:内联 `onclick=` 已清零;`app.js` 已迁入 `public/src/`,它调用模块函数的方向现在有编译期保护。)
 - **写进本文件的数字必须是实测的**,并注日期。本文件自称「固定项目真实状态」,一旦数字漂移(2026-07-15 曾查出路由 19→实为 27、index.html 1836 行→实为 1504、innerHTML 47→实为 168;2026-08-13 又漂:1504→1539、内联 handler 157/77→177/82;**2026-08-26 漂得最狠**:路由 29→30、index.html 1539→1070、innerHTML 236→194、经典脚本清单里 6 个文件早已迁走、**内联 handler 177/82→0**——「82 个强制全局是模块化地板」这条被当成前提写了两版,实际早被事件委托拆掉了),它就从「省 token 的地图」变成「误导人的旧地图」,危害大于没有。**引用前先抽验一个数,对不上就先修文件再干活。**
 - 修改后运行相关检查。
 

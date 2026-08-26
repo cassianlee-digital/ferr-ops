@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { bindTableEditor } from '../../public/src/table-editor.js';
 
 const html = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
-const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
+const appSource = readFileSync(new URL('../../public/src/app.js', import.meta.url), 'utf8');
 const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.meta.url), 'utf8');
 const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.meta.url), 'utf8');
 const closedLoopSource = readFileSync(new URL('../../public/src/closed-loop.js', import.meta.url), 'utf8');

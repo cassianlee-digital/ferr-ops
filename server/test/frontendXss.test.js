@@ -9,7 +9,7 @@ const chartsSource = readFileSync(new URL('../../public/src/charts.js', import.m
 const closedLoopSource = readFileSync(new URL('../../public/src/closed-loop.js', import.meta.url), 'utf8');
 const negAdsSource = readFileSync(new URL('../../public/src/neg-ads.js', import.meta.url), 'utf8');
 const aiSource = readFileSync(new URL('../../public/src/ai.js', import.meta.url), 'utf8');
-const appSource = readFileSync(new URL('../../public/app.js', import.meta.url), 'utf8');
+const appSource = readFileSync(new URL('../../public/src/app.js', import.meta.url), 'utf8');
 const indexSource = readFileSync(new URL('../../public/index.html', import.meta.url), 'utf8');
 const loginSource = readFileSync(new URL('../../public/login.html', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../../public/src/main.js', import.meta.url), 'utf8');
@@ -113,14 +113,29 @@ test('every static UI action is registered and external application JavaScript r
       .map((match) => match[1] || match[2] || match[3])
   );
   assert.deepEqual([...actions].filter((action) => !registered.has(action)), []);
-  assert.doesNotThrow(() => new Script(appSource));
+  // app.js 已是 ES 模块，vm.Script 按经典脚本解析会在 import/export 上报错（需要 --experimental-vm-modules
+  // 才能用 SourceTextModule）。这里保留原意图——正文语法必须有效——做法是剥掉模块语法后再解析：
+  // import 头单独按固定形状校验，剩下 400+ 行正文仍由 vm 真解析，真有语法错依然抓得到。
+  const importLines = appSource.match(/^import .*;$/gm) || [];
+  assert.ok(importLines.length >= 20, 'app.js 应从各业务模块显式 import');
+  for (const line of importLines) assert.match(line, /^import (?:\{[^}]+\}|\* as \w+) from '\.\/[\w-]+\.js';$/);
+  const body = appSource.replace(/^import .*;$/gm, '').replace(/^export (?=(?:async )?function )/gm, '');
+  assert.doesNotThrow(() => new Script(body));
 });
 
-test('main page loads app.js after its dependencies and contains no inline scripts', () => {
+test('app.js is bundled and stays the last import, page has no inline scripts', () => {
   assert.doesNotMatch(indexSource, /<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i);
   assert.doesNotMatch(indexSource, /<script src="\/ai\.js"><\/script>/);
-  assert.match(indexSource, /<script src="\/app\.js"><\/script>/);
-  assert.ok(indexSource.indexOf('<script src="/app.js">') > indexSource.indexOf('<script src="/dist/bundle.js">'));
+  // app.js 已迁入 ES 模块并打进 bundle，不再是独立的经典脚本
+  assert.doesNotMatch(indexSource, /<script src="\/app\.js"><\/script>/);
+  // 组装层必须是 main.js 的最后一个 import：它在模块求值期做 DOM 绑定 + 注册 window load 启动序列，
+  // 顺序等价于原来「bundle.js 之后再加载 app.js」。排到前面会让它先于依赖模块求值。
+  const appImport = mainSource.indexOf("import * as app from './app.js';");
+  assert.ok(appImport > 0, 'main.js 必须 import app.js');
+  const lastImport = mainSource.lastIndexOf('\nimport ');
+  assert.equal(mainSource.slice(lastImport + 1).startsWith("import * as app from './app.js';"), true, 'app.js 必须是最后一个 import');
+  // window 兼容层里 app 也要最后合并，还原「app.js 的全局后定义、同名覆盖」的原有语义
+  assert.match(mainSource, /Object\.assign\(window,[^)]*, app\);/);
 });
 
 test('weekly review is bundled with a narrow global compatibility surface', () => {
