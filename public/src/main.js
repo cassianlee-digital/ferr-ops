@@ -52,6 +52,9 @@ import { bindTableEditor } from './table-editor.js';
 // 已迁移（批次15）：SEO 机会词排名快照与趋势渲染。
 import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
 import { loadRisks } from './risks.js';
+// 新增（不是迁移，是新写的）：ledger —— KPI 页「运营总账」只读业务漏斗。
+// 自己插进 #panel-kpi、自己听 timerange，零内联 handler，故不挂 window（由 kpi-view 显式 import）。
+import './ledger.js';
 
 bindTableEditor();
 

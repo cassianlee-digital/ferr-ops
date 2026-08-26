@@ -758,7 +758,7 @@
       else ch.other++;
     });
     const chTotal = ch.SEO + ch.SEM + ch.direct + ch.other;
-    const pct2 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
+    const pct3 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
     if (cv2) {
       const w = cv2.closest(".chart-wrap") || cv2.parentElement;
       if (w) {
@@ -768,7 +768,7 @@
       cv2.style.display = "";
       _chanDonutChart = new Chart(cv2, { type: "doughnut", data: { labels: ["SEO", "SEM", "\u76F4\u63A5", "\u5176\u4ED6"], datasets: [{ data: [ch.SEO, ch.SEM, ch.direct, ch.other], backgroundColor: ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
     }
-    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct2(ch.SEO), lgChSem: pct2(ch.SEM), lgChDirect: pct2(ch.direct), lgChOther: pct2(ch.other) });
+    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct3(ch.SEO), lgChSem: pct3(ch.SEM), lgChDirect: pct3(ch.direct), lgChOther: pct3(ch.other) });
   }
   var seoChart = null;
   var seoFull = null;
@@ -1998,8 +1998,8 @@
       await API.patch("/api/inquiries/" + _trackEditing.id, { tracking_feedback: text2 });
       _trackEditing.tracking_feedback = text2;
       const tr = document.querySelector('.inq-tb tr[data-id="' + _trackEditing.id + '"]');
-      const cell = tr && tr.querySelector(".inq-track-feedback");
-      if (cell) cell.innerHTML = trackCellHtml(_trackEditing);
+      const cell2 = tr && tr.querySelector(".inq-track-feedback");
+      if (cell2) cell2.innerHTML = trackCellHtml(_trackEditing);
       closeModal("trackMask");
       toast("\u5DF2\u4FDD\u5B58\u8DDF\u8E2A\u53CD\u9988");
     } catch (e) {
@@ -2581,46 +2581,46 @@
     }
   });
   document.addEventListener("focusin", (e) => {
-    const cell = e.target.closest && e.target.closest(".kw-name");
-    if (cell) cell.dataset.kwOld = cell.textContent;
+    const cell2 = e.target.closest && e.target.closest(".kw-name");
+    if (cell2) cell2.dataset.kwOld = cell2.textContent;
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
-      const cell = e.target.closest && e.target.closest(".kw-name");
-      if (cell) {
+      const cell2 = e.target.closest && e.target.closest(".kw-name");
+      if (cell2) {
         e.preventDefault();
-        cell.blur();
+        cell2.blur();
       }
     }
   });
   document.addEventListener("focusout", async (e) => {
-    const cell = e.target.closest && e.target.closest(".kw-name");
-    if (!cell) return;
-    const tr = cell.closest("tr");
+    const cell2 = e.target.closest && e.target.closest(".kw-name");
+    if (!cell2) return;
+    const tr = cell2.closest("tr");
     if (!tr || !tr.dataset.id) return;
-    const oldVal = cell.dataset.kwOld != null ? cell.dataset.kwOld : cell.textContent;
-    const vr = validateEditableValue(cell.textContent, "text", { nonempty: true, emptyMsg: "\u5173\u952E\u8BCD\u4E0D\u80FD\u4E3A\u7A7A" });
+    const oldVal = cell2.dataset.kwOld != null ? cell2.dataset.kwOld : cell2.textContent;
+    const vr = validateEditableValue(cell2.textContent, "text", { nonempty: true, emptyMsg: "\u5173\u952E\u8BCD\u4E0D\u80FD\u4E3A\u7A7A" });
     if (!vr.ok) {
-      rollbackEditable(cell, oldVal);
-      showSaveError(cell, vr.msg);
+      rollbackEditable(cell2, oldVal);
+      showSaveError(cell2, vr.msg);
       return;
     }
     const v = vr.value;
     if (v === String(oldVal).trim()) {
-      cell.textContent = v;
-      setSavingState(cell, null);
+      cell2.textContent = v;
+      setSavingState(cell2, null);
       return;
     }
-    setSavingState(cell, "saving");
+    setSavingState(cell2, "saving");
     try {
       await API.patch("/api/keywords/" + tr.dataset.id, { keyword: v });
-      cell.textContent = v;
-      cell.dataset.kwOld = v;
-      setSavingState(cell, "ok");
+      cell2.textContent = v;
+      cell2.dataset.kwOld = v;
+      setSavingState(cell2, "ok");
       toast("\u5DF2\u66F4\u65B0\u5173\u952E\u8BCD \xB7 \u5DF2\u5165\u5E93");
     } catch (err) {
-      rollbackEditable(cell, oldVal);
-      showSaveError(cell, err.status === 403 ? "\u65E0\u6743\u9650\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+      rollbackEditable(cell2, oldVal);
+      showSaveError(cell2, err.status === 403 ? "\u65E0\u6743\u9650\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     }
   });
 
@@ -2928,8 +2928,8 @@
       const s = rf.querySelector("span");
       return s ? s.innerText.trim() : "";
     }
-    const cell = btn.closest(".review-grid>div");
-    if (cell) return cell.innerText.trim();
+    const cell2 = btn.closest(".review-grid>div");
+    if (cell2) return cell2.innerText.trim();
     return "";
   }
   function scopeDept(btn, txt) {
@@ -4017,9 +4017,9 @@
     const empty = document.getElementById(emptyId);
     if (!body) return;
     const items = Array.isArray(rows2) ? rows2 : [];
-    body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell) => {
-      const value = cell.html == null ? esc(cell.value ?? "") : cell.html;
-      return `<td class="${cell.cls || ""}">${value}</td>`;
+    body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell2) => {
+      const value = cell2.html == null ? esc(cell2.value ?? "") : cell2.html;
+      return `<td class="${cell2.cls || ""}">${value}</td>`;
     }).join("")}</tr>`).join("");
     if (empty) {
       empty.textContent = emptyText || "\u6682\u65E0\u6570\u636E";
@@ -4207,18 +4207,18 @@
     }
   }
   document.addEventListener("focusout", (e) => {
-    const cell = e.target.closest && e.target.closest("#tb-market [contenteditable]");
-    if (!cell) return;
-    const tr = cell.closest("tr");
+    const cell2 = e.target.closest && e.target.closest("#tb-market [contenteditable]");
+    if (!cell2) return;
+    const tr = cell2.closest("tr");
     const id = tr && tr.dataset.id;
     if (!id) return;
     const it = window._marketById[id];
     if (!it) return;
     const body = {};
-    if (cell.classList.contains("mkt-q")) body.question = cell.innerText.trim();
-    else if (cell.classList.contains("mkt-ans")) {
+    if (cell2.classList.contains("mkt-q")) body.question = cell2.innerText.trim();
+    else if (cell2.classList.contains("mkt-ans")) {
       it._ans = it._ans || {};
-      it._ans[cell.dataset.resp] = cell.innerText;
+      it._ans[cell2.dataset.resp] = cell2.innerText;
       body.answers = JSON.stringify(it._ans);
     } else return;
     API.patch("/api/market/research/" + id, body).catch((err) => toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
@@ -4433,6 +4433,196 @@
     }
   }
 
+  // public/src/ledger.js
+  var CARD_ID = "kpiLedger";
+  var CELL_TEXT = {
+    NOT_APPLICABLE: "N/A",
+    MISSING_DATA: "\u5F85\u5F55\u5165",
+    NO_SPEND: "\u65E0\u82B1\u8D39",
+    SPEND_WITH_ZERO_QUALITY: "\u6709\u82B1\u8D39\xB7\u96F6\u4F18\u8D28",
+    SPEND_WITH_ZERO_DEAL: "\u6709\u82B1\u8D39\xB7\u96F6\u6210\u4EA4"
+  };
+  function make(tag, className, text2) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text2 != null) el.textContent = String(text2);
+    return el;
+  }
+  function cell(tag, className, text2, title) {
+    const el = make(tag, className, text2);
+    if (title) el.title = title;
+    return el;
+  }
+  var money = (v) => v == null || !Number.isFinite(Number(v)) ? null : "\xA5" + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  var pct = (v) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(1) + "%";
+  function metricCell(item, format, extraTitle) {
+    if (!item) return cell("td", "num dim", "\u2014", extraTitle || "");
+    if (item.status === "VALID" && item.value != null) {
+      return cell("td", "num", format(item.value), extraTitle || item.note || "");
+    }
+    const key = item.reason || item.status;
+    const text2 = CELL_TEXT[key] || "\u2014";
+    const warn = key === "SPEND_WITH_ZERO_DEAL" || key === "SPEND_WITH_ZERO_QUALITY";
+    const title = item.note || (warn ? "\u8BE5\u6E20\u9053\u533A\u95F4\u5185\u6709\u82B1\u8D39\u4F46\u6CA1\u6709\u5BF9\u5E94\u7ED3\u679C" : "\u65E0\u6570\u636E\u6E90\uFF0C\u672A\u53C2\u4E0E\u8BA1\u7B97");
+    return cell("td", "num " + (warn ? "ledger-warn" : "dim"), text2, extraTitle ? extraTitle + " \xB7 " + title : title);
+  }
+  function rateCell(value, title) {
+    const text2 = pct(value);
+    return cell("td", "num " + (text2 ? "" : "dim"), text2 || "\u2014", text2 ? title || "" : "\u8BE5\u53E3\u5F84\u5206\u6BCD\u4E3A 0\uFF0C\u65E0\u6CD5\u8BA1\u7B97");
+  }
+  function numCell(value) {
+    return cell("td", "num", Number(value || 0).toLocaleString("zh-CN"), "");
+  }
+  function channelRow(row, isTotal) {
+    const tr = make("tr", isTotal ? "ledger-total" : "");
+    tr.appendChild(cell("td", "ledger-ch", row.label, ""));
+    tr.appendChild(metricCell(row.spend, money));
+    tr.appendChild(numCell(row.inquiries));
+    tr.appendChild(numCell(row.quality));
+    tr.appendChild(numCell(row.deals));
+    tr.appendChild(rateCell(row.qualityRate, "\u4F18\u8D28(A/B) \xF7 \u8BE2\u76D8"));
+    tr.appendChild(rateCell(row.dealRate, "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8" + (row.dealRateOverall != null ? "\uFF1B\u603B\u53E3\u5F84 " + pct(row.dealRateOverall) : "")));
+    tr.appendChild(metricCell(row.costPerQuality, money, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09" : ""));
+    tr.appendChild(metricCell(row.cac, money, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
+    return tr;
+  }
+  function buildTable(data) {
+    const table = make("table", "dt ledger-table");
+    const thead = make("thead");
+    const htr = make("tr");
+    [
+      ["\u6E20\u9053", "ledger-ch", ""],
+      ["\u82B1\u8D39", "num", "\u4EC5 SEM \u6709\u771F\u5B9E\u5A92\u4F53\u82B1\u8D39\uFF08sem_weeks.cost\uFF09"],
+      ["\u8BE2\u76D8", "num", "\u533A\u95F4\u5185\u8BE5\u6E20\u9053\u8BE2\u76D8\u6570"],
+      ["\u4F18\u8D28 A/B", "num", "\u7B49\u7EA7 A \u6216 B\uFF0C\u4E0E\u300C\u6709\u6548\u8BE2\u76D8\u300D\u540C\u53E3\u5F84"],
+      ["\u6210\u4EA4", "num", "\u8BE2\u76D8\u5F55\u5165\u91CC\u6807\u6CE8\u300C\u5DF2\u6210\u4EA4\u300D\u7684\u6570\u91CF \xB7 \u6EDE\u540E\u7ED3\u679C"],
+      ["\u4F18\u8D28\u7387", "num", "\u4F18\u8D28 \xF7 \u8BE2\u76D8"],
+      ["\u6210\u4EA4\u7387", "num", "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8\uFF08\u60AC\u505C\u770B\u603B\u53E3\u5F84\uFF09"],
+      ["\u6BCF\u4F18\u8D28\u6210\u672C", "num", "\u82B1\u8D39 \xF7 \u4F18\u8D28\u8BE2\u76D8"],
+      ["\u6BCF\u6210\u4EA4\u6210\u672C CAC", "num", "\u82B1\u8D39 \xF7 \u6210\u4EA4"]
+    ].forEach(([text2, cls, title]) => htr.appendChild(cell("th", cls, text2, title)));
+    thead.appendChild(htr);
+    table.appendChild(thead);
+    const tbody = make("tbody");
+    (data.channels || []).forEach((row) => tbody.appendChild(channelRow(row, false)));
+    if (data.totals) tbody.appendChild(channelRow(data.totals, true));
+    table.appendChild(tbody);
+    return table;
+  }
+  function buildTargets(targets) {
+    const box = make("div", "ledger-targets");
+    box.appendChild(make("div", "ledger-sec-title", "\u76EE\u6807 vs \u5F53\u524D\uFF08\u76EE\u6807\u4E3A\u8BBE\u7F6E\u9875\u6708\u5EA6\u76EE\u6807\uFF0C\u672A\u6309\u533A\u95F4\u6298\u7B97\uFF09"));
+    (targets || []).forEach((t) => {
+      const line = make("div", "ledger-target");
+      line.appendChild(make("div", "ledger-target-name", t.label));
+      const actualText = t.actual == null ? "\u2014" : t.unit === "\xA5" ? money(t.actual) : Number(t.actual).toLocaleString("zh-CN") + t.unit;
+      const targetText = t.target == null ? "\u76EE\u6807\u5F85\u5B9A" : "\u76EE\u6807 " + (t.unit === "\xA5" ? money(t.target) : Number(t.target).toLocaleString("zh-CN") + t.unit);
+      line.appendChild(make("div", "ledger-target-val", actualText + " / " + targetText));
+      const bar = make("div", "progress-bar ledger-progress");
+      const fill = make("div", "progress-fill");
+      const p = t.progress == null ? 0 : Math.max(0, Math.min(100, t.progress * 100));
+      fill.style.width = p + "%";
+      fill.classList.add(t.progress == null ? "ledger-fill-muted" : t.progress >= 1 ? "ledger-fill-green" : t.progress >= 0.6 ? "ledger-fill-blue" : "ledger-fill-amber");
+      bar.appendChild(fill);
+      line.appendChild(bar);
+      const tail = t.status === "NO_TARGET" ? "\u5F85\u8001\u677F\u62CD\u677F" : t.status === "NO_ACTUAL" ? "\u6682\u65E0\u5B9E\u9645\u503C" : Math.round(t.progress * 100) + "%";
+      line.appendChild(cell(
+        "div",
+        "ledger-target-pct" + (t.status === "VALID" ? "" : " dim"),
+        tail,
+        t.inverse ? "\u53CD\u5411\u6307\u6807\uFF1A\u8D8A\u4F4E\u8D8A\u597D\uFF0C\u8FBE\u6807\u5373\u5C01\u9876 100%" : ""
+      ));
+      box.appendChild(line);
+    });
+    return box;
+  }
+  function buildNotes(data) {
+    const box = make("div", "ledger-notes");
+    const notes = data.notes || {};
+    [notes.deal, notes.spend, notes.quality, notes.dealRate].forEach((text2) => {
+      if (text2) box.appendChild(make("div", "ledger-note", "\xB7 " + text2));
+    });
+    const missing = data.meta && data.meta.dealStatusMissing;
+    if (missing) box.appendChild(make("div", "ledger-note ledger-warn", "\xB7 \u6709 " + missing + " \u5C01\u8BE2\u76D8\u672A\u6807\u6CE8\u662F\u5426\u6210\u4EA4\uFF0C\u672A\u8BA1\u5165\u6210\u4EA4\u6570\uFF08\u4E5F\u672A\u5F53\u4F5C\u672A\u6210\u4EA4\uFF09"));
+    box.appendChild(make("div", "ledger-note", "\xB7 \u672C\u8868\u4E3A\u4E1A\u52A1\u603B\u8D26\uFF0C\u53EA\u8BFB\uFF1B\u4E0D\u53C2\u4E0E KPI \u7EE9\u6548\u8BC4\u5206"));
+    return box;
+  }
+  function ensureCard() {
+    let card = document.getElementById(CARD_ID);
+    if (card) return card;
+    const panel = document.getElementById("panel-kpi");
+    if (!panel) return null;
+    card = make("div", "card ledger-card");
+    card.id = CARD_ID;
+    const head = make("div", "card-head");
+    head.appendChild(make("span", "card-title", "\u8FD0\u8425\u603B\u8D26 \xB7 \u4E1A\u52A1\u7ED3\u679C\u6F0F\u6597"));
+    head.appendChild(make("span", "card-sub ledger-range", "\u2014"));
+    card.appendChild(head);
+    card.appendChild(make("div", "ledger-body", "\u6B63\u5728\u52A0\u8F7D\u8FD0\u8425\u603B\u8D26\u2026"));
+    card.addEventListener("click", (e) => {
+      if (e.target && e.target.closest("[data-ledger-retry]")) loadLedger(true);
+    });
+    const tip = panel.querySelector(":scope > .sheet-tip");
+    const anchor = tip || panel.querySelector(":scope > .timebar-inline") || panel.querySelector(":scope > .page-head");
+    if (anchor && anchor.parentNode === panel) anchor.insertAdjacentElement("afterend", card);
+    else panel.appendChild(card);
+    return card;
+  }
+  function setBody(card, node) {
+    const body = card.querySelector(".ledger-body");
+    if (!body) return;
+    body.textContent = "";
+    body.appendChild(node);
+  }
+  function render(card, data) {
+    const label = card.querySelector(".ledger-range");
+    if (label) label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data.range);
+    const wrap = make("div");
+    const scroller = make("div", "ledger-scroll");
+    scroller.appendChild(buildTable(data));
+    wrap.appendChild(scroller);
+    wrap.appendChild(buildTargets(data.targets));
+    wrap.appendChild(buildNotes(data));
+    setBody(card, wrap);
+  }
+  function renderError(card, message) {
+    const box = make("div", "ledger-error");
+    box.appendChild(make("div", "", "\u8FD0\u8425\u603B\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + (message || "\u672A\u77E5\u9519\u8BEF")));
+    box.appendChild(make("div", "ledger-note", "\u6570\u636E\u6E90\uFF1Ainquiries\uFF08\u8BE2\u76D8/\u7B49\u7EA7/\u662F\u5426\u6210\u4EA4\uFF09+ sem_weeks.cost\uFF08SEM \u82B1\u8D39\uFF09"));
+    const btn = make("button", "btn-ghost", "\u91CD\u8BD5");
+    btn.type = "button";
+    btn.setAttribute("data-ledger-retry", "1");
+    box.appendChild(btn);
+    setBody(card, box);
+  }
+  var requestSequence2 = 0;
+  var loadedRevision = null;
+  async function loadLedger(force) {
+    const card = ensureCard();
+    if (!card) return false;
+    const revision = getRangeRevision();
+    if (!force && loadedRevision === revision) return true;
+    const requestId = ++requestSequence2;
+    try {
+      const data = await API.get(withRange2("/api/kpi/ledger"));
+      if (requestId !== requestSequence2 || revision !== getRangeRevision()) return false;
+      render(card, data);
+      loadedRevision = revision;
+      return true;
+    } catch (e) {
+      if (requestId !== requestSequence2) return false;
+      if (e && e.message === "unauthorized") return false;
+      renderError(card, e && e.message);
+    }
+    return false;
+  }
+  function mountLedger() {
+    return loadLedger(false);
+  }
+  document.addEventListener("timerange", () => {
+    loadLedger(true);
+  });
+
   // public/src/kpi-view.js
   function grade(s) {
     if (s >= 90) return { t: "\u4F18\u79C0", c: "var(--green)", bg: "var(--green-soft)", i: "ti-trophy" };
@@ -4572,6 +4762,7 @@
     badge("g2b", company);
     gauge("liArc", "liScore", liScore);
     gauge("chenArc", "chenScore", chenScore);
+    mountLedger();
   }
   var kpiRefreshSequence = 0;
   async function refreshKpiRange() {
@@ -4944,10 +5135,10 @@
     generic: "\u592A\u6CDB \xB7 \u6CA1\u6709\u7ED3\u5408\u4E1A\u52A1"
   };
   function td(value, className) {
-    const cell = document.createElement("td");
-    if (className) cell.className = className;
-    cell.textContent = text(value);
-    return cell;
+    const cell2 = document.createElement("td");
+    if (className) cell2.className = className;
+    cell2.textContent = text(value);
+    return cell2;
   }
   function badge2(label, className) {
     const span = document.createElement("span");
@@ -5689,7 +5880,7 @@
     ${memo ? `<div class="hmemo">${memo}</div>` : ""}
   </div>`;
   }
-  function render(data) {
+  function render2(data) {
     const box = document.getElementById("plan-history");
     if (!box) return;
     const day = data.day;
@@ -5731,7 +5922,7 @@
     box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc(day) + " \u7684\u8BB0\u5F55\u2026</div>";
     try {
       const data = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
-      render(data);
+      render2(data);
     } catch (e) {
       box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
     }
@@ -5777,7 +5968,7 @@
   // public/src/sop-rate.js
   var DEPTS2 = [["SEO", "\u674E", "b-blue"], ["SEM", "\u9648", "b-purple"], ["\u516C\u53F8", "\u516C\u53F8", "b-red"]];
   var FREQ_LABEL2 = { daily: "\u6BCF\u65E5", weekly: "\u6BCF\u5468", monthly: "\u6BCF\u6708" };
-  function pct(done, expected) {
+  function pct2(done, expected) {
     return expected > 0 ? Math.round(done / expected * 100) : null;
   }
   function rateClass(p) {
@@ -5787,7 +5978,7 @@
     const counted = items.filter((i) => i.expected !== null);
     const done = counted.reduce((a, i) => a + i.done, 0);
     const expected = counted.reduce((a, i) => a + i.expected, 0);
-    const p = pct(done, expected);
+    const p = pct2(done, expected);
     const missed = counted.filter((i) => i.expected > i.done).sort((a, b) => b.expected - b.done - (a.expected - a.done));
     const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => d.slice(5)).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
     return `<div class="sr-dept">
@@ -6195,15 +6386,15 @@
   function closest(target, selector) {
     return target && target.closest ? target.closest(selector) : null;
   }
-  function setCellBusy(cell, busy, previousEditable) {
+  function setCellBusy(cell2, busy, previousEditable) {
     if (busy) {
-      cell.setAttribute("contenteditable", "false");
-      cell.setAttribute("aria-busy", "true");
+      cell2.setAttribute("contenteditable", "false");
+      cell2.setAttribute("aria-busy", "true");
       return;
     }
-    if (previousEditable == null) cell.removeAttribute("contenteditable");
-    else cell.setAttribute("contenteditable", previousEditable);
-    cell.removeAttribute("aria-busy");
+    if (previousEditable == null) cell2.removeAttribute("contenteditable");
+    else cell2.setAttribute("contenteditable", previousEditable);
+    cell2.removeAttribute("aria-busy");
   }
   function setDateInputsBusy(inputs, busy) {
     inputs.forEach((input) => {
@@ -6222,9 +6413,9 @@
     return inputs.length === 2 ? (inputs[0].value || "") + "~" + (inputs[1].value || "") : inputs[0].value;
   }
   function handleFocusIn(event) {
-    const cell = closest(event.target, EDITABLE_CELL);
-    if (cell) {
-      cell._old = cell.innerText;
+    const cell2 = closest(event.target, EDITABLE_CELL);
+    if (cell2) {
+      cell2._old = cell2.innerText;
       return;
     }
     const input = closest(event.target, DATE_INPUT);
@@ -6256,54 +6447,54 @@
     }
   }
   async function handleFocusOut(event) {
-    const cell = closest(event.target, EDITABLE_CELL);
-    if (!cell) return;
-    const row = cell.closest("tr");
+    const cell2 = closest(event.target, EDITABLE_CELL);
+    if (!cell2) return;
+    const row = cell2.closest("tr");
     const id = row && row.dataset.id;
     const endpoint = row && row.dataset.ep;
     if (!id || !endpoint) return;
-    const value = cell.innerText.trim();
-    const oldValue = cell._old != null ? cell._old : cell.innerText;
+    const value = cell2.innerText.trim();
+    const oldValue = cell2._old != null ? cell2._old : cell2.innerText;
     if (value === String(oldValue).trim()) return;
-    const previousEditable = cell.getAttribute("contenteditable");
-    setCellBusy(cell, true, previousEditable);
+    const previousEditable = cell2.getAttribute("contenteditable");
+    setCellBusy(cell2, true, previousEditable);
     try {
-      await API.patch(endpoint + "/" + id, { [cell.dataset.field]: value });
-      cell._old = value;
+      await API.patch(endpoint + "/" + id, { [cell2.dataset.field]: value });
+      cell2._old = value;
     } catch (error) {
-      rollbackEditable(cell, oldValue);
+      rollbackEditable(cell2, oldValue);
       toast(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     } finally {
-      setCellBusy(cell, false, previousEditable);
+      setCellBusy(cell2, false, previousEditable);
     }
   }
   function handleKeyDown(event) {
-    const cell = closest(event.target, "td[contenteditable]");
-    if (!cell) return;
-    const table = cell.closest("table");
+    const cell2 = closest(event.target, "td[contenteditable]");
+    if (!cell2) return;
+    const table = cell2.closest("table");
     if (!table) return;
     if (event.key === "Tab") {
       event.preventDefault();
       const cells = [...table.querySelectorAll("td[contenteditable]")];
-      const current = cells.indexOf(cell);
+      const current = cells.indexOf(cell2);
       const next = cells[current + (event.shiftKey ? -1 : 1)];
       if (next) {
-        cell.blur();
+        cell2.blur();
         next.focus();
         placeCaretEnd(next);
       }
       return;
     }
-    if (cell.classList.contains("mkt-ans")) return;
+    if (cell2.classList.contains("mkt-ans")) return;
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     const direction = event.key === "ArrowDown" ? "nextElementSibling" : "previousElementSibling";
-    const column = cell.cellIndex;
-    let row = cell.parentElement[direction];
+    const column = cell2.cellIndex;
+    let row = cell2.parentElement[direction];
     while (row) {
       const next = row.cells && row.cells[column];
       if (next && next.isContentEditable) {
         event.preventDefault();
-        cell.blur();
+        cell2.blur();
         next.focus();
         placeCaretEnd(next);
         return;
@@ -6399,7 +6590,7 @@
     google_ads_search_term_daily: "Google Ads \u641C\u7D22\u8BCD"
   };
   var register = null;
-  var requestSequence2 = 0;
+  var requestSequence3 = 0;
   function byId2(id) {
     return document.getElementById(id);
   }
@@ -6435,19 +6626,19 @@
     }
     return lines.slice(0, 6);
   }
-  function make(tag, className, text2) {
+  function make2(tag, className, text2) {
     const element = document.createElement(tag);
     if (className) element.className = className;
     if (text2 != null) element.textContent = String(text2);
     return element;
   }
   function statusBadge(item) {
-    const badge3 = make("span", `risk-badge risk-status risk-status-${item.status}`, STATUS_LABELS[item.status] || item.status);
+    const badge3 = make2("span", `risk-badge risk-status risk-status-${item.status}`, STATUS_LABELS[item.status] || item.status);
     badge3.setAttribute("aria-label", `\u72B6\u6001\uFF1A${STATUS_LABELS[item.status] || item.status}`);
     return badge3;
   }
   function severityBadge(item) {
-    const badge3 = make("span", `risk-badge risk-severity risk-severity-${item.severity.toLowerCase()}`, item.severity);
+    const badge3 = make2("span", `risk-badge risk-severity risk-severity-${item.severity.toLowerCase()}`, item.severity);
     badge3.setAttribute("aria-label", `\u4E25\u91CD\u7EA7\u522B\uFF1A${item.severity}`);
     return badge3;
   }
@@ -6472,15 +6663,15 @@
     status.textContent = `\u751F\u4EA7\u5B9E\u6D4B\uFF1A${verdict} \xB7 ${formatDate(acceptance.checkedAt)}`;
     status.dataset.state = acceptance.verdict;
   }
-  function appendEvidence(cell, item) {
-    cell.appendChild(make("div", "risk-evidence-main", item.detail || "\u6CA1\u6709\u53EF\u5C55\u793A\u7684\u8BC1\u636E\u8BF4\u660E\u3002"));
+  function appendEvidence(cell2, item) {
+    cell2.appendChild(make2("div", "risk-evidence-main", item.detail || "\u6CA1\u6709\u53EF\u5C55\u793A\u7684\u8BC1\u636E\u8BF4\u660E\u3002"));
     const lines = evidenceLines(item.evidence);
     if (lines.length) {
-      const list = make("ul", "risk-evidence-list");
-      lines.forEach((line) => list.appendChild(make("li", "", line)));
-      cell.appendChild(list);
+      const list = make2("ul", "risk-evidence-list");
+      lines.forEach((line) => list.appendChild(make2("li", "", line)));
+      cell2.appendChild(list);
     }
-    cell.appendChild(make("div", "risk-evidence-source", SOURCE_LABELS[item.source] || "\u5F53\u524D\u68C0\u67E5"));
+    cell2.appendChild(make2("div", "risk-evidence-source", SOURCE_LABELS[item.source] || "\u5F53\u524D\u68C0\u67E5"));
   }
   function renderRows() {
     if (!register) return;
@@ -6495,7 +6686,7 @@
     state.replaceChildren();
     if (!items.length) {
       wrap.hidden = true;
-      state.appendChild(make("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
+      state.appendChild(make2("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
       return;
     }
     wrap.hidden = false;
@@ -6505,27 +6696,27 @@
       severityCell.appendChild(severityBadge(item));
       const statusCell = document.createElement("td");
       statusCell.appendChild(statusBadge(item));
-      const titleCell = make("td", "risk-title-cell");
-      titleCell.appendChild(make("strong", "", item.title));
-      const evidenceCell = make("td", "risk-evidence-cell");
+      const titleCell = make2("td", "risk-title-cell");
+      titleCell.appendChild(make2("strong", "", item.title));
+      const evidenceCell = make2("td", "risk-evidence-cell");
       appendEvidence(evidenceCell, item);
-      const ownerCell = make("td", "risk-owner-cell", item.owner);
-      const updatedCell = make("td", "risk-updated-cell", formatDate(item.updatedAt));
-      const actionCell = make("td", "risk-action-cell", item.nextAction);
+      const ownerCell = make2("td", "risk-owner-cell", item.owner);
+      const updatedCell = make2("td", "risk-updated-cell", formatDate(item.updatedAt));
+      const actionCell = make2("td", "risk-action-cell", item.nextAction);
       row.append(severityCell, statusCell, titleCell, evidenceCell, ownerCell, updatedCell, actionCell);
       tbody.appendChild(row);
     });
   }
-  function renderError(error) {
+  function renderError2(error) {
     const state = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
     if (wrap) wrap.hidden = true;
     if (!state) return;
     state.replaceChildren();
-    const message = make("div", "risk-state-message risk-state-error");
-    message.appendChild(make("strong", "", "\u98CE\u9669\u6E05\u5355\u52A0\u8F7D\u5931\u8D25"));
-    message.appendChild(make("span", "", `\uFF1A${error && error.message ? error.message : "\u672A\u77E5\u9519\u8BEF"}`));
-    const retry = make("button", "btn-ghost", "\u91CD\u8BD5");
+    const message = make2("div", "risk-state-message risk-state-error");
+    message.appendChild(make2("strong", "", "\u98CE\u9669\u6E05\u5355\u52A0\u8F7D\u5931\u8D25"));
+    message.appendChild(make2("span", "", `\uFF1A${error && error.message ? error.message : "\u672A\u77E5\u9519\u8BEF"}`));
+    const retry = make2("button", "btn-ghost", "\u91CD\u8BD5");
     retry.type = "button";
     retry.addEventListener("click", loadRisks);
     message.appendChild(retry);
@@ -6547,7 +6738,7 @@
   }
   async function loadRisks() {
     bindControls();
-    const requestId = ++requestSequence2;
+    const requestId = ++requestSequence3;
     const refresh = byId2("risk-refresh");
     const state = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
@@ -6557,19 +6748,19 @@
     }
     if (wrap) wrap.hidden = true;
     if (state) {
-      state.replaceChildren(make("div", "risk-state-message", "\u6B63\u5728\u6838\u5BF9\u5F53\u524D\u914D\u7F6E\u3001\u6570\u636E\u5E93\u8BC1\u636E\u548C\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536\u2026"));
+      state.replaceChildren(make2("div", "risk-state-message", "\u6B63\u5728\u6838\u5BF9\u5F53\u524D\u914D\u7F6E\u3001\u6570\u636E\u5E93\u8BC1\u636E\u548C\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536\u2026"));
     }
     try {
       const result = await API.get("/api/risks");
-      if (requestId !== requestSequence2) return;
+      if (requestId !== requestSequence3) return;
       register = result;
       renderSummary(result.summary || {});
       renderAcceptance(result.latestLiveAcceptance);
       renderRows();
     } catch (error) {
-      if (requestId === requestSequence2) renderError(error);
+      if (requestId === requestSequence3) renderError2(error);
     } finally {
-      if (requestId === requestSequence2 && refresh) {
+      if (requestId === requestSequence3 && refresh) {
         refresh.disabled = false;
         refresh.removeAttribute("aria-busy");
       }

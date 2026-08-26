@@ -3,9 +3,17 @@
 import * as repo from '../db/repositories/kpi.js';
 import { requireAuth, onlyManagerBoss } from '../auth/middleware.js';
 import { computeScores, computeScoresForRange } from '../services/kpi.js';
+import { buildLedger } from '../services/kpiLedger.js';
 import { parseDateRange } from '../lib/parseDateRange.js';
 
 export async function kpiRoutes(app) {
+  // 运营总账（只读）：花费 → 询盘 → 优质 → 成交 → 效率。不参与评分，不写库。
+  app.get('/api/kpi/ledger', { preHandler: requireAuth }, async (request, reply) => {
+    const { range, error } = parseDateRange(request.query || {});
+    if (error) return reply.code(400).send({ error });
+    return buildLedger(range);
+  });
+
   app.get('/api/kpi-targets', { preHandler: requireAuth }, async (request, reply) => {
     const { range, error } = parseDateRange(request.query || {});
     if (error) return reply.code(400).send({ error });

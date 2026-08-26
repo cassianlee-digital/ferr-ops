@@ -4,6 +4,7 @@
 
 import { TOTAL, SEO, SEM, ratio, recomputeScores, company, liScore, chenScore, loadMetrics, loadWeeks } from './kpi.js';
 import { getRangeRevision, rangeText, withRange } from './timerange.js';
+import { mountLedger } from './ledger.js';
 
 function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-soft)',i:'ti-trophy'};if(s>=75)return{t:'合格',c:'var(--blue)',bg:'var(--blue-soft)',i:'ti-circle-check'};if(s>=60)return{t:'警告',c:'var(--amber)',bg:'var(--amber-soft)',i:'ti-alert-triangle'};return{t:'整改',c:'var(--primary)',bg:'var(--primary-soft)',i:'ti-flame'};}
 function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
@@ -56,6 +57,7 @@ export function renderKPI(){
   badge('liBadge',liScore);badge('chenBadge',chenScore);
   gauge('g1','g1s',company);gauge('g2','g2s',company);badge('g1b',company);badge('g2b',company);
   gauge('liArc','liScore',liScore);gauge('chenArc','chenScore',chenScore);
+  mountLedger(); // 运营总账卡：幂等挂载，同区间不重复请求；区间变化由其自身的 timerange 监听重拉
 }
 
 let kpiRefreshSequence=0;
