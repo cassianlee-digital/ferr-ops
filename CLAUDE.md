@@ -13,8 +13,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 ## Current Architecture
 
 - **后端不是单文件**:Fastify,模块化良好。
-  - `server/src/routes/`(**29 个路由文件**,2026-08-13 复测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1539 行 / 146KB**(2026-08-13 复测),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分三层:**经典脚本**(`hermes.js`/`charts.js`/`inquiries.js`/`kpi.js`/`ai.js`/`closed-loop.js`/`weekly-review.js`/`api.js`)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+  - `server/src/routes/`(**30 个路由文件**,2026-08-26 复测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1070 行 / 107KB**(2026-08-26 复测,比 8-13 的 1539 行又瘦一圈),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分三层:**经典脚本只剩 4 个**(`app.js`/`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -25,9 +25,9 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **自有函数约 285 个挂在 `window` 上**(实测:空 iframe 差集 = 338 名字 / 302 函数,含 vendor;其中经典脚本顶层函数 217 + `main.js` 挂上去的模块导出 68)。
   - **别用 grep 数 `window.X =` 去估全局面**——那样只得 56,**低 6 倍**:经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量。
-- **内联 handler 是模块化的地板**:模板/HTML 里有 **177 个内联 `onclick`/`onchange`**,裸调用 **82 个全局函数名**(2026-08-13 复测,日计划改造 +3:openTaskEdit/taskDefer/taskDrop)。`onclick="foo()"` 在**点击那一刻**才从 `window` 查 `foo` —— 所以**无论 ES 模块迁移做到多完整,这 82 个都必须留在 `window` 上**。`src/main.js` 末尾的 `Object.assign(window, …)` 就是这个兼容层,其注释已写明「供内联 onclick 调用」。
-- **迁移确实在消全局,不是白干**(inquiry-globe:21 个顶层符号 → 1 个导出,净减 20)。但它的**终点是这 82 个强制全局,不是 0**;想拆掉这层地板**只有事件委托**(`document` 上一个监听器 + `data-action` 属性)。**在那之前别承诺「模块化完成后全局清零」。**
-- **最大的隐形风险**:内联 handler 对打包器/静态分析**完全隐形**。改掉一个被 `onclick` 调用的函数名,**没有任何编译期报错**,直到用户点下去才 ReferenceError。**故每批迁移/改名后,必须在活站上核对这些名字仍是 function**(2026-07-15 已核 77/77;2026-08-13 新增的 3 个已在活页核过)。
+- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **114 处 `data-ui-action=`**(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo/loop-tab 委托、`google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
+- **`Object.assign(window, …)` 兼容层仍要留,但理由变了**:不再是「供内联 onclick 调用」,而是**经典脚本仍裸调用这些名字** —— `public/` 下还剩 4 个经典脚本(`app.js`/`hermes.js`/`api.js`/`login.js`),`app.js` 的启动序列直接调 `loadMetrics()`/`renderKPI()`/`loadClosedLoop()` 等。想真正清零全局,**下一步是把 `app.js` 也搬进 ES 模块**,不再是「做事件委托」。
+- **隐形风险降级但没消失**:经典脚本裸引用同样对打包器/静态分析隐形,改名依旧**没有编译期报错**。但排查方式变了 —— **改前端函数名前该 grep 的是 4 个经典脚本,不再是 `onclick=`**;`data-ui-action` 的动作名则由委托表集中分发,改名会在委托表里露出来。
 
 ## API / Sync Reality(真实状态,禁止把未实现描述成已完成)
 
@@ -43,7 +43,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **SEO 看板「概览」已升级为富看板(Looker 风格)**:顶部卡/趋势读 `/api/google/gsc/summary`(`loadSeoBoardGsc`);其余读 `/api/google/seo/board`(`loadSeoBoardFull`,后端 `routes/google.js` + `googleSync.js` 的 `gscBoardTables/gscScatter/ga4SourcesRange/ga4SourceSeries`)——**本周要点条**(后端 `buildSeoHighlights` 自动挑最大涨跌,绿涨红跌)、落地页表+关键词表带彩色Δ环比、**机会词散点象限**(ECharts 展现×排名+中位线)、GA4 来源甜甜圈+按天堆叠面积。均随时间范围重拉。第二期(需扩 GA4 同步)才能做:跳出率散点、来源级跳出/时长、date×source×page 明细。
 - **SEM 看板「概览」已升级为富看板**:顶部卡读 `/api/google/ads/summary`(`loadSemBoardAds`);其余读 `/api/google/ads/board`(`loadSemBoardFull` + 后端 `adsBoardTables/adsScatter/adsSeries` + `buildAdsHighlights`)——本周要点条(转化涨绿/每转化成本涨红/高花费零转化合计/最烧钱零转化词/最佳系列)、系列表+关键词表带转化Δ+评估徽章、**花费×转化散点**(右下红区=高花费低转化=该砍,红点标关键词+下方「该砍」清单带诊断/采纳)、系列花费甜甜圈+每日花费/转化趋势。评估徽章按 有转化/零有效/无花费;金额按账户币种、不臆造符号。旧层级表已被 Δ 表替代。
 - **询盘归因已上线**:`/api/attribution`(`server/src/routes/attribution.js`)按 `channel`(SEO自然/SEM付费/直接/其他,与 `renderInqDonuts` 同口径)+ `grade`(A/B=有效)聚合区间询盘 × Ads 花费,算 SEM **真实每有效询盘成本**并对比 Ads 自报每转化(差距≥1.3倍红字警示"Ads 转化虚高")。前端 SEM 看板顶部「真实询盘回报」卡(`loadAttribution`),随时间范围重算。这是"花的钱值不值"的真实答案,打通 询盘↔花费。
-- 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads)、诊断、询盘归因;GA4 概览与总览暂未跟随。
+- **KPI「运营总账」已上线**(2026-08-26,本分支 `claude/kpi-ledger-deal-status-e41865`):`GET /api/kpi/ledger`(`routes/kpi.js` + 纯函数 `services/kpiLedger.js` `computeLedger`)。老板年终看运营部成绩的一屏业务漏斗:**花费→询盘→优质(A/B)→成交→效率**,按渠道(复用 `attribution.js` 的 `classify`,四渠道同口径)+ 合计,给 优质率/成交率(优质口径+总口径)/每优质成本/CAC。**这是 `inquiries.deal_status` 第一次被 KPI 用上**。诚实口径:SEO/直接/其他 **无媒体花费口径→ NOT_APPLICABLE**(人力不计);SEM 花费**先取 Ads 同步真实值**(`google_ads_campaign_daily`,与 `/api/attribution` 同源,消双真相),无同步数据才回退人工周报 `sem_weeks.cost`,**判有无同步数据用 `ads.campaigns.length` 而非 `totals.costMicros`**(后者 COALESCE 过,0 行也返 0,会把「没同步」误报成「花了 0 元」);单位成本零分母→ `null` + reason(有花费·零成交/零优质),**绝不 Infinity**;未标注是否成交的老行既不算成交也不算未成交,单列 `dealStatusMissing`;币种 Ads=账户币种不加符号(与 `charts.js _money` 一致)、周报=¥,金额目标 `currency_mismatch` 标红。**只读,不进绩效评分**(评分引擎一行未改)。前端 `public/src/ledger.js`(新 ES 模块,全 createElement/textContent、**零 innerHTML 零内联 handler**),自插 `#panel-kpi` 的 `.sheet-tip` 之后,自听 `timerange` 重拉。**优质数/成交数无 kpi_targets 行→显示「目标待定」,不编数。** 测试 `server/test/kpiLedger.test.js` 18 例。
+- 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads)、诊断、询盘归因、KPI 运营总账;GA4 概览与总览暂未跟随。
 - **诊断引擎已上线**:`/api/diagnostics`(`server/src/routes/diagnostics.js` + `googleSync.js` 规则查询)产出 4 类真实 findings——机会词(排名11-20有曝光)、关键词蚕食(同词多页)、流量衰退(当前vs上一等长窗口点击跌幅)、高花费零有效(Ads cost>0 conv=0)。前端 SEO「站点机会/流量衰退/关键词蚕食」三子面板 + minitab 角标已读真实结果,随时间范围重算。**尚未做 CTR 异常规则。**
 - **诊断→整改闭环已通**:三类 SEO finding 每行「采纳」按钮 → POST `/api/fixes`(source=诊断引擎,evidence 记 GSC 依据)直接入整改清单(`public/charts.js` `adoptFinding`)。
 - **整改→日计划→回写也已通**(2026-08-13):整改清单每行「排入」→ `POST /api/fixes/:id/plan`,
@@ -106,8 +107,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 数据建议必须能**追溯到数据证据**。
 - AI 建议必须**结构化**,不能只是漂亮文字。
 - 任务必须能被**复盘验证**。
-- **改前端函数名前先搜内联 handler**:被 `onclick=` 调用的名字(82 个)改了**不会有任何报错**,直到用户点击。改完在活站上验 `typeof window.<name>==='function'`。
-- **写进本文件的数字必须是实测的**,并注日期。本文件自称「固定项目真实状态」,一旦数字漂移(2026-07-15 曾查出路由 19→实为 27、index.html 1836 行→实为 1504、innerHTML 47→实为 168;2026-08-13 又漂:1504→1539、内联 handler 157/77→177/82),它就从「省 token 的地图」变成「误导人的旧地图」,危害大于没有。**引用前先抽验一个数,对不上就先修文件再干活。**
+- **改前端函数名前先搜 4 个经典脚本**(`public/app.js`/`hermes.js`/`api.js`/`login.js`):它们裸调用挂在 `window` 上的模块函数,改了**不会有任何报错**,直到跑到那行才 ReferenceError。改完在活站上验 `typeof window.<name>==='function'`。(内联 `onclick=` 那条老规矩已作废,见 Current Architecture:HTML 内联 handler 已清零。)
+- **写进本文件的数字必须是实测的**,并注日期。本文件自称「固定项目真实状态」,一旦数字漂移(2026-07-15 曾查出路由 19→实为 27、index.html 1836 行→实为 1504、innerHTML 47→实为 168;2026-08-13 又漂:1504→1539、内联 handler 157/77→177/82;**2026-08-26 漂得最狠**:路由 29→30、index.html 1539→1070、innerHTML 236→194、经典脚本清单里 6 个文件早已迁走、**内联 handler 177/82→0**——「82 个强制全局是模块化地板」这条被当成前提写了两版,实际早被事件委托拆掉了),它就从「省 token 的地图」变成「误导人的旧地图」,危害大于没有。**引用前先抽验一个数,对不上就先修文件再干活。**
 - 修改后运行相关检查。
 
 ## Security Rules
@@ -118,7 +119,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 密钥只存**服务器环境变量**或**加密存储**(参考 `integrations.js` 的 AES 方案)。
 - **前端不能直接接触密钥。**
 - 所有**用户输入和 API 返回文本**渲染前必须 **escape**。
-- **谨慎使用 `innerHTML`**(2026-08-13 实测 **236 处赋值 / 分布 167 行 + 2 处 `insertAdjacentHTML`**,不是旧文写的 47 处,属 XSS 高风险面)。**这 238 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
+- **谨慎使用 `innerHTML`**(2026-08-26 复测 **194 处赋值 + 2 处 `insertAdjacentHTML`**,较 8-13 的 236 处有所下降,仍属 XSS 高风险面)。**这近 200 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
 
 ## 协作流程约定
 
