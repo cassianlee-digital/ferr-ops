@@ -1,10 +1,12 @@
 /* Hermes 长期记忆管理页（ES 模块 · esbuild 打包为 IIFE）。
    原本就是 IIFE + 末尾显式 window.X=X 的干净写法：这里只是去掉 IIFE 壳，改为 ES 模块导出，
    由 main.js 统一挂 window——暴露面与原来完全一致（正是内联 onclick 用到的那 5 个）。
-   运行时依赖：window.API、window.toast、window._curTab（均带 window. 前缀，无裸全局）。
+   运行时依赖：window.API、window._curTab（带 window. 前缀，无裸全局）；toast 已改为显式 import。
    使用 DOM textContent 渲染 API/用户文本，记忆内容无法注入 HTML。
    KIND_LABEL/FEEDBACK_LABEL/byId/td/badge/renderMemory/editHermesMemory/deactivateHermesMemory 保持模块内私有
    （注意：本模块的 badge 是局部工具，不会与 kpi-view 导出的 window.badge 冲突）。 */
+
+import { toast } from './ui-kit.js';
 
 const KIND_LABEL = {
   company: '公司事实',
@@ -20,7 +22,6 @@ const KIND_LABEL = {
 function byId(id) { return document.getElementById(id); }
 function text(value) { return value == null ? '' : String(value); }
 function setText(el, value) { if (el) el.textContent = text(value); }
-function toastSafe(message) { if (window.toast) window.toast(message); }
 
 function field(id) {
   const el = byId(id);
@@ -118,11 +119,11 @@ export async function loadHermesMemories(manual) {
     items.forEach((item) => tbody.appendChild(renderMemory(item)));
     if (empty) empty.style.display = items.length ? 'none' : 'block';
     setText(count, items.length ? items.length + ' 条有效记忆' : '暂无有效记忆');
-    if (manual) toastSafe('AI 记忆已刷新');
+    if (manual) toast('AI 记忆已刷新');
   } catch (e) {
     setText(count, '加载失败');
     if (empty) empty.style.display = 'block';
-    toastSafe('AI 记忆加载失败：' + (e.message || 'unknown_error'));
+    toast('AI 记忆加载失败：' + (e.message || 'unknown_error'));
   }
 }
 
@@ -157,7 +158,7 @@ export async function saveHermesMemory() {
     source: field('hm-source') || 'manual',
   };
   if (!body.title || !body.content) {
-    toastSafe('标题和记忆内容不能为空');
+    toast('标题和记忆内容不能为空');
     return;
   }
   try {
@@ -166,9 +167,9 @@ export async function saveHermesMemory() {
     else await window.API.post('/api/hermes/memories', body);
     resetHermesMemoryForm();
     await loadHermesMemories(false);
-    toastSafe(id ? 'AI 记忆已更新' : '已存入 AI 记忆');
+    toast(id ? 'AI 记忆已更新' : '已存入 AI 记忆');
   } catch (e) {
-    toastSafe(e.status === 403 ? '无权修改 AI 记忆' : '保存失败：' + (e.message || 'unknown_error'));
+    toast(e.status === 403 ? '无权修改 AI 记忆' : '保存失败：' + (e.message || 'unknown_error'));
   }
 }
 
@@ -178,9 +179,9 @@ async function deactivateHermesMemory(id) {
   try {
     await window.API.del('/api/hermes/memories/' + encodeURIComponent(id));
     await loadHermesMemories(false);
-    toastSafe('已停用这条 AI 记忆');
+    toast('已停用这条 AI 记忆');
   } catch (e) {
-    toastSafe(e.status === 403 ? '无权停用 AI 记忆' : '停用失败：' + (e.message || 'unknown_error'));
+    toast(e.status === 403 ? '无权停用 AI 记忆' : '停用失败：' + (e.message || 'unknown_error'));
   }
 }
 
@@ -195,7 +196,7 @@ export async function saveHermesFeedback() {
   const note = field('hf-note');
   const scope = field('hf-scope') || '未指定范围';
   if (!suggestion || !note) {
-    toastSafe('原建议和你的判断不能为空');
+    toast('原建议和你的判断不能为空');
     return;
   }
   const negative = result === 'wrong' || result === 'generic';
@@ -216,8 +217,8 @@ export async function saveHermesFeedback() {
     await window.API.post('/api/hermes/memories', body);
     resetHermesFeedbackForm();
     await loadHermesMemories(false);
-    toastSafe('反馈已沉淀，Hermes 后续会参考');
+    toast('反馈已沉淀，Hermes 后续会参考');
   } catch (e) {
-    toastSafe(e.status === 403 ? '无权沉淀反馈' : '反馈保存失败：' + (e.message || 'unknown_error'));
+    toast(e.status === 403 ? '无权沉淀反馈' : '反馈保存失败：' + (e.message || 'unknown_error'));
   }
 }

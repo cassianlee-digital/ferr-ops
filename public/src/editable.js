@@ -1,4 +1,5 @@
 /* Shared helpers for contenteditable fields. */
+import { toast } from './ui-kit.js';
 export function validateEditableValue(raw, type, opts){
   opts=opts||{};
   if(type==='number'){

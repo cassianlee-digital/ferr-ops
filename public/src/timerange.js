@@ -9,6 +9,7 @@
    RANGES/GRAN_LABEL/_range 经审计仅出现在注释中（charts.js 693 行提到 _range 也是注释），收进模块作用域。
    注：底部 [data-time] forEach 在模块求值时渲染时间条——bundle 为经典脚本且位于 body 之后，时间条已解析，安全。 */
 
+import { openModal, closeModal, toast } from './ui-kit.js';
 /* ---------- per-page inline time filter ---------- */
 const RANGES=['今天','昨天','近7天','近30天','近90天','近一年','自定义']; // C-2a 三框预设 + C组「可查看近一年」 + 6.23 文档 26「自定义」
 // 6.23 文档 26：自定义区间持久化（YYYY-MM-DD 范围）

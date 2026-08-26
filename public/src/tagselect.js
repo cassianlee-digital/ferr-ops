@@ -5,6 +5,7 @@
    注：const menu=getElementById('selMenu') 在模块求值时执行——bundle 以经典 <script> 加载且位于 body 之后，
        #selMenu 早已解析，安全（与旧脚本同一时机语义）。 */
 
+import { toast } from './ui-kit.js';
 import { inqRowHtml, isUpgraded } from './inquiries.js';
 
 /* ---------- colored tag-select ---------- */

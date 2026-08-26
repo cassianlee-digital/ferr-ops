@@ -2,6 +2,7 @@
    timerange / keywords / sop 依赖显式导入；API、esc/toast、弹窗、路由和 Excel 编辑基建仍由经典 app.js 提供。
    main.js 只为 app.js / ai.js / hermes.js 保留必要兼容入口，其余状态和辅助函数留在模块内。 */
 
+import { esc, openModal, closeModal, toast, toastGo } from './ui-kit.js';
 import { inlineConfirm } from './keywords.js';
 import { placeCaretEnd } from './editable.js';
 import { loadSops, loadUrgent, updateSopCounts } from './sop.js';

@@ -5,6 +5,7 @@
    懒加载：只有展开的那一周才请求——周报页会一次列出十几周。
    运行时依赖的全局（调用时解析）：API、esc()。
    mountSopRate 由 weekly-review.js 显式导入，不进入 window 全局面。 */
+import { esc } from './ui-kit.js';
 import { formatLocalDate } from './timerange.js';
 
 const DEPTS = [['SEO', '李', 'b-blue'], ['SEM', '陈', 'b-purple'], ['公司', '公司', 'b-red']];

@@ -5,6 +5,7 @@
    window._inqCache 由本模块初始化、loadInquiries() 填充，被 inquiry-globe.js / 图表 读取。
    仅 app.js 真实调用的 6 个入口由 main.js 挂到 window；行渲染辅助只供模块间显式导入。 */
 
+import { esc, openModal, closeModal, toast } from './ui-kit.js';
 import { loadDashboardInq } from './charts.js';
 import { inlineConfirm } from './keywords.js';
 

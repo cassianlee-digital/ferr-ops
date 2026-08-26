@@ -1,4 +1,5 @@
 /* SEO opportunity keyword rank snapshots and first-to-latest trend display. */
+import { toast } from './ui-kit.js';
 function renderRankTrend(snapshots){
   if(!snapshots||snapshots.length<2)return;
   const first=snapshots[0];

@@ -16,35 +16,14 @@ const Store={
   }
 };
 
-/* 极简 markdown → html */
-/* ===== 1b-a: 统一安全工具 ===== */
-// 全站唯一转义入口：& < > " ' ；null/undefined → ''
-function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-// 单值文本写入，杜绝 HTML 解析
-function renderText(el,s){ if(el) el.textContent=(s==null?'':String(s)); }
-// AI/Markdown → 安全 HTML：先整体 esc(原始 HTML 一律变文本，无法成标签)，再仅生成白名单标签 p/br/strong/ul/li
-function mdToHtml(t){
-  const src=esc(t).split(/\n/);
-  let html='', para=[], inList=false;
-  const flushP=()=>{ if(para.length){ html+='<p>'+para.join('<br>')+'</p>'; para=[]; } };
-  const flushL=()=>{ if(inList){ html+='</ul>'; inList=false; } };
-  for(let line of src){
-    line=line.replace(/\*\*([^*]+?)\*\*/g,'<strong>$1</strong>'); // 仅白名单：加粗
-    const m=line.match(/^\s*[-*]\s+(.*)$/);
-    if(m){ flushP(); if(!inList){ html+='<ul>'; inList=true; } html+='<li>'+m[1]+'</li>'; }
-    else if(line.trim()===''){ flushP(); flushL(); }
-    else { flushL(); para.push(line); }
-  }
-  flushP(); flushL();
-  return html;
-}
-/* AI 协同已迁移至 ES 模块 public/src/ai.js（打包进 /dist/bundle.js）。
-   app.js 仅通过 main.js 暴露的动作分发与初始化入口调用；esc/mdToHtml 仍由本文件提供。 */
+/* ===== 1b-a: 统一安全工具 / MODALS / TOAST 已迁至 ES 模块 public/src/ui-kit.js =====
+   esc / renderText / mdToHtml / openModal / closeModal / toast 系列的**唯一实现**在 ui-kit.js，
+   由 main.js 挂回 window 供本文件（经典脚本）与 hermes.js 调用。
+   bundle.js 在本文件之前加载，故这些名字在此处运行时一定已就绪。
+   ES 模块请显式 import { esc, toast } from './ui-kit.js'，不要再读 window。 */
 
-/* ================= MODALS ================= */
-function openModal(id){ document.getElementById(id).classList.add('show'); }
-function closeModal(id){ document.getElementById(id).classList.remove('show'); }
-document.querySelectorAll('.modal-mask').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m)m.classList.remove('show'); }));
+/* AI 协同已迁移至 ES 模块 public/src/ai.js（打包进 /dist/bundle.js）。
+   app.js 仅通过 main.js 暴露的动作分发与初始化入口调用。 */
 const STATIC_UI_ACTIONS={
   'toggle-theme':()=>toggleTheme(),
   go:el=>go(el.dataset.tab),
@@ -111,14 +90,7 @@ const semCampFilter=document.getElementById('semCampFilter');
 if(semCampFilter)semCampFilter.addEventListener('change',e=>onSemCampaignChange(e.target.value));
 const semAdGroupFilter=document.getElementById('semAdGroupFilter');
 if(semAdGroupFilter)semAdGroupFilter.addEventListener('change',e=>onSemAdGroupChange(e.target.value));
-let tt;
-function showToast(){ const t=document.getElementById('toast'); t.style.transform='translateX(-50%) translateY(0)'; clearTimeout(tt); tt=setTimeout(hideToast,3400); }
-function hideToast(){ document.getElementById('toast').style.transform='translateX(-50%) translateY(80px)'; }
-function toast(m){ const t=document.getElementById('toast'); t.textContent=m; showToast(); }
-/* 带「撤销」的 toast：勾错一条任务，刷新后它就被「已完成」折叠条收走了，找回来要先展开。
-   趁 toast 还在，给一次一键撤销。 */
-function toastUndo(m,fn){ const t=document.getElementById('toast'); t.textContent=(m==null?'':String(m)); const b=document.createElement('b'); b.textContent='  撤销'; b.style.color='#ff8a82'; b.style.cursor='pointer'; b.onclick=()=>{ hideToast(); try{fn();}catch(e){} }; t.appendChild(b); showToast(); }
-function toastGo(m,tab){ const t=document.getElementById('toast'); t.textContent=(m==null?'':String(m)); if(tab){ t.appendChild(document.createTextNode('  ')); const b=document.createElement('b'); b.textContent='查看 →'; b.style.color='#ff8a82'; b.style.cursor='pointer'; b.onclick=()=>{ go(tab); hideToast(); }; t.appendChild(b); } showToast(); }
+/* toast / toastUndo / toastGo / showToast / hideToast 的实现已迁至 ui-kit.js（见上方说明）。 */
 
 /* ---------- theme toggle ---------- */
 function toggleTheme(){ document.body.classList.toggle('dark'); const dk=document.body.classList.contains('dark'); document.getElementById('themeBtn').innerHTML='<i class="ti ti-'+(dk?'sun':'moon')+'"></i>'; try{localStorage.setItem('ferr:theme',dk?'dark':'light');}catch(e){} }

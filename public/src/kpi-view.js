@@ -2,6 +2,7 @@
    运行时全局依赖：esc()、API。评分数据和重算函数从 kpi.js 显式导入。
    仅 renderKPI/loadOverview 由 main.js 挂到 window，供 app.js 与 KPI 提交流程调用。 */
 
+import { esc } from './ui-kit.js';
 import { TOTAL, SEO, SEM, ratio, recomputeScores, company, liScore, chenScore, loadMetrics, loadWeeks } from './kpi.js';
 import { getRangeRevision, rangeText, withRange } from './timerange.js';
 import { mountLedger } from './ledger.js';

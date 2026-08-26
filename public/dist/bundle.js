@@ -14,6 +14,132 @@
     negRowHtml: () => negRowHtml
   });
 
+  // public/src/ui-kit.js
+  var ui_kit_exports = {};
+  __export(ui_kit_exports, {
+    closeModal: () => closeModal,
+    esc: () => esc,
+    hideToast: () => hideToast,
+    mdToHtml: () => mdToHtml,
+    openModal: () => openModal,
+    renderText: () => renderText,
+    showToast: () => showToast,
+    toast: () => toast,
+    toastGo: () => toastGo,
+    toastUndo: () => toastUndo
+  });
+  function esc(s) {
+    return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function renderText(el, s) {
+    if (el) el.textContent = s == null ? "" : String(s);
+  }
+  function mdToHtml(t) {
+    const src = esc(t).split(/\n/);
+    let html = "", para = [], inList = false;
+    const flushP = () => {
+      if (para.length) {
+        html += "<p>" + para.join("<br>") + "</p>";
+        para = [];
+      }
+    };
+    const flushL = () => {
+      if (inList) {
+        html += "</ul>";
+        inList = false;
+      }
+    };
+    for (let line of src) {
+      line = line.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
+      const m = line.match(/^\s*[-*]\s+(.*)$/);
+      if (m) {
+        flushP();
+        if (!inList) {
+          html += "<ul>";
+          inList = true;
+        }
+        html += "<li>" + m[1] + "</li>";
+      } else if (line.trim() === "") {
+        flushP();
+        flushL();
+      } else {
+        flushL();
+        para.push(line);
+      }
+    }
+    flushP();
+    flushL();
+    return html;
+  }
+  function openModal(id) {
+    document.getElementById(id).classList.add("show");
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove("show");
+  }
+  if (typeof document !== "undefined") {
+    document.querySelectorAll(".modal-mask").forEach((m) => m.addEventListener("click", (e) => {
+      if (e.target === m) m.classList.remove("show");
+    }));
+  }
+  var tt;
+  var toastEl = () => typeof document === "undefined" ? null : document.getElementById("toast");
+  function showToast() {
+    const t = toastEl();
+    if (!t) return;
+    t.style.transform = "translateX(-50%) translateY(0)";
+    clearTimeout(tt);
+    tt = setTimeout(hideToast, 3400);
+    if (tt && typeof tt.unref === "function") tt.unref();
+  }
+  function hideToast() {
+    const t = toastEl();
+    if (!t) return;
+    t.style.transform = "translateX(-50%) translateY(80px)";
+  }
+  function toast(m) {
+    const t = toastEl();
+    if (!t) return;
+    t.textContent = m;
+    showToast();
+  }
+  function toastUndo(m, fn) {
+    const t = toastEl();
+    if (!t) return;
+    t.textContent = m == null ? "" : String(m);
+    const b = document.createElement("b");
+    b.textContent = "  \u64A4\u9500";
+    b.style.color = "#ff8a82";
+    b.style.cursor = "pointer";
+    b.onclick = () => {
+      hideToast();
+      try {
+        fn();
+      } catch (e) {
+      }
+    };
+    t.appendChild(b);
+    showToast();
+  }
+  function toastGo(m, tab) {
+    const t = toastEl();
+    if (!t) return;
+    t.textContent = m == null ? "" : String(m);
+    if (tab) {
+      t.appendChild(document.createTextNode("\xA0\xA0"));
+      const b = document.createElement("b");
+      b.textContent = "\u67E5\u770B \u2192";
+      b.style.color = "#ff8a82";
+      b.style.cursor = "pointer";
+      b.onclick = () => {
+        if (typeof window.go === "function") window.go(tab);
+        hideToast();
+      };
+      t.appendChild(b);
+    }
+    showToast();
+  }
+
   // public/src/keywords.js
   var keywords_exports = {};
   __export(keywords_exports, {
@@ -3290,8 +3416,8 @@
     if (de) de.value = "";
     const ti = document.getElementById("subtask-parent-title");
     if (ti) {
-      const tt = card.querySelector(".ttitle");
-      ti.textContent = tt ? tt.innerText.trim() : "";
+      const tt2 = card.querySelector(".ttitle");
+      ti.textContent = tt2 ? tt2.innerText.trim() : "";
     }
     openModal("subtaskMask");
     if (t) setTimeout(() => t.focus(), 50);
@@ -5130,9 +5256,6 @@
   function setText2(el, value) {
     if (el) el.textContent = text(value);
   }
-  function toastSafe(message) {
-    if (window.toast) window.toast(message);
-  }
   function field(id) {
     const el = byId(id);
     return el ? el.value.trim() : "";
@@ -5218,11 +5341,11 @@
       items.forEach((item) => tbody.appendChild(renderMemory(item)));
       if (empty) empty.style.display = items.length ? "none" : "block";
       setText2(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
-      if (manual) toastSafe("AI \u8BB0\u5FC6\u5DF2\u5237\u65B0");
+      if (manual) toast("AI \u8BB0\u5FC6\u5DF2\u5237\u65B0");
     } catch (e) {
       setText2(count, "\u52A0\u8F7D\u5931\u8D25");
       if (empty) empty.style.display = "block";
-      toastSafe("AI \u8BB0\u5FC6\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+      toast("AI \u8BB0\u5FC6\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
   function resetHermesMemoryForm() {
@@ -5267,7 +5390,7 @@
       source: field("hm-source") || "manual"
     };
     if (!body.title || !body.content) {
-      toastSafe("\u6807\u9898\u548C\u8BB0\u5FC6\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A");
+      toast("\u6807\u9898\u548C\u8BB0\u5FC6\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A");
       return;
     }
     try {
@@ -5276,9 +5399,9 @@
       else await window.API.post("/api/hermes/memories", body);
       resetHermesMemoryForm();
       await loadHermesMemories(false);
-      toastSafe(id ? "AI \u8BB0\u5FC6\u5DF2\u66F4\u65B0" : "\u5DF2\u5B58\u5165 AI \u8BB0\u5FC6");
+      toast(id ? "AI \u8BB0\u5FC6\u5DF2\u66F4\u65B0" : "\u5DF2\u5B58\u5165 AI \u8BB0\u5FC6");
     } catch (e) {
-      toastSafe(e.status === 403 ? "\u65E0\u6743\u4FEE\u6539 AI \u8BB0\u5FC6" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+      toast(e.status === 403 ? "\u65E0\u6743\u4FEE\u6539 AI \u8BB0\u5FC6" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
   async function deactivateHermesMemory(id) {
@@ -5287,9 +5410,9 @@
     try {
       await window.API.del("/api/hermes/memories/" + encodeURIComponent(id));
       await loadHermesMemories(false);
-      toastSafe("\u5DF2\u505C\u7528\u8FD9\u6761 AI \u8BB0\u5FC6");
+      toast("\u5DF2\u505C\u7528\u8FD9\u6761 AI \u8BB0\u5FC6");
     } catch (e) {
-      toastSafe(e.status === 403 ? "\u65E0\u6743\u505C\u7528 AI \u8BB0\u5FC6" : "\u505C\u7528\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+      toast(e.status === 403 ? "\u65E0\u6743\u505C\u7528 AI \u8BB0\u5FC6" : "\u505C\u7528\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
   function resetHermesFeedbackForm() {
@@ -5306,7 +5429,7 @@
     const note = field("hf-note");
     const scope = field("hf-scope") || "\u672A\u6307\u5B9A\u8303\u56F4";
     if (!suggestion || !note) {
-      toastSafe("\u539F\u5EFA\u8BAE\u548C\u4F60\u7684\u5224\u65AD\u4E0D\u80FD\u4E3A\u7A7A");
+      toast("\u539F\u5EFA\u8BAE\u548C\u4F60\u7684\u5224\u65AD\u4E0D\u80FD\u4E3A\u7A7A");
       return;
     }
     const negative = result === "wrong" || result === "generic";
@@ -5327,9 +5450,9 @@
       await window.API.post("/api/hermes/memories", body);
       resetHermesFeedbackForm();
       await loadHermesMemories(false);
-      toastSafe("\u53CD\u9988\u5DF2\u6C89\u6DC0\uFF0CHermes \u540E\u7EED\u4F1A\u53C2\u8003");
+      toast("\u53CD\u9988\u5DF2\u6C89\u6DC0\uFF0CHermes \u540E\u7EED\u4F1A\u53C2\u8003");
     } catch (e) {
-      toastSafe(e.status === 403 ? "\u65E0\u6743\u6C89\u6DC0\u53CD\u9988" : "\u53CD\u9988\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+      toast(e.status === 403 ? "\u65E0\u6743\u6C89\u6DC0\u53CD\u9988" : "\u53CD\u9988\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
 
@@ -6787,5 +6910,5 @@
   var settingsCompatibility = { bindSettings, openPwd, submitPwd };
   var rankSnapshotCompatibility = { loadRankSnapshots, snapshotRanks };
   var riskCompatibility = { loadRisks };
-  Object.assign(window, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility);
+  Object.assign(window, ui_kit_exports, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility);
 })();

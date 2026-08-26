@@ -1,4 +1,5 @@
 /* Settings page: persisted KPI targets and account password changes. */
+import { openModal, closeModal, toast } from './ui-kit.js';
 import { TOTAL, SEO, SEM, applyKpiServer } from './kpi.js';
 import { renderKPI } from './kpi-view.js';
 import { withRange } from './timerange.js';

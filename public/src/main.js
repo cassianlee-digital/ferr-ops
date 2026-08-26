@@ -52,6 +52,10 @@ import { bindTableEditor } from './table-editor.js';
 // 已迁移（批次15）：SEO 机会词排名快照与趋势渲染。
 import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
 import { loadRisks } from './risks.js';
+// 全站 UI 基础工具（esc/弹窗/toast）的唯一实现。ES 模块已全部改为显式 import；
+// 这里挂 window **只为两个真实消费者**：经典脚本 public/app.js 与 public/hermes.js。
+// 它们不再模块化之前这层不能撤 —— 但模块侧已经不依赖 window 了。
+import * as uiKit from './ui-kit.js';
 // 新增（不是迁移，是新写的）：ledger —— KPI 页「运营总账」只读业务漏斗。
 // 自己插进 #panel-kpi、自己听 timerange，零内联 handler，故不挂 window（由 kpi-view 显式 import）。
 import './ledger.js';
@@ -67,4 +71,4 @@ const settingsCompatibility={bindSettings,openPwd,submitPwd};
 const rankSnapshotCompatibility={loadRankSnapshots,snapshotRanks};
 const riskCompatibility={loadRisks};
 
-Object.assign(window, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility);
+Object.assign(window, uiKit, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility);

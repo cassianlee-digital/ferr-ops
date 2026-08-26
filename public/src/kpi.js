@@ -3,6 +3,7 @@
    TOTAL/SEO/SEM/applyKpiServer/loadMetrics/loadWeeks 与两个提交入口由 main.js 挂到 window，
    供仍是经典脚本的 app.js 调用；评分内部状态仅供 kpi-view.js 显式导入。 */
 
+import { openModal, closeModal, toast } from './ui-kit.js';
 import { loadSemBoardAds, loadSeoBoardGsc, refreshSeoWeekChart } from './charts.js';
 import { getRangeRevision, withRange } from './timerange.js';
 

@@ -8,6 +8,7 @@
      - loadSops/loadUrgent/sopPeriodKey/updateSopCounts/renderSopOverdueBanner/refreshNavTaskDot —— index.html、closed-loop.js 真实调用；
      - 其余保持原有全局暴露面，零行为差异。
    DEPT_BADGE/FREQ_LABEL/FREQ_ICON/_sopEditing 无外部引用，收进模块作用域。 */
+import { esc, openModal, closeModal, toast } from './ui-kit.js';
 import { formatLocalDate } from './timerange.js';
 import { inlineConfirm } from './keywords.js';
 

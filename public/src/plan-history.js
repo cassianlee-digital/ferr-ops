@@ -4,6 +4,7 @@
    运行时依赖的全局（调用时解析）：API、esc()、toast()。
    不新增内联 handler：日期条用事件委托，全部在本模块内注册。
    setPlanDay/planDayIsToday 暂保留兼容入口，供经典 app.js 与后续计划视图整合。 */
+import { esc, toast } from './ui-kit.js';
 import { formatLocalDate } from './timerange.js';
 
 const DEPTS = [

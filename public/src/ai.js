@@ -2,6 +2,7 @@
    closed-loop 依赖显式导入；API、esc/mdToHtml、弹窗和 toast 仍由经典 app.js 在调用时提供。
    main.js 仅向 app.js 暴露静态动作和初始化真正需要的兼容入口。 */
 
+import { esc, mdToHtml, openModal, closeModal, toast, toastGo } from './ui-kit.js';
 import { addDeposit, addFixFromObj, clip, createEvidenceFix, persistFailMsg, persistFix, persistLoop } from './closed-loop.js';
 
 const apiUnavailableMsg='<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI 服务暂时不可用：请检查后台 AI Provider、API Key 与模型配置，或稍后重试。</div>';

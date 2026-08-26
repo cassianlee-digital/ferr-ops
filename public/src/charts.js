@@ -2,6 +2,7 @@
    时间范围工具显式导入；Chart/ECharts、API、esc/toast 与仍未迁移的 AI/整改入口在运行时解析。
    仅 app.js 仍需的初始化、筛选和加载入口由 main.js 挂到 window，其余状态留在模块内部。 */
 
+import { esc, toast, toastGo } from './ui-kit.js';
 import { formatLocalDate, getCurrentRange, getRangeRevision, rangeText, withRange } from './timerange.js';
 import { createEvidenceFix, persistFailMsg } from './closed-loop.js';
 import { runAiAnalysis } from './ai.js';

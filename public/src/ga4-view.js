@@ -2,6 +2,7 @@
    运行时依赖的全局（调用时解析）：API、esc()、withRange()、Chart。
    loadGa4 由 main.js 挂到 window，供 tab 初始化和时间筛选调用。 */
 
+import { esc } from './ui-kit.js';
 let devicesChart = null;
 let requestSequence = 0;
 

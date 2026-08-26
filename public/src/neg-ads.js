@@ -2,6 +2,7 @@
    prepend/placeCaretEnd 显式导入；esc()、toast()、API 仍由经典 app.js 提供。
    导出的函数由 main.js 挂到 window：addNeg/addAd 供内联 onclick，negRowHtml/adRowHtml 供 hydrate() 运行时调用。 */
 
+import { esc, toast } from './ui-kit.js';
 import { prepend } from './closed-loop.js';
 import { placeCaretEnd } from './editable.js';
 

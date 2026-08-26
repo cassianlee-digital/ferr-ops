@@ -8,6 +8,7 @@
      - addKeyword —— 内联 onclick（加词按钮 ×4）；filterKwByCat —— index.html:1135/1138 真实调用；
      - 其余函数保持原有全局暴露面，零行为差异。
    KW_TB/KW_PAGE_OPTS/_kwPage/_kwSize 无外部引用，收进模块作用域。 */
+import { esc, toast } from './ui-kit.js';
 import { OPT } from './tagselect.js';
 import { runAiAnalysis } from './ai.js';
 import { validateEditableValue, setSavingState, rollbackEditable, showSaveError, placeCaretEnd } from './editable.js';

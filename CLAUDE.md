@@ -26,8 +26,9 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **自有函数约 285 个挂在 `window` 上**(实测:空 iframe 差集 = 338 名字 / 302 函数,含 vendor;其中经典脚本顶层函数 217 + `main.js` 挂上去的模块导出 68)。
   - **别用 grep 数 `window.X =` 去估全局面**——那样只得 56,**低 6 倍**:经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量。
 - **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **114 处 `data-ui-action=`**(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo/loop-tab 委托、`google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
-- **`Object.assign(window, …)` 兼容层仍要留,但理由变了**:不再是「供内联 onclick 调用」,而是**经典脚本仍裸调用这些名字** —— `public/` 下还剩 4 个经典脚本(`app.js`/`hermes.js`/`api.js`/`login.js`),`app.js` 的启动序列直接调 `loadMetrics()`/`renderKPI()`/`loadClosedLoop()` 等。想真正清零全局,**下一步是把 `app.js` 也搬进 ES 模块**,不再是「做事件委托」。
-- **隐形风险降级但没消失**:经典脚本裸引用同样对打包器/静态分析隐形,改名依旧**没有编译期报错**。但排查方式变了 —— **改前端函数名前该 grep 的是 4 个经典脚本,不再是 `onclick=`**;`data-ui-action` 的动作名则由委托表集中分发,改名会在委托表里露出来。
+- **`public/src/ui-kit.js` 是全站 UI 基础工具的唯一实现**(2026-08-26 新增):`esc`/`renderText`/`mdToHtml`/`openModal`/`closeModal`/`toast`/`toastUndo`/`toastGo`/`showToast`/`hideToast` 从 app.js 搬来。**22 个 ES 模块已全部改为显式 `import { esc, toast } from './ui-kit.js'`,模块侧不再读 `window`**(校验脚本口径:模块里出现这些名字却没 import = 漏网)。收益是**编译期保护**:名字写错 esbuild 当场报错;此前它们是隐式全局,对打包器完全隐形。⚠ **本模块必须保持「无 DOM 也能被 import」**——`table-editor.js` 会被 `node --test` 真实 import,求值期碰 `document` 会让整个测试文件崩(已踩过);故遮罩绑定带 `typeof document` 守卫、toast 系列取不到 `#toast` 就安静退场。
+- **`Object.assign(window, …)` 兼容层仍要留,但只剩两个真实消费者**:经典脚本 `public/app.js` 与 `public/hermes.js`(`api.js`/`login.js` 不用)。`app.js` 的启动序列直接调 `loadMetrics()`/`renderKPI()`/`loadClosedLoop()`,`hermes.js` 用 `window.esc`/`window.toast`(带兜底)。**想真正清零全局,下一步是把 `app.js` 搬进 ES 模块** —— 它已不是「一堆遗留函数」,而是**组装层**:`STATIC_UI_ACTIONS` 委托表 + 导航 `go()` + `window load` 启动序列 + `applyRoleUi()`。
+- **隐形风险降级但没消失**:经典脚本裸引用同样对打包器/静态分析隐形,改名依旧**没有编译期报错**。但排查方式变了 —— **改前端函数名前该 grep 的是 4 个经典脚本,不再是 `onclick=`**;`data-ui-action` 的动作名由 `app.js` 的 `STATIC_UI_ACTIONS` 表集中分发,改名会在表里露出来。
 
 ## API / Sync Reality(真实状态,禁止把未实现描述成已完成)
 

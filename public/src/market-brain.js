@@ -2,6 +2,7 @@
    运行时依赖的全局（调用/事件时解析）：API、esc()、mdToHtml()、toast()（index.html 内联）。
    loadMarket/loadBrain/refreshBrain 由 main.js 挂到 window；focusout 监听在模块求值时注册（与旧脚本同一时机）。 */
 
+import { esc, mdToHtml, toast } from './ui-kit.js';
 /* ===== V7 市场分析（表格化）+ AI 记忆体联动 ===== */
 window._marketById = {};
 function mktEsc(s) { return esc(s); } // 合并到统一 esc()，保留别名避免改动调用点

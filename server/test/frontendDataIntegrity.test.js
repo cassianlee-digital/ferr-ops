@@ -189,16 +189,18 @@ test('table editor restores failed date and text saves at runtime', async () => 
   const listeners={};
   const previousDocument=globalThis.document;
   const previousApi=globalThis.API;
-  const previousToast=globalThis.toast;
   const messages=[];
+  // toast 已不再是隐式全局（table-editor 现在 import 自 ui-kit.js），stub globalThis.toast 不再拦得住。
+  // 改为提供一个假的 #toast 元素：真实的 ui-kit toast 会写进来，等于连提示链路一起测了。
+  const toastEl={ style:{}, appendChild(){}, get textContent(){ return ''; }, set textContent(v){ messages.push(v); } };
   globalThis.document={
     addEventListener(type,handler){
       listeners[type]??=[];
       listeners[type].push(handler);
-    }
+    },
+    getElementById(id){ return id==='toast'?toastEl:null; }
   };
   globalThis.API={patch:async()=>{ throw null; }};
-  globalThis.toast=message=>messages.push(message);
 
   try{
     bindTableEditor();
@@ -257,7 +259,6 @@ test('table editor restores failed date and text saves at runtime', async () => 
   }finally{
     globalThis.document=previousDocument;
     globalThis.API=previousApi;
-    globalThis.toast=previousToast;
   }
 });
 

@@ -6,6 +6,7 @@
    archRowHtml/archInqRowHtml/deriveAk 无外部引用，收进模块作用域。
    两个 click 委托在模块求值时注册（bundle 为经典脚本，时机与旧脚本一致）。 */
 
+import { esc, toast } from './ui-kit.js';
 import { GRADE_BADGE } from './inquiries.js';
 import { loadDashboardInq } from './charts.js';
 import { depRowHtml, persistLoop } from './closed-loop.js';

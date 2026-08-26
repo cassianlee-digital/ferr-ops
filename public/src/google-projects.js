@@ -6,6 +6,7 @@
      - loadDataSourcesStatus/loadIntegrations —— index.html 初始化调用。
    INTEG_LABEL、DS_LABEL/DS_ORDER/DS_TYPE_LABEL、dsRow、dsStatusMeta、googleProviderRow 无外部引用，收进模块作用域。 */
 
+import { esc, toast } from './ui-kit.js';
 import { loadDataFreshness } from './charts.js';
 
 const INTEG_LABEL={gsc:'Google Search Console',ga4:'Google Analytics 4 (GA4)',ads:'Google Ads'};

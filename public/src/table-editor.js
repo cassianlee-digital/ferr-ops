@@ -1,4 +1,5 @@
 /* Shared persistence and keyboard behavior for data-field table cells. */
+import { toast } from './ui-kit.js';
 import { rollbackEditable, placeCaretEnd } from './editable.js';
 
 const EDITABLE_CELL='td[contenteditable][data-field]';
