@@ -37,11 +37,29 @@ function chartEmpty(id,detail,title){
 function setDonutLegend(map){ Object.keys(map).forEach(id=>{ const e=document.getElementById(id); if(e)e.textContent=map[id]; }); }
 function fillDonutLegendDemo(){ setDonutLegend({lgInqA:DEMO.inqDonut.a,lgInqB:DEMO.inqDonut.b,lgInqC:DEMO.inqDonut.c,lgInqRate:DEMO.inqDonut.rate,lgChSeo:DEMO.chanDonut.seo+'%',lgChSem:DEMO.chanDonut.sem+'%',lgChDirect:DEMO.chanDonut.direct+'%',lgChOther:DEMO.chanDonut.other+'%'}); }
 function blankDonutLegend(){ setDonutLegend({lgInqA:'—',lgInqB:'—',lgInqC:'—',lgInqRate:'—',lgChSeo:'—',lgChSem:'—',lgChDirect:'—',lgChOther:'—'}); }
-/* BUG-6：KPI 页两个 donut 用真实询盘聚合（_inqCache 按当前 range 已过滤），无数据→诚实空状态 */
+/* BUG-6：KPI 页两个 donut 用真实询盘聚合，无数据→诚实空状态。
+   2026-08-26：不再读询盘页的 _inqCache —— 时间范围分页面独立后，那会出现「KPI 页写着近30天、
+   圆环画的却是询盘页的近一年」。改为按 KPI 页自己的区间单独取一份（_inqKpiCache），
+   且不受询盘页表头筛选影响：这是考核口径，不能被别人的临时筛选改写。 */
+window._inqKpiCache=[];
+let kpiInqRequestSequence=0;
+export async function loadKpiInqDonuts(){
+  const requestId=++kpiInqRequestSequence, revision=getRangeRevision('kpi');
+  try{
+    const {items}=await API.get(withRange('/api/inquiries','kpi'));
+    if(requestId!==kpiInqRequestSequence||revision!==getRangeRevision('kpi'))return false;
+    window._inqKpiCache=items||[];
+  }catch(e){
+    if(requestId!==kpiInqRequestSequence||revision!==getRangeRevision('kpi'))return false;
+    window._inqKpiCache=[];
+  }
+  renderInqDonuts();
+  return true;
+}
 let _inqDonutChart=null,_chanDonutChart=null;
 export function renderInqDonuts(){
   if(window.DEMO_MODE)return; // DEMO_MODE 仍走 charts() 示例
-  const rows=window._inqCache||[];
+  const rows=window._inqKpiCache||[];
   const cv1=document.getElementById('inqDonut'), cv2=document.getElementById('chanDonut');
   if(_inqDonutChart){ try{_inqDonutChart.destroy();}catch(e){} _inqDonutChart=null; }
   if(_chanDonutChart){ try{_chanDonutChart.destroy();}catch(e){} _chanDonutChart=null; }
@@ -123,9 +141,9 @@ function _shiftRange(r){
   return {start_date:formatLocalDate(prevStart), end_date:formatLocalDate(prevEnd)};
 }
 export async function loadSeoBoardGsc(){
-  const cur=getCurrentRange();
+  const cur=getCurrentRange('data');
   let data=null, prev=null;
-  try{ data=await API.get(withRange('/api/google/gsc/summary')); }
+  try{ data=await API.get(withRange('/api/google/gsc/summary','data')); }
   catch(e){ window._gscBoard={error:e}; renderSeoBoard(); return; }
   if(cur){ try{ prev=await API.get(withRange('/api/google/gsc/summary', _shiftRange(cur))); }catch(e){ prev=null; } }
   window._gscBoard={data,prev};
@@ -179,7 +197,7 @@ function renderSeoBoard(){
     // day 粒度按所选完整时间区间铺 X 轴（缺天断线）；week/month 保持原聚合行为
     let labels, clicks, impr;
     if(!gran||gran==='day'){
-      const rng=(board&&board.data&&board.data.range)||(typeof getCurrentRange==='function'?getCurrentRange():null);
+      const rng=(board&&board.data&&board.data.range)||getCurrentRange('data');
       const a=_alignDaily(data&&data.byDate, rng, 'date');
       labels=a.labels; clicks=a.rows.map(r=>r?(+r.clicks||0):null); impr=a.rows.map(r=>r?(+r.impressions||0):null);
     } else {
@@ -235,7 +253,7 @@ function _deltaHtml(cur,prev,lowerBetter,fmt){
 }
 export async function loadSeoBoardFull(){
   let d=null;
-  try{ d=await API.get(withRange('/api/google/seo/board')); }catch(e){ d={error:e}; }
+  try{ d=await API.get(withRange('/api/google/seo/board','data')); }catch(e){ d={error:e}; }
   renderSeoHighlights(d); renderSeoDeltaTables(d); renderSeoScatter(d); renderSeoSources(d);
 }
 function renderSeoHighlights(d){
@@ -346,7 +364,7 @@ function renderSeoSources(d){
     const ss=d&&d.sourceSeries;
     if(ss&&ss.dates&&ss.dates.length){
       // 按所选完整时间区间铺 X 轴（缺天填 0，堆叠图保结构）
-      const rng=(d&&d.range)||(typeof getCurrentRange==='function'?getCurrentRange():null);
+      const rng=(d&&d.range)||getCurrentRange('data');
       const dRows=ss.dates.map((x,i)=>({date:x,_i:i}));
       const aligned=_alignDaily(dRows,rng,'date');
       const datasets=ss.series.map((se,i)=>({label:se.source,data:aligned.rows.map(r=>r?(se.values[r._i]||0):0),borderColor:palette[i%palette.length],backgroundColor:palette[i%palette.length]+'55',fill:true,stack:'s',tension:.3,pointRadius:0,borderWidth:1.4}));
@@ -395,7 +413,7 @@ function _fillSemCampaignFilter(list){
 }
 export async function loadSemBoardAds(){
   let data=null;
-  try{ data=await API.get(withSemCampaign(withRange('/api/google/ads/summary'))); }
+  try{ data=await API.get(withSemCampaign(withRange('/api/google/ads/summary','data'))); }
   catch(e){ window._adsBoard={error:e}; renderSemBoard(); return; }
   window._adsBoard=data; renderSemBoard();
 }
@@ -439,7 +457,7 @@ function renderSemBoard(){
 
 /* ===== 询盘归因：Ads 花费 ÷ 真实 SEM 有效询盘（对比 Ads 自报转化） ===== */
 export async function loadAttribution(){
-  let d=null; try{ d=await API.get(withRange('/api/attribution')); }catch(e){ d={error:e}; }
+  let d=null; try{ d=await API.get(withRange('/api/attribution','data')); }catch(e){ d={error:e}; }
   renderAttribution(d);
 }
 function renderAttribution(d){
@@ -466,7 +484,7 @@ function renderAttribution(d){
 /* ===== SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势 ===== */
 window._semCostDonut=null; window._semTrend=null; window._semScatterChart=null;
 export async function loadSemBoardFull(){
-  let d=null; try{ d=await API.get(withSemCampaign(withRange('/api/google/ads/board'))); }catch(e){ d={error:e}; }
+  let d=null; try{ d=await API.get(withSemCampaign(withRange('/api/google/ads/board','data'))); }catch(e){ d={error:e}; }
   renderSemHighlights(d); renderSemDeltaTables(d); renderSemScatter(d); renderSemCostCharts(d);
 }
 function renderSemHighlights(d){
@@ -546,7 +564,7 @@ function _dayDiff(a,b){ return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse
 // rows: [{date:'YYYY-MM-DD',...}]; range: {start_date,end_date}; dateKey 默认 'date'
 function _alignDaily(rows,range,dateKey){
   const key=dateKey||'date';
-  const r=range||(typeof getCurrentRange==='function'?getCurrentRange():null);
+  const r=range||getCurrentRange('data');
   if(!r||!r.start_date||!r.end_date) return {labels:(rows||[]).map(x=>String(x[key]).slice(5,10)), rows:(rows||[]).slice(), isoDates:(rows||[]).map(x=>String(x[key]).slice(0,10))};
   const m=new Map((rows||[]).map(x=>[String(x[key]).slice(0,10),x]));
   const labels=[], out=[], iso=[];
@@ -580,7 +598,7 @@ function renderSemCostCharts(d){
     if(window._semTrend){ try{window._semTrend.destroy();}catch(e){} window._semTrend=null; }
     const s=(d&&d.series)||[];
     // 按「所选完整时间区间」铺 X 轴（缺天断线），让选 30/90 天时能一眼看到覆盖范围
-    const rng=(d&&d.range)||(typeof getCurrentRange==='function'?getCurrentRange():null);
+    const rng=(d&&d.range)||getCurrentRange('data');
     const aligned=_alignDaily(s,rng,'date');
     if(aligned.rows.some(r=>r)){
       const cost=aligned.rows.map(r=>r?+(r.costMicros/1e6).toFixed(0):null);
@@ -630,7 +648,7 @@ async function adoptFinding(btn,dept,title,detail,evidence){
 /* 阶段5：数据新鲜度条——三源实际有数据天数 / 区间总天数 + 最后同步时间 + 连接态 */
 export async function loadDataFreshness(){
   const el=document.getElementById('dataFreshness'); if(!el)return;
-  let d=null; try{ d=await API.get(withRange('/api/data-freshness')); }catch(e){ el.innerHTML='<span class="dim">'+esc(loadFailureText('数据新鲜度',e))+'</span>'; return; }
+  let d=null; try{ d=await API.get(withRange('/api/data-freshness','data')); }catch(e){ el.innerHTML='<span class="dim">'+esc(loadFailureText('数据新鲜度',e))+'</span>'; return; }
   const fmt=v=>{ if(!v)return '从未'; const s=String(v).replace(' ','T'); const t=new Date(/Z|[+-]\d{2}/.test(s)?s:s+'Z'); if(isNaN(t))return String(v).slice(5,16);
     const p=n=>String(n).padStart(2,'0'); const dif=Math.floor((Date.now()-t.getTime())/60000);
     if(dif<60)return dif+' 分钟前'; if(dif<1440)return Math.floor(dif/60)+' 小时前';
@@ -657,13 +675,13 @@ function _ovSpark(id, rows, valFn, color, emptyDetail){
 let dashboardBoardsRequestSequence=0;
 export async function loadDashboardBoards(){
   if(window.DEMO_MODE)return;
-  const requestId=++dashboardBoardsRequestSequence, revision=getRangeRevision(), r=getCurrentRange();
+  const requestId=++dashboardBoardsRequestSequence, revision=getRangeRevision('dashboard'), r=getCurrentRange('dashboard');
   const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const [gscResult,adsResult]=await Promise.allSettled([
     API.get(withRange('/api/google/gsc/summary',r)),
     API.get(withRange('/api/google/ads/board',r))
   ]);
-  if(requestId!==dashboardBoardsRequestSequence||revision!==getRangeRevision())return false;
+  if(requestId!==dashboardBoardsRequestSequence||revision!==getRangeRevision('dashboard'))return false;
   const g=gscResult.status==='fulfilled'?gscResult.value:null;
   const gError=gscResult.status==='rejected'?gscResult.reason:null;
   const gt=g&&g.totals;
@@ -684,7 +702,7 @@ export async function loadDashboardBoards(){
 }
 export async function loadDiagnostics(){
   let d=null;
-  try{ d=await API.get(withRange('/api/diagnostics')); }catch(e){ d={error:e}; }
+  try{ d=await API.get(withRange('/api/diagnostics','data')); }catch(e){ d={error:e}; }
   renderDiagnostics(d);
 }
 function renderDiagnostics(d){
@@ -742,13 +760,13 @@ window._inqDashboardCache=[];
 let _inqDashboardError=null;
 let dashboardInqRequestSequence=0;
 export async function loadDashboardInq(){
-  const requestId=++dashboardInqRequestSequence, revision=getRangeRevision();
+  const requestId=++dashboardInqRequestSequence, revision=getRangeRevision('dashboard');
   try{
-    const {items}=await API.get(withRange('/api/inquiries'));
-    if(requestId!==dashboardInqRequestSequence||revision!==getRangeRevision())return false;
+    const {items}=await API.get(withRange('/api/inquiries','dashboard'));
+    if(requestId!==dashboardInqRequestSequence||revision!==getRangeRevision('dashboard'))return false;
     window._inqDashboardCache=items||[]; _inqDashboardError=null;
   }catch(e){
-    if(requestId!==dashboardInqRequestSequence||revision!==getRangeRevision())return false;
+    if(requestId!==dashboardInqRequestSequence||revision!==getRangeRevision('dashboard'))return false;
     window._inqDashboardCache=[]; _inqDashboardError=e;
   }
   renderInqTrend();
@@ -756,7 +774,7 @@ export async function loadDashboardInq(){
 }
 function renderInqTrend(){
   const cv=document.getElementById('inqTrend'); if(!cv||window.DEMO_MODE)return;
-  const rows=window._inqDashboardCache||[], gran=window._gran||'day', r=getCurrentRange();
+  const rows=window._inqDashboardCache||[], gran=window._gran||'day', r=getCurrentRange('dashboard');
   const sub=document.getElementById('inqTrendSub'); if(sub){
     const granLabel={day:'按天',week:'按周',month:'按月'}[gran]||gran;
     sub.textContent=rangeText(r)+' · '+granLabel;
@@ -805,16 +823,26 @@ export function charts(){
   }
 }
 
-document.addEventListener('timerange',()=>{
-  loadDashboardInq();
-  loadDashboardBoards();
-  loadSeoChartRange();
-  loadSeoBoardFull();
-  loadSemBoardAds();
-  loadSemBoardFull();
-  loadAttribution();
-  loadDiagnostics();
-  loadDataFreshness();
+/* 2026-08-26：时间范围分页面独立后，每个消费者只认自己那页的 scope，
+   别页改时间不再连累本页（以前是一个事件全站重拉，改哪页六页一起动）。 */
+document.addEventListener('timerange',e=>{
+  const scope=e.detail&&e.detail.scope;
+  if(scope==='dashboard'){
+    loadDashboardInq();
+    loadDashboardBoards();
+    return;
+  }
+  if(scope==='data'){
+    loadSeoChartRange();
+    loadSeoBoardFull();
+    loadSemBoardAds();
+    loadSemBoardFull();
+    loadAttribution();
+    loadDiagnostics();
+    loadDataFreshness();
+    return;
+  }
+  if(scope==='kpi')loadKpiInqDonuts(); // KPI 页两个 donut 按 KPI 页区间重取
 });
 document.addEventListener('granularity',()=>{ rebuildSeoChart(); renderInqTrend(); });
 

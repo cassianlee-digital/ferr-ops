@@ -32,7 +32,8 @@ function tbody(id) {
 }
 
 test('live business tables never ship static records in real mode', () => {
-  for (const id of ['tb-inq-cur', 'tb-inq', 'tb-neg', 'tb-ad']) {
+  // tb-inq-cur（Hero「最新询盘」）已于 2026-08-26 合并进 tb-inq 这唯一一张带筛选/分页的表
+  for (const id of ['tb-inq', 'tb-neg', 'tb-ad']) {
     const body = tbody(id);
     assert.match(body, /data-load-state="loading"/);
     assert.doesNotMatch(body, /contenteditable|data-field=|data-id=/);
@@ -98,27 +99,39 @@ test('GA4 view exposes real campaign and event evidence with understandable labe
   assert.doesNotMatch(ga4Source, /\.style\./);
 });
 
-test('all dashboard date consumers use the shared range and reject stale responses', () => {
-  assert.match(inquiriesSource, /API\.get\(withRange\('\/api\/inquiries'\)\)/);
+/* 2026-08-26：时间范围由「全站一个」改成「每页一个」(scope: dashboard/kpi/inquiry/data/fix)。
+   这条守卫因此改为要求：每个取数方都显式声明自己属于哪一页，并且只认自己那一页的 revision，
+   否则改 A 页的时间会把 B 页的数据也换掉（正是这次要修的毛病）。 */
+test('every dated consumer names its own page scope and rejects stale responses', () => {
+  assert.match(inquiriesSource, /API\.get\(withRange\('\/api\/inquiries','inquiry'\)\)/);
   assert.match(inquiriesSource, /const requestId=\+\+inquiryRequestSequence/);
-  // 询盘自己订阅 timerange 重拉；timerange.js 不得反向调用 loadInquiries()
-  //（那与其文件头写明的「消费者订阅事件」设计相悖，且会形成 timerange→inquiries→charts→timerange 环）
-  assert.match(inquiriesSource, /document\.addEventListener\('timerange'/);
-  assert.doesNotMatch(timerangeSource, /^\s*loadInquiries\(\);/m);
-  assert.match(kpiSource, /API\.get\(withRange\('\/api\/kpi-targets'\)\)/);
-  assert.match(kpiSource, /API\.get\(withRange\('\/api\/seo-weeks'\)\)/);
-  assert.match(kpiSource, /API\.get\(withRange\('\/api\/sem-weeks'\)\)/);
-  assert.match(kpiViewSource, /API\.get\(withRange\('\/api\/overview'\)\)/);
-  assert.match(settingsSource, /API\.put\(withRange\('\/api\/kpi-targets'\)/);
-  assert.match(chartsSource, /r=getCurrentRange\(\)/);
+  assert.match(inquiriesSource, /revision!==getRangeRevision\('inquiry'\)/);
+  assert.match(kpiSource, /API\.get\(withRange\('\/api\/kpi-targets','kpi'\)\)/);
+  assert.match(kpiSource, /API\.get\(withRange\('\/api\/seo-weeks','kpi'\)\)/);
+  assert.match(kpiSource, /API\.get\(withRange\('\/api\/sem-weeks','kpi'\)\)/);
+  assert.match(kpiViewSource, /API\.get\(withRange\('\/api\/overview',scope\)\)/);
+  assert.match(kpiViewSource, /const scope=activeScope\(\)/); // 顶栏 KPI 跟随「当前所在页面」
+  assert.match(settingsSource, /API\.put\(withRange\('\/api\/kpi-targets','kpi'\)/);
+  assert.match(chartsSource, /r=getCurrentRange\('dashboard'\)/);
   assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/gsc\/summary',r\)\)/);
   assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/ads\/board',r\)\)/);
-  assert.match(chartsSource, /API\.get\(withRange\('\/api\/inquiries'\)\)/);
-  assert.match(chartsSource, /requestId!==dashboardBoardsRequestSequence\|\|revision!==getRangeRevision\(\)/);
-  assert.match(chartsSource, /requestId!==dashboardInqRequestSequence\|\|revision!==getRangeRevision\(\)/);
+  assert.match(chartsSource, /API\.get\(withRange\('\/api\/inquiries','dashboard'\)\)/);
+  assert.match(chartsSource, /API\.get\(withRange\('\/api\/inquiries','kpi'\)\)/); // KPI 圆环自带取数，不蹭询盘页缓存
+  assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/seo\/board','data'\)\)/);
+  assert.match(chartsSource, /API\.get\(withRange\('\/api\/diagnostics','data'\)\)/);
+  assert.match(ga4Source, /API\.get\(withRange\('\/api\/ga4\/overview','data'\)\)/);
+  assert.match(chartsSource, /requestId!==dashboardBoardsRequestSequence\|\|revision!==getRangeRevision\('dashboard'\)/);
+  assert.match(chartsSource, /requestId!==dashboardInqRequestSequence\|\|revision!==getRangeRevision\('dashboard'\)/);
   assert.match(chartsSource, /loadDashboardInq\(\);[\s\S]*loadDashboardBoards\(\);/);
-  assert.match(timerangeSource, /_rangeRevision\+\+;/);
-  assert.match(timerangeSource, /detail:\{range:_range,revision:_rangeRevision\}/);
+  // 事件必须带 scope，消费者必须按 scope 认领，否则「分页面独立」形同虚设
+  assert.match(timerangeSource, /s\.revision\+\+;/);
+  assert.match(timerangeSource, /detail: \{ scope: key, range: s\.range, revision: s\.revision \}/);
+  assert.match(chartsSource, /const scope=e\.detail&&e\.detail\.scope/);
+  assert.match(inquiriesSource, /e\.detail\.scope==='inquiry'\)loadInquiries\(\)/); // 监听器随 loadInquiries 一起迁进 inquiries.js
+  assert.match(ga4Source, /e\.detail\.scope === 'data'\) loadGa4\(\)/);
+  // 每页各存各的 localStorage key；旧的全站单一 key 只在迁移时读一次
+  assert.match(timerangeSource, /'ferr:timeRange:' \+ s/);
+  assert.match(timerangeSource, /'ferr:customRange:' \+ s/);
 });
 
 test('empty and failed live loads remain observable and retryable', () => {
@@ -127,8 +140,7 @@ test('empty and failed live loads remain observable and retryable', () => {
   assert.match(uiKitSource, /data-load-state="\$\{state\}"/);
   assert.match(appSource, /否词加载失败：/);
   assert.match(appSource, /广告创意加载失败：/);
-  assert.match(inquiriesSource, /window\._inqStats=null;[\s\S]*renderInqDonuts\(\);/);
-  assert.match(inquiriesSource, /询盘加载失败：/);
+  assert.match(inquiriesSource, /window\._inqStats=null;[\s\S]*tableLoadState\('tb-inq',14,'error'/);
   assert.match(appSource, /loadInquiries\(\)/);
   assert.match(appSource, /loadNegKeywords\(\)/);
   assert.match(appSource, /loadAdCreatives\(\)/);

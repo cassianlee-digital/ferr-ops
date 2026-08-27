@@ -1,11 +1,14 @@
 /* Inquiry distribution world map（ES 模块 · esbuild 打包为 IIFE）。
-   Entry stays renderGlobe(); data still comes from window._inqCache.
+   Entry stays renderGlobe(); 数据源 = inquiries.js 的 filteredInquiries()（表头筛选后的结果）。
+   2026-08-26 起不再直读 window._inqCache —— 地图必须与表格同口径：筛「业务员=张三」，地图只画张三的。
    The world base map is real GeoJSON loaded at runtime, not a hand-drawn sketch.
 
    迁移说明：唯一入口 renderGlobe 由 main.js 挂到 window —— inquiries.js:32 与 index.html:1109/1195 真实调用它。
    其余 20 个符号（COUNTRY_GEO/COUNTRY_ALIAS/collectMapData/tooltipHtml/ensureWorldMap/... ）经审计无任何外部引用，
    全部收进模块作用域（index.html:1146 提到 COUNTRY_GEO 只是注释）。
    本模块无加载期副作用，且用 window.echarts 显式取图表库，不依赖裸全局。 */
+
+import { filteredInquiries } from './inquiries.js';
 
 const QINGDAO = [120.38, 36.07];
 const WORLD_MAP_NAME = 'ferrWorld';
@@ -114,7 +117,7 @@ function modeOf(arr){
 function collectMapData(){
   const map = {};
   const unmapped = {};
-  (window._inqCache || []).forEach(row => {
+  filteredInquiries().forEach(row => {
     const name = countryName(row.country);
     const geo = COUNTRY_GEO[name];
     if (!name) return;
@@ -206,7 +209,7 @@ function renderShell(el, groups, bodyHtml, unmappedList, unmappedTotal){
     <div class="inq-flat-map inq-blue-map">
       <div class="inq-map-head">
         <div><span>真实世界地图</span><strong>全球询盘飞线</strong></div>
-        <div class="inq-map-total">${groups.length} 个国家 · ${(window._inqCache || []).length} 条询盘</div>
+        <div class="inq-map-total">${groups.length} 个国家 · ${filteredInquiries().length} 条询盘</div>
       </div>
       ${unmappedNoteHtml(unmappedList, unmappedTotal)}
       ${bodyHtml}

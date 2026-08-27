@@ -5,7 +5,7 @@
       __defProp(target, name, { get: all[name], enumerable: true });
   };
 
-  // public/src/neg-ads.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/neg-ads.js
   var neg_ads_exports = {};
   __export(neg_ads_exports, {
     adRowHtml: () => adRowHtml,
@@ -14,29 +14,29 @@
     negRowHtml: () => negRowHtml
   });
 
-  // public/src/ui-kit.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/ui-kit.js
   var ui_kit_exports = {};
   __export(ui_kit_exports, {
     closeModal: () => closeModal,
-    esc: () => esc,
+    esc: () => esc2,
     hideToast: () => hideToast,
     mdToHtml: () => mdToHtml,
     openModal: () => openModal,
     renderText: () => renderText,
     showToast: () => showToast,
     tableLoadState: () => tableLoadState,
-    toast: () => toast,
+    toast: () => toast2,
     toastGo: () => toastGo,
     toastUndo: () => toastUndo
   });
-  function esc(s) {
+  function esc2(s) {
     return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
   function renderText(el, s) {
     if (el) el.textContent = s == null ? "" : String(s);
   }
   function mdToHtml(t) {
-    const src = esc(t).split(/\n/);
+    const src = esc2(t).split(/\n/);
     let html = "", para = [], inList = false;
     const flushP = () => {
       if (para.length) {
@@ -83,11 +83,11 @@
       if (e.target === m) m.classList.remove("show");
     }));
   }
-  function tableLoadState(id, colspan, state, message, retryAction) {
+  function tableLoadState(id, colspan, state2, message, retryAction) {
     const tb = document.getElementById(id);
     if (!tb) return;
     const retry = typeof retryAction === "function" ? ' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> \u91CD\u8BD5</button>' : "";
-    tb.innerHTML = `<tr data-load-state="${state}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
+    tb.innerHTML = `<tr data-load-state="${state2}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc2(message)}${retry}</td></tr>`;
     const retryBtn = tb.querySelector(".table-retry");
     if (retryBtn) retryBtn.addEventListener("click", retryAction);
   }
@@ -106,7 +106,7 @@
     if (!t) return;
     t.style.transform = "translateX(-50%) translateY(80px)";
   }
-  function toast(m) {
+  function toast2(m) {
     const t = toastEl();
     if (!t) return;
     t.textContent = m;
@@ -149,7 +149,7 @@
     showToast();
   }
 
-  // public/src/keywords.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/keywords.js
   var keywords_exports = {};
   __export(keywords_exports, {
     activeCat: () => activeCat,
@@ -166,19 +166,21 @@
     renderSparklines: () => renderSparklines
   });
 
-  // public/src/tagselect.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/tagselect.js
   var tagselect_exports = {};
   __export(tagselect_exports, {
     OPT: () => OPT,
     persistTagChange: () => persistTagChange
   });
 
-  // public/src/timerange.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/timerange.js
   var timerange_exports = {};
   __export(timerange_exports, {
+    activeScope: () => activeScope,
     applyTimeRange: () => applyTimeRange,
     formatLocalDate: () => formatLocalDate,
     getCurrentRange: () => getCurrentRange,
+    getRangeLabel: () => getRangeLabel,
     getRangeRevision: () => getRangeRevision,
     openCustomRange: () => openCustomRange,
     rangeText: () => rangeText,
@@ -186,29 +188,60 @@
     renderTimebar: () => renderTimebar,
     resolveRange: () => resolveRange,
     submitCustomRange: () => submitCustomRange,
+    syncRangeUi: () => syncRangeUi,
     withRange: () => withRange2,
     ymd: () => ymd
   });
   var RANGES = ["\u4ECA\u5929", "\u6628\u5929", "\u8FD17\u5929", "\u8FD130\u5929", "\u8FD190\u5929", "\u8FD1\u4E00\u5E74", "\u81EA\u5B9A\u4E49"];
-  window._customRange = null;
-  try {
-    const cr = JSON.parse(localStorage.getItem("ferr:customRange") || "null");
-    if (cr && /^\d{4}-\d{2}-\d{2}$/.test(cr.start_date) && /^\d{4}-\d{2}-\d{2}$/.test(cr.end_date) && cr.start_date <= cr.end_date) window._customRange = cr;
-  } catch (e) {
-  }
-  try {
-    const t = localStorage.getItem("ferr:timeRange");
-    window._timeRange = RANGES.includes(t) ? t : "\u8FD130\u5929";
-  } catch (e) {
-    window._timeRange = "\u8FD130\u5929";
-  }
-  try {
-    const g = localStorage.getItem("ferr:gran");
-    window._gran = ["day", "week", "month"].includes(g) ? g : "week";
-  } catch (e) {
-    window._gran = "week";
-  }
+  var SCOPES = ["dashboard", "kpi", "inquiry", "data", "fix"];
+  var SCOPE_LABEL = { dashboard: "\u603B\u89C8", kpi: "KPI \u8003\u6838", inquiry: "\u8BE2\u76D8\u8BC4\u7EA7", data: "\u6570\u636E\u770B\u677F", fix: "\u6574\u6539\u6E05\u5355" };
+  var DEFAULT_SCOPE = "dashboard";
+  var DEFAULT_LABEL = "\u8FD130\u5929";
   var GRAN_LABEL = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" };
+  var LS_LABEL = (s) => "ferr:timeRange:" + s;
+  var LS_CUSTOM = (s) => "ferr:customRange:" + s;
+  function readJson(key) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "null");
+    } catch (e) {
+      return null;
+    }
+  }
+  function validCustom(cr) {
+    return !!(cr && /^\d{4}-\d{2}-\d{2}$/.test(cr.start_date) && /^\d{4}-\d{2}-\d{2}$/.test(cr.end_date) && cr.start_date <= cr.end_date);
+  }
+  var legacyLabel = (() => {
+    try {
+      const t = localStorage.getItem("ferr:timeRange");
+      return RANGES.includes(t) ? t : null;
+    } catch (e) {
+      return null;
+    }
+  })();
+  var legacyCustom = (() => {
+    const cr = readJson("ferr:customRange");
+    return validCustom(cr) ? cr : null;
+  })();
+  var state = {};
+  SCOPES.forEach((scope) => {
+    let label = null;
+    try {
+      const t = localStorage.getItem(LS_LABEL(scope));
+      if (RANGES.includes(t)) label = t;
+    } catch (e) {
+    }
+    const stored = readJson(LS_CUSTOM(scope));
+    const custom = validCustom(stored) ? stored : label ? null : legacyCustom;
+    state[scope] = { label: label || legacyLabel || DEFAULT_LABEL, custom: custom || null, range: null, revision: 0 };
+  });
+  function st(scope) {
+    return state[SCOPES.includes(scope) ? scope : DEFAULT_SCOPE];
+  }
+  function activeScope() {
+    const bar = document.querySelector(".panel.active [data-time][data-scope]");
+    const s = bar && bar.dataset.scope;
+    return SCOPES.includes(s) ? s : DEFAULT_SCOPE;
+  }
   function formatLocalDate(d) {
     const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
@@ -217,7 +250,7 @@
     v = String(v == null ? "" : v).trim();
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
   }
-  function resolveRange(label) {
+  function resolveRange(label, scope) {
     const today3 = /* @__PURE__ */ new Date();
     today3.setHours(0, 0, 0, 0);
     const back = (n) => {
@@ -264,7 +297,7 @@
       case "\u8FD11\u5E74":
         return r(back(364), today3);
       case "\u81EA\u5B9A\u4E49": {
-        const cr = window._customRange;
+        const cr = st(scope).custom;
         if (!cr) return null;
         return { start_date: cr.start_date, end_date: cr.end_date, period_label: "\u81EA\u5B9A\u4E49 " + cr.start_date + "~" + cr.end_date };
       }
@@ -272,16 +305,22 @@
         return r(back(29), today3);
     }
   }
-  var _range = resolveRange(window._timeRange);
-  var _rangeRevision = 0;
-  function getCurrentRange() {
-    return _range;
+  SCOPES.forEach((scope) => {
+    const s = st(scope);
+    if (s.label === "\u81EA\u5B9A\u4E49" && !s.custom) s.label = DEFAULT_LABEL;
+    s.range = resolveRange(s.label, scope);
+  });
+  function getCurrentRange(scope) {
+    return st(scope || activeScope()).range;
   }
-  function getRangeRevision() {
-    return _rangeRevision;
+  function getRangeRevision(scope) {
+    return st(scope || activeScope()).revision;
   }
-  function withRange2(path, range) {
-    range = range || _range;
+  function getRangeLabel(scope) {
+    return st(scope || activeScope()).label;
+  }
+  function withRange2(path, arg) {
+    const range = arg && typeof arg === "object" ? arg : getCurrentRange(typeof arg === "string" ? arg : void 0);
     if (!range || !range.start_date || !range.end_date) return path;
     const sep = path.includes("?") ? "&" : "?";
     return path + sep + "start_date=" + encodeURIComponent(range.start_date) + "&end_date=" + encodeURIComponent(range.end_date);
@@ -290,59 +329,76 @@
     return r && r.start_date ? r.start_date + " ~ " + r.end_date : "\u2014";
   }
   function syncRangeUi() {
-    document.querySelectorAll("[data-time] .trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === window._timeRange));
-    document.querySelectorAll("[data-tauto]").forEach((el) => el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(_range));
+    document.querySelectorAll("[data-time][data-scope]").forEach((bar) => {
+      const s = st(bar.dataset.scope);
+      bar.querySelectorAll(".trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === s.label));
+      bar.querySelectorAll("[data-tauto]").forEach((el) => {
+        el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      });
+    });
     const top = document.getElementById("topRange");
     if (top) {
-      top.textContent = rangeText(_range);
-      top.title = "\u5F53\u524D\u5168\u5C40\u65F6\u95F4\u8303\u56F4\uFF1A" + rangeText(_range);
+      const s = st(activeScope());
+      top.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      top.title = "\u5F53\u524D\u9875\u9762\u65F6\u95F4\u8303\u56F4\uFF1A" + rangeText(s.range) + "\uFF08\u5404\u9875\u9762\u5404\u81EA\u8BB0\u5FC6\uFF0C\u4E92\u4E0D\u5F71\u54CD\uFF09";
     }
   }
-  function refreshRangeConsumers() {
-    _rangeRevision++;
-    document.dispatchEvent(new CustomEvent("timerange", { detail: { range: _range, revision: _rangeRevision } }));
-    if (typeof loadGa4 === "function") loadGa4();
+  function refreshRangeConsumers(scope) {
+    const key = SCOPES.includes(scope) ? scope : DEFAULT_SCOPE;
+    const s = st(key);
+    s.revision++;
+    document.dispatchEvent(new CustomEvent("timerange", { detail: { scope: key, range: s.range, revision: s.revision } }));
   }
-  function applyTimeRange(label) {
-    const nr = resolveRange(label);
+  function applyTimeRange(label, scope) {
+    const key = SCOPES.includes(scope) ? scope : activeScope();
+    const nr = resolveRange(label, key);
     if (!nr) {
-      if (label === "\u81EA\u5B9A\u4E49") openCustomRange();
-      else toast("\u8BE5\u9884\u8BBE\u5C1A\u672A\u5B9E\u73B0\uFF0C\u672A\u6539\u53D8\u7B5B\u9009");
+      if (label === "\u81EA\u5B9A\u4E49") openCustomRange(key);
+      else toast2("\u8BE5\u9884\u8BBE\u5C1A\u672A\u5B9E\u73B0\uFF0C\u672A\u6539\u53D8\u7B5B\u9009");
       return false;
     }
-    window._timeRange = label;
-    _range = nr;
+    const s = st(key);
+    s.label = label;
+    s.range = nr;
     try {
-      localStorage.setItem("ferr:timeRange", label);
+      localStorage.setItem(LS_LABEL(key), label);
     } catch (e) {
     }
     syncRangeUi();
-    refreshRangeConsumers();
-    toast("\u65F6\u95F4\u8303\u56F4\uFF1A" + _range.period_label);
+    refreshRangeConsumers(key);
+    toast2(SCOPE_LABEL[key] + " \u65F6\u95F4\u8303\u56F4\uFF1A" + nr.period_label);
     return true;
   }
   function renderTimebar(bar) {
-    const grans = (bar.dataset.gran || "").split(",").map((s) => s.trim()).filter(Boolean);
-    const onlyWeekly = grans.includes("week") && !grans.includes("day");
+    const s = st(bar.dataset.scope);
+    const grans = (bar.dataset.gran || "").split(",").map((x) => x.trim()).filter(Boolean);
+    const onlyWeekly = grans.indexOf("week") >= 0 && grans.indexOf("day") < 0;
     const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${g}"${g === window._gran ? " selected" : ""}>${GRAN_LABEL[g] || g}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
-    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === window._timeRange ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(_range)}</button>` + granHtml;
+    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === s.label ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(s.range)}</button>` + granHtml + '<span class="tscope-note" title="\u6BCF\u4E2A\u9875\u9762\u5404\u81EA\u8BB0\u4F4F\u81EA\u5DF1\u7684\u65F6\u95F4\u8303\u56F4\uFF0C\u4E92\u4E0D\u5F71\u54CD">\u4EC5\u672C\u9875</span>';
   }
-  document.querySelectorAll("[data-time]").forEach((bar) => {
+  try {
+    const g = localStorage.getItem("ferr:gran");
+    window._gran = ["day", "week", "month"].indexOf(g) >= 0 ? g : "week";
+  } catch (e) {
+    window._gran = "week";
+  }
+  document.querySelectorAll("[data-time][data-scope]").forEach((bar) => {
+    const scope = SCOPES.includes(bar.dataset.scope) ? bar.dataset.scope : DEFAULT_SCOPE;
     renderTimebar(bar);
     bar.addEventListener("click", (e) => {
       const dateBtn = e.target.closest(".tauto-btn");
       if (dateBtn) {
-        openCustomRange();
+        openCustomRange(scope);
         return;
       }
       const btn = e.target.closest(".trange");
       if (!btn) return;
       const rg = btn.textContent.trim();
-      if (rg === "\u81EA\u5B9A\u4E49" && !window._customRange) {
-        openCustomRange();
+      if (rg === "\u81EA\u5B9A\u4E49" && !st(scope).custom) {
+        openCustomRange(scope);
         return;
       }
-      applyTimeRange(rg);
+      applyTimeRange(rg, scope);
     });
     bar.addEventListener("change", (e) => {
       const sel = e.target.closest(".tgran");
@@ -350,18 +406,20 @@
       window._gran = sel.value;
       try {
         localStorage.setItem("ferr:gran", sel.value);
-      } catch (e2) {
+      } catch (err) {
       }
-      document.querySelectorAll("[data-time] .tgran").forEach((s) => {
-        if ([...s.options].some((o) => o.value === sel.value)) s.value = sel.value;
+      document.querySelectorAll("[data-time] .tgran").forEach((x) => {
+        if ([...x.options].some((o) => o.value === sel.value)) x.value = sel.value;
       });
       document.dispatchEvent(new CustomEvent("granularity", { detail: { gran: window._gran } }));
-      toast("\u7C92\u5EA6\uFF1A" + (GRAN_LABEL[window._gran] || window._gran));
+      toast2("\u7C92\u5EA6\uFF1A" + (GRAN_LABEL[window._gran] || window._gran));
     });
   });
   syncRangeUi();
-  function openCustomRange() {
-    const cr = window._customRange || {};
+  var _customScope = DEFAULT_SCOPE;
+  function openCustomRange(scope) {
+    _customScope = SCOPES.includes(scope) ? scope : activeScope();
+    const cr = st(_customScope).custom || {};
     const today3 = formatLocalDate(/* @__PURE__ */ new Date());
     const back = (n) => {
       const d = /* @__PURE__ */ new Date();
@@ -370,6 +428,8 @@
     };
     document.getElementById("cr-start").value = cr.start_date || back(29);
     document.getElementById("cr-end").value = cr.end_date || today3;
+    const hint = document.getElementById("cr-scope-hint");
+    if (hint) hint.textContent = "\u4EC5\u4F5C\u7528\u4E8E\u300C" + SCOPE_LABEL[_customScope] + "\u300D\u9875\u9762\uFF0C\u5176\u5B83\u9875\u9762\u7684\u65F6\u95F4\u8303\u56F4\u4E0D\u53D7\u5F71\u54CD\u3002";
     openModal("customRangeMask");
     setTimeout(() => document.getElementById("cr-start").focus(), 50);
   }
@@ -377,36 +437,37 @@
     const s = document.getElementById("cr-start").value;
     const e = document.getElementById("cr-end").value;
     if (!s || !e) {
-      toast("\u8BF7\u9009\u62E9\u5F00\u59CB\u548C\u7ED3\u675F\u65E5\u671F");
+      toast2("\u8BF7\u9009\u62E9\u5F00\u59CB\u548C\u7ED3\u675F\u65E5\u671F");
       return;
     }
     if (s > e) {
-      toast("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
+      toast2("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
       return;
     }
     const days = Math.floor((/* @__PURE__ */ new Date(e + "T00:00") - /* @__PURE__ */ new Date(s + "T00:00")) / 864e5);
     if (days > 365) {
-      toast("\u533A\u95F4\u6700\u957F 1 \u5E74");
+      toast2("\u533A\u95F4\u6700\u957F 1 \u5E74");
       return;
     }
-    window._customRange = { start_date: s, end_date: e };
+    const scope = _customScope, cur = st(scope);
+    cur.custom = { start_date: s, end_date: e };
     try {
-      localStorage.setItem("ferr:customRange", JSON.stringify(window._customRange));
+      localStorage.setItem(LS_CUSTOM(scope), JSON.stringify(cur.custom));
     } catch (err) {
     }
-    window._timeRange = "\u81EA\u5B9A\u4E49";
+    cur.label = "\u81EA\u5B9A\u4E49";
     try {
-      localStorage.setItem("ferr:timeRange", "\u81EA\u5B9A\u4E49");
+      localStorage.setItem(LS_LABEL(scope), "\u81EA\u5B9A\u4E49");
     } catch (err) {
     }
-    _range = resolveRange("\u81EA\u5B9A\u4E49");
+    cur.range = resolveRange("\u81EA\u5B9A\u4E49", scope);
     syncRangeUi();
-    refreshRangeConsumers();
+    refreshRangeConsumers(scope);
     closeModal("customRangeMask");
-    toast("\u5DF2\u5E94\u7528\uFF1A" + _range.period_label);
+    toast2(SCOPE_LABEL[scope] + " \u5DF2\u5E94\u7528\uFF1A" + cur.range.period_label);
   }
 
-  // public/src/ai.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/ai.js
   var apiUnavailableMsg = '<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF1A\u8BF7\u68C0\u67E5\u540E\u53F0 AI Provider\u3001API Key \u4E0E\u6A21\u578B\u914D\u7F6E\uFF0C\u6216\u7A0D\u540E\u91CD\u8BD5\u3002</div>';
   var aiAnalyses = /* @__PURE__ */ new Map();
   var activeAi = null;
@@ -484,7 +545,7 @@
       applyAiAnalysisStates();
     } catch (e) {
       aiAnalyses = /* @__PURE__ */ new Map();
-      if (e && e.message !== "unauthorized") toast("AI \u5206\u6790\u8BB0\u5F55\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF") + "\uFF0C\u53EF\u5237\u65B0\u9875\u9762\u91CD\u8BD5");
+      if (e && e.message !== "unauthorized") toast2("AI \u5206\u6790\u8BB0\u5F55\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF") + "\uFF0C\u53EF\u5237\u65B0\u9875\u9762\u91CD\u8BD5");
     }
   }
   function onAiFooterClick(e) {
@@ -520,7 +581,7 @@
     const files = document.getElementById("aiChatFiles");
     if (files) files.addEventListener("change", () => {
       const list = document.getElementById("aiFileList");
-      if (list) list.innerHTML = [...files.files].slice(0, 5).map((f) => '<span class="ai-file-chip">' + esc(f.name) + "</span>").join("");
+      if (list) list.innerHTML = [...files.files].slice(0, 5).map((f) => '<span class="ai-file-chip">' + esc2(f.name) + "</span>").join("");
     });
   }
   function aiMessages(item) {
@@ -533,8 +594,8 @@
     const dims = q.dimensions || {};
     const labels = { evidenceCoverage: "\u8BC1\u636E\u8986\u76D6", sourceQuality: "\u6765\u6E90\u8D28\u91CF", freshness: "\u6570\u636E\u65F6\u6548", inferenceDiscipline: "\u63A8\u7406\u7EA6\u675F", numericConsistency: "\u6570\u5B57\u4E00\u81F4", temporalConsistency: "\u65F6\u95F4\u4E00\u81F4" };
     const entries = Object.keys(labels).filter((k) => Number.isFinite(Number(dims[k]))).map((k) => "<span>" + labels[k] + " " + Number(dims[k]) + "</span>").join("");
-    const title = q.applicable ? "\u7F6E\u4FE1\u5EA6 " + Number(q.score || 0) + "/100 \xB7 " + esc(q.label || "") : esc(q.label || "\u975E\u6570\u636E\u578B\u56DE\u7B54");
-    return '<div class="hermes-confidence ' + esc(q.level || "not_applicable") + '"><div class="hermes-confidence-head"><strong>' + title + "</strong><span>" + esc(q.decision || "") + "</span></div>" + (entries ? '<div class="hermes-confidence-grid">' + entries + "</div>" : "") + "</div>";
+    const title = q.applicable ? "\u7F6E\u4FE1\u5EA6 " + Number(q.score || 0) + "/100 \xB7 " + esc2(q.label || "") : esc2(q.label || "\u975E\u6570\u636E\u578B\u56DE\u7B54");
+    return '<div class="hermes-confidence ' + esc2(q.level || "not_applicable") + '"><div class="hermes-confidence-head"><strong>' + title + "</strong><span>" + esc2(q.decision || "") + "</span></div>" + (entries ? '<div class="hermes-confidence-grid">' + entries + "</div>" : "") + "</div>";
   }
   function aiIsActionable(item) {
     const q = item && item.quality && item.quality.confidenceAssessment;
@@ -607,7 +668,7 @@
   async function reanalyzeActive() {
     const item = activeAi;
     if (!item) {
-      toast("\u6682\u65E0\u53EF\u91CD\u65B0\u5206\u6790\u7684\u9879");
+      toast2("\u6682\u65E0\u53EF\u91CD\u65B0\u5206\u6790\u7684\u9879");
       return;
     }
     const requestVersion = ++modalRequestVersion;
@@ -617,11 +678,11 @@
       if (requestVersion !== modalRequestVersion) return;
       aiAnalyses.set(next.scope_key, next);
       renderAiItem(next);
-      toast("\u5DF2\u57FA\u4E8E\u6700\u65B0\u6570\u636E\u91CD\u65B0\u5206\u6790\uFF0C\u4E0A\u6B21\u7ED3\u8BBA\u5DF2\u5B58\u5165\u5386\u53F2");
+      toast2("\u5DF2\u57FA\u4E8E\u6700\u65B0\u6570\u636E\u91CD\u65B0\u5206\u6790\uFF0C\u4E0A\u6B21\u7ED3\u8BBA\u5DF2\u5B58\u5165\u5386\u53F2");
     } catch (e) {
       if (requestVersion !== modalRequestVersion) return;
       renderAiBody();
-      toast("\u91CD\u65B0\u5206\u6790\u5931\u8D25\uFF1A" + (e.message || "ai_failed"));
+      toast2("\u91CD\u65B0\u5206\u6790\u5931\u8D25\uFF1A" + (e.message || "ai_failed"));
     }
   }
   async function adoptSplitAction(btn, action) {
@@ -633,17 +694,17 @@
       toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355 \xB7 \u5DF2\u5165\u5E93", "fix");
     } catch (e) {
       btn.disabled = false;
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   async function splitActions() {
     const item = activeAi;
     if (!item) {
-      toast("\u6682\u65E0\u53EF\u62C6\u89E3\u7684\u5206\u6790");
+      toast2("\u6682\u65E0\u53EF\u62C6\u89E3\u7684\u5206\u6790");
       return;
     }
     if (!aiIsActionable(item)) {
-      toast("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u62C6\u6210\u53EF\u6267\u884C\u52A8\u4F5C");
+      toast2("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u62C6\u6210\u53EF\u6267\u884C\u52A8\u4F5C");
       return;
     }
     let box = document.getElementById("aiActionsBox");
@@ -664,10 +725,10 @@
         box.innerHTML = '<div class="dim csp-s-46909fa053">\u672A\u80FD\u4ECE\u7ED3\u8BBA\u4E2D\u63D0\u53D6\u5230\u660E\u786E\u53EF\u6267\u884C\u7684\u52A8\u4F5C\u3002</div>';
         return;
       }
-      box.innerHTML = '<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> \u53EF\u91C7\u7EB3\u7684\u6574\u6539\u52A8\u4F5C\uFF08\u9010\u6761\uFF09</div>' + splitActionItems.map((a, i) => '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge ' + (a.dept === "SEM" ? "b-purple" : "b-blue") + '">' + a.dept + "</span> " + esc(a.title) + '</div><div class="ai-action-d">' + esc(a.detail) + "</div>" + (a.evidence ? '<div class="ai-action-e dim">\u4F9D\u636E\uFF1A' + esc(a.evidence) + "</div>" : "") + '</div><button type="button" class="btn-mini" data-ai-split-index="' + i + '"><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div>').join("") + "</div>";
+      box.innerHTML = '<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> \u53EF\u91C7\u7EB3\u7684\u6574\u6539\u52A8\u4F5C\uFF08\u9010\u6761\uFF09</div>' + splitActionItems.map((a, i) => '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge ' + (a.dept === "SEM" ? "b-purple" : "b-blue") + '">' + a.dept + "</span> " + esc2(a.title) + '</div><div class="ai-action-d">' + esc2(a.detail) + "</div>" + (a.evidence ? '<div class="ai-action-e dim">\u4F9D\u636E\uFF1A' + esc2(a.evidence) + "</div>" : "") + '</div><button type="button" class="btn-mini" data-ai-split-index="' + i + '"><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div>').join("") + "</div>";
     } catch (e) {
       splitActionItems = [];
-      if (box) box.innerHTML = '<div class="dim csp-s-46909fa053">\u62C6\u89E3\u5931\u8D25\uFF1A' + esc(e.message || "ai_failed") + "</div>";
+      if (box) box.innerHTML = '<div class="dim csp-s-46909fa053">\u62C6\u89E3\u5931\u8D25\uFF1A' + esc2(e.message || "ai_failed") + "</div>";
     }
   }
   async function runAiAnalysis(btn, prompt2, title, force) {
@@ -690,7 +751,7 @@
       renderAiItem(item);
     } catch (e) {
       if (requestVersion !== modalRequestVersion) return;
-      document.getElementById("aiModalBody").innerHTML = apiUnavailableMsg + '<p class="dim">\u5931\u8D25\u539F\u56E0\uFF1A' + esc(e.message || "ai_failed") + "</p>";
+      document.getElementById("aiModalBody").innerHTML = apiUnavailableMsg + '<p class="dim">\u5931\u8D25\u539F\u56E0\uFF1A' + esc2(e.message || "ai_failed") + "</p>";
       setupAiFooter();
     } finally {
       if (requestVersion === modalRequestVersion && btn) btn.disabled = false;
@@ -706,13 +767,13 @@
     const input = document.getElementById("aiChatInput");
     const msg = (input && input.value || "").trim();
     if (!msg) {
-      toast("\u8BF7\u8F93\u5165\u8981\u7EE7\u7EED\u95EE AI \u7684\u5185\u5BB9");
+      toast2("\u8BF7\u8F93\u5165\u8981\u7EE7\u7EED\u95EE AI \u7684\u5185\u5BB9");
       return;
     }
     const files = [...(document.getElementById("aiChatFiles") || {}).files || []].slice(0, 5).map((f) => ({ name: f.name, type: f.type, size: f.size }));
     const requestVersion = ++modalRequestVersion;
     if (input) input.value = "";
-    document.getElementById("aiModalBody").insertAdjacentHTML("beforeend", '<div class="ai-chat-item user"><div class="bubble">' + esc(msg) + '</div></div><div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7EE7\u7EED\u5206\u6790...</div>');
+    document.getElementById("aiModalBody").insertAdjacentHTML("beforeend", '<div class="ai-chat-item user"><div class="bubble">' + esc2(msg) + '</div></div><div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7EE7\u7EED\u5206\u6790...</div>');
     try {
       const { item: next } = await API.post("/api/ai/analyses/" + item.id + "/chat", { message: msg, attachments: files });
       if (requestVersion !== modalRequestVersion) return;
@@ -722,7 +783,7 @@
       if (requestVersion !== modalRequestVersion) return;
       if (input) input.value = msg;
       renderAiBody();
-      toast("AI \u8FFD\u95EE\u5931\u8D25\uFF1A" + (e.message || "ai_failed"));
+      toast2("AI \u8FFD\u95EE\u5931\u8D25\uFF1A" + (e.message || "ai_failed"));
     }
   }
   async function archiveAiAnalysis() {
@@ -736,19 +797,19 @@
       activeAi = null;
       lastAi = { text: "", dept: "SEO", quality: null };
       closeModal("aiMask");
-      toast("\u5DF2\u5F52\u6863 AI \u5206\u6790");
+      toast2("\u5DF2\u5F52\u6863 AI \u5206\u6790");
     } catch (e) {
-      if (requestVersion === modalRequestVersion) toast(persistFailMsg(e));
+      if (requestVersion === modalRequestVersion) toast2(persistFailMsg(e));
     }
   }
   async function depositAi() {
     const item = activeAi;
     if (!item || !item.result_text) {
-      toast("\u6682\u65E0\u53EF\u6C89\u6DC0\u7684 AI \u5185\u5BB9");
+      toast2("\u6682\u65E0\u53EF\u6C89\u6DC0\u7684 AI \u5185\u5BB9");
       return;
     }
     if (!aiIsActionable(item)) {
-      toast("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u6C89\u6DC0");
+      toast2("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u6C89\u6DC0");
       return;
     }
     const s = aiDeptFromText((item.title || "") + " " + (item.prompt || "")) === "SEM" ? { dept: "SEM", owner: "\u9648", c: "b-purple" } : { dept: "SEO", owner: "\u674E", c: "b-blue" };
@@ -758,16 +819,16 @@
       addDeposit(s, item.result_text, "\u6C89\u6DC0");
       toastGo("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "deposit");
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   async function adoptAi() {
     if (!lastAi.text) {
-      toast("\u6682\u65E0\u53EF\u91C7\u7EB3\u7684 AI \u5185\u5BB9");
+      toast2("\u6682\u65E0\u53EF\u91C7\u7EB3\u7684 AI \u5185\u5BB9");
       return;
     }
     if (!lastAi.quality || !lastAi.quality.confidenceAssessment || lastAi.quality.confidenceAssessment.level === "low") {
-      toast("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u91C7\u7EB3");
+      toast2("\u5F53\u524D\u7ED3\u8BBA\u672A\u901A\u8FC7\u53EF\u6267\u884C\u6027\u8BC4\u5206\uFF0C\u9700\u91CD\u65B0\u5206\u6790\u6216\u8865\u5145\u6570\u636E\uFF0C\u4E0D\u80FD\u91C7\u7EB3");
       return;
     }
     const s = lastAi.dept === "SEM" ? { dept: "SEM", owner: "\u9648", c: "b-purple" } : { dept: "SEO", owner: "\u674E", c: "b-blue" };
@@ -783,13 +844,13 @@
       closeModal("aiMask");
       toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355\uFF08" + s.dept + "\uFF09\xB7 \u5DF2\u5165\u5E93", "fix");
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     } finally {
       if (btn) btn.disabled = false;
     }
   }
 
-  // public/src/charts.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/charts.js
   window.DEMO_MODE = window.DEMO_MODE || false;
   var DEMO = {
     inqTrend: { a: [2, 1, 2, 1, 2, 1, 2, 1], total: [6, 5, 7, 8, 6, 7, 8, 8] },
@@ -808,7 +869,7 @@
     return label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason;
   }
   function loadFailureRow(cols, label, error) {
-    return '<tr><td colspan="' + cols + '" class="dim csp-s-45c174bbec">' + esc(loadFailureText(label, error)) + "</td></tr>";
+    return '<tr><td colspan="' + cols + '" class="dim csp-s-45c174bbec">' + esc2(loadFailureText(label, error)) + "</td></tr>";
   }
   function chartEmpty(id, detail, title) {
     const cv = document.getElementById(id);
@@ -841,11 +902,26 @@
   function blankDonutLegend() {
     setDonutLegend({ lgInqA: "\u2014", lgInqB: "\u2014", lgInqC: "\u2014", lgInqRate: "\u2014", lgChSeo: "\u2014", lgChSem: "\u2014", lgChDirect: "\u2014", lgChOther: "\u2014" });
   }
+  window._inqKpiCache = [];
+  var kpiInqRequestSequence = 0;
+  async function loadKpiInqDonuts() {
+    const requestId = ++kpiInqRequestSequence, revision = getRangeRevision("kpi");
+    try {
+      const { items } = await API.get(withRange2("/api/inquiries", "kpi"));
+      if (requestId !== kpiInqRequestSequence || revision !== getRangeRevision("kpi")) return false;
+      window._inqKpiCache = items || [];
+    } catch (e) {
+      if (requestId !== kpiInqRequestSequence || revision !== getRangeRevision("kpi")) return false;
+      window._inqKpiCache = [];
+    }
+    renderInqDonuts();
+    return true;
+  }
   var _inqDonutChart = null;
   var _chanDonutChart = null;
   function renderInqDonuts() {
     if (window.DEMO_MODE) return;
-    const rows2 = window._inqCache || [];
+    const rows2 = window._inqKpiCache || [];
     const cv1 = document.getElementById("inqDonut"), cv2 = document.getElementById("chanDonut");
     if (_inqDonutChart) {
       try {
@@ -893,7 +969,7 @@
       else ch.other++;
     });
     const chTotal = ch.SEO + ch.SEM + ch.direct + ch.other;
-    const pct3 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
+    const pct4 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
     if (cv2) {
       const w = cv2.closest(".chart-wrap") || cv2.parentElement;
       if (w) {
@@ -903,7 +979,7 @@
       cv2.style.display = "";
       _chanDonutChart = new Chart(cv2, { type: "doughnut", data: { labels: ["SEO", "SEM", "\u76F4\u63A5", "\u5176\u4ED6"], datasets: [{ data: [ch.SEO, ch.SEM, ch.direct, ch.other], backgroundColor: ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
     }
-    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct3(ch.SEO), lgChSem: pct3(ch.SEM), lgChDirect: pct3(ch.direct), lgChOther: pct3(ch.other) });
+    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct4(ch.SEO), lgChSem: pct4(ch.SEM), lgChDirect: pct4(ch.direct), lgChOther: pct4(ch.other) });
   }
   var seoChart = null;
   var seoFull = null;
@@ -973,10 +1049,10 @@
     return { start_date: formatLocalDate(prevStart), end_date: formatLocalDate(prevEnd) };
   }
   async function loadSeoBoardGsc() {
-    const cur = getCurrentRange();
+    const cur = getCurrentRange("data");
     let data = null, prev = null;
     try {
-      data = await API.get(withRange2("/api/google/gsc/summary"));
+      data = await API.get(withRange2("/api/google/gsc/summary", "data"));
     } catch (e) {
       window._gscBoard = { error: e };
       renderSeoBoard();
@@ -1069,7 +1145,7 @@
       const gran = window._gran;
       let labels, clicks, impr;
       if (!gran || gran === "day") {
-        const rng = board && board.data && board.data.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+        const rng = board && board.data && board.data.range || getCurrentRange("data");
         const a = _alignDaily(data && data.byDate, rng, "date");
         labels = a.labels;
         clicks = a.rows.map((r) => r ? +r.clicks || 0 : null);
@@ -1113,7 +1189,7 @@
           const pos = p.position != null ? Number(p.position).toFixed(1) : "\u2014";
           const q = "\u5206\u6790\u9875\u9762 " + path + " \u7684SEO\u8868\u73B0\uFF1A\u70B9\u51FB" + (p.clicks || 0) + "\u3001\u5C55\u73B0" + (p.impressions || 0) + "\u3001CTR" + ctr + "\u3001\u5747\u6392\u540D" + pos + "\u3002\u7ED9\u51FA\u6700\u8BE5\u5148\u6539\u76843\u4E2A\u52A8\u4F5C\u3002";
           const title = path + " \u8BCA\u65AD";
-          return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + pos + '</td><td class="num dim">\u2014</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, title) + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
+          return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + pos + '</td><td class="num dim">\u2014</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, title) + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
         }).join("");
       }
     }
@@ -1151,7 +1227,7 @@
   async function loadSeoBoardFull() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/google/seo/board"));
+      d = await API.get(withRange2("/api/google/seo/board", "data"));
     } catch (e) {
       d = { error: e };
     }
@@ -1175,7 +1251,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc(h.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc2(h.text) + "</span>").join("");
   }
   function renderSeoDeltaTables(d) {
     const error = d && d.error;
@@ -1185,7 +1261,7 @@
       pt.innerHTML = error ? loadFailureRow(5, "SEO \u770B\u677F", error) : pages.length ? pages.map((p) => {
         const path = _seoPath(p.page);
         const q = "\u5206\u6790\u843D\u5730\u9875 " + path + " \u7684SEO\u8868\u73B0\uFF1A\u672C\u671F\u70B9\u51FB" + (p.clicks || 0) + "(\u4E0A\u671F" + (p.clicksPrev || 0) + ")\u3001\u5C55\u73B0" + (p.impressions || 0) + "\u3002\u7ED9\u51FA\u6700\u8BE5\u5148\u6539\u76843\u4E2A\u52A8\u4F5C\u3002";
-        return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(p.clicks, p.clicksPrev, false, "pct") + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u843D\u5730\u9875\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
+        return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(p.clicks, p.clicksPrev, false, "pct") + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u843D\u5730\u9875\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
     }
     const qt = document.getElementById("seoQueriesDelta");
@@ -1193,7 +1269,7 @@
       const qs = d && d.queries || [];
       qt.innerHTML = error ? loadFailureRow(6, "SEO \u770B\u677F", error) : qs.length ? qs.map((q) => {
         const pos = q.position != null ? Number(q.position).toFixed(1) : "\u2014";
-        return "<tr><td>" + esc(q.query) + '</td><td class="num">' + (q.impressions || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(q.impressions, q.imprPrev, false, "pct") + '</td><td class="num">' + (q.clicks || 0).toLocaleString() + '</td><td class="num">' + pos + '</td><td class="num">' + _deltaHtml(q.position, q.positionPrev, true, "abs1") + "</td></tr>";
+        return "<tr><td>" + esc2(q.query) + '</td><td class="num">' + (q.impressions || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(q.impressions, q.imprPrev, false, "pct") + '</td><td class="num">' + (q.clicks || 0).toLocaleString() + '</td><td class="num">' + pos + '</td><td class="num">' + _deltaHtml(q.position, q.positionPrev, true, "abs1") + "</td></tr>";
       }).join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
     }
   }
@@ -1213,7 +1289,7 @@
       const path = _seoPath(p.page), b = Math.round((p.bounceRate || 0) * 100), dur = Math.round(p.avgDuration || 0);
       const q = "\u843D\u5730\u9875 " + path + " \u4F1A\u8BDD" + p.sessions + "\u3001\u8DF3\u51FA\u7387" + b + "%\u3001\u5747\u65F6\u957F" + dur + "s\uFF0C\u6D41\u91CF\u4E0D\u5C0F\u4F46\u8DF3\u51FA\u504F\u9AD8\u3002\u7ED9\u51FA\u964D\u4F4E\u8DF3\u51FA\u3001\u63D0\u5347\u7559\u5B58\u4E0E\u8F6C\u5316\u7684\u5177\u4F53\u4F18\u5316\u52A8\u4F5C\uFF08\u9996\u5C4F/\u5185\u5BB9\u5339\u914D/CTA/\u52A0\u8F7D\u901F\u5EA6\uFF09\u3002";
       const ti = "\u964D\u8DF3\u51FA\uFF1A" + path, de = "\u843D\u5730\u9875 " + path + " \u9AD8\u6D41\u91CF(" + p.sessions + "\u4F1A\u8BDD)\u9AD8\u8DF3\u51FA(" + b + "%)\uFF0C\u4F18\u5316\u9996\u5C4F/\u5185\u5BB9\u5339\u914D/CTA \u964D\u4F4E\u8DF3\u51FA\u3001\u63D0\u5347\u8F6C\u5316\u3002", ev = "GA4 \u4F1A\u8BDD" + p.sessions + " \u8DF3\u51FA" + b + "% \u65F6\u957F" + dur + "s";
-      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(path) + '</span><span class="st-meta dim">' + p.sessions.toLocaleString() + ' \u4F1A\u8BDD \xB7 \u8DF3\u51FA <b class="csp-s-371de31267">' + b + "%</b> \xB7 " + dur + 's</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u964D\u8DF3\u51FA\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc2(path) + '</span><span class="st-meta dim">' + p.sessions.toLocaleString() + ' \u4F1A\u8BDD \xB7 \u8DF3\u51FA <b class="csp-s-371de31267">' + b + "%</b> \xB7 " + dur + 's</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u964D\u8DF3\u51FA\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
     }).join("") + "</div>";
   }
   function renderSeoScatter(d) {
@@ -1260,7 +1336,7 @@
         grid: { left: 52, right: 120, top: 16, bottom: 44 },
         xAxis: { type: "log", name: "\u4F1A\u8BDD", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
         yAxis: { type: "value", name: "\u8DF3\u51FA\u7387%", min: 0, max: 100, nameGap: 30, axisLabel: { fontSize: 10 } },
-        tooltip: { formatter: (o) => esc(o.value[2]) + "<br/>\u4F1A\u8BDD " + o.value[0].toLocaleString() + " \xB7 \u8DF3\u51FA\u7387 " + o.value[1] + "% \xB7 \u5747\u65F6\u957F " + Math.round(o.value[3]) + "s" },
+        tooltip: { formatter: (o) => esc2(o.value[2]) + "<br/>\u4F1A\u8BDD " + o.value[0].toLocaleString() + " \xB7 \u8DF3\u51FA\u7387 " + o.value[1] + "% \xB7 \u5747\u65F6\u957F " + Math.round(o.value[3]) + "s" },
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(32, 8 + Math.sqrt(v[0] || 0)),
@@ -1294,7 +1370,7 @@
       grid: { left: 52, right: 24, top: 16, bottom: 44 },
       xAxis: { type: "log", name: "\u5C55\u73B0", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
       yAxis: { type: "value", name: "\u6392\u540D(\u8D8A\u4F4E\u8D8A\u597D)", inverse: true, min: 1, nameGap: 30, axisLabel: { fontSize: 10 } },
-      tooltip: { formatter: (o) => esc(o.data[3]) + "<br/>\u5C55\u73B0 " + o.data[0].toLocaleString() + " \xB7 \u6392\u540D " + o.data[1].toFixed(1) + " \xB7 \u70B9\u51FB " + o.data[2] },
+      tooltip: { formatter: (o) => esc2(o.data[3]) + "<br/>\u5C55\u73B0 " + o.data[0].toLocaleString() + " \xB7 \u6392\u540D " + o.data[1].toFixed(1) + " \xB7 \u70B9\u51FB " + o.data[2] },
       series: [{
         type: "scatter",
         symbolSize: (v) => Math.min(30, 7 + Math.sqrt(v[2] || 0) * 2.2),
@@ -1324,10 +1400,10 @@
         const total = top.reduce((a, s) => a + (s.sessions || 0), 0) || 1;
         if (legend) legend.innerHTML = top.map((s, i) => {
           const b = s.bounceRate != null ? '<span class="dim csp-s-128d24435a"> \xB7 \u8DF3\u51FA' + Math.round(s.bounceRate * 100) + "%</span>" : "";
-          return '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc(s.source) + b + "</span><b>" + Math.round((s.sessions || 0) / total * 100) + "%</b></div>";
+          return '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc2(s.source) + b + "</span><b>" + Math.round((s.sessions || 0) / total * 100) + "%</b></div>";
         }).join("");
       } else if (legend) {
-        legend.innerHTML = '<span class="dim">' + (error ? esc(loadFailureText("SEO \u6765\u6E90", error)) : "\u6682\u65E0 GA4 \u6765\u6E90\u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
+        legend.innerHTML = '<span class="dim">' + (error ? esc2(loadFailureText("SEO \u6765\u6E90", error)) : "\u6682\u65E0 GA4 \u6765\u6E90\u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
       }
     }
     const areaCv = document.getElementById("seoSrcArea");
@@ -1341,7 +1417,7 @@
       }
       const ss = d && d.sourceSeries;
       if (ss && ss.dates && ss.dates.length) {
-        const rng = d && d.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+        const rng = d && d.range || getCurrentRange("data");
         const dRows = ss.dates.map((x, i) => ({ date: x, _i: i }));
         const aligned = _alignDaily(dRows, rng, "date");
         const datasets = ss.series.map((se, i) => ({ label: se.source, data: aligned.rows.map((r) => r ? se.values[r._i] || 0 : 0), borderColor: palette[i % palette.length], backgroundColor: palette[i % palette.length] + "55", fill: true, stack: "s", tension: 0.3, pointRadius: 0, borderWidth: 1.4 }));
@@ -1405,20 +1481,20 @@
     }
     sel.disabled = false;
     const cur = sel.value;
-    sel.innerHTML = ['<option value="">\u5168\u90E8\u5E7F\u544A\u7EC4</option>'].concat((list || []).map((g) => '<option value="' + esc(g.adGroupId) + '">' + esc(g.adGroupName || "(\u672A\u547D\u540D\u5E7F\u544A\u7EC4)") + "</option>")).join("");
+    sel.innerHTML = ['<option value="">\u5168\u90E8\u5E7F\u544A\u7EC4</option>'].concat((list || []).map((g) => '<option value="' + esc2(g.adGroupId) + '">' + esc2(g.adGroupName || "(\u672A\u547D\u540D\u5E7F\u544A\u7EC4)") + "</option>")).join("");
     sel.value = cur;
   }
   function _fillSemCampaignFilter(list) {
     const sel = document.getElementById("semCampFilter");
     if (!sel || window._semCampaign) return;
     const cur = sel.value;
-    sel.innerHTML = ['<option value="">\u5168\u90E8\u7CFB\u5217</option>'].concat((list || []).map((c) => '<option value="' + esc(c.campaignId) + '">' + esc(c.campaignName || "(\u672A\u547D\u540D)") + "</option>")).join("");
+    sel.innerHTML = ['<option value="">\u5168\u90E8\u7CFB\u5217</option>'].concat((list || []).map((c) => '<option value="' + esc2(c.campaignId) + '">' + esc2(c.campaignName || "(\u672A\u547D\u540D)") + "</option>")).join("");
     sel.value = cur;
   }
   async function loadSemBoardAds() {
     let data = null;
     try {
-      data = await API.get(withSemCampaign(withRange2("/api/google/ads/summary")));
+      data = await API.get(withSemCampaign(withRange2("/api/google/ads/summary", "data")));
     } catch (e) {
       window._adsBoard = { error: e };
       renderSemBoard();
@@ -1473,10 +1549,10 @@
     const cpc = (cost, conv) => conv && conv > 0 ? _money(cost / conv) : "\u2014";
     let html = "";
     camps.forEach((c) => {
-      html += '<tr class="h-camp" data-chart-action="toggle-hier"><td><i class="ti ti-chevron-down hicon"></i> <b>' + esc(c.campaignName || "(\u672A\u547D\u540D)") + '</b></td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
+      html += '<tr class="h-camp" data-chart-action="toggle-hier"><td><i class="ti ti-chevron-down hicon"></i> <b>' + esc2(c.campaignName || "(\u672A\u547D\u540D)") + '</b></td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
       (byCamp.get(c.campaignName || "") || []).forEach((k) => {
-        const mt = k.matchType ? " \xB7 " + esc(k.matchType) : "";
-        html += '<tr class="h-kw"><td>\u3000\u2022 ' + esc(k.keyword || "") + '<span class="dim csp-s-33ee298127">' + mt + '</span></td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>";
+        const mt = k.matchType ? " \xB7 " + esc2(k.matchType) : "";
+        html += '<tr class="h-kw"><td>\u3000\u2022 ' + esc2(k.keyword || "") + '<span class="dim csp-s-33ee298127">' + mt + '</span></td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>";
       });
     });
     tb.innerHTML = html;
@@ -1484,7 +1560,7 @@
   async function loadAttribution() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/attribution"));
+      d = await API.get(withRange2("/api/attribution", "data"));
     } catch (e) {
       d = { error: e };
     }
@@ -1495,7 +1571,7 @@
     if (!card || !body) return;
     if (d && d.error) {
       card.classList.remove("is-hidden");
-      body.innerHTML = '<div class="dim">' + esc(loadFailureText("\u8BE2\u76D8\u5F52\u56E0", d.error)) + "</div>";
+      body.innerHTML = '<div class="dim">' + esc2(loadFailureText("\u8BE2\u76D8\u5F52\u56E0", d.error)) + "</div>";
       return;
     }
     const sem = d && d.sem;
@@ -1516,7 +1592,7 @@
   async function loadSemBoardFull() {
     let d = null;
     try {
-      d = await API.get(withSemCampaign(withRange2("/api/google/ads/board")));
+      d = await API.get(withSemCampaign(withRange2("/api/google/ads/board", "data")));
     } catch (e) {
       d = { error: e };
     }
@@ -1540,7 +1616,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc(h.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc2(h.text) + "</span>").join("");
   }
   function renderSemDeltaTables(d) {
     const error = d && d.error;
@@ -1552,13 +1628,13 @@
       ct.innerHTML = error ? loadFailureRow(10, "SEM \u770B\u677F", error) : cs.length ? cs.map((c) => {
         const ctr = rate(c.clicks, c.impressions), cvr = rate(Number(c.conversions || 0), c.clicks);
         const cpcCost = c.clicks && c.clicks > 0 ? _money(c.costMicros / c.clicks) : "\u2014";
-        return "<tr><td>" + esc(c.name || "(\u672A\u547D\u540D)") + '</td><td class="num">' + (c.impressions || 0).toLocaleString() + '</td><td class="num">' + (c.clicks || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + cpcCost + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cvr + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
+        return "<tr><td>" + esc2(c.name || "(\u672A\u547D\u540D)") + '</td><td class="num">' + (c.impressions || 0).toLocaleString() + '</td><td class="num">' + (c.clicks || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + cpcCost + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cvr + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
       }).join("") : '<tr><td colspan="10" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
     }
     const kt = document.getElementById("semKwRows");
     if (kt) {
       const ks = d && d.keywords || [];
-      kt.innerHTML = error ? loadFailureRow(6, "SEM \u770B\u677F", error) : ks.length ? ks.map((k) => "<tr><td>" + esc(k.keyword || "") + '</td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + _deltaHtml(k.conversions, k.convPrev, false, "abs1") + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>").join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
+      kt.innerHTML = error ? loadFailureRow(6, "SEM \u770B\u677F", error) : ks.length ? ks.map((k) => "<tr><td>" + esc2(k.keyword || "") + '</td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + _deltaHtml(k.conversions, k.convPrev, false, "abs1") + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>").join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
     }
   }
   function _semScatterTitles(t, s) {
@@ -1583,7 +1659,7 @@
       const scope = [p.campaignName, p.adGroupName, p.matchType].filter(Boolean).join(" \xB7 ");
       const q = "\u771F\u5B9E\u641C\u7D22\u8BCD\u300C" + p.searchTerm + "\u300D\u5728\u6240\u9009\u533A\u95F4\u82B1\u8D39" + cost.toFixed(0) + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\u3001Ads\u8F6C\u5316" + c + "\u3002\u7ED3\u5408\u6709\u6548\u8BE2\u76D8\u5F52\u56E0\u548C\u4E70\u5BB6\u610F\u56FE\uFF0C\u5224\u65AD\u5E94\u52A0\u5426\u8BCD\u8FD8\u662F\u7EE7\u7EED\u89C2\u5BDF\uFF1B\u4E0D\u8981\u4EC5\u51ED\u96F6Ads\u8F6C\u5316\u76F4\u63A5\u5426\u5B9A\u3002";
       const ti = "\u6838\u9A8C\u5019\u9009\u5426\u8BCD\uFF1A" + p.searchTerm, de = "\u771F\u5B9E\u641C\u7D22\u8BCD\u300C" + p.searchTerm + "\u300D(" + (scope || "\u8303\u56F4\u672A\u77E5") + ") \u82B1\u8D39" + cost.toFixed(0) + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\u3001Ads\u8F6C\u5316" + c + "\u3002\u6838\u5BF9\u8BE2\u76D8\u5F52\u56E0\u548C\u610F\u56FE\u540E\u51B3\u5B9A\u662F\u5426\u52A0\u5426\u8BCD\u3002", ev = "Ads\u771F\u5B9E\u641C\u7D22\u8BCD \u82B1\u8D39" + cost.toFixed(0) + " \u8F6C\u5316" + c + " \u70B9\u51FB" + (p.clicks || 0);
-      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(p.searchTerm) + '</span><span class="st-meta dim">' + esc(scope || "\u8303\u56F4\u672A\u77E5") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u641C\u7D22\u8BCD\u6838\u9A8C") + '><i class="ti ti-bulb"></i> \u6838\u9A8C</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u8F6C\u4EFB\u52A1</button></div></div>';
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc2(p.searchTerm) + '</span><span class="st-meta dim">' + esc2(scope || "\u8303\u56F4\u672A\u77E5") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u641C\u7D22\u8BCD\u6838\u9A8C") + '><i class="ti ti-bulb"></i> \u6838\u9A8C</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u8F6C\u4EFB\u52A1</button></div></div>';
     }).join("") + "</div>";
   }
   function renderSemScatter(d) {
@@ -1625,7 +1701,7 @@
         grid: { left: 56, right: 120, top: 16, bottom: 44 },
         xAxis: { type: "log", name: "\u82B1\u8D39", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
         yAxis: { type: "log", name: "\u6BCF\u8F6C\u5316\u6210\u672C", nameGap: 8, axisLabel: { fontSize: 10 } },
-        tooltip: { formatter: (o) => esc(o.value[2]) + "<br/>\u82B1\u8D39 " + o.value[0] + " \xB7 \u6BCF\u8F6C\u5316\u6210\u672C " + o.value[1] + " \xB7 \u8F6C\u5316 " + o.value[3] },
+        tooltip: { formatter: (o) => esc2(o.value[2]) + "<br/>\u82B1\u8D39 " + o.value[0] + " \xB7 \u6BCF\u8F6C\u5316\u6210\u672C " + o.value[1] + " \xB7 \u8F6C\u5316 " + o.value[3] },
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(30, 8 + Math.sqrt(v[0] || 0) / 3),
@@ -1655,7 +1731,7 @@
   }
   function _alignDaily(rows2, range, dateKey) {
     const key = dateKey || "date";
-    const r = range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+    const r = range || getCurrentRange("data");
     if (!r || !r.start_date || !r.end_date) return { labels: (rows2 || []).map((x) => String(x[key]).slice(5, 10)), rows: (rows2 || []).slice(), isoDates: (rows2 || []).map((x) => String(x[key]).slice(0, 10)) };
     const m = new Map((rows2 || []).map((x) => [String(x[key]).slice(0, 10), x]));
     const labels = [], out = [], iso = [];
@@ -1695,9 +1771,9 @@
       if (top.length) {
         window._semCostDonut = new Chart(donutCv, { type: "doughnut", data: { labels: top.map((c) => c.name), datasets: [{ data: top.map((c) => c.costMicros / 1e6), backgroundColor: palette, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "62%" } });
         const total = top.reduce((a, c) => a + (c.costMicros || 0), 0) || 1;
-        if (legend) legend.innerHTML = top.map((c, i) => '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc(c.name) + "</span><b>" + Math.round((c.costMicros || 0) / total * 100) + "%</b></div>").join("");
+        if (legend) legend.innerHTML = top.map((c, i) => '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc2(c.name) + "</span><b>" + Math.round((c.costMicros || 0) / total * 100) + "%</b></div>").join("");
       } else if (legend) {
-        legend.innerHTML = '<span class="dim">' + (error ? esc(loadFailureText("SEM \u82B1\u8D39", error)) : "\u6682\u65E0 Ads \u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
+        legend.innerHTML = '<span class="dim">' + (error ? esc2(loadFailureText("SEM \u82B1\u8D39", error)) : "\u6682\u65E0 Ads \u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
       }
     }
     const trendCv = document.getElementById("semTrend");
@@ -1710,7 +1786,7 @@
         window._semTrend = null;
       }
       const s = d && d.series || [];
-      const rng = d && d.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+      const rng = d && d.range || getCurrentRange("data");
       const aligned = _alignDaily(s, rng, "date");
       if (aligned.rows.some((r) => r)) {
         const cost = aligned.rows.map((r) => r ? +(r.costMicros / 1e6).toFixed(0) : null);
@@ -1753,7 +1829,7 @@
     }
   }
   function _dataActionAttr(name, value) {
-    return " data-" + name + '="' + esc(String(value == null ? "" : value)) + '"';
+    return " data-" + name + '="' + esc2(String(value == null ? "" : value)) + '"';
   }
   function _aiActionAttrs(prompt2, title) {
     return _dataActionAttr("ferr-action", "ai") + _dataActionAttr("ai-prompt", prompt2) + _dataActionAttr("ai-title", title);
@@ -1792,9 +1868,9 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="ti ti-check"></i> \u5DF2\u91C7\u7EB3';
       if (typeof toastGo === "function") toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355 \xB7 \u5DF2\u5165\u5E93", "fix");
-      else toast("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355");
+      else toast2("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355");
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   async function loadDataFreshness() {
@@ -1802,9 +1878,9 @@
     if (!el) return;
     let d = null;
     try {
-      d = await API.get(withRange2("/api/data-freshness"));
+      d = await API.get(withRange2("/api/data-freshness", "data"));
     } catch (e) {
-      el.innerHTML = '<span class="dim">' + esc(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
+      el.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
       return;
     }
     const fmt2 = (v) => {
@@ -1854,7 +1930,7 @@
   var dashboardBoardsRequestSequence = 0;
   async function loadDashboardBoards() {
     if (window.DEMO_MODE) return;
-    const requestId = ++dashboardBoardsRequestSequence, revision = getRangeRevision(), r = getCurrentRange();
+    const requestId = ++dashboardBoardsRequestSequence, revision = getRangeRevision("dashboard"), r = getCurrentRange("dashboard");
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
@@ -1863,7 +1939,7 @@
       API.get(withRange2("/api/google/gsc/summary", r)),
       API.get(withRange2("/api/google/ads/board", r))
     ]);
-    if (requestId !== dashboardBoardsRequestSequence || revision !== getRangeRevision()) return false;
+    if (requestId !== dashboardBoardsRequestSequence || revision !== getRangeRevision("dashboard")) return false;
     const g = gscResult.status === "fulfilled" ? gscResult.value : null;
     const gError = gscResult.status === "rejected" ? gscResult.reason : null;
     const gt = g && g.totals;
@@ -1885,7 +1961,7 @@
   async function loadDiagnostics() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/diagnostics"));
+      d = await API.get(withRange2("/api/diagnostics", "data"));
     } catch (e) {
       d = { error: e };
     }
@@ -1903,7 +1979,7 @@
         const path = _seoPath(o.page), pos = o.position != null ? Number(o.position).toFixed(1) : "\u2014";
         const q = "\u5173\u952E\u8BCD\u300C" + o.query + "\u300D\u5F53\u524D\u6392\u540D" + pos + "\u3001\u9875\u9762" + path + "\u3001\u533A\u95F4\u66DD\u5149" + (o.impressions || 0) + "\uFF0C\u7ED9\u51FA\u51B2\u8FDBTop10\u7684\u5177\u4F53\u4F18\u5316\u6E05\u5355\uFF08\u6807\u9898/\u5185\u5BB9/\u5185\u94FE/\u5916\u94FE\uFF09\u3002";
         const ti = "\u673A\u4F1A\u8BCD\u51B2\u9996\u9875\uFF1A" + o.query, de = "\u5173\u952E\u8BCD\u300C" + o.query + "\u300D\u5F53\u524D\u6392\u540D" + pos + "\uFF08\u9875\u9762" + path + "\uFF09\uFF0C\u533A\u95F4\u66DD\u5149" + (o.impressions || 0) + "\u3002\u4F18\u5316\u6807\u9898/\u5185\u5BB9/\u5185\u94FE\u51B2\u8FDB Top10\u3002", ev = "GSC\u673A\u4F1A\u8BCD \u6392\u540D" + pos + " \u5C55\u73B0" + (o.impressions || 0) + " \u70B9\u51FB" + (o.clicks || 0);
-        return "<tr><td>" + esc(o.query) + '</td><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num"><span class="badge b-amber">' + pos + '</span></td><td class="num">' + (o.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u673A\u4F1A\u8BCD\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u51B2\u9996\u9875</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return "<tr><td>" + esc2(o.query) + '</td><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num"><span class="badge b-amber">' + pos + '</span></td><td class="num">' + (o.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u673A\u4F1A\u8BCD\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u51B2\u9996\u9875</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u673A\u4F1A\u8BCD \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
     }
     const t2 = document.getElementById("diagDecayRows");
@@ -1913,18 +1989,18 @@
         const posChg = p.positionPrev != null && p.positionCur != null ? Number(p.positionPrev).toFixed(1) + "\u2192" + Number(p.positionCur).toFixed(1) : "\u2014";
         const q = path + " \u70B9\u51FB\u8FD1\u4E00\u7A97\u8DCC" + p.dropPct + "%\uFF08" + p.clicksPrev + "\u2192" + p.clicksCur + "\uFF09\uFF0C\u6392\u540D" + posChg + "\u3002\u7ED9\u51FA\u6392\u67E5\u4E0E\u6B62\u635F\u6B65\u9AA4\u3002";
         const ti = "\u8870\u9000\u6B62\u635F\uFF1A" + path, de = "\u9875\u9762" + path + " \u70B9\u51FB\u73AF\u6BD4\u8DCC" + p.dropPct + "%\uFF08" + p.clicksPrev + "\u2192" + p.clicksCur + "\uFF09\uFF0C\u6392\u540D" + posChg + "\u3002\u6392\u67E5\u539F\u56E0\u5E76\u6B62\u635F\u3002", ev = "GSC\u73AF\u6BD4 \u70B9\u51FB\u2193" + p.dropPct + "% \u6392\u540D" + posChg;
-        return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num csp-s-b0e08465c2">\u25BC' + p.dropPct + '%</td><td class="num">' + esc(posChg) + '</td><td class="ctr"><span class="badge b-gray">\u9700\u6392\u67E5</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8870\u9000\u6B62\u635F") + '><i class="ti ti-bulb"></i> \u6B62\u635F\u65B9\u6848</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num csp-s-b0e08465c2">\u25BC' + p.dropPct + '%</td><td class="num">' + esc2(posChg) + '</td><td class="ctr"><span class="badge b-gray">\u9700\u6392\u67E5</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8870\u9000\u6B62\u635F") + '><i class="ti ti-bulb"></i> \u6B62\u635F\u65B9\u6848</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u660E\u663E\u8870\u9000\u9875 \xB7 \u9700\u22652 \u4E2A\u7B49\u957F\u7A97\u53E3\u6570\u636E\u624D\u80FD\u6BD4\u8F83</td></tr>';
     }
     const t3 = document.getElementById("diagCannRows");
     if (t3) {
       t3.innerHTML = error ? loadFailureRow(5, "SEO \u8695\u98DF\u8BCA\u65AD", error) : can2.length ? can2.map((g) => {
-        const urls = g.pages.map((p) => esc(_seoPath(p.page))).join("<br>");
+        const urls = g.pages.map((p) => esc2(_seoPath(p.page))).join("<br>");
         const ranks = g.pages.map((p) => p.position != null ? Number(p.position).toFixed(0) : "\u2014").join(" / ");
         const detail = g.pages.map((p) => _seoPath(p.page) + "(\u6392\u540D" + (p.position != null ? Number(p.position).toFixed(1) : "\u2014") + ")").join("\u3001");
         const q = "\u5173\u952E\u8BCD\u300C" + g.query + "\u300D\u88AB" + g.pages.length + "\u4E2AURL\u540C\u65F6\u7ADE\u4E89\uFF1A" + detail + "\u3002\u7ED9\u51FA\u5408\u5E76\u65B9\u6848\uFF1A\u4FDD\u7559\u54EA\u4E2A\u4E3A\u4E3B\u9875\u3001\u5176\u4F59\u5982\u4F55301\u6216\u6539\u5199\u5DEE\u5F02\u5316\u610F\u56FE\u3001\u5185\u94FE\u600E\u4E48\u8C03\u3002";
         const ti = "\u8695\u98DF\u5408\u5E76\uFF1A" + g.query, de = "\u5173\u952E\u8BCD\u300C" + g.query + "\u300D\u88AB" + g.pages.length + "\u4E2AURL\u7ADE\u4E89\uFF1A" + detail + "\u3002\u5408\u5E76/\u5DEE\u5F02\u5316\u610F\u56FE\u3001\u8C03\u6574\u5185\u94FE\u3002", ev = "GSC " + g.pages.length + "\u9875\u5206\u6563\u6392\u540D " + ranks;
-        return "<tr><td>" + esc(g.query) + '</td><td class="dim csp-s-33ee298127">' + urls + '</td><td class="num"><span class="badge b-red">' + esc(ranks) + '</span></td><td class="ctr"><span class="badge b-amber">' + g.pages.length + '\u9875\u62A21\u610F\u56FE</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8695\u98DF\u5408\u5E76\u5EFA\u8BAE") + '><i class="ti ti-git-merge"></i> AI \u5408\u5E76\u5EFA\u8BAE</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return "<tr><td>" + esc2(g.query) + '</td><td class="dim csp-s-33ee298127">' + urls + '</td><td class="num"><span class="badge b-red">' + esc2(ranks) + '</span></td><td class="ctr"><span class="badge b-amber">' + g.pages.length + '\u9875\u62A21\u610F\u56FE</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8695\u98DF\u5408\u5E76\u5EFA\u8BAE") + '><i class="ti ti-git-merge"></i> AI \u5408\u5E76\u5EFA\u8BAE</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u8695\u98DF\u7EC4 \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
     }
   }
@@ -1960,14 +2036,14 @@
   var _inqDashboardError = null;
   var dashboardInqRequestSequence = 0;
   async function loadDashboardInq() {
-    const requestId = ++dashboardInqRequestSequence, revision = getRangeRevision();
+    const requestId = ++dashboardInqRequestSequence, revision = getRangeRevision("dashboard");
     try {
-      const { items } = await API.get(withRange2("/api/inquiries"));
-      if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision()) return false;
+      const { items } = await API.get(withRange2("/api/inquiries", "dashboard"));
+      if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision("dashboard")) return false;
       window._inqDashboardCache = items || [];
       _inqDashboardError = null;
     } catch (e) {
-      if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision()) return false;
+      if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision("dashboard")) return false;
       window._inqDashboardCache = [];
       _inqDashboardError = e;
     }
@@ -1977,7 +2053,7 @@
   function renderInqTrend() {
     const cv = document.getElementById("inqTrend");
     if (!cv || window.DEMO_MODE) return;
-    const rows2 = window._inqDashboardCache || [], gran = window._gran || "day", r = getCurrentRange();
+    const rows2 = window._inqDashboardCache || [], gran = window._gran || "day", r = getCurrentRange("dashboard");
     const sub = document.getElementById("inqTrendSub");
     if (sub) {
       const granLabel = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" }[gran] || gran;
@@ -2045,16 +2121,24 @@
       else chartEmpty("seoBoard");
     }
   }
-  document.addEventListener("timerange", () => {
-    loadDashboardInq();
-    loadDashboardBoards();
-    loadSeoChartRange();
-    loadSeoBoardFull();
-    loadSemBoardAds();
-    loadSemBoardFull();
-    loadAttribution();
-    loadDiagnostics();
-    loadDataFreshness();
+  document.addEventListener("timerange", (e) => {
+    const scope = e.detail && e.detail.scope;
+    if (scope === "dashboard") {
+      loadDashboardInq();
+      loadDashboardBoards();
+      return;
+    }
+    if (scope === "data") {
+      loadSeoChartRange();
+      loadSeoBoardFull();
+      loadSemBoardAds();
+      loadSemBoardFull();
+      loadAttribution();
+      loadDiagnostics();
+      loadDataFreshness();
+      return;
+    }
+    if (scope === "kpi") loadKpiInqDonuts();
   });
   document.addEventListener("granularity", () => {
     rebuildSeoChart();
@@ -2070,7 +2154,7 @@
     }
   }
 
-  // public/src/inquiry-globe.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/inquiry-globe.js
   var inquiry_globe_exports = {};
   __export(inquiry_globe_exports, {
     renderGlobe: () => renderGlobe
@@ -2309,7 +2393,7 @@
   function collectMapData() {
     const map = {};
     const unmapped = {};
-    (window._inqCache || []).forEach((row) => {
+    filteredInquiries().forEach((row) => {
       const name = countryName(row.country);
       const geo = COUNTRY_GEO[name];
       if (!name) return;
@@ -2396,7 +2480,7 @@
     <div class="inq-flat-map inq-blue-map">
       <div class="inq-map-head">
         <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
-        <div class="inq-map-total">${groups.length} \u4E2A\u56FD\u5BB6 \xB7 ${(window._inqCache || []).length} \u6761\u8BE2\u76D8</div>
+        <div class="inq-map-total">${groups.length} \u4E2A\u56FD\u5BB6 \xB7 ${filteredInquiries().length} \u6761\u8BE2\u76D8</div>
       </div>
       ${unmappedNoteHtml(unmappedList, unmappedTotal)}
       ${bodyHtml}
@@ -2423,7 +2507,7 @@
   async function renderGlobe() {
     const el = document.getElementById("inqGlobe");
     if (!el) return;
-    const seq = ++renderSeq;
+    const seq3 = ++renderSeq;
     const { groups, unmappedList, unmappedTotal } = collectMapData();
     const empty = document.getElementById("inqGlobe-empty");
     if (empty) empty.style.display = "none";
@@ -2431,9 +2515,9 @@
     renderShell(el, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
     try {
       await ensureWorldMap();
-      if (seq !== renderSeq) return;
+      if (seq3 !== renderSeq) return;
     } catch (err) {
-      if (seq !== renderSeq) return;
+      if (seq3 !== renderSeq) return;
       const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
       renderShell(el, groups, `
       <div class="inq-map-error">
@@ -2575,7 +2659,7 @@
     }, true);
   }
 
-  // public/src/inquiries.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/inquiries.js
   var REGION_BADGE = { "\u6B27\u6D32": "b-blue", "\u897F\u6B27": "b-blue", "\u5357\u6B27": "b-blue", "\u5317\u6B27": "b-blue", "\u4E2D\u4E1C\u6B27": "b-teal", "\u4E1C\u6B27/\u4FC4\u7F57\u65AF": "b-amber", "\u4FC4\u7F57\u65AF": "b-amber", "\u5317\u7F8E": "b-purple", "\u62C9\u7F8E": "b-red", "\u4E2D\u4E1C": "b-amber", "\u5317\u975E": "b-amber", "\u6492\u54C8\u62C9\u4EE5\u5357\u975E\u6D32": "b-gray", "\u5357\u4E9A": "b-teal", "\u4E1C\u5357\u4E9A": "b-red", "\u4E1C\u5357\u4E9A/\u5DF4\u897F": "b-red", "\u4E1C\u4E9A": "b-green", "\u4E2D\u4E9A": "b-gray", "\u5927\u6D0B\u6D32": "b-teal", "\u5176\u4ED6": "b-gray" };
   var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
   var PROD_BADGE = { "\u94F8\u9020": "b-amber", "\u953B\u9020": "b-red", "\u673A\u52A0\u5DE5": "b-blue", "\u9600\u95E8": "b-purple", "\u7BA1\u4EF6": "b-teal", "\u7535\u529B\u91D1\u5177": "b-green" };
@@ -2619,9 +2703,9 @@
         } catch (e) {
         }
       }
-      toast("\u5DF2\u4FDD\u5B58 1 \u6761\u8BE2\u76D8\uFF08" + item.grade + "\u7EA7\uFF09\xB7 \u5DF2\u5165\u5E93\uFF0C\u591A\u4EBA\u5171\u4EAB");
+      toast2("\u5DF2\u4FDD\u5B58 1 \u6761\u8BE2\u76D8\uFF08" + item.grade + "\u7EA7\uFF09\xB7 \u5DF2\u5165\u5E93\uFF0C\u591A\u4EBA\u5171\u4EAB");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u9700\u767B\u5F55\u8FD0\u8425\u8D26\u53F7\uFF1A\u674E/\u9648/\u4E3B\u7BA1/\u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+      toast2(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u9700\u767B\u5F55\u8FD0\u8425\u8D26\u53F7\uFF1A\u674E/\u9648/\u4E3B\u7BA1/\u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
     }
   }
   function isUpgraded(r) {
@@ -2629,6 +2713,30 @@
     return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade] < ord[r.grade];
   }
   var _trackEditing = null;
+  function fbList(r) {
+    return r && Array.isArray(r.feedbacks) ? r.feedbacks : [];
+  }
+  function fbDate(iso, withTime) {
+    if (!iso) return "";
+    const d = /* @__PURE__ */ new Date(String(iso).replace(" ", "T") + "Z");
+    if (isNaN(d)) return String(iso);
+    const p = (n) => String(n).padStart(2, "0");
+    const md = p(d.getMonth() + 1) + "-" + p(d.getDate());
+    return withTime ? d.getFullYear() + "-" + md + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md;
+  }
+  function fbDateLabel(f, withTime) {
+    return f.created_at ? fbDate(f.created_at, withTime) : "\u65E5\u671F\u4E0D\u8BE6";
+  }
+  function renderTrackLog() {
+    const box = document.getElementById("track-log");
+    if (!box) return;
+    const list = fbList(_trackEditing);
+    if (!list.length) {
+      box.innerHTML = '<div class="track-log-empty">\u8FD8\u6CA1\u6709\u8DDF\u8E2A\u8BB0\u5F55\uFF0C\u5728\u4E0B\u9762\u5199\u7B2C\u4E00\u6761\u3002</div>';
+      return;
+    }
+    box.innerHTML = '<div class="track-log-head">\u8DDF\u8E2A\u8BB0\u5F55 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((f) => `<div class="track-item" data-fb="${f.id}"><div class="track-item-meta"><span class="track-item-date${f.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc2(fbDateLabel(f, true))}</span>` + (f.created_by_name ? `<span class="track-item-who">${esc2(f.created_by_name)}</span>` : "") + `<button type="button" class="track-item-del" data-fb-del="${f.id}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div><div class="track-item-text">${esc2(f.text)}</div></div>`).join("");
+  }
   function openTrack(tr) {
     const id = tr && tr.dataset.id;
     if (!id) return;
@@ -2636,50 +2744,215 @@
     if (!it) return;
     _trackEditing = it;
     document.getElementById("track-cust").textContent = it.customer_code || it.customer_name || it.country || "#" + it.id;
-    document.getElementById("track-text").value = it.tracking_feedback || "";
+    document.getElementById("track-text").value = "";
+    renderTrackLog();
     openModal("trackMask");
     setTimeout(() => document.getElementById("track-text").focus(), 50);
   }
+  function repaintTrackCell(it) {
+    const tr = document.querySelector('.inq-tb tr[data-id="' + it.id + '"]');
+    const cell2 = tr && tr.querySelector(".inq-track-feedback");
+    if (cell2) cell2.innerHTML = trackCellHtml(it);
+  }
   async function submitTrack() {
     if (!_trackEditing) return;
-    const text2 = document.getElementById("track-text").value.trim();
+    const box = document.getElementById("track-text");
+    const text2 = box.value.trim();
+    if (!text2) {
+      toast2("\u5148\u5199\u70B9\u5185\u5BB9\u518D\u6DFB\u52A0");
+      box.focus();
+      return;
+    }
     try {
-      await API.patch("/api/inquiries/" + _trackEditing.id, { tracking_feedback: text2 });
-      _trackEditing.tracking_feedback = text2;
-      const tr = document.querySelector('.inq-tb tr[data-id="' + _trackEditing.id + '"]');
-      const cell2 = tr && tr.querySelector(".inq-track-feedback");
-      if (cell2) cell2.innerHTML = trackCellHtml(_trackEditing);
-      closeModal("trackMask");
-      toast("\u5DF2\u4FDD\u5B58\u8DDF\u8E2A\u53CD\u9988");
+      const { item } = await API.post("/api/inquiries/" + _trackEditing.id + "/feedbacks", { text: text2 });
+      _trackEditing.feedbacks = [item].concat(fbList(_trackEditing));
+      box.value = "";
+      renderTrackLog();
+      repaintTrackCell(_trackEditing);
+      renderInqTable();
+      box.focus();
+      toast2("\u5DF2\u6DFB\u52A0 1 \u6761\u8DDF\u8E2A\u8BB0\u5F55\uFF08" + fbDateLabel(item, false) + "\uFF09");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || ""));
+      toast2(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6DFB\u52A0\u5931\u8D25\uFF1A" + (e.message || ""));
     }
   }
   document.addEventListener("click", (e) => {
-    const t = e.target.closest(".inq-tb .track-cell");
+    const t = e.target.closest(".inq-tb [data-track-open]");
     if (!t) return;
     const tr = t.closest("tr");
     if (tr) openTrack(tr);
   });
-  function trackCellHtml(r) {
-    const has = (r.tracking_feedback || "").trim();
-    if (has) {
-      const short = has.length > 15 ? has.slice(0, 15) + "\u2026" : has;
-      return `<span class="track-cell" title="${esc(has)}"><i class="ti ti-message-2"></i>${esc(short)}</span>`;
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("#track-log [data-fb-del]");
+    if (!btn || !_trackEditing) return;
+    if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
+    const fid = btn.dataset.fbDel;
+    try {
+      await API.del("/api/inquiries/" + _trackEditing.id + "/feedbacks/" + fid);
+      _trackEditing.feedbacks = fbList(_trackEditing).filter((f) => String(f.id) !== String(fid));
+      renderTrackLog();
+      repaintTrackCell(_trackEditing);
+      renderInqTable();
+      toast2("\u5DF2\u5220\u9664\u8BE5\u6761\u8DDF\u8E2A\u8BB0\u5F55");
+    } catch (err) {
+      toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || ""));
     }
-    return `<span class="track-cell track-empty"><i class="ti ti-plus"></i>\u53CD\u9988</span>`;
+  });
+  function trackCellHtml(r) {
+    const list = fbList(r);
+    if (!list.length) {
+      return `<button type="button" class="track-add track-add-first" data-track-open><i class="ti ti-plus"></i>\u53CD\u9988</button>`;
+    }
+    const title = list.map((f) => fbDateLabel(f, true) + "\u3000" + f.text).join("\n\n");
+    return `<div class="track-cell-wrap"><button type="button" class="track-list" data-track-open title="${esc2(title)}">` + list.map((f) => `<span class="track-line"><span class="track-line-date${f.created_at ? "" : " track-line-nodate"}">${esc2(fbDateLabel(f, false))}</span><span class="track-line-text">${esc2(f.text)}</span></span>`).join("") + `</button><button type="button" class="track-add" data-track-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
   }
   function inqRowHtml(r) {
     const up = isUpgraded(r);
-    const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc(r.original_grade)} \u2192 \u73B0 ${esc(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
-    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code || "")}</td><td>${esc(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region] || "b-gray"}">${esc(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product] || "b-gray"}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson || "")}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc2(r.original_grade)} \u2192 \u73B0 ${esc2(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
+    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td>${esc2(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region] || "b-gray"}">${esc2(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc2(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
     return p[0] + "\u5E74" + +p[1] + "\u6708";
   }
-  function latestVisibleMonth() {
-    return (window._inqCache || []).reduce((latest, row) => row && /^\d{4}-\d{2}-\d{2}$/.test(row.date || "") && row.date.slice(0, 7) > latest ? row.date.slice(0, 7) : latest, "");
+  var BLANK = "__blank__";
+  var FILTER_COLS = [
+    null,
+    { key: "customer_code", type: "text", ph: "\u5BA2\u6237\u7F16\u7801" },
+    { key: "country", type: "select", ph: "\u56FD\u5BB6", blank: "\u672A\u586B" },
+    { key: "region", type: "select", ph: "\u5927\u533A", blank: "\u672A\u586B" },
+    { key: "channel", type: "select", ph: "\u6E20\u9053", blank: "\u672A\u586B" },
+    { key: "source", type: "text", ph: "\u6765\u6E90\u8BCD" },
+    { key: "product", type: "select", ph: "\u4EA7\u54C1", blank: "\u672A\u586B" },
+    { key: "grade", type: "select", ph: "\u7B49\u7EA7" },
+    { key: "company", type: "select", ph: "\u516C\u53F8", blank: "\u672A\u6807\u6CE8" },
+    { key: "salesperson", type: "select", ph: "\u4E1A\u52A1\u5458", blank: "\u672A\u586B" },
+    { key: "deal_status", type: "select", ph: "\u662F\u5426\u6210\u4EA4", blank: "\u672A\u6807\u8BB0" },
+    { key: "note", type: "text", ph: "\u5907\u6CE8" },
+    { key: "feedbacks", type: "has", ph: "\u53CD\u9988" },
+    // 有没有跟进记录（数组，不是文本列）
+    { key: "__clear", type: "clear" }
+  ];
+  var FILTERS = {};
+  var PAGE_SIZES = [20, 50, 100];
+  var _page = 1;
+  var _pageSize = (() => {
+    try {
+      const n = +localStorage.getItem("ferr:inqPageSize");
+      return PAGE_SIZES.indexOf(n) >= 0 ? n : 50;
+    } catch (e) {
+      return 50;
+    }
+  })();
+  function isBlank(v) {
+    return v == null || String(v).trim() === "";
+  }
+  function activeFilterCount() {
+    return Object.keys(FILTERS).filter((k) => FILTERS[k] !== "" && FILTERS[k] != null).length;
+  }
+  function matches(r) {
+    for (const col of FILTER_COLS) {
+      if (!col || col.type === "clear") continue;
+      const want = FILTERS[col.key];
+      if (want == null || want === "") continue;
+      const val = r[col.key];
+      if (col.type === "text") {
+        if (String(val || "").toLowerCase().indexOf(String(want).toLowerCase()) < 0) return false;
+      } else if (col.type === "has") {
+        const yes = Array.isArray(val) ? val.length > 0 : !isBlank(val);
+        if (want === "\u6709" !== yes) return false;
+      } else {
+        if (want === BLANK) {
+          if (!isBlank(val)) return false;
+        } else if (String(val || "") !== want) return false;
+      }
+    }
+    return true;
+  }
+  function filteredInquiries() {
+    const rows2 = (window._inqCache || []).filter((r) => r && r.date && matches(r));
+    return rows2.slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+  }
+  function optionsFor(col) {
+    const seen = /* @__PURE__ */ new Map();
+    let blanks = 0;
+    (window._inqCache || []).forEach((r) => {
+      const v = r && r[col.key];
+      if (isBlank(v)) {
+        blanks++;
+        return;
+      }
+      const s = String(v);
+      seen.set(s, (seen.get(s) || 0) + 1);
+    });
+    const list = [...seen.keys()].sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
+    const out = list.map((v) => ({ value: v, label: v }));
+    if (blanks && col.blank) out.push({ value: BLANK, label: col.blank });
+    return out;
+  }
+  function renderInqFilterRow() {
+    const row = document.getElementById("inqFilterRow");
+    if (!row) return;
+    row.innerHTML = FILTER_COLS.map((col) => {
+      if (!col) return '<td class="inq-f-none"></td>';
+      if (col.type === "clear") {
+        const n = activeFilterCount();
+        return `<td class="ctr"><button type="button" class="inq-f-clear${n ? " on" : ""}" data-inq-clear title="\u6E05\u7A7A\u5168\u90E8\u7B5B\u9009\u6761\u4EF6"><i class="ti ti-filter-off"></i>${n ? " " + n : ""}</button></td>`;
+      }
+      const cur = FILTERS[col.key] || "";
+      if (col.type === "text")
+        return `<td><input type="search" class="inq-f-input" data-inq-filter="${col.key}" placeholder="${esc2(col.ph)}" value="${esc2(cur)}"></td>`;
+      const opts = col.type === "has" ? [{ value: "\u6709", label: "\u6709\u53CD\u9988" }, { value: "\u65E0", label: "\u65E0\u53CD\u9988" }] : optionsFor(col);
+      return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${col.key}"><option value="">${esc2(col.ph)}</option>` + opts.map((o) => `<option value="${esc2(o.value)}"${o.value === cur ? " selected" : ""}>${esc2(o.label)}</option>`).join("") + "</select></td>";
+    }).join("");
+    row.querySelectorAll("[data-inq-filter]").forEach((el) => {
+      el.value = FILTERS[el.dataset.inqFilter] || "";
+    });
+  }
+  function syncClearBadge() {
+    const btn = document.querySelector("#inqFilterRow .inq-f-clear");
+    if (!btn) return;
+    const n = activeFilterCount();
+    btn.classList.toggle("on", !!n);
+    btn.innerHTML = '<i class="ti ti-filter-off"></i>' + (n ? " " + n : "");
+  }
+  function renderInqSummary(total, shown) {
+    const el = document.getElementById("inqSummary");
+    if (!el) return;
+    const n = activeFilterCount();
+    if (!n) {
+      el.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
+      return;
+    }
+    el.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
+  }
+  function pageNumbers(page, pages) {
+    if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+    const out = [1];
+    let s = Math.max(2, page - 1), e = Math.min(pages - 1, page + 1);
+    if (page <= 3) {
+      s = 2;
+      e = 4;
+    }
+    if (page >= pages - 2) {
+      s = pages - 3;
+      e = pages - 1;
+    }
+    if (s > 2) out.push("\u2026");
+    for (let i = s; i <= e; i++) out.push(i);
+    if (e < pages - 1) out.push("\u2026");
+    out.push(pages);
+    return out;
+  }
+  function renderInqPager(total, pages, from, to) {
+    const el = document.getElementById("inqPager");
+    if (!el) return;
+    if (!total) {
+      el.innerHTML = "";
+      return;
+    }
+    const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${n}">${n}</button>`).join("");
+    el.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
   }
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".inq-tb .inq-del");
@@ -2698,89 +2971,48 @@
         } catch (_) {
         }
       }
-      toast("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5F52\u6863\u5230\u300C\u5F52\u6863\u300D\u9875");
+      toast2("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5F52\u6863\u5230\u300C\u5F52\u6863\u300D\u9875");
     } catch (err) {
-      toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   });
   function renderInqList() {
+    renderInqFilterRow();
+    renderInqTable();
+  }
+  function renderInqTable() {
     const tb = document.getElementById("tb-inq");
     if (!tb) return;
+    syncClearBadge();
+    const total = (window._inqCache || []).filter((r) => r && r.date).length;
+    const rows2 = filteredInquiries();
+    const pages = Math.max(1, Math.ceil(rows2.length / _pageSize));
+    if (_page > pages) _page = pages;
+    if (_page < 1) _page = 1;
+    renderInqSummary(total, rows2.length);
     tb.innerHTML = "";
-    const latestMonth = latestVisibleMonth();
-    const rows2 = (window._inqCache || []).filter((r) => r && r.date && r.date.slice(0, 7) !== latestMonth).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
     if (!rows2.length) {
-      tb.innerHTML = '<tr><td colspan="14" class="dim csp-s-d48bfa87bb">\u6240\u9009\u533A\u95F4\u6682\u65E0\u66F4\u65E9\u6708\u4EFD\u8BE2\u76D8</td></tr>';
+      const why = activeFilterCount() ? "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u8BE2\u76D8 \u2014\u2014 \u6362\u4E2A\u6761\u4EF6\u6216\u70B9\u53F3\u4E0A\u89D2\u300C\u6E05\u7A7A\u7B5B\u9009\u300D" : "\u6240\u9009\u65F6\u95F4\u533A\u95F4\u6682\u65E0\u8BE2\u76D8";
+      tb.innerHTML = `<tr><td colspan="14" class="dim csp-s-d48bfa87bb">${why}</td></tr>`;
+      renderInqPager(0, 1, 0, 0);
       return;
     }
-    const groups = [];
-    const idx = {};
-    rows2.forEach((r) => {
+    const start = (_page - 1) * _pageSize, slice = rows2.slice(start, start + _pageSize);
+    let curMonth = null;
+    slice.forEach((r) => {
       const ym = r.date.slice(0, 7);
-      if (idx[ym] == null) {
-        idx[ym] = groups.length;
-        groups.push({ ym, items: [] });
+      if (ym !== curMonth) {
+        curMonth = ym;
+        const n = rows2.filter((x) => x.date.slice(0, 7) === ym).length;
+        const sep = document.createElement("tr");
+        sep.className = "inq-msep";
+        sep.dataset.month = ym;
+        sep.innerHTML = `<td colspan="14"><i class="ti ti-calendar-month hicon"></i> ${esc2(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
+        tb.appendChild(sep);
       }
-      groups[idx[ym]].items.push(r);
-    });
-    groups.forEach((g) => {
-      const sep = document.createElement("tr");
-      sep.className = "inq-msep collapsed";
-      sep.dataset.month = g.ym;
-      sep.innerHTML = `<td colspan="14" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${g.items.length} \u6761</span></td>`;
-      sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
-      tb.appendChild(sep);
-      g.items.forEach((r) => {
-        const tr = document.createElement("tr");
-        tr.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
-        tr.dataset.month = g.ym;
-        if (r.id) {
-          tr.dataset.id = r.id;
-          tr.dataset.ep = "/api/inquiries";
-        }
-        tr.style.display = "none";
-        tr.innerHTML = inqRowHtml(r);
-        tb.appendChild(tr);
-      });
-    });
-  }
-  function toggleInqMonth(td2) {
-    const sep = td2.closest("tr");
-    if (!sep) return;
-    sep.classList.toggle("collapsed");
-    const hidden = sep.classList.contains("collapsed");
-    let n = sep.nextElementSibling;
-    while (n && !n.classList.contains("inq-msep")) {
-      if (n.classList.contains("inq-mrow")) n.style.display = hidden ? "none" : "";
-      n = n.nextElementSibling;
-    }
-  }
-  function refreshInqStats(stats) {
-    if (stats) window._inqStats = stats;
-  }
-  function renderInqFeed() {
-    const tb = document.getElementById("tb-inq-cur");
-    if (!tb) return;
-    tb.innerHTML = "";
-    const latestMonth = latestVisibleMonth();
-    const rows2 = (window._inqCache || []).filter((r) => r && r.date && r.date.slice(0, 7) === latestMonth).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
-    const cnt = document.getElementById("inqFeedCount");
-    if (cnt) cnt.textContent = rows2.length ? monthLabel(latestMonth) + " \xB7 " + rows2.length + " \u6761" : "\u6240\u9009\u533A\u95F4\u6682\u65E0";
-    if (!rows2.length) {
-      tb.innerHTML = '<tr><td colspan="14" class="dim csp-s-651d52088e">\u6240\u9009\u533A\u95F4\u6682\u65E0\u8BE2\u76D8</td></tr>';
-      return;
-    }
-    const p = latestMonth.split("-");
-    const sep = document.createElement("tr");
-    sep.className = "inq-msep";
-    sep.dataset.month = latestMonth;
-    sep.innerHTML = `<td colspan="14" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}\u5E74${+p[1]}\u6708 <span class="dim csp-s-8bde36d0d6">\xB7 ${rows2.length} \u6761</span><span class="badge b-green csp-s-4b17347c23">\u533A\u95F4\u6700\u65B0</span></td>`;
-    sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
-    tb.appendChild(sep);
-    rows2.forEach((r) => {
       const tr = document.createElement("tr");
       tr.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
-      tr.dataset.month = latestMonth;
+      tr.dataset.month = ym;
       if (r.id) {
         tr.dataset.id = r.id;
         tr.dataset.ep = "/api/inquiries";
@@ -2788,22 +3020,76 @@
       tr.innerHTML = inqRowHtml(r);
       tb.appendChild(tr);
     });
+    renderInqPager(rows2.length, pages, start + 1, start + slice.length);
+  }
+  function afterFilterChange(full) {
+    _page = 1;
+    if (full) renderInqList();
+    else renderInqTable();
+    if (window._curTab === "inquiry") {
+      try {
+        renderGlobe();
+      } catch (e) {
+      }
+    }
+  }
+  document.addEventListener("input", (e) => {
+    const el = e.target.closest("#inqFilterRow input[data-inq-filter]");
+    if (!el) return;
+    FILTERS[el.dataset.inqFilter] = el.value.trim();
+    afterFilterChange(false);
+  });
+  document.addEventListener("change", (e) => {
+    const sel = e.target.closest("#inqFilterRow select[data-inq-filter]");
+    if (sel) {
+      FILTERS[sel.dataset.inqFilter] = sel.value;
+      sel.classList.toggle("on", !!sel.value);
+      afterFilterChange(false);
+      return;
+    }
+    const size = e.target.closest("#inqPager [data-inq-size]");
+    if (size) {
+      _pageSize = +size.value || 50;
+      try {
+        localStorage.setItem("ferr:inqPageSize", String(_pageSize));
+      } catch (_) {
+      }
+      _page = 1;
+      renderInqTable();
+    }
+  });
+  document.addEventListener("click", (e) => {
+    const clear = e.target.closest("[data-inq-clear]");
+    if (clear) {
+      Object.keys(FILTERS).forEach((k) => delete FILTERS[k]);
+      afterFilterChange(true);
+      toast2("\u5DF2\u6E05\u7A7A\u8BE2\u76D8\u7B5B\u9009");
+      return;
+    }
+    const pg = e.target.closest("#inqPager [data-inq-page]");
+    if (pg && !pg.disabled) {
+      const n = +pg.dataset.inqPage;
+      if (!n || n === _page) return;
+      _page = n;
+      renderInqTable();
+      const tbl = document.querySelector("#panel-inquiry .inq-table");
+      if (tbl) tbl.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  });
+  function refreshInqStats(stats) {
+    if (stats) window._inqStats = stats;
   }
   var inquiryRequestSequence = 0;
   async function loadInquiries() {
     const requestId = ++inquiryRequestSequence;
-    const revision = getRangeRevision();
+    const revision = getRangeRevision("inquiry");
     try {
-      const { items, stats } = await API.get(withRange2("/api/inquiries"));
-      if (requestId !== inquiryRequestSequence || revision !== getRangeRevision()) return;
+      const { items, stats } = await API.get(withRange2("/api/inquiries", "inquiry"));
+      if (requestId !== inquiryRequestSequence || revision !== getRangeRevision("inquiry")) return;
       window._inqCache = items || [];
       renderInqList();
-      try {
-        renderInqFeed();
-      } catch (_) {
-      }
       refreshInqStats(stats);
-      renderInqDonuts();
+      loadKpiInqDonuts();
       if (window._curTab === "inquiry") {
         try {
           renderGlobe();
@@ -2815,26 +3101,22 @@
         window._inqCache = [];
         window._inqStats = null;
         const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
-        tableLoadState("tb-inq-cur", 11, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries);
-        tableLoadState("tb-inq", 11, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries);
-        const count = document.getElementById("inqFeedCount");
-        if (count) count.textContent = "\u52A0\u8F7D\u5931\u8D25";
-        renderInqDonuts();
+        tableLoadState("tb-inq", 14, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries);
         if (window._curTab === "inquiry") {
           try {
             renderGlobe();
           } catch (_) {
           }
         }
-        toast("\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
+        toast2("\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
       }
     }
   }
-  document.addEventListener("timerange", () => {
-    loadInquiries();
+  document.addEventListener("timerange", (e) => {
+    if (e.detail && e.detail.scope === "inquiry") loadInquiries();
   });
 
-  // public/src/tagselect.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/tagselect.js
   var OPT = {
     channel: [["SEO\u81EA\u7136", "b-blue"], ["SEM\u4ED8\u8D39", "b-purple"], ["\u76F4\u63A5", "b-teal"], ["\u5176\u4ED6", "b-gray"]],
     product: [["\u94F8\u9020", "b-amber"], ["\u953B\u9020", "b-red"], ["\u673A\u52A0\u5DE5", "b-blue"], ["\u9600\u95E8", "b-purple"], ["\u7BA1\u4EF6", "b-teal"], ["\u7535\u529B\u91D1\u5177", "b-green"]],
@@ -2899,7 +3181,7 @@
       try {
         await API.patch("/api/keywords/" + id, { attrs: { [attrKey]: value } });
       } catch (err) {
-        toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+        toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
       return;
     }
@@ -2942,14 +3224,14 @@
         const ak = isSem ? "sem" : "seo";
         await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
         tr.remove();
-        toast("\u5DF2\u5B8C\u6210 \xB7 \u5DF2\u81EA\u52A8\u5F52\u6863");
+        toast2("\u5DF2\u5B8C\u6210 \xB7 \u5DF2\u81EA\u52A8\u5F52\u6863");
       }
     } catch (err) {
-      toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
 
-  // public/src/editable.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/editable.js
   function validateEditableValue(raw, type, opts) {
     opts = opts || {};
     if (type === "number") {
@@ -2965,14 +3247,14 @@
     if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
     return { ok: true, value };
   }
-  function setSavingState(el, state) {
+  function setSavingState(el, state2) {
     if (!el) return;
     el.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
-    if (state === "saving") el.classList.add("kpi-saving");
-    else if (state === "ok") {
+    if (state2 === "saving") el.classList.add("kpi-saving");
+    else if (state2 === "ok") {
       el.classList.add("kpi-ok");
       setTimeout(() => el.classList.remove("kpi-ok"), 1200);
-    } else if (state === "error") {
+    } else if (state2 === "error") {
       el.classList.add("kpi-error");
       setTimeout(() => el.classList.remove("kpi-error"), 2e3);
     }
@@ -2982,7 +3264,7 @@
   }
   function showSaveError(el, msg) {
     setSavingState(el, "error");
-    toast(msg);
+    toast2(msg);
   }
   function placeCaretEnd(el) {
     try {
@@ -2996,7 +3278,7 @@
     }
   }
 
-  // public/src/keywords.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/keywords.js
   var KW_TB = { seo: "tb-kw-seo", sem: "tb-kw-sem", high: "tb-kw-high", customer: "tb-kw-cust" };
   var KW_PAGE_OPTS = [10, 20, 50, 100, 200, 300];
   var _kwPage = { seo: 0, sem: 0, high: 0, customer: 0 };
@@ -3023,16 +3305,16 @@
     const aiBtn = '<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> \u5206\u6790\u610F\u56FE</button>';
     const del = '<button class="btn-mini kw-del csp-s-7ee38adc7c" title="\u5220\u9664"><i class="ti ti-trash"></i></button>';
     const ev = (v) => v == null ? "" : v;
-    const ed = (attr, val) => `<td class="editable" contenteditable data-attr="${attr}">${esc(ev(val))}</td>`;
-    const ct = `<td class="dim csp-s-4a01f70563">${esc((r.created_at || "").slice(0, 10))}</td>`;
+    const ed = (attr, val) => `<td class="editable" contenteditable data-attr="${attr}">${esc2(ev(val))}</td>`;
+    const ct = `<td class="dim csp-s-4a01f70563">${esc2((r.created_at || "").slice(0, 10))}</td>`;
     if (type === "seo") {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc2(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc2(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc2(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
     } else if (type === "sem") {
-      tr.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc2(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc2(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc2(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc2(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
     } else if (type === "high") {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
     } else {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr">${aiBtn} ${del}</td>`;
     }
     return tr;
   }
@@ -3068,7 +3350,7 @@
       }
     } catch (err) {
       rollbackEditable(c, oldVal);
-      toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+      toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     }
   });
   function renderCatTabs(type) {
@@ -3079,7 +3361,7 @@
     if (!box || !tb) return;
     const active = (box.querySelector(".cat-tab.active") || {}).textContent;
     const cats = [...new Set([...tb.querySelectorAll("tr")].map((tr) => tr.dataset.cat).filter(Boolean))];
-    box.innerHTML = '<span class="cat-tab cat-all">\u5168\u90E8</span>' + cats.map((c) => `<span class="cat-tab">${esc(c)}</span>`).join("") + '<span class="cat-tab add"><i class="ti ti-plus"></i> \u65B0\u5EFA\u5206\u7C7B</span>';
+    box.innerHTML = '<span class="cat-tab cat-all">\u5168\u90E8</span>' + cats.map((c) => `<span class="cat-tab">${esc2(c)}</span>`).join("") + '<span class="cat-tab add"><i class="ti ti-plus"></i> \u65B0\u5EFA\u5206\u7C7B</span>';
     const keep = [...box.querySelectorAll(".cat-tab")].find((x) => x.textContent.trim() === (active || "").trim()) || box.querySelector(".cat-all");
     keep.classList.add("active");
     filterKwByCat(type, keep.classList.contains("cat-all") ? null : keep.textContent.trim());
@@ -3178,7 +3460,7 @@
           const tb = document.getElementById(KW_TB[t]);
           if (tb) tb.innerHTML = "";
         });
-        toast("\u5173\u952E\u8BCD\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+        toast2("\u5173\u952E\u8BCD\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
       }
     }
   }
@@ -3200,9 +3482,9 @@
           placeCaretEnd(c);
         }
       }
-      toast("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
+      toast2("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+      toast2(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
     }
   }
   function inlineConfirm(btn, label) {
@@ -3248,14 +3530,14 @@
       tr.remove();
       if (type === "seo" || type === "sem") renderCatTabs(type);
       else applyKwPaging(type);
-      toast("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5165\u5E93");
+      toast2("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5165\u5E93");
     } catch (e) {
       if (btn) {
         btn.dataset.confirm = "";
         btn.innerHTML = btn.dataset.old;
         btn.classList.remove("confirming");
       }
-      toast(e.status === 403 ? "\u65E0\u6743\u5220\u9664\uFF08\u8BE5\u8BCD\u5E93\u975E\u4F60\u8D1F\u8D23\uFF09" : "\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
+      toast2(e.status === 403 ? "\u65E0\u6743\u5220\u9664\uFF08\u8BE5\u8BCD\u5E93\u975E\u4F60\u8D1F\u8D23\uFF09" : "\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
   document.addEventListener("click", (e) => {
@@ -3310,7 +3592,7 @@
       cell2.textContent = v;
       cell2.dataset.kwOld = v;
       setSavingState(cell2, "ok");
-      toast("\u5DF2\u66F4\u65B0\u5173\u952E\u8BCD \xB7 \u5DF2\u5165\u5E93");
+      toast2("\u5DF2\u66F4\u65B0\u5173\u952E\u8BCD \xB7 \u5DF2\u5165\u5E93");
     } catch (err) {
       rollbackEditable(cell2, oldVal);
       showSaveError(cell2, err.status === 403 ? "\u65E0\u6743\u9650\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
@@ -3332,7 +3614,7 @@
     });
   }
 
-  // public/src/sop.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/sop.js
   var sop_exports = {};
   __export(sop_exports, {
     buildSopOverdueList: () => buildSopOverdueList,
@@ -3377,7 +3659,7 @@
       window._sops = items || [];
     } catch (e) {
       window._sops = [];
-      if (e && e.message !== "unauthorized") toast("SOP \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || ""));
+      if (e && e.message !== "unauthorized") toast2("SOP \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || ""));
     }
     try {
       const q = "daily=" + encodeURIComponent(sopPeriodKey("daily")) + "&weekly=" + encodeURIComponent(sopPeriodKey("weekly")) + "&monthly=" + encodeURIComponent(sopPeriodKey("monthly"));
@@ -3420,8 +3702,8 @@
     row.className = "tcard" + (done ? " done" : "");
     row.dataset.sopId = s.id;
     row.dataset.sopFreq = s.freq;
-    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
-    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc(s.title)}</span><span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq] || "")}">${esc(FREQ_TAG[s.freq] || "")}</span></span>`;
+    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(s.time_hint)}</span>` : "";
+    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc2(s.title)}</span><span class="sop-right">${due}<span class="freq-tag" title="${esc2(FREQ_LABEL[s.freq] || "")}">${esc2(FREQ_TAG[s.freq] || "")}</span></span>`;
     row.querySelector(".tcheck").addEventListener("click", (e) => window.chk(e.currentTarget));
     return row;
   }
@@ -3458,14 +3740,14 @@
       const tr = document.createElement("tr");
       tr.dataset.sopId = s.id;
       const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>` : '<span class="dim csp-s-33ee298127">\u53EA\u8BFB</span>';
-      tr.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.title)}</td><td class="dim csp-s-33ee298127">${esc(s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
+      tr.innerHTML = `<td>${esc2(s.dept)}</td><td>${esc2(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc2(s.title)}</td><td class="dim csp-s-33ee298127">${esc2(s.content || "")}</td><td>${esc2(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
       tb.appendChild(tr);
     });
   }
   var _sopEditing = null;
   function openSopModal(sop) {
     if (!isSopWritable()) {
-      toast("\u4EC5\u7ECF\u7406 / \u8001\u677F\u53EF\u7F16\u8F91 SOP");
+      toast2("\u4EC5\u7ECF\u7406 / \u8001\u677F\u53EF\u7F16\u8F91 SOP");
       return;
     }
     _sopEditing = sop || null;
@@ -3485,21 +3767,21 @@
     const content = document.getElementById("sop-content").value.trim();
     const time_hint = document.getElementById("sop-time").value.trim();
     if (!title) {
-      toast("\u8BF7\u586B\u5199\u6807\u9898");
+      toast2("\u8BF7\u586B\u5199\u6807\u9898");
       return;
     }
     try {
       if (_sopEditing) {
         await API.patch("/api/sop/" + _sopEditing.id, { dept, freq, title, content, time_hint });
-        toast("\u5DF2\u66F4\u65B0 SOP");
+        toast2("\u5DF2\u66F4\u65B0 SOP");
       } else {
         await API.post("/api/sop", { dept, freq, title, content, time_hint });
-        toast("\u5DF2\u65B0\u589E SOP");
+        toast2("\u5DF2\u65B0\u589E SOP");
       }
       closeModal("sopMask");
       await loadSops();
     } catch (e) {
-      toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || ""));
+      toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || ""));
     }
   }
   document.addEventListener("click", async (e) => {
@@ -3518,10 +3800,10 @@
       if (!inlineConfirm(del, "\u786E\u8BA4\u505C\u7528")) return;
       try {
         await API.del("/api/sop/" + id);
-        toast("\u5DF2\u505C\u7528");
+        toast2("\u5DF2\u505C\u7528");
         await loadSops();
       } catch (err) {
-        toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u64CD\u4F5C\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+        toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u64CD\u4F5C\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     }
   });
@@ -3543,7 +3825,7 @@
         if (s.freq !== freq) return;
         const done = window._sopDone[freq] && window._sopDone[freq].has(s.id);
         if (done) return;
-        lines.push(esc(s.dept) + "-" + today3 + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
+        lines.push(esc2(s.dept) + "-" + today3 + "-" + esc2(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc2(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
       });
     });
     return lines;
@@ -3566,9 +3848,9 @@
     try {
       const { items } = await API.get("/api/loop-items?urgent=1");
       window._urgentTasks = (items || []).filter((it) => {
-        const st = it.state || "";
+        const st2 = it.state || "";
         const ss = it.status || "";
-        return st !== "done" && ss !== "done";
+        return st2 !== "done" && ss !== "done";
       });
     } catch (e) {
       window._urgentTasks = [];
@@ -3588,8 +3870,8 @@
     }
     box.style.display = "flex";
     list.innerHTML = arr.map((it) => {
-      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc(it.task_date) + "\uFF09" : "";
-      return "<div>" + esc(it.content || "") + due + "</div>";
+      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc2(it.task_date) + "\uFF09" : "";
+      return "<div>" + esc2(it.content || "") + due + "</div>";
     }).join("");
   }
   function refreshNavTaskDot() {
@@ -3600,7 +3882,7 @@
     dot.classList.toggle("is-hidden", !(overdue || urgent));
   }
 
-  // public/src/closed-loop.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/closed-loop.js
   var _2 = (n) => String(n).padStart(2, "0");
   var today = () => {
     const d = /* @__PURE__ */ new Date();
@@ -3617,8 +3899,8 @@
   function prepend(tbId, html) {
     const tb = document.getElementById(tbId);
     if (!tb) return null;
-    const state = tb.querySelector("tr[data-load-state]");
-    if (state) state.remove();
+    const state2 = tb.querySelector("tr[data-load-state]");
+    if (state2) state2.remove();
     const tr = document.createElement("tr");
     tr.innerHTML = html;
     tb.insertBefore(tr, tb.firstChild);
@@ -3669,7 +3951,7 @@
   }
   function addDeposit(s, text2, act) {
     const ac = act === "\u91C7\u7EB3" ? "b-green" : "b-teal";
-    prepend("tb-dep", `<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc(s.dept)}\u8BCA\u65AD</span></td><td>${esc(text2)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);
+    prepend("tb-dep", `<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc2(s.dept)}\u8BCA\u65AD</span></td><td>${esc2(text2)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc2(act)}</span></td>`);
   }
   function fixRowHtml(f) {
     const dept = f.dept === "SEM" ? "SEM" : "SEO";
@@ -3678,7 +3960,7 @@
     const oc = owner === "\u9648" ? "b-purple" : "b-blue";
     const RES = ["\u5DF2\u6539", "\u8FDB\u884C\u4E2D", "\u8BA1\u5212\u4E0B\u5468", "\u653E\u5F03"];
     const status = RES.includes(f.status) ? f.status : "\u8BA1\u5212\u4E0B\u5468";
-    return `<td class="fix-title editable" contenteditable data-field="title">${esc(f.title || "")}</td><td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence || "")}</td><td class="fix-detail editable" contenteditable data-field="detail">${esc(f.detail || "")}</td><td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td><td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-actions ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i> \u5F52\u6863</button></td>`;
+    return `<td class="fix-title editable" contenteditable data-field="title">${esc2(f.title || "")}</td><td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc2(dept)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc2(f.evidence || "")}</td><td class="fix-detail editable" contenteditable data-field="detail">${esc2(f.detail || "")}</td><td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc2(owner)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td><td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc2(status)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-actions ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i> \u5F52\u6863</button></td>`;
   }
   function fixPlanHtml(f) {
     if (f && f.planned_done) return `<span class="badge b-green row-plan-go csp-s-9463ff4798" title="\u65E5\u8BA1\u5212\u91CC\u5DF2\u5B8C\u6210\uFF0C\u70B9\u51FB\u67E5\u770B">\u5DF2\u505A\u5B8C</span>`;
@@ -3726,7 +4008,7 @@
       toastGo(existed ? "\u8FD9\u6761\u5DF2\u7ECF\u5728\u65E5\u8BA1\u5212\u91CC\u4E86" : "\u5DF2\u6392\u8FDB" + (item.owner || item.dept || "") + "\u7684\u65E5\u8BA1\u5212", "planning");
     } catch (err) {
       btn.disabled = false;
-      toast(err && err.status === 409 ? "\u8BE5\u6574\u6539\u9879\u5DF2\u5F52\u6863\uFF0C\u4E0D\u80FD\u518D\u6392" : persistFailMsg(err));
+      toast2(err && err.status === 409 ? "\u8BE5\u6574\u6539\u9879\u5DF2\u5F52\u6863\uFF0C\u4E0D\u80FD\u518D\u6392" : persistFailMsg(err));
     }
   });
   document.addEventListener("click", (e) => {
@@ -3754,13 +4036,13 @@
   function addTest(s, content, it) {
     it = it || {};
     const id = s.dept === "SEM" ? "tb-test-sem" : "tb-test-seo";
-    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable || "")}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion || "")}</td><td class="ctr"><button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
+    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc2(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc2(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="variable">${esc2(it.variable || "")}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc2(it.conclusion || "")}</td><td class="ctr"><button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
   }
   function addPlan(s, content, it) {
     it = it || {};
     const id = s.dept === "SEM" ? "tb-plan-sem" : "tb-plan-seo";
     const status = it.status || "\u5F85\u5F00\u59CB";
-    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric || "")}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget || "")}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
+    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc2(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc2(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="metric">${esc2(it.metric || "")}</td><td class="editable" contenteditable data-field="due_or_budget">${esc2(it.due_or_budget || "")}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc2(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
   }
   function coScope() {
     return { dept: "\u516C\u53F8", owner: "", c: "b-red" };
@@ -3771,10 +4053,10 @@
   var TASK_GROUPS = [["overdue", "\u903E\u671F"], ["today", "\u4ECA\u65E5"], ["doing", "\u8FDB\u884C\u4E2D"], ["later", "\u7A0D\u540E"]];
   function taskGroupOf(it) {
     const t = formatLocalDate(/* @__PURE__ */ new Date());
-    const due = it && it.task_date || "", st = it && it.start_date || "";
+    const due = it && it.task_date || "", st2 = it && it.start_date || "";
     if (due && due < t) return "overdue";
-    if (st && st > t) return "later";
-    if (due && due > t) return st ? "doing" : "later";
+    if (st2 && st2 > t) return "later";
+    if (due && due > t) return st2 ? "doing" : "later";
     return "today";
   }
   function taskGroupEl(col, g) {
@@ -3784,7 +4066,7 @@
     el = document.createElement("div");
     el.className = "tgroup";
     el.dataset.g = g;
-    el.innerHTML = `<div class="tgroup-cap">${esc(label)} <span class="n"></span></div>`;
+    el.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
     const order = TASK_GROUPS.map((x) => x[0]);
     const after = [...col.querySelectorAll(":scope > .tgroup")].find((x) => order.indexOf(x.dataset.g) > order.indexOf(g)) || col.querySelector(".donefold") || col.querySelector(".add-task");
     if (after) col.insertBefore(el, after);
@@ -3803,7 +4085,7 @@
     if (item.id) card.dataset.id = item.id;
     card._item = item;
     card._scope = s;
-    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc(item.content)}</div><div class="tmeta"></div>`;
+    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc2(item.content)}</div><div class="tmeta"></div>`;
     if (isCoParent) {
       const box = document.createElement("div");
       box.className = "subtasks";
@@ -3817,9 +4099,9 @@
     const it = card._item || {}, s = card._scope || {}, box = card.querySelector(".tmeta");
     if (!box) return;
     const isCo = card.classList.contains("cotask"), g = taskGroupOf(it);
-    const deptBadge = isCo ? `<span class="badge ${s.c || "b-gray"}">${esc(s.dept || "")}</span>` : "";
+    const deptBadge = isCo ? `<span class="badge ${s.c || "b-gray"}">${esc2(s.dept || "")}</span>` : "";
     const srcBadge = it.fix_id ? `<span class="badge b-amber src-fix" title="\u6765\u81EA\u6574\u6539\u6E05\u5355 \xB7 \u70B9\u51FB\u67E5\u770B\u4F9D\u636E">\u6574\u6539</span>` : "";
-    const note = it.note ? `<span class="tnote">${esc(it.note)}</span>` : "";
+    const note = it.note ? `<span class="tnote">${esc2(it.note)}</span>` : "";
     const ops = g === "overdue" && it.id ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="\u987A\u5EF6\u5230\u4ECA\u5929"><i class="ti ti-calendar-plus"></i></button><button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="\u653E\u5F03\u5E76\u5F52\u6863"><i class="ti ti-archive"></i></button>` : "";
     const push = taskPushHtml(it, g);
     const split = isCo ? `<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> \u5206\u53D1</button>` : "";
@@ -3827,16 +4109,16 @@
     box.innerHTML = deptBadge + srcBadge + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
   }
   function taskDueHtml(it) {
-    const due = it.task_date || "", st = it.start_date || "", hr = it.task_hour || "";
-    const span = st && due && st < due;
-    const short = (d) => st.slice(0, 4) === due.slice(0, 4) ? d.slice(5) : d;
-    const txt = span ? short(st) + " ~ " + short(due) : due;
+    const due = it.task_date || "", st2 = it.start_date || "", hr = it.task_hour || "";
+    const span = st2 && due && st2 < due;
+    const short = (d) => st2.slice(0, 4) === due.slice(0, 4) ? d.slice(5) : d;
+    const txt = span ? short(st2) + " ~ " + short(due) : due;
     const time = hr ? (txt ? " " : "") + hr + ":00" : "";
     const empty = !txt && !time;
     if (empty && !it.id) return "";
     const cls = "tdue" + (empty ? " tdue-none" : "") + (it.id ? " task-edit" : "");
-    const attrs = it.id ? ` data-loop-action="task-edit" title="${span ? esc(st + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F"` : "";
-    return `<span class="${cls}"${attrs}><i class="ti ${empty ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty ? "\u8BBE\u65E5\u671F" : esc(txt) + esc(time)}</span>`;
+    const attrs = it.id ? ` data-loop-action="task-edit" title="${span ? esc2(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F"` : "";
+    return `<span class="${cls}"${attrs}><i class="ti ${empty ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty ? "\u8BBE\u65E5\u671F" : esc2(txt) + esc2(time)}</span>`;
   }
   var dayDiff = (a, b) => Math.round((Date.parse(b + "T00:00:00") - Date.parse(a + "T00:00:00")) / 864e5);
   function taskAgeHtml(it, g) {
@@ -3877,16 +4159,16 @@
         await API.del("/api/task-checkins/" + it.id + "?day_key=" + encodeURIComponent(day));
         const days = Math.max(0, cur.days - 1);
         taskCheckins.set(Number(it.id), { days, last: days ? cur.last : "", today: false });
-        toast("\u5DF2\u64A4\u9500\u4ECA\u65E5\u63A8\u8FDB \xB7 \u5DF2\u5165\u5E93");
+        toast2("\u5DF2\u64A4\u9500\u4ECA\u65E5\u63A8\u8FDB \xB7 \u5DF2\u5165\u5E93");
       } else {
         await API.post("/api/task-checkins", { loop_item_id: it.id, day_key: day });
         taskCheckins.set(Number(it.id), { days: cur.days + 1, last: day, today: true });
-        toast("\u5DF2\u8BB0\u4ECA\u65E5\u63A8\u8FDB \xB7 \u5DF2\u5165\u5E93");
+        toast2("\u5DF2\u8BB0\u4ECA\u65E5\u63A8\u8FDB \xB7 \u5DF2\u5165\u5E93");
       }
       renderTaskMeta(card);
     } catch (e) {
       btn.disabled = false;
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   async function loadTaskCheckins(isCurrent = () => true) {
@@ -3900,7 +4182,7 @@
     } catch (e) {
       if (!isCurrent()) return null;
       taskCheckins = /* @__PURE__ */ new Map();
-      if (e && e.message !== "unauthorized") toast("\u4EFB\u52A1\u63A8\u8FDB\u8BB0\u5F55\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+      if (e && e.message !== "unauthorized") toast2("\u4EFB\u52A1\u63A8\u8FDB\u8BB0\u5F55\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
       return e;
     }
   }
@@ -3929,8 +4211,8 @@
       renderTaskMeta(card);
       placeTaskCard(card);
       refreshTaskCols();
-      toast("\u5DF2\u987A\u5EF6\u5230\u4ECA\u5929 \xB7 \u5DF2\u5165\u5E93");
-    }).catch((e) => toast(persistFailMsg(e)));
+      toast2("\u5DF2\u987A\u5EF6\u5230\u4ECA\u5929 \xB7 \u5DF2\u5165\u5E93");
+    }).catch((e) => toast2(persistFailMsg(e)));
   }
   function taskDrop(btn) {
     const card = btn.closest(".tcard");
@@ -3944,7 +4226,7 @@
       refreshTaskCols();
       updateSopCounts();
       toastGo("\u5DF2\u653E\u5F03 \xB7 \u5F52\u6863\u7559\u75D5", "archive");
-    }).catch((e) => toast(persistFailMsg(e)));
+    }).catch((e) => toast2(persistFailMsg(e)));
   }
   function subOwnerBadge(owner) {
     return owner === "\u9648" ? "b-purple" : "b-blue";
@@ -3965,8 +4247,8 @@
     const oc = subOwnerBadge(owner);
     const del = it && it.id ? `<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
     const dt = it && it.task_date || "", hr = it && it.task_hour || "";
-    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr ? (dt ? " " : "") + esc(hr) + ":00" : ""}</span>` : "";
-    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sub-text">${esc(it && it.content || "")}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc(owner)}</span>${del}</span></div>`;
+    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(dt)}${hr ? (dt ? " " : "") + esc2(hr) + ":00" : ""}</span>` : "";
+    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sub-text">${esc2(it && it.content || "")}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc2(owner)}</span>${del}</span></div>`;
     box.appendChild(card);
     return card;
   }
@@ -3975,7 +4257,7 @@
     const card = btn.closest(".tcard");
     const pid = card && card.dataset.id;
     if (!pid) {
-      toast("\u8BF7\u5148\u4FDD\u5B58\u5927\u4EFB\u52A1\u518D\u5206\u53D1");
+      toast2("\u8BF7\u5148\u4FDD\u5B58\u5927\u4EFB\u52A1\u518D\u5206\u53D1");
       return;
     }
     _subtaskParentId = pid;
@@ -4009,7 +4291,7 @@
     if (!pid) return;
     const content = (document.getElementById("subtask-content").value || "").trim();
     if (!content) {
-      toast("\u8BF7\u586B\u5199\u5B50\u4EFB\u52A1\u5185\u5BB9");
+      toast2("\u8BF7\u586B\u5199\u5B50\u4EFB\u52A1\u5185\u5BB9");
       return;
     }
     const owner = document.getElementById("subtask-owner").value || "\u674E";
@@ -4020,9 +4302,9 @@
       const parentCard = document.querySelector('#newtask-company .tcard[data-id="' + pid + '"]');
       addSubTaskCard(parentCard, item);
       closeModal("subtaskMask");
-      toast("\u5DF2\u5206\u53D1\u5B50\u4EFB\u52A1\u7ED9" + owner + " \xB7 \u5DF2\u5165\u5E93");
+      toast2("\u5DF2\u5206\u53D1\u5B50\u4EFB\u52A1\u7ED9" + owner + " \xB7 \u5DF2\u5165\u5E93");
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   var _taskScope = null;
@@ -4102,14 +4384,14 @@
     if (!s) return;
     const content = (document.getElementById("task-content").value || "").trim();
     if (!content) {
-      toast("\u8BF7\u586B\u5199\u4EFB\u52A1\u5185\u5BB9");
+      toast2("\u8BF7\u586B\u5199\u4EFB\u52A1\u5185\u5BB9");
       return;
     }
     const task_date = document.getElementById("task-date").value || "";
     const startEl = document.getElementById("task-start");
     const start_date = startEl && startEl.value || "";
     if (start_date && task_date && start_date > task_date) {
-      toast("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u622A\u6B62\u65E5\u671F");
+      toast2("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u622A\u6B62\u65E5\u671F");
       return;
     }
     const task_hour = document.getElementById("task-hour").value || "";
@@ -4133,9 +4415,9 @@
         refreshTaskCols();
         closeModal("taskMask");
         _taskEditing = null;
-        toast("\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
+        toast2("\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
       } catch (e) {
-        toast(persistFailMsg(e));
+        toast2(persistFailMsg(e));
       }
       return;
     }
@@ -4146,10 +4428,10 @@
       addTaskCard(s, item.content, item);
       refreshTaskCols();
       closeModal("taskMask");
-      toast((s.dept === "\u516C\u53F8" ? urgent ? "\u5DF2\u6D3E\u53D1\u7D27\u6025\u516C\u53F8\u4EFB\u52A1" : "\u5DF2\u6D3E\u53D1\u516C\u53F8\u4EFB\u52A1" : "\u5DF2\u65B0\u589E" + s.dept + "\u4EFB\u52A1") + " \xB7 \u5DF2\u5165\u5E93");
+      toast2((s.dept === "\u516C\u53F8" ? urgent ? "\u5DF2\u6D3E\u53D1\u7D27\u6025\u516C\u53F8\u4EFB\u52A1" : "\u5DF2\u6D3E\u53D1\u516C\u53F8\u4EFB\u52A1" : "\u5DF2\u65B0\u589E" + s.dept + "\u4EFB\u52A1") + " \xB7 \u5DF2\u5165\u5E93");
       if (urgent) loadUrgent();
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   function taskDel(btn) {
@@ -4159,7 +4441,7 @@
     API.del("/api/loop-items/" + card.dataset.id).then(() => {
       card.remove();
       refreshTaskCols();
-    }).catch((e) => toast("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
+    }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
   }
   function refreshTaskCols(col) {
     if (col === null) return;
@@ -4245,9 +4527,9 @@
         c.focus();
         placeCaretEnd(c);
       }
-      toast("\u5DF2\u65B0\u589E\u6574\u6539\u9879 \xB7 \u5DF2\u5165\u5E93");
+      toast2("\u5DF2\u65B0\u589E\u6574\u6539\u9879 \xB7 \u5DF2\u5165\u5E93");
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   function sFromDept(dept) {
@@ -4365,7 +4647,7 @@
       if (loadVersion !== closedLoopLoadVersion) return;
       if (e && e.message !== "unauthorized") {
         showTableFailure("tb-fix", 8, "\u6574\u6539\u6E05\u5355", e, loadClosedLoop);
-        toast(loadFailureText2("\u6574\u6539\u6E05\u5355", e));
+        toast2(loadFailureText2("\u6574\u6539\u6E05\u5355", e));
       }
     }
     const depTb = document.getElementById("tb-dep");
@@ -4415,7 +4697,7 @@
         } catch (e) {
           if (loadVersion !== closedLoopLoadVersion) return;
           addTaskCard(ts, it.content, it);
-          toast("\u8FC7\u671F\u4EFB\u52A1\u81EA\u52A8\u5F52\u6863\u5931\u8D25\uFF1A" + (e && e.message || "\u672A\u77E5\u9519\u8BEF"));
+          toast2("\u8FC7\u671F\u4EFB\u52A1\u81EA\u52A8\u5F52\u6863\u5931\u8D25\uFF1A" + (e && e.message || "\u672A\u77E5\u9519\u8BEF"));
         }
       }));
       if (loadVersion !== closedLoopLoadVersion) return;
@@ -4429,7 +4711,7 @@
       if (loadVersion !== closedLoopLoadVersion) return;
       if (e && e.message !== "unauthorized") {
         showLoopLoadFailure(e);
-        toast(loadFailureText2("\u95ED\u73AF\u6570\u636E", e));
+        toast2(loadFailureText2("\u95ED\u73AF\u6570\u636E", e));
       }
     }
     const de = document.getElementById("dep-empty");
@@ -4440,14 +4722,14 @@
   function depRowHtml(it) {
     const date = (it.created_at || "").slice(5, 10) || today();
     const badge3 = it.status === "\u91C7\u7EB3" ? '<span class="badge b-green">\u91C7\u7EB3</span>' : '<span class="badge b-teal">\u6C89\u6DC0</span>';
-    return `<td class="num">${esc(date)}</td><td class="ctr">${badge3}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc(it.analysis || "")}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
+    return `<td class="num">${esc2(date)}</td><td class="ctr">${badge3}</td><td class="editable" contenteditable data-field="content">${esc2(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc2(it.analysis || "")}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
   }
   async function addDepositRow() {
     try {
       const { item } = await API.post("/api/loop-items", { kind: "deposit", content: "", status: "\u6C89\u6DC0" });
       const tb = document.getElementById("tb-dep");
-      const state = tb.querySelector("tr[data-load-state]");
-      if (state) state.remove();
+      const state2 = tb.querySelector("tr[data-load-state]");
+      if (state2) state2.remove();
       const tr = document.createElement("tr");
       tr.dataset.id = item.id;
       tr.dataset.ep = "/api/loop-items";
@@ -4459,7 +4741,7 @@
         c.focus();
       }
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
+      toast2(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
   function depDel(btn) {
@@ -4470,7 +4752,7 @@
       tr.remove();
       const tb = document.getElementById("tb-dep");
       if (tb && !tb.children.length) document.getElementById("dep-empty").style.display = "block";
-    }).catch((e) => toast("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
+    }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
   }
   async function addPlanRow(dept) {
     const s = sFromDept(dept);
@@ -4482,9 +4764,9 @@
         c.focus();
         placeCaretEnd(c);
       }
-      toast("\u5DF2\u65B0\u589E" + dept + "\u8BA1\u5212 \xB7 \u5DF2\u5165\u5E93");
+      toast2("\u5DF2\u65B0\u589E" + dept + "\u8BA1\u5212 \xB7 \u5DF2\u5165\u5E93");
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   async function addTestRow(dept) {
@@ -4497,16 +4779,16 @@
         c.focus();
         placeCaretEnd(c);
       }
-      toast("\u5DF2\u65B0\u589E" + dept + "\u6D4B\u8BD5 \xB7 \u5DF2\u5165\u5E93");
+      toast2("\u5DF2\u65B0\u589E" + dept + "\u6D4B\u8BD5 \xB7 \u5DF2\u5165\u5E93");
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   var CA_PRIO = { "\u6700\u9AD8": "b-red", "\u9AD8": "b-amber", "\u4E2D": "b-blue", "\u6301\u7EED": "b-gray" };
   var CA_OWNER = { "\u674E": "b-blue", "\u9648": "b-purple", "\u4E3B\u7BA1": "b-teal" };
   var CA_STATUS = { "\u5F85\u5F00\u59CB": "b-gray", "\u8FDB\u884C\u4E2D": "b-amber", "\u5DF2\u5B8C\u6210": "b-green" };
   function contentRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="name">${esc(r.name)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="problem">${esc(r.problem)}</td><td class="editable csp-s-33ee298127" contenteditable data-field="type">${esc(r.type)}</td><td class="ctr"><span class="tagselect ${CA_PRIO[r.priority] || "b-blue"}" data-kind="priority">${esc(r.priority || "\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_OWNER[r.owner] || "b-blue"}" data-kind="owner">${esc(r.owner || "\u674E")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_STATUS[r.status] || "b-gray"}" data-kind="status">${esc(r.status || "\u5F85\u5F00\u59CB")}<i class="ti ti-chevron-down"></i></span></td><td class="num">${esc(r.add_date || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc(r.note)}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
+    return `<td class="editable" contenteditable data-field="name">${esc2(r.name)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="problem">${esc2(r.problem)}</td><td class="editable csp-s-33ee298127" contenteditable data-field="type">${esc2(r.type)}</td><td class="ctr"><span class="tagselect ${CA_PRIO[r.priority] || "b-blue"}" data-kind="priority">${esc2(r.priority || "\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_OWNER[r.owner] || "b-blue"}" data-kind="owner">${esc2(r.owner || "\u674E")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_STATUS[r.status] || "b-gray"}" data-kind="status">${esc2(r.status || "\u5F85\u5F00\u59CB")}<i class="ti ti-chevron-down"></i></span></td><td class="num">${esc2(r.add_date || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc2(r.note)}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
   }
   async function loadContent() {
     const loadVersion = ++contentLoadVersion;
@@ -4531,7 +4813,7 @@
         showTableFailure("tb-content", 9, "\u5185\u5BB9\u8D44\u4EA7", e, loadContent);
         const empty = document.getElementById("content-empty");
         if (empty) empty.style.display = "none";
-        toast(loadFailureText2("\u5185\u5BB9\u8D44\u4EA7", e));
+        toast2(loadFailureText2("\u5185\u5BB9\u8D44\u4EA7", e));
       }
     }
   }
@@ -4539,8 +4821,8 @@
     try {
       const { item } = await API.post("/api/content-assets", {});
       const tb = document.getElementById("tb-content");
-      const state = tb.querySelector("tr[data-load-state]");
-      if (state) state.remove();
+      const state2 = tb.querySelector("tr[data-load-state]");
+      if (state2) state2.remove();
       const tr = document.createElement("tr");
       tr.dataset.id = item.id;
       tr.dataset.ep = "/api/content-assets";
@@ -4553,7 +4835,7 @@
         placeCaretEnd(c);
       }
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
+      toast2(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
   function contentDel(btn) {
@@ -4564,7 +4846,7 @@
       tr.remove();
       const tb = document.getElementById("tb-content");
       if (tb && !tb.children.length) document.getElementById("content-empty").style.display = "block";
-    }).catch((e) => toast("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
+    }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
   }
   function aiFp(dept, text2) {
     return (dept || "") + "|" + String(text2 || "").trim().slice(0, 200);
@@ -4610,7 +4892,7 @@
       aiMarkDone(grp, kind);
     } catch (e) {
       btn.disabled = false;
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   function injectAiActions() {
@@ -4625,7 +4907,7 @@
   }
   injectAiActions();
 
-  // public/src/neg-ads.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/neg-ads.js
   var NEGMATCH_BADGE = { "\u7CBE\u786E": "b-green", "\u8BCD\u7EC4": "b-blue", "\u5E7F\u6CDB": "b-amber" };
   var NEGSTATUS_BADGE = { "\u751F\u6548": "b-green", "\u89C2\u5BDF": "b-amber", "\u5DF2\u79FB\u9664": "b-gray" };
   var ADSTATUS_BADGE = { "\u91C7\u7528\u4E2D": "b-green", "\u6D4B\u8BD5\u4E2D": "b-amber", "\u5DF2\u5F03\u7528": "b-gray" };
@@ -4634,10 +4916,10 @@
     if (row) row.remove();
   }
   function negRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc(r.added_date || "")}</td><td class="editable csp-s-33ee298127" contenteditable data-field="reason">${esc(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
+    return `<td class="editable" contenteditable data-field="word">${esc2(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc2(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc2(r.added_date || "")}</td><td class="editable csp-s-33ee298127" contenteditable data-field="reason">${esc2(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc2(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc2(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
   }
   function adRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="title">${esc(r.title)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="description">${esc(r.description || "")}</td><td class="editable" contenteditable data-field="ctr">${esc(r.ctr || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="ab_conclusion">${esc(r.ab_conclusion || "")}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || "b-amber"}" data-kind="adstatus">${esc(r.status || "\u6D4B\u8BD5\u4E2D")}<i class="ti ti-chevron-down"></i></span></td>`;
+    return `<td class="editable" contenteditable data-field="title">${esc2(r.title)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="description">${esc2(r.description || "")}</td><td class="editable" contenteditable data-field="ctr">${esc2(r.ctr || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="ab_conclusion">${esc2(r.ab_conclusion || "")}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || "b-amber"}" data-kind="adstatus">${esc2(r.status || "\u6D4B\u8BD5\u4E2D")}<i class="ti ti-chevron-down"></i></span></td>`;
   }
   async function addNeg() {
     try {
@@ -4652,9 +4934,9 @@
         c.focus();
         placeCaretEnd(c);
       }
-      toast("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
+      toast2("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+      toast2(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
     }
   }
   async function addAd() {
@@ -4670,13 +4952,13 @@
         c.focus();
         placeCaretEnd(c);
       }
-      toast("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
+      toast2("\u5DF2\u52A0\u4E00\u884C \xB7 \u76F4\u63A5\u5728\u8868\u683C\u91CC\u6539");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+      toast2(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
     }
   }
 
-  // public/src/ga4-view.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/ga4-view.js
   var ga4_view_exports = {};
   __export(ga4_view_exports, {
     loadGa4: () => loadGa42
@@ -4726,7 +5008,7 @@
     if (!body) return;
     const items = Array.isArray(rows2) ? rows2 : [];
     body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell2) => {
-      const value = cell2.html == null ? esc(cell2.value ?? "") : cell2.html;
+      const value = cell2.html == null ? esc2(cell2.value ?? "") : cell2.html;
       return `<td class="${cell2.cls || ""}">${value}</td>`;
     }).join("")}</tr>`).join("");
     if (empty) {
@@ -4835,7 +5117,7 @@
     ], metrics ? "\u6240\u9009\u533A\u95F4\u6CA1\u6709\u5E7F\u544A\u7CFB\u5217\u6570\u636E" : baseEmpty);
     const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
     fillTable("ga4-events", "ga4-events-empty", data.conversionEvents, (row) => [
-      { html: `<div class="ga4-event-label">${esc(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc(row.eventName || "")}</div>` },
+      { html: `<div class="ga4-event-label">${esc2(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc2(row.eventName || "")}</div>` },
       { value: formatNumber(row.eventCount), cls: "num" },
       { value: formatNumber(row.keyEvents, 1), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
@@ -4847,7 +5129,7 @@
     const retry = document.getElementById("ga4-retry");
     if (retry) retry.disabled = true;
     try {
-      const data = await API.get(withRange("/api/ga4/overview"));
+      const data = await API.get(withRange("/api/ga4/overview", "data"));
       if (requestId !== requestSequence) return;
       renderGa4(data || { connected: false });
     } catch (error) {
@@ -4866,8 +5148,11 @@
       if (requestId === requestSequence && retry) retry.disabled = false;
     }
   }
+  document.addEventListener("timerange", (e) => {
+    if (e.detail && e.detail.scope === "data") loadGa42();
+  });
 
-  // public/src/market-brain.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/market-brain.js
   var market_brain_exports = {};
   __export(market_brain_exports, {
     loadBrain: () => loadBrain,
@@ -4877,7 +5162,7 @@
   });
   window._marketById = {};
   function mktEsc(s) {
-    return esc(s);
+    return esc2(s);
   }
   function renderMarket(items) {
     const tb = document.getElementById("tb-market");
@@ -4929,19 +5214,19 @@
       it._ans[cell2.dataset.resp] = cell2.innerText;
       body.answers = JSON.stringify(it._ans);
     } else return;
-    API.patch("/api/market/research/" + id, body).catch((err) => toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
+    API.patch("/api/market/research/" + id, body).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
   });
   async function loadBrain() {
     try {
-      const { state, summary } = await API.get("/api/market/brain");
+      const { state: state2, summary } = await API.get("/api/market/brain");
       const chip = document.getElementById("brainStatus");
       if (chip) {
-        if (!state.hasSummary) {
+        if (!state2.hasSummary) {
           chip.className = "badge b-gray";
           chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u672A\u5B66\u4E60";
-        } else if (state.needsUpdate) {
+        } else if (state2.needsUpdate) {
           chip.className = "badge b-amber";
-          chip.textContent = state.reason === "new_month" ? "AI \u8BB0\u5FC6\uFF1A\u5DF2\u8DE8\u6708\uFF0C\u5EFA\u8BAE\u66F4\u65B0" : "AI \u8BB0\u5FC6\uFF1A\u8D44\u6599\u6709\u53D8\uFF0C\u5EFA\u8BAE\u66F4\u65B0";
+          chip.textContent = state2.reason === "new_month" ? "AI \u8BB0\u5FC6\uFF1A\u5DF2\u8DE8\u6708\uFF0C\u5EFA\u8BAE\u66F4\u65B0" : "AI \u8BB0\u5FC6\uFF1A\u8D44\u6599\u6709\u53D8\uFF0C\u5EFA\u8BAE\u66F4\u65B0";
         } else {
           chip.className = "badge b-green";
           chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u5DF2\u662F\u6700\u65B0";
@@ -4952,7 +5237,7 @@
         if (summary) {
           card.style.display = "block";
           document.getElementById("brainSummary").innerHTML = mdToHtml(summary);
-          document.getElementById("brainUpdatedAt").textContent = state.updatedAt ? "\u66F4\u65B0\u4E8E " + state.updatedAt : "";
+          document.getElementById("brainUpdatedAt").textContent = state2.updatedAt ? "\u66F4\u65B0\u4E8E " + state2.updatedAt : "";
         } else card.style.display = "none";
       }
     } catch (e) {
@@ -4965,12 +5250,12 @@
     }
     try {
       const r = await API.post("/api/market/brain/refresh", {});
-      if (r && r.updated) toast("AI \u5DF2\u91CD\u65B0\u5B66\u4E60\u5E02\u573A\u8D44\u6599\uFF0C\u8BB0\u5FC6\u5DF2\u66F4\u65B0");
-      else if (r && r.reason === "no_source") toast("\u6682\u65E0\u5E02\u573A\u8D44\u6599\u53EF\u5B66\u4E60");
-      else toast("\u8BB0\u5FC6\u5DF2\u66F4\u65B0");
+      if (r && r.updated) toast2("AI \u5DF2\u91CD\u65B0\u5B66\u4E60\u5E02\u573A\u8D44\u6599\uFF0C\u8BB0\u5FC6\u5DF2\u66F4\u65B0");
+      else if (r && r.reason === "no_source") toast2("\u6682\u65E0\u5E02\u573A\u8D44\u6599\u53EF\u5B66\u4E60");
+      else toast2("\u8BB0\u5FC6\u5DF2\u66F4\u65B0");
       await loadBrain();
     } catch (e) {
-      toast(e.status === 503 ? "\u8BF7\u5148\u914D\u7F6E ANTHROPIC_API_KEY \u518D\u66F4\u65B0\u8BB0\u5FC6" : "\u66F4\u65B0\u5931\u8D25\uFF1A" + (e.body && e.body.error || e.message));
+      toast2(e.status === 503 ? "\u8BF7\u5148\u914D\u7F6E ANTHROPIC_API_KEY \u518D\u66F4\u65B0\u8BB0\u5FC6" : "\u66F4\u65B0\u5931\u8D25\uFF1A" + (e.body && e.body.error || e.message));
     }
     if (btn) {
       btn.disabled = false;
@@ -4978,14 +5263,14 @@
     }
   }
 
-  // public/src/kpi-view.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/kpi-view.js
   var kpi_view_exports = {};
   __export(kpi_view_exports, {
     loadOverview: () => loadOverview,
     renderKPI: () => renderKPI2
   });
 
-  // public/src/kpi.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/kpi.js
   var TOTAL = [{ n: "\u8BE2\u76D8\u603B\u91CF", w: 25, t: 60, a: 0, m: "r", u: "\u5C01" }, { n: "A\u7EA7\u8BE2\u76D8\u6570", w: 35, t: 10, a: 0, m: "r", u: "\u5C01" }, { n: "\u6709\u6548\u8BE2\u76D8\u6210\u672C", w: 25, t: 2e3, a: 0, m: "i", u: "\xA5" }, { n: "\u95ED\u73AF\u6267\u884C\u5EA6", w: 15, t: 5, a: 0, m: "r", u: "\u9879" }];
   var SEO = [{ n: "\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4", w: 25, t: 10, a: 0, m: "r", u: "%" }, { n: "\u6838\u5FC3\u8BCD Top10 \u5360\u6BD4", w: 25, t: 40, a: 0, m: "r", u: "%" }, { n: "\u5173\u952E\u8BCD\u8986\u76D6/\u957F\u5C3E", w: 15, t: 500, a: 0, m: "r", u: "\u8BCD" }, { n: "\u65B0\u589E\u6536\u5F55\u9875\u9762", w: 15, t: 20, a: 0, m: "r", u: "\u9875" }, { n: "\u8DF3\u51FA\u7387", w: 10, t: 55, a: 0, m: "i", u: "%" }, { n: "\u9875\u9762\u505C\u7559\u65F6\u957F", w: 10, t: 150, a: 0, m: "r", u: "s" }];
   var SEM = [{ n: "CPC", w: 15, t: 4, a: 0, m: "i", u: "\xA5" }, { n: "CTR", w: 15, t: 3.5, a: 0, m: "r", u: "%" }, { n: "\u8D28\u91CF\u5206", w: 15, t: 7.5, a: 0, m: "r", u: "" }, { n: "ROAS", w: 20, t: 3.5, a: 0, m: "r", u: "x" }, { n: "\u8F6C\u5316\u6B21\u6570", w: 15, t: 60, a: 0, m: "r", u: "\u6B21" }, { n: "\u6BCF\u6B21\u8F6C\u5316\u8D39\u7528", w: 20, t: 300, a: 0, m: "i", u: "\xA5" }];
@@ -5039,15 +5324,17 @@
   }
   var metricsRequestSequence = 0;
   async function loadMetrics() {
-    const requestId = ++metricsRequestSequence, revision = getRangeRevision();
+    const requestId = ++metricsRequestSequence, revision = getRangeRevision("kpi");
     try {
-      const { rows: rows2 } = await API.get(withRange2("/api/kpi-targets"));
-      if (requestId !== metricsRequestSequence || revision !== getRangeRevision()) return false;
-      applyKpiServer(rows2);
+      const res = await API.get(withRange2("/api/kpi-targets", "kpi"));
+      if (requestId !== metricsRequestSequence || revision !== getRangeRevision("kpi")) return false;
+      applyKpiServer(res.rows);
+      window._kpiRows = res.rows || [];
+      window._kpiAssessment = res.assessment || null;
       syncKpiInputs();
       return true;
     } catch (e) {
-      if (e && e.message !== "unauthorized") toast("KPI \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+      if (e && e.message !== "unauthorized") toast2("KPI \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
     }
     return false;
   }
@@ -5059,19 +5346,19 @@
   }
   var weeksRequestSequence = 0;
   async function loadWeeks() {
-    const requestId = ++weeksRequestSequence, revision = getRangeRevision();
+    const requestId = ++weeksRequestSequence, revision = getRangeRevision("kpi");
     try {
-      const [seo, sem] = await Promise.all([API.get(withRange2("/api/seo-weeks")), API.get(withRange2("/api/sem-weeks"))]);
-      if (requestId !== weeksRequestSequence || revision !== getRangeRevision()) return false;
+      const [seo, sem] = await Promise.all([API.get(withRange2("/api/seo-weeks", "kpi")), API.get(withRange2("/api/sem-weeks", "kpi"))]);
+      if (requestId !== weeksRequestSequence || revision !== getRangeRevision("kpi")) return false;
       window._seoWeeks = (seo.items || []).map(mapSeoWeek);
       window._semWeeks = (sem.items || []).map(mapSemWeek);
       renderBoardCards();
       return true;
     } catch (e) {
-      if (requestId !== weeksRequestSequence || revision !== getRangeRevision()) return false;
+      if (requestId !== weeksRequestSequence || revision !== getRangeRevision("kpi")) return false;
       window._seoWeeks = [];
       window._semWeeks = [];
-      if (e && e.message !== "unauthorized") toast("\u5468\u62A5\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
+      if (e && e.message !== "unauthorized") toast2("\u5468\u62A5\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
     }
     return false;
   }
@@ -5113,9 +5400,9 @@
       renderKPI();
       closeModal("seoWkMask");
       const wow = SEO[0].actualAvailable ? "\uFF0C\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4 " + (SEO[0].a >= 0 ? "+" : "") + SEO[0].a + "%" : "";
-      toast("\u5DF2\u5F55\u5165\u672C\u5468 GSC \u6570\u636E \xB7 \u5DF2\u5165\u5E93, \u56FE\u8868+KPI \u5DF2\u66F4\u65B0" + wow);
+      toast2("\u5DF2\u5F55\u5165\u672C\u5468 GSC \u6570\u636E \xB7 \u5DF2\u5165\u5E93, \u56FE\u8868+KPI \u5DF2\u66F4\u65B0" + wow);
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u674E/SEO \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+      toast2(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u674E/SEO \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
     }
   }
   async function submitSemWeek() {
@@ -5135,13 +5422,207 @@
       loadSemBoardAds();
       renderKPI();
       closeModal("semWkMask");
-      toast("\u5DF2\u5BFC\u5165\u672C\u5468 Ads \u6570\u636E \xB7 CPC \xA5" + (rec.cpc ?? "-") + " / CTR " + (rec.ctr ?? "-") + "% / \u6BCF\u8BE2\u76D8 \xA5" + (rec.cpconv ?? "-") + "\uFF08\u540E\u7AEF\u8BA1\u7B97\uFF09, KPI \u5DF2\u66F4\u65B0");
+      toast2("\u5DF2\u5BFC\u5165\u672C\u5468 Ads \u6570\u636E \xB7 CPC \xA5" + (rec.cpc ?? "-") + " / CTR " + (rec.ctr ?? "-") + "% / \u6BCF\u8BE2\u76D8 \xA5" + (rec.cpconv ?? "-") + "\uFF08\u540E\u7AEF\u8BA1\u7B97\uFF09, KPI \u5DF2\u66F4\u65B0");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u9648/SEM \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
+      toast2(e.status === 403 ? "\u65E0\u6743\u5F55\u5165\uFF08\u4EC5\u9648/SEM \u53EF\u5F55\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + e.message);
     }
   }
 
-  // public/src/ledger.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/execution.js
+  async function refreshAfterWrite() {
+    await loadMetrics();
+    if (window.renderKPI) window.renderKPI();
+  }
+  var ST_LABEL = { OPEN: "\u5F85\u6267\u884C", IN_PROGRESS: "\u6267\u884C\u4E2D", IMPLEMENTED: "\u5DF2\u5B9E\u65BD\u5F85\u9A8C\u8BC1", VERIFYING: "\u9A8C\u8BC1\u4E2D", VERIFIED: "\u5DF2\u9A8C\u8BC1", FAILED: "\u903E\u671F\u672A\u9A8C\u8BC1", CANCELLED: "\u5DF2\u53D6\u6D88" };
+  var ST_TONE = { VERIFIED: "kpi-tone-green", VERIFYING: "kpi-tone-blue", IMPLEMENTED: "kpi-tone-blue", IN_PROGRESS: "kpi-tone-amber", OPEN: "kpi-tone-muted", FAILED: "kpi-tone-primary", CANCELLED: "kpi-tone-muted" };
+  var IMP_RANK = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+  var IMP_LABEL = { HIGH: "\u9AD8", MEDIUM: "\u4E2D", LOW: "\u4F4E" };
+  var RESULT_LABEL = { POSITIVE: "\u6B63\u5411", NEUTRAL: "\u65E0\u660E\u663E\u53D8\u5316", NEGATIVE: "\u8D1F\u5411" };
+  var NEXT_STATUS = ["OPEN", "IN_PROGRESS", "IMPLEMENTED", "VERIFYING", "VERIFIED"];
+  function num(v) {
+    return v == null || !Number.isFinite(Number(v)) ? null : Number(v);
+  }
+  function verifCell(r) {
+    const bv = num(r.before_value), av = num(r.after_value);
+    if (bv != null && av != null) return esc(r.related_metric || "") + " " + bv + "\u2192" + av;
+    if (r.verification_result_text) return esc(r.verification_result_text);
+    if (r.verification_method) return esc(r.verification_method);
+    return "\u2014";
+  }
+  function rowHtml(r) {
+    const st2 = ST_LABEL[r.status] || r.status;
+    const tone = ST_TONE[r.status] || "kpi-tone-muted";
+    const res = r.verification_result ? '<span class="exec-res ' + (r.verification_result === "NEGATIVE" ? "kpi-tone-primary" : r.verification_result === "POSITIVE" ? "kpi-tone-green" : "kpi-tone-muted") + '">' + RESULT_LABEL[r.verification_result] + "</span>" : "";
+    const adv = NEXT_STATUS.indexOf(r.status);
+    const advBtn = adv >= 0 && adv < NEXT_STATUS.length - 1 ? '<button class="exec-btn" data-exec-advance="' + r.id + '" data-next="' + NEXT_STATUS[adv + 1] + '">\u63A8\u8FDB\u2192' + ST_LABEL[NEXT_STATUS[adv + 1]] + "</button>" : "";
+    const excluded = Number(r.exclude_from_assessment) === 1 ? '<span class="kpi-ds-badge">\u5DF2\u6392\u9664</span>' : "";
+    return '<tr><td class="exec-prob">' + esc(r.problem || "") + excluded + (r.analysis ? '<div class="exec-sub">\u5206\u6790\uFF1A' + esc(r.analysis) + "</div>" : "") + (r.action ? '<div class="exec-sub">\u52A8\u4F5C\uFF1A' + esc(r.action) + "</div>" : "") + "</td><td>" + esc(r.owner || "") + '</td><td><span class="exec-imp imp-' + (r.impact_level || "MEDIUM") + '">' + (IMP_LABEL[r.impact_level] || "\u4E2D") + '</span></td><td><span class="exec-st ' + tone + '">' + st2 + '</span></td><td class="exec-verif">' + verifCell(r) + " " + res + '</td><td class="exec-act">' + advBtn + "</td></tr>";
+  }
+  function panelHtml(channel, items) {
+    const sorted = items.slice().sort((a, b) => {
+      const ir = (IMP_RANK[a.impact_level] ?? 1) - (IMP_RANK[b.impact_level] ?? 1);
+      if (ir) return ir;
+      return String(a.verification_due_at || "").localeCompare(String(b.verification_due_at || ""));
+    });
+    const elig = sorted.filter((r) => Number(r.exclude_from_assessment) !== 1);
+    const ver = elig.filter((r) => r.status === "VERIFIED");
+    const bkt = (lvl) => {
+      const e = elig.filter((r) => (r.impact_level || "MEDIUM") === lvl);
+      const v = e.filter((r) => r.status === "VERIFIED");
+      return v.length + "/" + e.length;
+    };
+    const summary = "\u672C\u533A\u95F4\u5230\u671F " + elig.length + " \xB7 \u5DF2\u9A8C\u8BC1 " + ver.length + ' \xB7 <span class="exec-bkt">\u9AD8 ' + bkt("HIGH") + '</span> <span class="exec-bkt">\u4E2D ' + bkt("MEDIUM") + '</span> <span class="exec-bkt">\u4F4E ' + bkt("LOW") + "</span>";
+    const table = sorted.length ? '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u95EE\u9898 / \u5206\u6790 / \u52A8\u4F5C</th><th>\u8D1F\u8D23</th><th>\u5F71\u54CD</th><th>\u72B6\u6001</th><th>\u9A8C\u8BC1</th><th></th></tr></thead><tbody>' + sorted.map(rowHtml).join("") + "</tbody></table></div>" : '<div class="kpi-empty">\u672C\u533A\u95F4\u65E0\u5230\u671F\u9A8C\u8BC1\u7684\u95ED\u73AF</div>';
+    const form = '<form class="exec-form" data-exec-form="' + channel + '"><input name="problem" placeholder="\u53D1\u73B0\u7684\u95EE\u9898\uFF08\u5FC5\u586B\uFF09" required><input name="analysis" placeholder="\u5206\u6790\uFF1A\u4E3A\u4EC0\u4E48\u53D1\u751F"><input name="action" placeholder="\u52A8\u4F5C\uFF1A\u91C7\u53D6\u4E86\u4EC0\u4E48"><input name="verification_method" placeholder="\u9A8C\u8BC1\u65B9\u6CD5\uFF1A\u600E\u4E48\u5224\u65AD\u6709\u6548"><select name="impact_level"><option value="HIGH">\u9AD8\u5F71\u54CD</option><option value="MEDIUM" selected>\u4E2D\u5F71\u54CD</option><option value="LOW">\u4F4E\u5F71\u54CD</option></select><label class="exec-due">\u9A8C\u8BC1\u5230\u671F <input type="date" name="verification_due_at"></label><button type="submit" class="exec-btn exec-btn-primary">\u65B0\u589E\u95ED\u73AF</button></form>';
+    return '<details class="exec-panel" open><summary>\u6267\u884C\u9A8C\u8BC1\u95ED\u73AF \xB7 ' + summary + "</summary>" + table + form + "</details>";
+  }
+  var CH_ANCHOR = { seo: "seoRows", sem: "semRows" };
+  function ensureContainer(channel) {
+    const anchor = document.getElementById(CH_ANCHOR[channel]);
+    if (!anchor) return null;
+    let box = document.getElementById("exec-" + channel);
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "exec-" + channel;
+      box.className = "exec-mount";
+      anchor.parentElement.appendChild(box);
+    }
+    return box;
+  }
+  async function renderChannel(channel) {
+    const box = ensureContainer(channel);
+    if (!box) return;
+    try {
+      const { items } = await API.get(withRange2("/api/execution-loops?channel=" + channel + "&due=1"));
+      box.innerHTML = panelHtml(channel, items || []);
+    } catch (e) {
+      if (e && e.message !== "unauthorized") box.innerHTML = '<div class="kpi-empty">\u6267\u884C\u95ED\u73AF\u52A0\u8F7D\u5931\u8D25\uFF1A' + esc(e.message || "\u672A\u77E5\u9519\u8BEF") + "</div>";
+    }
+  }
+  var seq = 0;
+  async function mountExecution() {
+    const rev = getRangeRevision(), id = ++seq;
+    await Promise.all([renderChannel("seo"), renderChannel("sem")]);
+    if (id !== seq || rev !== getRangeRevision()) {
+    }
+  }
+  document.addEventListener("submit", async (e) => {
+    const form = e.target.closest && e.target.closest("[data-exec-form]");
+    if (!form) return;
+    e.preventDefault();
+    const channel = form.getAttribute("data-exec-form");
+    const body = { channel };
+    for (const el of form.elements) {
+      if (el.name && el.value) body[el.name] = el.value;
+    }
+    if (!body.problem) {
+      toast("\u95EE\u9898\u5FC5\u586B");
+      return;
+    }
+    try {
+      await API.post("/api/execution-loops", body);
+      toast("\u5DF2\u65B0\u589E\u6267\u884C\u95ED\u73AF");
+      await refreshAfterWrite();
+    } catch (err) {
+      toast(err.status === 403 ? "\u65E0\u6743\u5728\u6B64\u6E20\u9053\u65B0\u589E" : "\u65B0\u589E\u5931\u8D25\uFF1A" + (err.message || ""));
+    }
+  });
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest && e.target.closest("[data-exec-advance]");
+    if (!btn) return;
+    const id = btn.getAttribute("data-exec-advance"), next = btn.getAttribute("data-next");
+    const channel = btn.closest('[id^="exec-"]').id.replace("exec-", "");
+    try {
+      await API.patch("/api/execution-loops/" + id, { status: next });
+      toast("\u5DF2\u63A8\u8FDB\u81F3\u300C" + (ST_LABEL[next] || next) + "\u300D");
+      await refreshAfterWrite();
+    } catch (err) {
+      toast(err.status === 403 ? "\u65E0\u6743\u7F16\u8F91\u672C\u8BB0\u5F55" : "\u66F4\u65B0\u5931\u8D25\uFF1A" + (err.message || ""));
+    }
+  });
+  document.addEventListener("timerange", mountExecution);
+
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/kpi-periods.js
+  var OWNERS = [
+    { owner: "company", label: "\u516C\u53F8", type: "quarter" },
+    { owner: "seo", label: "\u674E \xB7 SEO", type: "quarter" },
+    { owner: "sem", label: "\u9648 \xB7 SEM", type: "month" }
+  ];
+  var OWNER_LABEL = { company: "\u516C\u53F8", seo: "\u674E\xB7SEO", sem: "\u9648\xB7SEM" };
+  var PERIOD_LABEL = { quarter: "\u5B63\u5EA6", month: "\u6708\u5EA6" };
+  function curKey(type) {
+    const d = /* @__PURE__ */ new Date(), y = d.getFullYear(), m = d.getMonth() + 1;
+    return type === "month" ? y + "-" + String(m).padStart(2, "0") : y + "-Q" + (Math.floor((m - 1) / 3) + 1);
+  }
+  var pct = (c) => Math.round((Number(c) || 0) * 100);
+  function scopeText(s) {
+    if (!s) return "\u5F85\u8BC4\u4F30";
+    if (s.score != null) return '<b class="kpi-tone-green">' + s.score + "</b> \u5206";
+    if (s.provisionalScore != null) return "\u53C2\u8003 <b>" + s.provisionalScore + "</b>\uFF08\u8986\u76D6\u7387 " + pct(s.coverage) + "%\uFF0C\u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206\uFF09";
+    return "\u5F85\u8BC4\u4F30";
+  }
+  function snapText(r) {
+    if (r.score != null) return '<b class="kpi-tone-green">' + r.score + "</b> \u5206";
+    if (r.provisional_score != null) return "\u53C2\u8003 " + r.provisional_score + "\uFF08\u8986\u76D6\u7387 " + pct(r.coverage) + "%\uFF09";
+    return "\u5F85\u8BC4\u4F30\uFF08" + (r.status || "") + "\uFF09";
+  }
+  function currentRowHtml(o) {
+    const key = curKey(o.type);
+    const s = o._preview;
+    return '<div class="kpip-cur"><span class="kpip-owner">' + o.label + '</span><span class="kpip-period">' + PERIOD_LABEL[o.type] + " " + key + '\uFF08\u8FDB\u884C\u4E2D\uFF09</span><span class="kpip-score">' + (s ? scopeText(s) : "\u2026") + '</span><button class="exec-btn exec-btn-primary" data-settle-owner="' + o.owner + '" data-settle-type="' + o.type + '" data-settle-key="' + key + '">\u7ED3\u7B97\u672C\u671F\u5E76\u51BB\u7ED3</button></div>';
+  }
+  function historyHtml(items) {
+    if (!items.length) return '<div class="kpi-empty">\u6682\u65E0\u5DF2\u7ED3\u7B97\u8003\u6838\u671F</div>';
+    return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u8003\u6838\u671F</th><th>\u5BF9\u8C61</th><th>\u6210\u7EE9</th><th>\u8986\u76D6\u7387</th><th>\u72B6\u6001</th><th>\u7ED3\u7B97\u65F6\u95F4</th></tr></thead><tbody>' + items.map((r) => "<tr><td>" + esc(r.period_key) + "</td><td>" + (OWNER_LABEL[r.owner] || r.owner) + "</td><td>" + snapText(r) + "</td><td>" + pct(r.coverage) + "%</td><td>" + esc(r.status || "") + "</td><td>" + esc((r.settled_at || "").slice(0, 16)) + "</td></tr>").join("") + "</tbody></table></div>";
+  }
+  function ensureMount() {
+    const panel = document.getElementById("panel-kpi");
+    if (!panel) return null;
+    let box = document.getElementById("kpi-periods-mount");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "kpi-periods-mount";
+      box.className = "card kpip-card";
+      panel.appendChild(box);
+    }
+    return box;
+  }
+  var seq2 = 0;
+  async function mountPeriods() {
+    const box = ensureMount();
+    if (!box) return;
+    const id = ++seq2;
+    try {
+      await Promise.all(OWNERS.map(async (o) => {
+        try {
+          const r = await API.get("/api/kpi/period-preview?owner=" + o.owner + "&period_type=" + o.type + "&period_key=" + curKey(o.type));
+          o._preview = r.scope;
+        } catch {
+          o._preview = null;
+        }
+      }));
+      const { items } = await API.get("/api/kpi/periods");
+      if (id !== seq2) return;
+      box.innerHTML = '<div class="card-head"><span class="card-title">\u8003\u6838\u671F\u7ED3\u7B97\u4E0E\u5386\u53F2</span><span class="kpip-note">\u5206\u6790\u533A\u95F4(\u9876\u90E8)\u4EC5\u770B\u6570\u636E\uFF1B\u6B63\u5F0F\u7EE9\u6548\u6309\u8003\u6838\u5468\u671F\u7ED3\u7B97\u51BB\u7ED3\uFF0C\u6B64\u540E\u6539\u76EE\u6807\u4E0D\u52A8\u5386\u53F2</span></div><div class="kpip-cur-list">' + OWNERS.map(currentRowHtml).join("") + '</div><div class="kpi-sec-label kpi-sec-diag">\u5DF2\u7ED3\u7B97\uFF08\u51BB\u7ED3\uFF09</div>' + historyHtml(items || []);
+    } catch (e) {
+      if (e && e.message !== "unauthorized") box.innerHTML = '<div class="kpi-empty">\u8003\u6838\u671F\u52A0\u8F7D\u5931\u8D25\uFF1A' + esc(e.message || "") + "</div>";
+    }
+  }
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest && e.target.closest("[data-settle-owner]");
+    if (!btn) return;
+    const owner = btn.getAttribute("data-settle-owner"), period_type = btn.getAttribute("data-settle-type"), period_key = btn.getAttribute("data-settle-key");
+    if (!confirm("\u786E\u8BA4\u7ED3\u7B97\u5E76\u51BB\u7ED3\u300C" + (OWNER_LABEL[owner] || owner) + " \xB7 " + period_key + "\u300D\uFF1F\u51BB\u7ED3\u540E\u6539\u76EE\u6807\u4E0D\u5F71\u54CD\u672C\u671F\u6210\u7EE9\u3002")) return;
+    try {
+      await API.post("/api/kpi/settle", { owner, period_type, period_key });
+      toast("\u5DF2\u7ED3\u7B97\u5E76\u51BB\u7ED3 " + period_key);
+      await mountPeriods();
+    } catch (err) {
+      toast(err.status === 403 ? "\u4EC5\u7BA1\u7406\u5458/\u8001\u677F\u53EF\u7ED3\u7B97" : "\u7ED3\u7B97\u5931\u8D25\uFF1A" + (err.message || ""));
+    }
+  });
+
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/ledger.js
   var CARD_ID = "kpiLedger";
   var CELL_TEXT = {
     NOT_APPLICABLE: "N/A",
@@ -5163,7 +5644,7 @@
   }
   var money = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
   var CURRENCY_HINT = "\u91D1\u989D\u4E3A\u5E7F\u544A\u8D26\u6237\u5E01\u79CD\uFF08Ads \u540C\u6B65\u672A\u5B58\u5E01\u79CD\uFF09\uFF0C\u6545\u4E0D\u52A0\u8D27\u5E01\u7B26\u53F7";
-  var pct = (v) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(1) + "%";
+  var pct2 = (v) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(1) + "%";
   function metricCell(item, extraTitle) {
     if (!item) return cell("td", "num dim", "\u2014", extraTitle || "");
     if (item.status === "VALID" && item.value != null) {
@@ -5177,7 +5658,7 @@
     return cell("td", "num " + (warn ? "ledger-warn" : "dim"), text2, extraTitle ? extraTitle + " \xB7 " + title : title);
   }
   function rateCell(value, title) {
-    const text2 = pct(value);
+    const text2 = pct2(value);
     return cell("td", "num " + (text2 ? "" : "dim"), text2 || "\u2014", text2 ? title || "" : "\u8BE5\u53E3\u5F84\u5206\u6BCD\u4E3A 0\uFF0C\u65E0\u6CD5\u8BA1\u7B97");
   }
   function numCell(value) {
@@ -5191,7 +5672,7 @@
     tr.appendChild(numCell(row.quality));
     tr.appendChild(numCell(row.deals));
     tr.appendChild(rateCell(row.qualityRate, "\u4F18\u8D28(A/B) \xF7 \u8BE2\u76D8"));
-    tr.appendChild(rateCell(row.dealRate, "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8" + (row.dealRateOverall != null ? "\uFF1B\u603B\u53E3\u5F84 " + pct(row.dealRateOverall) : "")));
+    tr.appendChild(rateCell(row.dealRate, "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8" + (row.dealRateOverall != null ? "\uFF1B\u603B\u53E3\u5F84 " + pct2(row.dealRateOverall) : "")));
     tr.appendChild(metricCell(row.costPerQuality, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09" : ""));
     tr.appendChild(metricCell(row.cac, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
     return tr;
@@ -5341,7 +5822,7 @@
     loadLedger(true);
   });
 
-  // public/src/kpi-view.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/kpi-view.js
   function grade(s) {
     if (s >= 90) return { t: "\u4F18\u79C0", c: "var(--green)", bg: "var(--green-soft)", i: "ti-trophy" };
     if (s >= 75) return { t: "\u5408\u683C", c: "var(--blue)", bg: "var(--blue-soft)", i: "ti-circle-check" };
@@ -5354,12 +5835,12 @@
     A.style.stroke = g.c;
     S.style.color = g.c;
     let c = 0;
-    (function st() {
+    (function st2() {
       c += score / 40;
       if (c >= score) c = score;
       A.style.strokeDashoffset = C - C * c / 100;
       S.textContent = c.toFixed(0);
-      if (c < score) requestAnimationFrame(st);
+      if (c < score) requestAnimationFrame(st2);
     })();
   }
   function badge(id, score) {
@@ -5382,7 +5863,7 @@
     if (!el) return;
     el.innerHTML = arr.map((k) => {
       const available = k.actualAvailable !== false && k.a != null, r = available ? ratio(k) : 0, tone = available ? scoreTone(r) : "kpi-tone-muted", progress = Math.max(0, Math.min(100, Number.isFinite(r) ? r * 100 : 0));
-      return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
+      return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
     }).join("");
     el.querySelectorAll("[data-progress]").forEach((fill) => {
       const progress = Number(fill.dataset.progress);
@@ -5405,10 +5886,11 @@
   }
   var overviewRequestSequence = 0;
   async function loadOverview() {
-    const requestId = ++overviewRequestSequence, revision = getRangeRevision();
+    const scope = activeScope();
+    const requestId = ++overviewRequestSequence, revision = getRangeRevision(scope);
     try {
-      const ov = await API.get(withRange2("/api/overview"));
-      if (requestId !== overviewRequestSequence || revision !== getRangeRevision()) return false;
+      const ov = await API.get(withRange2("/api/overview", scope));
+      if (requestId !== overviewRequestSequence || revision !== getRangeRevision(scope)) return false;
       const c = ov.current || {}, d = ov.delta || {}, comparison = ov.comparisonLabel || "vs \u4E0A\u6708";
       const set = (id, v) => {
         const e = document.getElementById(id);
@@ -5462,36 +5944,149 @@
     }
     return false;
   }
+  var DS_LABEL = { NOT_APPLICABLE: "\u4E0D\u9002\u7528", MISSING_DATA: "\u5F85\u63A5\u5165", INSUFFICIENT_DATA: "\u6837\u672C\u4E0D\u8DB3", PENDING: "\u89C2\u5BDF\u4E2D", TRACKING_ERROR: "\u8FFD\u8E2A\u5F02\u5E38" };
+  function fmtU(unit, v) {
+    if (v == null || !Number.isFinite(Number(v))) return "\u2014";
+    return unit === "\xA5" ? "\xA5" + Number(v).toLocaleString() : unit === "%" ? v + "%" : unit ? v + unit : v;
+  }
+  var pctCov = (s) => Math.round((s && s.coverage || 0) * 100);
+  function gaugeScope(arcId, scoreId, badgeId, s) {
+    const C = 364.4, A = document.getElementById(arcId), S = document.getElementById(scoreId), B = document.getElementById(badgeId);
+    if (!A || !S) return;
+    if (!s || !s.gradable || s.score == null) {
+      A.style.stroke = "var(--bg4)";
+      A.style.strokeDashoffset = C;
+      S.style.color = "var(--text3)";
+      S.textContent = "\u2014";
+      if (B) {
+        B.style.background = "var(--bg3)";
+        B.style.color = "var(--text3)";
+        let txt;
+        if (!s || s.status === "NO_METRICS") txt = '<i class="ti ti-hourglass"></i> \u5F85\u8BC4\u4F30 \xB7 \u6682\u672A\u914D\u7F6E\u7EE9\u6548\u6307\u6807';
+        else if (s.status === "CONFIG_INCOMPLETE") txt = '<i class="ti ti-settings-exclamation"></i> \u7EE9\u6548\u914D\u7F6E\u672A\u5B8C\u6210' + (s.provisionalScore != null ? " \xB7 \u53C2\u8003\u8868\u73B0 " + s.provisionalScore : "") + " \xB7 \u6B63\u5F0F\u7EE9\u6548\u5F85\u8BC4\u4F30";
+        else if (s.status === "NO_VALID_DATA") txt = '<i class="ti ti-hourglass"></i> \u5F85\u8BC4\u4F30 \xB7 \u6682\u65E0\u6709\u6548\u6570\u636E';
+        else txt = '<i class="ti ti-alert-circle"></i> \u53C2\u8003\u8868\u73B0 ' + (s.provisionalScore ?? "\u2014") + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "% \xB7 \u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206";
+        B.innerHTML = txt;
+      }
+      return;
+    }
+    const g = grade(s.score);
+    A.style.stroke = g.c;
+    S.style.color = g.c;
+    let c = 0;
+    (function st2() {
+      c += s.score / 40;
+      if (c >= s.score) c = s.score;
+      A.style.strokeDashoffset = C - C * c / 100;
+      S.textContent = c.toFixed(0);
+      if (c < s.score) requestAnimationFrame(st2);
+    })();
+    if (B) {
+      B.style.background = g.bg;
+      B.style.color = g.c;
+      B.innerHTML = '<i class="ti ' + g.i + '"></i> ' + g.t + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "%";
+    }
+  }
+  var PG_LABEL = { business: "\u4E1A\u52A1\u8D21\u732E", visibility: "\u641C\u7D22 & GEO \u53EF\u89C1\u5EA6", asset: "\u5185\u5BB9\u8D44\u4EA7", efficiency: "\u83B7\u5BA2\u6548\u7387", quality: "\u6D41\u91CF\u8D28\u91CF", execution: "\u6267\u884C\u4E0E\u4F18\u5316", experiment: "\u5B9E\u9A8C\u4E0E\u5B66\u4E60" };
+  function pgLabel(grp, g) {
+    if (grp === "sem" && g === "business") return "Lead \u4EF7\u503C";
+    return PG_LABEL[g] || g || "\u5176\u4ED6";
+  }
+  function metricRow(m) {
+    const included = m.included, r = included && Number.isFinite(m.ratio) ? m.ratio : 0;
+    const tone = included ? scoreTone(r) : "kpi-tone-muted", prog = Math.max(0, Math.min(100, r * 100));
+    const ds = included ? "" : '<span class="kpi-ds-badge">' + (DS_LABEL[m.data_status] || "\u5F85\u63A5\u5165") + "</span>";
+    const actualTxt = included ? m.display_value ? esc2(m.display_value) : fmtU(m.unit, m.actual) : "\u2014";
+    return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(m.name)}${ds}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmtU(m.unit, m.target)} \xB7 \u5B9E\u9645 ${actualTxt}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${prog}"></div></div></div><div class="kpi-score-value ${tone}">${included ? Math.round(r * 100) : "\u2014"}</div></div>`;
+  }
+  function diagChip(d) {
+    let tone = "kpi-tone-muted";
+    if (d.available && d.target > 0 && d.actual > 0) {
+      const ach = d.mode === "i" ? d.target / d.actual : d.actual / d.target;
+      tone = ach >= 1 ? "kpi-tone-green" : ach >= 0.8 ? "kpi-tone-amber" : "kpi-tone-primary";
+    }
+    return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc2(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
+  }
+  function renderBlock(grp, containerId, a) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const block = a.blocks && a.blocks[grp] || { metrics: [] };
+    const diags = (a.diagnostics || []).filter((d) => d.grp === grp);
+    const summaries = (a.summaries || []).filter((d) => d.grp === grp);
+    const metrics = block.metrics || [];
+    let html = '<div class="kpi-sec-label">\u7EE9\u6548\u6307\u6807\uFF08\u8BA1\u5206\uFF09</div>';
+    if (metrics.length) {
+      const groups = [], idx = {};
+      for (const m of metrics) {
+        const g = m.perf_group || "other";
+        if (!(g in idx)) {
+          idx[g] = groups.length;
+          groups.push([g, []]);
+        }
+        groups[idx[g]][1].push(m);
+      }
+      html += groups.map(([g, ms]) => {
+        const wt = ms.reduce((s, m) => s + (Number(m.weight) || 0), 0);
+        return '<div class="kpi-pg"><div class="kpi-pg-head">' + esc2(pgLabel(grp, g)) + '<span class="kpi-pg-wt">' + wt + "%</span></div>" + ms.map(metricRow).join("") + "</div>";
+      }).join("");
+    } else html += '<div class="kpi-empty">\u6682\u65E0\u53EF\u8BC4\u5206\u6307\u6807 \xB7 \u5F85\u63A5\u5165</div>';
+    if (diags.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u8BCA\u65AD\u6307\u6807\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + diags.map(diagChip).join("") + "</div>";
+    if (summaries.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u4E1A\u52A1\u6C47\u603B\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + summaries.map(diagChip).join("") + "</div>";
+    el.innerHTML = html;
+    el.querySelectorAll("[data-progress]").forEach((f) => {
+      const p = Number(f.dataset.progress);
+      f.style.width = (Number.isFinite(p) ? p : 0) + "%";
+    });
+  }
   function renderKPI2() {
     recomputeScores();
-    rows(TOTAL, "totalRows");
-    rows(SEO, "seoRows");
-    rows(SEM, "semRows");
     const set = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
     };
     set("topScore", company.toFixed(0));
-    badge("liBadge", liScore);
-    badge("chenBadge", chenScore);
     gauge("g1", "g1s", company);
-    gauge("g2", "g2s", company);
     badge("g1b", company);
-    badge("g2b", company);
-    gauge("liArc", "liScore", liScore);
-    gauge("chenArc", "chenScore", chenScore);
     mountLedger();
+    const a = window._kpiAssessment;
+    if (!a) {
+      rows(TOTAL, "totalRows");
+      rows(SEO, "seoRows");
+      rows(SEM, "semRows");
+      gauge("g2", "g2s", company);
+      badge("g2b", company);
+      gauge("liArc", "liScore", liScore);
+      gauge("chenArc", "chenScore", chenScore);
+      badge("liBadge", liScore);
+      badge("chenBadge", chenScore);
+      return;
+    }
+    gaugeScope("g2", "g2s", "g2b", a.scores.company);
+    gaugeScope("liArc", "liScore", "liBadge", a.scores.li);
+    gaugeScope("chenArc", "chenScore", "chenBadge", a.scores.chen);
+    renderBlock("total", "totalRows", a);
+    renderBlock("seo", "seoRows", a);
+    renderBlock("sem", "semRows", a);
+    mountExecution();
+    mountPeriods();
   }
   var kpiRefreshSequence = 0;
   async function refreshKpiRange() {
-    const requestId = ++kpiRefreshSequence, revision = getRangeRevision();
+    const requestId = ++kpiRefreshSequence, revision = getRangeRevision("kpi");
     await Promise.all([loadMetrics(), loadWeeks(), loadOverview()]);
-    if (requestId !== kpiRefreshSequence || revision !== getRangeRevision()) return;
+    if (requestId !== kpiRefreshSequence || revision !== getRangeRevision("kpi")) return;
     renderKPI2();
   }
-  document.addEventListener("timerange", refreshKpiRange);
+  document.addEventListener("timerange", (e) => {
+    const scope = e.detail && e.detail.scope;
+    if (scope === "kpi") {
+      refreshKpiRange();
+      return;
+    }
+    if (scope === activeScope()) loadOverview();
+  });
 
-  // public/src/google-projects.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/google-projects.js
   var google_projects_exports = {};
   __export(google_projects_exports, {
     backfillGoogle: () => backfillGoogle,
@@ -5502,7 +6097,7 @@
   });
   var INTEG_LABEL = { gsc: "Google Search Console", ga4: "Google Analytics 4 (GA4)", ads: "Google Ads" };
   var GOOGLE_PROVIDER_ORDER = ["gsc", "ga4", "ads"];
-  var DS_LABEL = { inquiries: "\u8BE2\u76D8", seo_weeks: "SEO \u5468\u62A5", sem_weeks: "SEM \u5468\u62A5", gsc: "GSC", ga4: "GA4", ads: "Google Ads", ai: "AI Provider" };
+  var DS_LABEL2 = { inquiries: "\u8BE2\u76D8", seo_weeks: "SEO \u5468\u62A5", sem_weeks: "SEM \u5468\u62A5", gsc: "GSC", ga4: "GA4", ads: "Google Ads", ai: "AI Provider" };
   var DS_ORDER = ["inquiries", "seo_weeks", "sem_weeks", "gsc", "ga4", "ads", "ai"];
   var DS_TYPE_LABEL = { manual: "\u4EBA\u5DE5\u5F55\u5165", sync: "\u81EA\u52A8\u540C\u6B65", provider: "AI Provider" };
   function dsStatusMeta(status, type) {
@@ -5519,18 +6114,18 @@
   }
   function dsRow(key, s) {
     s = s || {};
-    const name = DS_LABEL[key] || key;
+    const name = DS_LABEL2[key] || key;
     const typeText = DS_TYPE_LABEL[s.type] || s.type || "";
     const [text2, cls] = dsStatusMeta(s.status, s.type);
     const time = s.type === "manual" ? s.lastAt || "\u2014" : s.type === "sync" ? s.lastSyncAt || "\u2014" : "\u2014";
     const count = s.type === "manual" || s.type === "sync" ? s.count == null ? 0 : s.count : "\u2014";
     let extra = "";
-    if (s.error) extra = `<span class="csp-s-b0e08465c2"> \xB7 \u9519\u8BEF\uFF1A${esc(s.error)}</span>`;
-    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc(s.missing.join(", "))}</span>`;
+    if (s.error) extra = `<span class="csp-s-b0e08465c2"> \xB7 \u9519\u8BEF\uFF1A${esc2(s.error)}</span>`;
+    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc2(s.missing.join(", "))}</span>`;
     else if (s.note === "google_oauth_required") extra = `<span class="dim"> \xB7 \u9700\u8981 OAuth \u6388\u6743</span>`;
     else if (s.note === "google_sync_ready") extra = `<span class="dim"> \xB7 \u53EF\u624B\u52A8\u540C\u6B65</span>`;
-    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc(s.provider || "")}${s.model ? " / " + esc(s.model) : ""}</span>`;
-    return `<div class="csp-s-6d1156dd83"><div class="csp-s-22dccc46c7">${esc(name)}</div><div class="csp-s-b57829faf1">${esc(typeText)}</div><span class="badge ${cls}">${esc(text2)}</span><div class="csp-s-83725d2c6e"></div><div class="csp-s-95144d7b86">\u65F6\u95F4 ${esc(String(time))} \xB7 \u8BB0\u5F55 ${esc(String(count))}</div><div class="csp-s-33ee298127">${extra}</div></div>`;
+    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc2(s.provider || "")}${s.model ? " / " + esc2(s.model) : ""}</span>`;
+    return `<div class="csp-s-6d1156dd83"><div class="csp-s-22dccc46c7">${esc2(name)}</div><div class="csp-s-b57829faf1">${esc2(typeText)}</div><span class="badge ${cls}">${esc2(text2)}</span><div class="csp-s-83725d2c6e"></div><div class="csp-s-95144d7b86">\u65F6\u95F4 ${esc2(String(time))} \xB7 \u8BB0\u5F55 ${esc2(String(count))}</div><div class="csp-s-33ee298127">${extra}</div></div>`;
   }
   async function loadDataSourcesStatus() {
     const box = document.getElementById("ds-status-rows");
@@ -5542,7 +6137,7 @@
       const src = r && r.sources || {};
       box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("") + (window.DEMO_MODE ? '<div class="dim csp-s-5698104cf1">\u5F53\u524D\u4E3A\u6F14\u793A\u6807\u8BB0\uFF0C\u4E0B\u65B9\u4ECD\u4E3A\u63A5\u53E3\u771F\u5B9E\u72B6\u6001\u3002</div>' : "");
     } catch (e) {
-      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc2(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
     }
   }
   async function loadIntegrations() {
@@ -5552,11 +6147,11 @@
       const r = await API.get("/api/google/status");
       const providers = r && r.providers || {};
       const project = r && r.defaultProject;
-      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
+      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc2(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
       box.innerHTML = `<div class="sheet-tip csp-s-145afb7049"><i class="ti ti-info-circle"></i> ${projectText}</div>` + GOOGLE_PROVIDER_ORDER.map((p) => googleProviderRow(p, providers[p] || {}, project)).join("");
       bindGoogleProviderActions(box);
     } catch (e) {
-      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc2(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
     }
   }
   function googleProviderRow(provider, s, project) {
@@ -5564,22 +6159,22 @@
     const authorized = !!s.authorized;
     const ok = configured && authorized;
     const badge3 = ok ? '<span class="badge b-green">\u5DF2\u6388\u6743</span>' : configured ? '<span class="badge b-amber">\u5F85\u6388\u6743</span>' : '<span class="badge b-gray">\u540E\u7AEF\u672A\u914D\u7F6E</span>';
-    const missing = s.missing && s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">\u7F3A\u5C11\uFF1A${esc(s.missing.join(", "))}</div>` : "";
+    const missing = s.missing && s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">\u7F3A\u5C11\uFF1A${esc2(s.missing.join(", "))}</div>` : "";
     const lastSync = s.lastSyncAt || "\u2014";
     const lastStatus = s.lastSyncStatus || "\u672A\u540C\u6B65";
-    const lastError = s.lastError ? `<div class="csp-s-5ade8bf698">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc(s.lastError)}</div>` : "";
+    const lastError = s.lastError ? `<div class="csp-s-5ade8bf698">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc2(s.lastError)}</div>` : "";
     const providerConfigNote = provider === "gsc" ? s.siteUrlConfigured || project?.gsc_site_url ? "\u7AD9\u70B9\u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GSC_SITE_URL \u6216\u9879\u76EE\u7AD9\u70B9" : provider === "ga4" ? s.propertyConfigured || project?.ga4_property_id ? "Property \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GA4_PROPERTY_ID \u6216\u9879\u76EE Property" : s.customerConfigured || project?.ads_customer_id ? "Customer \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GOOGLE_ADS_CUSTOMER_ID \u6216\u9879\u76EE Customer";
     const authDisabled = configured ? "" : "disabled";
     const syncDisabled = ok ? "" : "disabled";
     return `<div class="csp-s-98c17c8e1c">
-    <div class="csp-s-fad0d7671e">${esc(INTEG_LABEL[provider] || provider)} ${badge3}</div>
+    <div class="csp-s-fad0d7671e">${esc2(INTEG_LABEL[provider] || provider)} ${badge3}</div>
     <div class="csp-s-fd03ebc21e">
-      <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
+      <div>${esc2(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc2(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc2(String(lastStatus))}</div>
       ${missing}${lastError}
     </div>
-    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
-    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
-    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
+    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc2(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
+    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc2(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
+    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc2(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
   </div>`;
   }
   function bindGoogleProviderActions(box) {
@@ -5610,14 +6205,14 @@
       start.setUTCDate(start.getUTCDate() - (days - 1));
       const iso = (d) => d.toISOString().slice(0, 10);
       const r = await API.post("/api/sync/" + encodeURIComponent(provider), { start_date: iso(start), end_date: iso(end) });
-      toast(`${INTEG_LABEL[provider] || provider} \u56DE\u8865 ${days} \u5929\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
+      toast2(`${INTEG_LABEL[provider] || provider} \u56DE\u8865 ${days} \u5929\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
       await loadDataSourcesStatus();
       await loadIntegrations();
       if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
       loadDataFreshness();
     } catch (e) {
       const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
-      toast(`\u56DE\u8865\u5931\u8D25\uFF1A${e.message}${missing}`);
+      toast2(`\u56DE\u8865\u5931\u8D25\uFF1A${e.message}${missing}`);
     } finally {
       if (btn) {
         btn.disabled = false;
@@ -5633,13 +6228,13 @@
     }
     try {
       const r = await API.post("/api/sync/" + encodeURIComponent(provider), {});
-      toast(`${INTEG_LABEL[provider] || provider} \u540C\u6B65\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
+      toast2(`${INTEG_LABEL[provider] || provider} \u540C\u6B65\u5B8C\u6210\uFF0C\u5199\u5165 ${r.rowsWritten || 0} \u884C`);
       await loadDataSourcesStatus();
       await loadIntegrations();
       if (provider === "ga4" && typeof loadGa4 === "function") await loadGa4();
     } catch (e) {
       const missing = e && e.body && e.body.missing && e.body.missing.length ? `\uFF0C\u7F3A\u5C11\uFF1A${e.body.missing.join(", ")}` : "";
-      toast(`\u540C\u6B65\u5931\u8D25\uFF1A${e.message}${missing}`);
+      toast2(`\u540C\u6B65\u5931\u8D25\uFF1A${e.message}${missing}`);
     } finally {
       if (btn) {
         btn.disabled = false;
@@ -5648,7 +6243,7 @@
     }
   }
 
-  // public/src/archive.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/archive.js
   var archive_exports = {};
   __export(archive_exports, {
     loadArchive: () => loadArchive2
@@ -5673,10 +6268,10 @@
       try {
         await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
         tr.remove();
-        toast("\u5DF2\u5F52\u6863");
+        toast2("\u5DF2\u5F52\u6863");
       } catch (err) {
         arc.disabled = false;
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5F52\u6863\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+        toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5F52\u6863\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     } else if (dep) {
       dep.disabled = true;
@@ -5685,8 +6280,8 @@
         const { item } = await persistLoop("deposit", s, content, "\u6C89\u6DC0");
         const depTb = document.getElementById("tb-dep");
         if (depTb) {
-          const state = depTb.querySelector("tr[data-load-state]");
-          if (state) state.remove();
+          const state2 = depTb.querySelector("tr[data-load-state]");
+          if (state2) state2.remove();
           const ntr = document.createElement("tr");
           ntr.dataset.id = item.id;
           ntr.dataset.ep = "/api/loop-items";
@@ -5696,30 +6291,30 @@
           if (de) de.style.display = "none";
         }
         dep.disabled = false;
-        toast("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93");
+        toast2("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93");
       } catch (err) {
         dep.disabled = false;
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6C89\u6DC0\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+        toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6C89\u6DC0\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     }
   });
   function archRowHtml(it, from) {
     const date = (it.archived_at || "").slice(0, 10);
     const dept = it.dept || "\u2014";
-    const content = esc(it.content || it.title || it.detail || "");
+    const content = esc2(it.content || it.title || it.detail || "");
     const fromBadge = '<span class="badge ' + (from === "fix" ? "b-amber" : "b-blue") + '">' + (from === "fix" ? "\u6574\u6539" : it.kind === "task" ? "\u4EFB\u52A1" : it.kind === "plan" ? "\u8BA1\u5212" : it.kind === "test" ? "\u6D4B\u8BD5" : it.kind === "deposit" ? "\u6C89\u6DC0" : "\u95ED\u73AF") + "</span>";
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u539F\u9875"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
-    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
+    return `<td class="archive-date num">${esc2(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc2(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
   }
   function archInqRowHtml(it) {
     const date = (it.archived_at || "").slice(0, 10);
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u8BE2\u76D8\u5217\u8868"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
     const label = it.customer_code || it.customer_name;
-    const cust = (label ? esc(label) + " \xB7 " : "") + esc(it.country || "");
-    const source = esc(it.source || "");
-    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-short-date num">${esc((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
+    const cust = (label ? esc2(label) + " \xB7 " : "") + esc2(it.country || "");
+    const source = esc2(it.source || "");
+    return `<td class="archive-date num">${esc2(date || "\u2014")}</td><td class="archive-short-date num">${esc2((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc2(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc2(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
   }
   async function loadArchive2() {
     const bucket = { sem: [], seo: [], company: [] };
@@ -5794,23 +6389,23 @@
           loadInquiries();
           loadDashboardInq();
         }
-        toast("\u5DF2\u6062\u590D \xB7 \u8BF7\u56DE\u539F\u9875\u67E5\u770B");
+        toast2("\u5DF2\u6062\u590D \xB7 \u8BF7\u56DE\u539F\u9875\u67E5\u770B");
       } catch (err) {
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+        toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     } else {
       if (!inlineConfirm(h, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
       try {
         await API.del(ep + "/" + id + "?hard=1");
         tr.remove();
-        toast("\u5DF2\u5F7B\u5E95\u5220\u9664");
+        toast2("\u5DF2\u5F7B\u5E95\u5220\u9664");
       } catch (err) {
-        toast(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+        toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     }
   });
 
-  // public/src/hermes-memory.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/hermes-memory.js
   var hermes_memory_exports = {};
   __export(hermes_memory_exports, {
     loadHermesMemories: () => loadHermesMemories,
@@ -5923,11 +6518,11 @@
       items.forEach((item) => tbody.appendChild(renderMemory(item)));
       if (empty) empty.style.display = items.length ? "none" : "block";
       setText2(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
-      if (manual) toast("AI \u8BB0\u5FC6\u5DF2\u5237\u65B0");
+      if (manual) toast2("AI \u8BB0\u5FC6\u5DF2\u5237\u65B0");
     } catch (e) {
       setText2(count, "\u52A0\u8F7D\u5931\u8D25");
       if (empty) empty.style.display = "block";
-      toast("AI \u8BB0\u5FC6\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+      toast2("AI \u8BB0\u5FC6\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
   function resetHermesMemoryForm() {
@@ -5972,7 +6567,7 @@
       source: field("hm-source") || "manual"
     };
     if (!body.title || !body.content) {
-      toast("\u6807\u9898\u548C\u8BB0\u5FC6\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A");
+      toast2("\u6807\u9898\u548C\u8BB0\u5FC6\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A");
       return;
     }
     try {
@@ -5981,9 +6576,9 @@
       else await window.API.post("/api/hermes/memories", body);
       resetHermesMemoryForm();
       await loadHermesMemories(false);
-      toast(id ? "AI \u8BB0\u5FC6\u5DF2\u66F4\u65B0" : "\u5DF2\u5B58\u5165 AI \u8BB0\u5FC6");
+      toast2(id ? "AI \u8BB0\u5FC6\u5DF2\u66F4\u65B0" : "\u5DF2\u5B58\u5165 AI \u8BB0\u5FC6");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u4FEE\u6539 AI \u8BB0\u5FC6" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+      toast2(e.status === 403 ? "\u65E0\u6743\u4FEE\u6539 AI \u8BB0\u5FC6" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
   async function deactivateHermesMemory(id) {
@@ -5992,9 +6587,9 @@
     try {
       await window.API.del("/api/hermes/memories/" + encodeURIComponent(id));
       await loadHermesMemories(false);
-      toast("\u5DF2\u505C\u7528\u8FD9\u6761 AI \u8BB0\u5FC6");
+      toast2("\u5DF2\u505C\u7528\u8FD9\u6761 AI \u8BB0\u5FC6");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u505C\u7528 AI \u8BB0\u5FC6" : "\u505C\u7528\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+      toast2(e.status === 403 ? "\u65E0\u6743\u505C\u7528 AI \u8BB0\u5FC6" : "\u505C\u7528\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
   function resetHermesFeedbackForm() {
@@ -6011,7 +6606,7 @@
     const note = field("hf-note");
     const scope = field("hf-scope") || "\u672A\u6307\u5B9A\u8303\u56F4";
     if (!suggestion || !note) {
-      toast("\u539F\u5EFA\u8BAE\u548C\u4F60\u7684\u5224\u65AD\u4E0D\u80FD\u4E3A\u7A7A");
+      toast2("\u539F\u5EFA\u8BAE\u548C\u4F60\u7684\u5224\u65AD\u4E0D\u80FD\u4E3A\u7A7A");
       return;
     }
     const negative = result === "wrong" || result === "generic";
@@ -6032,13 +6627,13 @@
       await window.API.post("/api/hermes/memories", body);
       resetHermesFeedbackForm();
       await loadHermesMemories(false);
-      toast("\u53CD\u9988\u5DF2\u6C89\u6DC0\uFF0CHermes \u540E\u7EED\u4F1A\u53C2\u8003");
+      toast2("\u53CD\u9988\u5DF2\u6C89\u6DC0\uFF0CHermes \u540E\u7EED\u4F1A\u53C2\u8003");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u6C89\u6DC0\u53CD\u9988" : "\u53CD\u9988\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
+      toast2(e.status === 403 ? "\u65E0\u6743\u6C89\u6DC0\u53CD\u9988" : "\u53CD\u9988\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
 
-  // public/src/plan-history.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/plan-history.js
   var plan_history_exports = {};
   __export(plan_history_exports, {
     planDayIsToday: () => planDayIsToday,
@@ -6079,14 +6674,14 @@
     return { cls: "hs-none", text: "\u65E0\u8BB0\u5F55" };
   }
   function taskRowHtml(t, day, pushed, note) {
-    const st = taskStateFor(t, day, pushed);
-    const span = t.start_date && t.task_date && t.start_date < t.task_date ? `${esc(t.start_date.slice(5))} ~ ${esc(t.task_date.slice(5))}` : esc(t.task_date || "");
+    const st2 = taskStateFor(t, day, pushed);
+    const span = t.start_date && t.task_date && t.start_date < t.task_date ? `${esc2(t.start_date.slice(5))} ~ ${esc2(t.task_date.slice(5))}` : esc2(t.task_date || "");
     const src = t.fix_id ? '<span class="badge b-amber">\u6574\u6539</span>' : "";
-    const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc(t.owner)}</span>` : "";
-    const memo = note ? `<span class="hnote">${esc(note)}</span>` : "";
+    const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc2(t.owner)}</span>` : "";
+    const memo = note ? `<span class="hnote">${esc2(note)}</span>` : "";
     return `<div class="hcard">
-    <div class="hrow"><span class="htext">${esc(t.content || "")}</span>
-      <span class="hright">${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st.cls}">${st.text}</span></span></div>
+    <div class="hrow"><span class="htext">${esc2(t.content || "")}</span>
+      <span class="hright">${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st2.cls}">${st2.text}</span></span></div>
     ${memo ? `<div class="hmemo">${memo}</div>` : ""}
   </div>`;
   }
@@ -6108,7 +6703,7 @@
       const spoken = tasks.filter((t) => (t.done_at || "").slice(0, 10) === day || pushed.has(t.id)).length;
       const sopHtml = sops.length ? '<div class="sop-list">' + sops.map((s) => `<div class="hcard hsop${s.done ? " on" : ""}">
           <div class="hrow"><span class="hcheck">${s.done ? '<i class="ti ti-check"></i>' : ""}</span>
-            <span class="htext">${esc(s.title)}</span>
+            <span class="htext">${esc2(s.title)}</span>
             <span class="hright">${s.active ? "" : '<span class="badge b-gray">\u5DF2\u505C\u7528</span>'}<span class="freq-tag">${FREQ_TAG2[s.freq] || ""}</span></span></div>
         </div>`).join("") + "</div>" : '<div class="hempty">\u5F53\u65F6\u6CA1\u6709\u914D\u7F6E SOP</div>';
       const taskHtml = tasks.length ? tasks.map((t) => {
@@ -6116,7 +6711,7 @@
         return taskRowHtml(t, day, pushed, noteOf.get(t.id)) + (subs.length ? `<div class="hsubs">${subs.map((s2) => taskRowHtml(s2, day, pushed, noteOf.get(s2.id))).join("")}</div>` : "");
       }).join("") : '<div class="hempty">\u90A3\u5929\u8FD9\u4E00\u5217\u6CA1\u6709\u4EFB\u52A1</div>';
       return `<div class="pblock">
-      <div class="pblock-head"><span class="badge ${d.badge}">${esc(d.key)}</span><span class="pn">${esc(d.label)}</span>
+      <div class="pblock-head"><span class="badge ${d.badge}">${esc2(d.key)}</span><span class="pn">${esc2(d.label)}</span>
         <span class="kcount">SOP ${sopDone}/${sops.length} \xB7 \u4EFB\u52A1 ${tasks.length} \xB7 \u6709\u4EA4\u4EE3 ${spoken}</span></div>
       <div class="sopnew">
         <div><div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>${sopHtml}</div>
@@ -6129,12 +6724,12 @@
     const box = document.getElementById("plan-history");
     if (!box) return;
     const pk = periodKeysFor(day);
-    box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc(day) + " \u7684\u8BB0\u5F55\u2026</div>";
+    box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc2(day) + " \u7684\u8BB0\u5F55\u2026</div>";
     try {
       const data = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
       render2(data);
     } catch (e) {
-      box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
+      box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
     }
   }
   function setPlanDay(day) {
@@ -6168,17 +6763,17 @@
   var _dayInput = document.getElementById("planday-input");
   if (_dayInput && !_dayInput.value) _dayInput.value = today2();
 
-  // public/src/weekly-review.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/weekly-review.js
   var weekly_review_exports = {};
   __export(weekly_review_exports, {
     renderMonthReview: () => renderMonthReview,
     renderReview: () => renderReview
   });
 
-  // public/src/sop-rate.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/sop-rate.js
   var DEPTS2 = [["SEO", "\u674E", "b-blue"], ["SEM", "\u9648", "b-purple"], ["\u516C\u53F8", "\u516C\u53F8", "b-red"]];
   var FREQ_LABEL2 = { daily: "\u6BCF\u65E5", weekly: "\u6BCF\u5468", monthly: "\u6BCF\u6708" };
-  function pct2(done, expected) {
+  function pct3(done, expected) {
     return expected > 0 ? Math.round(done / expected * 100) : null;
   }
   function rateClass(p) {
@@ -6188,11 +6783,11 @@
     const counted = items.filter((i) => i.expected !== null);
     const done = counted.reduce((a, i) => a + i.done, 0);
     const expected = counted.reduce((a, i) => a + i.expected, 0);
-    const p = pct2(done, expected);
+    const p = pct3(done, expected);
     const missed = counted.filter((i) => i.expected > i.done).sort((a, b) => b.expected - b.done - (a.expected - a.done));
-    const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => d.slice(5)).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
+    const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc2(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => d.slice(5)).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
     return `<div class="sr-dept">
-    <div class="sr-head"><span class="badge ${badge3}">${esc(label)}</span>
+    <div class="sr-head"><span class="badge ${badge3}">${esc2(label)}</span>
       <span class="sr-num ${rateClass(p)}">${expected ? `${done}/${expected}` : "\u2014"}${p === null ? "" : ` \xB7 ${p}%`}</span></div>
     <div class="sr-misses">${missHtml}</div>
   </div>`;
@@ -6214,11 +6809,11 @@
       }
       const hasMonthly = items.some((i) => i.expected === null);
       el.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
-        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc(data.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
+        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc2(data.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
       <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
     } catch (e) {
       el.dataset.loaded = "";
-      el.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
+      el.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
     }
   }
   document.addEventListener("click", (e) => {
@@ -6230,7 +6825,7 @@
     if (el) mountSopRate(el);
   });
 
-  // public/src/weekly-review.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/weekly-review.js
   var RV_SECTIONS = [
     ["summary", "\u2460 \u672C\u5468\u5DE5\u4F5C\u603B\u7ED3", []],
     ["problems", "\u2461 \u9047\u5230\u7684\u95EE\u9898", ["\u6D4B\u8BD5", "\u91C7\u7EB3"]],
@@ -6325,8 +6920,8 @@
     });
   }
   function rvItemHtml(text2, acts) {
-    const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === "\u91C7\u7EB3" ? "adopt" : "test"}" data-review-action="act" data-kind="${esc(a)}">${a}</button>`).join("");
-    return `<div class="rv-item"><span class="txt" contenteditable>${esc(text2)}</span>${btns}<span class="rv-del" data-review-action="delete" title="\u5220\u9664"><i class="ti ti-x"></i></span></div>`;
+    const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === "\u91C7\u7EB3" ? "adopt" : "test"}" data-review-action="act" data-kind="${esc2(a)}">${a}</button>`).join("");
+    return `<div class="rv-item"><span class="txt" contenteditable>${esc2(text2)}</span>${btns}<span class="rv-del" data-review-action="delete" title="\u5220\u9664"><i class="ti ti-x"></i></span></div>`;
   }
   function bindReviewActions(root) {
     root.onclick = (e) => {
@@ -6346,7 +6941,7 @@
       const items = rec && rec[field2] || [];
       h += `<div class="rv-sec" data-field="${field2}" data-dept="${dept}" data-week="${key}"><h5>${title}</h5>`;
       if (field2 === "summary" && !items.length && prevPlan && prevPlan.length) {
-        h += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
+        h += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc2(x)).join("\uFF1B")}</div>`;
       }
       h += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
       h += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
@@ -6455,7 +7050,7 @@
     const dept = sec.dataset.dept;
     const week = sec.dataset.week;
     const items = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
-    API.put("/api/weekly-reports", { week_key: week, dept, field: field2, items }).catch((err) => toast(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
+    API.put("/api/weekly-reports", { week_key: week, dept, field: field2, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
   }
   function rvAdd(el) {
     const sec = el.closest(".rv-sec");
@@ -6479,7 +7074,7 @@
     const item = el.closest(".rv-item");
     const text2 = item.querySelector(".txt").innerText.trim();
     if (!text2) {
-      toast("\u8BF7\u5148\u586B\u5199\u5185\u5BB9");
+      toast2("\u8BF7\u5148\u586B\u5199\u5185\u5BB9");
       return;
     }
     const sec = el.closest(".rv-sec");
@@ -6495,7 +7090,7 @@
         toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "deposit");
       }
     } catch (e) {
-      toast(persistFailMsg(e));
+      toast2(persistFailMsg(e));
     }
   }
   document.addEventListener("focusout", (e) => {
@@ -6504,7 +7099,7 @@
     rvSectionSave(t.closest(".rv-sec"));
   });
 
-  // public/src/settings.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/settings.js
   function bindSettings() {
     document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
       if (el.dataset.settingsBound === "1") return;
@@ -6515,7 +7110,7 @@
       const commit = async () => {
         if (!can("kpiTarget")) {
           rollbackEditable(el, el.dataset.kpiOld != null ? el.dataset.kpiOld : el.textContent);
-          toast("\u4EC5\u8001\u677F/\u4E3B\u7BA1\u53EF\u6539 KPI \u76EE\u6807");
+          toast2("\u4EC5\u8001\u677F/\u4E3B\u7BA1\u53EF\u6539 KPI \u76EE\u6807");
           return;
         }
         const parts = el.dataset.kpi.split(":");
@@ -6536,13 +7131,13 @@
         }
         setSavingState(el, "saving");
         try {
-          const { rows: rows2 } = await API.put(withRange2("/api/kpi-targets"), { updates: [{ id: item.id, target: result.value }] });
+          const { rows: rows2 } = await API.put(withRange2("/api/kpi-targets", "kpi"), { updates: [{ id: item.id, target: result.value }] });
           applyKpiServer(rows2);
           renderKPI2();
           el.textContent = String(item.t);
           el.dataset.kpiOld = String(item.t);
           setSavingState(el, "ok");
-          toast("\u5DF2\u66F4\u65B0\u300C" + item.n + "\u300D\u76EE\u6807 \u2192 " + item.t + " \xB7 \u5DF2\u5165\u5E93, \u8BC4\u5206\u5DF2\u91CD\u7B97");
+          toast2("\u5DF2\u66F4\u65B0\u300C" + item.n + "\u300D\u76EE\u6807 \u2192 " + item.t + " \xB7 \u5DF2\u5165\u5E93, \u8BC4\u5206\u5DF2\u91CD\u7B97");
         } catch (error) {
           rollbackEditable(el, oldValue);
           showSaveError(el, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
@@ -6569,27 +7164,27 @@
     const newPassword = document.getElementById("pwd-new").value;
     const confirmation = document.getElementById("pwd-new2").value;
     if (!oldPassword || !newPassword) {
-      toast("\u8BF7\u586B\u5199\u5F53\u524D\u5BC6\u7801\u4E0E\u65B0\u5BC6\u7801");
+      toast2("\u8BF7\u586B\u5199\u5F53\u524D\u5BC6\u7801\u4E0E\u65B0\u5BC6\u7801");
       return;
     }
     if (newPassword.length < 6) {
-      toast("\u65B0\u5BC6\u7801\u81F3\u5C11 6 \u4F4D");
+      toast2("\u65B0\u5BC6\u7801\u81F3\u5C11 6 \u4F4D");
       return;
     }
     if (newPassword !== confirmation) {
-      toast("\u4E24\u6B21\u8F93\u5165\u7684\u65B0\u5BC6\u7801\u4E0D\u4E00\u81F4");
+      toast2("\u4E24\u6B21\u8F93\u5165\u7684\u65B0\u5BC6\u7801\u4E0D\u4E00\u81F4");
       return;
     }
     try {
       await API.post("/api/change-password", { oldPassword, newPassword });
       closeModal("pwdMask");
-      toast("\u5BC6\u7801\u5DF2\u4FEE\u6539\uFF0C\u4E0B\u6B21\u767B\u5F55\u7528\u65B0\u5BC6\u7801");
+      toast2("\u5BC6\u7801\u5DF2\u4FEE\u6539\uFF0C\u4E0B\u6B21\u767B\u5F55\u7528\u65B0\u5BC6\u7801");
     } catch (error) {
-      toast(error.status === 401 ? "\u5F53\u524D\u5BC6\u7801\u4E0D\u6B63\u786E" : "\u4FEE\u6539\u5931\u8D25\uFF1A" + error.message);
+      toast2(error.status === 401 ? "\u5F53\u524D\u5BC6\u7801\u4E0D\u6B63\u786E" : "\u4FEE\u6539\u5931\u8D25\uFF1A" + error.message);
     }
   }
 
-  // public/src/table-editor.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/table-editor.js
   var EDITABLE_CELL = "td[contenteditable][data-field]";
   var DATE_INPUT = "input.cell-date[data-field]";
   var tableEditorBound = false;
@@ -6648,10 +7243,10 @@
         item._oldValue = item.value;
         item.defaultValue = item.value;
       });
-      toast("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93");
+      toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93");
     } catch (error) {
       input.value = oldValue || "";
-      toast(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+      toast2(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     } finally {
       setDateInputsBusy(inputs, false);
     }
@@ -6673,7 +7268,7 @@
       cell2._old = value;
     } catch (error) {
       rollbackEditable(cell2, oldValue);
-      toast(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+      toast2(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     } finally {
       setCellBusy(cell2, false, previousEditable);
     }
@@ -6721,7 +7316,7 @@
     document.addEventListener("keydown", handleKeyDown);
   }
 
-  // public/src/rank-snapshots.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/rank-snapshots.js
   function renderRankTrend(snapshots) {
     if (!snapshots || snapshots.length < 2) return;
     const first = snapshots[0];
@@ -6763,13 +7358,13 @@
     try {
       const { weeks, snapshots } = await API.post("/api/rank-snapshots", { items });
       renderRankTrend(snapshots);
-      toast("\u5DF2\u8BB0\u5F55\u672C\u5468\u6392\u540D\u5FEB\u7167\uFF08" + items.length + " \u8BCD\uFF09\xB7 \u5171 " + weeks + " \u5468\uFF0C\u53EF\u770B\u8D8B\u52BF");
+      toast2("\u5DF2\u8BB0\u5F55\u672C\u5468\u6392\u540D\u5FEB\u7167\uFF08" + items.length + " \u8BCD\uFF09\xB7 \u5171 " + weeks + " \u5468\uFF0C\u53EF\u770B\u8D8B\u52BF");
     } catch (error) {
-      toast(error && error.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u674E/SEO \u53EF\u8BB0\u5F55\u5FEB\u7167\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (error && error.message || "\u672A\u77E5\u9519\u8BEF"));
+      toast2(error && error.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u674E/SEO \u53EF\u8BB0\u5F55\u5FEB\u7167\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (error && error.message || "\u672A\u77E5\u9519\u8BEF"));
     }
   }
 
-  // public/src/risks.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/risks.js
   var STATUS_LABELS = { fail: "\u5931\u8D25", unverified: "\u5F85\u9A8C\u8BC1", warn: "\u8B66\u544A", pass: "\u901A\u8FC7" };
   var SOURCE_LABELS = { production_live: "\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536", current_static: "\u5F53\u524D\u914D\u7F6E\u4E0E\u6570\u636E\u5E93" };
   var EVIDENCE_LABELS = {
@@ -6886,17 +7481,17 @@
   function renderRows() {
     if (!register) return;
     const tbody = byId2("risk-rows");
-    const state = byId2("risk-state");
+    const state2 = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
-    if (!tbody || !state || !wrap) return;
+    if (!tbody || !state2 || !wrap) return;
     const severity = byId2("risk-filter-severity")?.value || "all";
     const status = byId2("risk-filter-status")?.value || "open";
     const items = register.items.filter((item) => (severity === "all" || item.severity === severity) && (status === "all" || (status === "open" ? item.status !== "pass" : item.status === status)));
     tbody.replaceChildren();
-    state.replaceChildren();
+    state2.replaceChildren();
     if (!items.length) {
       wrap.hidden = true;
-      state.appendChild(make2("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
+      state2.appendChild(make2("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
       return;
     }
     wrap.hidden = false;
@@ -6918,11 +7513,11 @@
     });
   }
   function renderError2(error) {
-    const state = byId2("risk-state");
+    const state2 = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
     if (wrap) wrap.hidden = true;
-    if (!state) return;
-    state.replaceChildren();
+    if (!state2) return;
+    state2.replaceChildren();
     const message = make2("div", "risk-state-message risk-state-error");
     message.appendChild(make2("strong", "", "\u98CE\u9669\u6E05\u5355\u52A0\u8F7D\u5931\u8D25"));
     message.appendChild(make2("span", "", `\uFF1A${error && error.message ? error.message : "\u672A\u77E5\u9519\u8BEF"}`));
@@ -6930,7 +7525,7 @@
     retry.type = "button";
     retry.addEventListener("click", loadRisks);
     message.appendChild(retry);
-    state.appendChild(message);
+    state2.appendChild(message);
   }
   function bindControls() {
     const refresh = byId2("risk-refresh");
@@ -6950,15 +7545,15 @@
     bindControls();
     const requestId = ++requestSequence3;
     const refresh = byId2("risk-refresh");
-    const state = byId2("risk-state");
+    const state2 = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
     if (refresh) {
       refresh.disabled = true;
       refresh.setAttribute("aria-busy", "true");
     }
     if (wrap) wrap.hidden = true;
-    if (state) {
-      state.replaceChildren(make2("div", "risk-state-message", "\u6B63\u5728\u6838\u5BF9\u5F53\u524D\u914D\u7F6E\u3001\u6570\u636E\u5E93\u8BC1\u636E\u548C\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536\u2026"));
+    if (state2) {
+      state2.replaceChildren(make2("div", "risk-state-message", "\u6B63\u5728\u6838\u5BF9\u5F53\u524D\u914D\u7F6E\u3001\u6570\u636E\u5E93\u8BC1\u636E\u548C\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536\u2026"));
     }
     try {
       const result = await API.get("/api/risks");
@@ -6977,7 +7572,7 @@
     }
   }
 
-  // public/src/app.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/app.js
   var app_exports = {};
   __export(app_exports, {
     chk: () => chk2,
@@ -7014,7 +7609,7 @@
     logout: () => API.logout(),
     "open-sop": () => openSopModal(),
     "open-hermes-panel": () => openHermesPanel(),
-    toast: (el) => toast(el.dataset.message),
+    toast: (el) => toast2(el.dataset.message),
     "close-hermes-panel": () => closeHermesPanel(),
     "toggle-hermes-maximize": () => toggleHermesMaximize(),
     "load-hermes-morning-brief": () => loadHermesMorningBrief(),
@@ -7198,6 +7793,11 @@
       } catch (e) {
       }
     }
+    try {
+      syncRangeUi();
+      loadOverview();
+    } catch (e) {
+    }
   }
   document.querySelectorAll(".nav-item").forEach((n) => n.addEventListener("click", () => go2(n.dataset.tab)));
   document.querySelectorAll(".planning-tab").forEach((btn) => btn.addEventListener("click", () => setPlanningTab2(btn.dataset.planTab)));
@@ -7239,8 +7839,8 @@
     }
     if (sub) {
       const panel = document.getElementById("panel-" + tab);
-      const st = panel && panel.querySelector('.subtab[data-sub="' + sub + '"]');
-      if (st) st.click();
+      const st2 = panel && panel.querySelector('.subtab[data-sub="' + sub + '"]');
+      if (st2) st2.click();
     }
   }
   document.querySelectorAll(".cat-tabs").forEach((box) => box.addEventListener("click", (e) => {
@@ -7296,7 +7896,7 @@
       if (e && e.message !== "unauthorized") {
         const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
         tableLoadState("tb-neg", 6, "error", "\u5426\u8BCD\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadNegKeywords);
-        toast("\u5426\u8BCD\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
+        toast2("\u5426\u8BCD\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
       }
     }
   }
@@ -7320,7 +7920,7 @@
       if (e && e.message !== "unauthorized") {
         const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
         tableLoadState("tb-ad", 5, "error", "\u5E7F\u544A\u521B\u610F\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadAdCreatives);
-        toast("\u5E7F\u544A\u521B\u610F\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
+        toast2("\u5E7F\u544A\u521B\u610F\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason);
       }
     }
   }
@@ -7337,7 +7937,7 @@
       bar.innerHTML = LOOP.map((x, i) => {
         const n = i + 1;
         const cls = n === cur ? "active" : n < cur ? "done" : "";
-        return `<span class="loopstep ${cls}" data-loop-tab="${esc(x[1])}">${x[0]}</span>` + (n < LOOP.length ? '<span class="loopsep"></span>' : "");
+        return `<span class="loopstep ${cls}" data-loop-tab="${esc2(x[1])}">${x[0]}</span>` + (n < LOOP.length ? '<span class="loopsep"></span>' : "");
       }).join("");
       bar.onclick = (e) => {
         const step = e.target.closest("[data-loop-tab]");
@@ -7380,32 +7980,32 @@
     if (id) {
       if (on && c.classList.contains("cotask")) {
         API.post("/api/loop-items/" + id + "/archive", { archive_kind: "company" }).then(() => {
-          toast("\u5927\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5F52\u6863\uFF08\u542B\u5B50\u4EFB\u52A1\uFF09");
+          toast2("\u5927\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5F52\u6863\uFF08\u542B\u5B50\u4EFB\u52A1\uFF09");
           c.remove();
           recount();
           loadUrgent();
           if (typeof updateSopCounts === "function") updateSopCounts();
         }).catch((e) => {
           rollback();
-          toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
+          toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
         });
         return;
       }
       API.patch("/api/loop-items/" + id, { state: on ? "done" : "todo", status: on ? "done" : "\u5F85\u529E" }).then(() => {
         const fx = c._item && c._item.fix_id;
         if (on) toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el));
-        else toast("\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u56DE\u5230\u300C\u8FDB\u884C\u4E2D\u300D" : ""));
+        else toast2("\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u56DE\u5230\u300C\u8FDB\u884C\u4E2D\u300D" : ""));
         loadUrgent();
       }).catch((e) => {
         rollback();
-        toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
+        toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
       });
     } else if (sopId) {
       const freq = c.dataset.sopFreq || "daily";
       const pk = sopPeriodKey(freq);
       const req = on ? API.post("/api/sop/completions", { sop_id: Number(sopId), period_key: pk }) : API.del("/api/sop/completions/" + sopId + "?period_key=" + encodeURIComponent(pk));
       req.then(() => {
-        toast(on ? "SOP \u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" : "\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93");
+        toast2(on ? "SOP \u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" : "\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93");
         const set = window._sopDone && window._sopDone[freq];
         if (set) {
           if (on) set.add(Number(sopId));
@@ -7416,10 +8016,10 @@
         refreshNavTaskDot();
       }).catch((e) => {
         rollback();
-        toast(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
+        toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
       });
     } else {
-      toast(on ? "\u5DF2\u5B8C\u6210" : "");
+      toast2(on ? "\u5DF2\u5B8C\u6210" : "");
     }
   }
   window.addEventListener("load", async () => {
@@ -7487,11 +8087,11 @@
     if (!can("sem")) document.querySelectorAll('[data-ui-action="add-keyword"][data-keyword-type="sem"]').forEach((b) => b.style.display = "none");
   }
 
-  // public/src/main.js
+  // ../daily-plan-ui-improvements-8f6ac3/public/src/main.js
   bindTableEditor();
-  var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
+  var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
-  var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
+  var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadKpiInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
   var closedLoopCompatibility = { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent };
   var aiCompatibility = { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi };
   var settingsCompatibility = { bindSettings, openPwd, submitPwd };

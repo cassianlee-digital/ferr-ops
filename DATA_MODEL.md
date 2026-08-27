@@ -103,7 +103,14 @@
 > 现有 inquiries 已有:date / country / region / channel / source / product / grade / note /
 > customer_code(客户编码) / company(询价通过哪个主体:贝孚特 | 费尔瑞,未选留 NULL) /
 > salesperson(业务员) / deal_status(是否成交:未成交 | 已成交) /
-> tracking_feedback / original_grade。customer_name 已从录入与表格下线,列保留只为不丢历史数据。
+> tracking_feedback(**已停写**,见下) / original_grade。customer_name 已从录入与表格下线,列保留只为不丢历史数据。
+>
+> **跟踪反馈已拆表**(2026-08-27):`inquiry_feedbacks(id, inquiry_id, text, created_by, created_at)`。
+> 一条询盘可有多条带时间的跟进记录,时间由服务端盖章。`inquiries.tracking_feedback` 那一列**只保留历史数据、只读不写**
+> (已从 repo 的 update allowed 名单移除),迁移时原文进新表且 **created_at 留 NULL** —— 老字段本来就没有时间戳,
+> 补一个日期等于伪造跟进记录,前端如实显示「日期不详」。迁移幂等,靠 `meta.backfill_inquiry_feedbacks` 只跑一次。
+> 接口:`GET/POST /api/inquiries/:id/feedbacks`、`DELETE /api/inquiries/:id/feedbacks/:feedbackId`;
+> `GET /api/inquiries` 每行直接带 `feedbacks[]`(新的在前,批量查询避免 N+1)。
 > 以下为归因增强字段:
 
 | 字段 | 说明 |

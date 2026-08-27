@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { db } from './connection.js';
-import { migrate } from './migrate.js';
+import { migrate, classifyKpiDefaults, ensurePerformanceGroupsV3 } from './migrate.js';
 import { config } from '../config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -55,12 +55,18 @@ export function seed() {
     console.log(`[seed] 已创建账号 ${u.username} (${u.role})`);
   }
 
-  if (db.prepare('SELECT COUNT(*) AS c FROM kpi_targets').get().c === 0) {
+  {
+    // 幂等按 (grp,name) 插入基础 16 条。不能用「表空」判据：migrate 的 ensurePerformanceGroupsV3
+    // 已先插入 14 条绩效分组指标，表非空会漏插基础指标（曾致 询盘总量/A级 丢失）。
     const insKpi = db.prepare(
       'INSERT INTO kpi_targets (grp, name, weight, target, actual, mode, unit, sort_order) VALUES (?,?,?,?,0,?,?,?)'
     );
-    KPI.forEach((row, i) => insKpi.run(row[0], row[1], row[2], row[3], row[4], row[5], i));
-    console.log(`[seed] 已写入 ${KPI.length} 条 KPI 目标（实际值=0）`);
+    const existsKpi = db.prepare('SELECT id FROM kpi_targets WHERE grp = ? AND name = ?');
+    let inserted = 0;
+    KPI.forEach((row, i) => { if (!existsKpi.get(row[0], row[1])) { insKpi.run(row[0], row[1], row[2], row[3], row[4], row[5], i); inserted++; } });
+    classifyKpiDefaults();        // 刚插入的行补三级分层（KPI_CLASSIFY：旧共享指标已定为 summary）
+    ensurePerformanceGroupsV3();  // 幂等：绩效分组指标 + 旧共享指标降级 summary（meta 打标只跑一次）
+    if (inserted) console.log(`[seed] 已写入 ${inserted} 条基础 KPI + 绩效分组指标`);
   }
 
   // 市场调研问卷（来自《FERR-市场分析.xlsx》，真实资料、非 mock；表空时写入）

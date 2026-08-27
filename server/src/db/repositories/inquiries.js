@@ -7,18 +7,18 @@ import { updateById } from '../updateHelper.js';
 const NOT_ARCHIVED = "(state IS NULL OR state <> 'archived')";
 export function list(range) {
   if (range && range.start_date && range.end_date) {
-    return db
+    return attachFeedbacks(db
       .prepare(`SELECT * FROM inquiries WHERE ${NOT_ARCHIVED} AND date BETWEEN @start_date AND @end_date ORDER BY date DESC, id DESC`)
-      .all({ start_date: range.start_date, end_date: range.end_date });
+      .all({ start_date: range.start_date, end_date: range.end_date }));
   }
-  return db
+  return attachFeedbacks(db
     .prepare(`SELECT * FROM inquiries WHERE ${NOT_ARCHIVED} ORDER BY date DESC, id DESC`)
-    .all();
+    .all());
 }
 
 // P3：归档列表（归档页「询盘」桶用），按归档时间倒序
 export function listArchived() {
-  return db.prepare("SELECT * FROM inquiries WHERE state='archived' ORDER BY archived_at DESC, id DESC").all();
+  return attachFeedbacks(db.prepare("SELECT * FROM inquiries WHERE state='archived' ORDER BY archived_at DESC, id DESC").all());
 }
 
 // P3：软删→归档（幂等）
@@ -59,7 +59,7 @@ export function create(rec, userId) {
       tracking_feedback: rec.tracking_feedback ?? null,
       original_grade: rec.original_grade ?? rec.grade ?? null,
     });
-  return db.prepare('SELECT * FROM inquiries WHERE id = ?').get(info.lastInsertRowid);
+  return get(info.lastInsertRowid); // 与列表同形（带空的 feedbacks 数组）
 }
 
 // 6.23 文档 9：首次改 grade 时把「修改前的旧等级」锁为 original_grade（仅对 NULL 旧数据生效；新数据 POST 时已设）。
@@ -70,17 +70,69 @@ export function lockOriginalGradeIfNull(id) {
 
 export function update(id, fields) {
   // original_grade 显式不在 allowed：服务端硬阻止前端改写「最初等级」，确保上调标红判定可靠
+  // tracking_feedback 也不在 allowed（2026-08-27）：跟踪反馈已改为 inquiry_feedbacks 多条记录，
+  // 老列只保留历史数据、只读不写，避免两处各存一份、对不上账
   const allowed = ['date', 'country', 'region', 'channel', 'source', 'product', 'grade', 'note',
-    'customer_code', 'company', 'salesperson', 'deal_status', 'tracking_feedback'];
+    'customer_code', 'company', 'salesperson', 'deal_status'];
   updateById('inquiries', id, fields, allowed);
   return get(id);
 }
 
+/* ===== 跟踪反馈：一条询盘可以有多条带时间的记录（2026-08-27）=====
+   created_at 为 NULL = 从老的单条 tracking_feedback 迁过来的、时间不详的历史记录，前端如实标注。 */
+const FEEDBACK_SELECT = `SELECT f.id, f.inquiry_id, f.text, f.created_at, u.name AS created_by_name
+                           FROM inquiry_feedbacks f LEFT JOIN users u ON u.id = f.created_by`;
+
+// 批量取：列表页一次把区间内所有询盘的反馈捞回来，避免 N+1。返回 {inquiry_id: [记录…]}，新的在前。
+function feedbacksByInquiry(ids) {
+  const map = {};
+  if (!ids.length) return map;
+  const rows = db
+    .prepare(`${FEEDBACK_SELECT} WHERE f.inquiry_id IN (${ids.map(() => '?').join(',')})
+              ORDER BY f.created_at IS NULL, f.created_at DESC, f.id DESC`)
+    .all(...ids);
+  for (const r of rows) (map[r.inquiry_id] ||= []).push(r);
+  return map;
+}
+
+// 给一批询盘行挂上 feedbacks 数组（列表/统计都用它，保证前端只认一个字段）
+export function attachFeedbacks(rows) {
+  const map = feedbacksByInquiry(rows.map((r) => r.id));
+  for (const r of rows) r.feedbacks = map[r.id] || [];
+  return rows;
+}
+
+export function listFeedbacks(inquiryId) {
+  return db
+    .prepare(`${FEEDBACK_SELECT} WHERE f.inquiry_id = ? ORDER BY f.created_at IS NULL, f.created_at DESC, f.id DESC`)
+    .all(inquiryId);
+}
+
+export function addFeedback(inquiryId, text, userId) {
+  const info = db
+    .prepare(`INSERT INTO inquiry_feedbacks (inquiry_id, text, created_by, created_at)
+              VALUES (?, ?, ?, datetime('now'))`)
+    .run(inquiryId, text, userId ?? null);
+  return db.prepare(`${FEEDBACK_SELECT} WHERE f.id = ?`).get(info.lastInsertRowid);
+}
+
+export function getFeedback(id) {
+  return db.prepare('SELECT * FROM inquiry_feedbacks WHERE id = ?').get(id);
+}
+
+export function removeFeedback(id) {
+  db.prepare('DELETE FROM inquiry_feedbacks WHERE id = ?').run(id);
+}
+
 export function get(id) {
-  return db.prepare('SELECT * FROM inquiries WHERE id = ?').get(id);
+  const row = db.prepare('SELECT * FROM inquiries WHERE id = ?').get(id);
+  if (row) attachFeedbacks([row]); // 单行也带 feedbacks，PATCH 返回的 item 与列表同形
+  return row;
 }
 
 export function remove(id) {
+  // 物理删除询盘时一并清掉它的跟踪记录，避免留下指向不存在询盘的孤儿行
+  db.prepare('DELETE FROM inquiry_feedbacks WHERE inquiry_id = ?').run(id);
   db.prepare('DELETE FROM inquiries WHERE id = ?').run(id);
 }
 

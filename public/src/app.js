@@ -9,12 +9,12 @@
    显式 import 的模块调用 —— 那是下一刀要收的方向。 */
 import { adoptAi, aiBox, loadAiAnalyses, runAiAnalysis } from './ai.js';
 import { loadArchive } from './archive.js';
-import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, renderInqDonuts, resizeScatters, toggleHier } from './charts.js';
+import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, resizeScatters, toggleHier } from './charts.js';
 import { addContent, addDepositRow, addFixRow, addPlanRow, addTestRow, loadClosedLoop, loadContent, openTaskModal, prepend, refreshTaskCols, submitSubtask, submitTask } from './closed-loop.js';
 import { loadGa4 } from './ga4-view.js';
 import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
-import { loadInquiries, openInquiry, refreshInqStats, renderInqFeed, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
+import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
 import { addKeyword, filterKwByCat, loadKeywords, renderSparklines } from './keywords.js';
 import { loadOverview, renderKPI } from './kpi-view.js';
@@ -25,7 +25,7 @@ import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
 import { loadRisks } from './risks.js';
 import { bindSettings, openPwd, submitPwd } from './settings.js';
 import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, updateSopCounts } from './sop.js';
-import { getRangeRevision, submitCustomRange, withRange } from './timerange.js';
+import { getRangeRevision, submitCustomRange, syncRangeUi, withRange } from './timerange.js';
 import { closeModal, esc, tableLoadState, toast, toastUndo } from './ui-kit.js';
 import { renderMonthReview, renderReview } from './weekly-review.js';
 
@@ -160,6 +160,9 @@ export function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:dat
   if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
   if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结
+  // 2026-08-26：时间范围分页面独立 → 右上角日期与顶栏 KPI 三个 pill 跟随「当前所在页面」的区间。
+  // 没有时间条的页面（计划/关键词/归档…）落回总览的区间，见 src/timerange.js 的 DEFAULT_SCOPE。
+  try{ syncRangeUi(); loadOverview(); }catch(e){}
 }
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>go(n.dataset.tab)));
 document.querySelectorAll('.planning-tab').forEach(btn=>btn.addEventListener('click',()=>setPlanningTab(btn.dataset.planTab)));
@@ -198,7 +201,7 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 /* GA4 流量看板：ES 模块 public/src/ga4-view.js（打包进 /dist/bundle.js）— loadGa4() */
 
 /* 询盘录入已迁移至 ES 模块 public/src/inquiries.js（打包进 /dist/bundle.js）
-   — 仅 openInquiry/submitInquiry/submitTrack/renderInqList/renderInqFeed/refreshInqStats 保留全局兼容入口 */
+   — 仅 openInquiry/submitInquiry/submitTrack/renderInqList/refreshInqStats 保留全局兼容入口 */
 
 /* 否词库 / 广告创意库 录入：ES 模块 public/src/neg-ads.js（打包进 /dist/bundle.js）— addNeg/addAd/negRowHtml/adRowHtml 等 */
 
