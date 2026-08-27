@@ -33,7 +33,7 @@ export function bindSettings(){
       }
       setSavingState(el,'saving');
       try{
-        const {rows}=await API.put(withRange('/api/kpi-targets'),{updates:[{id:item.id,target:result.value}]});
+        const {rows}=await API.put(withRange('/api/kpi-targets','kpi'),{updates:[{id:item.id,target:result.value}]});
         applyKpiServer(rows);
         renderKPI();
         el.textContent=String(item.t);

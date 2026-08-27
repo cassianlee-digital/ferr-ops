@@ -490,9 +490,6 @@ body.dark #integ-rows>.sheet-tip{
 
 
 
-.inq-feed-btn{width:28px;height:28px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
-  border:1px solid var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;border-radius:var(--radius);font-size:16px}
-.inq-feed-btn:hover{color:var(--primary);border-color:var(--primary)}
 
 /* 最新询盘表：容器内滚动（询盘多时下滑），表头吸顶，右侧留安全边距 */
 
@@ -500,10 +497,6 @@ body.dark #integ-rows>.sheet-tip{
 
 /* 每行都有分隔线（含末行），更像表格 */
 
-/* 展开按钮：仅折叠态显示，贴在地图左侧 */
-.inq-feed-expand{display:none;align-self:flex-start}
-.inq-hero.feed-collapsed .inq-feed{flex-basis:0;width:0;padding-left:0;padding-right:0;opacity:0;border-width:0;pointer-events:none}
-.inq-hero.feed-collapsed .inq-feed-expand{display:flex}
 #panel-inquiry>.sheet-tip{
   margin-bottom:14px!important;
   padding:10px 12px;

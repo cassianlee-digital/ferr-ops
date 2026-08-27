@@ -3,7 +3,7 @@
    仅 renderKPI/loadOverview 由 main.js 挂到 window，供 app.js 与 KPI 提交流程调用。 */
 
 import { TOTAL, SEO, SEM, ratio, recomputeScores, company, liScore, chenScore, loadMetrics, loadWeeks } from './kpi.js';
-import { getRangeRevision, rangeText, withRange } from './timerange.js';
+import { activeScope, getRangeRevision, rangeText, withRange } from './timerange.js';
 
 function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-soft)',i:'ti-trophy'};if(s>=75)return{t:'合格',c:'var(--blue)',bg:'var(--blue-soft)',i:'ti-circle-check'};if(s>=60)return{t:'警告',c:'var(--amber)',bg:'var(--amber-soft)',i:'ti-alert-triangle'};return{t:'整改',c:'var(--primary)',bg:'var(--primary-soft)',i:'ti-flame'};}
 function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
@@ -20,12 +20,15 @@ function mini(ov){
   const el=document.getElementById('miniScores'); if(!el)return;
   el.innerHTML=m.map(x=>`<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3]||'').startsWith('▲')?'kpi-tone-green':((x[3]||'').startsWith('▼')?'kpi-tone-primary':'kpi-tone-muted')}">${x[3]||''}</span></div></div>`).join('');
 }
-/* 总览：拉真实数据 + 与上月环比，更新顶栏与表盘旁的环比 */
+/* 总览：拉真实数据 + 与上月环比，更新顶栏与表盘旁的环比。
+   2026-08-26：时间范围分页面独立后，顶栏 KPI 与右上角日期一律「跟随当前所在页面」的区间——
+   所以这里取 activeScope() 而不是某个固定 scope，并在切页时由 app.js go() 重新调用。 */
 let overviewRequestSequence=0;
 export async function loadOverview(){
-  const requestId=++overviewRequestSequence, revision=getRangeRevision();
+  const scope=activeScope();
+  const requestId=++overviewRequestSequence, revision=getRangeRevision(scope);
   try{
-    const ov=await API.get(withRange('/api/overview')); if(requestId!==overviewRequestSequence||revision!==getRangeRevision())return false; const c=ov.current||{}, d=ov.delta||{}, comparison=ov.comparisonLabel||'vs 上月';
+    const ov=await API.get(withRange('/api/overview',scope)); if(requestId!==overviewRequestSequence||revision!==getRangeRevision(scope))return false; const c=ov.current||{}, d=ov.delta||{}, comparison=ov.comparisonLabel||'vs 上月';
     const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
     set('topValid', (c.valid??'—')+' / '+(c.total??'—'));
     set('topAratio', c.aRatio!=null?c.aRatio+'%':'—');
@@ -60,9 +63,13 @@ export function renderKPI(){
 
 let kpiRefreshSequence=0;
 async function refreshKpiRange(){
-  const requestId=++kpiRefreshSequence, revision=getRangeRevision();
+  const requestId=++kpiRefreshSequence, revision=getRangeRevision('kpi');
   await Promise.all([loadMetrics(),loadWeeks(),loadOverview()]);
-  if(requestId!==kpiRefreshSequence||revision!==getRangeRevision())return;
+  if(requestId!==kpiRefreshSequence||revision!==getRangeRevision('kpi'))return;
   renderKPI();
 }
-document.addEventListener('timerange',refreshKpiRange);
+document.addEventListener('timerange',e=>{
+  const scope=e.detail&&e.detail.scope;
+  if(scope==='kpi'){ refreshKpiRange(); return; } // KPI 页自己的目标/周数据/总分
+  if(scope===activeScope())loadOverview();       // 别页改时间 → 只把顶栏那三个 pill 跟到当前页区间
+});

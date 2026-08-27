@@ -12,7 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_VERSION = '12';
 
 const ALL_TABLES = [
-  'users', 'inquiries', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
+  'users', 'inquiries', 'inquiry_feedbacks', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
@@ -545,6 +545,20 @@ CREATE TABLE IF NOT EXISTS task_checkins (
   UNIQUE(loop_item_id, day_key)
 );
 CREATE INDEX IF NOT EXISTS idx_task_checkins_item ON task_checkins(loop_item_id);
+
+-- 跟踪反馈改成「多条带时间的记录」（2026-08-27）。
+-- 原来 inquiries.tracking_feedback 是单个 TEXT：一条询盘只能存一段话，覆盖式保存，
+-- 既不知道是哪天写的，也看不出跟进了几次 —— 复盘时等于没有证据。
+-- 老列保留不动（绝不删数据），但从此只读不写，唯一真相在本表。
+CREATE TABLE IF NOT EXISTS inquiry_feedbacks (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  inquiry_id  INTEGER NOT NULL REFERENCES inquiries(id),
+  text        TEXT NOT NULL,
+  created_by  INTEGER REFERENCES users(id),
+  -- 迁移进来的老记录 created_at 留 NULL：那段话确实没有时间戳，宁可显示「日期不详」也不编一个
+  created_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_inquiry_feedbacks_inq ON inquiry_feedbacks(inquiry_id);
 `;
 
 export function migrate() {
@@ -626,6 +640,7 @@ export function migrate() {
   // 看着像没人做。按创建日补开始日，让它们回到「进行中」。
   // 只跑一次（meta 打标），否则用户事后手动清空开始日会被下次启动重新填回来。
   try { backfillTaskStartDates(); } catch (e) {}
+  try { backfillInquiryFeedbacks(); } catch (e) {}
 
   db.prepare(
     `INSERT INTO meta (key,value) VALUES ('schema_version',?)
@@ -647,6 +662,21 @@ function backfillTaskStartDates() {
         AND created_at IS NOT NULL`
   ).run();
   db.prepare("INSERT INTO meta (key,value) VALUES ('backfill_task_start_date','1')").run();
+}
+
+// 老的单条 tracking_feedback 迁进 inquiry_feedbacks，成为该询盘的第一条记录。
+// created_at 故意留 NULL —— 老字段本来就没有时间戳，编一个日期等于伪造跟进记录。
+// 老列不清空：万一迁移有问题，原始数据还在原处可比对。幂等靠 meta 标记，只跑一次。
+function backfillInquiryFeedbacks() {
+  const done = db.prepare("SELECT value FROM meta WHERE key='backfill_inquiry_feedbacks'").get();
+  if (done) return;
+  db.prepare(
+    `INSERT INTO inquiry_feedbacks (inquiry_id, text, created_by, created_at)
+     SELECT id, TRIM(tracking_feedback), created_by, NULL
+       FROM inquiries
+      WHERE tracking_feedback IS NOT NULL AND TRIM(tracking_feedback) <> ''`
+  ).run();
+  db.prepare("INSERT INTO meta (key,value) VALUES ('backfill_inquiry_feedbacks','1')").run();
 }
 
 // 把旧「年-月-第几周」周报键改写成「本周周一日期 YYYY-MM-DD」。幂等：日期键/月报键都不匹配 legacy 正则。

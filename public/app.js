@@ -157,6 +157,9 @@ function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','dat
   if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
   if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结
+  // 2026-08-26：时间范围分页面独立 → 右上角日期与顶栏 KPI 三个 pill 跟随「当前所在页面」的区间。
+  // 没有时间条的页面（计划/关键词/归档…）落回总览的区间，见 src/timerange.js 的 DEFAULT_SCOPE。
+  try{ syncRangeUi(); loadOverview(); }catch(e){}
 }
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>go(n.dataset.tab)));
 document.querySelectorAll('.planning-tab').forEach(btn=>btn.addEventListener('click',()=>setPlanningTab(btn.dataset.planTab)));
@@ -195,7 +198,7 @@ document.querySelectorAll('.cat-tabs').forEach(box=>box.addEventListener('click'
 /* GA4 流量看板：ES 模块 public/src/ga4-view.js（打包进 /dist/bundle.js）— loadGa4() */
 
 /* 询盘录入已迁移至 ES 模块 public/src/inquiries.js（打包进 /dist/bundle.js）
-   — 仅 openInquiry/submitInquiry/submitTrack/renderInqList/renderInqFeed/refreshInqStats 保留全局兼容入口 */
+   — 仅 openInquiry/submitInquiry/submitTrack/renderInqList/refreshInqStats 保留全局兼容入口 */
 
 /* 否词库 / 广告创意库 录入：ES 模块 public/src/neg-ads.js（打包进 /dist/bundle.js）— addNeg/addAd/negRowHtml/adRowHtml 等 */
 
@@ -236,33 +239,31 @@ function tableLoadState(id,colspan,state,message,retryAction){
   tb.innerHTML=`<tr data-load-state="${state}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
   const retryBtn=tb.querySelector('.table-retry'); if(retryBtn)retryBtn.addEventListener('click',retryAction);
 }
-// 询盘加载（带当前时间区间）。供首屏 hydrate 与时间切换共用。
+// 询盘加载（按「询盘页」自己的时间区间；2026-08-26 起时间范围分页面独立）。供首屏 hydrate 与时间切换共用。
 let inquiryRequestSequence=0;
 async function loadInquiries(){
   const requestId=++inquiryRequestSequence;
-  const revision=typeof getRangeRevision==='function'?getRangeRevision():0;
+  const revision=getRangeRevision('inquiry');
   try{
-    const {items,stats}=await API.get(withRange('/api/inquiries'));
-    if(requestId!==inquiryRequestSequence||(typeof getRangeRevision==='function'&&revision!==getRangeRevision()))return;
+    const {items,stats}=await API.get(withRange('/api/inquiries','inquiry'));
+    if(requestId!==inquiryRequestSequence||revision!==getRangeRevision('inquiry'))return;
     window._inqCache=items||[];
-    renderInqList(); // C组：按月分组渲染（清掉旧行/静态示例行，当月展开、上月折叠）
-    try{ renderInqFeed(); }catch(_){} // Hero 左栏「最新询盘」同步刷新
+    renderInqList(); // 唯一一张表：表头筛选 + 日期倒序 + 月份分隔 + 分页
     refreshInqStats(stats);
     // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
-    renderInqDonuts();  // BUG-6：KPI 页两个 donut 同步真实重绘
+    loadKpiInqDonuts(); // KPI 页两个 donut 按 KPI 页自己的区间取数（不受询盘页区间/筛选影响）
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
   }catch(e){ if(requestId===inquiryRequestSequence&&e&&e.message!=='unauthorized'){
     window._inqCache=[];
     window._inqStats=null;
     const reason=e.message||'未知错误';
-    tableLoadState('tb-inq-cur',11,'error','询盘加载失败：'+reason,loadInquiries);
-    tableLoadState('tb-inq',11,'error','询盘加载失败：'+reason,loadInquiries);
-    const count=document.getElementById('inqFeedCount'); if(count)count.textContent='加载失败';
-    renderInqDonuts();
+    tableLoadState('tb-inq',14,'error','询盘加载失败：'+reason,loadInquiries);
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(_){}}
     toast('询盘加载失败：'+reason);
   } }
 }
+// 询盘页时间条只驱动询盘页自己（其它页面的时间条各管各的，见 src/timerange.js）
+document.addEventListener('timerange',e=>{ if(e.detail&&e.detail.scope==='inquiry')loadInquiries(); });
 async function loadNegKeywords(){
   try{
     const {items}=await API.get('/api/neg-keywords');

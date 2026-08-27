@@ -40,9 +40,11 @@
   // public/src/timerange.js
   var timerange_exports = {};
   __export(timerange_exports, {
+    activeScope: () => activeScope,
     applyTimeRange: () => applyTimeRange,
     formatLocalDate: () => formatLocalDate,
     getCurrentRange: () => getCurrentRange,
+    getRangeLabel: () => getRangeLabel,
     getRangeRevision: () => getRangeRevision,
     openCustomRange: () => openCustomRange,
     rangeText: () => rangeText,
@@ -50,29 +52,60 @@
     renderTimebar: () => renderTimebar,
     resolveRange: () => resolveRange,
     submitCustomRange: () => submitCustomRange,
+    syncRangeUi: () => syncRangeUi,
     withRange: () => withRange2,
     ymd: () => ymd
   });
   var RANGES = ["\u4ECA\u5929", "\u6628\u5929", "\u8FD17\u5929", "\u8FD130\u5929", "\u8FD190\u5929", "\u8FD1\u4E00\u5E74", "\u81EA\u5B9A\u4E49"];
-  window._customRange = null;
-  try {
-    const cr = JSON.parse(localStorage.getItem("ferr:customRange") || "null");
-    if (cr && /^\d{4}-\d{2}-\d{2}$/.test(cr.start_date) && /^\d{4}-\d{2}-\d{2}$/.test(cr.end_date) && cr.start_date <= cr.end_date) window._customRange = cr;
-  } catch (e) {
-  }
-  try {
-    const t = localStorage.getItem("ferr:timeRange");
-    window._timeRange = RANGES.includes(t) ? t : "\u8FD130\u5929";
-  } catch (e) {
-    window._timeRange = "\u8FD130\u5929";
-  }
-  try {
-    const g = localStorage.getItem("ferr:gran");
-    window._gran = ["day", "week", "month"].includes(g) ? g : "week";
-  } catch (e) {
-    window._gran = "week";
-  }
+  var SCOPES = ["dashboard", "kpi", "inquiry", "data", "fix"];
+  var SCOPE_LABEL = { dashboard: "\u603B\u89C8", kpi: "KPI \u8003\u6838", inquiry: "\u8BE2\u76D8\u8BC4\u7EA7", data: "\u6570\u636E\u770B\u677F", fix: "\u6574\u6539\u6E05\u5355" };
+  var DEFAULT_SCOPE = "dashboard";
+  var DEFAULT_LABEL = "\u8FD130\u5929";
   var GRAN_LABEL = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" };
+  var LS_LABEL = (s) => "ferr:timeRange:" + s;
+  var LS_CUSTOM = (s) => "ferr:customRange:" + s;
+  function readJson(key) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "null");
+    } catch (e) {
+      return null;
+    }
+  }
+  function validCustom(cr) {
+    return !!(cr && /^\d{4}-\d{2}-\d{2}$/.test(cr.start_date) && /^\d{4}-\d{2}-\d{2}$/.test(cr.end_date) && cr.start_date <= cr.end_date);
+  }
+  var legacyLabel = (() => {
+    try {
+      const t = localStorage.getItem("ferr:timeRange");
+      return RANGES.includes(t) ? t : null;
+    } catch (e) {
+      return null;
+    }
+  })();
+  var legacyCustom = (() => {
+    const cr = readJson("ferr:customRange");
+    return validCustom(cr) ? cr : null;
+  })();
+  var state = {};
+  SCOPES.forEach((scope) => {
+    let label = null;
+    try {
+      const t = localStorage.getItem(LS_LABEL(scope));
+      if (RANGES.includes(t)) label = t;
+    } catch (e) {
+    }
+    const stored = readJson(LS_CUSTOM(scope));
+    const custom = validCustom(stored) ? stored : label ? null : legacyCustom;
+    state[scope] = { label: label || legacyLabel || DEFAULT_LABEL, custom: custom || null, range: null, revision: 0 };
+  });
+  function st(scope) {
+    return state[SCOPES.includes(scope) ? scope : DEFAULT_SCOPE];
+  }
+  function activeScope() {
+    const bar = document.querySelector(".panel.active [data-time][data-scope]");
+    const s = bar && bar.dataset.scope;
+    return SCOPES.includes(s) ? s : DEFAULT_SCOPE;
+  }
   function formatLocalDate(d) {
     const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
@@ -81,7 +114,7 @@
     v = String(v == null ? "" : v).trim();
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
   }
-  function resolveRange(label) {
+  function resolveRange(label, scope) {
     const today3 = /* @__PURE__ */ new Date();
     today3.setHours(0, 0, 0, 0);
     const back = (n) => {
@@ -128,7 +161,7 @@
       case "\u8FD11\u5E74":
         return r(back(364), today3);
       case "\u81EA\u5B9A\u4E49": {
-        const cr = window._customRange;
+        const cr = st(scope).custom;
         if (!cr) return null;
         return { start_date: cr.start_date, end_date: cr.end_date, period_label: "\u81EA\u5B9A\u4E49 " + cr.start_date + "~" + cr.end_date };
       }
@@ -136,16 +169,22 @@
         return r(back(29), today3);
     }
   }
-  var _range = resolveRange(window._timeRange);
-  var _rangeRevision = 0;
-  function getCurrentRange() {
-    return _range;
+  SCOPES.forEach((scope) => {
+    const s = st(scope);
+    if (s.label === "\u81EA\u5B9A\u4E49" && !s.custom) s.label = DEFAULT_LABEL;
+    s.range = resolveRange(s.label, scope);
+  });
+  function getCurrentRange(scope) {
+    return st(scope || activeScope()).range;
   }
-  function getRangeRevision() {
-    return _rangeRevision;
+  function getRangeRevision(scope) {
+    return st(scope || activeScope()).revision;
   }
-  function withRange2(path, range) {
-    range = range || _range;
+  function getRangeLabel(scope) {
+    return st(scope || activeScope()).label;
+  }
+  function withRange2(path, arg) {
+    const range = arg && typeof arg === "object" ? arg : getCurrentRange(typeof arg === "string" ? arg : void 0);
     if (!range || !range.start_date || !range.end_date) return path;
     const sep = path.includes("?") ? "&" : "?";
     return path + sep + "start_date=" + encodeURIComponent(range.start_date) + "&end_date=" + encodeURIComponent(range.end_date);
@@ -154,60 +193,76 @@
     return r && r.start_date ? r.start_date + " ~ " + r.end_date : "\u2014";
   }
   function syncRangeUi() {
-    document.querySelectorAll("[data-time] .trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === window._timeRange));
-    document.querySelectorAll("[data-tauto]").forEach((el) => el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(_range));
+    document.querySelectorAll("[data-time][data-scope]").forEach((bar) => {
+      const s = st(bar.dataset.scope);
+      bar.querySelectorAll(".trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === s.label));
+      bar.querySelectorAll("[data-tauto]").forEach((el) => {
+        el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      });
+    });
     const top = document.getElementById("topRange");
     if (top) {
-      top.textContent = rangeText(_range);
-      top.title = "\u5F53\u524D\u5168\u5C40\u65F6\u95F4\u8303\u56F4\uFF1A" + rangeText(_range);
+      const s = st(activeScope());
+      top.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      top.title = "\u5F53\u524D\u9875\u9762\u65F6\u95F4\u8303\u56F4\uFF1A" + rangeText(s.range) + "\uFF08\u5404\u9875\u9762\u5404\u81EA\u8BB0\u5FC6\uFF0C\u4E92\u4E0D\u5F71\u54CD\uFF09";
     }
   }
-  function refreshRangeConsumers() {
-    _rangeRevision++;
-    document.dispatchEvent(new CustomEvent("timerange", { detail: { range: _range, revision: _rangeRevision } }));
-    loadInquiries();
-    if (typeof loadGa4 === "function") loadGa4();
+  function refreshRangeConsumers(scope) {
+    const key = SCOPES.includes(scope) ? scope : DEFAULT_SCOPE;
+    const s = st(key);
+    s.revision++;
+    document.dispatchEvent(new CustomEvent("timerange", { detail: { scope: key, range: s.range, revision: s.revision } }));
   }
-  function applyTimeRange(label) {
-    const nr = resolveRange(label);
+  function applyTimeRange(label, scope) {
+    const key = SCOPES.includes(scope) ? scope : activeScope();
+    const nr = resolveRange(label, key);
     if (!nr) {
-      if (label === "\u81EA\u5B9A\u4E49") openCustomRange();
+      if (label === "\u81EA\u5B9A\u4E49") openCustomRange(key);
       else toast("\u8BE5\u9884\u8BBE\u5C1A\u672A\u5B9E\u73B0\uFF0C\u672A\u6539\u53D8\u7B5B\u9009");
       return false;
     }
-    window._timeRange = label;
-    _range = nr;
+    const s = st(key);
+    s.label = label;
+    s.range = nr;
     try {
-      localStorage.setItem("ferr:timeRange", label);
+      localStorage.setItem(LS_LABEL(key), label);
     } catch (e) {
     }
     syncRangeUi();
-    refreshRangeConsumers();
-    toast("\u65F6\u95F4\u8303\u56F4\uFF1A" + _range.period_label);
+    refreshRangeConsumers(key);
+    toast(SCOPE_LABEL[key] + " \u65F6\u95F4\u8303\u56F4\uFF1A" + nr.period_label);
     return true;
   }
   function renderTimebar(bar) {
-    const grans = (bar.dataset.gran || "").split(",").map((s) => s.trim()).filter(Boolean);
-    const onlyWeekly = grans.includes("week") && !grans.includes("day");
+    const s = st(bar.dataset.scope);
+    const grans = (bar.dataset.gran || "").split(",").map((x) => x.trim()).filter(Boolean);
+    const onlyWeekly = grans.indexOf("week") >= 0 && grans.indexOf("day") < 0;
     const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${g}"${g === window._gran ? " selected" : ""}>${GRAN_LABEL[g] || g}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
-    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === window._timeRange ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(_range)}</button>` + granHtml;
+    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === s.label ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(s.range)}</button>` + granHtml + '<span class="tscope-note" title="\u6BCF\u4E2A\u9875\u9762\u5404\u81EA\u8BB0\u4F4F\u81EA\u5DF1\u7684\u65F6\u95F4\u8303\u56F4\uFF0C\u4E92\u4E0D\u5F71\u54CD">\u4EC5\u672C\u9875</span>';
   }
-  document.querySelectorAll("[data-time]").forEach((bar) => {
+  try {
+    const g = localStorage.getItem("ferr:gran");
+    window._gran = ["day", "week", "month"].indexOf(g) >= 0 ? g : "week";
+  } catch (e) {
+    window._gran = "week";
+  }
+  document.querySelectorAll("[data-time][data-scope]").forEach((bar) => {
+    const scope = SCOPES.includes(bar.dataset.scope) ? bar.dataset.scope : DEFAULT_SCOPE;
     renderTimebar(bar);
     bar.addEventListener("click", (e) => {
       const dateBtn = e.target.closest(".tauto-btn");
       if (dateBtn) {
-        openCustomRange();
+        openCustomRange(scope);
         return;
       }
       const btn = e.target.closest(".trange");
       if (!btn) return;
       const rg = btn.textContent.trim();
-      if (rg === "\u81EA\u5B9A\u4E49" && !window._customRange) {
-        openCustomRange();
+      if (rg === "\u81EA\u5B9A\u4E49" && !st(scope).custom) {
+        openCustomRange(scope);
         return;
       }
-      applyTimeRange(rg);
+      applyTimeRange(rg, scope);
     });
     bar.addEventListener("change", (e) => {
       const sel = e.target.closest(".tgran");
@@ -215,18 +270,20 @@
       window._gran = sel.value;
       try {
         localStorage.setItem("ferr:gran", sel.value);
-      } catch (e2) {
+      } catch (err) {
       }
-      document.querySelectorAll("[data-time] .tgran").forEach((s) => {
-        if ([...s.options].some((o) => o.value === sel.value)) s.value = sel.value;
+      document.querySelectorAll("[data-time] .tgran").forEach((x) => {
+        if ([...x.options].some((o) => o.value === sel.value)) x.value = sel.value;
       });
       document.dispatchEvent(new CustomEvent("granularity", { detail: { gran: window._gran } }));
       toast("\u7C92\u5EA6\uFF1A" + (GRAN_LABEL[window._gran] || window._gran));
     });
   });
   syncRangeUi();
-  function openCustomRange() {
-    const cr = window._customRange || {};
+  var _customScope = DEFAULT_SCOPE;
+  function openCustomRange(scope) {
+    _customScope = SCOPES.includes(scope) ? scope : activeScope();
+    const cr = st(_customScope).custom || {};
     const today3 = formatLocalDate(/* @__PURE__ */ new Date());
     const back = (n) => {
       const d = /* @__PURE__ */ new Date();
@@ -235,6 +292,8 @@
     };
     document.getElementById("cr-start").value = cr.start_date || back(29);
     document.getElementById("cr-end").value = cr.end_date || today3;
+    const hint = document.getElementById("cr-scope-hint");
+    if (hint) hint.textContent = "\u4EC5\u4F5C\u7528\u4E8E\u300C" + SCOPE_LABEL[_customScope] + "\u300D\u9875\u9762\uFF0C\u5176\u5B83\u9875\u9762\u7684\u65F6\u95F4\u8303\u56F4\u4E0D\u53D7\u5F71\u54CD\u3002";
     openModal("customRangeMask");
     setTimeout(() => document.getElementById("cr-start").focus(), 50);
   }
@@ -254,21 +313,22 @@
       toast("\u533A\u95F4\u6700\u957F 1 \u5E74");
       return;
     }
-    window._customRange = { start_date: s, end_date: e };
+    const scope = _customScope, cur = st(scope);
+    cur.custom = { start_date: s, end_date: e };
     try {
-      localStorage.setItem("ferr:customRange", JSON.stringify(window._customRange));
+      localStorage.setItem(LS_CUSTOM(scope), JSON.stringify(cur.custom));
     } catch (err) {
     }
-    window._timeRange = "\u81EA\u5B9A\u4E49";
+    cur.label = "\u81EA\u5B9A\u4E49";
     try {
-      localStorage.setItem("ferr:timeRange", "\u81EA\u5B9A\u4E49");
+      localStorage.setItem(LS_LABEL(scope), "\u81EA\u5B9A\u4E49");
     } catch (err) {
     }
-    _range = resolveRange("\u81EA\u5B9A\u4E49");
+    cur.range = resolveRange("\u81EA\u5B9A\u4E49", scope);
     syncRangeUi();
-    refreshRangeConsumers();
+    refreshRangeConsumers(scope);
     closeModal("customRangeMask");
-    toast("\u5DF2\u5E94\u7528\uFF1A" + _range.period_label);
+    toast(SCOPE_LABEL[scope] + " \u5DF2\u5E94\u7528\uFF1A" + cur.range.period_label);
   }
 
   // public/src/ai.js
@@ -706,11 +766,26 @@
   function blankDonutLegend() {
     setDonutLegend({ lgInqA: "\u2014", lgInqB: "\u2014", lgInqC: "\u2014", lgInqRate: "\u2014", lgChSeo: "\u2014", lgChSem: "\u2014", lgChDirect: "\u2014", lgChOther: "\u2014" });
   }
+  window._inqKpiCache = [];
+  var kpiInqRequestSequence = 0;
+  async function loadKpiInqDonuts() {
+    const requestId = ++kpiInqRequestSequence, revision = getRangeRevision("kpi");
+    try {
+      const { items } = await API.get(withRange2("/api/inquiries", "kpi"));
+      if (requestId !== kpiInqRequestSequence || revision !== getRangeRevision("kpi")) return false;
+      window._inqKpiCache = items || [];
+    } catch (e) {
+      if (requestId !== kpiInqRequestSequence || revision !== getRangeRevision("kpi")) return false;
+      window._inqKpiCache = [];
+    }
+    renderInqDonuts();
+    return true;
+  }
   var _inqDonutChart = null;
   var _chanDonutChart = null;
   function renderInqDonuts() {
     if (window.DEMO_MODE) return;
-    const rows2 = window._inqCache || [];
+    const rows2 = window._inqKpiCache || [];
     const cv1 = document.getElementById("inqDonut"), cv2 = document.getElementById("chanDonut");
     if (_inqDonutChart) {
       try {
@@ -838,10 +913,10 @@
     return { start_date: formatLocalDate(prevStart), end_date: formatLocalDate(prevEnd) };
   }
   async function loadSeoBoardGsc() {
-    const cur = getCurrentRange();
+    const cur = getCurrentRange("data");
     let data = null, prev = null;
     try {
-      data = await API.get(withRange2("/api/google/gsc/summary"));
+      data = await API.get(withRange2("/api/google/gsc/summary", "data"));
     } catch (e) {
       window._gscBoard = { error: e };
       renderSeoBoard();
@@ -934,7 +1009,7 @@
       const gran = window._gran;
       let labels, clicks, impr;
       if (!gran || gran === "day") {
-        const rng = board && board.data && board.data.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+        const rng = board && board.data && board.data.range || getCurrentRange("data");
         const a = _alignDaily(data && data.byDate, rng, "date");
         labels = a.labels;
         clicks = a.rows.map((r) => r ? +r.clicks || 0 : null);
@@ -1016,7 +1091,7 @@
   async function loadSeoBoardFull() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/google/seo/board"));
+      d = await API.get(withRange2("/api/google/seo/board", "data"));
     } catch (e) {
       d = { error: e };
     }
@@ -1206,7 +1281,7 @@
       }
       const ss = d && d.sourceSeries;
       if (ss && ss.dates && ss.dates.length) {
-        const rng = d && d.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+        const rng = d && d.range || getCurrentRange("data");
         const dRows = ss.dates.map((x, i) => ({ date: x, _i: i }));
         const aligned = _alignDaily(dRows, rng, "date");
         const datasets = ss.series.map((se, i) => ({ label: se.source, data: aligned.rows.map((r) => r ? se.values[r._i] || 0 : 0), borderColor: palette[i % palette.length], backgroundColor: palette[i % palette.length] + "55", fill: true, stack: "s", tension: 0.3, pointRadius: 0, borderWidth: 1.4 }));
@@ -1283,7 +1358,7 @@
   async function loadSemBoardAds() {
     let data = null;
     try {
-      data = await API.get(withSemCampaign(withRange2("/api/google/ads/summary")));
+      data = await API.get(withSemCampaign(withRange2("/api/google/ads/summary", "data")));
     } catch (e) {
       window._adsBoard = { error: e };
       renderSemBoard();
@@ -1349,7 +1424,7 @@
   async function loadAttribution() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/attribution"));
+      d = await API.get(withRange2("/api/attribution", "data"));
     } catch (e) {
       d = { error: e };
     }
@@ -1381,7 +1456,7 @@
   async function loadSemBoardFull() {
     let d = null;
     try {
-      d = await API.get(withSemCampaign(withRange2("/api/google/ads/board")));
+      d = await API.get(withSemCampaign(withRange2("/api/google/ads/board", "data")));
     } catch (e) {
       d = { error: e };
     }
@@ -1520,7 +1595,7 @@
   }
   function _alignDaily(rows2, range, dateKey) {
     const key = dateKey || "date";
-    const r = range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+    const r = range || getCurrentRange("data");
     if (!r || !r.start_date || !r.end_date) return { labels: (rows2 || []).map((x) => String(x[key]).slice(5, 10)), rows: (rows2 || []).slice(), isoDates: (rows2 || []).map((x) => String(x[key]).slice(0, 10)) };
     const m = new Map((rows2 || []).map((x) => [String(x[key]).slice(0, 10), x]));
     const labels = [], out = [], iso = [];
@@ -1575,7 +1650,7 @@
         window._semTrend = null;
       }
       const s = d && d.series || [];
-      const rng = d && d.range || (typeof getCurrentRange === "function" ? getCurrentRange() : null);
+      const rng = d && d.range || getCurrentRange("data");
       const aligned = _alignDaily(s, rng, "date");
       if (aligned.rows.some((r) => r)) {
         const cost = aligned.rows.map((r) => r ? +(r.costMicros / 1e6).toFixed(0) : null);
@@ -1667,7 +1742,7 @@
     if (!el) return;
     let d = null;
     try {
-      d = await API.get(withRange2("/api/data-freshness"));
+      d = await API.get(withRange2("/api/data-freshness", "data"));
     } catch (e) {
       el.innerHTML = '<span class="dim">' + esc(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
       return;
@@ -1719,7 +1794,7 @@
   var dashboardBoardsRequestSequence = 0;
   async function loadDashboardBoards() {
     if (window.DEMO_MODE) return;
-    const requestId = ++dashboardBoardsRequestSequence, revision = getRangeRevision(), r = getCurrentRange();
+    const requestId = ++dashboardBoardsRequestSequence, revision = getRangeRevision("dashboard"), r = getCurrentRange("dashboard");
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
@@ -1728,7 +1803,7 @@
       API.get(withRange2("/api/google/gsc/summary", r)),
       API.get(withRange2("/api/google/ads/board", r))
     ]);
-    if (requestId !== dashboardBoardsRequestSequence || revision !== getRangeRevision()) return false;
+    if (requestId !== dashboardBoardsRequestSequence || revision !== getRangeRevision("dashboard")) return false;
     const g = gscResult.status === "fulfilled" ? gscResult.value : null;
     const gError = gscResult.status === "rejected" ? gscResult.reason : null;
     const gt = g && g.totals;
@@ -1750,7 +1825,7 @@
   async function loadDiagnostics() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/diagnostics"));
+      d = await API.get(withRange2("/api/diagnostics", "data"));
     } catch (e) {
       d = { error: e };
     }
@@ -1825,14 +1900,14 @@
   var _inqDashboardError = null;
   var dashboardInqRequestSequence = 0;
   async function loadDashboardInq() {
-    const requestId = ++dashboardInqRequestSequence, revision = getRangeRevision();
+    const requestId = ++dashboardInqRequestSequence, revision = getRangeRevision("dashboard");
     try {
-      const { items } = await API.get(withRange2("/api/inquiries"));
-      if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision()) return false;
+      const { items } = await API.get(withRange2("/api/inquiries", "dashboard"));
+      if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision("dashboard")) return false;
       window._inqDashboardCache = items || [];
       _inqDashboardError = null;
     } catch (e) {
-      if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision()) return false;
+      if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision("dashboard")) return false;
       window._inqDashboardCache = [];
       _inqDashboardError = e;
     }
@@ -1842,7 +1917,7 @@
   function renderInqTrend() {
     const cv = document.getElementById("inqTrend");
     if (!cv || window.DEMO_MODE) return;
-    const rows2 = window._inqDashboardCache || [], gran = window._gran || "day", r = getCurrentRange();
+    const rows2 = window._inqDashboardCache || [], gran = window._gran || "day", r = getCurrentRange("dashboard");
     const sub = document.getElementById("inqTrendSub");
     if (sub) {
       const granLabel = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" }[gran] || gran;
@@ -1910,16 +1985,24 @@
       else chartEmpty("seoBoard");
     }
   }
-  document.addEventListener("timerange", () => {
-    loadDashboardInq();
-    loadDashboardBoards();
-    loadSeoChartRange();
-    loadSeoBoardFull();
-    loadSemBoardAds();
-    loadSemBoardFull();
-    loadAttribution();
-    loadDiagnostics();
-    loadDataFreshness();
+  document.addEventListener("timerange", (e) => {
+    const scope = e.detail && e.detail.scope;
+    if (scope === "dashboard") {
+      loadDashboardInq();
+      loadDashboardBoards();
+      return;
+    }
+    if (scope === "data") {
+      loadSeoChartRange();
+      loadSeoBoardFull();
+      loadSemBoardAds();
+      loadSemBoardFull();
+      loadAttribution();
+      loadDiagnostics();
+      loadDataFreshness();
+      return;
+    }
+    if (scope === "kpi") loadKpiInqDonuts();
   });
   document.addEventListener("granularity", () => {
     rebuildSeoChart();
@@ -1980,6 +2063,30 @@
     return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade] < ord[r.grade];
   }
   var _trackEditing = null;
+  function fbList(r) {
+    return r && Array.isArray(r.feedbacks) ? r.feedbacks : [];
+  }
+  function fbDate(iso, withTime) {
+    if (!iso) return "";
+    const d = /* @__PURE__ */ new Date(String(iso).replace(" ", "T") + "Z");
+    if (isNaN(d)) return String(iso);
+    const p = (n) => String(n).padStart(2, "0");
+    const md = p(d.getMonth() + 1) + "-" + p(d.getDate());
+    return withTime ? d.getFullYear() + "-" + md + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md;
+  }
+  function fbDateLabel(f, withTime) {
+    return f.created_at ? fbDate(f.created_at, withTime) : "\u65E5\u671F\u4E0D\u8BE6";
+  }
+  function renderTrackLog() {
+    const box = document.getElementById("track-log");
+    if (!box) return;
+    const list = fbList(_trackEditing);
+    if (!list.length) {
+      box.innerHTML = '<div class="track-log-empty">\u8FD8\u6CA1\u6709\u8DDF\u8E2A\u8BB0\u5F55\uFF0C\u5728\u4E0B\u9762\u5199\u7B2C\u4E00\u6761\u3002</div>';
+      return;
+    }
+    box.innerHTML = '<div class="track-log-head">\u8DDF\u8E2A\u8BB0\u5F55 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((f) => `<div class="track-item" data-fb="${f.id}"><div class="track-item-meta"><span class="track-item-date${f.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc(fbDateLabel(f, true))}</span>` + (f.created_by_name ? `<span class="track-item-who">${esc(f.created_by_name)}</span>` : "") + `<button type="button" class="track-item-del" data-fb-del="${f.id}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div><div class="track-item-text">${esc(f.text)}</div></div>`).join("");
+  }
   function openTrack(tr) {
     const id = tr && tr.dataset.id;
     if (!id) return;
@@ -1987,38 +2094,67 @@
     if (!it) return;
     _trackEditing = it;
     document.getElementById("track-cust").textContent = it.customer_code || it.customer_name || it.country || "#" + it.id;
-    document.getElementById("track-text").value = it.tracking_feedback || "";
+    document.getElementById("track-text").value = "";
+    renderTrackLog();
     openModal("trackMask");
     setTimeout(() => document.getElementById("track-text").focus(), 50);
   }
+  function repaintTrackCell(it) {
+    const tr = document.querySelector('.inq-tb tr[data-id="' + it.id + '"]');
+    const cell = tr && tr.querySelector(".inq-track-feedback");
+    if (cell) cell.innerHTML = trackCellHtml(it);
+  }
   async function submitTrack() {
     if (!_trackEditing) return;
-    const text2 = document.getElementById("track-text").value.trim();
+    const box = document.getElementById("track-text");
+    const text2 = box.value.trim();
+    if (!text2) {
+      toast("\u5148\u5199\u70B9\u5185\u5BB9\u518D\u6DFB\u52A0");
+      box.focus();
+      return;
+    }
     try {
-      await API.patch("/api/inquiries/" + _trackEditing.id, { tracking_feedback: text2 });
-      _trackEditing.tracking_feedback = text2;
-      const tr = document.querySelector('.inq-tb tr[data-id="' + _trackEditing.id + '"]');
-      const cell = tr && tr.querySelector(".inq-track-feedback");
-      if (cell) cell.innerHTML = trackCellHtml(_trackEditing);
-      closeModal("trackMask");
-      toast("\u5DF2\u4FDD\u5B58\u8DDF\u8E2A\u53CD\u9988");
+      const { item } = await API.post("/api/inquiries/" + _trackEditing.id + "/feedbacks", { text: text2 });
+      _trackEditing.feedbacks = [item].concat(fbList(_trackEditing));
+      box.value = "";
+      renderTrackLog();
+      repaintTrackCell(_trackEditing);
+      renderInqTable();
+      box.focus();
+      toast("\u5DF2\u6DFB\u52A0 1 \u6761\u8DDF\u8E2A\u8BB0\u5F55\uFF08" + fbDateLabel(item, false) + "\uFF09");
     } catch (e) {
-      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || ""));
+      toast(e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6DFB\u52A0\u5931\u8D25\uFF1A" + (e.message || ""));
     }
   }
   document.addEventListener("click", (e) => {
-    const t = e.target.closest(".inq-tb .track-cell");
+    const t = e.target.closest(".inq-tb [data-track-open]");
     if (!t) return;
     const tr = t.closest("tr");
     if (tr) openTrack(tr);
   });
-  function trackCellHtml(r) {
-    const has = (r.tracking_feedback || "").trim();
-    if (has) {
-      const short = has.length > 15 ? has.slice(0, 15) + "\u2026" : has;
-      return `<span class="track-cell" title="${esc(has)}"><i class="ti ti-message-2"></i>${esc(short)}</span>`;
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("#track-log [data-fb-del]");
+    if (!btn || !_trackEditing) return;
+    if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
+    const fid = btn.dataset.fbDel;
+    try {
+      await API.del("/api/inquiries/" + _trackEditing.id + "/feedbacks/" + fid);
+      _trackEditing.feedbacks = fbList(_trackEditing).filter((f) => String(f.id) !== String(fid));
+      renderTrackLog();
+      repaintTrackCell(_trackEditing);
+      renderInqTable();
+      toast("\u5DF2\u5220\u9664\u8BE5\u6761\u8DDF\u8E2A\u8BB0\u5F55");
+    } catch (err) {
+      toast(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || ""));
     }
-    return `<span class="track-cell track-empty"><i class="ti ti-plus"></i>\u53CD\u9988</span>`;
+  });
+  function trackCellHtml(r) {
+    const list = fbList(r);
+    if (!list.length) {
+      return `<button type="button" class="track-add track-add-first" data-track-open><i class="ti ti-plus"></i>\u53CD\u9988</button>`;
+    }
+    const title = list.map((f) => fbDateLabel(f, true) + "\u3000" + f.text).join("\n\n");
+    return `<div class="track-cell-wrap"><button type="button" class="track-list" data-track-open title="${esc(title)}">` + list.map((f) => `<span class="track-line"><span class="track-line-date${f.created_at ? "" : " track-line-nodate"}">${esc(fbDateLabel(f, false))}</span><span class="track-line-text">${esc(f.text)}</span></span>`).join("") + `</button><button type="button" class="track-add" data-track-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
   }
   function inqRowHtml(r) {
     const up = isUpgraded(r);
@@ -2029,8 +2165,144 @@
     const p = ym.split("-");
     return p[0] + "\u5E74" + +p[1] + "\u6708";
   }
-  function latestVisibleMonth() {
-    return (window._inqCache || []).reduce((latest, row) => row && /^\d{4}-\d{2}-\d{2}$/.test(row.date || "") && row.date.slice(0, 7) > latest ? row.date.slice(0, 7) : latest, "");
+  var BLANK = "__blank__";
+  var FILTER_COLS = [
+    null,
+    { key: "customer_code", type: "text", ph: "\u5BA2\u6237\u7F16\u7801" },
+    { key: "country", type: "select", ph: "\u56FD\u5BB6", blank: "\u672A\u586B" },
+    { key: "region", type: "select", ph: "\u5927\u533A", blank: "\u672A\u586B" },
+    { key: "channel", type: "select", ph: "\u6E20\u9053", blank: "\u672A\u586B" },
+    { key: "source", type: "text", ph: "\u6765\u6E90\u8BCD" },
+    { key: "product", type: "select", ph: "\u4EA7\u54C1", blank: "\u672A\u586B" },
+    { key: "grade", type: "select", ph: "\u7B49\u7EA7" },
+    { key: "company", type: "select", ph: "\u516C\u53F8", blank: "\u672A\u6807\u6CE8" },
+    { key: "salesperson", type: "select", ph: "\u4E1A\u52A1\u5458", blank: "\u672A\u586B" },
+    { key: "deal_status", type: "select", ph: "\u662F\u5426\u6210\u4EA4", blank: "\u672A\u6807\u8BB0" },
+    { key: "note", type: "text", ph: "\u5907\u6CE8" },
+    { key: "feedbacks", type: "has", ph: "\u53CD\u9988" },
+    // 有没有跟进记录（数组，不是文本列）
+    { key: "__clear", type: "clear" }
+  ];
+  var FILTERS = {};
+  var PAGE_SIZES = [20, 50, 100];
+  var _page = 1;
+  var _pageSize = (() => {
+    try {
+      const n = +localStorage.getItem("ferr:inqPageSize");
+      return PAGE_SIZES.indexOf(n) >= 0 ? n : 50;
+    } catch (e) {
+      return 50;
+    }
+  })();
+  function isBlank(v) {
+    return v == null || String(v).trim() === "";
+  }
+  function activeFilterCount() {
+    return Object.keys(FILTERS).filter((k) => FILTERS[k] !== "" && FILTERS[k] != null).length;
+  }
+  function matches(r) {
+    for (const col of FILTER_COLS) {
+      if (!col || col.type === "clear") continue;
+      const want = FILTERS[col.key];
+      if (want == null || want === "") continue;
+      const val = r[col.key];
+      if (col.type === "text") {
+        if (String(val || "").toLowerCase().indexOf(String(want).toLowerCase()) < 0) return false;
+      } else if (col.type === "has") {
+        const yes = Array.isArray(val) ? val.length > 0 : !isBlank(val);
+        if (want === "\u6709" !== yes) return false;
+      } else {
+        if (want === BLANK) {
+          if (!isBlank(val)) return false;
+        } else if (String(val || "") !== want) return false;
+      }
+    }
+    return true;
+  }
+  function filteredInquiries() {
+    const rows2 = (window._inqCache || []).filter((r) => r && r.date && matches(r));
+    return rows2.slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+  }
+  function optionsFor(col) {
+    const seen = /* @__PURE__ */ new Map();
+    let blanks = 0;
+    (window._inqCache || []).forEach((r) => {
+      const v = r && r[col.key];
+      if (isBlank(v)) {
+        blanks++;
+        return;
+      }
+      const s = String(v);
+      seen.set(s, (seen.get(s) || 0) + 1);
+    });
+    const list = [...seen.keys()].sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
+    const out = list.map((v) => ({ value: v, label: v }));
+    if (blanks && col.blank) out.push({ value: BLANK, label: col.blank });
+    return out;
+  }
+  function renderInqFilterRow() {
+    const row = document.getElementById("inqFilterRow");
+    if (!row) return;
+    row.innerHTML = FILTER_COLS.map((col) => {
+      if (!col) return '<td class="inq-f-none"></td>';
+      if (col.type === "clear") {
+        const n = activeFilterCount();
+        return `<td class="ctr"><button type="button" class="inq-f-clear${n ? " on" : ""}" data-inq-clear title="\u6E05\u7A7A\u5168\u90E8\u7B5B\u9009\u6761\u4EF6"><i class="ti ti-filter-off"></i>${n ? " " + n : ""}</button></td>`;
+      }
+      const cur = FILTERS[col.key] || "";
+      if (col.type === "text")
+        return `<td><input type="search" class="inq-f-input" data-inq-filter="${col.key}" placeholder="${esc(col.ph)}" value="${esc(cur)}"></td>`;
+      const opts = col.type === "has" ? [{ value: "\u6709", label: "\u6709\u53CD\u9988" }, { value: "\u65E0", label: "\u65E0\u53CD\u9988" }] : optionsFor(col);
+      return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${col.key}"><option value="">${esc(col.ph)}</option>` + opts.map((o) => `<option value="${esc(o.value)}"${o.value === cur ? " selected" : ""}>${esc(o.label)}</option>`).join("") + "</select></td>";
+    }).join("");
+    row.querySelectorAll("[data-inq-filter]").forEach((el) => {
+      el.value = FILTERS[el.dataset.inqFilter] || "";
+    });
+  }
+  function syncClearBadge() {
+    const btn = document.querySelector("#inqFilterRow .inq-f-clear");
+    if (!btn) return;
+    const n = activeFilterCount();
+    btn.classList.toggle("on", !!n);
+    btn.innerHTML = '<i class="ti ti-filter-off"></i>' + (n ? " " + n : "");
+  }
+  function renderInqSummary(total, shown) {
+    const el = document.getElementById("inqSummary");
+    if (!el) return;
+    const n = activeFilterCount();
+    if (!n) {
+      el.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
+      return;
+    }
+    el.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
+  }
+  function pageNumbers(page, pages) {
+    if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+    const out = [1];
+    let s = Math.max(2, page - 1), e = Math.min(pages - 1, page + 1);
+    if (page <= 3) {
+      s = 2;
+      e = 4;
+    }
+    if (page >= pages - 2) {
+      s = pages - 3;
+      e = pages - 1;
+    }
+    if (s > 2) out.push("\u2026");
+    for (let i = s; i <= e; i++) out.push(i);
+    if (e < pages - 1) out.push("\u2026");
+    out.push(pages);
+    return out;
+  }
+  function renderInqPager(total, pages, from, to) {
+    const el = document.getElementById("inqPager");
+    if (!el) return;
+    if (!total) {
+      el.innerHTML = "";
+      return;
+    }
+    const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${n}">${n}</button>`).join("");
+    el.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
   }
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".inq-tb .inq-del");
@@ -2055,83 +2327,42 @@
     }
   });
   function renderInqList() {
+    renderInqFilterRow();
+    renderInqTable();
+  }
+  function renderInqTable() {
     const tb = document.getElementById("tb-inq");
     if (!tb) return;
+    syncClearBadge();
+    const total = (window._inqCache || []).filter((r) => r && r.date).length;
+    const rows2 = filteredInquiries();
+    const pages = Math.max(1, Math.ceil(rows2.length / _pageSize));
+    if (_page > pages) _page = pages;
+    if (_page < 1) _page = 1;
+    renderInqSummary(total, rows2.length);
     tb.innerHTML = "";
-    const latestMonth = latestVisibleMonth();
-    const rows2 = (window._inqCache || []).filter((r) => r && r.date && r.date.slice(0, 7) !== latestMonth).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
     if (!rows2.length) {
-      tb.innerHTML = '<tr><td colspan="14" class="dim csp-s-d48bfa87bb">\u6240\u9009\u533A\u95F4\u6682\u65E0\u66F4\u65E9\u6708\u4EFD\u8BE2\u76D8</td></tr>';
+      const why = activeFilterCount() ? "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u8BE2\u76D8 \u2014\u2014 \u6362\u4E2A\u6761\u4EF6\u6216\u70B9\u53F3\u4E0A\u89D2\u300C\u6E05\u7A7A\u7B5B\u9009\u300D" : "\u6240\u9009\u65F6\u95F4\u533A\u95F4\u6682\u65E0\u8BE2\u76D8";
+      tb.innerHTML = `<tr><td colspan="14" class="dim csp-s-d48bfa87bb">${why}</td></tr>`;
+      renderInqPager(0, 1, 0, 0);
       return;
     }
-    const groups = [];
-    const idx = {};
-    rows2.forEach((r) => {
+    const start = (_page - 1) * _pageSize, slice = rows2.slice(start, start + _pageSize);
+    let curMonth = null;
+    slice.forEach((r) => {
       const ym = r.date.slice(0, 7);
-      if (idx[ym] == null) {
-        idx[ym] = groups.length;
-        groups.push({ ym, items: [] });
+      if (ym !== curMonth) {
+        curMonth = ym;
+        const n = rows2.filter((x) => x.date.slice(0, 7) === ym).length;
+        const sep = document.createElement("tr");
+        sep.className = "inq-msep";
+        sep.dataset.month = ym;
+        sep.innerHTML = `<td colspan="14"><i class="ti ti-calendar-month hicon"></i> ${esc(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
+        tb.appendChild(sep);
       }
-      groups[idx[ym]].items.push(r);
-    });
-    groups.forEach((g) => {
-      const sep = document.createElement("tr");
-      sep.className = "inq-msep collapsed";
-      sep.dataset.month = g.ym;
-      sep.innerHTML = `<td colspan="14" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(g.ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${g.items.length} \u6761</span></td>`;
-      sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
-      tb.appendChild(sep);
-      g.items.forEach((r) => {
-        const tr = document.createElement("tr");
-        tr.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
-        tr.dataset.month = g.ym;
-        if (r.id) {
-          tr.dataset.id = r.id;
-          tr.dataset.ep = "/api/inquiries";
-        }
-        tr.style.display = "none";
-        tr.innerHTML = inqRowHtml(r);
-        tb.appendChild(tr);
-      });
-    });
-  }
-  function toggleInqMonth(td2) {
-    const sep = td2.closest("tr");
-    if (!sep) return;
-    sep.classList.toggle("collapsed");
-    const hidden = sep.classList.contains("collapsed");
-    let n = sep.nextElementSibling;
-    while (n && !n.classList.contains("inq-msep")) {
-      if (n.classList.contains("inq-mrow")) n.style.display = hidden ? "none" : "";
-      n = n.nextElementSibling;
-    }
-  }
-  function refreshInqStats(stats) {
-    if (stats) window._inqStats = stats;
-  }
-  function renderInqFeed() {
-    const tb = document.getElementById("tb-inq-cur");
-    if (!tb) return;
-    tb.innerHTML = "";
-    const latestMonth = latestVisibleMonth();
-    const rows2 = (window._inqCache || []).filter((r) => r && r.date && r.date.slice(0, 7) === latestMonth).slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
-    const cnt = document.getElementById("inqFeedCount");
-    if (cnt) cnt.textContent = rows2.length ? monthLabel(latestMonth) + " \xB7 " + rows2.length + " \u6761" : "\u6240\u9009\u533A\u95F4\u6682\u65E0";
-    if (!rows2.length) {
-      tb.innerHTML = '<tr><td colspan="14" class="dim csp-s-651d52088e">\u6240\u9009\u533A\u95F4\u6682\u65E0\u8BE2\u76D8</td></tr>';
-      return;
-    }
-    const p = latestMonth.split("-");
-    const sep = document.createElement("tr");
-    sep.className = "inq-msep";
-    sep.dataset.month = latestMonth;
-    sep.innerHTML = `<td colspan="14" class="inq-month-toggle"><i class="ti ti-chevron-down hicon"></i> ${p[0]}\u5E74${+p[1]}\u6708 <span class="dim csp-s-8bde36d0d6">\xB7 ${rows2.length} \u6761</span><span class="badge b-green csp-s-4b17347c23">\u533A\u95F4\u6700\u65B0</span></td>`;
-    sep.querySelector(".inq-month-toggle").addEventListener("click", (e) => toggleInqMonth(e.currentTarget));
-    tb.appendChild(sep);
-    rows2.forEach((r) => {
       const tr = document.createElement("tr");
       tr.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
-      tr.dataset.month = latestMonth;
+      tr.dataset.month = ym;
       if (r.id) {
         tr.dataset.id = r.id;
         tr.dataset.ep = "/api/inquiries";
@@ -2139,6 +2370,64 @@
       tr.innerHTML = inqRowHtml(r);
       tb.appendChild(tr);
     });
+    renderInqPager(rows2.length, pages, start + 1, start + slice.length);
+  }
+  function afterFilterChange(full) {
+    _page = 1;
+    if (full) renderInqList();
+    else renderInqTable();
+    if (window._curTab === "inquiry") {
+      try {
+        renderGlobe();
+      } catch (e) {
+      }
+    }
+  }
+  document.addEventListener("input", (e) => {
+    const el = e.target.closest("#inqFilterRow input[data-inq-filter]");
+    if (!el) return;
+    FILTERS[el.dataset.inqFilter] = el.value.trim();
+    afterFilterChange(false);
+  });
+  document.addEventListener("change", (e) => {
+    const sel = e.target.closest("#inqFilterRow select[data-inq-filter]");
+    if (sel) {
+      FILTERS[sel.dataset.inqFilter] = sel.value;
+      sel.classList.toggle("on", !!sel.value);
+      afterFilterChange(false);
+      return;
+    }
+    const size = e.target.closest("#inqPager [data-inq-size]");
+    if (size) {
+      _pageSize = +size.value || 50;
+      try {
+        localStorage.setItem("ferr:inqPageSize", String(_pageSize));
+      } catch (_) {
+      }
+      _page = 1;
+      renderInqTable();
+    }
+  });
+  document.addEventListener("click", (e) => {
+    const clear = e.target.closest("[data-inq-clear]");
+    if (clear) {
+      Object.keys(FILTERS).forEach((k) => delete FILTERS[k]);
+      afterFilterChange(true);
+      toast("\u5DF2\u6E05\u7A7A\u8BE2\u76D8\u7B5B\u9009");
+      return;
+    }
+    const pg = e.target.closest("#inqPager [data-inq-page]");
+    if (pg && !pg.disabled) {
+      const n = +pg.dataset.inqPage;
+      if (!n || n === _page) return;
+      _page = n;
+      renderInqTable();
+      const tbl = document.querySelector("#panel-inquiry .inq-table");
+      if (tbl) tbl.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  });
+  function refreshInqStats(stats) {
+    if (stats) window._inqStats = stats;
   }
 
   // public/src/tagselect.js
@@ -2272,14 +2561,14 @@
     if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
     return { ok: true, value };
   }
-  function setSavingState(el, state) {
+  function setSavingState(el, state2) {
     if (!el) return;
     el.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
-    if (state === "saving") el.classList.add("kpi-saving");
-    else if (state === "ok") {
+    if (state2 === "saving") el.classList.add("kpi-saving");
+    else if (state2 === "ok") {
       el.classList.add("kpi-ok");
       setTimeout(() => el.classList.remove("kpi-ok"), 1200);
-    } else if (state === "error") {
+    } else if (state2 === "error") {
       el.classList.add("kpi-error");
       setTimeout(() => el.classList.remove("kpi-error"), 2e3);
     }
@@ -2858,9 +3147,9 @@
     try {
       const { items } = await API.get("/api/loop-items?urgent=1");
       window._urgentTasks = (items || []).filter((it) => {
-        const st = it.state || "";
+        const st2 = it.state || "";
         const ss = it.status || "";
-        return st !== "done" && ss !== "done";
+        return st2 !== "done" && ss !== "done";
       });
     } catch (e) {
       window._urgentTasks = [];
@@ -2909,8 +3198,8 @@
   function prepend(tbId, html) {
     const tb = document.getElementById(tbId);
     if (!tb) return null;
-    const state = tb.querySelector("tr[data-load-state]");
-    if (state) state.remove();
+    const state2 = tb.querySelector("tr[data-load-state]");
+    if (state2) state2.remove();
     const tr = document.createElement("tr");
     tr.innerHTML = html;
     tb.insertBefore(tr, tb.firstChild);
@@ -3063,10 +3352,10 @@
   var TASK_GROUPS = [["overdue", "\u903E\u671F"], ["today", "\u4ECA\u65E5"], ["doing", "\u8FDB\u884C\u4E2D"], ["later", "\u7A0D\u540E"]];
   function taskGroupOf(it) {
     const t = formatLocalDate(/* @__PURE__ */ new Date());
-    const due = it && it.task_date || "", st = it && it.start_date || "";
+    const due = it && it.task_date || "", st2 = it && it.start_date || "";
     if (due && due < t) return "overdue";
-    if (st && st > t) return "later";
-    if (due && due > t) return st ? "doing" : "later";
+    if (st2 && st2 > t) return "later";
+    if (due && due > t) return st2 ? "doing" : "later";
     return "today";
   }
   function taskGroupEl(col, g) {
@@ -3119,15 +3408,15 @@
     box.innerHTML = deptBadge + srcBadge + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
   }
   function taskDueHtml(it) {
-    const due = it.task_date || "", st = it.start_date || "", hr = it.task_hour || "";
-    const span = st && due && st < due;
-    const short = (d) => st.slice(0, 4) === due.slice(0, 4) ? d.slice(5) : d;
-    const txt = span ? short(st) + " ~ " + short(due) : due;
+    const due = it.task_date || "", st2 = it.start_date || "", hr = it.task_hour || "";
+    const span = st2 && due && st2 < due;
+    const short = (d) => st2.slice(0, 4) === due.slice(0, 4) ? d.slice(5) : d;
+    const txt = span ? short(st2) + " ~ " + short(due) : due;
     const time = hr ? (txt ? " " : "") + hr + ":00" : "";
     const empty = !txt && !time;
     if (empty && !it.id) return "";
     const cls = "tdue" + (empty ? " tdue-none" : "") + (it.id ? " task-edit" : "");
-    const attrs = it.id ? ` data-loop-action="task-edit" title="${span ? esc(st + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F"` : "";
+    const attrs = it.id ? ` data-loop-action="task-edit" title="${span ? esc(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F"` : "";
     return `<span class="${cls}"${attrs}><i class="ti ${empty ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty ? "\u8BBE\u65E5\u671F" : esc(txt) + esc(time)}</span>`;
   }
   var dayDiff = (a, b) => Math.round((Date.parse(b + "T00:00:00") - Date.parse(a + "T00:00:00")) / 864e5);
@@ -3738,8 +4027,8 @@
     try {
       const { item } = await API.post("/api/loop-items", { kind: "deposit", content: "", status: "\u6C89\u6DC0" });
       const tb = document.getElementById("tb-dep");
-      const state = tb.querySelector("tr[data-load-state]");
-      if (state) state.remove();
+      const state2 = tb.querySelector("tr[data-load-state]");
+      if (state2) state2.remove();
       const tr = document.createElement("tr");
       tr.dataset.id = item.id;
       tr.dataset.ep = "/api/loop-items";
@@ -3831,8 +4120,8 @@
     try {
       const { item } = await API.post("/api/content-assets", {});
       const tb = document.getElementById("tb-content");
-      const state = tb.querySelector("tr[data-load-state]");
-      if (state) state.remove();
+      const state2 = tb.querySelector("tr[data-load-state]");
+      if (state2) state2.remove();
       const tr = document.createElement("tr");
       tr.dataset.id = item.id;
       tr.dataset.ep = "/api/content-assets";
@@ -4139,7 +4428,7 @@
     const retry = document.getElementById("ga4-retry");
     if (retry) retry.disabled = true;
     try {
-      const data = await API.get(withRange("/api/ga4/overview"));
+      const data = await API.get(withRange("/api/ga4/overview", "data"));
       if (requestId !== requestSequence) return;
       renderGa4(data || { connected: false });
     } catch (error) {
@@ -4158,6 +4447,9 @@
       if (requestId === requestSequence && retry) retry.disabled = false;
     }
   }
+  document.addEventListener("timerange", (e) => {
+    if (e.detail && e.detail.scope === "data") loadGa42();
+  });
 
   // public/src/market-brain.js
   var market_brain_exports = {};
@@ -4225,15 +4517,15 @@
   });
   async function loadBrain() {
     try {
-      const { state, summary } = await API.get("/api/market/brain");
+      const { state: state2, summary } = await API.get("/api/market/brain");
       const chip = document.getElementById("brainStatus");
       if (chip) {
-        if (!state.hasSummary) {
+        if (!state2.hasSummary) {
           chip.className = "badge b-gray";
           chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u672A\u5B66\u4E60";
-        } else if (state.needsUpdate) {
+        } else if (state2.needsUpdate) {
           chip.className = "badge b-amber";
-          chip.textContent = state.reason === "new_month" ? "AI \u8BB0\u5FC6\uFF1A\u5DF2\u8DE8\u6708\uFF0C\u5EFA\u8BAE\u66F4\u65B0" : "AI \u8BB0\u5FC6\uFF1A\u8D44\u6599\u6709\u53D8\uFF0C\u5EFA\u8BAE\u66F4\u65B0";
+          chip.textContent = state2.reason === "new_month" ? "AI \u8BB0\u5FC6\uFF1A\u5DF2\u8DE8\u6708\uFF0C\u5EFA\u8BAE\u66F4\u65B0" : "AI \u8BB0\u5FC6\uFF1A\u8D44\u6599\u6709\u53D8\uFF0C\u5EFA\u8BAE\u66F4\u65B0";
         } else {
           chip.className = "badge b-green";
           chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u5DF2\u662F\u6700\u65B0";
@@ -4244,7 +4536,7 @@
         if (summary) {
           card.style.display = "block";
           document.getElementById("brainSummary").innerHTML = mdToHtml(summary);
-          document.getElementById("brainUpdatedAt").textContent = state.updatedAt ? "\u66F4\u65B0\u4E8E " + state.updatedAt : "";
+          document.getElementById("brainUpdatedAt").textContent = state2.updatedAt ? "\u66F4\u65B0\u4E8E " + state2.updatedAt : "";
         } else card.style.display = "none";
       }
     } catch (e) {
@@ -4331,10 +4623,10 @@
   }
   var metricsRequestSequence = 0;
   async function loadMetrics() {
-    const requestId = ++metricsRequestSequence, revision = getRangeRevision();
+    const requestId = ++metricsRequestSequence, revision = getRangeRevision("kpi");
     try {
-      const { rows: rows2 } = await API.get(withRange2("/api/kpi-targets"));
-      if (requestId !== metricsRequestSequence || revision !== getRangeRevision()) return false;
+      const { rows: rows2 } = await API.get(withRange2("/api/kpi-targets", "kpi"));
+      if (requestId !== metricsRequestSequence || revision !== getRangeRevision("kpi")) return false;
       applyKpiServer(rows2);
       syncKpiInputs();
       return true;
@@ -4351,16 +4643,16 @@
   }
   var weeksRequestSequence = 0;
   async function loadWeeks() {
-    const requestId = ++weeksRequestSequence, revision = getRangeRevision();
+    const requestId = ++weeksRequestSequence, revision = getRangeRevision("kpi");
     try {
-      const [seo, sem] = await Promise.all([API.get(withRange2("/api/seo-weeks")), API.get(withRange2("/api/sem-weeks"))]);
-      if (requestId !== weeksRequestSequence || revision !== getRangeRevision()) return false;
+      const [seo, sem] = await Promise.all([API.get(withRange2("/api/seo-weeks", "kpi")), API.get(withRange2("/api/sem-weeks", "kpi"))]);
+      if (requestId !== weeksRequestSequence || revision !== getRangeRevision("kpi")) return false;
       window._seoWeeks = (seo.items || []).map(mapSeoWeek);
       window._semWeeks = (sem.items || []).map(mapSemWeek);
       renderBoardCards();
       return true;
     } catch (e) {
-      if (requestId !== weeksRequestSequence || revision !== getRangeRevision()) return false;
+      if (requestId !== weeksRequestSequence || revision !== getRangeRevision("kpi")) return false;
       window._seoWeeks = [];
       window._semWeeks = [];
       if (e && e.message !== "unauthorized") toast("\u5468\u62A5\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "\u672A\u77E5\u9519\u8BEF"));
@@ -4446,12 +4738,12 @@
     A.style.stroke = g.c;
     S.style.color = g.c;
     let c = 0;
-    (function st() {
+    (function st2() {
       c += score / 40;
       if (c >= score) c = score;
       A.style.strokeDashoffset = C - C * c / 100;
       S.textContent = c.toFixed(0);
-      if (c < score) requestAnimationFrame(st);
+      if (c < score) requestAnimationFrame(st2);
     })();
   }
   function badge(id, score) {
@@ -4497,10 +4789,11 @@
   }
   var overviewRequestSequence = 0;
   async function loadOverview() {
-    const requestId = ++overviewRequestSequence, revision = getRangeRevision();
+    const scope = activeScope();
+    const requestId = ++overviewRequestSequence, revision = getRangeRevision(scope);
     try {
-      const ov = await API.get(withRange2("/api/overview"));
-      if (requestId !== overviewRequestSequence || revision !== getRangeRevision()) return false;
+      const ov = await API.get(withRange2("/api/overview", scope));
+      if (requestId !== overviewRequestSequence || revision !== getRangeRevision(scope)) return false;
       const c = ov.current || {}, d = ov.delta || {}, comparison = ov.comparisonLabel || "vs \u4E0A\u6708";
       const set = (id, v) => {
         const e = document.getElementById(id);
@@ -4575,12 +4868,19 @@
   }
   var kpiRefreshSequence = 0;
   async function refreshKpiRange() {
-    const requestId = ++kpiRefreshSequence, revision = getRangeRevision();
+    const requestId = ++kpiRefreshSequence, revision = getRangeRevision("kpi");
     await Promise.all([loadMetrics(), loadWeeks(), loadOverview()]);
-    if (requestId !== kpiRefreshSequence || revision !== getRangeRevision()) return;
+    if (requestId !== kpiRefreshSequence || revision !== getRangeRevision("kpi")) return;
     renderKPI2();
   }
-  document.addEventListener("timerange", refreshKpiRange);
+  document.addEventListener("timerange", (e) => {
+    const scope = e.detail && e.detail.scope;
+    if (scope === "kpi") {
+      refreshKpiRange();
+      return;
+    }
+    if (scope === activeScope()) loadOverview();
+  });
 
   // public/src/google-projects.js
   var google_projects_exports = {};
@@ -4776,8 +5076,8 @@
         const { item } = await persistLoop("deposit", s, content, "\u6C89\u6DC0");
         const depTb = document.getElementById("tb-dep");
         if (depTb) {
-          const state = depTb.querySelector("tr[data-load-state]");
-          if (state) state.remove();
+          const state2 = depTb.querySelector("tr[data-load-state]");
+          if (state2) state2.remove();
           const ntr = document.createElement("tr");
           ntr.dataset.id = item.id;
           ntr.dataset.ep = "/api/loop-items";
@@ -5371,7 +5671,7 @@
   function collectMapData() {
     const map = {};
     const unmapped = {};
-    (window._inqCache || []).forEach((row) => {
+    filteredInquiries().forEach((row) => {
       const name = countryName(row.country);
       const geo = COUNTRY_GEO[name];
       if (!name) return;
@@ -5458,7 +5758,7 @@
     <div class="inq-flat-map inq-blue-map">
       <div class="inq-map-head">
         <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
-        <div class="inq-map-total">${groups.length} \u4E2A\u56FD\u5BB6 \xB7 ${(window._inqCache || []).length} \u6761\u8BE2\u76D8</div>
+        <div class="inq-map-total">${groups.length} \u4E2A\u56FD\u5BB6 \xB7 ${filteredInquiries().length} \u6761\u8BE2\u76D8</div>
       </div>
       ${unmappedNoteHtml(unmappedList, unmappedTotal)}
       ${bodyHtml}
@@ -5678,14 +5978,14 @@
     return { cls: "hs-none", text: "\u65E0\u8BB0\u5F55" };
   }
   function taskRowHtml(t, day, pushed, note) {
-    const st = taskStateFor(t, day, pushed);
+    const st2 = taskStateFor(t, day, pushed);
     const span = t.start_date && t.task_date && t.start_date < t.task_date ? `${esc(t.start_date.slice(5))} ~ ${esc(t.task_date.slice(5))}` : esc(t.task_date || "");
     const src = t.fix_id ? '<span class="badge b-amber">\u6574\u6539</span>' : "";
     const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc(t.owner)}</span>` : "";
     const memo = note ? `<span class="hnote">${esc(note)}</span>` : "";
     return `<div class="hcard">
     <div class="hrow"><span class="htext">${esc(t.content || "")}</span>
-      <span class="hright">${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st.cls}">${st.text}</span></span></div>
+      <span class="hright">${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st2.cls}">${st2.text}</span></span></div>
     ${memo ? `<div class="hmemo">${memo}</div>` : ""}
   </div>`;
   }
@@ -6135,7 +6435,7 @@
         }
         setSavingState(el, "saving");
         try {
-          const { rows: rows2 } = await API.put(withRange2("/api/kpi-targets"), { updates: [{ id: item.id, target: result.value }] });
+          const { rows: rows2 } = await API.put(withRange2("/api/kpi-targets", "kpi"), { updates: [{ id: item.id, target: result.value }] });
           applyKpiServer(rows2);
           renderKPI2();
           el.textContent = String(item.t);
@@ -6485,17 +6785,17 @@
   function renderRows() {
     if (!register) return;
     const tbody = byId2("risk-rows");
-    const state = byId2("risk-state");
+    const state2 = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
-    if (!tbody || !state || !wrap) return;
+    if (!tbody || !state2 || !wrap) return;
     const severity = byId2("risk-filter-severity")?.value || "all";
     const status = byId2("risk-filter-status")?.value || "open";
     const items = register.items.filter((item) => (severity === "all" || item.severity === severity) && (status === "all" || (status === "open" ? item.status !== "pass" : item.status === status)));
     tbody.replaceChildren();
-    state.replaceChildren();
+    state2.replaceChildren();
     if (!items.length) {
       wrap.hidden = true;
-      state.appendChild(make("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
+      state2.appendChild(make("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
       return;
     }
     wrap.hidden = false;
@@ -6517,11 +6817,11 @@
     });
   }
   function renderError(error) {
-    const state = byId2("risk-state");
+    const state2 = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
     if (wrap) wrap.hidden = true;
-    if (!state) return;
-    state.replaceChildren();
+    if (!state2) return;
+    state2.replaceChildren();
     const message = make("div", "risk-state-message risk-state-error");
     message.appendChild(make("strong", "", "\u98CE\u9669\u6E05\u5355\u52A0\u8F7D\u5931\u8D25"));
     message.appendChild(make("span", "", `\uFF1A${error && error.message ? error.message : "\u672A\u77E5\u9519\u8BEF"}`));
@@ -6529,7 +6829,7 @@
     retry.type = "button";
     retry.addEventListener("click", loadRisks);
     message.appendChild(retry);
-    state.appendChild(message);
+    state2.appendChild(message);
   }
   function bindControls() {
     const refresh = byId2("risk-refresh");
@@ -6549,15 +6849,15 @@
     bindControls();
     const requestId = ++requestSequence2;
     const refresh = byId2("risk-refresh");
-    const state = byId2("risk-state");
+    const state2 = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
     if (refresh) {
       refresh.disabled = true;
       refresh.setAttribute("aria-busy", "true");
     }
     if (wrap) wrap.hidden = true;
-    if (state) {
-      state.replaceChildren(make("div", "risk-state-message", "\u6B63\u5728\u6838\u5BF9\u5F53\u524D\u914D\u7F6E\u3001\u6570\u636E\u5E93\u8BC1\u636E\u548C\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536\u2026"));
+    if (state2) {
+      state2.replaceChildren(make("div", "risk-state-message", "\u6B63\u5728\u6838\u5BF9\u5F53\u524D\u914D\u7F6E\u3001\u6570\u636E\u5E93\u8BC1\u636E\u548C\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536\u2026"));
     }
     try {
       const result = await API.get("/api/risks");
@@ -6578,9 +6878,9 @@
 
   // public/src/main.js
   bindTableEditor();
-  var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed };
+  var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
-  var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
+  var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadKpiInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
   var closedLoopCompatibility = { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent };
   var aiCompatibility = { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi };
   var settingsCompatibility = { bindSettings, openPwd, submitPwd };

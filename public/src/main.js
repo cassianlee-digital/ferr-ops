@@ -34,13 +34,15 @@ import * as planHistory from './plan-history.js';
 // 已迁移（批次7）：weekly-review（内部 20+ 个符号收回模块，仅保留 app.js 使用的两个渲染入口）。
 // sop-rate 由 weekly-review 显式 import，不再暴露 window.mountSopRate。
 import * as weeklyReview from './weekly-review.js';
-// 已迁移（批次8）：inquiries（内部渲染/事件辅助收回模块；仅保留 app.js 调用的 6 个兼容入口）。
+// 已迁移（批次8）：inquiries（内部渲染/事件辅助收回模块；仅保留 app.js 调用的 5 个兼容入口）。
+// 2026-08-26：renderInqFeed 随 Hero「最新询盘」表一起删除（全页合并成唯一一张带筛选/分页的表）；
+//              filteredInquiries 由 inquiry-globe.js 显式 import，不上 window。
 // GRADE_BADGE、inqRowHtml、isUpgraded 由 archive/tagselect 显式 import，不再挂 window。
-import { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats, renderInqFeed } from './inquiries.js';
+import { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats } from './inquiries.js';
 // 已迁移（批次9）：kpi（评分状态由 kpi-view 显式 import；仅 app.js 必需入口挂 window）。
 import { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek } from './kpi.js';
 // 已迁移（批次10）：charts（时间筛选改为事件契约；模块消费者显式 import；仅 app.js 入口挂 window）。
-import { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters } from './charts.js';
+import { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadKpiInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters } from './charts.js';
 // 已迁移（批次11）：closed-loop（模块消费者显式 import；经典 app.js / hermes.js 仅保留必要入口）。
 import { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent } from './closed-loop.js';
 // 已迁移（批次12）：ai（状态收回模块；keywords / charts 显式 import；仅 app.js 的动作分发和初始化保留兼容入口）。
@@ -55,9 +57,9 @@ import { loadRisks } from './risks.js';
 
 bindTableEditor();
 
-const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats,renderInqFeed};
+const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats};
 const kpiCompatibility={TOTAL,SEO,SEM,applyKpiServer,loadMetrics,loadWeeks,submitSeoWeek,submitSemWeek};
-const chartCompatibility={charts,loadDashboardInq,loadDashboardBoards,renderInqDonuts,loadSeoBoardGsc,loadSeoBoardFull,loadSemBoardAds,loadSemBoardFull,loadAttribution,loadDiagnostics,loadDataFreshness,onSemCampaignChange,onSemAdGroupChange,resizeScatters};
+const chartCompatibility={charts,loadDashboardInq,loadDashboardBoards,renderInqDonuts,loadKpiInqDonuts,loadSeoBoardGsc,loadSeoBoardFull,loadSemBoardAds,loadSemBoardFull,loadAttribution,loadDiagnostics,loadDataFreshness,onSemCampaignChange,onSemAdGroupChange,resizeScatters};
 const closedLoopCompatibility={prepend,refreshTaskCols,addFixRow,addDepositRow,addPlanRow,addTestRow,addContent,openTaskModal,submitTask,submitSubtask,loadClosedLoop,loadContent};
 const aiCompatibility={runAiAnalysis,aiBox,loadAiAnalyses,adoptAi};
 const settingsCompatibility={bindSettings,openPwd,submitPwd};

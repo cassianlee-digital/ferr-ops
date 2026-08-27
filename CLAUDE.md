@@ -13,8 +13,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 ## Current Architecture
 
 - **后端不是单文件**:Fastify,模块化良好。
-  - `server/src/routes/`(**29 个路由文件**,2026-08-13 复测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1539 行 / 146KB**(2026-08-13 复测),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分三层:**经典脚本**(`hermes.js`/`charts.js`/`inquiries.js`/`kpi.js`/`ai.js`/`closed-loop.js`/`weekly-review.js`/`api.js`)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+  - `server/src/routes/`(**30 个路由文件**,2026-08-27 复测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1062 行 / 108KB**(2026-08-27 实测;2026-08-13 记的 1539 行早已漂掉),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分三层:**经典脚本**(`hermes.js`/`charts.js`/`inquiries.js`/`kpi.js`/`ai.js`/`closed-loop.js`/`weekly-review.js`/`api.js`)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -25,9 +25,10 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **自有函数约 285 个挂在 `window` 上**(实测:空 iframe 差集 = 338 名字 / 302 函数,含 vendor;其中经典脚本顶层函数 217 + `main.js` 挂上去的模块导出 68)。
   - **别用 grep 数 `window.X =` 去估全局面**——那样只得 56,**低 6 倍**:经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量。
-- **内联 handler 是模块化的地板**:模板/HTML 里有 **177 个内联 `onclick`/`onchange`**,裸调用 **82 个全局函数名**(2026-08-13 复测,日计划改造 +3:openTaskEdit/taskDefer/taskDrop)。`onclick="foo()"` 在**点击那一刻**才从 `window` 查 `foo` —— 所以**无论 ES 模块迁移做到多完整,这 82 个都必须留在 `window` 上**。`src/main.js` 末尾的 `Object.assign(window, …)` 就是这个兼容层,其注释已写明「供内联 onclick 调用」。
-- **迁移确实在消全局,不是白干**(inquiry-globe:21 个顶层符号 → 1 个导出,净减 20)。但它的**终点是这 82 个强制全局,不是 0**;想拆掉这层地板**只有事件委托**(`document` 上一个监听器 + `data-action` 属性)。**在那之前别承诺「模块化完成后全局清零」。**
-- **最大的隐形风险**:内联 handler 对打包器/静态分析**完全隐形**。改掉一个被 `onclick` 调用的函数名,**没有任何编译期报错**,直到用户点下去才 ReferenceError。**故每批迁移/改名后,必须在活站上核对这些名字仍是 function**(2026-07-15 已核 77/77;2026-08-13 新增的 3 个已在活页核过)。
+- **~~内联 handler 是模块化的地板~~ 这层地板已经拆掉了**(2026-08-27 实测):全站内联 `onclick`/`onchange` **= 0**(HTML 属性 0 个、JS 模板串 0 个),已全部改成**事件委托**——HTML 写 `data-ui-action="…"`(index.html 里 **104 处**),`app.js` 的 `STATIC_UI_ACTIONS` 表统一分发。旧文档说的「177 个内联 handler / 82 个强制全局」**已不成立,别再照抄**。
+  `src/main.js` 末尾的 `Object.assign(window, …)` 仍在,但它现在只服务**经典脚本之间的互相调用**(app.js/hermes.js 调模块导出),不再是「点下去才解析」的定时炸弹。
+- **迁移确实在消全局,不是白干**(inquiry-globe:21 个顶层符号 → 1 个导出,净减 20)。事件委托做完后,`window` 上剩下的是**经典脚本仍在调用的兼容入口**,可以继续往下削,不再有「必须留着」的硬地板。
+- **剩下的隐形风险在 `data-ui-action` 的字符串键**:HTML 里写 `data-ui-action="open-inquiry"`,改 `STATIC_UI_ACTIONS` 的键名同样**没有编译期报错**。改完仍需在活站上点一遍或核对键集合。经典脚本对模块导出的裸调用(如 `loadInquiries()`)也一样,靠 `main.js` 的兼容层兜着。
 
 ## API / Sync Reality(真实状态,禁止把未实现描述成已完成)
 
@@ -43,7 +44,20 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **SEO 看板「概览」已升级为富看板(Looker 风格)**:顶部卡/趋势读 `/api/google/gsc/summary`(`loadSeoBoardGsc`);其余读 `/api/google/seo/board`(`loadSeoBoardFull`,后端 `routes/google.js` + `googleSync.js` 的 `gscBoardTables/gscScatter/ga4SourcesRange/ga4SourceSeries`)——**本周要点条**(后端 `buildSeoHighlights` 自动挑最大涨跌,绿涨红跌)、落地页表+关键词表带彩色Δ环比、**机会词散点象限**(ECharts 展现×排名+中位线)、GA4 来源甜甜圈+按天堆叠面积。均随时间范围重拉。第二期(需扩 GA4 同步)才能做:跳出率散点、来源级跳出/时长、date×source×page 明细。
 - **SEM 看板「概览」已升级为富看板**:顶部卡读 `/api/google/ads/summary`(`loadSemBoardAds`);其余读 `/api/google/ads/board`(`loadSemBoardFull` + 后端 `adsBoardTables/adsScatter/adsSeries` + `buildAdsHighlights`)——本周要点条(转化涨绿/每转化成本涨红/高花费零转化合计/最烧钱零转化词/最佳系列)、系列表+关键词表带转化Δ+评估徽章、**花费×转化散点**(右下红区=高花费低转化=该砍,红点标关键词+下方「该砍」清单带诊断/采纳)、系列花费甜甜圈+每日花费/转化趋势。评估徽章按 有转化/零有效/无花费;金额按账户币种、不臆造符号。旧层级表已被 Δ 表替代。
 - **询盘归因已上线**:`/api/attribution`(`server/src/routes/attribution.js`)按 `channel`(SEO自然/SEM付费/直接/其他,与 `renderInqDonuts` 同口径)+ `grade`(A/B=有效)聚合区间询盘 × Ads 花费,算 SEM **真实每有效询盘成本**并对比 Ads 自报每转化(差距≥1.3倍红字警示"Ads 转化虚高")。前端 SEM 看板顶部「真实询盘回报」卡(`loadAttribution`),随时间范围重算。这是"花的钱值不值"的真实答案,打通 询盘↔花费。
-- 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads)、诊断、询盘归因;GA4 概览与总览暂未跟随。
+- **询盘评级页已合表改版**(2026-08-26/27):原来是「Hero 左栏当月表 + 下方按月折叠的历史表」两张表,现在**只剩一张**(`#tb-inq`),Hero 左栏与 `renderInqFeed` 已删除;飞线地图改全宽,并**排在表格下面**(先看询价明细,再看落在世界哪儿)。
+  - `<thead>` 第二行是**按列筛选**(`#inqFilterRow`,`renderInqFilterRow()`):国家/大区/渠道/产品/等级/公司/业务员/是否成交 = 下拉(**候选值只列当前区间数据里真实出现过的**,空值用 `__blank__` 哨兵单独可筛),客户编码/来源词/备注 = 文本包含,跟踪反馈 = 有/无;多条件 **AND**;日期列不给筛选(时间条在管)。
+  - 主体是**日期倒序连续列表**,跨月插一条 `.inq-msep` 分隔行(**不再可折叠**,只是视觉分段,每页开头会重复本页首行所属月份),底部 `#inqPager` 分页(20/50/100,只有每页条数进 `localStorage`)。
+  - **筛选/分页全在前端**(区间数据本来就一次取全),不改 `/api/inquiries`。**地图跟随筛选结果**(`inquiry-globe.js` 显式 `import { filteredInquiries }`,不再直读 `_inqCache`);**顶栏 KPI 与 KPI 页圆环一律不受筛选影响**——那是考核口径。
+  - **跟踪反馈已从单条改成多条带时间的记录**(2026-08-27,新表 `inquiry_feedbacks`):表格里那一格显示**最新一条(带日期)+ 永远在的「添加」按钮**,
+    点开是完整时间线弹框(新的在上、可逐条删、加完不关窗可以接着加)。老的 `inquiries.tracking_feedback` 列**只读不写**,
+    迁移进来的老记录 `created_at` **留 NULL、前端显示「日期不详」**——那段话本来就没时间戳,补日期等于伪造跟进记录。
+    **格子里把每一条跟进都铺出来**(老板明确要求):一条一行、各带自己的日期、正文**完整不截断**,最新的在最上(左侧竖条+日期是蓝的,便于一眼看出跟到哪一步)。
+    做成左侧竖条的时间线而非一条一个方框——5 条跟进时方框套方框太吵。列宽 340px(14 列原来被表格均分成 138px,
+    大区/渠道/产品/等级/公司/是否成交 只放 2~4 个字的标签,收窄后把宽度让给「跟踪反馈」和「备注」;实际渲染约 400px)。
+    **已知代价**:跟进多、话又长的行会明显变高(实测 3 条含一条 150 字 → 行高 194px,单条 68px)。这是拿行高换可读性,是老板拍板的取舍,别自作主张改回截断。
+    格子越界的老毛病同时修掉(格内元素一律 `max-width:100%` + `min-width:0` + `word-break`)。
+  - **筛选条件刻意不持久化**:每次进页面是干净全量,只在表格上方显示「已筛选 N / M 条 · 清空筛选」。理由是持久化最容易造成「下次打开发现询盘少了一半,以为丢数据」。
+- 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads)、GA4、诊断、询盘归因、总览、KPI。
 - **诊断引擎已上线**:`/api/diagnostics`(`server/src/routes/diagnostics.js` + `googleSync.js` 规则查询)产出 4 类真实 findings——机会词(排名11-20有曝光)、关键词蚕食(同词多页)、流量衰退(当前vs上一等长窗口点击跌幅)、高花费零有效(Ads cost>0 conv=0)。前端 SEO「站点机会/流量衰退/关键词蚕食」三子面板 + minitab 角标已读真实结果,随时间范围重算。**尚未做 CTR 异常规则。**
 - **诊断→整改闭环已通**:三类 SEO finding 每行「采纳」按钮 → POST `/api/fixes`(source=诊断引擎,evidence 记 GSC 依据)直接入整改清单(`public/charts.js` `adoptFinding`)。
 - **整改→日计划→回写也已通**(2026-08-13):整改清单每行「排入」→ `POST /api/fixes/:id/plan`,
@@ -55,7 +69,13 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **AI 上下文已含真实同步数据**:`aiContext.js buildContext` 注入 GSC/Ads 近30天汇总 + Top系列 + 机会词/蚕食/衰退/高花费零有效。SEM 看板「问题分析/优化思路/关键词排查」及所有 AI 按钮据此产出基于真实数据的分析。
 - **AI 弹窗能力**:分析按 `scope_key` 持久化(`ai_analyses`);弹窗顶部**历史时间线**可点切换对比(`history_json` 快照,重跑旧结论不丢不归档),footer「重新分析」按本页最新数据重跑、「拆成整改动作」(`/api/ai/analyses/:id/actions`)把结论拆成动作逐条「采纳」入整改。`max_tokens` 默认 4000(.env 显式值会覆盖)。
 - **仍残留的 demo 假数据:** 整改清单 AI 框两条写死建议(`index.html` 约 348-349);GA4 看板与总览部分 mini 图仍空状态。
-- **时间筛选目前只停留在前端变量**(`window._timeRange`),总览/KPI 仍不受区间影响(询盘/SEO/SEM/诊断已真正按区间重算)。
+- **时间范围已改成「每个页面各存各的」**(2026-08-26,`public/src/timerange.js` 重写):以前全站共用一个 `window._timeRange`,在询盘页点「近一年」,数据看板也跟着变成近一年。
+  现按 **scope** 隔离:`dashboard / kpi / inquiry / data / fix`,各自一份 label+range+revision,各自 `localStorage`(`ferr:timeRange:<scope>` / `ferr:customRange:<scope>`;老的全站单 key 只在首次加载时读一次做迁移)。
+  - **scope 来自 HTML 上的 `[data-time][data-scope]`,不靠 DOM 推导** —— GA4 面板会被 `mountGa4IntoData()` 搬进数据看板,`closest('.panel')` 会推错;GA4 与数据看板**共用 `data`**(同一屏两个互不相干的时间条会误导人)。
+  - `withRange(path, scope|rangeObj)`、`getCurrentRange(scope)`、`getRangeRevision(scope)` —— **业务代码必须显式传 scope**,不传只兜底到当前可见页。
+  - `timerange` 事件 detail 带 `{scope,range,revision}`,消费者(charts/kpi-view/ga4-view/app.js)**各自按 scope 认领**;时间模块不再反向调用任何 loader。
+  - 顶栏三个 KPI pill 与右上角日期**跟随「当前所在页面」**(`activeScope()`),切页时由 `go()` 重新拉 `/api/overview`;没有时间条的页面落回 `dashboard`。
+  - KPI 页两个 donut 不再蹭询盘页的 `_inqCache`,改为按 KPI 页区间自取一份 `_inqKpiCache`(`loadKpiInqDonuts()`),否则会出现「KPI 页写着近30天、圆环画的是询盘页的近一年」。
 - **AI 目前是单 provider**,仅通过 Anthropic(`server/src/services/anthropic.js`)。
 - **日计划(`#panel-tasks`)已改版**(2026-08-13):三列(公司/陈-SEM/李-SEO),每列上=SOP 固定清单、下=每日新增。
   - SOP 日/周/月**合并成一个清单框**,一条一行,频率是行尾标签(`src/sop.js renderSopCards/sopCardEl`)。
@@ -106,8 +126,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 数据建议必须能**追溯到数据证据**。
 - AI 建议必须**结构化**,不能只是漂亮文字。
 - 任务必须能被**复盘验证**。
-- **改前端函数名前先搜内联 handler**:被 `onclick=` 调用的名字(82 个)改了**不会有任何报错**,直到用户点击。改完在活站上验 `typeof window.<name>==='function'`。
-- **写进本文件的数字必须是实测的**,并注日期。本文件自称「固定项目真实状态」,一旦数字漂移(2026-07-15 曾查出路由 19→实为 27、index.html 1836 行→实为 1504、innerHTML 47→实为 168;2026-08-13 又漂:1504→1539、内联 handler 157/77→177/82),它就从「省 token 的地图」变成「误导人的旧地图」,危害大于没有。**引用前先抽验一个数,对不上就先修文件再干活。**
+- **改前端函数名前先搜 `data-ui-action` 与经典脚本调用点**:内联 `onclick` 已清零(2026-08-27 实测),但 `data-ui-action` 的字符串键、以及 app.js/hermes.js 对 `window.<name>` 的裸调用改了**同样不会有编译期报错**。改完在活站上验 `typeof window.<name>==='function'`。
+- **写进本文件的数字必须是实测的**,并注日期。本文件自称「固定项目真实状态」,一旦数字漂移(2026-07-15 曾查出路由 19→实为 27、index.html 1836 行→实为 1504、innerHTML 47→实为 168;2026-08-13 又漂:1504→1539、内联 handler 157/77→177/82;2026-08-27 再漂:index.html 1539→1062、内联 handler 177→**0**(已全量改事件委托)、innerHTML 236→183 处赋值、路由 29→30),它就从「省 token 的地图」变成「误导人的旧地图」,危害大于没有。**引用前先抽验一个数,对不上就先修文件再干活。**
 - 修改后运行相关检查。
 
 ## Security Rules
@@ -118,7 +138,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 密钥只存**服务器环境变量**或**加密存储**(参考 `integrations.js` 的 AES 方案)。
 - **前端不能直接接触密钥。**
 - 所有**用户输入和 API 返回文本**渲染前必须 **escape**。
-- **谨慎使用 `innerHTML`**(2026-08-13 实测 **236 处赋值 / 分布 167 行 + 2 处 `insertAdjacentHTML`**,不是旧文写的 47 处,属 XSS 高风险面)。**这 238 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
+- **谨慎使用 `innerHTML`**(2026-08-27 复测 `index.html` + `public/*.js` + `public/src/*.js`:**183 处 `.innerHTML=` 赋值 / `innerHTML` 共出现 187 次 / 分布 186 行 + 2 处 `insertAdjacentHTML`**;2026-08-13 记的 236 已漂,属 XSS 高风险面)。**这 185 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
 
 ## 协作流程约定
 

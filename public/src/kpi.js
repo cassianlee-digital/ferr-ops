@@ -44,8 +44,8 @@ export function applyKpiServer(rows){
 function syncKpiInputs(){ document.querySelectorAll('#panel-settings [data-kpi]').forEach(el=>{ const p=el.dataset.kpi.split(':'),arr=({TOTAL,SEO,SEM})[p[0]],idx=+p[1]; if(arr&&arr[idx]&&arr[idx].t!=null){ el.textContent=String(arr[idx].t); el.dataset.kpiOld=String(arr[idx].t); } }); }
 let metricsRequestSequence=0;
 export async function loadMetrics(){
-  const requestId=++metricsRequestSequence, revision=getRangeRevision();
-  try{ const {rows}=await API.get(withRange('/api/kpi-targets')); if(requestId!==metricsRequestSequence||revision!==getRangeRevision())return false; applyKpiServer(rows); syncKpiInputs(); return true; }
+  const requestId=++metricsRequestSequence, revision=getRangeRevision('kpi');
+  try{ const {rows}=await API.get(withRange('/api/kpi-targets','kpi')); if(requestId!==metricsRequestSequence||revision!==getRangeRevision('kpi'))return false; applyKpiServer(rows); syncKpiInputs(); return true; }
   catch(e){ if(e&&e.message!=='unauthorized')toast('KPI 加载失败：'+(e.message||'未知错误')); }
   return false;
 }
@@ -55,16 +55,16 @@ function mapSeoWeek(w){return {date:(w.week_date||'').slice(5),ym:(w.week_date||
 function mapSemWeek(w){return {date:(w.week_date||'').slice(5),cost:w.cost,impr:w.impressions,clicks:w.clicks,conv:w.conversions,roas:w.roas,qs:w.quality_score,cpc:w.cpc,ctr:w.ctr,cpconv:w.cost_per_conv};}
 let weeksRequestSequence=0;
 export async function loadWeeks(){
-  const requestId=++weeksRequestSequence, revision=getRangeRevision();
+  const requestId=++weeksRequestSequence, revision=getRangeRevision('kpi');
   try{
-    const [seo,sem]=await Promise.all([API.get(withRange('/api/seo-weeks')),API.get(withRange('/api/sem-weeks'))]);
-    if(requestId!==weeksRequestSequence||revision!==getRangeRevision())return false;
+    const [seo,sem]=await Promise.all([API.get(withRange('/api/seo-weeks','kpi')),API.get(withRange('/api/sem-weeks','kpi'))]);
+    if(requestId!==weeksRequestSequence||revision!==getRangeRevision('kpi'))return false;
     window._seoWeeks=(seo.items||[]).map(mapSeoWeek);
     window._semWeeks=(sem.items||[]).map(mapSemWeek);
     renderBoardCards();
     return true;
   }catch(e){
-    if(requestId!==weeksRequestSequence||revision!==getRangeRevision())return false;
+    if(requestId!==weeksRequestSequence||revision!==getRangeRevision('kpi'))return false;
     window._seoWeeks=[]; window._semWeeks=[];
     if(e&&e.message!=='unauthorized')toast('周报加载失败：'+(e.message||'未知错误'));
   }

@@ -4,26 +4,6 @@
   margin-bottom:12px;
 }
 
-.inq-hero{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
-
-.inq-hero .inq-feed{width:100%;height:600px;display:flex;flex-direction:column;padding:16px 20px;overflow:hidden}
-
-.inq-hero .inq-map-card{width:100%}
-
-.inq-feed-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-
-.inq-feed-head .card-sub{margin-left:4px}
-
-.inq-feed-tip{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px;margin-bottom:10px}
-
-.inq-feed-list{flex:1 1 auto;min-height:0;overflow:auto;padding-right:2px}
-
-.inq-cur-table{width:100%}
-
-.inq-cur-table thead th{position:sticky;top:0;z-index:2;background:var(--bg2)}
-
-#panel-inquiry .inq-cur-table td{border-bottom:1px solid var(--border)}
-
 #panel-inquiry .sheet-toolbar{
   margin-bottom:10px;
 }
@@ -246,3 +226,201 @@ body.dark .inq-map-head strong {
 
 #panel-inquiry .card:has(#inqGlobe) .card-head span,
 #panel-inquiry .card:has(#inqGlobe) .card-sub { color: var(--text3) !important; }
+
+/* ================= 表头筛选行 + 分页条（2026-08-26 合表改版）=================
+   两张表合成一张：thead 第二行是筛选控件，tbody 里跨月插一条分隔行，表下是分页条。
+   控件做成「不筛选时几乎隐形、筛了才有颜色」——表头是给人扫的，不是给控件抢戏的。 */
+#panel-inquiry .inq-filter-row td{
+  height:38px;padding:4px 8px;
+  background:#fafbfd;
+  border-bottom:1px solid #e5e8ef;
+  vertical-align:middle!important;
+  position:sticky;top:40px;z-index:1; /* 贴在表头(高 40px)下面一起吸顶，滚长列表时筛选条件始终在手边 */
+}
+#panel-inquiry .inq-filter-row td.inq-f-none{background:#fafbfd}
+
+.inq-f-input,.inq-f-select{
+  width:100%;max-width:150px;min-width:0;height:28px;
+  padding:0 6px;
+  border:1px solid transparent;border-radius:var(--radius);
+  background:#fff;color:var(--text1);
+  font-size:12px;font-family:inherit;
+  outline:none;
+}
+.inq-f-input::placeholder{color:#a9b1bd}
+.inq-f-input:hover,.inq-f-select:hover{border-color:#d7dee8}
+.inq-f-input:focus,.inq-f-select:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(47,114,232,.12)}
+/* 已生效的筛选：蓝底，一眼看出这一列正在被筛 */
+.inq-f-select.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:500}
+.inq-f-input:not(:placeholder-shown){border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
+
+.inq-f-clear{
+  display:inline-flex;align-items:center;gap:3px;
+  height:26px;padding:0 8px;
+  border:1px solid transparent;border-radius:var(--radius);
+  background:transparent;color:#a9b1bd;
+  font-size:12px;cursor:pointer;
+}
+.inq-f-clear:hover{color:var(--text2);border-color:#d7dee8;background:#fff}
+.inq-f-clear.on{color:var(--primary);border-color:var(--primary);background:var(--primary-soft);font-weight:600}
+
+/* 表格上方计数：没筛就报总数，筛了就把「多少 / 总共多少」摆明，别让人以为询盘丢了 */
+.inq-summary{display:inline-flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap}
+.inq-filtered{display:inline-flex;align-items:center;gap:4px;color:var(--blue);font-weight:500}
+.inq-filtered b{font-weight:700}
+.inq-f-clear-link{
+  border:0;background:none;padding:0;cursor:pointer;
+  color:var(--text3);font-size:12px;text-decoration:underline;font-family:inherit;
+}
+.inq-f-clear-link:hover{color:var(--primary)}
+#panel-inquiry .sheet-toolbar{display:flex;align-items:center;gap:12px}
+#panel-inquiry .sheet-toolbar .sheet-tip{flex:1 1 auto;width:auto}
+
+/* 分页条 */
+.inq-pager{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  margin-top:10px;padding:8px 2px;
+  color:var(--text3);font-size:12px;
+}
+.inq-pager .pg-mid{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.inq-pager .pg-num{
+  min-width:28px;height:28px;padding:0 7px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg2);color:var(--text2);
+  font-size:12px;font-family:inherit;cursor:pointer;
+}
+.inq-pager .pg-num:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
+.inq-pager .pg-num.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.inq-pager .pg-num:disabled{opacity:.4;cursor:not-allowed}
+.inq-pager .pg-gap{padding:0 2px;color:var(--text3)}
+.inq-pager .pg-size select{
+  height:28px;padding:0 4px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg2);color:var(--text2);font-size:12px;font-family:inherit;
+}
+
+/* 时间条上的「仅本页」标：提醒这条时间线只作用于当前页面 */
+.tscope-note{
+  margin-left:auto;padding:2px 7px;
+  border:1px solid var(--border);border-radius:999px;
+  color:var(--text3);font-size:11px;white-space:nowrap;
+}
+
+body.dark #panel-inquiry .inq-filter-row td,
+body.dark #panel-inquiry .inq-filter-row td.inq-f-none{background:#0f172a;border-color:#273142}
+body.dark .inq-f-input,body.dark .inq-f-select{background:#0b1220;color:#e5e7eb}
+body.dark .inq-f-input:hover,body.dark .inq-f-select:hover{border-color:#334155}
+body.dark .inq-f-clear:hover{background:#0b1220;border-color:#334155}
+body.dark .inq-pager .pg-num{background:#0b1220;border-color:#273142;color:#cbd5e1}
+body.dark .inq-pager .pg-size select{background:#0b1220;border-color:#273142;color:#cbd5e1}
+
+/* ================= 跟踪反馈：多条记录（2026-08-27）=================
+   旧版是一条覆盖式文本，芯片 max-width:120px 却撞上 120px 的列宽 + 左右各 12px 内边距，
+   于是内容顶出格子（就是截图里那个越界的框）。这里把列宽和内容宽度一起焊死：
+   列给 158px，格子里的东西一律 max-width:100% 且 min-width:0，长文本只能省略号，不许撑格子。 */
+/* 列宽预算（2026-08-27）：14 列原来被表格均分成每列 138px，
+   大区/渠道/产品/等级/公司/是否成交 只放 2~4 个字的彩色标签，白占一大截；
+   把这些收窄，省下来的宽度给「跟踪反馈」和「备注」——那两列才是要读字的地方。 */
+#panel-inquiry .inq-table th:nth-child(1),#panel-inquiry .inq-table td:nth-child(1){width:74px}    /* 日期 MM-DD */
+#panel-inquiry .inq-table th:nth-child(2),#panel-inquiry .inq-table td:nth-child(2){width:96px}    /* 客户编码 */
+#panel-inquiry .inq-table th:nth-child(3),#panel-inquiry .inq-table td:nth-child(3){width:88px}    /* 国家 */
+#panel-inquiry .inq-table th:nth-child(4),#panel-inquiry .inq-table td:nth-child(4){width:78px}    /* 大区 */
+#panel-inquiry .inq-table th:nth-child(5),#panel-inquiry .inq-table td:nth-child(5){width:92px}    /* 渠道 */
+#panel-inquiry .inq-table th:nth-child(6),#panel-inquiry .inq-table td:nth-child(6){width:150px}   /* 来源词 / 落地页 */
+#panel-inquiry .inq-table th:nth-child(7),#panel-inquiry .inq-table td:nth-child(7){width:82px}    /* 产品 */
+#panel-inquiry .inq-table th:nth-child(8),#panel-inquiry .inq-table td:nth-child(8){width:80px}    /* 等级(+上调⚠) */
+#panel-inquiry .inq-table th:nth-child(9),#panel-inquiry .inq-table td:nth-child(9){width:88px}    /* 公司 */
+#panel-inquiry .inq-table th:nth-child(10),#panel-inquiry .inq-table td:nth-child(10){width:86px}  /* 业务员 */
+#panel-inquiry .inq-table th:nth-child(11),#panel-inquiry .inq-table td:nth-child(11){width:92px}  /* 是否成交 */
+#panel-inquiry .inq-table th:nth-child(12),#panel-inquiry .inq-table td:nth-child(12){width:180px} /* 备注 */
+#panel-inquiry .inq-table th:nth-child(13),
+#panel-inquiry .inq-table td.inq-track-feedback{
+  width:340px;max-width:340px;   /* 每条跟进都完整铺开，宽一点才少换行、少撑高行 */
+}
+#panel-inquiry td.inq-track-feedback{
+  padding:8px;
+  text-align:left;
+  vertical-align:top!important;  /* 多行时跟日期列顶端对齐，比垂直居中好扫 */
+  overflow:hidden;
+}
+.track-cell-wrap{
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+  max-width:100%;min-width:0;
+}
+/* 格子里列出**每一条**跟进：一条一行、各带自己的日期、正文完整不截断（2026-08-27）。
+   做成左侧竖条的时间线而不是一条一个方框：5 条跟进时方框套方框太吵，竖条更轻、也更省纵向空间。
+   最新一条的竖条与日期是蓝的 —— 全都铺出来之后，仍要一眼看出「跟到哪一步了」。 */
+.track-list{
+  display:block;width:100%;max-width:100%;min-width:0;
+  margin:0;padding:0;border:0;background:none;
+  font:inherit;text-align:left;cursor:pointer;
+}
+.track-line{
+  display:block;
+  padding:1px 0 1px 8px;margin-bottom:5px;
+  border-left:2px solid var(--border2);
+  color:var(--text2);font-size:12px;line-height:1.55;
+  white-space:normal;word-break:break-word;overflow-wrap:anywhere;
+}
+.track-line:last-child{margin-bottom:0}
+.track-line:first-child{border-left-color:var(--blue)}
+.track-list:hover .track-line{border-left-color:var(--blue)}
+.track-list:hover .track-line-text{color:var(--text1)}
+.track-line-date{
+  margin-right:5px;
+  color:var(--text3);font-variant-numeric:tabular-nums;font-weight:600;
+}
+.track-line:first-child .track-line-date{color:var(--blue)}
+/* created_at 为 NULL = 老的单条 tracking_feedback 迁过来的，本来就没时间戳，如实标注不编日期 */
+.track-line-nodate{font-style:italic;font-weight:400;opacity:.75}
+/* 「添加」按钮：加过反馈之后也永远在，别逼人先点开旧的那条才能补记录 */
+.track-add{
+  display:inline-flex;align-items:center;gap:3px;
+  max-width:100%;
+  padding:2px 7px;
+  border:1px dashed var(--border2);border-radius:var(--radius);
+  background:transparent;color:var(--text3);
+  font-size:11px;font-family:inherit;line-height:1.5;cursor:pointer;
+}
+.track-add:hover{border-color:var(--primary);color:var(--primary);border-style:solid}
+.track-add-first{font-size:12px;padding:3px 8px}
+.track-count{
+  margin-left:2px;padding:0 4px;
+  border-radius:999px;background:var(--border);color:var(--text2);
+  font-size:10px;font-weight:600;
+}
+
+/* 弹框里的时间线 */
+.track-log{
+  max-height:min(46vh,340px);overflow:auto;
+  margin-bottom:14px;
+}
+.track-log-head{margin-bottom:8px;color:var(--text3);font-size:12px}
+.track-log-empty{
+  padding:14px;border:1px dashed var(--border2);border-radius:var(--radius);
+  color:var(--text3);font-size:12px;text-align:center;
+}
+.track-item{
+  padding:8px 10px;margin-bottom:8px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg2);
+}
+.track-item-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px;color:var(--text3)}
+.track-item-date{display:inline-flex;align-items:center;gap:3px;font-variant-numeric:tabular-nums}
+/* created_at 为 NULL = 从老的单条 tracking_feedback 迁过来的，本来就没时间戳，如实标灰不编日期 */
+.track-item-nodate{font-style:italic;opacity:.75}
+.track-item-who{padding:0 5px;border-radius:999px;background:var(--bg3);color:var(--text2)}
+.track-item-del{
+  margin-left:auto;padding:2px 5px;
+  border:0;background:none;color:var(--text3);font-size:12px;cursor:pointer;border-radius:var(--radius);
+}
+.track-item-del:hover{color:var(--primary);background:var(--primary-soft)}
+.track-item-text{font-size:13px;line-height:1.6;color:var(--text1);white-space:pre-wrap;word-break:break-word}
+
+/* 地图现在排在表格下面，给它留出与表格的间距 */
+#panel-inquiry .inq-map-full{margin-top:16px}
+
+body.dark .track-line{border-left-color:#273142}
+body.dark .track-item{background:#0f172a;border-color:#273142}
+body.dark .track-count{background:#273142;color:#cbd5e1}

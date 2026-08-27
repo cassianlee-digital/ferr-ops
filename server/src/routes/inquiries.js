@@ -81,6 +81,32 @@ export async function inquiriesRoutes(app) {
     return { ok: true, item, stats: repo.stats() };
   });
 
+  /* ===== 跟踪反馈：一条询盘多条带时间的记录（2026-08-27）=====
+     以前是 PATCH tracking_feedback 覆盖式写一段话——跟进了三次也只剩最后一次，还不知道哪天写的。
+     现在每次跟进都是一条新记录，服务端盖时间戳（前端传的时间一律不信）。 */
+  app.get('/api/inquiries/:id/feedbacks', { preHandler: requireAuth }, async (request) => {
+    return { items: repo.listFeedbacks(Number(request.params.id)) };
+  });
+
+  app.post('/api/inquiries/:id/feedbacks', editor, async (request, reply) => {
+    const id = Number(request.params.id);
+    if (!repo.get(id)) return reply.code(404).send({ error: 'not_found' });
+    const text = String(request.body?.text ?? '').trim().slice(0, 2000);
+    if (!text) return reply.code(400).send({ error: 'empty_text' });
+    const item = repo.addFeedback(id, text, request.user.id);
+    reply.code(201);
+    return { item };
+  });
+
+  // 写错了要能删掉——改版前那一条是可以直接改的，不给删口子等于开倒车
+  app.delete('/api/inquiries/:id/feedbacks/:feedbackId', editor, async (request, reply) => {
+    const id = Number(request.params.id);
+    const row = repo.getFeedback(Number(request.params.feedbackId));
+    if (!row || row.inquiry_id !== id) return reply.code(404).send({ error: 'not_found' });
+    repo.removeFeedback(row.id);
+    return { ok: true };
+  });
+
   // P3：从归档恢复询盘
   app.post('/api/inquiries/:id/restore', editor, async (request, reply) => {
     const item = repo.restore(Number(request.params.id));

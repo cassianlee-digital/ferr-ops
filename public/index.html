@@ -100,7 +100,7 @@
       <!-- ============ 总览 ============ -->
       <div class="panel active" id="panel-dashboard">
         <div class="page-head"><div><div class="page-title">运营总览</div><div class="page-sub">询盘 · SEO · SEM 三块趋势一眼掌握</div></div></div>
-        <div class="timebar-inline" data-time data-gran="day,week,month"></div>
+        <div class="timebar-inline" data-time data-scope="dashboard" data-gran="day,week,month"></div>
         <div class="grid32">
           <div class="card"><div class="card-head"><span class="card-title" id="overviewKpiTitle">所选区间 KPI 考核总分</span><span class="card-link" data-ui-action="go" data-tab="kpi">查看明细 →</span></div>
             <div class="score-hero"><div class="gauge"><svg width="140" height="140" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg4)" stroke-width="11"/><circle id="g1" cx="70" cy="70" r="58" fill="none" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/></svg><div class="gauge-center"><div class="gauge-score" id="g1s">0</div><div class="gauge-max">/ 100</div></div></div>
@@ -144,7 +144,7 @@
       <!-- ============ KPI ============ -->
       <div class="panel" id="panel-kpi">
         <div class="page-head"><div><div class="page-title">KPI 考核</div><div class="page-sub">公司总分 + 李 + 陈 · 目标值与权重在「设置」可改</div></div><span class="card-sub" id="kpiRangeLabel">当前区间 —</span></div>
-        <div class="timebar-inline" data-time data-gran="day,week,month"></div>
+        <div class="timebar-inline" data-time data-scope="kpi" data-gran="day,week,month"></div>
         <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-info-circle"></i> 实际值按所选区间重新查询；目标仍采用设置中的月度目标，不自动折算，区间较短时请结合实际进度判断。</div>
         <div class="grid3">
           <div class="card csp-s-905008530c"><div class="card-head csp-s-99b9ba53aa"><span class="card-title">公司总分</span></div>
@@ -172,39 +172,30 @@
       <!-- ============ 询盘评级 ============ -->
       <div class="panel" id="panel-inquiry">
         <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><button class="btn-primary" data-ui-action="open-inquiry"><i class="ti ti-plus"></i> 录入询盘</button></div>
-        <div class="timebar-inline" data-time data-gran="day,week,month"></div>
-<!-- Hero：最新询盘 feed（左·可折叠）+ 全球飞线地图（右·2/3）— 一进页面即见录入询盘 -->
-        <div class="inq-hero" id="inqHero">
-          <aside class="card inq-feed" id="inqFeed">
-            <div class="inq-feed-head">
-              <div><span class="card-title">最新询盘</span> <span class="card-sub" id="inqFeedCount">—</span></div>
-            </div>
-            <div class="inq-feed-tip"><i class="ti ti-clock"></i> 展示所选区间最新月份；更早月份见下方明细表</div>
-            <div class="inq-feed-list" id="inqFeedList">
-              <table class="dt inq-cur-table">
-                <thead><tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-2d09dd5b97">跟踪反馈</th><th class="ctr csp-s-0b3b13b1db">操作</th></tr></thead>
-                <tbody id="tb-inq-cur" class="inq-tb"><tr data-load-state="loading"><td colspan="14" class="dim csp-s-651d52088e">正在加载真实询盘…</td></tr></tbody>
-              </table>
-            </div>
-          </aside>
-          <div class="card inq-map-card">
-            <div class="card-head"><span class="card-title">🌍 全球询盘分布</span><span class="card-sub">青岛 → 各国飞线</span></div>
-            <div class="csp-s-4bbfeca396" id="inqGlobe"></div>
-          </div>
-        </div>
-
-<!-- 询盘明细表（全宽）-->
+        <div class="timebar-inline" data-time data-scope="inquiry" data-gran="day,week,month"></div>
+<!-- 询盘明细表（全宽 · 唯一一张表：表头筛选行 + 月份分隔行 + 底部分页）-->
         <div>
-          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；上方地图按表格数据实时高亮各国并画青岛飞线</span></div>
-          <div class="card"><table class="dt">
+          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；表头第二行按列筛选，下方地图跟随筛选结果</span><span class="inq-summary" id="inqSummary"></span></div>
+          <div class="card"><table class="dt inq-table">
           <!-- 6.23 文档 11/12/7：删销售确认列；加跟踪反馈（备注后）；P3 末尾加「操作」删除列 -->
           <!-- 录入改版：客户姓名 → 客户编码，等级后加 公司 / 业务员 / 是否成交；总列数 = 14（colspan 同步） -->
-          <thead><tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr></thead>
+          <thead>
+            <tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr>
+            <!-- 筛选行由 inquiries.js renderInqFilterRow() 填充：下拉项取自当前区间真实出现过的值 -->
+            <tr class="inq-filter-row" id="inqFilterRow"></tr>
+          </thead>
           <tbody id="tb-inq" class="inq-tb">
             <tr data-load-state="loading"><td colspan="14" class="dim csp-s-d48bfa87bb">正在加载真实询盘…</td></tr>
           </tbody>
         </table></div>
+          <div class="inq-pager" id="inqPager"></div>
           </div>
+
+<!-- 全球飞线地图（全宽）—— 摆在表格下面：先看询价明细，再看它们落在世界哪儿（2026-08-27 调序） -->
+        <div class="card inq-map-card inq-map-full">
+          <div class="card-head"><span class="card-title">🌍 全球询盘分布</span><span class="card-sub">青岛 → 各国飞线 · 跟随上方表头筛选</span></div>
+          <div class="csp-s-4bbfeca396" id="inqGlobe"></div>
+        </div>
       </div>
 
       <!-- ============ ① 月度计划 ============ -->
@@ -258,7 +249,7 @@
       <!-- ============ ③ 数据看板 ============ -->
       <div class="panel" id="panel-data">
         <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
-        <div class="timebar-inline" data-time data-gran="week,month"></div>
+        <div class="timebar-inline" data-time data-scope="data" data-gran="week,month"></div>
         <!-- 阶段5：数据新鲜度条——三源实际有数据天数 + 最后同步时间，替代之前删掉的碎提示 -->
         <div id="dataFreshness" class="data-fresh"><span class="dim">数据新鲜度加载中…</span></div>
         <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div><div class="subtab" data-sub="data-report">AI 周报</div></div>
@@ -411,7 +402,7 @@
       <!-- ============ ④ 整改清单 ============ -->
       <div class="panel" id="panel-fix">
         <div class="page-head"><div><div class="page-title">整改清单</div><div class="page-sub">每条须有依据数据 · 可手动新增，也可从数据看板「采纳」自动汇入 · 表格可编辑、失焦即存</div></div><div class="csp-s-9c40389b4a"><button class="btn-primary" data-ui-action="add-fix"><i class="ti ti-plus"></i> 新增整改</button><button class="btn-ai" data-ui-action="ai" data-ai-prompt="按SOP整改动作库生成本周候选整改清单并排优先级" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> AI 生成整改项 ↗</button></div></div>
-        <div class="timebar-inline" data-time></div>
+        <div class="timebar-inline" data-time data-scope="fix"></div>
         <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-clock-off"></i> 整改清单暂不按时间范围过滤，显示全部。</div>
         <div class="card csp-s-42a6ced8b6"><table class="dt fix-table"><thead><tr><th>问题 / 机会</th><th class="ctr">所属</th><th>依据数据</th><th>整改动作</th><th class="ctr">负责人</th><th>截止</th><th class="ctr">结果</th><th class="ctr csp-s-dc9eac3f89">操作</th></tr></thead><tbody id="tb-fix"></tbody></table></div>
         <div class="ai-box"><div class="ai-header"><div class="ai-dot"></div><span class="ai-title">AI 补充板块 · 整改调整建议</span><button class="btn-ai csp-s-ca6fc035af" data-ui-action="ai-box" data-ai-prompt="仅根据后台真实SEO、SEM、询盘和诊断数据提出整改建议；每条写明问题、证据、动作、验证指标和置信度，数据不足时明确说明。">重新生成 ↗</button></div>
@@ -679,7 +670,7 @@
       <!-- ============ GA4 ============ -->
       <div class="panel" id="panel-ga4">
         <div class="page-head"><div><div class="page-title">GA4 流量</div><div class="page-sub">专业 GA4 看板 · 授权并同步后自动填充</div></div><span id="ga4-status" class="badge b-gray">未接入</span></div>
-        <div class="timebar-inline" data-time></div>
+        <div class="timebar-inline" data-time data-scope="data"></div>
         <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-clock-off"></i> GA4 看板读取本地同步数据；授权后请在「设置 · API 接入」执行一次同步。</div>
         <div id="ga4-hint" class="banner banner-red csp-s-6aa34d7432"><i id="ga4-hint-icon" class="ti ti-plug-connected-x csp-s-fd44150866"></i><div class="ga4-hint-copy"><div class="banner-t" id="ga4-hint-title">暂无 GA4 数据，请前往「设置 · API 接入」授权并同步</div><div class="banner-s" id="ga4-hint-detail">后台不会展示示例流量；只有 Google 同步写入数据库后，下列模块才会填充真实数据。</div></div><button class="btn-ghost ga4-retry is-hidden" id="ga4-retry" type="button" data-ui-action="reload-ga4"><i class="ti ti-refresh"></i> 重试</button></div>
         <div class="metric-row csp-s-91144dcb46">
@@ -928,6 +919,7 @@
         <div class="fld"><label>结束日期</label><input type="date" id="cr-end"></div>
       </div>
       <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 区间最长 1 年；切换其他预设后，自定义区间仍保留，下次点「自定义」直接复用。</div>
+      <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-layout-board-split"></i> <span id="cr-scope-hint">仅作用于当前页面，其它页面的时间范围不受影响。</span></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="customRangeMask">取消</button><button class="btn-primary" data-ui-action="submit-custom-range"><i class="ti ti-device-floppy"></i> 应用</button></div>
   </div>
@@ -938,10 +930,13 @@
   <div class="modal csp-s-ac44573161">
     <div class="modal-head"><i class="ti ti-message-2 csp-s-b0e08465c2"></i> 跟踪反馈 · <span id="track-cust">客户</span><span class="x" data-ui-action="close-modal" data-modal="trackMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
-      <div class="fld"><label>跟踪记录（可分多次补充）</label><textarea id="track-text" rows="6" placeholder="客户的后续反馈、报价、关键节点…"></textarea></div>
-      <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 跟踪后若发现是好询盘，记得回表格把「等级」上调（C→A/B），系统会自动标红提示重点处理。</div>
+      <!-- 2026-08-27：跟踪反馈改成多条带时间的记录（表 inquiry_feedbacks）。
+           以前是一段覆盖式的文本，跟进三次也只剩最后一次、且不知道是哪天写的。 -->
+      <div class="track-log" id="track-log"></div>
+      <div class="fld"><label>新增一条跟踪记录</label><textarea id="track-text" rows="4" placeholder="客户的后续反馈、报价、关键节点…"></textarea></div>
+      <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 每次跟进都添加一条，日期由系统记录；跟踪后若发现是好询盘，记得回表格把「等级」上调（C→A/B），系统会自动标红提示重点处理。</div>
     </div>
-    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="trackMask">取消</button><button class="btn-primary" data-ui-action="submit-track"><i class="ti ti-device-floppy"></i> 保存</button></div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="trackMask">关闭</button><button class="btn-primary" data-ui-action="submit-track"><i class="ti ti-plus"></i> 添加记录</button></div>
   </div>
 </div>
 

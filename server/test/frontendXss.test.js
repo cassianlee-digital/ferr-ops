@@ -21,6 +21,8 @@ const archiveSource = readFileSync(new URL('../../public/src/archive.js', import
 const kpiSource = readFileSync(new URL('../../public/src/kpi.js', import.meta.url), 'utf8');
 const kpiViewSource = readFileSync(new URL('../../public/src/kpi-view.js', import.meta.url), 'utf8');
 const timerangeSource = readFileSync(new URL('../../public/src/timerange.js', import.meta.url), 'utf8');
+const inquiryGlobeSource = readFileSync(new URL('../../public/src/inquiry-globe.js', import.meta.url), 'utf8');
+const pageInquiryCss = readFileSync(new URL('../../public/page-inquiry.css', import.meta.url), 'utf8');
 const googleProjectsSource = readFileSync(new URL('../../public/src/google-projects.js', import.meta.url), 'utf8');
 const sopSource = readFileSync(new URL('../../public/src/sop.js', import.meta.url), 'utf8');
 const risksSource = readFileSync(new URL('../../public/src/risks.js', import.meta.url), 'utf8');
@@ -148,7 +150,6 @@ test('inquiries are bundled with explicit module dependencies and a narrow globa
   assert.deepEqual(compatibility, [
     'openInquiry',
     'refreshInqStats',
-    'renderInqFeed',
     'renderInqList',
     'submitInquiry',
     'submitTrack'
@@ -164,15 +165,35 @@ test('inquiries are bundled with explicit module dependencies and a narrow globa
     .map((match) => match[1])
     .sort();
   assert.deepEqual(exportedFunctions, [
+    'filteredInquiries',
     'inqRowHtml',
     'isUpgraded',
     'openInquiry',
     'refreshInqStats',
-    'renderInqFeed',
+    'renderInqFilterRow',
     'renderInqList',
     'submitInquiry',
     'submitTrack'
   ]);
+  // 地图必须与表格同口径：只能读筛选后的结果，不许再直读 window._inqCache（否则筛「业务员=张三」地图还画全量）
+  assert.match(inquiryGlobeSource, /import \{ filteredInquiries \} from '\.\/inquiries\.js';/);
+  assert.doesNotMatch(inquiryGlobeSource, /\(window\._inqCache/); // 注释里可以提它，代码里不许再读它
+  // 筛选条件刻意不持久化：只有每页条数进 localStorage，避免下次打开「询盘少了一半」的误判
+  assert.doesNotMatch(inquiriesSource, /localStorage\.setItem\('ferr:inqFilter/);
+  assert.match(inquiriesSource, /localStorage\.setItem\('ferr:inqPageSize'/);
+  // 跟踪反馈已改为多条记录：走 POST /feedbacks，不许再 PATCH 覆盖式写老列
+  assert.match(inquiriesSource, /API\.post\('\/api\/inquiries\/'\+_trackEditing\.id\+'\/feedbacks'/);
+  assert.doesNotMatch(inquiriesSource, /API\.patch\([^)]*tracking_feedback/);
+  assert.match(inquiriesSource, /data-track-open/);        // 表格里「添加」按钮永远在
+  assert.match(inquiriesSource, /日期不详/);                // 老记录没时间戳就如实说，不补假日期
+  assert.match(indexSource, /id="track-log"/);             // 弹框里是完整时间线，不是一个覆盖式输入框
+  assert.doesNotMatch(indexSource, /id="track-text" rows="6"/);
+  // 老板拍板：格子里要把**每一条**跟进都铺出来、正文完整不截断。
+  // 这两条守卫防的是「以后有人嫌行太高，又偷偷改回只显示最新一条 / 加省略号」。
+  assert.match(inquiriesSource, /list\.map\(f=>`<span class="track-line">/);
+  assert.match(inquiriesSource, /class="track-line-date/);
+  assert.doesNotMatch(pageInquiryCss, /line-clamp/);
+  assert.doesNotMatch(pageInquiryCss, /\.track-line-text\{[^}]*(?:ellipsis|nowrap)/);
 });
 
 test('KPI modules use loaded values and expose only required classic-script compatibility', () => {
@@ -215,6 +236,7 @@ test('charts are bundled behind events and a narrow classic-script compatibility
     'loadDashboardInq',
     'loadDataFreshness',
     'loadDiagnostics',
+    'loadKpiInqDonuts',
     'loadSemBoardAds',
     'loadSemBoardFull',
     'loadSeoBoardFull',

@@ -185,7 +185,7 @@ export async function loadGa4() {
   const retry = document.getElementById('ga4-retry');
   if (retry) retry.disabled = true;
   try {
-    const data = await API.get(withRange('/api/ga4/overview'));
+    const data = await API.get(withRange('/api/ga4/overview','data')); // GA4 已嵌进数据看板，跟数据看板同一个时间条
     if (requestId !== requestSequence) return;
     renderGa4(data || { connected: false });
   } catch (error) {
@@ -204,3 +204,9 @@ export async function loadGa4() {
     if (requestId === requestSequence && retry) retry.disabled = false;
   }
 }
+
+/* 2026-08-26：时间范围分页面独立。GA4 面板已被 mountGa4IntoData() 嵌进「数据看板」作为子页签，
+   同一屏上不该有两个互不相干的时间条，故与数据看板共用 data 这一个 scope。 */
+document.addEventListener('timerange', e => {
+  if (e.detail && e.detail.scope === 'data') loadGa4();
+});
