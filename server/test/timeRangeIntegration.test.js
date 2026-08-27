@@ -68,14 +68,16 @@ test('不同日期范围驱动 KPI、总览和询盘重算，且不写共享快�
   const kpiA = kpiAResponse.json();
   const kpiB = kpiBResponse.json();
   const actual = (payload, name) => payload.rows.find((row) => row.name === name)?.actual;
+  // 汇总项（summary，仍随区间展示）
   assert.equal(actual(kpiA, '询盘总量'), 1);
   assert.equal(actual(kpiB, '询盘总量'), 2);
   assert.equal(actual(kpiA, 'A级询盘数'), 1);
   assert.equal(actual(kpiB, 'A级询盘数'), 0);
-  assert.equal(actual(kpiA, '闭环执行度'), 1);
-  assert.equal(actual(kpiB, '闭环执行度'), 0);
-  assert.equal(actual(kpiA, '有效询盘成本'), 100);
-  assert.equal(actual(kpiB, '有效询盘成本'), null);
+  // 绩效指标（Phase 4B，按渠道归因实时算）：rangeA 有 1 封 SEM A 询盘 + 100 花费
+  assert.equal(actual(kpiA, 'SEM 有效询盘数量'), 1); // SEM A/B effective
+  assert.equal(actual(kpiB, 'SEM 有效询盘数量'), 0); // rangeB 仅 SEM C → effective 0（真实 0，VALID）
+  assert.equal(actual(kpiA, '每有效询盘成本'), 100); // 100 花费 / 1 有效
+  assert.equal(actual(kpiB, '每有效询盘成本'), null); // rangeB 无花费 → MISSING_DATA
 
   const overviewA = overviewAResponse.json();
   const overviewB = overviewBResponse.json();

@@ -5,7 +5,7 @@
       __defProp(target, name, { get: all[name], enumerable: true });
   };
 
-  // public/src/neg-ads.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/neg-ads.js
   var neg_ads_exports = {};
   __export(neg_ads_exports, {
     adRowHtml: () => adRowHtml,
@@ -14,7 +14,7 @@
     negRowHtml: () => negRowHtml
   });
 
-  // public/src/keywords.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/keywords.js
   var keywords_exports = {};
   __export(keywords_exports, {
     activeCat: () => activeCat,
@@ -30,14 +30,14 @@
     renderKwPager: () => renderKwPager
   });
 
-  // public/src/tagselect.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/tagselect.js
   var tagselect_exports = {};
   __export(tagselect_exports, {
     OPT: () => OPT,
     persistTagChange: () => persistTagChange
   });
 
-  // public/src/timerange.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/timerange.js
   var timerange_exports = {};
   __export(timerange_exports, {
     activeScope: () => activeScope,
@@ -331,7 +331,7 @@
     toast(SCOPE_LABEL[scope] + " \u5DF2\u5E94\u7528\uFF1A" + cur.range.period_label);
   }
 
-  // public/src/ai.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/ai.js
   var apiUnavailableMsg = '<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF1A\u8BF7\u68C0\u67E5\u540E\u53F0 AI Provider\u3001API Key \u4E0E\u6A21\u578B\u914D\u7F6E\uFF0C\u6216\u7A0D\u540E\u91CD\u8BD5\u3002</div>';
   var aiAnalyses = /* @__PURE__ */ new Map();
   var activeAi = null;
@@ -714,7 +714,7 @@
     }
   }
 
-  // public/src/charts.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/charts.js
   window.DEMO_MODE = window.DEMO_MODE || false;
   var DEMO = {
     inqTrend: { a: [2, 1, 2, 1, 2, 1, 2, 1], total: [6, 5, 7, 8, 6, 7, 8, 8] },
@@ -833,7 +833,7 @@
       else ch.other++;
     });
     const chTotal = ch.SEO + ch.SEM + ch.direct + ch.other;
-    const pct2 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
+    const pct3 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
     if (cv2) {
       const w = cv2.closest(".chart-wrap") || cv2.parentElement;
       if (w) {
@@ -843,7 +843,7 @@
       cv2.style.display = "";
       _chanDonutChart = new Chart(cv2, { type: "doughnut", data: { labels: ["SEO", "SEM", "\u76F4\u63A5", "\u5176\u4ED6"], datasets: [{ data: [ch.SEO, ch.SEM, ch.direct, ch.other], backgroundColor: ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
     }
-    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct2(ch.SEO), lgChSem: pct2(ch.SEM), lgChDirect: pct2(ch.direct), lgChOther: pct2(ch.other) });
+    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct3(ch.SEO), lgChSem: pct3(ch.SEM), lgChDirect: pct3(ch.direct), lgChOther: pct3(ch.other) });
   }
   var seoChart = null;
   var seoFull = null;
@@ -2009,7 +2009,7 @@
     renderInqTrend();
   });
 
-  // public/src/inquiries.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/inquiries.js
   var REGION_BADGE = { "\u6B27\u6D32": "b-blue", "\u897F\u6B27": "b-blue", "\u5357\u6B27": "b-blue", "\u5317\u6B27": "b-blue", "\u4E2D\u4E1C\u6B27": "b-teal", "\u4E1C\u6B27/\u4FC4\u7F57\u65AF": "b-amber", "\u4FC4\u7F57\u65AF": "b-amber", "\u5317\u7F8E": "b-purple", "\u62C9\u7F8E": "b-red", "\u4E2D\u4E1C": "b-amber", "\u5317\u975E": "b-amber", "\u6492\u54C8\u62C9\u4EE5\u5357\u975E\u6D32": "b-gray", "\u5357\u4E9A": "b-teal", "\u4E1C\u5357\u4E9A": "b-red", "\u4E1C\u5357\u4E9A/\u5DF4\u897F": "b-red", "\u4E1C\u4E9A": "b-green", "\u4E2D\u4E9A": "b-gray", "\u5927\u6D0B\u6D32": "b-teal", "\u5176\u4ED6": "b-gray" };
   var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
   var PROD_BADGE = { "\u94F8\u9020": "b-amber", "\u953B\u9020": "b-red", "\u673A\u52A0\u5DE5": "b-blue", "\u9600\u95E8": "b-purple", "\u7BA1\u4EF6": "b-teal", "\u7535\u529B\u91D1\u5177": "b-green" };
@@ -2430,7 +2430,7 @@
     if (stats) window._inqStats = stats;
   }
 
-  // public/src/tagselect.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/tagselect.js
   var OPT = {
     channel: [["SEO\u81EA\u7136", "b-blue"], ["SEM\u4ED8\u8D39", "b-purple"], ["\u76F4\u63A5", "b-teal"], ["\u5176\u4ED6", "b-gray"]],
     product: [["\u94F8\u9020", "b-amber"], ["\u953B\u9020", "b-red"], ["\u673A\u52A0\u5DE5", "b-blue"], ["\u9600\u95E8", "b-purple"], ["\u7BA1\u4EF6", "b-teal"], ["\u7535\u529B\u91D1\u5177", "b-green"]],
@@ -2545,7 +2545,7 @@
     }
   }
 
-  // public/src/editable.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/editable.js
   function validateEditableValue(raw, type, opts) {
     opts = opts || {};
     if (type === "number") {
@@ -2592,7 +2592,7 @@
     }
   }
 
-  // public/src/keywords.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/keywords.js
   var KW_TB = { seo: "tb-kw-seo", sem: "tb-kw-sem", high: "tb-kw-high", customer: "tb-kw-cust" };
   var KW_PAGE_OPTS = [10, 20, 50, 100, 200, 300];
   var _kwPage = { seo: 0, sem: 0, high: 0, customer: 0 };
@@ -2913,7 +2913,7 @@
     }
   });
 
-  // public/src/sop.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/sop.js
   var sop_exports = {};
   __export(sop_exports, {
     buildSopOverdueList: () => buildSopOverdueList,
@@ -3181,7 +3181,7 @@
     dot.classList.toggle("is-hidden", !(overdue || urgent));
   }
 
-  // public/src/closed-loop.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/closed-loop.js
   var _2 = (n) => String(n).padStart(2, "0");
   var today = () => {
     const d = /* @__PURE__ */ new Date();
@@ -4206,7 +4206,7 @@
   }
   injectAiActions();
 
-  // public/src/neg-ads.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/neg-ads.js
   var NEGMATCH_BADGE = { "\u7CBE\u786E": "b-green", "\u8BCD\u7EC4": "b-blue", "\u5E7F\u6CDB": "b-amber" };
   var NEGSTATUS_BADGE = { "\u751F\u6548": "b-green", "\u89C2\u5BDF": "b-amber", "\u5DF2\u79FB\u9664": "b-gray" };
   var ADSTATUS_BADGE = { "\u91C7\u7528\u4E2D": "b-green", "\u6D4B\u8BD5\u4E2D": "b-amber", "\u5DF2\u5F03\u7528": "b-gray" };
@@ -4257,7 +4257,7 @@
     }
   }
 
-  // public/src/ga4-view.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/ga4-view.js
   var ga4_view_exports = {};
   __export(ga4_view_exports, {
     loadGa4: () => loadGa42
@@ -4451,7 +4451,7 @@
     if (e.detail && e.detail.scope === "data") loadGa42();
   });
 
-  // public/src/market-brain.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/market-brain.js
   var market_brain_exports = {};
   __export(market_brain_exports, {
     loadBrain: () => loadBrain,
@@ -4562,14 +4562,14 @@
     }
   }
 
-  // public/src/kpi-view.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/kpi-view.js
   var kpi_view_exports = {};
   __export(kpi_view_exports, {
     loadOverview: () => loadOverview,
     renderKPI: () => renderKPI2
   });
 
-  // public/src/kpi.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/kpi.js
   var TOTAL = [{ n: "\u8BE2\u76D8\u603B\u91CF", w: 25, t: 60, a: 0, m: "r", u: "\u5C01" }, { n: "A\u7EA7\u8BE2\u76D8\u6570", w: 35, t: 10, a: 0, m: "r", u: "\u5C01" }, { n: "\u6709\u6548\u8BE2\u76D8\u6210\u672C", w: 25, t: 2e3, a: 0, m: "i", u: "\xA5" }, { n: "\u95ED\u73AF\u6267\u884C\u5EA6", w: 15, t: 5, a: 0, m: "r", u: "\u9879" }];
   var SEO = [{ n: "\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4", w: 25, t: 10, a: 0, m: "r", u: "%" }, { n: "\u6838\u5FC3\u8BCD Top10 \u5360\u6BD4", w: 25, t: 40, a: 0, m: "r", u: "%" }, { n: "\u5173\u952E\u8BCD\u8986\u76D6/\u957F\u5C3E", w: 15, t: 500, a: 0, m: "r", u: "\u8BCD" }, { n: "\u65B0\u589E\u6536\u5F55\u9875\u9762", w: 15, t: 20, a: 0, m: "r", u: "\u9875" }, { n: "\u8DF3\u51FA\u7387", w: 10, t: 55, a: 0, m: "i", u: "%" }, { n: "\u9875\u9762\u505C\u7559\u65F6\u957F", w: 10, t: 150, a: 0, m: "r", u: "s" }];
   var SEM = [{ n: "CPC", w: 15, t: 4, a: 0, m: "i", u: "\xA5" }, { n: "CTR", w: 15, t: 3.5, a: 0, m: "r", u: "%" }, { n: "\u8D28\u91CF\u5206", w: 15, t: 7.5, a: 0, m: "r", u: "" }, { n: "ROAS", w: 20, t: 3.5, a: 0, m: "r", u: "x" }, { n: "\u8F6C\u5316\u6B21\u6570", w: 15, t: 60, a: 0, m: "r", u: "\u6B21" }, { n: "\u6BCF\u6B21\u8F6C\u5316\u8D39\u7528", w: 20, t: 300, a: 0, m: "i", u: "\xA5" }];
@@ -4625,9 +4625,11 @@
   async function loadMetrics() {
     const requestId = ++metricsRequestSequence, revision = getRangeRevision("kpi");
     try {
-      const { rows: rows2 } = await API.get(withRange2("/api/kpi-targets", "kpi"));
+      const res = await API.get(withRange2("/api/kpi-targets", "kpi"));
       if (requestId !== metricsRequestSequence || revision !== getRangeRevision("kpi")) return false;
-      applyKpiServer(rows2);
+      applyKpiServer(res.rows);
+      window._kpiRows = res.rows || [];
+      window._kpiAssessment = res.assessment || null;
       syncKpiInputs();
       return true;
     } catch (e) {
@@ -4725,7 +4727,201 @@
     }
   }
 
-  // public/src/kpi-view.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/execution.js
+  async function refreshAfterWrite() {
+    await loadMetrics();
+    if (window.renderKPI) window.renderKPI();
+  }
+  var ST_LABEL = { OPEN: "\u5F85\u6267\u884C", IN_PROGRESS: "\u6267\u884C\u4E2D", IMPLEMENTED: "\u5DF2\u5B9E\u65BD\u5F85\u9A8C\u8BC1", VERIFYING: "\u9A8C\u8BC1\u4E2D", VERIFIED: "\u5DF2\u9A8C\u8BC1", FAILED: "\u903E\u671F\u672A\u9A8C\u8BC1", CANCELLED: "\u5DF2\u53D6\u6D88" };
+  var ST_TONE = { VERIFIED: "kpi-tone-green", VERIFYING: "kpi-tone-blue", IMPLEMENTED: "kpi-tone-blue", IN_PROGRESS: "kpi-tone-amber", OPEN: "kpi-tone-muted", FAILED: "kpi-tone-primary", CANCELLED: "kpi-tone-muted" };
+  var IMP_RANK = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+  var IMP_LABEL = { HIGH: "\u9AD8", MEDIUM: "\u4E2D", LOW: "\u4F4E" };
+  var RESULT_LABEL = { POSITIVE: "\u6B63\u5411", NEUTRAL: "\u65E0\u660E\u663E\u53D8\u5316", NEGATIVE: "\u8D1F\u5411" };
+  var NEXT_STATUS = ["OPEN", "IN_PROGRESS", "IMPLEMENTED", "VERIFYING", "VERIFIED"];
+  function num(v) {
+    return v == null || !Number.isFinite(Number(v)) ? null : Number(v);
+  }
+  function verifCell(r) {
+    const bv = num(r.before_value), av = num(r.after_value);
+    if (bv != null && av != null) return esc(r.related_metric || "") + " " + bv + "\u2192" + av;
+    if (r.verification_result_text) return esc(r.verification_result_text);
+    if (r.verification_method) return esc(r.verification_method);
+    return "\u2014";
+  }
+  function rowHtml(r) {
+    const st2 = ST_LABEL[r.status] || r.status;
+    const tone = ST_TONE[r.status] || "kpi-tone-muted";
+    const res = r.verification_result ? '<span class="exec-res ' + (r.verification_result === "NEGATIVE" ? "kpi-tone-primary" : r.verification_result === "POSITIVE" ? "kpi-tone-green" : "kpi-tone-muted") + '">' + RESULT_LABEL[r.verification_result] + "</span>" : "";
+    const adv = NEXT_STATUS.indexOf(r.status);
+    const advBtn = adv >= 0 && adv < NEXT_STATUS.length - 1 ? '<button class="exec-btn" data-exec-advance="' + r.id + '" data-next="' + NEXT_STATUS[adv + 1] + '">\u63A8\u8FDB\u2192' + ST_LABEL[NEXT_STATUS[adv + 1]] + "</button>" : "";
+    const excluded = Number(r.exclude_from_assessment) === 1 ? '<span class="kpi-ds-badge">\u5DF2\u6392\u9664</span>' : "";
+    return '<tr><td class="exec-prob">' + esc(r.problem || "") + excluded + (r.analysis ? '<div class="exec-sub">\u5206\u6790\uFF1A' + esc(r.analysis) + "</div>" : "") + (r.action ? '<div class="exec-sub">\u52A8\u4F5C\uFF1A' + esc(r.action) + "</div>" : "") + "</td><td>" + esc(r.owner || "") + '</td><td><span class="exec-imp imp-' + (r.impact_level || "MEDIUM") + '">' + (IMP_LABEL[r.impact_level] || "\u4E2D") + '</span></td><td><span class="exec-st ' + tone + '">' + st2 + '</span></td><td class="exec-verif">' + verifCell(r) + " " + res + '</td><td class="exec-act">' + advBtn + "</td></tr>";
+  }
+  function panelHtml(channel, items) {
+    const sorted = items.slice().sort((a, b) => {
+      const ir = (IMP_RANK[a.impact_level] ?? 1) - (IMP_RANK[b.impact_level] ?? 1);
+      if (ir) return ir;
+      return String(a.verification_due_at || "").localeCompare(String(b.verification_due_at || ""));
+    });
+    const elig = sorted.filter((r) => Number(r.exclude_from_assessment) !== 1);
+    const ver = elig.filter((r) => r.status === "VERIFIED");
+    const bkt = (lvl) => {
+      const e = elig.filter((r) => (r.impact_level || "MEDIUM") === lvl);
+      const v = e.filter((r) => r.status === "VERIFIED");
+      return v.length + "/" + e.length;
+    };
+    const summary = "\u672C\u533A\u95F4\u5230\u671F " + elig.length + " \xB7 \u5DF2\u9A8C\u8BC1 " + ver.length + ' \xB7 <span class="exec-bkt">\u9AD8 ' + bkt("HIGH") + '</span> <span class="exec-bkt">\u4E2D ' + bkt("MEDIUM") + '</span> <span class="exec-bkt">\u4F4E ' + bkt("LOW") + "</span>";
+    const table = sorted.length ? '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u95EE\u9898 / \u5206\u6790 / \u52A8\u4F5C</th><th>\u8D1F\u8D23</th><th>\u5F71\u54CD</th><th>\u72B6\u6001</th><th>\u9A8C\u8BC1</th><th></th></tr></thead><tbody>' + sorted.map(rowHtml).join("") + "</tbody></table></div>" : '<div class="kpi-empty">\u672C\u533A\u95F4\u65E0\u5230\u671F\u9A8C\u8BC1\u7684\u95ED\u73AF</div>';
+    const form = '<form class="exec-form" data-exec-form="' + channel + '"><input name="problem" placeholder="\u53D1\u73B0\u7684\u95EE\u9898\uFF08\u5FC5\u586B\uFF09" required><input name="analysis" placeholder="\u5206\u6790\uFF1A\u4E3A\u4EC0\u4E48\u53D1\u751F"><input name="action" placeholder="\u52A8\u4F5C\uFF1A\u91C7\u53D6\u4E86\u4EC0\u4E48"><input name="verification_method" placeholder="\u9A8C\u8BC1\u65B9\u6CD5\uFF1A\u600E\u4E48\u5224\u65AD\u6709\u6548"><select name="impact_level"><option value="HIGH">\u9AD8\u5F71\u54CD</option><option value="MEDIUM" selected>\u4E2D\u5F71\u54CD</option><option value="LOW">\u4F4E\u5F71\u54CD</option></select><label class="exec-due">\u9A8C\u8BC1\u5230\u671F <input type="date" name="verification_due_at"></label><button type="submit" class="exec-btn exec-btn-primary">\u65B0\u589E\u95ED\u73AF</button></form>';
+    return '<details class="exec-panel" open><summary>\u6267\u884C\u9A8C\u8BC1\u95ED\u73AF \xB7 ' + summary + "</summary>" + table + form + "</details>";
+  }
+  var CH_ANCHOR = { seo: "seoRows", sem: "semRows" };
+  function ensureContainer(channel) {
+    const anchor = document.getElementById(CH_ANCHOR[channel]);
+    if (!anchor) return null;
+    let box = document.getElementById("exec-" + channel);
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "exec-" + channel;
+      box.className = "exec-mount";
+      anchor.parentElement.appendChild(box);
+    }
+    return box;
+  }
+  async function renderChannel(channel) {
+    const box = ensureContainer(channel);
+    if (!box) return;
+    try {
+      const { items } = await API.get(withRange2("/api/execution-loops?channel=" + channel + "&due=1"));
+      box.innerHTML = panelHtml(channel, items || []);
+    } catch (e) {
+      if (e && e.message !== "unauthorized") box.innerHTML = '<div class="kpi-empty">\u6267\u884C\u95ED\u73AF\u52A0\u8F7D\u5931\u8D25\uFF1A' + esc(e.message || "\u672A\u77E5\u9519\u8BEF") + "</div>";
+    }
+  }
+  var seq = 0;
+  async function mountExecution() {
+    const rev = getRangeRevision(), id = ++seq;
+    await Promise.all([renderChannel("seo"), renderChannel("sem")]);
+    if (id !== seq || rev !== getRangeRevision()) {
+    }
+  }
+  document.addEventListener("submit", async (e) => {
+    const form = e.target.closest && e.target.closest("[data-exec-form]");
+    if (!form) return;
+    e.preventDefault();
+    const channel = form.getAttribute("data-exec-form");
+    const body = { channel };
+    for (const el of form.elements) {
+      if (el.name && el.value) body[el.name] = el.value;
+    }
+    if (!body.problem) {
+      toast("\u95EE\u9898\u5FC5\u586B");
+      return;
+    }
+    try {
+      await API.post("/api/execution-loops", body);
+      toast("\u5DF2\u65B0\u589E\u6267\u884C\u95ED\u73AF");
+      await refreshAfterWrite();
+    } catch (err) {
+      toast(err.status === 403 ? "\u65E0\u6743\u5728\u6B64\u6E20\u9053\u65B0\u589E" : "\u65B0\u589E\u5931\u8D25\uFF1A" + (err.message || ""));
+    }
+  });
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest && e.target.closest("[data-exec-advance]");
+    if (!btn) return;
+    const id = btn.getAttribute("data-exec-advance"), next = btn.getAttribute("data-next");
+    const channel = btn.closest('[id^="exec-"]').id.replace("exec-", "");
+    try {
+      await API.patch("/api/execution-loops/" + id, { status: next });
+      toast("\u5DF2\u63A8\u8FDB\u81F3\u300C" + (ST_LABEL[next] || next) + "\u300D");
+      await refreshAfterWrite();
+    } catch (err) {
+      toast(err.status === 403 ? "\u65E0\u6743\u7F16\u8F91\u672C\u8BB0\u5F55" : "\u66F4\u65B0\u5931\u8D25\uFF1A" + (err.message || ""));
+    }
+  });
+  document.addEventListener("timerange", mountExecution);
+
+  // ../kpi-performance-review-optimization-5dd42a/public/src/kpi-periods.js
+  var OWNERS = [
+    { owner: "company", label: "\u516C\u53F8", type: "quarter" },
+    { owner: "seo", label: "\u674E \xB7 SEO", type: "quarter" },
+    { owner: "sem", label: "\u9648 \xB7 SEM", type: "month" }
+  ];
+  var OWNER_LABEL = { company: "\u516C\u53F8", seo: "\u674E\xB7SEO", sem: "\u9648\xB7SEM" };
+  var PERIOD_LABEL = { quarter: "\u5B63\u5EA6", month: "\u6708\u5EA6" };
+  function curKey(type) {
+    const d = /* @__PURE__ */ new Date(), y = d.getFullYear(), m = d.getMonth() + 1;
+    return type === "month" ? y + "-" + String(m).padStart(2, "0") : y + "-Q" + (Math.floor((m - 1) / 3) + 1);
+  }
+  var pct = (c) => Math.round((Number(c) || 0) * 100);
+  function scopeText(s) {
+    if (!s) return "\u5F85\u8BC4\u4F30";
+    if (s.score != null) return '<b class="kpi-tone-green">' + s.score + "</b> \u5206";
+    if (s.provisionalScore != null) return "\u53C2\u8003 <b>" + s.provisionalScore + "</b>\uFF08\u8986\u76D6\u7387 " + pct(s.coverage) + "%\uFF0C\u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206\uFF09";
+    return "\u5F85\u8BC4\u4F30";
+  }
+  function snapText(r) {
+    if (r.score != null) return '<b class="kpi-tone-green">' + r.score + "</b> \u5206";
+    if (r.provisional_score != null) return "\u53C2\u8003 " + r.provisional_score + "\uFF08\u8986\u76D6\u7387 " + pct(r.coverage) + "%\uFF09";
+    return "\u5F85\u8BC4\u4F30\uFF08" + (r.status || "") + "\uFF09";
+  }
+  function currentRowHtml(o) {
+    const key = curKey(o.type);
+    const s = o._preview;
+    return '<div class="kpip-cur"><span class="kpip-owner">' + o.label + '</span><span class="kpip-period">' + PERIOD_LABEL[o.type] + " " + key + '\uFF08\u8FDB\u884C\u4E2D\uFF09</span><span class="kpip-score">' + (s ? scopeText(s) : "\u2026") + '</span><button class="exec-btn exec-btn-primary" data-settle-owner="' + o.owner + '" data-settle-type="' + o.type + '" data-settle-key="' + key + '">\u7ED3\u7B97\u672C\u671F\u5E76\u51BB\u7ED3</button></div>';
+  }
+  function historyHtml(items) {
+    if (!items.length) return '<div class="kpi-empty">\u6682\u65E0\u5DF2\u7ED3\u7B97\u8003\u6838\u671F</div>';
+    return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u8003\u6838\u671F</th><th>\u5BF9\u8C61</th><th>\u6210\u7EE9</th><th>\u8986\u76D6\u7387</th><th>\u72B6\u6001</th><th>\u7ED3\u7B97\u65F6\u95F4</th></tr></thead><tbody>' + items.map((r) => "<tr><td>" + esc(r.period_key) + "</td><td>" + (OWNER_LABEL[r.owner] || r.owner) + "</td><td>" + snapText(r) + "</td><td>" + pct(r.coverage) + "%</td><td>" + esc(r.status || "") + "</td><td>" + esc((r.settled_at || "").slice(0, 16)) + "</td></tr>").join("") + "</tbody></table></div>";
+  }
+  function ensureMount() {
+    const panel = document.getElementById("panel-kpi");
+    if (!panel) return null;
+    let box = document.getElementById("kpi-periods-mount");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "kpi-periods-mount";
+      box.className = "card kpip-card";
+      panel.appendChild(box);
+    }
+    return box;
+  }
+  var seq2 = 0;
+  async function mountPeriods() {
+    const box = ensureMount();
+    if (!box) return;
+    const id = ++seq2;
+    try {
+      await Promise.all(OWNERS.map(async (o) => {
+        try {
+          const r = await API.get("/api/kpi/period-preview?owner=" + o.owner + "&period_type=" + o.type + "&period_key=" + curKey(o.type));
+          o._preview = r.scope;
+        } catch {
+          o._preview = null;
+        }
+      }));
+      const { items } = await API.get("/api/kpi/periods");
+      if (id !== seq2) return;
+      box.innerHTML = '<div class="card-head"><span class="card-title">\u8003\u6838\u671F\u7ED3\u7B97\u4E0E\u5386\u53F2</span><span class="kpip-note">\u5206\u6790\u533A\u95F4(\u9876\u90E8)\u4EC5\u770B\u6570\u636E\uFF1B\u6B63\u5F0F\u7EE9\u6548\u6309\u8003\u6838\u5468\u671F\u7ED3\u7B97\u51BB\u7ED3\uFF0C\u6B64\u540E\u6539\u76EE\u6807\u4E0D\u52A8\u5386\u53F2</span></div><div class="kpip-cur-list">' + OWNERS.map(currentRowHtml).join("") + '</div><div class="kpi-sec-label kpi-sec-diag">\u5DF2\u7ED3\u7B97\uFF08\u51BB\u7ED3\uFF09</div>' + historyHtml(items || []);
+    } catch (e) {
+      if (e && e.message !== "unauthorized") box.innerHTML = '<div class="kpi-empty">\u8003\u6838\u671F\u52A0\u8F7D\u5931\u8D25\uFF1A' + esc(e.message || "") + "</div>";
+    }
+  }
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest && e.target.closest("[data-settle-owner]");
+    if (!btn) return;
+    const owner = btn.getAttribute("data-settle-owner"), period_type = btn.getAttribute("data-settle-type"), period_key = btn.getAttribute("data-settle-key");
+    if (!confirm("\u786E\u8BA4\u7ED3\u7B97\u5E76\u51BB\u7ED3\u300C" + (OWNER_LABEL[owner] || owner) + " \xB7 " + period_key + "\u300D\uFF1F\u51BB\u7ED3\u540E\u6539\u76EE\u6807\u4E0D\u5F71\u54CD\u672C\u671F\u6210\u7EE9\u3002")) return;
+    try {
+      await API.post("/api/kpi/settle", { owner, period_type, period_key });
+      toast("\u5DF2\u7ED3\u7B97\u5E76\u51BB\u7ED3 " + period_key);
+      await mountPeriods();
+    } catch (err) {
+      toast(err.status === 403 ? "\u4EC5\u7BA1\u7406\u5458/\u8001\u677F\u53EF\u7ED3\u7B97" : "\u7ED3\u7B97\u5931\u8D25\uFF1A" + (err.message || ""));
+    }
+  });
+
+  // ../kpi-performance-review-optimization-5dd42a/public/src/kpi-view.js
   function grade(s) {
     if (s >= 90) return { t: "\u4F18\u79C0", c: "var(--green)", bg: "var(--green-soft)", i: "ti-trophy" };
     if (s >= 75) return { t: "\u5408\u683C", c: "var(--blue)", bg: "var(--blue-soft)", i: "ti-circle-check" };
@@ -4847,24 +5043,130 @@
     }
     return false;
   }
+  var DS_LABEL = { NOT_APPLICABLE: "\u4E0D\u9002\u7528", MISSING_DATA: "\u5F85\u63A5\u5165", INSUFFICIENT_DATA: "\u6837\u672C\u4E0D\u8DB3", PENDING: "\u89C2\u5BDF\u4E2D", TRACKING_ERROR: "\u8FFD\u8E2A\u5F02\u5E38" };
+  function fmtU(unit, v) {
+    if (v == null || !Number.isFinite(Number(v))) return "\u2014";
+    return unit === "\xA5" ? "\xA5" + Number(v).toLocaleString() : unit === "%" ? v + "%" : unit ? v + unit : v;
+  }
+  var pctCov = (s) => Math.round((s && s.coverage || 0) * 100);
+  function gaugeScope(arcId, scoreId, badgeId, s) {
+    const C = 364.4, A = document.getElementById(arcId), S = document.getElementById(scoreId), B = document.getElementById(badgeId);
+    if (!A || !S) return;
+    if (!s || !s.gradable || s.score == null) {
+      A.style.stroke = "var(--bg4)";
+      A.style.strokeDashoffset = C;
+      S.style.color = "var(--text3)";
+      S.textContent = "\u2014";
+      if (B) {
+        B.style.background = "var(--bg3)";
+        B.style.color = "var(--text3)";
+        let txt;
+        if (!s || s.status === "NO_METRICS") txt = '<i class="ti ti-hourglass"></i> \u5F85\u8BC4\u4F30 \xB7 \u6682\u672A\u914D\u7F6E\u7EE9\u6548\u6307\u6807';
+        else if (s.status === "CONFIG_INCOMPLETE") txt = '<i class="ti ti-settings-exclamation"></i> \u7EE9\u6548\u914D\u7F6E\u672A\u5B8C\u6210' + (s.provisionalScore != null ? " \xB7 \u53C2\u8003\u8868\u73B0 " + s.provisionalScore : "") + " \xB7 \u6B63\u5F0F\u7EE9\u6548\u5F85\u8BC4\u4F30";
+        else if (s.status === "NO_VALID_DATA") txt = '<i class="ti ti-hourglass"></i> \u5F85\u8BC4\u4F30 \xB7 \u6682\u65E0\u6709\u6548\u6570\u636E';
+        else txt = '<i class="ti ti-alert-circle"></i> \u53C2\u8003\u8868\u73B0 ' + (s.provisionalScore ?? "\u2014") + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "% \xB7 \u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206";
+        B.innerHTML = txt;
+      }
+      return;
+    }
+    const g = grade(s.score);
+    A.style.stroke = g.c;
+    S.style.color = g.c;
+    let c = 0;
+    (function st2() {
+      c += s.score / 40;
+      if (c >= s.score) c = s.score;
+      A.style.strokeDashoffset = C - C * c / 100;
+      S.textContent = c.toFixed(0);
+      if (c < s.score) requestAnimationFrame(st2);
+    })();
+    if (B) {
+      B.style.background = g.bg;
+      B.style.color = g.c;
+      B.innerHTML = '<i class="ti ' + g.i + '"></i> ' + g.t + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "%";
+    }
+  }
+  var PG_LABEL = { business: "\u4E1A\u52A1\u8D21\u732E", visibility: "\u641C\u7D22 & GEO \u53EF\u89C1\u5EA6", asset: "\u5185\u5BB9\u8D44\u4EA7", efficiency: "\u83B7\u5BA2\u6548\u7387", quality: "\u6D41\u91CF\u8D28\u91CF", execution: "\u6267\u884C\u4E0E\u4F18\u5316", experiment: "\u5B9E\u9A8C\u4E0E\u5B66\u4E60" };
+  function pgLabel(grp, g) {
+    if (grp === "sem" && g === "business") return "Lead \u4EF7\u503C";
+    return PG_LABEL[g] || g || "\u5176\u4ED6";
+  }
+  function metricRow(m) {
+    const included = m.included, r = included && Number.isFinite(m.ratio) ? m.ratio : 0;
+    const tone = included ? scoreTone(r) : "kpi-tone-muted", prog = Math.max(0, Math.min(100, r * 100));
+    const ds = included ? "" : '<span class="kpi-ds-badge">' + (DS_LABEL[m.data_status] || "\u5F85\u63A5\u5165") + "</span>";
+    const actualTxt = included ? m.display_value ? esc(m.display_value) : fmtU(m.unit, m.actual) : "\u2014";
+    return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(m.name)}${ds}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmtU(m.unit, m.target)} \xB7 \u5B9E\u9645 ${actualTxt}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${prog}"></div></div></div><div class="kpi-score-value ${tone}">${included ? Math.round(r * 100) : "\u2014"}</div></div>`;
+  }
+  function diagChip(d) {
+    let tone = "kpi-tone-muted";
+    if (d.available && d.target > 0 && d.actual > 0) {
+      const ach = d.mode === "i" ? d.target / d.actual : d.actual / d.target;
+      tone = ach >= 1 ? "kpi-tone-green" : ach >= 0.8 ? "kpi-tone-amber" : "kpi-tone-primary";
+    }
+    return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
+  }
+  function renderBlock(grp, containerId, a) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const block = a.blocks && a.blocks[grp] || { metrics: [] };
+    const diags = (a.diagnostics || []).filter((d) => d.grp === grp);
+    const summaries = (a.summaries || []).filter((d) => d.grp === grp);
+    const metrics = block.metrics || [];
+    let html = '<div class="kpi-sec-label">\u7EE9\u6548\u6307\u6807\uFF08\u8BA1\u5206\uFF09</div>';
+    if (metrics.length) {
+      const groups = [], idx = {};
+      for (const m of metrics) {
+        const g = m.perf_group || "other";
+        if (!(g in idx)) {
+          idx[g] = groups.length;
+          groups.push([g, []]);
+        }
+        groups[idx[g]][1].push(m);
+      }
+      html += groups.map(([g, ms]) => {
+        const wt = ms.reduce((s, m) => s + (Number(m.weight) || 0), 0);
+        return '<div class="kpi-pg"><div class="kpi-pg-head">' + esc(pgLabel(grp, g)) + '<span class="kpi-pg-wt">' + wt + "%</span></div>" + ms.map(metricRow).join("") + "</div>";
+      }).join("");
+    } else html += '<div class="kpi-empty">\u6682\u65E0\u53EF\u8BC4\u5206\u6307\u6807 \xB7 \u5F85\u63A5\u5165</div>';
+    if (diags.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u8BCA\u65AD\u6307\u6807\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + diags.map(diagChip).join("") + "</div>";
+    if (summaries.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u4E1A\u52A1\u6C47\u603B\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + summaries.map(diagChip).join("") + "</div>";
+    el.innerHTML = html;
+    el.querySelectorAll("[data-progress]").forEach((f) => {
+      const p = Number(f.dataset.progress);
+      f.style.width = (Number.isFinite(p) ? p : 0) + "%";
+    });
+  }
   function renderKPI2() {
     recomputeScores();
-    rows(TOTAL, "totalRows");
-    rows(SEO, "seoRows");
-    rows(SEM, "semRows");
     const set = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
     };
     set("topScore", company.toFixed(0));
-    badge("liBadge", liScore);
-    badge("chenBadge", chenScore);
     gauge("g1", "g1s", company);
-    gauge("g2", "g2s", company);
     badge("g1b", company);
-    badge("g2b", company);
-    gauge("liArc", "liScore", liScore);
-    gauge("chenArc", "chenScore", chenScore);
+    const a = window._kpiAssessment;
+    if (!a) {
+      rows(TOTAL, "totalRows");
+      rows(SEO, "seoRows");
+      rows(SEM, "semRows");
+      gauge("g2", "g2s", company);
+      badge("g2b", company);
+      gauge("liArc", "liScore", liScore);
+      gauge("chenArc", "chenScore", chenScore);
+      badge("liBadge", liScore);
+      badge("chenBadge", chenScore);
+      return;
+    }
+    gaugeScope("g2", "g2s", "g2b", a.scores.company);
+    gaugeScope("liArc", "liScore", "liBadge", a.scores.li);
+    gaugeScope("chenArc", "chenScore", "chenBadge", a.scores.chen);
+    renderBlock("total", "totalRows", a);
+    renderBlock("seo", "seoRows", a);
+    renderBlock("sem", "semRows", a);
+    mountExecution();
+    mountPeriods();
   }
   var kpiRefreshSequence = 0;
   async function refreshKpiRange() {
@@ -4882,7 +5184,7 @@
     if (scope === activeScope()) loadOverview();
   });
 
-  // public/src/google-projects.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/google-projects.js
   var google_projects_exports = {};
   __export(google_projects_exports, {
     backfillGoogle: () => backfillGoogle,
@@ -4893,7 +5195,7 @@
   });
   var INTEG_LABEL = { gsc: "Google Search Console", ga4: "Google Analytics 4 (GA4)", ads: "Google Ads" };
   var GOOGLE_PROVIDER_ORDER = ["gsc", "ga4", "ads"];
-  var DS_LABEL = { inquiries: "\u8BE2\u76D8", seo_weeks: "SEO \u5468\u62A5", sem_weeks: "SEM \u5468\u62A5", gsc: "GSC", ga4: "GA4", ads: "Google Ads", ai: "AI Provider" };
+  var DS_LABEL2 = { inquiries: "\u8BE2\u76D8", seo_weeks: "SEO \u5468\u62A5", sem_weeks: "SEM \u5468\u62A5", gsc: "GSC", ga4: "GA4", ads: "Google Ads", ai: "AI Provider" };
   var DS_ORDER = ["inquiries", "seo_weeks", "sem_weeks", "gsc", "ga4", "ads", "ai"];
   var DS_TYPE_LABEL = { manual: "\u4EBA\u5DE5\u5F55\u5165", sync: "\u81EA\u52A8\u540C\u6B65", provider: "AI Provider" };
   function dsStatusMeta(status, type) {
@@ -4910,7 +5212,7 @@
   }
   function dsRow(key, s) {
     s = s || {};
-    const name = DS_LABEL[key] || key;
+    const name = DS_LABEL2[key] || key;
     const typeText = DS_TYPE_LABEL[s.type] || s.type || "";
     const [text2, cls] = dsStatusMeta(s.status, s.type);
     const time = s.type === "manual" ? s.lastAt || "\u2014" : s.type === "sync" ? s.lastSyncAt || "\u2014" : "\u2014";
@@ -5039,7 +5341,7 @@
     }
   }
 
-  // public/src/archive.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/archive.js
   var archive_exports = {};
   __export(archive_exports, {
     loadArchive: () => loadArchive2
@@ -5201,7 +5503,7 @@
     }
   });
 
-  // public/src/hermes-memory.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/hermes-memory.js
   var hermes_memory_exports = {};
   __export(hermes_memory_exports, {
     loadHermesMemories: () => loadHermesMemories,
@@ -5432,7 +5734,7 @@
     }
   }
 
-  // public/src/inquiry-globe.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/inquiry-globe.js
   var inquiry_globe_exports = {};
   __export(inquiry_globe_exports, {
     renderGlobe: () => renderGlobe2
@@ -5785,7 +6087,7 @@
   async function renderGlobe2() {
     const el = document.getElementById("inqGlobe");
     if (!el) return;
-    const seq = ++renderSeq;
+    const seq3 = ++renderSeq;
     const { groups, unmappedList, unmappedTotal } = collectMapData();
     const empty = document.getElementById("inqGlobe-empty");
     if (empty) empty.style.display = "none";
@@ -5793,9 +6095,9 @@
     renderShell(el, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
     try {
       await ensureWorldMap();
-      if (seq !== renderSeq) return;
+      if (seq3 !== renderSeq) return;
     } catch (err) {
-      if (seq !== renderSeq) return;
+      if (seq3 !== renderSeq) return;
       const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
       renderShell(el, groups, `
       <div class="inq-map-error">
@@ -5937,7 +6239,7 @@
     }, true);
   }
 
-  // public/src/plan-history.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/plan-history.js
   var plan_history_exports = {};
   __export(plan_history_exports, {
     planDayIsToday: () => planDayIsToday,
@@ -6067,17 +6369,17 @@
   var _dayInput = document.getElementById("planday-input");
   if (_dayInput && !_dayInput.value) _dayInput.value = today2();
 
-  // public/src/weekly-review.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/weekly-review.js
   var weekly_review_exports = {};
   __export(weekly_review_exports, {
     renderMonthReview: () => renderMonthReview,
     renderReview: () => renderReview
   });
 
-  // public/src/sop-rate.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/sop-rate.js
   var DEPTS2 = [["SEO", "\u674E", "b-blue"], ["SEM", "\u9648", "b-purple"], ["\u516C\u53F8", "\u516C\u53F8", "b-red"]];
   var FREQ_LABEL2 = { daily: "\u6BCF\u65E5", weekly: "\u6BCF\u5468", monthly: "\u6BCF\u6708" };
-  function pct(done, expected) {
+  function pct2(done, expected) {
     return expected > 0 ? Math.round(done / expected * 100) : null;
   }
   function rateClass(p) {
@@ -6087,7 +6389,7 @@
     const counted = items.filter((i) => i.expected !== null);
     const done = counted.reduce((a, i) => a + i.done, 0);
     const expected = counted.reduce((a, i) => a + i.expected, 0);
-    const p = pct(done, expected);
+    const p = pct2(done, expected);
     const missed = counted.filter((i) => i.expected > i.done).sort((a, b) => b.expected - b.done - (a.expected - a.done));
     const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => d.slice(5)).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
     return `<div class="sr-dept">
@@ -6129,7 +6431,7 @@
     if (el) mountSopRate(el);
   });
 
-  // public/src/weekly-review.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/weekly-review.js
   var RV_SECTIONS = [
     ["summary", "\u2460 \u672C\u5468\u5DE5\u4F5C\u603B\u7ED3", []],
     ["problems", "\u2461 \u9047\u5230\u7684\u95EE\u9898", ["\u6D4B\u8BD5", "\u91C7\u7EB3"]],
@@ -6403,7 +6705,7 @@
     rvSectionSave(t.closest(".rv-sec"));
   });
 
-  // public/src/settings.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/settings.js
   function bindSettings() {
     document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
       if (el.dataset.settingsBound === "1") return;
@@ -6488,7 +6790,7 @@
     }
   }
 
-  // public/src/table-editor.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/table-editor.js
   var EDITABLE_CELL = "td[contenteditable][data-field]";
   var DATE_INPUT = "input.cell-date[data-field]";
   var tableEditorBound = false;
@@ -6620,7 +6922,7 @@
     document.addEventListener("keydown", handleKeyDown);
   }
 
-  // public/src/rank-snapshots.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/rank-snapshots.js
   function renderRankTrend(snapshots) {
     if (!snapshots || snapshots.length < 2) return;
     const first = snapshots[0];
@@ -6668,7 +6970,7 @@
     }
   }
 
-  // public/src/risks.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/risks.js
   var STATUS_LABELS = { fail: "\u5931\u8D25", unverified: "\u5F85\u9A8C\u8BC1", warn: "\u8B66\u544A", pass: "\u901A\u8FC7" };
   var SOURCE_LABELS = { production_live: "\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536", current_static: "\u5F53\u524D\u914D\u7F6E\u4E0E\u6570\u636E\u5E93" };
   var EVIDENCE_LABELS = {
@@ -6876,7 +7178,7 @@
     }
   }
 
-  // public/src/main.js
+  // ../kpi-performance-review-optimization-5dd42a/public/src/main.js
   bindTableEditor();
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };

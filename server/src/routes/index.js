@@ -8,6 +8,7 @@ import { adCreativesRoutes } from './adCreatives.js';
 import { rankSnapshotsRoutes } from './rankSnapshots.js';
 import { keywordsRoutes } from './keywords.js';
 import { fixesRoutes } from './fixes.js';
+import { executionLoopRoutes } from './executionLoops.js';
 import { loopItemsRoutes } from './loopItems.js';
 import { aiRoutes } from './ai.js';
 import { syncRoutes } from './sync.js';
@@ -39,6 +40,7 @@ export async function registerRoutes(app) {
   await app.register(rankSnapshotsRoutes);
   await app.register(keywordsRoutes);
   await app.register(fixesRoutes);
+  await app.register(executionLoopRoutes);
   await app.register(loopItemsRoutes);
   await app.register(aiRoutes);
   await app.register(syncRoutes);

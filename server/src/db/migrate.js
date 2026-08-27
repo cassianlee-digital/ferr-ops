@@ -13,7 +13,7 @@ const SCHEMA_VERSION = '12';
 
 const ALL_TABLES = [
   'users', 'inquiries', 'inquiry_feedbacks', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
-  'rank_snapshots', 'kpi_targets', 'keywords', 'fixes', 'loop_items',
+  'rank_snapshots', 'kpi_targets', 'kpi_period_snapshots', 'kpi_config', 'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
   'sop_definitions', 'sop_completions', 'task_checkins', 'hermes_action_runs',
@@ -133,6 +133,63 @@ CREATE TABLE IF NOT EXISTS kpi_targets (
   unit       TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
+
+-- KPI 绩效重构：正式考核期的冻结快照。改目标/权重不影响已结算的历史期（§29）。
+-- rows_json 存当期逐指标 target/actual/data_status/score 的完整证据，score=null 表示「数据不足未评分」。
+CREATE TABLE IF NOT EXISTS kpi_period_snapshots (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  period_type  TEXT NOT NULL,                 -- 'quarter' | 'month'
+  period_key   TEXT NOT NULL,                 -- '2026-Q2' | '2026-08'
+  owner        TEXT NOT NULL,                 -- 'company' | 'seo' | 'sem' | 'total'
+  score        REAL,                          -- null = 可评分覆盖率不足，未出总分
+  coverage     REAL,                          -- 可评分权重占比 0~1
+  confidence   REAL,                          -- 数据可信度 0~1
+  gradable     INTEGER NOT NULL DEFAULT 0,    -- 覆盖率是否达到出分地板
+  rows_json    TEXT,                          -- 冻结的逐指标证据
+  note         TEXT,
+  settled_by   INTEGER REFERENCES users(id),
+  settled_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_kpi_snap_key ON kpi_period_snapshots(period_type, period_key, owner);
+
+-- KPI 全局参数（出分地板、评分上限、Lead 权重、考核周期等），KV 存储、可在设置页改。
+CREATE TABLE IF NOT EXISTS kpi_config (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+-- Phase 5A：SEO/SEM 运营问题闭环（Problem→Analysis→Action→Verification）。Execution KPI 的真实数据源。
+-- 考核「有效问题是否被完整解决并验证」，非任务数量。可 source_type/source_id 溯源到 fixes/诊断（复用诊断→整改管线）。
+CREATE TABLE IF NOT EXISTS execution_loops (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel       TEXT NOT NULL CHECK (channel IN ('seo','sem','shared')),
+  owner         TEXT,
+  owner_id      INTEGER REFERENCES users(id),
+  problem       TEXT NOT NULL,
+  analysis      TEXT,
+  action        TEXT,
+  impact_level  TEXT CHECK (impact_level IN ('HIGH','MEDIUM','LOW')),
+  status        TEXT NOT NULL DEFAULT 'OPEN'
+                CHECK (status IN ('OPEN','IN_PROGRESS','IMPLEMENTED','VERIFYING','VERIFIED','FAILED','CANCELLED')),
+  verification_method       TEXT,
+  verification_result       TEXT CHECK (verification_result IN ('POSITIVE','NEUTRAL','NEGATIVE')),
+  verification_result_text  TEXT,
+  verified      INTEGER NOT NULL DEFAULT 0,
+  related_metric TEXT,
+  before_value  REAL,
+  after_value   REAL,
+  cancel_reason TEXT,
+  exclude_from_assessment INTEGER NOT NULL DEFAULT 0,  -- 仅管理员/主管确认后可置 1，排除出分母（防刷）
+  source_type   TEXT,                                  -- 'fix' | 'diagnostic' | 'manual'
+  source_id     INTEGER,
+  created_by    INTEGER REFERENCES users(id),
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  implemented_at      TEXT,
+  verification_due_at TEXT,   -- 到期才进入当周期 Eligible（未到期=PENDING，不扣分）
+  verified_at         TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_execution_loops_channel ON execution_loops(channel);
+CREATE INDEX IF NOT EXISTS idx_execution_loops_due ON execution_loops(verification_due_at);
 
 CREATE TABLE IF NOT EXISTS keywords (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -625,6 +682,26 @@ export function migrate() {
   ensureColumns('hermes_action_runs', [
     ['idempotency_key', 'TEXT'], ['attempt_count', 'INTEGER NOT NULL DEFAULT 0'],
   ]);
+  // Phase 5C 考核期冻结：快照补 状态/参考分/区间（旧库幂等加列）
+  ensureColumns('kpi_period_snapshots', [
+    ['status', 'TEXT'], ['provisional_score', 'REAL'],
+    ['range_start', 'TEXT'], ['range_end', 'TEXT'],
+  ]);
+  // KPI 绩效重构：三级分层 + 数据状态 + 目标模式（旧库幂等加列，老行由 classifyKpiDefaults 分类）
+  ensureColumns('kpi_targets', [
+    ['category', 'TEXT'],                        // 评分角色：performance|diagnostic|summary
+    ['perf_group', 'TEXT'],                       // 绩效分组：business|visibility|asset|execution|experiment（仅 performance）
+    ['level', 'INTEGER NOT NULL DEFAULT 1'],     // 1=绩效 2=增长/资产 3=诊断（保留，兼容）
+    ['target_type', 'TEXT'],                     // higher|lower|improvement|range|absolute
+    ['baseline', 'REAL'],                        // improvement 模式基线
+    ['target_high', 'REAL'],                     // range 模式上界
+    ['scorable', 'INTEGER NOT NULL DEFAULT 1'],  // 是否进绩效评分（诊断/汇总=0；由 category 派生）
+    ['data_status', 'TEXT'],                     // VALID|NOT_APPLICABLE|MISSING_DATA|INSUFFICIENT_DATA|PENDING|TRACKING_ERROR
+    ['confidence', 'REAL'],
+    ['sample_size', 'INTEGER'],
+    ['min_sample', 'INTEGER'],
+    ['attribution_source', 'TEXT'],               // 预留：SEO/SEM Lead 归因来源（当前空）
+  ]);
   // 索引：旧库 db.exec(SCHEMA) 已建表，索引语句 IF NOT EXISTS 幂等，重复 exec 无害
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_state_kind ON loop_items(state, kind)'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_loop_items_fix ON loop_items(fix_id)'); } catch (e) {}
@@ -641,6 +718,14 @@ export function migrate() {
   // 只跑一次（meta 打标），否则用户事后手动清空开始日会被下次启动重新填回来。
   try { backfillTaskStartDates(); } catch (e) {}
   try { backfillInquiryFeedbacks(); } catch (e) {}
+
+  // KPI 绩效重构：新行补分类（category 为空才写）；一次性把旧方案(business/execution…)重映射到
+  // 新评分角色(performance/diagnostic/summary)+绩效分组；配置键重命名 + 补默认。
+  try { classifyKpiDefaults(); } catch (e) {}
+  try { remapKpiSchemeV2(); } catch (e) {}
+  try { ensurePerformanceGroupsV3(); } catch (e) {}
+  try { migrateKpiConfigKeys(); } catch (e) {}
+  try { seedKpiConfigDefaults(); } catch (e) {}
 
   db.prepare(
     `INSERT INTO meta (key,value) VALUES ('schema_version',?)
@@ -677,6 +762,129 @@ function backfillInquiryFeedbacks() {
       WHERE tracking_feedback IS NOT NULL AND TRIM(tracking_feedback) <> ''`
   ).run();
   db.prepare("INSERT INTO meta (key,value) VALUES ('backfill_inquiry_feedbacks','1')").run();
+}
+
+// KPI 评分角色 + 绩效分组（文档点8/6）。category=评分角色(performance/diagnostic/summary)，
+// perf_group=绩效分组(仅 performance)。scorable 由 category 派生：仅 performance=1。
+// 说明:遵循文档「不奖励把报表做漂亮」——除 A级询盘/有效询盘成本/闭环执行度(performance)外,
+// 现有 SEO/SEM 指标一律为 diagnostic;询盘总量为 summary(仅展示不评分,避免与渠道拆分后的 Lead 重复计分)。
+const KPI_CLASSIFY = {
+  // 旧共享指标一律 summary（仅展示，不计分）：渠道 Lead(Volume+Quality) 与 SEM CPVI 已取代它们，
+  // 旧「闭环执行度」是数量式 KPI（本次重构要避免的东西）。防 Lead 重复计分（点7/8/12）。
+  'total|询盘总量':       { category: 'summary', perf_group: null, scorable: 0 },
+  'total|A级询盘数':      { category: 'summary', perf_group: null, scorable: 0 },
+  'total|有效询盘成本':   { category: 'summary', perf_group: null, scorable: 0 },
+  'total|闭环执行度':     { category: 'summary', perf_group: null, scorable: 0 },
+  'seo|自然流量环比':     { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'seo|核心词 Top10 占比':{ category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'seo|关键词覆盖/长尾':  { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'seo|新增收录页面':     { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'seo|跳出率':           { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'seo|页面停留时长':     { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'sem|CPC':              { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'sem|CTR':              { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'sem|质量分':           { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'sem|ROAS':             { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'sem|转化次数':         { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+  'sem|每次转化费用':     { category: 'diagnostic',  perf_group: null,        scorable: 0 },
+};
+// 新行补分类（category 为空才写），target_type 由 mode 推导。已分类的行不动（自愈 + 不覆盖）。
+export function classifyKpiDefaults() {
+  const rows = db.prepare('SELECT id, grp, name, mode, category FROM kpi_targets').all();
+  const upd = db.prepare(
+    'UPDATE kpi_targets SET category=?, perf_group=?, scorable=?, target_type=?, data_status=COALESCE(data_status,?) WHERE id=?'
+  );
+  for (const r of rows) {
+    if (r.category) continue;
+    const c = KPI_CLASSIFY[`${r.grp}|${r.name}`] || { category: 'performance', perf_group: r.grp === 'total' ? 'business' : r.grp, scorable: 1 };
+    upd.run(c.category, c.perf_group, c.scorable, r.mode === 'i' ? 'lower' : 'higher', 'VALID', r.id);
+  }
+}
+// 一次性重映射：把旧方案(category=business/execution/…)迁到新评分角色+绩效分组。meta 打标只跑一次。
+function remapKpiSchemeV2() {
+  const done = db.prepare("SELECT value FROM meta WHERE key='kpi_scheme_v2'").get();
+  if (done) return;
+  const upd = db.prepare('UPDATE kpi_targets SET category=?, perf_group=?, scorable=? WHERE grp=? AND name=?');
+  for (const [key, c] of Object.entries(KPI_CLASSIFY)) {
+    const [grp, name] = key.split('|');
+    upd.run(c.category, c.perf_group, c.scorable, grp, name);
+  }
+  db.prepare("INSERT OR IGNORE INTO meta (key,value) VALUES ('kpi_scheme_v2','1')").run();
+}
+
+// Phase 4B Performance Groups（真实数据接入）。扁平权重 = 组权重 × 组内权重（引擎按 grp 内 metric.weight
+// 加权，故直接扁平化即可精确复现两级权重，且 MISSING 数据拉低覆盖率而非消失）。
+// data_status:VALID 的三类由 deriveRangeRows/recomputeActuals 按渠道归因实时算；其余 MISSING/NOT_APPLICABLE 占位，绝不 mock。
+const PERF_GROUP_METRICS = [
+  // grp, name, weight(扁平), target, mode, unit, perf_group, data_status, sort_order
+  ['seo', 'SEO 有效询盘数量', 24, 15, 'r', '封', 'business',   'VALID',          20],
+  ['seo', 'SEO 询盘质量指数', 16, 0.5, 'r', '',  'business',   'VALID',          21],
+  ['seo', '加权商业词可见度', 12, 100, 'r', '',  'visibility',  'MISSING_DATA',   22],
+  ['seo', '高意图词可见度',   9,  100, 'r', '',  'visibility',  'MISSING_DATA',   23],
+  ['seo', 'GEO/AI 可见度',    9,  100, 'r', '',  'visibility',  'NOT_APPLICABLE', 24],
+  ['seo', '有效页面率',       15, 60,  'r', '%', 'asset',       'MISSING_DATA',   25],
+  ['seo', 'SEO 优化验证闭环', 10, 100, 'r', '%', 'execution',   'MISSING_DATA',   26],
+  ['seo', 'SEO 实验学习闭环', 5,  100, 'r', '%', 'experiment',  'MISSING_DATA',   27],
+  ['sem', 'SEM 有效询盘数量', 24, 15, 'r', '封', 'business',   'VALID',          20],
+  ['sem', 'SEM 询盘质量指数', 16, 0.5, 'r', '',  'business',   'VALID',          21],
+  ['sem', '每有效询盘成本',   25, 2000,'i', '¥', 'efficiency',  'VALID',          22],
+  ['sem', '无效流量消耗率',   15, 15,  'i', '%', 'quality',     'MISSING_DATA',   23],
+  ['sem', 'SEM 优化验证闭环', 10, 100, 'r', '%', 'execution',   'MISSING_DATA',   24],
+  ['sem', 'SEM 实验学习闭环', 10, 100, 'r', '%', 'experiment',  'MISSING_DATA',   25],
+];
+// 幂等插入新绩效指标 + 把旧共享指标降级为 summary（防 Lead 重复计分，点7/8/12）。只跑一次（meta 打标）。
+export function ensurePerformanceGroupsV3() {
+  const done = db.prepare("SELECT value FROM meta WHERE key='kpi_perf_groups_v3'").get();
+  if (done) return;
+  // 空表时不跑（不设 flag）：新库由 seed 先插基础 16 行、再调本函数，避免抢在 seed 的 COUNT==0 判断前污染。
+  if (!db.prepare('SELECT 1 FROM kpi_targets LIMIT 1').get()) return;
+  const exists = db.prepare('SELECT id FROM kpi_targets WHERE grp=? AND name=?');
+  const ins = db.prepare(
+    `INSERT INTO kpi_targets (grp, name, weight, target, actual, mode, unit, sort_order, category, perf_group, scorable, target_type, data_status)
+     VALUES (?,?,?,?,0,?,?,?, 'performance', ?, 1, ?, ?)`
+  );
+  for (const [grp, name, weight, target, mode, unit, pg, ds, sort] of PERF_GROUP_METRICS) {
+    if (exists.get(grp, name)) continue;
+    ins.run(grp, name, weight, target, mode, unit, sort, pg, mode === 'i' ? 'lower' : 'higher', ds);
+  }
+  // 旧共享绩效指标 → summary（SEM CPVI/渠道 Lead 已取代；旧「闭环执行度」是数量式 KPI，本次重构要避免的东西）
+  const toSummary = db.prepare("UPDATE kpi_targets SET category='summary', scorable=0 WHERE grp='total' AND name=?");
+  for (const n of ['有效询盘成本', 'A级询盘数', '闭环执行度', '询盘总量']) toSummary.run(n);
+  db.prepare("INSERT OR IGNORE INTO meta (key,value) VALUES ('kpi_perf_groups_v3','1')").run();
+}
+
+// KPI 全局默认参数（仅缺失时写）。命名严格：min_coverage_to_grade=允许正式评分的最低覆盖率；
+// metric_score_cap=单指标达成率上限；final_score_cap=最终分上限。
+const KPI_CONFIG_DEFAULTS = {
+  min_coverage_to_grade: '0.6',
+  metric_score_cap: '1.0',
+  final_score_cap: '1.0',
+  lead_weight_a: '3',
+  lead_weight_b: '1',
+  lead_weight_c: '0',
+  lead_quality_min_sample: '3',   // Lead Quality Index 最小样本；不足→INSUFFICIENT_DATA
+  block_total_required: '0',      // 公司共享块当前无绩效 KPI，非必需（不触发 CONFIG_INCOMPLETE；点9）
+  exec_impact_high: '3',          // Execution 影响权重：HIGH
+  exec_impact_medium: '2',        // MEDIUM
+  exec_impact_low: '1',           // LOW
+  seo_period: 'quarter',
+  sem_period: 'month',
+};
+// 配置键重命名迁移：score_floor→min_coverage_to_grade、score_cap→metric_score_cap（值搬过去，删旧键）。
+function migrateKpiConfigKeys() {
+  const get = (k) => db.prepare('SELECT value FROM kpi_config WHERE key=?').get(k);
+  const rename = (oldK, newK) => {
+    const o = get(oldK);
+    if (!o) return;
+    if (!get(newK)) db.prepare('INSERT INTO kpi_config (key, value) VALUES (?, ?)').run(newK, o.value);
+    db.prepare('DELETE FROM kpi_config WHERE key=?').run(oldK);
+  };
+  rename('score_floor', 'min_coverage_to_grade');
+  rename('score_cap', 'metric_score_cap');
+}
+function seedKpiConfigDefaults() {
+  const ins = db.prepare('INSERT OR IGNORE INTO kpi_config (key, value) VALUES (?, ?)');
+  for (const [k, v] of Object.entries(KPI_CONFIG_DEFAULTS)) ins.run(k, v);
 }
 
 // 把旧「年-月-第几周」周报键改写成「本周周一日期 YYYY-MM-DD」。幂等：日期键/月报键都不匹配 legacy 正则。

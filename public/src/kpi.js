@@ -45,7 +45,11 @@ function syncKpiInputs(){ document.querySelectorAll('#panel-settings [data-kpi]'
 let metricsRequestSequence=0;
 export async function loadMetrics(){
   const requestId=++metricsRequestSequence, revision=getRangeRevision('kpi');
-  try{ const {rows}=await API.get(withRange('/api/kpi-targets','kpi')); if(requestId!==metricsRequestSequence||revision!==getRangeRevision('kpi'))return false; applyKpiServer(rows); syncKpiInputs(); return true; }
+  try{ const res=await API.get(withRange('/api/kpi-targets','kpi')); if(requestId!==metricsRequestSequence||revision!==getRangeRevision('kpi'))return false;
+    applyKpiServer(res.rows);
+    // v2 评分为后端权威：原始行(含三级分层/数据状态) + assessment(覆盖率/是否可评分/分数) 供 kpi-view 渲染
+    window._kpiRows=res.rows||[]; window._kpiAssessment=res.assessment||null;
+    syncKpiInputs(); return true; }
   catch(e){ if(e&&e.message!=='unauthorized')toast('KPI 加载失败：'+(e.message||'未知错误')); }
   return false;
 }
