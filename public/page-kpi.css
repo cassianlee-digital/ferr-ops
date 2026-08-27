@@ -350,3 +350,28 @@
   .ledger-target{grid-template-columns:1fr 1fr;gap:6px}
   .ledger-target .ledger-progress{grid-column:1 / -1}
 }
+
+/* ================= KPI v2 结构豁免（2026-08-27 修复排版错乱）=================
+   本文件里 `#totalRows>div / #seoRows>div / #semRows>div` 有好几条老规则（多轮 CSS pass 累积），
+   它们是给**旧的扁平指标行**写的：一行 = 名称 + 数值，所以强制 `display:grid` + 两列
+   `minmax(0,1fr) 120px`。
+
+   KPI v2 把结构换成了「分组容器 `.kpi-pg` 内含若干指标行」+ 分段标题 `.kpi-sec-label`。
+   这些容器被上面那些规则劫持后，组标题占掉第 1 列、**第一个指标被塞进 120px 那一列**，
+   于是「SEO 有效询盘数量」在 21px 宽里一个字换一行 —— 就是合并后看到的排版错乱。
+
+   这里只做一件事：把 v2 的两个容器还原成块级，让 `.kpi-pg` 内部本来就是 flex 的指标行
+   （`.csp-s-1b8e8a2860`，名称 `flex:1` + 进度条 64px + 数值）自己排。
+   选择器带 class，比 `#xxxRows > div` 的 type 选择器特异性更高，故能压过它们的 !important。
+   旧规则不删：如果哪天 assessment 取不到、renderKPI 回退到旧扁平行，那套布局还得靠它们。 */
+#totalRows > .kpi-pg,   #seoRows > .kpi-pg,   #semRows > .kpi-pg,
+#totalRows > .kpi-sec-label, #seoRows > .kpi-sec-label, #semRows > .kpi-sec-label {
+  display: block !important;
+  grid-template-columns: none !important;
+  gap: 0 !important;
+}
+/* 分组容器不该有底边框/内边距——边框是每条指标行自己画的，容器再画一条就成了双线 */
+#totalRows > .kpi-pg, #seoRows > .kpi-pg, #semRows > .kpi-pg {
+  padding: 0 !important;
+  border-bottom: 0 !important;
+}
