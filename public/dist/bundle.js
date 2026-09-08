@@ -5,7 +5,7 @@
       __defProp(target, name, { get: all[name], enumerable: true });
   };
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/neg-ads.js
+  // public/src/neg-ads.js
   var neg_ads_exports = {};
   __export(neg_ads_exports, {
     adRowHtml: () => adRowHtml,
@@ -14,7 +14,7 @@
     negRowHtml: () => negRowHtml
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/ui-kit.js
+  // public/src/ui-kit.js
   var ui_kit_exports = {};
   __export(ui_kit_exports, {
     closeModal: () => closeModal,
@@ -149,7 +149,7 @@
     showToast();
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/keywords.js
+  // public/src/keywords.js
   var keywords_exports = {};
   __export(keywords_exports, {
     activeCat: () => activeCat,
@@ -166,14 +166,14 @@
     renderSparklines: () => renderSparklines
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/tagselect.js
+  // public/src/tagselect.js
   var tagselect_exports = {};
   __export(tagselect_exports, {
     OPT: () => OPT,
     persistTagChange: () => persistTagChange
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/timerange.js
+  // public/src/timerange.js
   var timerange_exports = {};
   __export(timerange_exports, {
     activeScope: () => activeScope,
@@ -467,7 +467,7 @@
     toast2(SCOPE_LABEL[scope] + " \u5DF2\u5E94\u7528\uFF1A" + cur.range.period_label);
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/ai.js
+  // public/src/ai.js
   var apiUnavailableMsg = '<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF1A\u8BF7\u68C0\u67E5\u540E\u53F0 AI Provider\u3001API Key \u4E0E\u6A21\u578B\u914D\u7F6E\uFF0C\u6216\u7A0D\u540E\u91CD\u8BD5\u3002</div>';
   var aiAnalyses = /* @__PURE__ */ new Map();
   var activeAi = null;
@@ -850,7 +850,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/charts.js
+  // public/src/charts.js
   window.DEMO_MODE = window.DEMO_MODE || false;
   var DEMO = {
     inqTrend: { a: [2, 1, 2, 1, 2, 1, 2, 1], total: [6, 5, 7, 8, 6, 7, 8, 8] },
@@ -2154,7 +2154,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/inquiry-globe.js
+  // public/src/inquiry-globe.js
   var inquiry_globe_exports = {};
   __export(inquiry_globe_exports, {
     renderGlobe: () => renderGlobe
@@ -2659,7 +2659,208 @@
     }, true);
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/inquiries.js
+  // public/src/editable.js
+  function validateEditableValue(raw, type, opts) {
+    opts = opts || {};
+    if (type === "number") {
+      const s = String(raw == null ? "" : raw).trim();
+      if (s === "") return { ok: false, msg: opts.emptyMsg || "KPI \u76EE\u6807\u503C\u4E0D\u80FD\u4E3A\u7A7A" };
+      if (!/^\d+(\.\d+)?$/.test(s)) return { ok: false, msg: "\u8BF7\u8F93\u5165\u6709\u6548\u6570\u5B57" };
+      const value2 = Number(s);
+      if (!Number.isFinite(value2)) return { ok: false, msg: "\u8BF7\u8F93\u5165\u6709\u6548\u6570\u5B57" };
+      if (opts.min != null && value2 < opts.min) return { ok: false, msg: opts.minMsg || "KPI \u76EE\u6807\u503C\u4E0D\u80FD\u4E3A\u8D1F\u6570" };
+      return { ok: true, value: value2 };
+    }
+    const value = String(raw == null ? "" : raw).trim();
+    if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
+    return { ok: true, value };
+  }
+  function setSavingState(el, state2) {
+    if (!el) return;
+    el.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
+    if (state2 === "saving") el.classList.add("kpi-saving");
+    else if (state2 === "ok") {
+      el.classList.add("kpi-ok");
+      setTimeout(() => el.classList.remove("kpi-ok"), 1200);
+    } else if (state2 === "error") {
+      el.classList.add("kpi-error");
+      setTimeout(() => el.classList.remove("kpi-error"), 2e3);
+    }
+  }
+  function rollbackEditable(el, oldValue) {
+    if (el) el.textContent = oldValue == null ? "" : String(oldValue);
+  }
+  function showSaveError(el, msg) {
+    setSavingState(el, "error");
+    toast2(msg);
+  }
+  function placeCaretEnd(el) {
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const selection = getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } catch (e) {
+    }
+  }
+
+  // public/src/table-editor.js
+  var EDITABLE_CELL = "td[contenteditable][data-field]";
+  var DATE_INPUT = "input.cell-date[data-field]";
+  var tableEditorBound = false;
+  function closest(target, selector) {
+    return target && target.closest ? target.closest(selector) : null;
+  }
+  function markCell(cell2, state2) {
+    if (cell2 && cell2.classList) setSavingState(cell2, state2);
+  }
+  function announceCellSaved(detail) {
+    if (typeof document === "undefined" || !document.dispatchEvent || typeof CustomEvent !== "function") return;
+    try {
+      document.dispatchEvent(new CustomEvent("cellsaved", { detail }));
+    } catch (error) {
+    }
+  }
+  function commitPendingCellEdit(root) {
+    if (typeof document === "undefined") return;
+    const active = document.activeElement;
+    if (!active || !root || !root.contains || !root.contains(active)) return;
+    if (!closest(active, EDITABLE_CELL)) return;
+    active.blur();
+  }
+  function setCellBusy(cell2, busy, previousEditable) {
+    if (busy) {
+      cell2.setAttribute("contenteditable", "false");
+      cell2.setAttribute("aria-busy", "true");
+      return;
+    }
+    if (previousEditable == null) cell2.removeAttribute("contenteditable");
+    else cell2.setAttribute("contenteditable", previousEditable);
+    cell2.removeAttribute("aria-busy");
+  }
+  function setDateInputsBusy(inputs, busy) {
+    inputs.forEach((input) => {
+      if (busy) {
+        input._tableEditorWasDisabled = input.disabled;
+        input.disabled = true;
+        input.setAttribute("aria-busy", "true");
+      } else {
+        input.disabled = Boolean(input._tableEditorWasDisabled);
+        delete input._tableEditorWasDisabled;
+        input.removeAttribute("aria-busy");
+      }
+    });
+  }
+  function dateFieldValue(inputs) {
+    return inputs.length === 2 ? (inputs[0].value || "") + "~" + (inputs[1].value || "") : inputs[0].value;
+  }
+  function handleFocusIn(event) {
+    const cell2 = closest(event.target, EDITABLE_CELL);
+    if (cell2) {
+      cell2._old = cell2.innerText;
+      return;
+    }
+    const input = closest(event.target, DATE_INPUT);
+    if (input) input._oldValue = input.value;
+  }
+  async function handleDateChange(event) {
+    const input = closest(event.target, DATE_INPUT);
+    if (!input) return;
+    const row = input.closest("tr");
+    const endpoint = row && row.dataset.ep;
+    const id = row && row.dataset.id;
+    if (!endpoint || !id) return;
+    const container = input.closest("td");
+    const inputs = [...container.querySelectorAll("input.cell-date")];
+    const oldValue = input._oldValue != null ? input._oldValue : input.defaultValue;
+    setDateInputsBusy(inputs, true);
+    try {
+      await API.patch(endpoint + "/" + id, { [input.dataset.field]: dateFieldValue(inputs) });
+      inputs.forEach((item) => {
+        item._oldValue = item.value;
+        item.defaultValue = item.value;
+      });
+      toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93");
+    } catch (error) {
+      input.value = oldValue || "";
+      toast2(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+    } finally {
+      setDateInputsBusy(inputs, false);
+    }
+  }
+  async function handleFocusOut(event) {
+    const cell2 = closest(event.target, EDITABLE_CELL);
+    if (!cell2) return;
+    const row = cell2.closest("tr");
+    const id = row && row.dataset.id;
+    const endpoint = row && row.dataset.ep;
+    if (!id || !endpoint) return;
+    const value = cell2.innerText.trim();
+    const oldValue = cell2._old != null ? cell2._old : cell2.innerText;
+    if (value === String(oldValue).trim()) return;
+    const previousEditable = cell2.getAttribute("contenteditable");
+    setCellBusy(cell2, true, previousEditable);
+    markCell(cell2, "saving");
+    try {
+      const response = await API.patch(endpoint + "/" + id, { [cell2.dataset.field]: value });
+      cell2._old = value;
+      markCell(cell2, "ok");
+      announceCellSaved({ ok: true, endpoint, id, field: cell2.dataset.field, value, item: response && response.item });
+    } catch (error) {
+      rollbackEditable(cell2, oldValue);
+      markCell(cell2, "error");
+      announceCellSaved({ ok: false, endpoint, id, field: cell2.dataset.field, value: String(oldValue == null ? "" : oldValue).trim() });
+      toast2(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+    } finally {
+      setCellBusy(cell2, false, previousEditable);
+    }
+  }
+  function handleKeyDown(event) {
+    const cell2 = closest(event.target, "td[contenteditable]");
+    if (!cell2) return;
+    const table = cell2.closest("table");
+    if (!table) return;
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const cells = [...table.querySelectorAll("td[contenteditable]")];
+      const current = cells.indexOf(cell2);
+      const next = cells[current + (event.shiftKey ? -1 : 1)];
+      if (next) {
+        cell2.blur();
+        next.focus();
+        placeCaretEnd(next);
+      }
+      return;
+    }
+    if (cell2.classList.contains("mkt-ans")) return;
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    const direction = event.key === "ArrowDown" ? "nextElementSibling" : "previousElementSibling";
+    const column = cell2.cellIndex;
+    let row = cell2.parentElement[direction];
+    while (row) {
+      const next = row.cells && row.cells[column];
+      if (next && next.isContentEditable) {
+        event.preventDefault();
+        cell2.blur();
+        next.focus();
+        placeCaretEnd(next);
+        return;
+      }
+      row = row[direction];
+    }
+  }
+  function bindTableEditor() {
+    if (tableEditorBound) return;
+    tableEditorBound = true;
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("change", handleDateChange);
+    document.addEventListener("focusout", handleFocusOut);
+    document.addEventListener("keydown", handleKeyDown);
+  }
+
+  // public/src/inquiries.js
   var REGION_BADGE = { "\u6B27\u6D32": "b-blue", "\u897F\u6B27": "b-blue", "\u5357\u6B27": "b-blue", "\u5317\u6B27": "b-blue", "\u4E2D\u4E1C\u6B27": "b-teal", "\u4E1C\u6B27/\u4FC4\u7F57\u65AF": "b-amber", "\u4FC4\u7F57\u65AF": "b-amber", "\u5317\u7F8E": "b-purple", "\u62C9\u7F8E": "b-red", "\u4E2D\u4E1C": "b-amber", "\u5317\u975E": "b-amber", "\u6492\u54C8\u62C9\u4EE5\u5357\u975E\u6D32": "b-gray", "\u5357\u4E9A": "b-teal", "\u4E1C\u5357\u4E9A": "b-red", "\u4E1C\u5357\u4E9A/\u5DF4\u897F": "b-red", "\u4E1C\u4E9A": "b-green", "\u4E2D\u4E9A": "b-gray", "\u5927\u6D0B\u6D32": "b-teal", "\u5176\u4ED6": "b-gray" };
   var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
   var PROD_BADGE = { "\u94F8\u9020": "b-amber", "\u953B\u9020": "b-red", "\u673A\u52A0\u5DE5": "b-blue", "\u9600\u95E8": "b-purple", "\u7BA1\u4EF6": "b-teal", "\u7535\u529B\u91D1\u5177": "b-green" };
@@ -2976,6 +3177,27 @@
       toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   });
+  document.addEventListener("cellsaved", (e) => {
+    const d = e.detail || {};
+    if (d.endpoint !== "/api/inquiries") return;
+    const it = (window._inqCache || []).find((x) => String(x.id) === String(d.id));
+    if (!it) return;
+    if (d.ok === false) {
+      it[d.field] = d.value;
+      return;
+    }
+    if (d.item && typeof d.item === "object") Object.assign(it, d.item);
+    else it[d.field] = d.value;
+  });
+  function absorbEditedCells(tb) {
+    tb.querySelectorAll("tr[data-id] td[contenteditable][data-field]").forEach((td2) => {
+      const now = td2.innerText.trim();
+      if (td2._old == null || String(td2._old).trim() === now) return;
+      const tr = td2.closest("tr");
+      const it = (window._inqCache || []).find((x) => String(x.id) === String(tr.dataset.id));
+      if (it) it[td2.dataset.field] = now;
+    });
+  }
   function renderInqList() {
     renderInqFilterRow();
     renderInqTable();
@@ -2983,6 +3205,8 @@
   function renderInqTable() {
     const tb = document.getElementById("tb-inq");
     if (!tb) return;
+    commitPendingCellEdit(tb);
+    absorbEditedCells(tb);
     syncClearBadge();
     const total = (window._inqCache || []).filter((r) => r && r.date).length;
     const rows2 = filteredInquiries();
@@ -3116,7 +3340,7 @@
     if (e.detail && e.detail.scope === "inquiry") loadInquiries();
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/tagselect.js
+  // public/src/tagselect.js
   var OPT = {
     channel: [["SEO\u81EA\u7136", "b-blue"], ["SEM\u4ED8\u8D39", "b-purple"], ["\u76F4\u63A5", "b-teal"], ["\u5176\u4ED6", "b-gray"]],
     product: [["\u94F8\u9020", "b-amber"], ["\u953B\u9020", "b-red"], ["\u673A\u52A0\u5DE5", "b-blue"], ["\u9600\u95E8", "b-purple"], ["\u7BA1\u4EF6", "b-teal"], ["\u7535\u529B\u91D1\u5177", "b-green"]],
@@ -3231,54 +3455,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/editable.js
-  function validateEditableValue(raw, type, opts) {
-    opts = opts || {};
-    if (type === "number") {
-      const s = String(raw == null ? "" : raw).trim();
-      if (s === "") return { ok: false, msg: opts.emptyMsg || "KPI \u76EE\u6807\u503C\u4E0D\u80FD\u4E3A\u7A7A" };
-      if (!/^\d+(\.\d+)?$/.test(s)) return { ok: false, msg: "\u8BF7\u8F93\u5165\u6709\u6548\u6570\u5B57" };
-      const value2 = Number(s);
-      if (!Number.isFinite(value2)) return { ok: false, msg: "\u8BF7\u8F93\u5165\u6709\u6548\u6570\u5B57" };
-      if (opts.min != null && value2 < opts.min) return { ok: false, msg: opts.minMsg || "KPI \u76EE\u6807\u503C\u4E0D\u80FD\u4E3A\u8D1F\u6570" };
-      return { ok: true, value: value2 };
-    }
-    const value = String(raw == null ? "" : raw).trim();
-    if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
-    return { ok: true, value };
-  }
-  function setSavingState(el, state2) {
-    if (!el) return;
-    el.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
-    if (state2 === "saving") el.classList.add("kpi-saving");
-    else if (state2 === "ok") {
-      el.classList.add("kpi-ok");
-      setTimeout(() => el.classList.remove("kpi-ok"), 1200);
-    } else if (state2 === "error") {
-      el.classList.add("kpi-error");
-      setTimeout(() => el.classList.remove("kpi-error"), 2e3);
-    }
-  }
-  function rollbackEditable(el, oldValue) {
-    if (el) el.textContent = oldValue == null ? "" : String(oldValue);
-  }
-  function showSaveError(el, msg) {
-    setSavingState(el, "error");
-    toast2(msg);
-  }
-  function placeCaretEnd(el) {
-    try {
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.collapse(false);
-      const selection = getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } catch (e) {
-    }
-  }
-
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/keywords.js
+  // public/src/keywords.js
   var KW_TB = { seo: "tb-kw-seo", sem: "tb-kw-sem", high: "tb-kw-high", customer: "tb-kw-cust" };
   var KW_PAGE_OPTS = [10, 20, 50, 100, 200, 300];
   var _kwPage = { seo: 0, sem: 0, high: 0, customer: 0 };
@@ -3614,7 +3791,7 @@
     });
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/sop.js
+  // public/src/sop.js
   var sop_exports = {};
   __export(sop_exports, {
     buildSopOverdueList: () => buildSopOverdueList,
@@ -3882,7 +4059,7 @@
     dot.classList.toggle("is-hidden", !(overdue || urgent));
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/closed-loop.js
+  // public/src/closed-loop.js
   var _2 = (n) => String(n).padStart(2, "0");
   var today = () => {
     const d = /* @__PURE__ */ new Date();
@@ -4907,7 +5084,7 @@
   }
   injectAiActions();
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/neg-ads.js
+  // public/src/neg-ads.js
   var NEGMATCH_BADGE = { "\u7CBE\u786E": "b-green", "\u8BCD\u7EC4": "b-blue", "\u5E7F\u6CDB": "b-amber" };
   var NEGSTATUS_BADGE = { "\u751F\u6548": "b-green", "\u89C2\u5BDF": "b-amber", "\u5DF2\u79FB\u9664": "b-gray" };
   var ADSTATUS_BADGE = { "\u91C7\u7528\u4E2D": "b-green", "\u6D4B\u8BD5\u4E2D": "b-amber", "\u5DF2\u5F03\u7528": "b-gray" };
@@ -4958,7 +5135,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/ga4-view.js
+  // public/src/ga4-view.js
   var ga4_view_exports = {};
   __export(ga4_view_exports, {
     loadGa4: () => loadGa42
@@ -5152,7 +5329,7 @@
     if (e.detail && e.detail.scope === "data") loadGa42();
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/market-brain.js
+  // public/src/market-brain.js
   var market_brain_exports = {};
   __export(market_brain_exports, {
     loadBrain: () => loadBrain,
@@ -5263,14 +5440,14 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/kpi-view.js
+  // public/src/kpi-view.js
   var kpi_view_exports = {};
   __export(kpi_view_exports, {
     loadOverview: () => loadOverview,
     renderKPI: () => renderKPI2
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/kpi.js
+  // public/src/kpi.js
   var TOTAL = [{ n: "\u8BE2\u76D8\u603B\u91CF", w: 25, t: 60, a: 0, m: "r", u: "\u5C01" }, { n: "A\u7EA7\u8BE2\u76D8\u6570", w: 35, t: 10, a: 0, m: "r", u: "\u5C01" }, { n: "\u6709\u6548\u8BE2\u76D8\u6210\u672C", w: 25, t: 2e3, a: 0, m: "i", u: "\xA5" }, { n: "\u95ED\u73AF\u6267\u884C\u5EA6", w: 15, t: 5, a: 0, m: "r", u: "\u9879" }];
   var SEO = [{ n: "\u81EA\u7136\u6D41\u91CF\u73AF\u6BD4", w: 25, t: 10, a: 0, m: "r", u: "%" }, { n: "\u6838\u5FC3\u8BCD Top10 \u5360\u6BD4", w: 25, t: 40, a: 0, m: "r", u: "%" }, { n: "\u5173\u952E\u8BCD\u8986\u76D6/\u957F\u5C3E", w: 15, t: 500, a: 0, m: "r", u: "\u8BCD" }, { n: "\u65B0\u589E\u6536\u5F55\u9875\u9762", w: 15, t: 20, a: 0, m: "r", u: "\u9875" }, { n: "\u8DF3\u51FA\u7387", w: 10, t: 55, a: 0, m: "i", u: "%" }, { n: "\u9875\u9762\u505C\u7559\u65F6\u957F", w: 10, t: 150, a: 0, m: "r", u: "s" }];
   var SEM = [{ n: "CPC", w: 15, t: 4, a: 0, m: "i", u: "\xA5" }, { n: "CTR", w: 15, t: 3.5, a: 0, m: "r", u: "%" }, { n: "\u8D28\u91CF\u5206", w: 15, t: 7.5, a: 0, m: "r", u: "" }, { n: "ROAS", w: 20, t: 3.5, a: 0, m: "r", u: "x" }, { n: "\u8F6C\u5316\u6B21\u6570", w: 15, t: 60, a: 0, m: "r", u: "\u6B21" }, { n: "\u6BCF\u6B21\u8F6C\u5316\u8D39\u7528", w: 20, t: 300, a: 0, m: "i", u: "\xA5" }];
@@ -5428,7 +5605,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/execution.js
+  // public/src/execution.js
   async function refreshAfterWrite() {
     await loadMetrics();
     if (window.renderKPI) window.renderKPI();
@@ -5542,7 +5719,7 @@
   });
   document.addEventListener("timerange", mountExecution);
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/kpi-periods.js
+  // public/src/kpi-periods.js
   var OWNERS = [
     { owner: "company", label: "\u516C\u53F8", type: "quarter" },
     { owner: "seo", label: "\u674E \xB7 SEO", type: "quarter" },
@@ -5622,7 +5799,7 @@
     }
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/ledger.js
+  // public/src/ledger.js
   var CARD_ID = "kpiLedger";
   var CELL_TEXT = {
     NOT_APPLICABLE: "N/A",
@@ -5822,7 +5999,7 @@
     loadLedger(true);
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/kpi-view.js
+  // public/src/kpi-view.js
   function grade(s) {
     if (s >= 90) return { t: "\u4F18\u79C0", c: "var(--green)", bg: "var(--green-soft)", i: "ti-trophy" };
     if (s >= 75) return { t: "\u5408\u683C", c: "var(--blue)", bg: "var(--blue-soft)", i: "ti-circle-check" };
@@ -6086,7 +6263,7 @@
     if (scope === activeScope()) loadOverview();
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/google-projects.js
+  // public/src/google-projects.js
   var google_projects_exports = {};
   __export(google_projects_exports, {
     backfillGoogle: () => backfillGoogle,
@@ -6243,7 +6420,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/archive.js
+  // public/src/archive.js
   var archive_exports = {};
   __export(archive_exports, {
     loadArchive: () => loadArchive2
@@ -6405,7 +6582,7 @@
     }
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/hermes-memory.js
+  // public/src/hermes-memory.js
   var hermes_memory_exports = {};
   __export(hermes_memory_exports, {
     loadHermesMemories: () => loadHermesMemories,
@@ -6633,7 +6810,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/plan-history.js
+  // public/src/plan-history.js
   var plan_history_exports = {};
   __export(plan_history_exports, {
     planDayIsToday: () => planDayIsToday,
@@ -6763,14 +6940,14 @@
   var _dayInput = document.getElementById("planday-input");
   if (_dayInput && !_dayInput.value) _dayInput.value = today2();
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/weekly-review.js
+  // public/src/weekly-review.js
   var weekly_review_exports = {};
   __export(weekly_review_exports, {
     renderMonthReview: () => renderMonthReview,
     renderReview: () => renderReview
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/sop-rate.js
+  // public/src/sop-rate.js
   var DEPTS2 = [["SEO", "\u674E", "b-blue"], ["SEM", "\u9648", "b-purple"], ["\u516C\u53F8", "\u516C\u53F8", "b-red"]];
   var FREQ_LABEL2 = { daily: "\u6BCF\u65E5", weekly: "\u6BCF\u5468", monthly: "\u6BCF\u6708" };
   function pct3(done, expected) {
@@ -6825,7 +7002,7 @@
     if (el) mountSopRate(el);
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/weekly-review.js
+  // public/src/weekly-review.js
   var RV_SECTIONS = [
     ["summary", "\u2460 \u672C\u5468\u5DE5\u4F5C\u603B\u7ED3", []],
     ["problems", "\u2461 \u9047\u5230\u7684\u95EE\u9898", ["\u6D4B\u8BD5", "\u91C7\u7EB3"]],
@@ -7099,7 +7276,7 @@
     rvSectionSave(t.closest(".rv-sec"));
   });
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/settings.js
+  // public/src/settings.js
   function bindSettings() {
     document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
       if (el.dataset.settingsBound === "1") return;
@@ -7184,139 +7361,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/table-editor.js
-  var EDITABLE_CELL = "td[contenteditable][data-field]";
-  var DATE_INPUT = "input.cell-date[data-field]";
-  var tableEditorBound = false;
-  function closest(target, selector) {
-    return target && target.closest ? target.closest(selector) : null;
-  }
-  function setCellBusy(cell2, busy, previousEditable) {
-    if (busy) {
-      cell2.setAttribute("contenteditable", "false");
-      cell2.setAttribute("aria-busy", "true");
-      return;
-    }
-    if (previousEditable == null) cell2.removeAttribute("contenteditable");
-    else cell2.setAttribute("contenteditable", previousEditable);
-    cell2.removeAttribute("aria-busy");
-  }
-  function setDateInputsBusy(inputs, busy) {
-    inputs.forEach((input) => {
-      if (busy) {
-        input._tableEditorWasDisabled = input.disabled;
-        input.disabled = true;
-        input.setAttribute("aria-busy", "true");
-      } else {
-        input.disabled = Boolean(input._tableEditorWasDisabled);
-        delete input._tableEditorWasDisabled;
-        input.removeAttribute("aria-busy");
-      }
-    });
-  }
-  function dateFieldValue(inputs) {
-    return inputs.length === 2 ? (inputs[0].value || "") + "~" + (inputs[1].value || "") : inputs[0].value;
-  }
-  function handleFocusIn(event) {
-    const cell2 = closest(event.target, EDITABLE_CELL);
-    if (cell2) {
-      cell2._old = cell2.innerText;
-      return;
-    }
-    const input = closest(event.target, DATE_INPUT);
-    if (input) input._oldValue = input.value;
-  }
-  async function handleDateChange(event) {
-    const input = closest(event.target, DATE_INPUT);
-    if (!input) return;
-    const row = input.closest("tr");
-    const endpoint = row && row.dataset.ep;
-    const id = row && row.dataset.id;
-    if (!endpoint || !id) return;
-    const container = input.closest("td");
-    const inputs = [...container.querySelectorAll("input.cell-date")];
-    const oldValue = input._oldValue != null ? input._oldValue : input.defaultValue;
-    setDateInputsBusy(inputs, true);
-    try {
-      await API.patch(endpoint + "/" + id, { [input.dataset.field]: dateFieldValue(inputs) });
-      inputs.forEach((item) => {
-        item._oldValue = item.value;
-        item.defaultValue = item.value;
-      });
-      toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93");
-    } catch (error) {
-      input.value = oldValue || "";
-      toast2(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
-    } finally {
-      setDateInputsBusy(inputs, false);
-    }
-  }
-  async function handleFocusOut(event) {
-    const cell2 = closest(event.target, EDITABLE_CELL);
-    if (!cell2) return;
-    const row = cell2.closest("tr");
-    const id = row && row.dataset.id;
-    const endpoint = row && row.dataset.ep;
-    if (!id || !endpoint) return;
-    const value = cell2.innerText.trim();
-    const oldValue = cell2._old != null ? cell2._old : cell2.innerText;
-    if (value === String(oldValue).trim()) return;
-    const previousEditable = cell2.getAttribute("contenteditable");
-    setCellBusy(cell2, true, previousEditable);
-    try {
-      await API.patch(endpoint + "/" + id, { [cell2.dataset.field]: value });
-      cell2._old = value;
-    } catch (error) {
-      rollbackEditable(cell2, oldValue);
-      toast2(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
-    } finally {
-      setCellBusy(cell2, false, previousEditable);
-    }
-  }
-  function handleKeyDown(event) {
-    const cell2 = closest(event.target, "td[contenteditable]");
-    if (!cell2) return;
-    const table = cell2.closest("table");
-    if (!table) return;
-    if (event.key === "Tab") {
-      event.preventDefault();
-      const cells = [...table.querySelectorAll("td[contenteditable]")];
-      const current = cells.indexOf(cell2);
-      const next = cells[current + (event.shiftKey ? -1 : 1)];
-      if (next) {
-        cell2.blur();
-        next.focus();
-        placeCaretEnd(next);
-      }
-      return;
-    }
-    if (cell2.classList.contains("mkt-ans")) return;
-    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-    const direction = event.key === "ArrowDown" ? "nextElementSibling" : "previousElementSibling";
-    const column = cell2.cellIndex;
-    let row = cell2.parentElement[direction];
-    while (row) {
-      const next = row.cells && row.cells[column];
-      if (next && next.isContentEditable) {
-        event.preventDefault();
-        cell2.blur();
-        next.focus();
-        placeCaretEnd(next);
-        return;
-      }
-      row = row[direction];
-    }
-  }
-  function bindTableEditor() {
-    if (tableEditorBound) return;
-    tableEditorBound = true;
-    document.addEventListener("focusin", handleFocusIn);
-    document.addEventListener("change", handleDateChange);
-    document.addEventListener("focusout", handleFocusOut);
-    document.addEventListener("keydown", handleKeyDown);
-  }
-
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/rank-snapshots.js
+  // public/src/rank-snapshots.js
   function renderRankTrend(snapshots) {
     if (!snapshots || snapshots.length < 2) return;
     const first = snapshots[0];
@@ -7364,7 +7409,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/risks.js
+  // public/src/risks.js
   var STATUS_LABELS = { fail: "\u5931\u8D25", unverified: "\u5F85\u9A8C\u8BC1", warn: "\u8B66\u544A", pass: "\u901A\u8FC7" };
   var SOURCE_LABELS = { production_live: "\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536", current_static: "\u5F53\u524D\u914D\u7F6E\u4E0E\u6570\u636E\u5E93" };
   var EVIDENCE_LABELS = {
@@ -7572,7 +7617,7 @@
     }
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/app.js
+  // public/src/app.js
   var app_exports = {};
   __export(app_exports, {
     chk: () => chk2,
@@ -8087,7 +8132,7 @@
     if (!can("sem")) document.querySelectorAll('[data-ui-action="add-keyword"][data-keyword-type="sem"]').forEach((b) => b.style.display = "none");
   }
 
-  // ../daily-plan-ui-improvements-8f6ac3/public/src/main.js
+  // public/src/main.js
   bindTableEditor();
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };

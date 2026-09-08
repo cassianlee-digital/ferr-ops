@@ -17,6 +17,7 @@ import { loadDashboardInq, loadKpiInqDonuts } from './charts.js';
 import { inlineConfirm } from './keywords.js';
 import { renderGlobe } from './inquiry-globe.js';
 import { getRangeRevision, withRange } from './timerange.js';
+import { commitPendingCellEdit } from './table-editor.js';
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
 const REGION_BADGE={'欧洲':'b-blue','西欧':'b-blue','南欧':'b-blue','北欧':'b-blue','中东欧':'b-teal','东欧/俄罗斯':'b-amber','俄罗斯':'b-amber','北美':'b-purple','拉美':'b-red','中东':'b-amber','北非':'b-amber','撒哈拉以南非洲':'b-gray','南亚':'b-teal','东南亚':'b-red','东南亚/巴西':'b-red','东亚':'b-green','中亚':'b-gray','大洋洲':'b-teal','其他':'b-gray'};
@@ -308,6 +309,34 @@ document.addEventListener('click',async e=>{
     toast('已删除 · 已归档到「归档」页');
   }catch(err){ toast(err&&err.status===403?'无权操作':'删除失败：'+(err.message||'请求失败')); }
 });
+/* ===== 可编辑单元格（客户编码 / 业务员）与行缓存的同步（2026-09-08）=====
+   老板反馈「客户编码后期补录后，有的直接就不显示」，根因是缓存不同步而不是没存进库：
+   表格每次重画都拿 window._inqCache 整行重渲，而 table-editor 存盘只改了 DOM、没回写缓存。
+   于是补完编码后只要发生一次重画（翻页 / 改筛选 / 加跟进反馈 / 切时间范围），
+   刚敲的编码就被旧缓存覆盖回空白——库里明明有，屏幕上没了。
+   两条一起补：① 存盘成功广播 cellsaved → 写回缓存；② 重画前先提交在编辑的格子、再把 DOM 已改值收回缓存。 */
+document.addEventListener('cellsaved',e=>{
+  const d=e.detail||{};
+  if(d.endpoint!=='/api/inquiries')return;
+  const it=(window._inqCache||[]).find(x=>String(x.id)===String(d.id));
+  if(!it)return;
+  if(d.ok===false){ it[d.field]=d.value; return; }            // 没存成：缓存跟着 DOM 一起滚回旧值
+  if(d.item&&typeof d.item==='object')Object.assign(it,d.item); // 服务端整行（含 feedbacks），最权威
+  else it[d.field]=d.value;
+});
+/* 重画前把「改了但还没确认存盘」的可编辑单元格收回缓存。
+   只收 dirty 的（td._old 由 table-editor 在 focusin 时记、存盘成功后更新）——
+   存盘成功的行已由 cellsaved 用服务端整行同步过，全量收会让过期 DOM 反过来盖掉刚拉回来的新数据。 */
+function absorbEditedCells(tb){
+  tb.querySelectorAll('tr[data-id] td[contenteditable][data-field]').forEach(td=>{
+    const now=td.innerText.trim();
+    if(td._old==null||String(td._old).trim()===now)return;
+    const tr=td.closest('tr');
+    const it=(window._inqCache||[]).find(x=>String(x.id)===String(tr.dataset.id));
+    if(it)it[td.dataset.field]=now;
+  });
+}
+
 /* 唯一一张询盘表：筛选 → 日期倒序 → 分页 → 跨月插月份分隔行。
    月份分隔行只是视觉分段（不再折叠）：翻页后每页开头都会带上本页第一条所属月份，不会「不知道自己看的是哪个月」。 */
 export function renderInqList(){
@@ -316,6 +345,8 @@ export function renderInqList(){
 }
 function renderInqTable(){
   const tb=document.getElementById('tb-inq'); if(!tb)return;
+  commitPendingCellEdit(tb); // 正在敲的那格先落库：节点被换掉后浏览器不会再补发 focusout
+  absorbEditedCells(tb);
   syncClearBadge();
   const total=(window._inqCache||[]).filter(r=>r&&r.date).length;
   const rows=filteredInquiries();

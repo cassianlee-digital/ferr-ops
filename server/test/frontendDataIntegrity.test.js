@@ -205,6 +205,23 @@ test('generic table editing has one idempotent owner and rolls back failed date 
   assert.match(tableEditorSource, /setCellBusy\(cell,true,previousEditable\);[\s\S]*finally\{[\s\S]*setCellBusy\(cell,false,previousEditable\);/);
 });
 
+// 2026-09-08：老板反馈「客户编码后期补录后，有的直接就不显示」。值其实已入库，
+// 是询盘表用旧行缓存整表重画时把它盖回了空白。防回归焊死三件事：存盘后广播、
+// 重画前先提交仍在编辑的格子、询盘模块订阅广播同步自己的行缓存。
+test('saved cell edits survive the next table repaint', () => {
+  assert.match(tableEditorSource, /new CustomEvent\('cellsaved',\{detail\}\)/);
+  assert.match(tableEditorSource, /announceCellSaved\(\{ok:true,endpoint,id,field:cell\.dataset\.field,value,item:response&&response\.item\}\)/);
+  assert.match(tableEditorSource, /announceCellSaved\(\{ok:false,/);
+  assert.match(tableEditorSource, /export function commitPendingCellEdit\(root\)/);
+  assert.match(inquiriesSource, /import \{ commitPendingCellEdit \} from '\.\/table-editor\.js';/);
+  assert.match(inquiriesSource, /document\.addEventListener\('cellsaved',/);
+  assert.match(inquiriesSource, /if\(d\.endpoint!=='\/api\/inquiries'\)return;/);
+  // 重画前：先提交仍在编辑的格子（节点被换掉后浏览器不会再补发 focusout），再把未落库的改动收回缓存
+  assert.match(inquiriesSource, /commitPendingCellEdit\(tb\);[\s\S]{0,300}absorbEditedCells\(tb\);[\s\S]{0,400}tb\.innerHTML='';/);
+  // 只收 dirty 的：全量收会让过期 DOM 反过来盖掉刚从服务端拉回来的新数据
+  assert.match(inquiriesSource, /if\(td\._old==null\|\|String\(td\._old\)\.trim\(\)===now\)return;/);
+});
+
 test('table editor restores failed date and text saves at runtime', async () => {
   const listeners={};
   const previousDocument=globalThis.document;
@@ -213,12 +230,14 @@ test('table editor restores failed date and text saves at runtime', async () => 
   // toast 已不再是隐式全局（table-editor 现在 import 自 ui-kit.js），stub globalThis.toast 不再拦得住。
   // 改为提供一个假的 #toast 元素：真实的 ui-kit toast 会写进来，等于连提示链路一起测了。
   const toastEl={ style:{}, appendChild(){}, get textContent(){ return ''; }, set textContent(v){ messages.push(v); } };
+  const broadcasts=[];
   globalThis.document={
     addEventListener(type,handler){
       listeners[type]??=[];
       listeners[type].push(handler);
     },
-    getElementById(id){ return id==='toast'?toastEl:null; }
+    getElementById(id){ return id==='toast'?toastEl:null; },
+    dispatchEvent(event){ broadcasts.push({type:event.type,detail:event.detail}); return true; }
   };
   globalThis.API={patch:async()=>{ throw null; }};
 
@@ -276,6 +295,29 @@ test('table editor restores failed date and text saves at runtime', async () => 
     assert.equal(cellAttributes.get('contenteditable'),'true');
     assert.equal(cellAttributes.has('aria-busy'),false);
     assert.deepEqual(messages,['保存失败，已恢复旧值','保存失败，已恢复旧值']);
+    // 存盘失败也要广播：这一格可能已被重画换掉，只把 DOM 滚回旧值不够，缓存也得滚回去
+    assert.deepEqual(broadcasts,[{type:'cellsaved',
+      detail:{ok:false,endpoint:'/api/loop-items',id:'9',field:'content',value:'old text'}}]);
+
+    // 存盘成功 → 广播服务端整行，列表模块据此同步缓存（否则下一次重画会把新值盖回旧值）
+    broadcasts.length=0;
+    globalThis.API={patch:async()=>({item:{id:9,content:'new text'}})};
+    const savedCell={
+      innerText:'DE-2026-018',
+      textContent:'DE-2026-018',
+      _old:'',
+      dataset:{field:'customer_code'},
+      closest(selector){
+        if(selector==='td[contenteditable][data-field]')return this;
+        if(selector==='tr')return {dataset:{ep:'/api/inquiries',id:'12'}};
+        return null;
+      },
+      getAttribute:()=>null, setAttribute(){}, removeAttribute(){}
+    };
+    await listeners.focusout[0]({target:savedCell});
+    assert.deepEqual(broadcasts,[{type:'cellsaved',detail:{ok:true,endpoint:'/api/inquiries',id:'12',
+      field:'customer_code',value:'DE-2026-018',item:{id:9,content:'new text'}}}]);
+    assert.equal(savedCell._old,'DE-2026-018'); // 已确认落库 → 不再算 dirty，重画时不会被当成未保存改动
   }finally{
     globalThis.document=previousDocument;
     globalThis.API=previousApi;

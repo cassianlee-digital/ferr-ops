@@ -65,6 +65,13 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
     **已知代价**:跟进多、话又长的行会明显变高(实测 3 条含一条 150 字 → 行高 194px,单条 68px)。这是拿行高换可读性,是老板拍板的取舍,别自作主张改回截断。
     格子越界的老毛病同时修掉(格内元素一律 `max-width:100%` + `min-width:0` + `word-break`)。
   - **筛选条件刻意不持久化**:每次进页面是干净全量,只在表格上方显示「已筛选 N / M 条 · 清空筛选」。理由是持久化最容易造成「下次打开发现询盘少了一半,以为丢数据」。
+  - **可编辑格(客户编码/业务员)存盘后必须同步 `_inqCache`**(2026-09-08 修):老板反馈「客户编码后期补录后,有的直接就不显示」——
+    值**已经入库**,是 `renderInqTable()` 用旧行缓存整表重画时盖回了空白(翻页/改筛选/加跟进反馈/切时间范围都会重画)。
+    修法:`table-editor.js` 存盘后 `document.dispatchEvent(new CustomEvent('cellsaved',…))`(成功带服务端整行 `item`,失败带回滚后的旧值 `ok:false`),
+    `inquiries.js` 订阅它写回缓存;重画前先 `commitPendingCellEdit(tb)`(节点被 `innerHTML=''` 换掉后浏览器**不会**补发 focusout,
+    正在敲的字连保存机会都没有)再 `absorbEditedCells(tb)` 收 dirty 格子(只收 `td._old` 与现值不同的,全量收会让过期 DOM 盖掉刚拉回的新数据)。
+    同时给可编辑格补上存盘回执(复用 `setSavingState` 的黄/绿/红),以前存成功是**完全无提示**的。防回归见 `frontendDataIntegrity.test.js` 的
+    `saved cell edits survive the next table repaint`。**别再让任何表只改 DOM 不回写缓存。**
 - 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads)、GA4、诊断、询盘归因、总览、KPI。
 - **诊断引擎已上线**:`/api/diagnostics`(`server/src/routes/diagnostics.js` + `googleSync.js` 规则查询)产出 4 类真实 findings——机会词(排名11-20有曝光)、关键词蚕食(同词多页)、流量衰退(当前vs上一等长窗口点击跌幅)、高花费零有效(Ads cost>0 conv=0)。前端 SEO「站点机会/流量衰退/关键词蚕食」三子面板 + minitab 角标已读真实结果,随时间范围重算。**尚未做 CTR 异常规则。**
 - **诊断→整改闭环已通**:三类 SEO finding 每行「采纳」按钮 → POST `/api/fixes`(source=诊断引擎,evidence 记 GSC 依据)直接入整改清单(`public/charts.js` `adoptFinding`)。
