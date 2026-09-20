@@ -12,6 +12,9 @@ import { esc, toast } from './ui-kit.js';
 import { OPT } from './tagselect.js';
 import { runAiAnalysis } from './ai.js';
 import { validateEditableValue, setSavingState, rollbackEditable, showSaveError, placeCaretEnd } from './editable.js';
+import { thumbsHtml, pickAndUpload, deleteImage } from './attachments.js';
+
+const KEYWORD_OWNER='keyword'; // 通用附件的宿主类型，与后端 routes/attachments.js 的白名单一致
 
 /* ================= 关键词库（4 类 · 增删改入库 · FR-9）================= */
 const KW_TB={seo:'tb-kw-seo',sem:'tb-kw-sem',high:'tb-kw-high',customer:'tb-kw-cust'};
@@ -48,12 +51,54 @@ export function kwRow(type,r){
       +ed('ktype',a.ktype)+ed('channel',a.channel)+ed('inquiry',a.inquiry)+ed('gradeText',a.gradeText)
       +`<td class="ctr">${aiBtn} ${del}</td>`;
   }else{
+    // 客户信息词库：「对应我们的词」后面是业务反馈（只放图）。老板要求「点击后上传图片」，
+    // 所以这一格没有输入框，点「传图」直接开系统选图框，缩略图点开看原图。
     tr.innerHTML=ct+`<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>`
       +ed('sourceCustomer',a.sourceCustomer)+ed('mapped',a.mapped)
+      +`<td class="ctr kw-sales">${kwSalesCellHtml(r)}</td>`
       +`<td class="ctr">${aiBtn} ${del}</td>`;
+    tr._kwImages=Array.isArray(r.images)?r.images.slice():[];
   }
   return tr;
 }
+/* ===== 客户信息词库的「业务反馈」：只上传图片 =====
+   图片走通用附件接口（owner_type='keyword'），与询盘那边的业务反馈同一套存储与预览。
+   这里刻意不带文字输入：老板明确说「这个地方只点击后上传图片」——业务原话本来就记在左边那两列。 */
+function kwSalesCellHtml(r){
+  const imgs=Array.isArray(r.images)?r.images:[];
+  return thumbsHtml(imgs,{deletable:true})
+    +`<button type="button" class="btn-mini kw-img-add" title="上传业务发来的图片"><i class="ti ti-photo-plus"></i> ${imgs.length?'加图':'传图'}</button>`;
+}
+function kwRowRecord(tr){
+  // 行缓存：上传/删除后要就地更新这一格，不重拉整张表（重拉会把别人正在编辑的格子冲掉）
+  if(!tr._kwImages)tr._kwImages=[];
+  return tr._kwImages;
+}
+function repaintKwSales(tr){
+  const cell=tr.querySelector('.kw-sales'); if(!cell)return;
+  cell.innerHTML=kwSalesCellHtml({images:kwRowRecord(tr)});
+}
+document.addEventListener('click',async e=>{
+  const add=e.target.closest('#tb-kw-cust .kw-img-add');
+  if(add){
+    const tr=add.closest('tr'); if(!tr||!tr.dataset.id)return;
+    const done=await pickAndUpload(KEYWORD_OWNER,tr.dataset.id,{multiple:true});
+    if(done.length){ tr._kwImages=kwRowRecord(tr).concat(done); repaintKwSales(tr); }
+    return;
+  }
+  const del=e.target.closest('#tb-kw-cust [data-att-del]');
+  if(del){
+    const tr=del.closest('tr'); if(!tr)return;
+    if(!inlineConfirm(del,'确认'))return;
+    const id=del.dataset.attDel;
+    try{
+      await deleteImage(id);
+      tr._kwImages=kwRowRecord(tr).filter(im=>String(im.id)!==String(id));
+      repaintKwSales(tr);
+      toast('已删除这张图');
+    }catch(err){ toast(err&&err.status===403?'无权操作':'删除失败：'+((err&&err.message)||'')); }
+  }
+});
 /* 关键词单元格保存：data-attr → 写入 attrs；data-cat → 写入 category。失焦即存、失败回滚 */
 document.addEventListener('focusin',e=>{ const c=e.target.closest&&e.target.closest('#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]'); if(c)c._old=c.innerText; });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const c=e.target.closest&&e.target.closest('#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]'); if(c){ e.preventDefault(); c.blur(); } } });

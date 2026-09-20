@@ -143,7 +143,10 @@
 }
 
 #panel-inquiry table.dt {
-  min-width: 1120px;
+  /* 2026-09-20：插入「业务反馈」后是 15 列，列宽预算合计约 1790px。
+     min-width 提到 1480 是取舍：再窄下去业务反馈/跟踪反馈两列会被压到读不了字，
+     不如让外层 .card 的 overflow-x 接管，横向滚一点。 */
+  min-width: 1480px;
   border: 0;
   border-collapse: collapse;
 }
@@ -319,25 +322,41 @@ body.dark .inq-pager .pg-size select{background:#0b1220;border-color:#273142;col
    旧版是一条覆盖式文本，芯片 max-width:120px 却撞上 120px 的列宽 + 左右各 12px 内边距，
    于是内容顶出格子（就是截图里那个越界的框）。这里把列宽和内容宽度一起焊死：
    列给 158px，格子里的东西一律 max-width:100% 且 min-width:0，长文本只能省略号，不许撑格子。 */
-/* 列宽预算（2026-08-27）：14 列原来被表格均分成每列 138px，
-   大区/渠道/产品/等级/公司/是否成交 只放 2~4 个字的彩色标签，白占一大截；
-   把这些收窄，省下来的宽度给「跟踪反馈」和「备注」——那两列才是要读字的地方。 */
-#panel-inquiry .inq-table th:nth-child(1),#panel-inquiry .inq-table td:nth-child(1){width:74px}    /* 日期 MM-DD */
-#panel-inquiry .inq-table th:nth-child(2),#panel-inquiry .inq-table td:nth-child(2){width:96px}    /* 客户编码 */
-#panel-inquiry .inq-table th:nth-child(3),#panel-inquiry .inq-table td:nth-child(3){width:88px}    /* 国家 */
-#panel-inquiry .inq-table th:nth-child(4),#panel-inquiry .inq-table td:nth-child(4){width:78px}    /* 大区 */
-#panel-inquiry .inq-table th:nth-child(5),#panel-inquiry .inq-table td:nth-child(5){width:92px}    /* 渠道 */
-#panel-inquiry .inq-table th:nth-child(6),#panel-inquiry .inq-table td:nth-child(6){width:150px}   /* 来源词 / 落地页 */
+/* 列宽预算（2026-09-20 重排：业务员后插入「业务反馈」，共 15 列）。
+   原则没变：大区/渠道/产品/等级/公司/是否成交 只放 2~4 个字的彩色标签，能收就收；
+   省下来的宽度全给三列要读字的 —— 业务反馈 / 备注 / 跟踪反馈。
+   表格是 table-layout:fixed + width:100%，总宽超出容器时浏览器按比例缩，不会横向溢出。 */
+#panel-inquiry .inq-table th:nth-child(1),#panel-inquiry .inq-table td:nth-child(1){width:68px}    /* 日期 MM-DD */
+#panel-inquiry .inq-table th:nth-child(2),#panel-inquiry .inq-table td:nth-child(2){width:90px}    /* 客户编码 */
+#panel-inquiry .inq-table th:nth-child(3),#panel-inquiry .inq-table td:nth-child(3){width:84px}    /* 国家（可改） */
+#panel-inquiry .inq-table th:nth-child(4),#panel-inquiry .inq-table td:nth-child(4){width:76px}    /* 大区（可改） */
+#panel-inquiry .inq-table th:nth-child(5),#panel-inquiry .inq-table td:nth-child(5){width:86px}    /* 渠道 */
+#panel-inquiry .inq-table th:nth-child(6),#panel-inquiry .inq-table td:nth-child(6){width:130px}   /* 来源词 / 落地页 */
 #panel-inquiry .inq-table th:nth-child(7),#panel-inquiry .inq-table td:nth-child(7){width:82px}    /* 产品 */
-#panel-inquiry .inq-table th:nth-child(8),#panel-inquiry .inq-table td:nth-child(8){width:80px}    /* 等级(+上调⚠) */
-#panel-inquiry .inq-table th:nth-child(9),#panel-inquiry .inq-table td:nth-child(9){width:88px}    /* 公司 */
-#panel-inquiry .inq-table th:nth-child(10),#panel-inquiry .inq-table td:nth-child(10){width:86px}  /* 业务员 */
-#panel-inquiry .inq-table th:nth-child(11),#panel-inquiry .inq-table td:nth-child(11){width:92px}  /* 是否成交 */
-#panel-inquiry .inq-table th:nth-child(12),#panel-inquiry .inq-table td:nth-child(12){width:180px} /* 备注 */
-#panel-inquiry .inq-table th:nth-child(13),
-#panel-inquiry .inq-table td.inq-track-feedback{
-  width:340px;max-width:340px;   /* 每条跟进都完整铺开，宽一点才少换行、少撑高行 */
+#panel-inquiry .inq-table th:nth-child(8),#panel-inquiry .inq-table td:nth-child(8){width:74px}    /* 等级(+上调⚠) */
+#panel-inquiry .inq-table th:nth-child(9),#panel-inquiry .inq-table td:nth-child(9){width:84px}    /* 公司 */
+#panel-inquiry .inq-table th:nth-child(10),#panel-inquiry .inq-table td:nth-child(10){width:80px}  /* 业务员 */
+#panel-inquiry .inq-table th.inq-th-sales,
+#panel-inquiry .inq-table td.inq-sales-feedback{
+  width:300px;max-width:300px;   /* 业务反馈：文字 + 截图缩略图，与跟踪反馈同一种版式 */
 }
+#panel-inquiry .inq-table th:nth-child(12),#panel-inquiry .inq-table td:nth-child(12){width:86px}  /* 是否成交 */
+#panel-inquiry .inq-table th:nth-child(13),#panel-inquiry .inq-table td:nth-child(13){width:160px} /* 备注 */
+#panel-inquiry .inq-table th:nth-child(14),
+#panel-inquiry .inq-table td.inq-track-feedback{
+  width:320px;max-width:320px;   /* 每条跟进都完整铺开，宽一点才少换行、少撑高行 */
+}
+#panel-inquiry td.inq-sales-feedback{
+  padding:8px;
+  text-align:left;
+  overflow:hidden;
+}
+/* 多行的两列要顶端对齐才好扫。选择器必须带上 table.dt：
+   上面 `#panel-inquiry table.dt td{vertical-align:middle!important}` 的特指度是 (1,1,2)，
+   比 `#panel-inquiry td.inq-track-feedback` 的 (1,1,1) 高 —— 原来那条 top 规则其实一直没生效
+   （2026-09-20 实测两列都是 middle）。这里补齐特指度，让当初写下的意图真正落地。 */
+#panel-inquiry table.dt td.inq-track-feedback,
+#panel-inquiry table.dt td.inq-sales-feedback{vertical-align:top!important}
 #panel-inquiry td.inq-track-feedback{
   padding:8px;
   text-align:left;
@@ -424,3 +443,41 @@ body.dark .inq-pager .pg-size select{background:#0b1220;border-color:#273142;col
 body.dark .track-line{border-left-color:#273142}
 body.dark .track-item{background:#0f172a;border-color:#273142}
 body.dark .track-count{background:#273142;color:#cbd5e1}
+
+/* ================= 业务反馈（2026-09-20）=================
+   业务发回来的原始材料：一段话 + 若干张截图。版式刻意与「跟踪反馈」一致（左侧竖条时间线），
+   同一张表里两列长得不一样，人会以为它们语义也不同。区别只在竖条/日期用紫色，
+   一眼能分出「这是业务说的」而不是「我们记的」。 */
+.sales-list .sales-line{border-left-color:var(--border)}
+.sales-list .sales-line:first-child{border-left-color:var(--purple)}
+.sales-list:hover .sales-line{border-left-color:var(--purple)}
+.sales-line-date{color:var(--text3)}
+.sales-line:first-child .sales-line-date{color:var(--purple)}
+.sales-only-img{color:var(--text3);font-style:italic}
+
+/* 弹框里的选图行 */
+.sales-pick-row{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-top:8px}
+.sales-pending{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--text2)}
+.sales-pending-head{width:100%;color:var(--text3);font-size:11px}
+.sales-pending-item{
+  display:inline-flex;align-items:center;gap:4px;
+  max-width:200px;padding:2px 4px 2px 8px;
+  border:1px solid var(--border);border-radius:999px;background:var(--bg3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sales-pending-del{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;flex:0 0 auto;
+  border:0;border-radius:999px;background:none;color:var(--text3);cursor:pointer;font-size:11px;
+}
+.sales-pending-del:hover{color:var(--primary);background:var(--primary-soft)}
+.sales-item-add-img{
+  margin-left:auto;padding:0 4px;
+  border:0;background:none;color:var(--text3);cursor:pointer;font-size:12px;
+}
+.sales-item-add-img:hover{color:var(--purple);background:var(--purple-soft)}
+/* 「补图」和「删除」都在同一行右侧：删除本来靠 margin-left:auto 贴右，现在让位给补图按钮 */
+.track-item-meta .sales-item-add-img + .track-item-del{margin-left:0}
+
+body.dark .sales-list .sales-line{border-left-color:#273142}
+body.dark .sales-pending-item{background:#0f172a;border-color:#273142}

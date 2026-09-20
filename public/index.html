@@ -178,14 +178,15 @@
           <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；表头第二行按列筛选，下方地图跟随筛选结果</span><span class="inq-summary" id="inqSummary"></span></div>
           <div class="card"><table class="dt inq-table">
           <!-- 6.23 文档 11/12/7：删销售确认列；加跟踪反馈（备注后）；P3 末尾加「操作」删除列 -->
-          <!-- 录入改版：客户姓名 → 客户编码，等级后加 公司 / 业务员 / 是否成交；总列数 = 14（colspan 同步） -->
+          <!-- 录入改版：客户姓名 → 客户编码，等级后加 公司 / 业务员 / 是否成交 -->
+          <!-- 2026-09-20：业务员后加「业务反馈」（业务发回来的文字 + 截图）；总列数 = 15（colspan 同步） -->
           <thead>
-            <tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr>
-            <!-- 筛选行由 inquiries.js renderInqFilterRow() 填充：下拉项取自当前区间真实出现过的值 -->
+            <tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr inq-th-sales">业务反馈</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr>
+            <!-- 筛选行由 inquiries.js renderInqFilterRow() 填充：产品/大区列出完整目录，其余取真实出现过的值 -->
             <tr class="inq-filter-row" id="inqFilterRow"></tr>
           </thead>
           <tbody id="tb-inq" class="inq-tb">
-            <tr data-load-state="loading"><td colspan="14" class="dim csp-s-d48bfa87bb">正在加载真实询盘…</td></tr>
+            <tr data-load-state="loading"><td colspan="15" class="dim csp-s-d48bfa87bb">正在加载真实询盘…</td></tr>
           </tbody>
         </table></div>
           <div class="inq-pager" id="inqPager"></div>
@@ -442,7 +443,8 @@
         <div class="subpanel" id="sub-kw-cust">
           <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-info-circle"></i> 记录业务/客户口中说出的真实用词</div>
           <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-keyword" data-keyword-type="customer"><i class="ti ti-plus"></i> 加词</button></div>
-          <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>客户原话 / 用词</th><th>来源客户</th><th>对应我们的词</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust"></tbody></table></div>
+          <!-- 2026-09-20：「对应我们的词」后加「业务反馈」——点一下直接传图（业务常常是甩截图过来） -->
+          <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>客户原话 / 用词</th><th>来源客户</th><th>对应我们的词</th><th class="ctr kw-th-sales">业务反馈</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust"></tbody></table></div>
         </div>
         <div class="subpanel" id="sub-kw-neg">
           <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-ban csp-s-b0e08465c2"></i> SEM 质量控制核心：记录每个否词「什么时候加、为什么加」，写新广告/排查浪费时一查就有</div>
@@ -728,6 +730,7 @@
         <div class="set-layout">
         <div class="set-nav">
           <div class="subtab active" data-sub="set-profile"><i class="ti ti-user"></i> 个人资料</div>
+          <div class="subtab" data-sub="set-review"><i class="ti ti-clipboard-check"></i> 月度绩效考核</div>
           <div class="subtab" data-sub="set-kpi"><i class="ti ti-target"></i> 指标修改</div>
           <div class="subtab" data-sub="set-threshold"><i class="ti ti-adjustments"></i> 等级阈值</div>
           <div class="subtab" data-sub="set-ds"><i class="ti ti-plug"></i> 数据源状态</div>
@@ -742,6 +745,13 @@
             <div class="prof-field"><label>角色</label><div class="val" id="prof-role">—</div></div>
             <div class="prof-field"><label>登录用户名</label><div class="val" id="prof-user">—</div></div>
             <div class="csp-s-301647f506"><button class="btn-ghost" data-ui-action="open-password"><i class="ti ti-key"></i> 修改密码</button></div>
+          </div>
+        </div>
+        <!-- 月度绩效考核（老板考核表口径）：权重 / 上限 / 分档 / 月度目标。
+             整块由 public/src/kpi-review-admin.js 渲染（零内联 handler），与 KPI 页那张表同一份配置。 -->
+        <div class="subpanel" id="sub-set-review">
+          <div class="card"><div class="card-head"><span class="card-title">月度绩效考核方案</span><span class="card-sub">与 KPI 页「月度绩效考核」同一份配置 · 仅主管/老板可改</span></div>
+            <div id="kpiReviewAdmin"></div>
           </div>
         </div>
         <div class="subpanel" id="sub-set-kpi">
@@ -891,12 +901,14 @@
         <div class="fld"><label>公司（询价通过哪家）</label><select id="f-company"><option value="">未标注</option><option>贝孚特</option><option>费尔瑞</option></select></div>
       </div>
       <div class="fld-row">
-        <div class="fld"><label>大区</label><select id="f-region"><option>西欧</option><option>南欧</option><option>北欧</option><option>中东欧</option><option>东欧/俄罗斯</option><option>北美</option><option>拉美</option><option>中东</option><option>北非</option><option>撒哈拉以南非洲</option><option>南亚</option><option>东南亚</option><option>东亚</option><option>中亚</option><option>大洋洲</option><option>其他</option></select></div>
+        <!-- 大区 / 产品的 option 由 openInquiry() 调 fillSelect() 按 public/src/catalog.js 渲染。
+             这里刻意留空：清单写两份就会出现「表格里有、录入框里没有」，那正是要修的毛病。 -->
+        <div class="fld"><label>大区</label><select id="f-region"></select></div>
         <div class="fld"><label>渠道</label><select id="f-channel"><option>SEO自然</option><option>SEM付费</option><option>直接</option><option>其他</option></select></div>
       </div>
       <div class="fld"><label>来源词 / 落地页</label><input id="f-source" placeholder="ductile iron casting / 球铁页"></div>
       <div class="fld-row">
-        <div class="fld"><label>产品</label><select id="f-product"><option>铸造</option><option>锻造</option><option>机加工</option><option>阀门</option><option>管件</option><option>电力金具</option></select></div>
+        <div class="fld"><label>产品</label><select id="f-product"></select></div>
         <div class="fld"><label>等级</label><select id="f-grade"><option value="A">A · 有效优质</option><option value="B">B · 有效合格</option><option value="C">C · 无效</option></select></div>
       </div>
       <div class="fld-row">
@@ -937,6 +949,24 @@
       <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 每次跟进都添加一条，日期由系统记录；跟踪后若发现是好询盘，记得回表格把「等级」上调（C→A/B），系统会自动标红提示重点处理。</div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="trackMask">关闭</button><button class="btn-primary" data-ui-action="submit-track"><i class="ti ti-plus"></i> 添加记录</button></div>
+  </div>
+</div>
+
+<!-- 业务反馈（2026-09-20）：业务发回来的关键词/原话 + 截图。
+     与上面的「跟踪反馈」分开：那是运营记的跟进进度，这是业务给的原始材料。 -->
+<div class="modal-mask" id="salesMask">
+  <div class="modal csp-s-ac44573161">
+    <div class="modal-head"><i class="ti ti-user-check csp-s-b0e08465c2"></i> 业务反馈 · <span id="sales-cust">客户</span><span class="x" data-ui-action="close-modal" data-modal="salesMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="track-log" id="sales-log"></div>
+      <div class="fld"><label>新增一条业务反馈</label><textarea id="sales-text" rows="4" placeholder="业务发过来的关键词、客户原话、需求要点…（只传图片也可以，这里可以留空）"></textarea></div>
+      <div class="sales-pick-row">
+        <button type="button" class="btn-ghost" data-ui-action="pick-sales-images"><i class="ti ti-photo-plus"></i> 选择图片</button>
+        <div class="sales-pending" id="sales-pending"></div>
+      </div>
+      <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 支持 PNG / JPG / WEBP / GIF，上传前会自动压缩到长边 1600px；点缩略图看原图。文字和图片可以只有其一。</div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="salesMask">关闭</button><button class="btn-primary" data-ui-action="submit-sales-note"><i class="ti ti-plus"></i> 添加记录</button></div>
   </div>
 </div>
 

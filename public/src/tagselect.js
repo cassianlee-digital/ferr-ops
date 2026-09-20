@@ -7,11 +7,14 @@
 
 import { toast } from './ui-kit.js';
 import { inqRowHtml, isUpgraded } from './inquiries.js';
+import { PRODUCTS, REGIONS } from './catalog.js';
 
 /* ---------- colored tag-select ---------- */
 export const OPT={
  channel:[['SEO自然','b-blue'],['SEM付费','b-purple'],['直接','b-teal'],['其他','b-gray']],
- product:[['铸造','b-amber'],['锻造','b-red'],['机加工','b-blue'],['阀门','b-purple'],['管件','b-teal'],['电力金具','b-green']],
+ // 产品 / 大区从 catalog.js 取，和录入弹框下拉、表头筛选同一份清单（加产品只改 catalog.js）
+ product:PRODUCTS,
+ region:REGIONS, // 2026-09-20：大区从只读徽章改成可点改（录入当下常常还不知道客户在哪）
  status:[['待开始','b-gray'],['进行中','b-amber'],['已完成','b-green']],
  result:[['已改','b-green'],['进行中','b-amber'],['计划下周','b-blue'],['放弃','b-gray']],
  grade:[['A','b-green'],['B','b-blue'],['C','b-gray']], // 6.23 文档 8：询盘等级 tagselect 可点改
@@ -55,7 +58,11 @@ export async function persistTagChange(el,value){
   const ep=tr.dataset.ep; if(!ep)return;
   const fieldMap={negmatch:'match_type',negstatus:'status',adstatus:'status',match:'match_type',
     priority:'priority',owner:'owner',status:'status',result:'status',dept:'dept',grade:'grade',
-    deal:'deal_status',company:'company'}; // 6.23 文档 8 + 录入改版：是否成交 / 公司
+    deal:'deal_status',company:'company', // 6.23 文档 8 + 录入改版：是否成交 / 公司
+    // 2026-09-20 补：region 新增可改；product/channel 是**早就存在的静默 bug** ——
+    // 表格里这两个标签本来就长得像可点改的，点了也确实换了颜色，但 kind 不在这张表里
+    // 就直接 return 了，一次 PATCH 都没发过，刷新后原样退回去。三个一起补上。
+    region:'region',product:'product',channel:'channel'};
   const field=fieldMap[kind]; if(!field)return;
   try{
     await API.patch(ep+'/'+id,{[field]:value});

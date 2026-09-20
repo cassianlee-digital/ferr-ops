@@ -1,5 +1,8 @@
 // 关键词库数据访问层。attrs 以 JSON 存放各词库的差异化列（等级/竞争/排名/落地页等）。
 import { db } from '../connection.js';
+import * as attachRepo from './attachments.js';
+
+export const KEYWORD_OWNER_TYPE = 'keyword';
 
 function parse(row) {
   if (!row) return row;
@@ -8,15 +11,27 @@ function parse(row) {
   return { ...row, attrs };
 }
 
+/* 「客户信息词库」的业务反馈是图片。批量挂元数据（不含 BLOB），
+   前端拿 id 去 /api/attachments/:id/raw 取图 —— 列表接口不背几 MB 的图片。
+   只给 type='customer' 挂：别的词库没这一栏，挂了白费一次查询。 */
+function attachImages(rows) {
+  const targets = rows.filter((r) => r.type === 'customer');
+  if (!targets.length) return rows;
+  const map = attachRepo.metaByOwners(KEYWORD_OWNER_TYPE, targets.map((r) => r.id));
+  for (const r of targets) r.images = map[r.id] || [];
+  return rows;
+}
+
 export function list(type) {
   const rows = type
     ? db.prepare('SELECT * FROM keywords WHERE type = ? ORDER BY id ASC').all(type)
     : db.prepare('SELECT * FROM keywords ORDER BY type, id ASC').all();
-  return rows.map(parse);
+  return attachImages(rows.map(parse));
 }
 
 export function get(id) {
-  return parse(db.prepare('SELECT * FROM keywords WHERE id = ?').get(id));
+  const row = parse(db.prepare('SELECT * FROM keywords WHERE id = ?').get(id));
+  return row ? attachImages([row])[0] : row;
 }
 
 export function create({ type, keyword, attrs = {}, category = null }) {
@@ -39,5 +54,6 @@ export function update(id, fields) {
 }
 
 export function remove(id) {
+  attachRepo.removeByOwner(KEYWORD_OWNER_TYPE, id); // 连带删图，不留孤儿 BLOB
   db.prepare('DELETE FROM keywords WHERE id = ?').run(id);
 }

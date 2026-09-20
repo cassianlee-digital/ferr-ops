@@ -969,7 +969,7 @@
       else ch.other++;
     });
     const chTotal = ch.SEO + ch.SEM + ch.direct + ch.other;
-    const pct4 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
+    const pct5 = (v) => chTotal ? Math.round(v * 100 / chTotal) + "%" : "\u2014";
     if (cv2) {
       const w = cv2.closest(".chart-wrap") || cv2.parentElement;
       if (w) {
@@ -979,7 +979,7 @@
       cv2.style.display = "";
       _chanDonutChart = new Chart(cv2, { type: "doughnut", data: { labels: ["SEO", "SEM", "\u76F4\u63A5", "\u5176\u4ED6"], datasets: [{ data: [ch.SEO, ch.SEM, ch.direct, ch.other], backgroundColor: ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
     }
-    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct4(ch.SEO), lgChSem: pct4(ch.SEM), lgChDirect: pct4(ch.direct), lgChOther: pct4(ch.other) });
+    setDonutLegend({ lgInqA: q.A, lgInqB: q.B, lgInqC: q.C, lgInqRate: rate, lgChSeo: pct5(ch.SEO), lgChSem: pct5(ch.SEM), lgChDirect: pct5(ch.direct), lgChOther: pct5(ch.other) });
   }
   var seoChart = null;
   var seoFull = null;
@@ -2713,8 +2713,8 @@
   function closest(target, selector) {
     return target && target.closest ? target.closest(selector) : null;
   }
-  function markCell(cell2, state2) {
-    if (cell2 && cell2.classList) setSavingState(cell2, state2);
+  function markCell(cell3, state2) {
+    if (cell3 && cell3.classList) setSavingState(cell3, state2);
   }
   function announceCellSaved(detail) {
     if (typeof document === "undefined" || !document.dispatchEvent || typeof CustomEvent !== "function") return;
@@ -2730,15 +2730,15 @@
     if (!closest(active, EDITABLE_CELL)) return;
     active.blur();
   }
-  function setCellBusy(cell2, busy, previousEditable) {
+  function setCellBusy(cell3, busy, previousEditable) {
     if (busy) {
-      cell2.setAttribute("contenteditable", "false");
-      cell2.setAttribute("aria-busy", "true");
+      cell3.setAttribute("contenteditable", "false");
+      cell3.setAttribute("aria-busy", "true");
       return;
     }
-    if (previousEditable == null) cell2.removeAttribute("contenteditable");
-    else cell2.setAttribute("contenteditable", previousEditable);
-    cell2.removeAttribute("aria-busy");
+    if (previousEditable == null) cell3.removeAttribute("contenteditable");
+    else cell3.setAttribute("contenteditable", previousEditable);
+    cell3.removeAttribute("aria-busy");
   }
   function setDateInputsBusy(inputs, busy) {
     inputs.forEach((input) => {
@@ -2757,9 +2757,9 @@
     return inputs.length === 2 ? (inputs[0].value || "") + "~" + (inputs[1].value || "") : inputs[0].value;
   }
   function handleFocusIn(event) {
-    const cell2 = closest(event.target, EDITABLE_CELL);
-    if (cell2) {
-      cell2._old = cell2.innerText;
+    const cell3 = closest(event.target, EDITABLE_CELL);
+    if (cell3) {
+      cell3._old = cell3.innerText;
       return;
     }
     const input = closest(event.target, DATE_INPUT);
@@ -2791,59 +2791,59 @@
     }
   }
   async function handleFocusOut(event) {
-    const cell2 = closest(event.target, EDITABLE_CELL);
-    if (!cell2) return;
-    const row = cell2.closest("tr");
+    const cell3 = closest(event.target, EDITABLE_CELL);
+    if (!cell3) return;
+    const row = cell3.closest("tr");
     const id = row && row.dataset.id;
     const endpoint = row && row.dataset.ep;
     if (!id || !endpoint) return;
-    const value = cell2.innerText.trim();
-    const oldValue = cell2._old != null ? cell2._old : cell2.innerText;
+    const value = cell3.innerText.trim();
+    const oldValue = cell3._old != null ? cell3._old : cell3.innerText;
     if (value === String(oldValue).trim()) return;
-    const previousEditable = cell2.getAttribute("contenteditable");
-    setCellBusy(cell2, true, previousEditable);
-    markCell(cell2, "saving");
+    const previousEditable = cell3.getAttribute("contenteditable");
+    setCellBusy(cell3, true, previousEditable);
+    markCell(cell3, "saving");
     try {
-      const response = await API.patch(endpoint + "/" + id, { [cell2.dataset.field]: value });
-      cell2._old = value;
-      markCell(cell2, "ok");
-      announceCellSaved({ ok: true, endpoint, id, field: cell2.dataset.field, value, item: response && response.item });
+      const response = await API.patch(endpoint + "/" + id, { [cell3.dataset.field]: value });
+      cell3._old = value;
+      markCell(cell3, "ok");
+      announceCellSaved({ ok: true, endpoint, id, field: cell3.dataset.field, value, item: response && response.item });
     } catch (error) {
-      rollbackEditable(cell2, oldValue);
-      markCell(cell2, "error");
-      announceCellSaved({ ok: false, endpoint, id, field: cell2.dataset.field, value: String(oldValue == null ? "" : oldValue).trim() });
+      rollbackEditable(cell3, oldValue);
+      markCell(cell3, "error");
+      announceCellSaved({ ok: false, endpoint, id, field: cell3.dataset.field, value: String(oldValue == null ? "" : oldValue).trim() });
       toast2(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     } finally {
-      setCellBusy(cell2, false, previousEditable);
+      setCellBusy(cell3, false, previousEditable);
     }
   }
   function handleKeyDown(event) {
-    const cell2 = closest(event.target, "td[contenteditable]");
-    if (!cell2) return;
-    const table = cell2.closest("table");
+    const cell3 = closest(event.target, "td[contenteditable]");
+    if (!cell3) return;
+    const table = cell3.closest("table");
     if (!table) return;
     if (event.key === "Tab") {
       event.preventDefault();
       const cells = [...table.querySelectorAll("td[contenteditable]")];
-      const current = cells.indexOf(cell2);
+      const current = cells.indexOf(cell3);
       const next = cells[current + (event.shiftKey ? -1 : 1)];
       if (next) {
-        cell2.blur();
+        cell3.blur();
         next.focus();
         placeCaretEnd(next);
       }
       return;
     }
-    if (cell2.classList.contains("mkt-ans")) return;
+    if (cell3.classList.contains("mkt-ans")) return;
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     const direction = event.key === "ArrowDown" ? "nextElementSibling" : "previousElementSibling";
-    const column = cell2.cellIndex;
-    let row = cell2.parentElement[direction];
+    const column = cell3.cellIndex;
+    let row = cell3.parentElement[direction];
     while (row) {
       const next = row.cells && row.cells[column];
       if (next && next.isContentEditable) {
         event.preventDefault();
-        cell2.blur();
+        cell3.blur();
         next.focus();
         placeCaretEnd(next);
         return;
@@ -2860,15 +2860,399 @@
     document.addEventListener("keydown", handleKeyDown);
   }
 
+  // public/src/catalog.js
+  var PRODUCTS = [
+    ["\u94F8\u9020", "b-amber"],
+    ["\u953B\u9020", "b-red"],
+    ["\u673A\u52A0\u5DE5", "b-blue"],
+    ["\u9600\u95E8", "b-purple"],
+    ["\u7BA1\u4EF6", "b-teal"],
+    ["\u7535\u529B\u91D1\u5177", "b-green"],
+    // 2026-09-20 老板新增
+    ["\u722C\u68AF", "b-blue"],
+    ["\u7D27\u7EBF\u5668", "b-amber"],
+    ["\u7535\u529B", "b-red"],
+    ["\u5EFA\u7B51\u9884\u57CB\u4EF6", "b-teal"],
+    ["AI\u7B97\u529B", "b-purple"]
+  ];
+  var REGIONS = [
+    ["\u897F\u6B27", "b-blue"],
+    ["\u5357\u6B27", "b-blue"],
+    ["\u5317\u6B27", "b-blue"],
+    ["\u4E2D\u4E1C\u6B27", "b-teal"],
+    ["\u4E1C\u6B27/\u4FC4\u7F57\u65AF", "b-amber"],
+    ["\u5317\u7F8E", "b-purple"],
+    ["\u62C9\u7F8E", "b-red"],
+    ["\u4E2D\u4E1C", "b-amber"],
+    ["\u5317\u975E", "b-amber"],
+    ["\u6492\u54C8\u62C9\u4EE5\u5357\u975E\u6D32", "b-gray"],
+    ["\u5357\u4E9A", "b-teal"],
+    ["\u4E1C\u5357\u4E9A", "b-red"],
+    ["\u4E1C\u4E9A", "b-green"],
+    ["\u4E2D\u4E9A", "b-gray"],
+    ["\u5927\u6D0B\u6D32", "b-teal"],
+    ["\u5176\u4ED6", "b-gray"]
+  ];
+  var LEGACY_REGION_BADGE = { \u6B27\u6D32: "b-blue", \u4FC4\u7F57\u65AF: "b-amber", "\u4E1C\u5357\u4E9A/\u5DF4\u897F": "b-red" };
+  var toMap = (pairs, extra) => Object.assign(Object.fromEntries(pairs), extra || {});
+  var PRODUCT_BADGE = toMap(PRODUCTS);
+  var REGION_BADGE = toMap(REGIONS, LEGACY_REGION_BADGE);
+  var PRODUCT_NAMES = PRODUCTS.map((p) => p[0]);
+  var REGION_NAMES = REGIONS.map((r) => r[0]);
+  function fillSelect(el, names, { placeholder = null } = {}) {
+    if (!el) return;
+    const keepValue = el.value;
+    const opts = [];
+    if (placeholder != null) opts.push(`<option value="">${placeholder}</option>`);
+    for (const n of names) opts.push(`<option>${n}</option>`);
+    el.innerHTML = opts.join("");
+    if (keepValue && names.indexOf(keepValue) >= 0) el.value = keepValue;
+  }
+
+  // public/src/attachments.js
+  var MAX_EDGE = 1600;
+  var MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+  var ACCEPT = "image/png,image/jpeg,image/webp,image/gif";
+  function rawUrl(id) {
+    return "/api/attachments/" + encodeURIComponent(id) + "/raw";
+  }
+  function humanBytes(n) {
+    if (!Number.isFinite(Number(n))) return "";
+    const v = Number(n);
+    if (v < 1024) return v + " B";
+    if (v < 1024 * 1024) return (v / 1024).toFixed(0) + " KB";
+    return (v / 1024 / 1024).toFixed(1) + " MB";
+  }
+  function pickImages({ multiple = true } = {}) {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ACCEPT;
+      input.multiple = !!multiple;
+      input.className = "att-file-input";
+      input.addEventListener("change", () => {
+        const files = [...input.files || []];
+        input.remove();
+        resolve(files);
+      });
+      document.body.appendChild(input);
+      input.click();
+    });
+  }
+  function compressImage(file, maxEdge = MAX_EDGE) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("\u8BFB\u53D6\u6587\u4EF6\u5931\u8D25"));
+      reader.onload = () => {
+        const original = String(reader.result || "");
+        if (file.type === "image/gif") return resolve(original);
+        const img = new Image();
+        img.onerror = () => resolve(original);
+        img.onload = () => {
+          try {
+            const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+            if (scale >= 1) return resolve(original);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return resolve(original);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const out = canvas.toDataURL("image/jpeg", 0.82);
+            resolve(out && out.length < original.length ? out : original);
+          } catch (e) {
+            resolve(original);
+          }
+        };
+        img.src = original;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  async function uploadImage(ownerType, ownerId, file) {
+    const dataBase64 = await compressImage(file);
+    const approxBytes = Math.floor((dataBase64.length - (dataBase64.indexOf(",") + 1)) * 0.75);
+    if (approxBytes > MAX_UPLOAD_BYTES) {
+      throw new Error("\u56FE\u7247\u538B\u7F29\u540E\u4ECD\u6709 " + humanBytes(approxBytes) + "\uFF0C\u8D85\u8FC7 " + humanBytes(MAX_UPLOAD_BYTES) + " \u4E0A\u9650");
+    }
+    try {
+      const { item } = await API.post("/api/attachments", {
+        owner_type: ownerType,
+        owner_id: ownerId,
+        name: file.name,
+        dataBase64
+      });
+      return item;
+    } catch (e) {
+      throw new Error(uploadErrorText(e));
+    }
+  }
+  function uploadErrorText(e) {
+    const code = e && (e.body?.error || e.error);
+    if (e && e.status === 403) return "\u65E0\u6743\u4E0A\u4F20";
+    if (code === "unsupported_image_type") return "\u53EA\u652F\u6301 PNG / JPG / WEBP / GIF \u56FE\u7247";
+    if (code === "image_too_large") return "\u56FE\u7247\u592A\u5927\uFF0C\u8BF7\u5148\u538B\u7F29";
+    if (code === "too_many_attachments") return "\u8FD9\u6761\u8BB0\u5F55\u7684\u56FE\u7247\u6570\u91CF\u5DF2\u8FBE\u4E0A\u9650";
+    if (code === "owner_quota_exceeded") return "\u8FD9\u6761\u8BB0\u5F55\u7684\u56FE\u7247\u603B\u91CF\u5DF2\u8FBE\u4E0A\u9650";
+    if (code === "bad_image_data") return "\u8FD9\u4E2A\u6587\u4EF6\u4E0D\u662F\u6709\u6548\u56FE\u7247";
+    return "\u4E0A\u4F20\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25");
+  }
+  async function uploadAll(ownerType, ownerId, files, onProgress) {
+    const done = [];
+    const failed = [];
+    for (let i = 0; i < files.length; i++) {
+      if (onProgress) onProgress(i + 1, files.length);
+      try {
+        done.push(await uploadImage(ownerType, ownerId, files[i]));
+      } catch (e) {
+        failed.push({ name: files[i].name, reason: e.message });
+      }
+    }
+    return { done, failed };
+  }
+  async function deleteImage(id) {
+    await API.del("/api/attachments/" + encodeURIComponent(id));
+  }
+  function thumbsHtml(images, { deletable = false } = {}) {
+    const list = Array.isArray(images) ? images : [];
+    if (!list.length) return "";
+    return '<span class="att-thumbs">' + list.map((im) => {
+      const label = esc2((im.name || "\u56FE\u7247") + (im.bytes ? " \xB7 " + humanBytes(im.bytes) : ""));
+      return `<span class="att-thumb-wrap"><img class="att-thumb" src="${esc2(rawUrl(im.id))}" alt="${label}" title="${label}" data-att-view="${esc2(im.id)}" data-att-name="${esc2(im.name || "\u56FE\u7247")}" data-att-bytes="${esc2(im.bytes || 0)}" loading="lazy">` + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc2(im.id)}" title="\u5220\u9664\u8FD9\u5F20\u56FE"><i class="ti ti-x"></i></button>` : "") + "</span>";
+    }).join("") + "</span>";
+  }
+  var lightbox = null;
+  var lightboxSeq = 0;
+  function ensureLightbox() {
+    if (lightbox) return lightbox;
+    lightbox = document.createElement("div");
+    lightbox.className = "att-lightbox";
+    lightbox.innerHTML = '<div class="att-lightbox-card"><div class="att-lightbox-stage"><img class="att-lightbox-img" alt="\u539F\u56FE\u9884\u89C8"></div><div class="att-lightbox-bar"><span class="att-lightbox-name"></span><span class="att-lightbox-dim"></span><a class="att-lightbox-open" target="_blank" rel="noopener">\u5728\u65B0\u6807\u7B7E\u6253\u5F00\u539F\u56FE</a></div></div><button type="button" class="att-lightbox-close" title="\u5173\u95ED\uFF08Esc\uFF09"><i class="ti ti-x"></i></button>';
+    lightbox.addEventListener("click", (e) => {
+      if (e.target.closest(".att-lightbox-card") && !e.target.closest(".att-lightbox-close")) return;
+      closeLightbox();
+    });
+    document.body.appendChild(lightbox);
+    return lightbox;
+  }
+  function closeLightbox() {
+    if (lightbox) lightbox.classList.remove("on");
+  }
+  function openLightbox(id, meta = {}) {
+    const box = ensureLightbox();
+    const img = box.querySelector(".att-lightbox-img");
+    const url = rawUrl(id);
+    const seq3 = ++lightboxSeq;
+    img.src = url;
+    box.querySelector(".att-lightbox-name").textContent = meta.name || "\u56FE\u7247";
+    box.querySelector(".att-lightbox-open").href = url;
+    const dim = box.querySelector(".att-lightbox-dim");
+    const sizeText = meta.bytes ? humanBytes(meta.bytes) : "";
+    dim.textContent = sizeText;
+    const showDim = () => {
+      if (seq3 !== lightboxSeq || !img.naturalWidth) return;
+      const px = img.naturalWidth + " \xD7 " + img.naturalHeight;
+      dim.textContent = sizeText ? px + " \xB7 " + sizeText : px;
+    };
+    if (img.complete) showDim();
+    else img.addEventListener("load", showDim, { once: true });
+    box.classList.add("on");
+  }
+  document.addEventListener("click", (e) => {
+    const thumb = e.target.closest("[data-att-view]");
+    if (!thumb || e.target.closest("[data-att-del]")) return;
+    openLightbox(thumb.dataset.attView, { name: thumb.dataset.attName, bytes: Number(thumb.dataset.attBytes) || 0 });
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeLightbox();
+  });
+  async function pickAndUpload(ownerType, ownerId, { multiple = true } = {}) {
+    const files = await pickImages({ multiple });
+    if (!files.length) return [];
+    toast2("\u6B63\u5728\u4E0A\u4F20 " + files.length + " \u5F20\u56FE\u7247\u2026");
+    const { done, failed } = await uploadAll(ownerType, ownerId, files);
+    if (failed.length) toast2("\u5DF2\u4E0A\u4F20 " + done.length + " \u5F20\uFF0C" + failed.length + " \u5F20\u5931\u8D25\uFF1A" + failed[0].reason);
+    else toast2("\u5DF2\u4E0A\u4F20 " + done.length + " \u5F20\u56FE\u7247 \xB7 \u5DF2\u5165\u5E93");
+    return done;
+  }
+
+  // public/src/inquiry-sales.js
+  var OWNER_TYPE = "inquiry_sales_note";
+  function noteList(r) {
+    return r && Array.isArray(r.sales_notes) ? r.sales_notes : [];
+  }
+  function noteDate(iso, withTime) {
+    if (!iso) return "\u65E5\u671F\u4E0D\u8BE6";
+    const d = /* @__PURE__ */ new Date(String(iso).replace(" ", "T") + "Z");
+    if (isNaN(d)) return String(iso);
+    const p = (n) => String(n).padStart(2, "0");
+    const md = p(d.getMonth() + 1) + "-" + p(d.getDate());
+    return withTime ? d.getFullYear() + "-" + md + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md;
+  }
+  function salesCellHtml(r) {
+    const list = noteList(r);
+    if (!list.length) {
+      return '<button type="button" class="track-add track-add-first" data-sales-open><i class="ti ti-plus"></i>\u4E1A\u52A1\u53CD\u9988</button>';
+    }
+    const title = list.map((n) => noteDate(n.created_at, true) + "\u3000" + (n.text || "(\u4EC5\u56FE\u7247)")).join("\n\n");
+    return `<div class="track-cell-wrap"><button type="button" class="track-list sales-list" data-sales-open title="${esc2(title)}">` + list.map((n) => `<span class="track-line sales-line"><span class="track-line-date sales-line-date">${esc2(noteDate(n.created_at, false))}</span><span class="track-line-text">` + (n.text ? esc2(n.text) : '<span class="sales-only-img">\u4EC5\u56FE\u7247</span>') + thumbsHtml(n.images) + "</span></span>").join("") + `</button><button type="button" class="track-add" data-sales-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
+  }
+  var editing = null;
+  var pendingFiles = [];
+  function repaintCell() {
+    if (!editing) return;
+    const tr = document.querySelector('.inq-tb tr[data-id="' + editing.id + '"]');
+    const cell3 = tr && tr.querySelector(".inq-sales-feedback");
+    if (cell3) cell3.innerHTML = salesCellHtml(editing);
+    document.dispatchEvent(new CustomEvent("salesnoteschanged", { detail: { id: editing.id } }));
+  }
+  function renderPending() {
+    const box = document.getElementById("sales-pending");
+    if (!box) return;
+    if (!pendingFiles.length) {
+      box.innerHTML = "";
+      return;
+    }
+    box.innerHTML = '<div class="sales-pending-head">\u5F85\u4E0A\u4F20 ' + pendingFiles.length + " \u5F20\uFF1A</div>" + pendingFiles.map((f, i) => `<span class="sales-pending-item">${esc2(f.name)}<button type="button" class="sales-pending-del" data-sales-unpick="${i}" title="\u4E0D\u4F20\u8FD9\u5F20"><i class="ti ti-x"></i></button></span>`).join("");
+  }
+  function renderLog() {
+    const box = document.getElementById("sales-log");
+    if (!box) return;
+    const list = noteList(editing);
+    if (!list.length) {
+      box.innerHTML = '<div class="track-log-empty">\u8FD8\u6CA1\u6709\u4E1A\u52A1\u53CD\u9988\uFF0C\u5728\u4E0B\u9762\u5199\u7B2C\u4E00\u6761\u6216\u76F4\u63A5\u4F20\u56FE\u3002</div>';
+      return;
+    }
+    box.innerHTML = '<div class="track-log-head">\u4E1A\u52A1\u53CD\u9988 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((n) => `<div class="track-item" data-note="${esc2(n.id)}"><div class="track-item-meta"><span class="track-item-date${n.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc2(noteDate(n.created_at, true))}</span>` + (n.created_by_name ? `<span class="track-item-who">${esc2(n.created_by_name)}</span>` : "") + `<button type="button" class="sales-item-add-img" data-sales-addimg="${esc2(n.id)}" title="\u7ED9\u8FD9\u6761\u8865\u56FE"><i class="ti ti-photo-plus"></i></button><button type="button" class="track-item-del" data-sales-del="${esc2(n.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div>` + (n.text ? `<div class="track-item-text">${esc2(n.text)}</div>` : '<div class="track-item-text dim">\uFF08\u4EC5\u56FE\u7247\uFF09</div>') + thumbsHtml(n.images, { deletable: true }) + "</div>").join("");
+  }
+  function openSales(tr) {
+    const id = tr && tr.dataset.id;
+    if (!id) return;
+    const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
+    if (!it) return;
+    editing = it;
+    pendingFiles = [];
+    const who = document.getElementById("sales-cust");
+    if (who) who.textContent = it.customer_code || it.customer_name || it.country || "#" + it.id;
+    const text2 = document.getElementById("sales-text");
+    if (text2) text2.value = "";
+    renderLog();
+    renderPending();
+    openModal("salesMask");
+    setTimeout(() => {
+      const t = document.getElementById("sales-text");
+      if (t) t.focus();
+    }, 50);
+  }
+  async function submitSalesNote() {
+    if (!editing) return;
+    const box = document.getElementById("sales-text");
+    const text2 = box && box.value.trim() || "";
+    if (!text2 && !pendingFiles.length) {
+      toast2("\u5199\u70B9\u5185\u5BB9\uFF0C\u6216\u8005\u5148\u9009\u51E0\u5F20\u56FE");
+      if (box) box.focus();
+      return;
+    }
+    const btn = document.querySelector('[data-ui-action="submit-sales-note"]');
+    if (btn) btn.disabled = true;
+    try {
+      const { item } = await API.post(
+        "/api/inquiries/" + editing.id + "/sales-notes",
+        { text: text2, withImages: pendingFiles.length > 0 }
+      );
+      item.images = item.images || [];
+      if (pendingFiles.length) {
+        const { done, failed } = await uploadAll(OWNER_TYPE, item.id, pendingFiles);
+        item.images = done;
+        if (failed.length) toast2(failed.length + " \u5F20\u56FE\u4E0A\u4F20\u5931\u8D25\uFF1A" + failed[0].reason);
+      }
+      editing.sales_notes = [item].concat(noteList(editing));
+      pendingFiles = [];
+      if (box) box.value = "";
+      renderLog();
+      renderPending();
+      repaintCell();
+      if (box) box.focus();
+      toast2("\u5DF2\u6DFB\u52A0 1 \u6761\u4E1A\u52A1\u53CD\u9988\uFF08" + noteDate(item.created_at, false) + "\uFF09");
+    } catch (e) {
+      toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6DFB\u52A0\u5931\u8D25\uFF1A" + (e && e.message || ""));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  async function pickSalesImages() {
+    const files = await pickImages({ multiple: true });
+    if (!files.length) return;
+    pendingFiles = pendingFiles.concat(files);
+    renderPending();
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest(".inq-tb [data-sales-open]");
+    if (!t) return;
+    const tr = t.closest("tr");
+    if (tr) openSales(tr);
+  });
+  document.addEventListener("click", async (e) => {
+    const unpick = e.target.closest("[data-sales-unpick]");
+    if (unpick) {
+      pendingFiles.splice(Number(unpick.dataset.salesUnpick), 1);
+      renderPending();
+      return;
+    }
+    if (!editing) return;
+    const addImg = e.target.closest("#sales-log [data-sales-addimg]");
+    if (addImg) {
+      const noteId = addImg.dataset.salesAddimg;
+      const note = noteList(editing).find((n) => String(n.id) === String(noteId));
+      if (!note) return;
+      const added = await pickAndUpload(OWNER_TYPE, noteId);
+      if (added.length) {
+        note.images = (note.images || []).concat(added);
+        renderLog();
+        repaintCell();
+      }
+      return;
+    }
+    const delImg = e.target.closest("#sales-log [data-att-del]");
+    if (delImg) {
+      if (!inlineConfirm(delImg, "\u786E\u8BA4")) return;
+      const imgId = delImg.dataset.attDel;
+      try {
+        await deleteImage(imgId);
+        for (const n of noteList(editing)) n.images = (n.images || []).filter((im) => String(im.id) !== String(imgId));
+        renderLog();
+        repaintCell();
+        toast2("\u5DF2\u5220\u9664\u8FD9\u5F20\u56FE");
+      } catch (err) {
+        toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
+      }
+      return;
+    }
+    const delNote = e.target.closest("#sales-log [data-sales-del]");
+    if (delNote) {
+      if (!inlineConfirm(delNote, "\u786E\u8BA4\u5220\u9664")) return;
+      const noteId = delNote.dataset.salesDel;
+      try {
+        await API.del("/api/inquiries/" + editing.id + "/sales-notes/" + noteId);
+        editing.sales_notes = noteList(editing).filter((n) => String(n.id) !== String(noteId));
+        renderLog();
+        repaintCell();
+        toast2("\u5DF2\u5220\u9664\u8BE5\u6761\u4E1A\u52A1\u53CD\u9988");
+      } catch (err) {
+        toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
+      }
+    }
+  });
+
   // public/src/inquiries.js
-  var REGION_BADGE = { "\u6B27\u6D32": "b-blue", "\u897F\u6B27": "b-blue", "\u5357\u6B27": "b-blue", "\u5317\u6B27": "b-blue", "\u4E2D\u4E1C\u6B27": "b-teal", "\u4E1C\u6B27/\u4FC4\u7F57\u65AF": "b-amber", "\u4FC4\u7F57\u65AF": "b-amber", "\u5317\u7F8E": "b-purple", "\u62C9\u7F8E": "b-red", "\u4E2D\u4E1C": "b-amber", "\u5317\u975E": "b-amber", "\u6492\u54C8\u62C9\u4EE5\u5357\u975E\u6D32": "b-gray", "\u5357\u4E9A": "b-teal", "\u4E1C\u5357\u4E9A": "b-red", "\u4E1C\u5357\u4E9A/\u5DF4\u897F": "b-red", "\u4E1C\u4E9A": "b-green", "\u4E2D\u4E9A": "b-gray", "\u5927\u6D0B\u6D32": "b-teal", "\u5176\u4ED6": "b-gray" };
   var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
-  var PROD_BADGE = { "\u94F8\u9020": "b-amber", "\u953B\u9020": "b-red", "\u673A\u52A0\u5DE5": "b-blue", "\u9600\u95E8": "b-purple", "\u7BA1\u4EF6": "b-teal", "\u7535\u529B\u91D1\u5177": "b-green" };
   var GRADE_BADGE = { A: "b-green", B: "b-blue", C: "b-gray" };
   var DEAL_BADGE = { "\u5DF2\u6210\u4EA4": "b-green", "\u672A\u6210\u4EA4": "b-gray" };
   var COMPANY_BADGE = { "\u8D1D\u5B5A\u7279": "b-teal", "\u8D39\u5C14\u745E": "b-purple" };
   window._inqCache = [];
   function openInquiry() {
+    fillSelect(document.getElementById("f-product"), PRODUCT_NAMES);
+    fillSelect(document.getElementById("f-region"), REGION_NAMES);
     document.getElementById("f-date").value = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     ["f-country", "f-code", "f-sales", "f-source", "f-note"].forEach((i) => document.getElementById(i).value = "");
     document.getElementById("f-deal").value = "\u672A\u6210\u4EA4";
@@ -2952,8 +3336,8 @@
   }
   function repaintTrackCell(it) {
     const tr = document.querySelector('.inq-tb tr[data-id="' + it.id + '"]');
-    const cell2 = tr && tr.querySelector(".inq-track-feedback");
-    if (cell2) cell2.innerHTML = trackCellHtml(it);
+    const cell3 = tr && tr.querySelector(".inq-track-feedback");
+    if (cell3) cell3.innerHTML = trackCellHtml(it);
   }
   async function submitTrack() {
     if (!_trackEditing) return;
@@ -3010,7 +3394,7 @@
   function inqRowHtml(r) {
     const up = isUpgraded(r);
     const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc2(r.original_grade)} \u2192 \u73B0 ${esc2(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
-    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td>${esc2(r.country)}</td><td class="ctr"><span class="badge ${REGION_BADGE[r.region] || "b-gray"}">${esc2(r.region)}</span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc2(r.source)}</td><td class="ctr"><span class="tagselect ${PROD_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc2(r.country || "")}</td><td class="ctr"><span class="tagselect ${REGION_BADGE[r.region] || "b-gray"}" data-kind="region">${esc2(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc2(r.source)}</td><td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
@@ -3020,20 +3404,24 @@
   var FILTER_COLS = [
     null,
     { key: "customer_code", type: "text", ph: "\u5BA2\u6237\u7F16\u7801" },
-    { key: "country", type: "select", ph: "\u56FD\u5BB6", blank: "\u672A\u586B" },
-    { key: "region", type: "select", ph: "\u5927\u533A", blank: "\u672A\u586B" },
+    { key: "country", type: "text", ph: "\u56FD\u5BB6" },
+    // 国家改成可编辑自由文本后，用包含匹配比穷举下拉更好用
+    { key: "region", type: "select", ph: "\u5927\u533A", blank: "\u672A\u586B", catalog: REGION_NAMES },
     { key: "channel", type: "select", ph: "\u6E20\u9053", blank: "\u672A\u586B" },
     { key: "source", type: "text", ph: "\u6765\u6E90\u8BCD" },
-    { key: "product", type: "select", ph: "\u4EA7\u54C1", blank: "\u672A\u586B" },
+    { key: "product", type: "select", ph: "\u4EA7\u54C1", blank: "\u672A\u586B", catalog: PRODUCT_NAMES },
     { key: "grade", type: "select", ph: "\u7B49\u7EA7" },
     { key: "company", type: "select", ph: "\u516C\u53F8", blank: "\u672A\u6807\u6CE8" },
     { key: "salesperson", type: "select", ph: "\u4E1A\u52A1\u5458", blank: "\u672A\u586B" },
+    { key: "sales_notes", type: "has", ph: "\u4E1A\u52A1\u53CD\u9988" },
+    // 有没有业务发回来的材料（数组，不是文本列）
     { key: "deal_status", type: "select", ph: "\u662F\u5426\u6210\u4EA4", blank: "\u672A\u6807\u8BB0" },
     { key: "note", type: "text", ph: "\u5907\u6CE8" },
-    { key: "feedbacks", type: "has", ph: "\u53CD\u9988" },
+    { key: "feedbacks", type: "has", ph: "\u8DDF\u8E2A\u53CD\u9988" },
     // 有没有跟进记录（数组，不是文本列）
     { key: "__clear", type: "clear" }
   ];
+  var COLSPAN = FILTER_COLS.length;
   var FILTERS = {};
   var PAGE_SIZES = [20, 50, 100];
   var _page = 1;
@@ -3086,9 +3474,14 @@
       const s = String(v);
       seen.set(s, (seen.get(s) || 0) + 1);
     });
-    const list = [...seen.keys()].sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
-    const out = list.map((v) => ({ value: v, label: v }));
-    if (blanks && col.blank) out.push({ value: BLANK, label: col.blank });
+    const catalog = Array.isArray(col.catalog) ? col.catalog : [];
+    const extras = [...seen.keys()].filter((v) => catalog.indexOf(v) < 0).sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
+    const names = catalog.length ? catalog.concat(extras) : extras;
+    const out = names.map((v) => {
+      const n = seen.get(v) || 0;
+      return { value: v, label: catalog.length ? v + "\uFF08" + n + "\uFF09" : v };
+    });
+    if (blanks && col.blank) out.push({ value: BLANK, label: col.blank + "\uFF08" + blanks + "\uFF09" });
     return out;
   }
   function renderInqFilterRow() {
@@ -3189,6 +3582,7 @@
     if (d.item && typeof d.item === "object") Object.assign(it, d.item);
     else it[d.field] = d.value;
   });
+  document.addEventListener("salesnoteschanged", () => renderInqTable());
   function absorbEditedCells(tb) {
     tb.querySelectorAll("tr[data-id] td[contenteditable][data-field]").forEach((td2) => {
       const now = td2.innerText.trim();
@@ -3217,7 +3611,7 @@
     tb.innerHTML = "";
     if (!rows2.length) {
       const why = activeFilterCount() ? "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u8BE2\u76D8 \u2014\u2014 \u6362\u4E2A\u6761\u4EF6\u6216\u70B9\u53F3\u4E0A\u89D2\u300C\u6E05\u7A7A\u7B5B\u9009\u300D" : "\u6240\u9009\u65F6\u95F4\u533A\u95F4\u6682\u65E0\u8BE2\u76D8";
-      tb.innerHTML = `<tr><td colspan="14" class="dim csp-s-d48bfa87bb">${why}</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="${COLSPAN}" class="dim csp-s-d48bfa87bb">${why}</td></tr>`;
       renderInqPager(0, 1, 0, 0);
       return;
     }
@@ -3231,7 +3625,7 @@
         const sep = document.createElement("tr");
         sep.className = "inq-msep";
         sep.dataset.month = ym;
-        sep.innerHTML = `<td colspan="14"><i class="ti ti-calendar-month hicon"></i> ${esc2(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
+        sep.innerHTML = `<td colspan="${COLSPAN}"><i class="ti ti-calendar-month hicon"></i> ${esc2(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
         tb.appendChild(sep);
       }
       const tr = document.createElement("tr");
@@ -3325,7 +3719,7 @@
         window._inqCache = [];
         window._inqStats = null;
         const reason = e.message || "\u672A\u77E5\u9519\u8BEF";
-        tableLoadState("tb-inq", 14, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries);
+        tableLoadState("tb-inq", COLSPAN, "error", "\u8BE2\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason, loadInquiries);
         if (window._curTab === "inquiry") {
           try {
             renderGlobe();
@@ -3343,7 +3737,10 @@
   // public/src/tagselect.js
   var OPT = {
     channel: [["SEO\u81EA\u7136", "b-blue"], ["SEM\u4ED8\u8D39", "b-purple"], ["\u76F4\u63A5", "b-teal"], ["\u5176\u4ED6", "b-gray"]],
-    product: [["\u94F8\u9020", "b-amber"], ["\u953B\u9020", "b-red"], ["\u673A\u52A0\u5DE5", "b-blue"], ["\u9600\u95E8", "b-purple"], ["\u7BA1\u4EF6", "b-teal"], ["\u7535\u529B\u91D1\u5177", "b-green"]],
+    // 产品 / 大区从 catalog.js 取，和录入弹框下拉、表头筛选同一份清单（加产品只改 catalog.js）
+    product: PRODUCTS,
+    region: REGIONS,
+    // 2026-09-20：大区从只读徽章改成可点改（录入当下常常还不知道客户在哪）
     status: [["\u5F85\u5F00\u59CB", "b-gray"], ["\u8FDB\u884C\u4E2D", "b-amber"], ["\u5DF2\u5B8C\u6210", "b-green"]],
     result: [["\u5DF2\u6539", "b-green"], ["\u8FDB\u884C\u4E2D", "b-amber"], ["\u8BA1\u5212\u4E0B\u5468", "b-blue"], ["\u653E\u5F03", "b-gray"]],
     grade: [["A", "b-green"], ["B", "b-blue"], ["C", "b-gray"]],
@@ -3423,7 +3820,14 @@
       dept: "dept",
       grade: "grade",
       deal: "deal_status",
-      company: "company"
+      company: "company",
+      // 6.23 文档 8 + 录入改版：是否成交 / 公司
+      // 2026-09-20 补：region 新增可改；product/channel 是**早就存在的静默 bug** ——
+      // 表格里这两个标签本来就长得像可点改的，点了也确实换了颜色，但 kind 不在这张表里
+      // 就直接 return 了，一次 PATCH 都没发过，刷新后原样退回去。三个一起补上。
+      region: "region",
+      product: "product",
+      channel: "channel"
     };
     const field2 = fieldMap[kind];
     if (!field2) return;
@@ -3456,6 +3860,7 @@
   }
 
   // public/src/keywords.js
+  var KEYWORD_OWNER = "keyword";
   var KW_TB = { seo: "tb-kw-seo", sem: "tb-kw-sem", high: "tb-kw-high", customer: "tb-kw-cust" };
   var KW_PAGE_OPTS = [10, 20, 50, 100, 200, 300];
   var _kwPage = { seo: 0, sem: 0, high: 0, customer: 0 };
@@ -3491,10 +3896,52 @@
     } else if (type === "high") {
       tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
     } else {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr kw-sales">${kwSalesCellHtml(r)}</td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr._kwImages = Array.isArray(r.images) ? r.images.slice() : [];
     }
     return tr;
   }
+  function kwSalesCellHtml(r) {
+    const imgs = Array.isArray(r.images) ? r.images : [];
+    return thumbsHtml(imgs, { deletable: true }) + `<button type="button" class="btn-mini kw-img-add" title="\u4E0A\u4F20\u4E1A\u52A1\u53D1\u6765\u7684\u56FE\u7247"><i class="ti ti-photo-plus"></i> ${imgs.length ? "\u52A0\u56FE" : "\u4F20\u56FE"}</button>`;
+  }
+  function kwRowRecord(tr) {
+    if (!tr._kwImages) tr._kwImages = [];
+    return tr._kwImages;
+  }
+  function repaintKwSales(tr) {
+    const cell3 = tr.querySelector(".kw-sales");
+    if (!cell3) return;
+    cell3.innerHTML = kwSalesCellHtml({ images: kwRowRecord(tr) });
+  }
+  document.addEventListener("click", async (e) => {
+    const add = e.target.closest("#tb-kw-cust .kw-img-add");
+    if (add) {
+      const tr = add.closest("tr");
+      if (!tr || !tr.dataset.id) return;
+      const done = await pickAndUpload(KEYWORD_OWNER, tr.dataset.id, { multiple: true });
+      if (done.length) {
+        tr._kwImages = kwRowRecord(tr).concat(done);
+        repaintKwSales(tr);
+      }
+      return;
+    }
+    const del = e.target.closest("#tb-kw-cust [data-att-del]");
+    if (del) {
+      const tr = del.closest("tr");
+      if (!tr) return;
+      if (!inlineConfirm(del, "\u786E\u8BA4")) return;
+      const id = del.dataset.attDel;
+      try {
+        await deleteImage(id);
+        tr._kwImages = kwRowRecord(tr).filter((im) => String(im.id) !== String(id));
+        repaintKwSales(tr);
+        toast2("\u5DF2\u5220\u9664\u8FD9\u5F20\u56FE");
+      } catch (err) {
+        toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
+      }
+    }
+  });
   document.addEventListener("focusin", (e) => {
     const c = e.target.closest && e.target.closest("#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]");
     if (c) c._old = c.innerText;
@@ -3733,46 +4180,46 @@
     }
   });
   document.addEventListener("focusin", (e) => {
-    const cell2 = e.target.closest && e.target.closest(".kw-name");
-    if (cell2) cell2.dataset.kwOld = cell2.textContent;
+    const cell3 = e.target.closest && e.target.closest(".kw-name");
+    if (cell3) cell3.dataset.kwOld = cell3.textContent;
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
-      const cell2 = e.target.closest && e.target.closest(".kw-name");
-      if (cell2) {
+      const cell3 = e.target.closest && e.target.closest(".kw-name");
+      if (cell3) {
         e.preventDefault();
-        cell2.blur();
+        cell3.blur();
       }
     }
   });
   document.addEventListener("focusout", async (e) => {
-    const cell2 = e.target.closest && e.target.closest(".kw-name");
-    if (!cell2) return;
-    const tr = cell2.closest("tr");
+    const cell3 = e.target.closest && e.target.closest(".kw-name");
+    if (!cell3) return;
+    const tr = cell3.closest("tr");
     if (!tr || !tr.dataset.id) return;
-    const oldVal = cell2.dataset.kwOld != null ? cell2.dataset.kwOld : cell2.textContent;
-    const vr = validateEditableValue(cell2.textContent, "text", { nonempty: true, emptyMsg: "\u5173\u952E\u8BCD\u4E0D\u80FD\u4E3A\u7A7A" });
+    const oldVal = cell3.dataset.kwOld != null ? cell3.dataset.kwOld : cell3.textContent;
+    const vr = validateEditableValue(cell3.textContent, "text", { nonempty: true, emptyMsg: "\u5173\u952E\u8BCD\u4E0D\u80FD\u4E3A\u7A7A" });
     if (!vr.ok) {
-      rollbackEditable(cell2, oldVal);
-      showSaveError(cell2, vr.msg);
+      rollbackEditable(cell3, oldVal);
+      showSaveError(cell3, vr.msg);
       return;
     }
     const v = vr.value;
     if (v === String(oldVal).trim()) {
-      cell2.textContent = v;
-      setSavingState(cell2, null);
+      cell3.textContent = v;
+      setSavingState(cell3, null);
       return;
     }
-    setSavingState(cell2, "saving");
+    setSavingState(cell3, "saving");
     try {
       await API.patch("/api/keywords/" + tr.dataset.id, { keyword: v });
-      cell2.textContent = v;
-      cell2.dataset.kwOld = v;
-      setSavingState(cell2, "ok");
+      cell3.textContent = v;
+      cell3.dataset.kwOld = v;
+      setSavingState(cell3, "ok");
       toast2("\u5DF2\u66F4\u65B0\u5173\u952E\u8BCD \xB7 \u5DF2\u5165\u5E93");
     } catch (err) {
-      rollbackEditable(cell2, oldVal);
-      showSaveError(cell2, err.status === 403 ? "\u65E0\u6743\u9650\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+      rollbackEditable(cell3, oldVal);
+      showSaveError(cell3, err.status === 403 ? "\u65E0\u6743\u9650\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     }
   });
   function renderSparklines() {
@@ -4095,8 +4542,8 @@
       const s = rf.querySelector("span");
       return s ? s.innerText.trim() : "";
     }
-    const cell2 = btn.closest(".review-grid>div");
-    if (cell2) return cell2.innerText.trim();
+    const cell3 = btn.closest(".review-grid>div");
+    if (cell3) return cell3.innerText.trim();
     return "";
   }
   function scopeDept(btn, txt) {
@@ -5184,9 +5631,9 @@
     const empty = document.getElementById(emptyId);
     if (!body) return;
     const items = Array.isArray(rows2) ? rows2 : [];
-    body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell2) => {
-      const value = cell2.html == null ? esc2(cell2.value ?? "") : cell2.html;
-      return `<td class="${cell2.cls || ""}">${value}</td>`;
+    body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell3) => {
+      const value = cell3.html == null ? esc2(cell3.value ?? "") : cell3.html;
+      return `<td class="${cell3.cls || ""}">${value}</td>`;
     }).join("")}</tr>`).join("");
     if (empty) {
       empty.textContent = emptyText || "\u6682\u65E0\u6570\u636E";
@@ -5377,18 +5824,18 @@
     }
   }
   document.addEventListener("focusout", (e) => {
-    const cell2 = e.target.closest && e.target.closest("#tb-market [contenteditable]");
-    if (!cell2) return;
-    const tr = cell2.closest("tr");
+    const cell3 = e.target.closest && e.target.closest("#tb-market [contenteditable]");
+    if (!cell3) return;
+    const tr = cell3.closest("tr");
     const id = tr && tr.dataset.id;
     if (!id) return;
     const it = window._marketById[id];
     if (!it) return;
     const body = {};
-    if (cell2.classList.contains("mkt-q")) body.question = cell2.innerText.trim();
-    else if (cell2.classList.contains("mkt-ans")) {
+    if (cell3.classList.contains("mkt-q")) body.question = cell3.innerText.trim();
+    else if (cell3.classList.contains("mkt-ans")) {
       it._ans = it._ans || {};
-      it._ans[cell2.dataset.resp] = cell2.innerText;
+      it._ans[cell3.dataset.resp] = cell3.innerText;
       body.answers = JSON.stringify(it._ans);
     } else return;
     API.patch("/api/market/research/" + id, body).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
@@ -5883,12 +6330,12 @@
     (targets || []).forEach((t) => {
       const line = make("div", "ledger-target");
       line.appendChild(make("div", "ledger-target-name", t.label));
-      const actualText = t.actual == null ? "\u2014" : t.unit === "\xA5" ? money(t.actual, t.currency) : Number(t.actual).toLocaleString("zh-CN") + t.unit;
+      const actualText2 = t.actual == null ? "\u2014" : t.unit === "\xA5" ? money(t.actual, t.currency) : Number(t.actual).toLocaleString("zh-CN") + t.unit;
       const targetText = t.target == null ? "\u76EE\u6807\u5F85\u5B9A" : "\u76EE\u6807 " + (t.unit === "\xA5" ? money(t.target, "CNY") : Number(t.target).toLocaleString("zh-CN") + t.unit);
       line.appendChild(cell(
         "div",
         "ledger-target-val" + (t.currency_mismatch ? " ledger-warn" : ""),
-        actualText + " / " + targetText,
+        actualText2 + " / " + targetText,
         t.currency_mismatch ? "\u5B9E\u9645\u503C\u6765\u81EA Ads\uFF08\u8D26\u6237\u5E01\u79CD\uFF09\uFF0C\u76EE\u6807\u6309\u4EBA\u6C11\u5E01\u8BBE\u5B9A \u2014\u2014 \u5E01\u79CD\u53EF\u80FD\u4E0D\u4E00\u81F4\uFF0C\u8FDB\u5EA6\u4EC5\u4F9B\u53C2\u8003" : ""
       ));
       const bar = make("div", "progress-bar ledger-progress");
@@ -5997,6 +6444,336 @@
   }
   document.addEventListener("timerange", () => {
     loadLedger(true);
+  });
+
+  // public/src/kpi-review.js
+  var CARD_ID2 = "kpiReview";
+  var SCOPES2 = [
+    { key: "department", label: "\u8FD0\u8425\u90E8\uFF08\u90E8\u95E8\uFF09", hint: "\u8001\u677F\u8003\u6838\u8868\u7684\u4E3B\u53E3\u5F84\uFF1AA/B \u8BE2\u4EF7\u662F SEM \u4E0E SEO \u5171\u540C\u4EA7\u51FA" },
+    { key: "seo", label: "\u674E \xB7 SEO", hint: "\u5171\u4EAB A/B \u6570\u91CF\u53E3\u5F84\uFF1B\u5E7F\u544A\u6210\u672C\u4E0D\u9002\u7528\uFF0C\u6743\u91CD\u5DF2\u91CD\u65B0\u5F52\u4E00" },
+    { key: "sem", label: "\u9648 \xB7 SEM", hint: "\u5171\u4EAB A/B \u6570\u91CF\u53E3\u5F84\uFF1B\u5E7F\u544A\u6210\u672C\u6309 SEM \u5B9E\u9645\u82B1\u8D39\u8BA1\u7B97" }
+  ];
+  var activeScopeKey = "department";
+  var latest = null;
+  var STATUS_TEXT = {
+    NOT_APPLICABLE: "\u4E0D\u9002\u7528",
+    NO_TARGET: "\u76EE\u6807\u5F85\u5B9A",
+    MISSING_DATA: "\u7F3A\u6570\u636E",
+    NO_BASELINE: "\u672C\u671F\u65E0\u6B64\u9879"
+  };
+  var SCOPE_STATUS_TEXT = {
+    GRADED: null,
+    CONFIG_INCOMPLETE: "\u8003\u6838\u76EE\u6807\u672A\u8BBE\u5168 \xB7 \u5148\u5230\u300C\u8BBE\u7F6E \u2192 \u6708\u5EA6\u7EE9\u6548\u8003\u6838\u300D\u628A\u76EE\u6807\u586B\u5B8C",
+    INSUFFICIENT_COVERAGE: "\u53EF\u8BC4\u5206\u6570\u636E\u4E0D\u8DB3\uFF0C\u672A\u51FA\u6B63\u5F0F\u5206",
+    NO_VALID_DATA: "\u672C\u533A\u95F4\u6682\u65E0\u53EF\u8BC4\u5206\u6570\u636E"
+  };
+  function make2(tag, className, text2) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text2 != null) el.textContent = String(text2);
+    return el;
+  }
+  function cell2(tag, className, text2, title) {
+    const el = make2(tag, className, text2);
+    if (title) el.title = title;
+    return el;
+  }
+  var pct3 = (v, digits) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(digits == null ? 1 : digits) + "%";
+  var money2 = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+  function metricValueText(m, which) {
+    const v = m[which];
+    if (v == null) return null;
+    if (m.unit === "%") return pct3(v);
+    if (m.unit === "\xA5") return money2(v, which === "target" ? "CNY" : m.currency);
+    return String(v);
+  }
+  function ensureCard2() {
+    const existing = document.getElementById(CARD_ID2);
+    if (existing) return existing;
+    const panel = document.getElementById("panel-kpi");
+    if (!panel) return null;
+    const card = make2("div", "card kpi-review");
+    card.id = CARD_ID2;
+    const head = make2("div", "card-head");
+    head.appendChild(make2("span", "card-title", "\u6708\u5EA6\u7EE9\u6548\u8003\u6838 \xB7 \u8001\u677F\u8003\u6838\u8868\u53E3\u5F84"));
+    head.appendChild(make2("span", "card-sub kpi-review-range", "\u5F53\u524D\u533A\u95F4 \u2014"));
+    card.appendChild(head);
+    card.appendChild(make2("div", "kpi-review-body"));
+    const anchor = panel.querySelector(".sheet-tip");
+    if (anchor && anchor.nextSibling) panel.insertBefore(card, anchor.nextSibling);
+    else panel.appendChild(card);
+    return card;
+  }
+  function hoistAboveLedger(card) {
+    const ledger = document.getElementById("kpiLedger");
+    if (!ledger || ledger.parentNode !== card.parentNode) return;
+    if (card.compareDocumentPosition(ledger) & Node.DOCUMENT_POSITION_FOLLOWING) return;
+    card.parentNode.insertBefore(card, ledger);
+  }
+  function setBody2(card, node) {
+    const body = card.querySelector(".kpi-review-body");
+    if (!body) return;
+    body.textContent = "";
+    body.appendChild(node);
+  }
+  function buildTabs() {
+    const bar = make2("div", "kpi-review-tabs");
+    for (const s of SCOPES2) {
+      const btn = make2("button", "kpi-review-tab" + (s.key === activeScopeKey ? " on" : ""), s.label);
+      btn.type = "button";
+      btn.title = s.hint;
+      btn.setAttribute("data-kpi-review-scope", s.key);
+      bar.appendChild(btn);
+    }
+    return bar;
+  }
+  function bandTone(coef) {
+    if (!Number.isFinite(Number(coef))) return "tone-muted";
+    const c = Number(coef);
+    if (c >= 1) return "tone-ok";
+    if (c >= 0.9) return "tone-good";
+    if (c >= 0.8) return "tone-warn";
+    return "tone-bad";
+  }
+  function buildHero(s) {
+    const hero = make2("div", "kpi-review-hero");
+    const scoreBox = make2("div", "kpi-review-score");
+    const official = s.score != null;
+    const shown = official ? s.score : s.provisionalScore;
+    const band = official ? s.band : s.provisionalBand;
+    const big = make2("div", "kpi-review-score-num" + (official ? "" : " provisional"), shown == null ? "\u2014" : shown);
+    scoreBox.appendChild(big);
+    scoreBox.appendChild(make2("div", "kpi-review-score-max", official ? "\u603B\u5206 / \u4E0A\u9650 " + s.maxScore : "\u53C2\u8003\u5206\uFF08\u672A\u51FA\u6B63\u5F0F\u5206\uFF09"));
+    hero.appendChild(scoreBox);
+    const meta = make2("div", "kpi-review-meta");
+    const gradeRow = make2("div", "kpi-review-grade-row");
+    if (band) {
+      const tone = official ? " " + bandTone(band.coef) : " provisional";
+      gradeRow.appendChild(cell2("span", "kpi-review-grade" + tone, band.label, band.note || ""));
+      gradeRow.appendChild(cell2(
+        "span",
+        "kpi-review-coef",
+        "\u7EE9\u6548\u7CFB\u6570 " + band.coef,
+        official ? "\u6309\u603B\u5206\u843D\u5165\u7684\u5206\u6863" : "\u4EC5\u4F9B\u53C2\u8003 \u2014\u2014 \u6B63\u5F0F\u5206\u672A\u4EA7\u751F\uFF0C\u7CFB\u6570\u4E0D\u751F\u6548"
+      ));
+    } else {
+      gradeRow.appendChild(make2("span", "kpi-review-grade muted", "\u5F85\u8BC4\u4F30"));
+    }
+    meta.appendChild(gradeRow);
+    const warn = SCOPE_STATUS_TEXT[s.status];
+    if (warn) meta.appendChild(make2("div", "kpi-review-warn", warn));
+    meta.appendChild(make2(
+      "div",
+      "kpi-review-cov",
+      "\u53EF\u8BC4\u5206\u8986\u76D6\u7387 " + (pct3(s.coverage, 0) || "0%") + "\uFF08" + s.weights.valid + " / " + s.weights.eligible + " \u5206\u6743\u91CD\u6709\u6570\u636E\uFF09"
+    ));
+    hero.appendChild(meta);
+    hero.appendChild(buildChips(s));
+    return hero;
+  }
+  function buildChips(s) {
+    const wrap = make2("div", "kpi-review-chips");
+    const costA = s.metrics.find((m) => m.key === "cost_a");
+    const costAb = s.metrics.find((m) => m.key === "cost_ab");
+    const costText = (m) => m && m.status === "VALID" && m.actual != null ? money2(m.actual, m.currency) : m ? STATUS_TEXT[m.status] || "\u2014" : "\u2014";
+    const items = [
+      ["A+B \u6709\u6548\u8BE2\u4EF7", s.leads.effective, null],
+      ["A \u7EA7\u8BE2\u4EF7", s.leads.a, null],
+      ["B \u7EA7\u8BE2\u4EF7", s.leads.b, null],
+      ["A \u7EA7\u5360\u6BD4", pct3(s.leads.aRatio) || "\u2014", null],
+      ["\u5E7F\u544A\u6295\u5165", s.adSpend.status === "VALID" ? money2(s.adSpend.value, s.adSpend.currency) : "\u7F3A\u6570\u636E", s.adSpend.note],
+      ["A \u7EA7\u83B7\u5BA2\u6210\u672C", costText(costA), costA && costA.note],
+      ["A+B \u83B7\u5BA2\u6210\u672C", costText(costAb), costAb && costAb.note]
+    ];
+    for (const [label, value, title] of items) {
+      const chip = make2("div", "kpi-review-chip");
+      chip.appendChild(make2("div", "kpi-review-chip-label", label));
+      chip.appendChild(cell2("div", "kpi-review-chip-value", value == null ? "\u2014" : value, title || ""));
+      wrap.appendChild(chip);
+    }
+    return wrap;
+  }
+  function toneFor(ratio2) {
+    if (ratio2 == null) return "kpi-tone-muted";
+    if (ratio2 >= 1) return "kpi-tone-green";
+    if (ratio2 >= 0.8) return "kpi-tone-blue";
+    if (ratio2 >= 0.5) return "kpi-tone-amber";
+    return "kpi-tone-primary";
+  }
+  function buildTable2(s) {
+    const table = make2("table", "dt kpi-review-table");
+    const thead = make2("thead");
+    const hr = make2("tr");
+    for (const h of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
+      hr.appendChild(make2("th", h === "\u8003\u6838\u9879\u76EE" || h === "\u8BF4\u660E" ? "" : "ctr", h));
+    }
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    const tbody = make2("tbody");
+    for (const m of s.metrics) {
+      const tr = make2("tr", m.status === "VALID" ? "" : "kpi-review-row-off");
+      tr.appendChild(cell2("td", "kpi-review-name", m.label, m.note || ""));
+      tr.appendChild(make2("td", "ctr num", m.weight));
+      tr.appendChild(make2("td", "ctr num", metricValueText(m, "target") || "\u2014"));
+      tr.appendChild(cell2(
+        "td",
+        "ctr num" + (m.status === "VALID" ? "" : " dim"),
+        actualText(m),
+        m.status === "VALID" ? "" : m.note || ""
+      ));
+      const tone = m.status === "VALID" ? toneFor(m.ratio) : "kpi-tone-muted";
+      tr.appendChild(cell2(
+        "td",
+        "ctr num " + tone,
+        m.ratio == null ? "\u2014" : pct3(m.ratio, 0),
+        m.raw_ratio != null && m.ratio != null && m.raw_ratio > m.ratio ? "\u5B9E\u9645\u8FBE\u6210 " + pct3(m.raw_ratio, 0) + "\uFF0C\u6309\u4E0A\u9650 " + pct3(m.ratio, 0) + " \u8BA1\u5206" : ""
+      ));
+      tr.appendChild(make2("td", "ctr num kpi-review-score-cell " + tone, m.score == null ? "\u2014" : m.score));
+      tr.appendChild(cell2("td", "kpi-review-note dim", statusNote(m), m.note || ""));
+      tbody.appendChild(tr);
+    }
+    tbody.appendChild(buildAdRow(s.adSpend));
+    table.appendChild(tbody);
+    return table;
+  }
+  function actualText(m) {
+    if (m.status !== "VALID") return STATUS_TEXT[m.status] || "\u2014";
+    const num2 = metricValueText(m, "actual");
+    if (m.display_value && num2) return num2 + "\uFF08" + m.display_value + "\uFF09";
+    return m.display_value || num2 || "\u2014";
+  }
+  function statusNote(m) {
+    if (m.status === "VALID") return m.note || "";
+    return (STATUS_TEXT[m.status] || "") + (m.note ? " \xB7 " + m.note : "");
+  }
+  function buildAdRow(ad) {
+    const tr = make2("tr", "kpi-review-row-info");
+    tr.appendChild(cell2("td", "kpi-review-name", "\u5E7F\u544A\u6295\u5165\uFF08\u4E0D\u8BA1\u5206\uFF09", ad.note));
+    tr.appendChild(make2("td", "ctr dim", "\u2014"));
+    tr.appendChild(make2("td", "ctr num", ad.budget == null ? "\u9884\u7B97\u5F85\u5B9A" : money2(ad.budget, "CNY")));
+    tr.appendChild(make2("td", "ctr num", ad.status === "VALID" ? money2(ad.value, ad.currency) : "\u7F3A\u6570\u636E"));
+    const dev = ad.deviation;
+    const devText = dev == null ? "\u2014" : (dev > 0 ? "+" : "") + (dev * 100).toFixed(1) + "%";
+    tr.appendChild(cell2(
+      "td",
+      "ctr num " + (ad.within_tolerance === false ? "kpi-tone-amber" : "kpi-tone-muted"),
+      devText,
+      "\u76F8\u5BF9\u9884\u7B97\u7684\u504F\u5DEE\uFF0C\u5BB9\u5FCD\u5E26 \xB1" + Math.round(ad.tolerance * 100) + "%"
+    ));
+    tr.appendChild(make2("td", "ctr dim", "\u2014"));
+    tr.appendChild(make2("td", "kpi-review-note dim", ad.note));
+    return tr;
+  }
+  function buildBands(s) {
+    const box = make2("div", "kpi-review-bands");
+    box.appendChild(make2("div", "kpi-review-sub", "\u7EE9\u6548\u7CFB\u6570\u5206\u6863"));
+    const row = make2("div", "kpi-review-band-row");
+    const current = s.score != null ? s.band : null;
+    for (const b of s.config.bands) {
+      const active = current && current.label === b.label;
+      const chip = make2("div", "kpi-review-band" + (active ? " on " + bandTone(b.coef) : ""));
+      chip.title = b.note || "";
+      chip.appendChild(make2("span", "kpi-review-band-range", "\u2265 " + b.min));
+      chip.appendChild(make2("span", "kpi-review-band-label", b.label));
+      chip.appendChild(make2("span", "kpi-review-band-coef", "\xD7" + b.coef));
+      row.appendChild(chip);
+    }
+    box.appendChild(row);
+    return box;
+  }
+  function buildFooter(s) {
+    const box = make2("div", "kpi-review-foot");
+    const a = s.attribution;
+    const unattrib = make2("div", "kpi-review-attr");
+    unattrib.appendChild(make2("span", "kpi-review-attr-label", "\u672A\u6807\u660E\u6765\u6E90\u7684\u8BE2\u76D8"));
+    unattrib.appendChild(cell2("span", "kpi-review-attr-value", a.unattributed + " \u6761\uFF08" + (pct3(a.unattributedRate, 0) || "0%") + "\uFF09", a.note));
+    unattrib.appendChild(make2(
+      "span",
+      "kpi-review-attr-note",
+      "\u300C\u76F4\u63A5 / \u5176\u4ED6\u300D\u6309\u8001\u677F\u53E3\u5F84\u8BA1\u5165\u90E8\u95E8\u603B\u91CF\uFF0C\u4E0D\u5F71\u54CD\u5F97\u5206\uFF1B\u8FD9\u4E2A\u6BD4\u4F8B\u957F\u671F\u504F\u9AD8\u8BF4\u660E\u5F55\u5165\u6765\u6E90\u8981\u6539\u8FDB"
+    ));
+    box.appendChild(unattrib);
+    const src = make2("div", "kpi-review-sources");
+    src.appendChild(make2("div", "kpi-review-sub", "\u6570\u636E\u6765\u6E90"));
+    const ul = make2("ul", "kpi-review-source-list");
+    const labels = { leads: "\u8BE2\u4EF7\u6570\u91CF", spend: "\u5E7F\u544A\u6295\u5165", weekly: "\u5468\u590D\u76D8", fix: "\u6574\u6539\u95ED\u73AF", test: "\u5B9E\u9A8C\u6D4B\u8BD5", targets: "\u8003\u6838\u76EE\u6807" };
+    for (const [k, v] of Object.entries(s.sources || {})) {
+      ul.appendChild(make2("li", "", (labels[k] || k) + "\uFF1A" + v));
+    }
+    src.appendChild(ul);
+    box.appendChild(src);
+    const basis = make2("div", "kpi-review-basis");
+    basis.textContent = s.scope === "seo" ? "A / B \u8BE2\u4EF7\u6570\u91CF\u53D6\u90E8\u95E8\u6574\u4F53\u53E3\u5F84\uFF08\u4E0D\u6309\u6E20\u9053\u62C6\u5206\u5230\u4E2A\u4EBA\uFF09\uFF1B\u5E7F\u544A\u6210\u672C\u5BF9 SEO \u4E0D\u9002\u7528\uFF0C\u5176 20 \u5206\u6743\u91CD\u5DF2\u5728\u5176\u4F59\u6307\u6807\u95F4\u91CD\u65B0\u5F52\u4E00\u3002" : s.scope === "sem" ? "A / B \u8BE2\u4EF7\u6570\u91CF\u53D6\u90E8\u95E8\u6574\u4F53\u53E3\u5F84\uFF08\u4E0D\u6309\u6E20\u9053\u62C6\u5206\u5230\u4E2A\u4EBA\uFF09\uFF1B\u5E7F\u544A\u6210\u672C\u6309\u6240\u9009\u533A\u95F4\u7684 SEM \u5B9E\u9645\u82B1\u8D39\u8BA1\u7B97\u3002" : "\u672C\u8868\u6309\u90E8\u95E8\u6574\u4F53\u8003\u6838\uFF1AA / B \u8BE2\u4EF7\u662F SEM \u4E0E SEO \u5171\u540C\u4EA7\u51FA\uFF0C\u542B\u300C\u76F4\u63A5 / \u5176\u4ED6\u300D\u6E20\u9053\u3002";
+    box.appendChild(basis);
+    return box;
+  }
+  function render2(card, data) {
+    latest = data;
+    hoistAboveLedger(card);
+    const label = card.querySelector(".kpi-review-range");
+    if (label) {
+      label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data.range) + (data.department.targets.source === "default" ? " \xB7 \u76EE\u6807\u53D6\u901A\u7528\u515C\u5E95\u503C" : "");
+    }
+    const s = data[activeScopeKey] || data.department;
+    const wrap = make2("div");
+    wrap.appendChild(buildTabs());
+    wrap.appendChild(buildHero(s));
+    const scroller = make2("div", "kpi-review-scroll");
+    scroller.appendChild(buildTable2(s));
+    wrap.appendChild(scroller);
+    wrap.appendChild(buildBands(s));
+    wrap.appendChild(buildFooter(s));
+    setBody2(card, wrap);
+  }
+  function renderError2(card, message) {
+    const box = make2("div", "kpi-review-error");
+    box.appendChild(make2("div", "", "\u6708\u5EA6\u7EE9\u6548\u8003\u6838\u52A0\u8F7D\u5931\u8D25\uFF1A" + (message || "\u672A\u77E5\u9519\u8BEF")));
+    box.appendChild(make2("div", "kpi-review-basis", "\u6570\u636E\u6E90\uFF1Ainquiries\uFF08\u8BE2\u4EF7\u7B49\u7EA7\uFF09+ Google Ads / sem_weeks\uFF08\u5E7F\u544A\u6295\u5165\uFF09+ weekly_reports / fixes / loop_items\uFF08\u8FC7\u7A0B\u6307\u6807\uFF09"));
+    const btn = make2("button", "btn-ghost", "\u91CD\u8BD5");
+    btn.type = "button";
+    btn.setAttribute("data-kpi-review-retry", "1");
+    box.appendChild(btn);
+    setBody2(card, box);
+  }
+  var requestSequence3 = 0;
+  var loadedRevision2 = null;
+  async function loadKpiReview(force) {
+    const card = ensureCard2();
+    if (!card) return false;
+    const revision = getRangeRevision("kpi");
+    if (!force && loadedRevision2 === revision && latest) return true;
+    const requestId = ++requestSequence3;
+    try {
+      const data = await API.get(withRange2("/api/kpi/review", "kpi"));
+      if (requestId !== requestSequence3 || revision !== getRangeRevision("kpi")) return false;
+      render2(card, data);
+      loadedRevision2 = revision;
+      return true;
+    } catch (e) {
+      if (requestId !== requestSequence3) return false;
+      if (e && e.message === "unauthorized") return false;
+      loadedRevision2 = null;
+      renderError2(card, e && e.message);
+    }
+    return false;
+  }
+  function mountKpiReview() {
+    return loadKpiReview(false);
+  }
+  document.addEventListener("timerange", (e) => {
+    if (e.detail && e.detail.scope === "kpi") loadKpiReview(true);
+  });
+  document.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-kpi-review-scope]");
+    if (tab) {
+      const next = tab.dataset.kpiReviewScope;
+      if (next === activeScopeKey || !latest) return;
+      activeScopeKey = next;
+      const card = document.getElementById(CARD_ID2);
+      if (card) render2(card, latest);
+      return;
+    }
+    if (e.target.closest("[data-kpi-review-retry]")) loadKpiReview(true);
   });
 
   // public/src/kpi-view.js
@@ -6224,6 +7001,7 @@
     set("topScore", company.toFixed(0));
     gauge("g1", "g1s", company);
     badge("g1b", company);
+    mountKpiReview();
     mountLedger();
     const a = window._kpiAssessment;
     if (!a) {
@@ -6622,10 +7400,10 @@
     generic: "\u592A\u6CDB \xB7 \u6CA1\u6709\u7ED3\u5408\u4E1A\u52A1"
   };
   function td(value, className) {
-    const cell2 = document.createElement("td");
-    if (className) cell2.className = className;
-    cell2.textContent = text(value);
-    return cell2;
+    const cell3 = document.createElement("td");
+    if (className) cell3.className = className;
+    cell3.textContent = text(value);
+    return cell3;
   }
   function badge2(label, className) {
     const span = document.createElement("span");
@@ -6862,7 +7640,7 @@
     ${memo ? `<div class="hmemo">${memo}</div>` : ""}
   </div>`;
   }
-  function render2(data) {
+  function render3(data) {
     const box = document.getElementById("plan-history");
     if (!box) return;
     const day = data.day;
@@ -6904,7 +7682,7 @@
     box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc2(day) + " \u7684\u8BB0\u5F55\u2026</div>";
     try {
       const data = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
-      render2(data);
+      render3(data);
     } catch (e) {
       box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
     }
@@ -6950,7 +7728,7 @@
   // public/src/sop-rate.js
   var DEPTS2 = [["SEO", "\u674E", "b-blue"], ["SEM", "\u9648", "b-purple"], ["\u516C\u53F8", "\u516C\u53F8", "b-red"]];
   var FREQ_LABEL2 = { daily: "\u6BCF\u65E5", weekly: "\u6BCF\u5468", monthly: "\u6BCF\u6708" };
-  function pct3(done, expected) {
+  function pct4(done, expected) {
     return expected > 0 ? Math.round(done / expected * 100) : null;
   }
   function rateClass(p) {
@@ -6960,7 +7738,7 @@
     const counted = items.filter((i) => i.expected !== null);
     const done = counted.reduce((a, i) => a + i.done, 0);
     const expected = counted.reduce((a, i) => a + i.expected, 0);
-    const p = pct3(done, expected);
+    const p = pct4(done, expected);
     const missed = counted.filter((i) => i.expected > i.done).sort((a, b) => b.expected - b.done - (a.expected - a.done));
     const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc2(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => d.slice(5)).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
     return `<div class="sr-dept">
@@ -7365,11 +8143,11 @@
   function renderRankTrend(snapshots) {
     if (!snapshots || snapshots.length < 2) return;
     const first = snapshots[0];
-    const latest = snapshots[snapshots.length - 1];
+    const latest2 = snapshots[snapshots.length - 1];
     [...document.querySelectorAll("#mp-seo-opp tbody tr")].forEach((row) => {
       const keyword = row.cells[0].textContent.trim();
       const start = first.items.find((item) => item.keyword === keyword);
-      const end = latest.items.find((item) => item.keyword === keyword);
+      const end = latest2.items.find((item) => item.keyword === keyword);
       if (!start || !end || start.rank == null || end.rank == null) return;
       const difference = start.rank - end.rank;
       let trend = row.querySelector(".rk-trend");
@@ -7440,7 +8218,7 @@
     google_ads_search_term_daily: "Google Ads \u641C\u7D22\u8BCD"
   };
   var register = null;
-  var requestSequence3 = 0;
+  var requestSequence4 = 0;
   function byId2(id) {
     return document.getElementById(id);
   }
@@ -7476,19 +8254,19 @@
     }
     return lines.slice(0, 6);
   }
-  function make2(tag, className, text2) {
+  function make3(tag, className, text2) {
     const element = document.createElement(tag);
     if (className) element.className = className;
     if (text2 != null) element.textContent = String(text2);
     return element;
   }
   function statusBadge(item) {
-    const badge3 = make2("span", `risk-badge risk-status risk-status-${item.status}`, STATUS_LABELS[item.status] || item.status);
+    const badge3 = make3("span", `risk-badge risk-status risk-status-${item.status}`, STATUS_LABELS[item.status] || item.status);
     badge3.setAttribute("aria-label", `\u72B6\u6001\uFF1A${STATUS_LABELS[item.status] || item.status}`);
     return badge3;
   }
   function severityBadge(item) {
-    const badge3 = make2("span", `risk-badge risk-severity risk-severity-${item.severity.toLowerCase()}`, item.severity);
+    const badge3 = make3("span", `risk-badge risk-severity risk-severity-${item.severity.toLowerCase()}`, item.severity);
     badge3.setAttribute("aria-label", `\u4E25\u91CD\u7EA7\u522B\uFF1A${item.severity}`);
     return badge3;
   }
@@ -7513,15 +8291,15 @@
     status.textContent = `\u751F\u4EA7\u5B9E\u6D4B\uFF1A${verdict} \xB7 ${formatDate(acceptance.checkedAt)}`;
     status.dataset.state = acceptance.verdict;
   }
-  function appendEvidence(cell2, item) {
-    cell2.appendChild(make2("div", "risk-evidence-main", item.detail || "\u6CA1\u6709\u53EF\u5C55\u793A\u7684\u8BC1\u636E\u8BF4\u660E\u3002"));
+  function appendEvidence(cell3, item) {
+    cell3.appendChild(make3("div", "risk-evidence-main", item.detail || "\u6CA1\u6709\u53EF\u5C55\u793A\u7684\u8BC1\u636E\u8BF4\u660E\u3002"));
     const lines = evidenceLines(item.evidence);
     if (lines.length) {
-      const list = make2("ul", "risk-evidence-list");
-      lines.forEach((line) => list.appendChild(make2("li", "", line)));
-      cell2.appendChild(list);
+      const list = make3("ul", "risk-evidence-list");
+      lines.forEach((line) => list.appendChild(make3("li", "", line)));
+      cell3.appendChild(list);
     }
-    cell2.appendChild(make2("div", "risk-evidence-source", SOURCE_LABELS[item.source] || "\u5F53\u524D\u68C0\u67E5"));
+    cell3.appendChild(make3("div", "risk-evidence-source", SOURCE_LABELS[item.source] || "\u5F53\u524D\u68C0\u67E5"));
   }
   function renderRows() {
     if (!register) return;
@@ -7536,7 +8314,7 @@
     state2.replaceChildren();
     if (!items.length) {
       wrap.hidden = true;
-      state2.appendChild(make2("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
+      state2.appendChild(make3("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
       return;
     }
     wrap.hidden = false;
@@ -7546,27 +8324,27 @@
       severityCell.appendChild(severityBadge(item));
       const statusCell = document.createElement("td");
       statusCell.appendChild(statusBadge(item));
-      const titleCell = make2("td", "risk-title-cell");
-      titleCell.appendChild(make2("strong", "", item.title));
-      const evidenceCell = make2("td", "risk-evidence-cell");
+      const titleCell = make3("td", "risk-title-cell");
+      titleCell.appendChild(make3("strong", "", item.title));
+      const evidenceCell = make3("td", "risk-evidence-cell");
       appendEvidence(evidenceCell, item);
-      const ownerCell = make2("td", "risk-owner-cell", item.owner);
-      const updatedCell = make2("td", "risk-updated-cell", formatDate(item.updatedAt));
-      const actionCell = make2("td", "risk-action-cell", item.nextAction);
+      const ownerCell = make3("td", "risk-owner-cell", item.owner);
+      const updatedCell = make3("td", "risk-updated-cell", formatDate(item.updatedAt));
+      const actionCell = make3("td", "risk-action-cell", item.nextAction);
       row.append(severityCell, statusCell, titleCell, evidenceCell, ownerCell, updatedCell, actionCell);
       tbody.appendChild(row);
     });
   }
-  function renderError2(error) {
+  function renderError3(error) {
     const state2 = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
     if (wrap) wrap.hidden = true;
     if (!state2) return;
     state2.replaceChildren();
-    const message = make2("div", "risk-state-message risk-state-error");
-    message.appendChild(make2("strong", "", "\u98CE\u9669\u6E05\u5355\u52A0\u8F7D\u5931\u8D25"));
-    message.appendChild(make2("span", "", `\uFF1A${error && error.message ? error.message : "\u672A\u77E5\u9519\u8BEF"}`));
-    const retry = make2("button", "btn-ghost", "\u91CD\u8BD5");
+    const message = make3("div", "risk-state-message risk-state-error");
+    message.appendChild(make3("strong", "", "\u98CE\u9669\u6E05\u5355\u52A0\u8F7D\u5931\u8D25"));
+    message.appendChild(make3("span", "", `\uFF1A${error && error.message ? error.message : "\u672A\u77E5\u9519\u8BEF"}`));
+    const retry = make3("button", "btn-ghost", "\u91CD\u8BD5");
     retry.type = "button";
     retry.addEventListener("click", loadRisks);
     message.appendChild(retry);
@@ -7588,7 +8366,7 @@
   }
   async function loadRisks() {
     bindControls();
-    const requestId = ++requestSequence3;
+    const requestId = ++requestSequence4;
     const refresh = byId2("risk-refresh");
     const state2 = byId2("risk-state");
     const wrap = byId2("risk-table-wrap");
@@ -7598,24 +8376,415 @@
     }
     if (wrap) wrap.hidden = true;
     if (state2) {
-      state2.replaceChildren(make2("div", "risk-state-message", "\u6B63\u5728\u6838\u5BF9\u5F53\u524D\u914D\u7F6E\u3001\u6570\u636E\u5E93\u8BC1\u636E\u548C\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536\u2026"));
+      state2.replaceChildren(make3("div", "risk-state-message", "\u6B63\u5728\u6838\u5BF9\u5F53\u524D\u914D\u7F6E\u3001\u6570\u636E\u5E93\u8BC1\u636E\u548C\u6700\u8FD1\u751F\u4EA7\u9A8C\u6536\u2026"));
     }
     try {
       const result = await API.get("/api/risks");
-      if (requestId !== requestSequence3) return;
+      if (requestId !== requestSequence4) return;
       register = result;
       renderSummary(result.summary || {});
       renderAcceptance(result.latestLiveAcceptance);
       renderRows();
     } catch (error) {
-      if (requestId === requestSequence3) renderError2(error);
+      if (requestId === requestSequence4) renderError3(error);
     } finally {
-      if (requestId === requestSequence3 && refresh) {
+      if (requestId === requestSequence4 && refresh) {
         refresh.disabled = false;
         refresh.removeAttribute("aria-busy");
       }
     }
   }
+
+  // public/src/kpi-review-admin.js
+  var HOST_ID = "kpiReviewAdmin";
+  var WEIGHT_FIELDS = [
+    ["review_weight_a", "A \u7EA7\u8BE2\u4EF7\u6570\u91CF", "\u8001\u677F\u8868\u7684\u7B2C\u4E00\u8003\u6838\u9879"],
+    ["review_weight_b", "B \u7EA7\u8BE2\u4EF7\u6570\u91CF", ""],
+    ["review_weight_cost_a", "A \u7EA7\u8BE2\u4EF7\u6210\u672C", "\u5E7F\u544A\u6295\u5165 \xF7 A \u7EA7\u6570\u91CF\uFF0C\u8D8A\u4F4E\u8D8A\u597D"],
+    ["review_weight_cost_ab", "A+B \u6709\u6548\u8BE2\u4EF7\u6210\u672C", "\u5E7F\u544A\u6295\u5165 \xF7 (A+B)\uFF0C\u8D8A\u4F4E\u8D8A\u597D"],
+    ["review_weight_a_ratio", "A \u7EA7\u8BE2\u4EF7\u5360\u6BD4", "\u8D28\u91CF\u6307\u6807\uFF1AA \xF7 (A+B)"],
+    ["review_weight_weekly", "\u5468\u590D\u76D8 / \u6570\u636E\u5206\u6790\u5B8C\u6210\u7387", "\u6570\u636E\u6765\u6E90 weekly_reports"],
+    ["review_weight_fix", "\u95EE\u9898\u6574\u6539\u95ED\u73AF\u7387", "\u6570\u636E\u6765\u6E90 fixes\uFF08\u6574\u6539\u53F0\u8D26\uFF09"],
+    ["review_weight_test", "\u5B9E\u9A8C\u6D4B\u8BD5\u5B8C\u6210\u7387", "\u6570\u636E\u6765\u6E90 loop_items(kind=test)"]
+  ];
+  var SCALAR_FIELDS = [
+    ["review_metric_cap", "\u5355\u6307\u6807\u8FBE\u6210\u7387\u4E0A\u9650", "\u8001\u677F\u8868\uFF1A\u6700\u9AD8\u6309 120% \u8BA1\u5206 \u2192 \u586B 1.2", 0.01],
+    ["review_min_coverage", "\u51FA\u5206\u5730\u677F\uFF08\u8986\u76D6\u7387\uFF09", "\u6709\u6570\u636E\u7684\u6743\u91CD\u4F4E\u4E8E\u8FD9\u4E2A\u6BD4\u4F8B\u5C31\u4E0D\u51FA\u6B63\u5F0F\u5206\uFF0C\u53EA\u7ED9\u53C2\u8003\u5206", 0.01],
+    ["review_budget_tolerance", "\u5E7F\u544A\u9884\u7B97\u5BB9\u5FCD\u5E26", "\xB1\u591A\u5C11\u7B97\u6B63\u5E38\uFF0C\u53EA\u505A\u63D0\u793A\u4E0D\u6263\u5206 \u2192 0.1 \u8868\u793A \xB110%", 0.01]
+  ];
+  var TARGET_FIELDS = [
+    ["a_target", "A \u7EA7\u76EE\u6807", ""],
+    ["b_target", "B \u7EA7\u76EE\u6807", ""],
+    ["ad_budget", "\u5E7F\u544A\u9884\u7B97", "\u53EA\u505A\u5BF9\u7167\uFF0C\u4E0D\u8BA1\u5206"],
+    ["cost_a_target", "A \u7EA7\u6210\u672C\u76EE\u6807", ""],
+    ["cost_ab_target", "A+B \u6210\u672C\u76EE\u6807", ""],
+    ["a_ratio_target", "A \u7EA7\u5360\u6BD4\u76EE\u6807", "\u586B 0~1 \u7684\u5C0F\u6570\uFF0C\u4F8B\u5982 0.3 \u8868\u793A 30%"]
+  ];
+  var PERIOD_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+  var loaded = null;
+  var mounted = false;
+  function make4(tag, className, text2) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text2 != null) el.textContent = String(text2);
+    return el;
+  }
+  function numInput(name, value, step) {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.className = "kra-input";
+    input.step = step == null ? "1" : String(step);
+    input.min = "0";
+    input.setAttribute("data-kra-field", name);
+    input.value = value == null || value === "" ? "" : String(value);
+    return input;
+  }
+  function canEdit() {
+    const role = window.ME && window.ME.role;
+    return role === "manager" || role === "boss";
+  }
+  function buildWeights(cfg) {
+    const box = make4("div", "kra-block");
+    box.appendChild(make4("div", "kra-title", "\u2460 \u6743\u91CD\uFF08\u8001\u677F\u8868\u5408\u8BA1 100 \u5206\uFF09"));
+    const table = make4("table", "dt kra-table");
+    const thead = make4("thead");
+    const hr = make4("tr");
+    hr.appendChild(make4("th", "", "\u8003\u6838\u9879\u76EE"));
+    hr.appendChild(make4("th", "ctr", "\u6743\u91CD"));
+    hr.appendChild(make4("th", "", "\u8BF4\u660E"));
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    const tbody = make4("tbody");
+    for (const [key, label, note] of WEIGHT_FIELDS) {
+      const tr = make4("tr");
+      tr.appendChild(make4("td", "", label));
+      const td2 = make4("td", "ctr");
+      td2.appendChild(numInput(key, cfg.raw[key]));
+      tr.appendChild(td2);
+      tr.appendChild(make4("td", "dim", note));
+      tbody.appendChild(tr);
+    }
+    const sumRow = make4("tr", "kra-sum-row");
+    sumRow.appendChild(make4("td", "", "\u5408\u8BA1"));
+    sumRow.appendChild(make4("td", "ctr num kra-weight-sum", ""));
+    sumRow.appendChild(make4("td", "dim", "\u4E0D\u5F3A\u5236\u7B49\u4E8E 100\uFF1A\u6743\u91CD\u53EA\u5728\u6709\u6570\u636E\u7684\u6307\u6807\u4E4B\u95F4\u6309\u6BD4\u4F8B\u5F52\u4E00\uFF0C\u5408\u8BA1\u53D8\u4E86\u603B\u5206\u53E3\u5F84\u4E5F\u8DDF\u7740\u53D8"));
+    tbody.appendChild(sumRow);
+    table.appendChild(tbody);
+    box.appendChild(table);
+    return box;
+  }
+  function buildScalars(cfg) {
+    const box = make4("div", "kra-block");
+    box.appendChild(make4("div", "kra-title", "\u2461 \u8BC4\u5206\u53C2\u6570"));
+    const grid = make4("div", "kra-grid");
+    for (const [key, label, note, step] of SCALAR_FIELDS) {
+      const fld = make4("div", "kra-fld");
+      fld.appendChild(make4("label", "", label));
+      fld.appendChild(numInput(key, cfg.raw[key], step));
+      fld.appendChild(make4("div", "kra-hint", note));
+      grid.appendChild(fld);
+    }
+    box.appendChild(grid);
+    return box;
+  }
+  function buildBands2(cfg) {
+    const box = make4("div", "kra-block");
+    box.appendChild(make4("div", "kra-title", "\u2462 \u7EE9\u6548\u7CFB\u6570\u5206\u6863"));
+    box.appendChild(make4("div", "kra-hint", "\u6309\u300C\u603B\u5206\u4E0B\u9650\u300D\u4ECE\u9AD8\u5230\u4F4E\u5339\u914D\u3002\u6700\u4F4E\u4E00\u6863\u7684\u4E0B\u9650\u5EFA\u8BAE\u586B 0\uFF0C\u5426\u5219\u4F4E\u5206\u4F1A\u6389\u51FA\u6240\u6709\u5206\u6863\u3001\u62FF\u4E0D\u5230\u7CFB\u6570\u3002"));
+    const table = make4("table", "dt kra-table");
+    const thead = make4("thead");
+    const hr = make4("tr");
+    for (const h of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h === "\u8BF4\u660E" ? "" : "ctr", h));
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    const tbody = make4("tbody", "kra-bands");
+    for (const b of cfg.config.bands) tbody.appendChild(bandRow(b));
+    table.appendChild(tbody);
+    box.appendChild(table);
+    const add = make4("button", "btn-ghost kra-add", "+ \u52A0\u4E00\u6863");
+    add.type = "button";
+    add.setAttribute("data-kra-add-band", "1");
+    box.appendChild(add);
+    return box;
+  }
+  function bandRow(b) {
+    const tr = make4("tr", "kra-band-row");
+    const mk = (cls, value, type, step) => {
+      const td2 = make4("td", "ctr");
+      const input = document.createElement("input");
+      input.type = type || "text";
+      input.className = "kra-input " + cls;
+      if (step) input.step = step;
+      input.value = value == null ? "" : String(value);
+      td2.appendChild(input);
+      return td2;
+    };
+    tr.appendChild(mk("kra-band-min", b.min, "number", "0.1"));
+    tr.appendChild(mk("kra-band-label", b.label));
+    tr.appendChild(mk("kra-band-coef", b.coef, "number", "0.01"));
+    tr.appendChild(mk("kra-band-note", b.note || ""));
+    const del = make4("td", "ctr");
+    const btn = make4("button", "btn-mini kra-band-del", "");
+    btn.type = "button";
+    btn.title = "\u5220\u6389\u8FD9\u4E00\u6863";
+    btn.setAttribute("data-kra-del-band", "1");
+    btn.appendChild(make4("i", "ti ti-trash"));
+    del.appendChild(btn);
+    tr.appendChild(del);
+    return tr;
+  }
+  function buildTargets2(cfg) {
+    const box = make4("div", "kra-block");
+    box.appendChild(make4("div", "kra-title", "\u2463 \u6708\u5EA6\u76EE\u6807"));
+    box.appendChild(make4(
+      "div",
+      "kra-hint",
+      "\u300C\u901A\u7528\u515C\u5E95\u300D\u8FD9\u4E00\u884C\u7528\u4E8E\u6240\u6709\u6CA1\u5355\u72EC\u8BBE\u76EE\u6807\u7684\u6708\u4EFD\u3002\u7559\u7A7A = \u76EE\u6807\u5F85\u5B9A\uFF0C\u8BE5\u6307\u6807\u4E0D\u8BA1\u5206\u5E76\u5728 KPI \u9875\u6807\u300C\u76EE\u6807\u5F85\u5B9A\u300D\uFF0C\u4E0D\u4F1A\u6309 0 \u5206\u7B97\u3002"
+    ));
+    const table = make4("table", "dt kra-table");
+    const thead = make4("thead");
+    const hr = make4("tr");
+    hr.appendChild(make4("th", "", "\u6708\u4EFD"));
+    for (const [, label, note] of TARGET_FIELDS) {
+      const th = make4("th", "ctr", label);
+      if (note) th.title = note;
+      hr.appendChild(th);
+    }
+    hr.appendChild(make4("th", "ctr", ""));
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    const tbody = make4("tbody", "kra-targets");
+    const rows2 = cfg.targets.slice().sort((a, b) => {
+      if (a.period_key === "default") return -1;
+      if (b.period_key === "default") return 1;
+      return b.period_key.localeCompare(a.period_key);
+    });
+    for (const row of rows2) tbody.appendChild(targetRow(row));
+    table.appendChild(tbody);
+    box.appendChild(table);
+    const addRow = make4("div", "kra-add-period");
+    const input = document.createElement("input");
+    input.type = "month";
+    input.className = "kra-input kra-new-period";
+    addRow.appendChild(input);
+    const add = make4("button", "btn-ghost kra-add", "+ \u4E3A\u8FD9\u4E2A\u6708\u5355\u72EC\u8BBE\u76EE\u6807");
+    add.type = "button";
+    add.setAttribute("data-kra-add-period", "1");
+    addRow.appendChild(add);
+    box.appendChild(addRow);
+    return box;
+  }
+  function targetRow(row) {
+    const isDefault = row.period_key === "default";
+    const tr = make4("tr", "kra-target-row" + (isDefault ? " kra-target-default" : ""));
+    tr.setAttribute("data-kra-period", row.period_key);
+    tr.appendChild(make4("td", "", isDefault ? "\u901A\u7528\u515C\u5E95" : row.period_key));
+    for (const [key] of TARGET_FIELDS) {
+      const td2 = make4("td", "ctr");
+      const input = numInput(key, row[key], key === "a_ratio_target" ? "0.01" : "1");
+      input.classList.add("kra-target-input");
+      td2.appendChild(input);
+      tr.appendChild(td2);
+    }
+    const ops = make4("td", "ctr");
+    if (!isDefault) {
+      const btn = make4("button", "btn-mini", "");
+      btn.type = "button";
+      btn.title = "\u5220\u6389\u8FD9\u4E2A\u6708\u7684\u5355\u72EC\u76EE\u6807\uFF08\u4E4B\u540E\u56DE\u843D\u5230\u901A\u7528\u515C\u5E95\uFF09";
+      btn.setAttribute("data-kra-del-period", row.period_key);
+      btn.appendChild(make4("i", "ti ti-trash"));
+      ops.appendChild(btn);
+    } else {
+      ops.appendChild(make4("span", "dim", "\u2014"));
+    }
+    tr.appendChild(ops);
+    return tr;
+  }
+  function syncWeightSum(host) {
+    const cellEl = host.querySelector(".kra-weight-sum");
+    if (!cellEl) return;
+    let sum = 0;
+    for (const [key] of WEIGHT_FIELDS) {
+      const input = host.querySelector(`[data-kra-field="${key}"]`);
+      const n = Number(input && input.value);
+      if (Number.isFinite(n)) sum += n;
+    }
+    cellEl.textContent = String(Math.round(sum * 100) / 100);
+    cellEl.classList.toggle("kra-sum-off", Math.abs(sum - 100) > 1e-3);
+  }
+  function render4(host, cfg) {
+    loaded = cfg;
+    host.textContent = "";
+    const wrap = make4("div", "kra");
+    if (!canEdit()) {
+      wrap.appendChild(make4(
+        "div",
+        "kra-readonly",
+        "\u4F60\u53EF\u4EE5\u67E5\u770B\u8003\u6838\u65B9\u6848\uFF0C\u4F46\u53EA\u6709\u4E3B\u7BA1 / \u8001\u677F\u80FD\u4FEE\u6539\u3002\uFF08\u540E\u7AEF\u540C\u6837\u5F3A\u5236\u6B64\u6743\u9650\uFF0C\u4E0D\u662F\u524D\u7AEF\u85CF\u8D77\u6765\u800C\u5DF2\u3002\uFF09"
+      ));
+    }
+    wrap.appendChild(buildWeights(cfg));
+    wrap.appendChild(buildScalars(cfg));
+    wrap.appendChild(buildBands2(cfg));
+    wrap.appendChild(buildTargets2(cfg));
+    const foot = make4("div", "kra-foot");
+    const save2 = make4("button", "btn-primary", "\u4FDD\u5B58\u8003\u6838\u65B9\u6848");
+    save2.type = "button";
+    save2.setAttribute("data-kra-save", "1");
+    save2.disabled = !canEdit();
+    foot.appendChild(save2);
+    foot.appendChild(make4("span", "kra-hint", "\u4FDD\u5B58\u540E KPI \u9875\u7684\u300C\u6708\u5EA6\u7EE9\u6548\u8003\u6838\u300D\u7ACB\u5373\u6309\u65B0\u65B9\u6848\u91CD\u7B97\u3002\u5386\u53F2\u5DF2\u7ED3\u7B97\u7684\u8003\u6838\u671F\u4E0D\u53D7\u5F71\u54CD\u3002"));
+    wrap.appendChild(foot);
+    host.appendChild(wrap);
+    if (!canEdit()) host.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el) => {
+      el.disabled = true;
+    });
+    syncWeightSum(host);
+  }
+  function renderError4(host, message) {
+    host.textContent = "";
+    const box = make4("div", "kra-error");
+    box.appendChild(make4("div", "", "\u8003\u6838\u65B9\u6848\u52A0\u8F7D\u5931\u8D25\uFF1A" + (message || "\u672A\u77E5\u9519\u8BEF")));
+    const btn = make4("button", "btn-ghost", "\u91CD\u8BD5");
+    btn.type = "button";
+    btn.setAttribute("data-kra-retry", "1");
+    box.appendChild(btn);
+    host.appendChild(box);
+  }
+  async function loadReviewConfig() {
+    const host = document.getElementById(HOST_ID);
+    if (!host) return false;
+    try {
+      render4(host, await API.get("/api/kpi/review-config"));
+      return true;
+    } catch (e) {
+      if (e && e.message === "unauthorized") return false;
+      renderError4(host, e && e.message);
+    }
+    return false;
+  }
+  function valueOrNull(input) {
+    const raw = String(input.value).trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+  async function save(host) {
+    const config = {};
+    for (const [key] of WEIGHT_FIELDS.concat(SCALAR_FIELDS.map((f) => [f[0]]))) {
+      const input = host.querySelector(`[data-kra-field="${key}"]`);
+      if (!input) continue;
+      const n = Number(input.value);
+      if (!Number.isFinite(n) || n < 0) {
+        toast2("\u300C" + key + "\u300D\u8981\u586B\u4E00\u4E2A\u975E\u8D1F\u6570\u5B57");
+        input.focus();
+        return;
+      }
+      config[key] = n;
+    }
+    const bands = [...host.querySelectorAll(".kra-band-row")].map((tr) => ({
+      min: Number(tr.querySelector(".kra-band-min").value),
+      label: tr.querySelector(".kra-band-label").value.trim(),
+      coef: Number(tr.querySelector(".kra-band-coef").value),
+      note: tr.querySelector(".kra-band-note").value.trim() || null
+    }));
+    if (!bands.length) {
+      toast2("\u81F3\u5C11\u8981\u7559\u4E00\u6863\u7EE9\u6548\u7CFB\u6570");
+      return;
+    }
+    const bad = bands.find((b) => !Number.isFinite(b.min) || !Number.isFinite(b.coef) || !b.label);
+    if (bad) {
+      toast2("\u5206\u6863\u91CC\u300C\u603B\u5206\u4E0B\u9650 / \u7B49\u7EA7\u540D\u79F0 / \u7EE9\u6548\u7CFB\u6570\u300D\u90FD\u8981\u586B \u2014\u2014 \u8FD9\u51B3\u5B9A\u53D1\u591A\u5C11\u94B1\uFF0C\u4E0D\u80FD\u7559\u7A7A");
+      return;
+    }
+    const targets = [...host.querySelectorAll(".kra-target-row")].map((tr) => {
+      const out = { period_key: tr.dataset.kraPeriod };
+      tr.querySelectorAll(".kra-target-input").forEach((input) => {
+        out[input.dataset.kraField] = valueOrNull(input);
+      });
+      return out;
+    });
+    const btn = host.querySelector("[data-kra-save]");
+    if (btn) btn.disabled = true;
+    try {
+      const cfg = await API.put("/api/kpi/review-config", { config, bands, targets });
+      render4(host, cfg);
+      loadKpiReview(true);
+      toast2("\u8003\u6838\u65B9\u6848\u5DF2\u4FDD\u5B58 \xB7 KPI \u9875\u5DF2\u6309\u65B0\u65B9\u6848\u91CD\u7B97");
+    } catch (e) {
+      if (btn) btn.disabled = false;
+      toast2(e && e.status === 403 ? "\u65E0\u6743\u4FEE\u6539\u8003\u6838\u65B9\u6848\uFF08\u9700\u4E3B\u7BA1 / \u8001\u677F\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  }
+  document.addEventListener("input", (e) => {
+    const host = document.getElementById(HOST_ID);
+    if (!host || !host.contains(e.target)) return;
+    if (e.target.matches("[data-kra-field]")) syncWeightSum(host);
+  });
+  document.addEventListener("click", async (e) => {
+    const host = document.getElementById(HOST_ID);
+    if (!host || !host.contains(e.target)) return;
+    if (e.target.closest("[data-kra-retry]")) {
+      loadReviewConfig();
+      return;
+    }
+    if (e.target.closest("[data-kra-save]")) {
+      save(host);
+      return;
+    }
+    const addBand = e.target.closest("[data-kra-add-band]");
+    if (addBand) {
+      const body = host.querySelector(".kra-bands");
+      if (body) body.appendChild(bandRow({ min: 0, label: "", coef: 1, note: "" }));
+      return;
+    }
+    const delBand = e.target.closest("[data-kra-del-band]");
+    if (delBand) {
+      const rows2 = host.querySelectorAll(".kra-band-row");
+      if (rows2.length <= 1) {
+        toast2("\u81F3\u5C11\u8981\u7559\u4E00\u6863");
+        return;
+      }
+      delBand.closest("tr").remove();
+      return;
+    }
+    const addPeriod = e.target.closest("[data-kra-add-period]");
+    if (addPeriod) {
+      const input = host.querySelector(".kra-new-period");
+      const key = input && String(input.value).trim();
+      if (!PERIOD_KEY_RE.test(key || "")) {
+        toast2("\u5148\u9009\u4E00\u4E2A\u6708\u4EFD\uFF08YYYY-MM\uFF09");
+        return;
+      }
+      if (host.querySelector(`.kra-target-row[data-kra-period="${key}"]`)) {
+        toast2(key + " \u5DF2\u7ECF\u5728\u8868\u91CC\u4E86");
+        return;
+      }
+      const body = host.querySelector(".kra-targets");
+      if (body) body.appendChild(targetRow({ period_key: key }));
+      input.value = "";
+      return;
+    }
+    const delPeriod = e.target.closest("[data-kra-del-period]");
+    if (delPeriod) {
+      const key = delPeriod.dataset.kraDelPeriod;
+      try {
+        render4(host, await API.del("/api/kpi/review-targets/" + encodeURIComponent(key)));
+        toast2("\u5DF2\u5220\u9664 " + key + " \u7684\u5355\u72EC\u76EE\u6807 \xB7 \u8BE5\u6708\u56DE\u843D\u5230\u901A\u7528\u515C\u5E95");
+      } catch (err) {
+        toast2(err && err.status === 403 ? "\u65E0\u6743\u4FEE\u6539\u8003\u6838\u65B9\u6848" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
+      }
+    }
+  });
+  function mountReviewAdmin() {
+    if (mounted) return;
+    mounted = true;
+    loadReviewConfig();
+  }
+  document.addEventListener("click", (e) => {
+    const tab = e.target.closest('.set-nav .subtab[data-sub="set-review"]');
+    if (tab) mountReviewAdmin();
+  });
 
   // public/src/app.js
   var app_exports = {};
@@ -7673,6 +8842,8 @@
     "submit-inquiry": () => submitInquiry(),
     "submit-custom-range": () => submitCustomRange(),
     "submit-track": () => submitTrack(),
+    "submit-sales-note": () => submitSalesNote(),
+    "pick-sales-images": () => pickSalesImages(),
     "submit-seo-week": () => submitSeoWeek(),
     "submit-sem-week": () => submitSemWeek(),
     "submit-password": () => submitPwd(),

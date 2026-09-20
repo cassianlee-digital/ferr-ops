@@ -1,5 +1,6 @@
 // 询盘 API（FR-1）。写入限销售；所有登录用户可读。
 import * as repo from '../db/repositories/inquiries.js';
+import * as salesNotesRepo from '../db/repositories/inquirySalesNotes.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 import { recomputeActuals } from '../services/kpi.js';
 import { parseDateRange } from '../lib/parseDateRange.js';
@@ -104,6 +105,40 @@ export async function inquiriesRoutes(app) {
     const row = repo.getFeedback(Number(request.params.feedbackId));
     if (!row || row.inquiry_id !== id) return reply.code(404).send({ error: 'not_found' });
     repo.removeFeedback(row.id);
+    return { ok: true };
+  });
+
+  /* ===== 业务反馈：业务员针对这条询盘发回来的材料（一段话 + 若干张图）=====
+     与上面的「跟踪反馈」刻意分开：那是运营自己记的跟进进度，这是业务给的原始材料。
+     图片不在这里传，走 POST /api/attachments（owner_type=inquiry_sales_note），
+     先建记录拿到 id、再逐张挂图 —— 这样一次上传失败只丢那一张，不会把整条反馈搞没。 */
+  app.get('/api/inquiries/:id/sales-notes', { preHandler: requireAuth }, async (request) => {
+    return { items: salesNotesRepo.list(Number(request.params.id)) };
+  });
+
+  app.post('/api/inquiries/:id/sales-notes', editor, async (request, reply) => {
+    const id = Number(request.params.id);
+    if (!repo.get(id)) return reply.code(404).send({ error: 'not_found' });
+    const text = String(request.body?.text ?? '').trim().slice(0, 4000);
+    // 允许「只有图片没有文字」：业务经常直接甩一张截图过来
+    const withImages = request.body?.withImages === true;
+    if (!text && !withImages) return reply.code(400).send({ error: 'empty_note' });
+    reply.code(201);
+    return { item: salesNotesRepo.create(id, text || null, request.user.id) };
+  });
+
+  app.patch('/api/inquiries/:id/sales-notes/:noteId', editor, async (request, reply) => {
+    const row = salesNotesRepo.get(Number(request.params.noteId));
+    if (!row || row.inquiry_id !== Number(request.params.id)) return reply.code(404).send({ error: 'not_found' });
+    const text = String(request.body?.text ?? '').trim().slice(0, 4000);
+    if (!text && !row.images.length) return reply.code(400).send({ error: 'empty_note' });
+    return { item: salesNotesRepo.update(row.id, text || null) };
+  });
+
+  app.delete('/api/inquiries/:id/sales-notes/:noteId', editor, async (request, reply) => {
+    const row = salesNotesRepo.get(Number(request.params.noteId));
+    if (!row || row.inquiry_id !== Number(request.params.id)) return reply.code(404).send({ error: 'not_found' });
+    salesNotesRepo.remove(row.id); // 连带删掉它的图片，不留孤儿 BLOB
     return { ok: true };
   });
 

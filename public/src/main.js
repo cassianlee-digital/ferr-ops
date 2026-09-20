@@ -61,6 +61,10 @@ import * as uiKit from './ui-kit.js';
 // 新增（不是迁移，是新写的）：ledger —— KPI 页「运营总账」只读业务漏斗。
 // 自己插进 #panel-kpi、自己听 timerange，零内联 handler，故不挂 window（由 kpi-view 显式 import）。
 import './ledger.js';
+// 新增（2026-09-20）：月度绩效考核（老板考核表口径）。
+// kpi-review 由 kpi-view 显式 import（KPI 页渲染时挂载）；admin 只在设置页那个子标签被点开时才拉配置，
+// 两者都自己做事件委托、不挂 window，所以这里只需要把 admin 拉进打包图里。
+import './kpi-review-admin.js';
 // 应用组装层（原经典脚本 public/app.js，2026-08-26 迁入）。**必须放在最后一个 import**：
 // 它的模块求值期会做 DOM 绑定并注册 window load 启动序列，顺序等价于原来「bundle.js 之后加载 app.js」。
 // 它 import 所有业务模块、没有模块 import 它，是依赖图顶点，故排在末尾不会造成前向引用。

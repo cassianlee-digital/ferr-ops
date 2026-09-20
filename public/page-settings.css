@@ -770,3 +770,48 @@ body.dark #sub-set-sop #sop-empty {
 #sub-set-kpi table.dt {
   border-width: 0;
 }
+
+/* ================= 设置 → 月度绩效考核方案（2026-09-20）=================
+   权重 / 评分参数 / 绩效系数分档 / 月度目标，一屏改完。与 KPI 页那张考核表同一份配置。 */
+.kra{font-size:13px}
+.kra-readonly{
+  margin-bottom:12px;padding:8px 12px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg3);color:var(--text2);font-size:12px;
+}
+.kra-block{margin-bottom:20px}
+.kra-title{margin-bottom:8px;color:var(--text1);font-size:13px;font-weight:600}
+.kra-hint{margin-top:4px;color:var(--text3);font-size:11px;line-height:1.6}
+.kra-table{width:100%}
+.kra-table td,.kra-table th{vertical-align:middle}
+.kra-input{
+  width:100%;max-width:130px;height:28px;
+  padding:0 6px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg2);color:var(--text1);
+  font-size:12px;font-family:inherit;font-variant-numeric:tabular-nums;
+  outline:none;
+}
+.kra-input:focus{border-color:var(--blue);box-shadow:0 0 0 2px var(--ring)}
+.kra-input:disabled{background:var(--bg4);color:var(--text3);cursor:not-allowed}
+.kra-table .ctr .kra-input{margin:0 auto;display:block;max-width:92px;text-align:center}
+.kra-band-label,.kra-band-note{max-width:100%;text-align:left!important}
+.kra-sum-row td{font-weight:600;background:var(--bg3)}
+.kra-weight-sum{font-variant-numeric:tabular-nums}
+/* 合计不等于 100 只是提醒，不是错误：权重在有数据的指标间归一，合计变了总分口径也跟着变 */
+.kra-sum-off{color:var(--amber)}
+.kra-grid{display:flex;gap:14px;flex-wrap:wrap}
+.kra-fld{flex:1 1 200px;min-width:180px}
+.kra-fld label{display:block;margin-bottom:4px;color:var(--text2);font-size:12px}
+.kra-add{margin-top:8px}
+.kra-add-period{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.kra-new-period{max-width:160px}
+.kra-target-default td:first-child{font-weight:600;color:var(--blue)}
+.kra-foot{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding-top:12px;border-top:1px solid var(--border);
+}
+.kra-error{padding:16px;color:var(--text2)}
+
+body.dark .kra-readonly,body.dark .kra-sum-row td{background:#0f172a}
+body.dark .kra-input{background:#0b1220;border-color:#273142;color:#e5e7eb}

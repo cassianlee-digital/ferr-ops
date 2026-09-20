@@ -13,8 +13,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 ## Current Architecture
 
 - **后端不是单文件**:Fastify,模块化良好。
-  - `server/src/routes/`(**31 个路由文件**,2026-08-27 合并后复测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1064 行 / 108KB**(2026-08-27 合并后实测,比 8-13 的 1539 行又瘦一圈),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+  - `server/src/routes/`(**32 个路由文件**,2026-09-20 实测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1094 行 / 111KB**(2026-09-20 实测;ES 模块 **36 个**),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -50,6 +50,39 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **SEO 看板「概览」已升级为富看板(Looker 风格)**:顶部卡/趋势读 `/api/google/gsc/summary`(`loadSeoBoardGsc`);其余读 `/api/google/seo/board`(`loadSeoBoardFull`,后端 `routes/google.js` + `googleSync.js` 的 `gscBoardTables/gscScatter/ga4SourcesRange/ga4SourceSeries`)——**本周要点条**(后端 `buildSeoHighlights` 自动挑最大涨跌,绿涨红跌)、落地页表+关键词表带彩色Δ环比、**机会词散点象限**(ECharts 展现×排名+中位线)、GA4 来源甜甜圈+按天堆叠面积。均随时间范围重拉。第二期(需扩 GA4 同步)才能做:跳出率散点、来源级跳出/时长、date×source×page 明细。
 - **SEM 看板「概览」已升级为富看板**:顶部卡读 `/api/google/ads/summary`(`loadSemBoardAds`);其余读 `/api/google/ads/board`(`loadSemBoardFull` + 后端 `adsBoardTables/adsScatter/adsSeries` + `buildAdsHighlights`)——本周要点条(转化涨绿/每转化成本涨红/高花费零转化合计/最烧钱零转化词/最佳系列)、系列表+关键词表带转化Δ+评估徽章、**花费×转化散点**(右下红区=高花费低转化=该砍,红点标关键词+下方「该砍」清单带诊断/采纳)、系列花费甜甜圈+每日花费/转化趋势。评估徽章按 有转化/零有效/无花费;金额按账户币种、不臆造符号。旧层级表已被 Δ 表替代。
 - **询盘归因已上线**:`/api/attribution`(`server/src/routes/attribution.js`)按 `channel`(SEO自然/SEM付费/直接/其他,与 `renderInqDonuts` 同口径)+ `grade`(A/B=有效)聚合区间询盘 × Ads 花费,算 SEM **真实每有效询盘成本**并对比 Ads 自报每转化(差距≥1.3倍红字警示"Ads 转化虚高")。前端 SEM 看板顶部「真实询盘回报」卡(`loadAttribution`),随时间范围重算。这是"花的钱值不值"的真实答案,打通 询盘↔花费。
+- **KPI「月度绩效考核」已上线(2026-09-20,老板《2026 运营部绩效考核表》口径)** —— 这是 KPI 页现在的**主角**,
+  摆在三个表盘之前。后端 `server/src/services/kpiReview.js`(纯函数 `computeReview` + DB 组装 `buildReview/buildReviewAll`),
+  路由 `GET /api/kpi/review`、`GET·PUT /api/kpi/review-config`、`DELETE /api/kpi/review-targets/:periodKey`;
+  前端 `public/src/kpi-review.js`(看板)+ `public/src/kpi-review-admin.js`(设置 → 月度绩效考核)。
+  - **为什么另起一套而不改 `services/kpi.js` 的 v2**:v2 考的是「每个渠道各自的过程质量」(可见度/质量指数/CPVI),
+    老板这张表考的是「部门这个月带回多少 A/B 询价、花了多少钱、该做的复盘整改做没做」。口径、量纲、
+    出分范围(v2 封顶 100;老板表封顶 **120** 且带**绩效系数**)都不同,硬塞进一个引擎两边都拧巴。
+    **v2 引擎与 `kpi_period_snapshots` 结算快照一行未改**,继续在下方作为诊断明细展示。
+  - **老板亲定口径(2026-09-20 对话,别自作主张改)**:
+    ① A/B 询价数量是 SEM 与 SEO **共同产出,按部门整体算一次,不按渠道拆到个人** ——
+       理由不是偷懒:询盘全是人工录入,`channel` 没有任何机器证据(见 [[inquiry-channel-attribution-dead-end]]),
+       按它拆 = 用手填字段决定谁的钱。三个范围(部门/李/陈)拿到的是**同一个 A/B 数**。
+    ② 「直接 / 其他」渠道**全部计入部门总量**(老板:这些多半也是自家渠道带来的,只是当时没留来源);
+       同时把**未归因占比**一直亮在看板上,长期偏高说明录入要改进。
+    ③ 成本类指标按部门口径算一次;落到 **SEO 个人时标 `NOT_APPLICABLE`、20 分权重在其余指标间重新归一**,
+       **绝不给李编一个 0 分**。
+    ④ **SEM/SEO 的过程数据(CPC、排名、跳出率…)本期不计入考核。**
+  - **权重(合计 100,全部可在设置页改)**:A 级数量 40 / B 级数量 20 / A 级成本 10 / A+B 成本 10 /
+    A 级占比 5 / 周复盘 5 / 整改闭环 5 / 实验测试 5。单指标达成率上限 **1.2**(老板表 `MIN(实际/目标,120%)`)。
+    **广告投入只做预算对照(±10%),不计分** —— 超预算是要解释的事,不是扣分项(多花的钱会如实反映在两项获客成本上)。
+  - **绩效系数分档**(`kpi_config.review_bands`,JSON,可改):110+ 超额优秀×1.2 / 100+ 达成目标×1.0 /
+    90+ 良好×0.9 / 80+ 达标×0.8 / 其余 未达标×0.6。
+  - **诚实口径(有 18 例单测焊死,`server/test/kpiReview.test.js`)**:
+    `NO_TARGET` 目标没设 → 整份标 `CONFIG_INCOMPLETE`,**只给参考分不出正式分**;
+    `MISSING_DATA` 有目标没数据 → 留在分母拉低覆盖率,**不是 0 分**;
+    `NOT_APPLICABLE` / `NO_BASELINE`(区间内一条整改都没有、零广告投入、有效询价为 0)→ **移出分母**,不判 0;
+    **唯一强制 0 分的情形是「花了钱却零 A 级/零有效询价」** —— 那不是除零错误,是结论,绝不让它逃出评分。
+    覆盖率低于 `review_min_coverage`(默认 0.6)同样只给参考分。
+  - **数据源**:询价 `inquiries.grade`(全渠道,排除归档);广告投入先取 Ads 同步、无则回退 `sem_weeks.cost`
+    (复用 `kpiLedger.resolveSemSpend`,与总账/归因同源);周复盘 `weekly_reports`(分母=区间周一数×部门数,**建了空行不算交**);
+    整改闭环 `fixes`(按截止日归区间,**「放弃」不进分母**);实验测试 `loop_items(kind=test)`(按创建日,`period` 是自由文本不可靠)。
+  - **月度目标表 `kpi_review_targets`**(对应老板表的「目标设置」页):`period_key='YYYY-MM'`,
+    `'default'` 行兜底;**跨月区间一律回退 default**,不挑一个月假装代表全区间。**一个数都不预填** —— 目标是老板定的,编一个进去等于凭空立假 KPI。
 - **KPI「运营总账」已上线**(2026-08-26,本分支 `claude/kpi-ledger-deal-status-e41865`):`GET /api/kpi/ledger`(`routes/kpi.js` + 纯函数 `services/kpiLedger.js` `computeLedger`)。老板年终看运营部成绩的一屏业务漏斗:**花费→询盘→优质(A/B)→成交→效率**,按渠道(复用 `attribution.js` 的 `classify`,四渠道同口径)+ 合计,给 优质率/成交率(优质口径+总口径)/每优质成本/CAC。**这是 `inquiries.deal_status` 第一次被 KPI 用上**。诚实口径:SEO/直接/其他 **无媒体花费口径→ NOT_APPLICABLE**(人力不计);SEM 花费**先取 Ads 同步真实值**(`google_ads_campaign_daily`,与 `/api/attribution` 同源,消双真相),无同步数据才回退人工周报 `sem_weeks.cost`,**判有无同步数据用 `ads.campaigns.length` 而非 `totals.costMicros`**(后者 COALESCE 过,0 行也返 0,会把「没同步」误报成「花了 0 元」);单位成本零分母→ `null` + reason(有花费·零成交/零优质),**绝不 Infinity**;未标注是否成交的老行既不算成交也不算未成交,单列 `dealStatusMissing`;币种 Ads=账户币种不加符号(与 `charts.js _money` 一致)、周报=¥,金额目标 `currency_mismatch` 标红。**只读,不进绩效评分**(评分引擎一行未改)。前端 `public/src/ledger.js`(新 ES 模块,全 createElement/textContent、**零 innerHTML 零内联 handler**),自插 `#panel-kpi` 的 `.sheet-tip` 之后,自听 `timerange` 重拉。**优质数/成交数无 kpi_targets 行→显示「目标待定」,不编数。** 测试 `server/test/kpiLedger.test.js` 18 例。
 - 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads)、诊断、询盘归因、KPI 运营总账;GA4 概览与总览暂未跟随。
 - **询盘评级页已合表改版**(2026-08-26/27):原来是「Hero 左栏当月表 + 下方按月折叠的历史表」两张表,现在**只剩一张**(`#tb-inq`),Hero 左栏与 `renderInqFeed` 已删除;飞线地图改全宽,并**排在表格下面**(先看询价明细,再看落在世界哪儿)。
@@ -72,6 +105,27 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
     正在敲的字连保存机会都没有)再 `absorbEditedCells(tb)` 收 dirty 格子(只收 `td._old` 与现值不同的,全量收会让过期 DOM 盖掉刚拉回的新数据)。
     同时给可编辑格补上存盘回执(复用 `setSavingState` 的黄/绿/红),以前存成功是**完全无提示**的。防回归见 `frontendDataIntegrity.test.js` 的
     `saved cell edits survive the next table repaint`。**别再让任何表只改 DOM 不回写缓存。**
+- **询盘表 2026-09-20 改版(共 15 列)**:
+  - **国家改成可编辑格、大区改成彩色标签下拉**(老板:录入当下常常还不知道客户哪来的,先留空后补)。
+    顺带修掉一个**静默 bug**:`产品`/`渠道` 标签本来就长得像可点改,点了也换颜色,但 `tagselect.js` 的
+    `fieldMap` 里没有这两个 kind → 直接 `return`,**一次 PATCH 都没发过**,刷新就退回去。region/product/channel 三个一起补上了。
+  - **业务员后新增「业务反馈」列**:业务发回来的原始材料(一段话 + 若干张截图)。
+    与旁边的「跟踪反馈」**刻意分表分列**(`inquiry_sales_notes` vs `inquiry_feedbacks`):
+    跟踪反馈是运营记的跟进进度,业务反馈是业务给的材料;混在一起复盘时就分不清哪句话是谁说的。
+    表头筛选多一列「有/无业务反馈」。前端模块 `public/src/inquiry-sales.js`(只对外给 `salesCellHtml`,
+    刷新走 `salesnoteschanged` 事件,**不与 inquiries.js 互相 import**,避免成环)。
+  - **列数与 colspan 不再手写**:`const COLSPAN=FILTER_COLS.length`,空态/月份分隔行/错误行统一用它(有测试焊死)。
+- **产品 / 大区的可选值只有一份:`public/src/catalog.js`**(2026-09-20 新增)。
+  老板反馈的「产品和筛选框不同步」根因是同一份清单散在四处(OPT.product / PROD_BADGE / 录入弹框 `<option>` / 表头筛选),
+  加一个产品要改四处、漏一处就对不上。现在 tagselect 的 `OPT.product/OPT.region`、彩色徽章、
+  录入弹框(运行时 `fillSelect` 渲染,HTML 里**刻意留空**)、表头筛选全从这里取 —— **加产品只改 catalog.js**。
+  产品现为 11 个(新增 爬梯 / 紧线器 / 电力 / 建筑预埋件 / AI算力)。
+  表头筛选里**有目录的列(产品/大区)列出完整目录并带该值的条数**,没目录的列仍只列真实出现过的值。
+- **图片附件已上线**(`attachments` 表 + `server/src/routes/attachments.js` + `public/src/attachments.js`):
+  询盘「业务反馈」和关键词库「客户信息词库 → 业务反馈」共用。BLOB 存库(生产是 Docker Compose,
+  落盘要额外挂卷且 `backup.js` 备的就是这个 .db,存库能跟着一起备份);列表接口只回元数据,
+  原图走 `GET /api/attachments/:id/raw`(immutable 缓存,id 不复用)。前端 canvas 压到长边 1600px 再传(GIF 原样传,重绘会只剩第一帧);
+  服务端**不信前端报的 MIME,用文件头魔数复验** + `nosniff`,防的是「把 .html 改名 .png 传上来当同源页面打开」。
 - 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads)、GA4、诊断、询盘归因、总览、KPI。
 - **诊断引擎已上线**:`/api/diagnostics`(`server/src/routes/diagnostics.js` + `googleSync.js` 规则查询)产出 4 类真实 findings——机会词(排名11-20有曝光)、关键词蚕食(同词多页)、流量衰退(当前vs上一等长窗口点击跌幅)、高花费零有效(Ads cost>0 conv=0)。前端 SEO「站点机会/流量衰退/关键词蚕食」三子面板 + minitab 角标已读真实结果,随时间范围重算。**尚未做 CTR 异常规则。**
 - **诊断→整改闭环已通**:三类 SEO finding 每行「采纳」按钮 → POST `/api/fixes`(source=诊断引擎,evidence 记 GSC 依据)直接入整改清单(`public/charts.js` `adoptFinding`)。
@@ -155,7 +209,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 密钥只存**服务器环境变量**或**加密存储**(参考 `integrations.js` 的 AES 方案)。
 - **前端不能直接接触密钥。**
 - 所有**用户输入和 API 返回文本**渲染前必须 **escape**。
-- **谨慎使用 `innerHTML`**(2026-08-27 合并后复测 **192 处 `.innerHTML=` 赋值 + 2 处 `insertAdjacentHTML`**,较 8-13 的 236 处有所下降,仍属 XSS 高风险面)。**这近 200 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
+- **谨慎使用 `innerHTML`**(2026-09-20 实测 **200 处 `.innerHTML=` 赋值 + 2 处 `insertAdjacentHTML`**;口径 `grep -roE '\.innerHTML\s*=' public --include=*.js --include=*.html | grep -v /dist/ | grep -v /vendor/ | wc -l`)。**这近 200 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
 
 ## 协作流程约定
 

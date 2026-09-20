@@ -292,3 +292,19 @@
 .cat-tab {
   padding: 0 12px !important;
 }
+
+/* ================= 客户信息词库：业务反馈（2026-09-20）=================
+   老板要求这一格「只点击后上传图片」，所以没有输入框：一个传图按钮 + 缩略图。 */
+/* 竖着排：缩略图一行、「加图」按钮一行。
+   原来两者同在一行的 inline 流里，180px 的格子挤成一团，按钮还被删除角标压住（2026-09-20 实测）。
+   做法是把 .att-thumbs 从 inline-flex 提成块级 flex（占满一行），按钮自然落到下一行 ——
+   **不能给 td 设 display:flex**：那会让它不再是 table-cell，固定表格的列宽模型随之失效。 */
+#tb-kw-cust td.kw-sales{text-align:center;vertical-align:middle}
+#tb-kw-cust td.kw-sales .att-thumbs{display:flex;justify-content:center;margin:0 0 6px}
+#panel-keywords #sub-kw-cust table.dt th.kw-th-sales,
+#panel-keywords #sub-kw-cust table.dt td.kw-sales{width:200px}
+/* 「分析意图」只放两个小按钮，却因为 table-layout:fixed 均分拿到 347px，
+   看起来像多出一列空白（截图里被圈出来的那块）。收窄，把宽度让给左边三列要读字的。 */
+#panel-keywords #sub-kw-cust table.dt th:last-child,
+#panel-keywords #sub-kw-cust table.dt td:last-child{width:150px}
+.kw-img-add{white-space:nowrap;flex:0 0 auto}

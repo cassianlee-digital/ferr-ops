@@ -16,6 +16,7 @@ import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
 import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
+import { pickSalesImages, submitSalesNote } from './inquiry-sales.js';
 import { addKeyword, filterKwByCat, loadKeywords, renderSparklines } from './keywords.js';
 import { loadOverview, renderKPI } from './kpi-view.js';
 import { loadMetrics, loadWeeks, submitSemWeek, submitSeoWeek } from './kpi.js';
@@ -103,6 +104,8 @@ const STATIC_UI_ACTIONS={
   'submit-inquiry':()=>submitInquiry(),
   'submit-custom-range':()=>submitCustomRange(),
   'submit-track':()=>submitTrack(),
+  'submit-sales-note':()=>submitSalesNote(),
+  'pick-sales-images':()=>pickSalesImages(),
   'submit-seo-week':()=>submitSeoWeek(),
   'submit-sem-week':()=>submitSemWeek(),
   'submit-password':()=>submitPwd(),

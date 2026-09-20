@@ -18,17 +18,22 @@ import { inlineConfirm } from './keywords.js';
 import { renderGlobe } from './inquiry-globe.js';
 import { getRangeRevision, withRange } from './timerange.js';
 import { commitPendingCellEdit } from './table-editor.js';
+import { PRODUCT_BADGE, REGION_BADGE, PRODUCT_NAMES, REGION_NAMES, fillSelect } from './catalog.js';
+import { salesCellHtml } from './inquiry-sales.js';
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
-const REGION_BADGE={'欧洲':'b-blue','西欧':'b-blue','南欧':'b-blue','北欧':'b-blue','中东欧':'b-teal','东欧/俄罗斯':'b-amber','俄罗斯':'b-amber','北美':'b-purple','拉美':'b-red','中东':'b-amber','北非':'b-amber','撒哈拉以南非洲':'b-gray','南亚':'b-teal','东南亚':'b-red','东南亚/巴西':'b-red','东亚':'b-green','中亚':'b-gray','大洋洲':'b-teal','其他':'b-gray'};
+// 产品 / 大区的可选值与配色统一来自 catalog.js —— 以前这里各写一份，加个产品要改四处，
+// 结果就是老板看到的「表格里有、筛选框里没有」。别再往这个文件里复制清单。
 const CH_BADGE={'SEO自然':'b-blue','SEM付费':'b-purple','直接':'b-teal','其他':'b-gray'};
-const PROD_BADGE={'铸造':'b-amber','锻造':'b-red','机加工':'b-blue','阀门':'b-purple','管件':'b-teal','电力金具':'b-green'};
 export const GRADE_BADGE={A:'b-green',B:'b-blue',C:'b-gray'};
 export const DEAL_BADGE={'已成交':'b-green','未成交':'b-gray'};
 export const COMPANY_BADGE={'贝孚特':'b-teal','费尔瑞':'b-purple'};
 window._inqCache=[];
 
 export function openInquiry(){
+  // 下拉按目录重建：产品/大区只有 catalog.js 一个真相，弹框与表格标签、表头筛选永远一致
+  fillSelect(document.getElementById('f-product'),PRODUCT_NAMES);
+  fillSelect(document.getElementById('f-region'),REGION_NAMES);
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   ['f-country','f-code','f-sales','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('f-deal').value='未成交'; // 每次打开都回默认，避免沿用上一条
@@ -51,7 +56,8 @@ export async function submitInquiry(){
     toast('已保存 1 条询盘（'+item.grade+'级）· 已入库，多人共享');
   }catch(e){ toast(e.status===403?'无权录入（需登录运营账号：李/陈/主管/老板）':'保存失败：'+e.message); }
 }
-// 6.23 文档 7/8/9 + 录入改版：客户编码/业务员(editable) + 等级/是否成交 tagselect 可点改 + 上调标红(⚠️) + 跟踪反馈弹框。共 14 td。
+// 6.23 文档 7/8/9 + 录入改版：客户编码/国家/业务员(editable) + 大区/等级/是否成交 tagselect 可点改
+// + 上调标红(⚠️) + 业务反馈/跟踪反馈两个弹框。共 15 td（与 FILTER_COLS 一一对应）。
 export function isUpgraded(r){ const ord={A:3,B:2,C:1}; return r.original_grade && ord[r.original_grade] && ord[r.grade] && ord[r.original_grade]<ord[r.grade]; }
 /* ===== 跟踪反馈：一条询盘可以有多条带时间的记录（2026-08-27 改版）=====
    以前是 PATCH tracking_feedback 覆盖式写一段话 —— 跟进三次也只剩最后一次，还不知道哪天写的。
@@ -156,16 +162,20 @@ function trackCellHtml(r){
 export function inqRowHtml(r){
   const up=isUpgraded(r);
   const upMark=up?` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="等级已上调（原 ${esc(r.original_grade)} → 现 ${esc(r.grade)}） · 重点处理"></i>`:'';
+  // 国家/大区后期可改（2026-09-20 老板要求）：录入当下常常不知道客户是哪来的，
+  // 先留空或填错，等业务问清楚再补。国家是自由文本（带国旗 emoji），故用可编辑格；
+  // 大区是固定几个值，改成彩色标签下拉，和渠道/产品一致，点一下就换。
   return `<td>${esc(r.date.slice(5))}</td>`
     +`<td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code||'')}</td>`
-    +`<td>${esc(r.country)}</td>`
-    +`<td class="ctr"><span class="badge ${REGION_BADGE[r.region]||'b-gray'}">${esc(r.region)}</span></td>`
+    +`<td class="editable" contenteditable data-field="country">${esc(r.country||'')}</td>`
+    +`<td class="ctr"><span class="tagselect ${REGION_BADGE[r.region]||'b-gray'}" data-kind="region">${esc(r.region||'未填')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td>${esc(r.source)}</td>`
-    +`<td class="ctr"><span class="tagselect ${PROD_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
     +`<td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company]||'b-gray'}" data-kind="company">${esc(r.company||'未标注')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson||'')}</td>`
+    +`<td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td>`
     +`<td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status]||'b-gray'}" data-kind="deal">${esc(r.deal_status||'未标记')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="dim csp-s-33ee298127">${esc(r.note||'')}</td>`
     +`<td class="ctr inq-track-feedback">${trackCellHtml(r)}</td>`
@@ -174,25 +184,31 @@ export function inqRowHtml(r){
 function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
 
 /* ================= 表头筛选 + 分页（2026-08-26 新增）=================
-   14 列与表头一一对应；日期列不给筛选（时间条已经在管时间），操作列放「清空」。
-   select 的候选值只列「当前区间数据里真实出现过的」——不臆造选项，选了必有结果。 */
+   15 列与表头一一对应；日期列不给筛选（时间条已经在管时间），操作列放「清空」。
+   候选值口径（2026-09-20 调整）：
+     · 产品 / 大区 这类「有固定目录」的列 → 列出 catalog.js 的**全部**选项，后面带该选项在
+       当前区间的条数。老板反馈的「产品和筛选框不同步」就是这里：以前只列数据里出现过的值，
+       新加的产品在表格下拉里有、在筛选框里没有，看起来就是两套清单。
+     · 公司 / 业务员 / 来源词 这类没有目录的列 → 仍然只列真实出现过的值，不臆造选项。 */
 const BLANK='__blank__'; // 空值哨兵：区别于「没筛选」，用来专门筛「没填的那些」
 const FILTER_COLS=[
   null,
   {key:'customer_code',type:'text',ph:'客户编码'},
-  {key:'country',type:'select',ph:'国家',blank:'未填'},
-  {key:'region',type:'select',ph:'大区',blank:'未填'},
+  {key:'country',type:'text',ph:'国家'}, // 国家改成可编辑自由文本后，用包含匹配比穷举下拉更好用
+  {key:'region',type:'select',ph:'大区',blank:'未填',catalog:REGION_NAMES},
   {key:'channel',type:'select',ph:'渠道',blank:'未填'},
   {key:'source',type:'text',ph:'来源词'},
-  {key:'product',type:'select',ph:'产品',blank:'未填'},
+  {key:'product',type:'select',ph:'产品',blank:'未填',catalog:PRODUCT_NAMES},
   {key:'grade',type:'select',ph:'等级'},
   {key:'company',type:'select',ph:'公司',blank:'未标注'},
   {key:'salesperson',type:'select',ph:'业务员',blank:'未填'},
+  {key:'sales_notes',type:'has',ph:'业务反馈'}, // 有没有业务发回来的材料（数组，不是文本列）
   {key:'deal_status',type:'select',ph:'是否成交',blank:'未标记'},
   {key:'note',type:'text',ph:'备注'},
-  {key:'feedbacks',type:'has',ph:'反馈'}, // 有没有跟进记录（数组，不是文本列）
+  {key:'feedbacks',type:'has',ph:'跟踪反馈'}, // 有没有跟进记录（数组，不是文本列）
   {key:'__clear',type:'clear'}
 ];
+const COLSPAN=FILTER_COLS.length; // 空态/月份分隔行的 colspan 跟着列数走，不再手写数字
 const FILTERS={};                     // key -> 已选值（'' = 该列未筛选）；刻意不写 localStorage
 const PAGE_SIZES=[20,50,100];
 let _page=1;
@@ -218,6 +234,9 @@ export function filteredInquiries(){
   // 服务端已按 date DESC,id DESC 返回；这里用稳定排序按日期再兜一次，同日顺序保持不变
   return rows.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
 }
+/* 下拉候选。有目录的列（产品/大区）列出全部目录项 + 区间内出现过的历史值；
+   标签带上条数，0 条的也留着可选 —— 选中后表格会给出「当前筛选条件下没有询盘」的明确提示，
+   这比「新产品在筛选框里根本不存在、以为功能坏了」要好。 */
 function optionsFor(col){
   const seen=new Map(); let blanks=0;
   (window._inqCache||[]).forEach(r=>{
@@ -225,9 +244,14 @@ function optionsFor(col){
     if(isBlank(v)){ blanks++; return; }
     const s=String(v); seen.set(s,(seen.get(s)||0)+1);
   });
-  const list=[...seen.keys()].sort((a,b)=>a.localeCompare(b,'zh-Hans-CN'));
-  const out=list.map(v=>({value:v,label:v}));
-  if(blanks&&col.blank)out.push({value:BLANK,label:col.blank});
+  const catalog=Array.isArray(col.catalog)?col.catalog:[];
+  const extras=[...seen.keys()].filter(v=>catalog.indexOf(v)<0).sort((a,b)=>a.localeCompare(b,'zh-Hans-CN'));
+  const names=catalog.length?catalog.concat(extras):extras;
+  const out=names.map(v=>{
+    const n=seen.get(v)||0;
+    return {value:v,label:catalog.length?(v+'（'+n+'）'):v};
+  });
+  if(blanks&&col.blank)out.push({value:BLANK,label:col.blank+'（'+blanks+'）'});
   return out;
 }
 export function renderInqFilterRow(){
@@ -324,6 +348,9 @@ document.addEventListener('cellsaved',e=>{
   if(d.item&&typeof d.item==='object')Object.assign(it,d.item); // 服务端整行（含 feedbacks），最权威
   else it[d.field]=d.value;
 });
+/* 业务反馈由 inquiry-sales.js 管（它自己重画那一格），但「有/无业务反馈」这个筛选条件
+   与条数统计在本模块，所以要重画整表。用事件而不是互相 import —— 否则两个模块成环。 */
+document.addEventListener('salesnoteschanged',()=>renderInqTable());
 /* 重画前把「改了但还没确认存盘」的可编辑单元格收回缓存。
    只收 dirty 的（td._old 由 table-editor 在 focusin 时记、存盘成功后更新）——
    存盘成功的行已由 cellsaved 用服务端整行同步过，全量收会让过期 DOM 反过来盖掉刚拉回来的新数据。 */
@@ -357,7 +384,7 @@ function renderInqTable(){
   tb.innerHTML='';
   if(!rows.length){
     const why=activeFilterCount()?'当前筛选条件下没有询盘 —— 换个条件或点右上角「清空筛选」':'所选时间区间暂无询盘';
-    tb.innerHTML=`<tr><td colspan="14" class="dim csp-s-d48bfa87bb">${why}</td></tr>`;
+    tb.innerHTML=`<tr><td colspan="${COLSPAN}" class="dim csp-s-d48bfa87bb">${why}</td></tr>`;
     renderInqPager(0,1,0,0);
     return;
   }
@@ -370,7 +397,7 @@ function renderInqTable(){
       const n=rows.filter(x=>x.date.slice(0,7)===ym).length; // 当前筛选下该月总条数（不只本页）
       const sep=document.createElement('tr');
       sep.className='inq-msep'; sep.dataset.month=ym;
-      sep.innerHTML=`<td colspan="14"><i class="ti ti-calendar-month hicon"></i> ${esc(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">· ${n} 条</span></td>`;
+      sep.innerHTML=`<td colspan="${COLSPAN}"><i class="ti ti-calendar-month hicon"></i> ${esc(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">· ${n} 条</span></td>`;
       tb.appendChild(sep);
     }
     const tr=document.createElement('tr');
@@ -437,7 +464,7 @@ export async function loadInquiries(){
     window._inqCache=[];
     window._inqStats=null;
     const reason=e.message||'未知错误';
-    tableLoadState('tb-inq',14,'error','询盘加载失败：'+reason,loadInquiries);
+    tableLoadState('tb-inq',COLSPAN,'error','询盘加载失败：'+reason,loadInquiries);
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(_){}}
     toast('询盘加载失败：'+reason);
   } }

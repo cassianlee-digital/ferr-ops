@@ -8,6 +8,7 @@ import { activeScope, getRangeRevision, rangeText, withRange } from './timerange
 import { mountExecution } from './execution.js';
 import { mountPeriods } from './kpi-periods.js';
 import { mountLedger } from './ledger.js';
+import { mountKpiReview } from './kpi-review.js';
 
 function grade(s){if(s>=90)return{t:'优秀',c:'var(--green)',bg:'var(--green-soft)',i:'ti-trophy'};if(s>=75)return{t:'合格',c:'var(--blue)',bg:'var(--blue-soft)',i:'ti-circle-check'};if(s>=60)return{t:'警告',c:'var(--amber)',bg:'var(--amber-soft)',i:'ti-alert-triangle'};return{t:'整改',c:'var(--primary)',bg:'var(--primary-soft)',i:'ti-flame'};}
 function gauge(arc,sc,score){const C=364.4,g=grade(score),A=document.getElementById(arc),S=document.getElementById(sc);if(!A)return;A.style.stroke=g.c;S.style.color=g.c;let c=0;(function st(){c+=score/40;if(c>=score)c=score;A.style.strokeDashoffset=C-(C*c/100);S.textContent=c.toFixed(0);if(c<score)requestAnimationFrame(st);})();}
@@ -121,6 +122,10 @@ export function renderKPI(){
   recomputeScores(); // 总览页镜像 g1 仍用旧客户端算法（总览改版不在本次范围）
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set('topScore',company.toFixed(0));gauge('g1','g1s',company);badge('g1b',company);
+  // 月度绩效考核（老板考核表口径）——KPI 页的主角，插在最上面。
+  // 与下面的 v2 分层考核相互独立：那套算的是渠道过程质量，本期按老板要求不计入考核。
+  // 放在 assessment 判空之前，理由同 mountLedger：v2 加载失败时它照样该显示。
+  mountKpiReview();
   mountLedger(); // 运营总账卡：花费→询盘→优质→成交→效率。与 v2 评分无关的业务漏斗，
                  // 故放在 assessment 判空之前——评分加载失败时它照样该显示。幂等挂载，区间变化由自身监听重拉。
   const a=window._kpiAssessment;

@@ -375,3 +375,103 @@
   padding: 0 !important;
   border-bottom: 0 !important;
 }
+
+/* ================= 月度绩效考核（老板考核表口径 · 2026-09-20）=================
+   KPI 页的主角：总分 / 等级 / 绩效系数 + 逐项得分明细。摆在三个表盘之前。
+   配色沿用 KPI 页既有的 kpi-tone-* 语义，不另起一套。 */
+.kpi-review{margin-bottom:var(--console-section-gap,14px)}
+.kpi-review-body{padding-top:4px}
+
+.kpi-review-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.kpi-review-tab{
+  height:28px;padding:0 12px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg2);color:var(--text2);
+  font-size:12px;font-family:inherit;cursor:pointer;
+}
+.kpi-review-tab:hover{border-color:var(--blue);color:var(--blue)}
+.kpi-review-tab.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:500}
+
+.kpi-review-hero{
+  display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;
+  padding:14px 16px;margin-bottom:12px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg3);
+}
+.kpi-review-score{min-width:110px;text-align:center}
+.kpi-review-score-num{font-size:40px;font-weight:700;line-height:1.05;color:var(--text1);font-variant-numeric:tabular-nums}
+.kpi-review-score-num.provisional{color:var(--text3)}
+.kpi-review-score-max{margin-top:2px;color:var(--text3);font-size:11px}
+.kpi-review-meta{flex:1 1 220px;min-width:0}
+.kpi-review-grade-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* 等级徽章：颜色由绩效系数决定（见 kpi-review.js bandTone），
+   绝不固定成绿色 —— 把「未达标」画成绿的，等于用配色撒谎。 */
+.kpi-review-grade{
+  padding:3px 10px;border-radius:var(--radius);
+  background:var(--bg4);color:var(--text2);
+  font-size:13px;font-weight:600;
+}
+.kpi-review-grade.tone-ok{background:var(--green-soft);color:var(--green)}
+.kpi-review-grade.tone-good{background:var(--blue-soft);color:var(--blue)}
+.kpi-review-grade.tone-warn{background:var(--amber-soft);color:var(--amber)}
+/* 判负用 --danger（红）而不是 --primary：--primary 在浅色主题下是品牌蓝，
+   把「未达标」染成蓝色等于把坏消息说得像中性提示。 */
+.kpi-review-grade.tone-bad{background:var(--danger-soft);color:var(--danger)}
+.kpi-review-grade.provisional{background:var(--bg4);color:var(--text3)}
+.kpi-review-grade.muted{background:var(--bg4);color:var(--text3);font-weight:500}
+.kpi-review-coef{
+  padding:3px 8px;border:1px solid var(--border);border-radius:var(--radius);
+  color:var(--text2);font-size:12px;font-variant-numeric:tabular-nums;
+}
+.kpi-review-warn{margin-top:6px;color:var(--amber);font-size:12px;line-height:1.5}
+.kpi-review-cov{margin-top:6px;color:var(--text3);font-size:11px}
+
+.kpi-review-chips{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;flex:2 1 420px}
+.kpi-review-chip{
+  flex:1 1 110px;min-width:96px;padding:8px 10px;
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);
+}
+.kpi-review-chip-label{color:var(--text3);font-size:11px;white-space:nowrap}
+.kpi-review-chip-value{margin-top:3px;color:var(--text1);font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;word-break:break-all}
+
+.kpi-review-scroll{overflow-x:auto}
+.kpi-review-table{min-width:760px}
+.kpi-review-table td{vertical-align:middle}
+.kpi-review-name{font-weight:500}
+.kpi-review-score-cell{font-weight:700;font-variant-numeric:tabular-nums}
+.kpi-review-note{font-size:11px;line-height:1.5}
+/* 不计分 / 缺数据的行整体压暗：让「哪些进了分数」一眼可分 */
+.kpi-review-row-off td{background:var(--bg3);color:var(--text3)}
+.kpi-review-row-info td{background:var(--bg3);font-style:italic}
+
+.kpi-review-bands{margin-top:14px}
+.kpi-review-sub{margin-bottom:6px;color:var(--text3);font-size:12px;font-weight:500}
+.kpi-review-band-row{display:flex;align-items:stretch;gap:6px;flex-wrap:wrap}
+.kpi-review-band{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 10px;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg2);font-size:12px;
+}
+/* 当前所处的那一档高亮，配色同样跟系数走 */
+.kpi-review-band.on{font-weight:600}
+.kpi-review-band.on.tone-ok{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.kpi-review-band.on.tone-good{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
+.kpi-review-band.on.tone-warn{border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.kpi-review-band.on.tone-bad{border-color:var(--danger);background:var(--danger-soft);color:var(--danger)}
+.kpi-review-band-range{color:var(--text3);font-variant-numeric:tabular-nums}
+.kpi-review-band.on .kpi-review-band-range{color:inherit}
+.kpi-review-band-coef{font-variant-numeric:tabular-nums;font-weight:600}
+
+.kpi-review-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.kpi-review-attr{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.kpi-review-attr-label{color:var(--text2);font-size:12px}
+.kpi-review-attr-value{color:var(--amber);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi-review-attr-note{color:var(--text3);font-size:11px}
+.kpi-review-source-list{margin:0;padding-left:18px;color:var(--text3);font-size:11px;line-height:1.7}
+.kpi-review-basis{margin-top:8px;color:var(--text3);font-size:11px;line-height:1.6}
+.kpi-review-error{padding:16px;color:var(--text2);font-size:13px}
+.kpi-review-error .btn-ghost{margin-top:10px}
+
+body.dark .kpi-review-hero,body.dark .kpi-review-row-off td,body.dark .kpi-review-row-info td{background:#0f172a}
+body.dark .kpi-review-chip,body.dark .kpi-review-band,body.dark .kpi-review-tab{background:#0b1220;border-color:#273142}

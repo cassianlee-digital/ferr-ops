@@ -24,6 +24,13 @@ const risksSource = readFileSync(new URL('../../public/src/risks.js', import.met
 const inquiriesSource = readFileSync(new URL('../../public/src/inquiries.js', import.meta.url), 'utf8');
 const uiKitSource = readFileSync(new URL('../../public/src/ui-kit.js', import.meta.url), 'utf8');
 const stylesSource = readFileSync(new URL('../../public/styles.css', import.meta.url), 'utf8');
+// 2026-09-20 新增：产品/大区目录、图片附件、业务反馈、月度绩效考核
+const catalogSource = readFileSync(new URL('../../public/src/catalog.js', import.meta.url), 'utf8');
+const tagSelectSource = readFileSync(new URL('../../public/src/tagselect.js', import.meta.url), 'utf8');
+const attachmentsSource = readFileSync(new URL('../../public/src/attachments.js', import.meta.url), 'utf8');
+const inquirySalesSource = readFileSync(new URL('../../public/src/inquiry-sales.js', import.meta.url), 'utf8');
+const kpiReviewSource = readFileSync(new URL('../../public/src/kpi-review.js', import.meta.url), 'utf8');
+const kpiReviewAdminSource = readFileSync(new URL('../../public/src/kpi-review-admin.js', import.meta.url), 'utf8');
 
 function tbody(id) {
   const match = html.match(new RegExp(`<tbody[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/tbody>`));
@@ -140,7 +147,11 @@ test('empty and failed live loads remain observable and retryable', () => {
   assert.match(uiKitSource, /data-load-state="\$\{state\}"/);
   assert.match(appSource, /否词加载失败：/);
   assert.match(appSource, /广告创意加载失败：/);
-  assert.match(inquiriesSource, /window\._inqStats=null;[\s\S]*tableLoadState\('tb-inq',14,'error'/);
+  // 列数不再写死：2026-09-20 加了「业务反馈」列后是 15 列，colspan 统一由 FILTER_COLS.length 推出，
+  // 防的就是「加了列却漏改某处 colspan，空态/错误行宽度对不上」这类改一处漏一处的毛病。
+  assert.match(inquiriesSource, /window\._inqStats=null;[\s\S]*tableLoadState\('tb-inq',COLSPAN,'error'/);
+  assert.match(inquiriesSource, /const COLSPAN=FILTER_COLS\.length;/);
+  assert.doesNotMatch(inquiriesSource, /colspan="\d+"/);
   assert.match(appSource, /loadInquiries\(\)/);
   assert.match(appSource, /loadNegKeywords\(\)/);
   assert.match(appSource, /loadAdCreatives\(\)/);
@@ -353,4 +364,118 @@ test('P0/P1 risk register is a real authenticated data surface with explicit sta
   assert.match(risksSource, /当前筛选条件下没有风险项/);
   assert.match(risksSource, /requestId!==requestSequence/);
   assert.match(risksSource, /SOURCE_LABELS=\{production_live:'最近生产验收',current_static:'当前配置与数据库'\}/);
+});
+
+/* ================= 2026-09-20 改版的防回归 ================= */
+
+test('产品与大区只有一份清单：录入下拉 / 彩色标签 / 表头筛选都从 catalog.js 取', () => {
+  // 老板反馈的「产品和筛选框不同步」，根因就是同一份清单散在四处各写一遍。
+  for (const p of ['爬梯', '紧线器', '电力', '建筑预埋件', 'AI算力']) {
+    assert.ok(catalogSource.includes(`['${p}',`), `新产品 ${p} 不在目录里`);
+  }
+  assert.match(tagSelectSource, /product:PRODUCTS/);
+  assert.match(tagSelectSource, /region:REGIONS/);
+  assert.match(tagSelectSource, /import \{ PRODUCTS, REGIONS \} from '\.\/catalog\.js';/);
+  assert.match(inquiriesSource, /from '\.\/catalog\.js'/);
+  // 任何地方再复制一份产品清单都会在这里红
+  assert.doesNotMatch(inquiriesSource, /PROD_BADGE=\{/);
+  assert.doesNotMatch(tagSelectSource, /\['铸造','b-amber'\]/);
+  assert.doesNotMatch(html, /<option>铸造<\/option>/, '录入弹框的产品下拉必须由 fillSelect 按目录渲染，不再写死 option');
+  assert.doesNotMatch(html, /<option>西欧<\/option>/, '大区下拉同理');
+  assert.match(inquiriesSource, /fillSelect\(document\.getElementById\('f-product'\),PRODUCT_NAMES\)/);
+  // 表头筛选的产品/大区列出完整目录（这正是「同步」的含义），不再只列出现过的值
+  assert.match(inquiriesSource, /catalog:PRODUCT_NAMES/);
+  assert.match(inquiriesSource, /catalog:REGION_NAMES/);
+});
+
+test('国家可改、大区可改，且产品/渠道的标签变更真的会落库', () => {
+  assert.match(inquiriesSource, /contenteditable data-field="country"/);
+  assert.match(inquiriesSource, /data-kind="region"/);
+  // region/product/channel 之前不在 fieldMap 里 → 点了换颜色却一次 PATCH 都不发，刷新原样退回
+  assert.match(tagSelectSource, /region:'region',product:'product',channel:'channel'/);
+});
+
+test('图片附件只走 /raw 取原图，不把 base64 塞进列表或表格', () => {
+  assert.match(attachmentsSource, /export function rawUrl\(id\)/);
+  assert.match(attachmentsSource, /'\/api\/attachments\/' \+ encodeURIComponent\(id\) \+ '\/raw'/);
+  // 缩略图 src 必须是 /raw 地址；把 dataURL 直接渲染进表格会让整页体积随图片线性膨胀
+  assert.match(attachmentsSource, /src="\$\{esc\(rawUrl\(im\.id\)\)\}"/);
+  assert.doesNotMatch(attachmentsSource, /src="\$\{[^}]*dataUrl/);
+  // 上传前压缩：业务随手一张截图好几 MB，原样进库 SQLite 迅速膨胀
+  assert.match(attachmentsSource, /export function compressImage\(/);
+  assert.match(attachmentsSource, /MAX_EDGE = 1600/);
+  // 动图不能重绘（只会剩第一帧），必须原样传
+  assert.match(attachmentsSource, /file\.type === 'image\/gif'/);
+  // 删除角标压在图里，不往外挑：往外挑会盖住窄格子里挨着的按钮（2026-09-20 在关键词库实测撞上了）
+  const componentsCss = readFileSync(new URL('../../public/components.css', import.meta.url), 'utf8');
+  const badge = componentsCss.match(/\.att-thumb-del\{([^}]*)\}/);
+  assert.ok(badge, '.att-thumb-del 样式缺失');
+  assert.doesNotMatch(badge[1], /top:-|right:-/, '删除角标不许用负偏移往外伸');
+  // 表格格子里的缩略图只读（deletable 默认 false），删图统一在弹框里做
+  assert.match(attachmentsSource, /\{ deletable = false \} = \{\}/);
+});
+
+test('大图预览是一张带说明的卡片，且缓存命中时尺寸照样显示', () => {
+  assert.match(attachmentsSource, /att-lightbox-card/);
+  assert.match(attachmentsSource, /att-lightbox-name/);
+  assert.match(attachmentsSource, /在新标签打开原图/);
+  // 图走 immutable 缓存，第二次打开 load 早触发完了；只挂监听会永远等不到尺寸
+  assert.match(attachmentsSource, /if \(img\.complete\) showDim\(\);/);
+  // 判过期必须用序号：读 img.src 回来的是绝对地址，跟相对路径比永远不相等（踩过）
+  assert.match(attachmentsSource, /seq !== lightboxSeq/);
+  assert.doesNotMatch(attachmentsSource, /img\.src !== /);
+  // 点卡片不关窗（要能选文字、点链接），只有背景/✕/Esc 才关
+  assert.match(attachmentsSource, /e\.target\.closest\('\.att-lightbox-card'\)/);
+  // 刻意不把小图硬放大：拉伸只会变马赛克，等于假装它有更多细节
+  const componentsCss2 = readFileSync(new URL('../../public/components.css', import.meta.url), 'utf8');
+  const lightboxImg = componentsCss2.match(/\.att-lightbox-img\{([^}]*)\}/);
+  assert.ok(lightboxImg, '.att-lightbox-img 样式缺失');
+  assert.match(lightboxImg[1], /max-width|max-height/);
+  assert.doesNotMatch(lightboxImg[1], /^\s*width:\s*\d|;\s*width:\s*\d/, '不许给预览图写死宽度去强行放大');
+});
+
+test('业务反馈与跟踪反馈是两列两张表，语义不许合并', () => {
+  assert.match(inquiriesSource, /class="ctr inq-sales-feedback"/);
+  assert.match(inquiriesSource, /class="ctr inq-track-feedback"/);
+  assert.match(html, /<th class="ctr inq-th-sales">业务反馈<\/th>/);
+  // 走各自的接口，别哪天有人图省事把业务反馈写进 inquiry_feedbacks
+  assert.match(inquirySalesSource, /'\/sales-notes'/);
+  assert.doesNotMatch(inquirySalesSource, /\/feedbacks/);
+  // 先建记录再挂图：一张图失败只丢那一张，不会把整条反馈搞没
+  assert.match(inquirySalesSource, /API\.post\('\/api\/inquiries\/' \+ editing\.id \+ '\/sales-notes'/);
+  // 两个模块不许互相 import（会成环），刷新靠事件
+  assert.match(inquirySalesSource, /new CustomEvent\('salesnoteschanged'/);
+  assert.match(inquiriesSource, /addEventListener\('salesnoteschanged'/);
+  assert.doesNotMatch(inquirySalesSource, /from '\.\/inquiries\.js'/);
+});
+
+test('月度绩效考核：前端一行不算分，且缺数据不得显示成 0 分', () => {
+  // 分数只能来自后端 services/kpiReview.js —— 两处各算一遍必然对不上账
+  assert.doesNotMatch(kpiReviewSource, /\* *m\.weight|weight *\* */);
+  assert.match(kpiReviewSource, /API\.get\(withRange\('\/api\/kpi\/review', 'kpi'\)\)/);
+  // 非 VALID 的指标出状态文案而不是数字 0
+  assert.match(kpiReviewSource, /NO_TARGET: '目标待定'/);
+  assert.match(kpiReviewSource, /MISSING_DATA: '缺数据'/);
+  assert.match(kpiReviewSource, /m\.score == null \? '—' : m\.score/);
+  // 只认 KPI 页自己的时间范围（时间范围已分页面独立）
+  assert.match(kpiReviewSource, /e\.detail\.scope === 'kpi'/);
+  // 等级配色跟着绩效系数走，不许写死绿色
+  assert.match(kpiReviewSource, /function bandTone\(coef\)/);
+  // 未归因占比必须一直亮着：老板口径把直接/其他计入总量，但录入质量得有人负责
+  assert.match(kpiReviewSource, /未标明来源的询盘/);
+});
+
+test('考核方案从设置页改，指标口径不写死在代码里', () => {
+  assert.match(html, /data-sub="set-review"/);
+  assert.match(html, /id="kpiReviewAdmin"/);
+  assert.match(mainSource, /import '\.\/kpi-review-admin\.js';/);
+  // 权重/上限/分档/月度目标全部可配（老板明确说后期会加指标）
+  for (const key of ['review_weight_a', 'review_weight_fix', 'review_metric_cap', 'review_min_coverage']) {
+    assert.match(kpiReviewAdminSource, new RegExp(`'${key}'`), `${key} 应该可以在设置页改`);
+  }
+  assert.match(kpiReviewAdminSource, /kra-band-min/);
+  assert.match(kpiReviewAdminSource, /API\.put\('\/api\/kpi\/review-config'/);
+  // 目标留空 = 目标待定，绝不当成 0（当成 0 会让该指标凭空满分）
+  assert.match(kpiReviewAdminSource, /function valueOrNull\(input\)/);
+  assert.match(kpiReviewAdminSource, /if \(!raw\) return null;/);
 });

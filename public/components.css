@@ -140,3 +140,77 @@ table.dt td.num{text-align:right}
 .b-gray{background:#f7f8fa;color:#4e5969;border-color:#e5e8ef}
 .tagselect{background:#f6ffed;color:#15803d;border-color:#c8f2d4}
 .cache-tag{background:#f6fffb;color:#00a870;border-color:transparent}
+
+/* ================= 图片附件（2026-09-20）=================
+   询盘表「业务反馈」与关键词库「客户信息词库」共用。缩略图正方形裁切，点开看原图。 */
+.att-file-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.att-thumbs{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:4px;max-width:100%}
+.att-thumb-wrap{position:relative;display:inline-flex;line-height:0}
+.att-thumb{
+  width:40px;height:40px;
+  object-fit:cover;
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg3);cursor:zoom-in;
+}
+.att-thumb:hover{border-color:var(--blue)}
+/* 删除角标压在缩略图**里面**的右上角，不往外伸。
+   曾经是 top/right:-5px 往外挑，结果在关键词库那种窄格子里直接盖住旁边的「加图」按钮
+   （2026-09-20 实测角标 x 1712~1727、按钮从 1722 开始）。放进图里就不会再撞到任何邻居，
+   也不会被 overflow:hidden 的容器裁掉。 */
+.att-thumb-del{
+  position:absolute;top:1px;right:1px;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:15px;height:15px;padding:0;
+  border:0;border-radius:999px;
+  background:rgba(15,23,42,.62);color:#fff;
+  font-size:9px;line-height:1;cursor:pointer;
+}
+.att-thumb-del:hover{background:var(--danger)}
+.att-thumb-del.confirming{background:var(--danger);width:auto;padding:0 5px;border-radius:8px;font-size:10px}
+
+/* 大图预览：点背景 / ✕ / Esc 关闭；点卡片本身不关（要能选文字、点链接）。
+   做成卡片而不是「一张图浮在全屏黑底上」—— 业务发来的截图尺寸参差不齐，
+   小图在空旷黑底里会显得像坏了。卡片跟着内容走，底部说明栏交代文件名与真实像素尺寸。 */
+.att-lightbox{
+  position:fixed;inset:0;z-index:9000;
+  display:none;align-items:center;justify-content:center;
+  padding:40px;
+  background:rgba(8,11,16,.82);
+  cursor:zoom-out;
+}
+.att-lightbox.on{display:flex}
+.att-lightbox-card{
+  display:flex;flex-direction:column;
+  max-width:92vw;max-height:88vh;
+  border-radius:var(--radius);
+  background:var(--bg2);
+  box-shadow:0 18px 48px rgba(0,0,0,.45);
+  cursor:default;overflow:hidden;
+}
+/* 小图不硬放大（拉伸只会变马赛克），但给个最小尺寸，让它看起来是「就这么大」而不是「坏了」 */
+.att-lightbox-stage{
+  display:flex;align-items:center;justify-content:center;
+  min-width:min(320px,80vw);min-height:min(180px,40vh);
+  padding:12px;
+  background:var(--bg3);
+}
+.att-lightbox-img{max-width:min(88vw,100%);max-height:78vh;object-fit:contain;display:block}
+.att-lightbox-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 12px;
+  border-top:1px solid var(--border);
+  color:var(--text2);font-size:12px;
+}
+.att-lightbox-name{font-weight:500;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50%}
+.att-lightbox-dim{color:var(--text3);font-variant-numeric:tabular-nums}
+.att-lightbox-open{margin-left:auto;color:var(--blue);text-decoration:none}
+.att-lightbox-open:hover{text-decoration:underline}
+.att-lightbox-close{
+  position:absolute;top:16px;right:20px;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;
+  border:1px solid rgba(255,255,255,.28);border-radius:var(--radius);
+  background:rgba(255,255,255,.08);color:#fff;
+  font-size:16px;cursor:pointer;
+}
+.att-lightbox-close:hover{background:rgba(255,255,255,.18)}

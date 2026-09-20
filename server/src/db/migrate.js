@@ -12,8 +12,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_VERSION = '12';
 
 const ALL_TABLES = [
-  'users', 'inquiries', 'inquiry_feedbacks', 'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
-  'rank_snapshots', 'kpi_targets', 'kpi_period_snapshots', 'kpi_config', 'execution_loops', 'keywords', 'fixes', 'loop_items',
+  'users', 'inquiries', 'inquiry_feedbacks', 'inquiry_sales_notes', 'attachments',
+  'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
+  'rank_snapshots', 'kpi_targets', 'kpi_period_snapshots', 'kpi_config', 'kpi_review_targets',
+  'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
   'sop_definitions', 'sop_completions', 'task_checkins', 'hermes_action_runs',
@@ -616,6 +618,49 @@ CREATE TABLE IF NOT EXISTS inquiry_feedbacks (
   created_at  TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_inquiry_feedbacks_inq ON inquiry_feedbacks(inquiry_id);
+
+-- 通用附件（目前只收图片）。业务发回来的关键词截图 / 聊天记录截图等原始材料。
+-- 图片以 BLOB 存库而不是落盘：生产是 Docker Compose，落盘要额外挂卷、备份也会漏，
+-- 而 backup.js 备的就是这个 .db 文件 —— 存库图片跟着一起备份，少一处「备份没覆盖到」的坑。
+-- 列表接口只回元数据（不含 data），原图走 GET /api/attachments/:id/raw，避免列表把图片一起拖回来。
+CREATE TABLE IF NOT EXISTS attachments (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_type  TEXT NOT NULL,          -- 'inquiry_sales_note' | 'keyword'
+  owner_id    INTEGER NOT NULL,
+  name        TEXT,
+  mime        TEXT NOT NULL,
+  bytes       INTEGER NOT NULL,
+  data        BLOB NOT NULL,
+  created_by  INTEGER REFERENCES users(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_attachments_owner ON attachments(owner_type, owner_id);
+
+-- 业务反馈：业务员针对这条询盘发回来的东西（一段话 + 若干张图）。
+-- 与「跟踪反馈」刻意分成两张表：跟踪反馈是运营自己记的跟进进度，业务反馈是业务给的原始材料，
+-- 混在一张表里以后就分不清「谁说的」，复盘时等于没有证据链。
+CREATE TABLE IF NOT EXISTS inquiry_sales_notes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  inquiry_id  INTEGER NOT NULL REFERENCES inquiries(id),
+  text        TEXT,
+  created_by  INTEGER REFERENCES users(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_inquiry_sales_notes_inq ON inquiry_sales_notes(inquiry_id);
+
+-- 月度绩效考核目标（老板《2026 运营部绩效考核表》的「目标设置」页口径）。
+-- period_key = 'YYYY-MM'；'default' 行是兜底：某月没单独设就用它。两者都没有 → 该指标标「目标待定」，绝不猜。
+CREATE TABLE IF NOT EXISTS kpi_review_targets (
+  period_key      TEXT PRIMARY KEY,
+  a_target        REAL,   -- A 级询价数量目标
+  b_target        REAL,   -- B 级询价数量目标
+  ad_budget       REAL,   -- 广告预算（只做基准对照，不计分）
+  cost_a_target   REAL,   -- A 级询价成本目标（越低越好）
+  cost_ab_target  REAL,   -- A+B 有效询价成本目标（越低越好）
+  a_ratio_target  REAL,   -- A 级占比目标，0~1
+  note            TEXT,
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `;
 
 export function migrate() {
@@ -726,6 +771,7 @@ export function migrate() {
   try { ensurePerformanceGroupsV3(); } catch (e) {}
   try { migrateKpiConfigKeys(); } catch (e) {}
   try { seedKpiConfigDefaults(); } catch (e) {}
+  try { seedReviewTargetRow(); } catch (e) {}
 
   db.prepare(
     `INSERT INTO meta (key,value) VALUES ('schema_version',?)
@@ -869,6 +915,28 @@ const KPI_CONFIG_DEFAULTS = {
   exec_impact_low: '1',           // LOW
   seo_period: 'quarter',
   sem_period: 'month',
+  /* ===== 月度绩效考核表（老板 2026 口径）=====
+     权重直接照搬老板那张表，合计 100 分；单指标达成率上限 120%（MIN(实际/目标,120%)）。
+     这些键都从设置页可改 —— 老板明确说过后期会加/调指标，别写死在代码里。 */
+  review_weight_a: '40',          // A 级询价数量
+  review_weight_b: '20',          // B 级询价数量
+  review_weight_cost_a: '10',     // A 级询价成本（广告投入 ÷ A 级数量，越低越好）
+  review_weight_cost_ab: '10',    // A+B 有效询价成本
+  review_weight_a_ratio: '5',     // A 级询价占比
+  review_weight_weekly: '5',      // 周复盘 / 数据分析完成率
+  review_weight_fix: '5',         // 问题整改闭环率
+  review_weight_test: '5',        // 实验测试完成率
+  review_metric_cap: '1.2',       // 单指标达成率上限（老板表：最高按 120% 计分）
+  review_min_coverage: '0.6',     // 可评分权重覆盖率低于此值不出正式总分（沿用 v2 的诚实口径）
+  review_budget_tolerance: '0.1', // 广告投入对预算的容忍带 ±10%（只提示，不计分）
+  // 分档与绩效系数：老板表第四节。JSON 数组，min 为该档下限（含），按 min 从高到低匹配。
+  review_bands: JSON.stringify([
+    { min: 110, label: '超额优秀', coef: 1.2, note: '超额完成核心目标，可作为年底额外奖励的重要依据' },
+    { min: 100, label: '达成目标', coef: 1.0, note: '正常全额绩效' },
+    { min: 90, label: '良好', coef: 0.9, note: '部分未达标' },
+    { min: 80, label: '达标', coef: 0.8, note: '基本达标，需关注短板' },
+    { min: 0, label: '未达标', coef: 0.6, note: '进入整改 / 专项复盘' },
+  ]),
 };
 // 配置键重命名迁移：score_floor→min_coverage_to_grade、score_cap→metric_score_cap（值搬过去，删旧键）。
 function migrateKpiConfigKeys() {
@@ -885,6 +953,11 @@ function migrateKpiConfigKeys() {
 function seedKpiConfigDefaults() {
   const ins = db.prepare('INSERT OR IGNORE INTO kpi_config (key, value) VALUES (?, ?)');
   for (const [k, v] of Object.entries(KPI_CONFIG_DEFAULTS)) ins.run(k, v);
+}
+/* 兜底目标行：只建一行全 NULL 的 'default'，让设置页永远有东西可填、接口永远有形状。
+   刻意不预填任何数字 —— 目标是老板定的，编一个进去等于凭空给团队立了个假 KPI。 */
+function seedReviewTargetRow() {
+  db.prepare("INSERT OR IGNORE INTO kpi_review_targets (period_key) VALUES ('default')").run();
 }
 
 // 把旧「年-月-第几周」周报键改写成「本周周一日期 YYYY-MM-DD」。幂等：日期键/月报键都不匹配 legacy 正则。

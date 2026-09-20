@@ -1,6 +1,7 @@
 // 询盘数据访问层。SQL 集中于此，便于将来替换为 PostgreSQL。
 import { db } from '../connection.js';
 import { updateById } from '../updateHelper.js';
+import * as salesNotesRepo from './inquirySalesNotes.js';
 
 // range 可选：{ start_date, end_date }(YYYY-MM-DD)。提供则按 date 区间过滤(参数化)；不提供返回全量。
 // P3：默认排除已归档（state='archived'）；归档项只在归档页通过 listArchived() 取。
@@ -95,10 +96,16 @@ function feedbacksByInquiry(ids) {
   return map;
 }
 
-// 给一批询盘行挂上 feedbacks 数组（列表/统计都用它，保证前端只认一个字段）
+/* 给一批询盘行挂上 feedbacks（运营跟踪）+ sales_notes（业务反馈，含图片元数据）。
+   两者都走批量查询，列表页一次捞完 —— 单条去查会变成 N+1，80 条询盘就是 160 次查询。
+   函数名保留 attachFeedbacks 不改：外部已有调用点，改名对打包器/静态分析是隐形的。 */
 export function attachFeedbacks(rows) {
   const map = feedbacksByInquiry(rows.map((r) => r.id));
-  for (const r of rows) r.feedbacks = map[r.id] || [];
+  const notes = salesNotesRepo.byInquiry(rows.map((r) => r.id));
+  for (const r of rows) {
+    r.feedbacks = map[r.id] || [];
+    r.sales_notes = notes[r.id] || [];
+  }
   return rows;
 }
 
@@ -131,8 +138,10 @@ export function get(id) {
 }
 
 export function remove(id) {
-  // 物理删除询盘时一并清掉它的跟踪记录，避免留下指向不存在询盘的孤儿行
+  // 物理删除询盘时一并清掉它的跟踪记录与业务反馈（含图片 BLOB），
+  // 避免留下指向不存在询盘的孤儿行——图片尤其要清，不然会一直占着库体积
   db.prepare('DELETE FROM inquiry_feedbacks WHERE inquiry_id = ?').run(id);
+  salesNotesRepo.removeByInquiry(id);
   db.prepare('DELETE FROM inquiries WHERE id = ?').run(id);
 }
 

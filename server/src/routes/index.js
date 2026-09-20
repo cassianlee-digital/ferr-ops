@@ -29,6 +29,7 @@ import { hermesRoutes } from './hermes.js';
 import { dataFreshnessRoutes } from './dataFreshness.js';
 import { hermesActionsRoutes } from './hermesActions.js';
 import { risksRoutes } from './risks.js';
+import { attachmentsRoutes } from './attachments.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -61,4 +62,5 @@ export async function registerRoutes(app) {
   await app.register(dataFreshnessRoutes);
   await app.register(hermesActionsRoutes);
   await app.register(risksRoutes);
+  await app.register(attachmentsRoutes);
 }
