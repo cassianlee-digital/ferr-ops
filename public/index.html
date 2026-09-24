@@ -619,7 +619,9 @@
 
       <!-- ============ 任务看板 V3 ============ -->
       <div class="panel" id="panel-tasks">
-        <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">每列上=SOP 固定清单(日/周/月合并一条一行)、下=每日新增 · 陈=SEM、李=SEO、公司任务在左</div></div><button class="btn-primary" data-ui-action="ai" data-ai-prompt="根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
+        <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">每列上=SOP 固定清单(日/周/月合并一条一行)、下=每日新增 · 陈=SEM、李=SEO、公司任务在左</div></div>
+          <button class="btn-ghost btn-mini co-add-task-btn" id="co-add-task-hdr" data-ui-action="open-task" data-dept="公司" title="派发公司任务"><i class="ti ti-building"></i> 派发公司任务</button>
+          <button class="btn-primary" data-ui-action="ai" data-ai-prompt="根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
         <!-- Step C：未做 SOP 提示 banner（周期首日 08:00 后才显示）+ 公司新派 banner（urgent=1 未完成；硬编码 Bafaw banner 已移除）-->
         <div id="sop-overdue-banner" class="banner banner-red csp-s-43becb3c13"><i class="ti ti-alert-triangle csp-s-61d6cf4bc7"></i><div class="csp-s-83725d2c6e"><div class="banner-t">未完成提示</div><div class="banner-s" id="sop-overdue-list"></div></div></div>
         <div id="urgent-banner" class="banner banner-red csp-s-43becb3c13"><i class="ti ti-bell-ringing csp-s-61d6cf4bc7"></i><div class="csp-s-83725d2c6e"><div class="banner-t">公司新派任务</div><div class="banner-s" id="urgent-list"></div></div></div>
@@ -1027,6 +1029,12 @@
         <div class="fld"><label>&nbsp;</label><div class="dim csp-s-25b23d2157">截止日晚于开始日 = 跨天任务，这段时间里每天都在「进行中」，不用每天新建。</div></div>
       </div>
       <div class="fld"><label>任务内容</label><textarea id="task-content" placeholder="要做什么…"></textarea></div>
+      <div class="fld"><label>为什么做 / 解决什么问题（可选）</label><textarea id="task-why" rows="2" placeholder="背景目的，或它要解决的具体问题…"></textarea></div>
+      <div class="fld"><label>完成标准（可选）</label><textarea id="task-done-when" rows="2" placeholder="达到什么算完成，让别人也能判断…"></textarea></div>
+      <div class="fld-row">
+        <div class="fld"><label>验证日期（可选）</label><input type="date" id="task-verify-date"></div>
+        <div class="fld"><label>怎么验证（可选）</label><input type="text" id="task-verify-how" placeholder="截图对比 / 看数据 / 客户反馈…"></div>
+      </div>
       <div class="fld"><label>备注（可选）</label><textarea id="task-note" placeholder="补充说明…"></textarea></div>
       <!-- Step C：urgent 勾选，仅经理/老板派发公司任务时显示 -->
       <div class="fld is-hidden" id="task-urgent-fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="task-urgent"> ⚠️ 设为紧急（顶部强提示，所有人可见，完成后消失）</label></div>

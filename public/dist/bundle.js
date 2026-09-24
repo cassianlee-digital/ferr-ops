@@ -4726,11 +4726,22 @@
     const deptBadge = isCo ? `<span class="badge ${s.c || "b-gray"}">${esc2(s.dept || "")}</span>` : "";
     const srcBadge = it.fix_id ? `<span class="badge b-amber src-fix" title="\u6765\u81EA\u6574\u6539\u6E05\u5355 \xB7 \u70B9\u51FB\u67E5\u770B\u4F9D\u636E">\u6574\u6539</span>` : "";
     const note = it.note ? `<span class="tnote">${esc2(it.note)}</span>` : "";
+    const whyLine = it.task_why ? `<span class="tloop-why"><span class="tloop-label">\u4E3A\u4EC0\u4E48</span>${esc2(it.task_why)}</span>` : "";
+    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u5B8C\u6210\u6807\u51C6</span>${esc2(it.task_done_when)}</span>` : "";
+    const verifyLine = it.task_verify_date || it.task_verify_how ? `<span class="tloop-verify"><i class="ti ti-calendar-check"></i>${it.task_verify_date ? esc2(it.task_verify_date.slice(5)) : ""}${it.task_verify_date && it.task_verify_how ? " \xB7 " : ""}${it.task_verify_how ? esc2(it.task_verify_how) : ""}</span>` : "";
+    const loopBlock = whyLine || doneWhenLine || verifyLine ? `<div class="tloop">${whyLine}${doneWhenLine}${verifyLine}</div>` : "";
     const ops = g === "overdue" && it.id ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="\u987A\u5EF6\u5230\u4ECA\u5929"><i class="ti ti-calendar-plus"></i></button><button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="\u653E\u5F03\u5E76\u5F52\u6863"><i class="ti ti-archive"></i></button>` : "";
     const push = taskPushHtml(it, g);
     const split = isCo ? `<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> \u5206\u53D1</button>` : "";
     const del = it.id ? `<button type="button" class="btn-mini csp-task-delete ${isCo || ops || push ? "csp-task-delete-spaced" : "csp-task-delete-pushed"}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
     box.innerHTML = deptBadge + srcBadge + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
+    let lb = card.querySelector(".tloop");
+    if (lb) lb.remove();
+    if (loopBlock) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = loopBlock;
+      card.appendChild(tmp.firstChild);
+    }
   }
   function taskDueHtml(it) {
     const due = it.task_date || "", st2 = it.start_date || "", hr = it.task_hour || "";
@@ -4852,6 +4863,32 @@
       toastGo("\u5DF2\u653E\u5F03 \xB7 \u5F52\u6863\u7559\u75D5", "archive");
     }).catch((e) => toast2(persistFailMsg(e)));
   }
+  function syncCompanyColVisibility() {
+    const col = document.getElementById("newtask-company");
+    const coBlock = document.getElementById("cocol-tasks");
+    const hdrBtn = document.getElementById("co-add-task-hdr");
+    if (!col || !coBlock) return;
+    const hasActive = !!col.querySelector(".tcard:not(.done):not(.subtask)");
+    coBlock.style.display = hasActive ? "" : "none";
+    const board = document.querySelector("#panel-tasks > .tboard");
+    if (board) board.classList.toggle("co-hidden", !hasActive);
+    if (hdrBtn) hdrBtn.style.display = hasActive ? "none" : "";
+  }
+  function sortTaskCardsByTime(col) {
+    if (!col) return;
+    const cmpHour = (a, b) => {
+      const ha = a._item && a._item.task_hour || "99", hb = b._item && b._item.task_hour || "99";
+      return ha < hb ? -1 : ha > hb ? 1 : 0;
+    };
+    col.querySelectorAll(":scope > .tgroup").forEach((g) => {
+      const cards = [...g.querySelectorAll(":scope > .tcard")].sort(cmpHour);
+      const anchor2 = g.querySelector(".donefold") || null;
+      cards.forEach((c) => anchor2 ? g.insertBefore(c, anchor2) : g.appendChild(c));
+    });
+    const flat = [...col.querySelectorAll(":scope > .tcard")].sort(cmpHour);
+    const anchor = col.querySelector(".donefold") || col.querySelector(".add-task");
+    flat.forEach((c) => anchor ? col.insertBefore(c, anchor) : col.appendChild(c));
+  }
   function subOwnerBadge(owner) {
     return owner === "\u9648" ? "b-purple" : "b-blue";
   }
@@ -4960,6 +4997,14 @@
     if (tc) tc.value = "";
     const tn = document.getElementById("task-note");
     if (tn) tn.value = "";
+    const tw = document.getElementById("task-why");
+    if (tw) tw.value = "";
+    const tdw = document.getElementById("task-done-when");
+    if (tdw) tdw.value = "";
+    const tvd = document.getElementById("task-verify-date");
+    if (tvd) tvd.value = "";
+    const tvh = document.getElementById("task-verify-how");
+    if (tvh) tvh.value = "";
     const role = (window.ME || {}).role;
     const canUrgent = (role === "manager" || role === "boss") && dept === "\u516C\u53F8";
     const uf = document.getElementById("task-urgent-fld");
@@ -4998,6 +5043,14 @@
     if (tc) tc.value = it.content || "";
     const tn = document.getElementById("task-note");
     if (tn) tn.value = it.note || "";
+    const tw = document.getElementById("task-why");
+    if (tw) tw.value = it.task_why || "";
+    const tdw = document.getElementById("task-done-when");
+    if (tdw) tdw.value = it.task_done_when || "";
+    const tvd = document.getElementById("task-verify-date");
+    if (tvd) tvd.value = it.task_verify_date || "";
+    const tvh = document.getElementById("task-verify-how");
+    if (tvh) tvh.value = it.task_verify_how || "";
     const uf = document.getElementById("task-urgent-fld");
     if (uf) uf.classList.add("is-hidden");
     openModal("taskMask");
@@ -5020,13 +5073,17 @@
     }
     const task_hour = document.getElementById("task-hour").value || "";
     const note = (document.getElementById("task-note").value || "").trim();
+    const task_why = (document.getElementById("task-why") && document.getElementById("task-why").value || "").trim();
+    const task_done_when = (document.getElementById("task-done-when") && document.getElementById("task-done-when").value || "").trim();
+    const task_verify_date = document.getElementById("task-verify-date") && document.getElementById("task-verify-date").value || "";
+    const task_verify_how = (document.getElementById("task-verify-how") && document.getElementById("task-verify-how").value || "").trim();
     const ucEl = document.getElementById("task-urgent");
     const urgent = ucEl && ucEl.checked && !document.getElementById("task-urgent-fld").classList.contains("is-hidden") ? 1 : void 0;
     if (_taskEditing) {
       const card = _taskEditing, it = card._item || {};
       try {
-        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, note });
-        Object.assign(it, item || { content, task_date, start_date, task_hour, note });
+        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how });
+        Object.assign(it, item || { content, task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how });
         const t = card.querySelector(".ttitle");
         if (t) {
           [...t.childNodes].forEach((n) => {
@@ -5046,7 +5103,7 @@
       return;
     }
     try {
-      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, note };
+      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how };
       if (urgent) body.urgent = 1;
       const { item } = await API.post("/api/loop-items", body);
       addTaskCard(s, item.content, item);
@@ -5071,6 +5128,7 @@
     if (col === null) return;
     if (col === void 0) {
       ["company", "sem", "seo"].forEach((k) => refreshTaskCols(document.getElementById("newtask-" + k)));
+      syncCompanyColVisibility();
       return;
     }
     const folded = col.classList.contains("folded");
@@ -5341,6 +5399,8 @@
     const de = document.getElementById("dep-empty");
     if (de) de.style.display = depTb && depTb.children.length ? "none" : "block";
     refreshTaskCols();
+    ["company", "sem", "seo"].forEach((k) => sortTaskCardsByTime(document.getElementById("newtask-" + k)));
+    syncCompanyColVisibility();
     applyAiDoneStates();
   }
   function depRowHtml(it) {
@@ -7716,7 +7776,17 @@
     if (e.target && e.target.id === "planday-input") setPlanDay(e.target.value || today2());
   });
   var _dayInput = document.getElementById("planday-input");
-  if (_dayInput && !_dayInput.value) _dayInput.value = today2();
+  if (_dayInput && !_dayInput.value) {
+    const now = /* @__PURE__ */ new Date();
+    const advance = now.getHours() >= 17;
+    if (advance) {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      _dayInput.value = formatLocalDate(tomorrow);
+    } else {
+      _dayInput.value = today2();
+    }
+  }
 
   // public/src/weekly-review.js
   var weekly_review_exports = {};

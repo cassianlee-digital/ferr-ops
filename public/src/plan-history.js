@@ -151,6 +151,16 @@ document.addEventListener('change', (e) => {
   if (e.target && e.target.id === 'planday-input') setPlanDay(e.target.value || today());
 });
 
-// 日期框先摆上今天（bundle 在 body 末尾执行，#panel-tasks 已解析完）
+// 日期框先摆上今天（17点后自动切到明天，团队下班前排下一天的计划）
 const _dayInput = document.getElementById('planday-input');
-if (_dayInput && !_dayInput.value) _dayInput.value = today();
+if (_dayInput && !_dayInput.value) {
+  const now = new Date();
+  const advance = now.getHours() >= 17;
+  if (advance) {
+    const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+    _dayInput.value = formatLocalDate(tomorrow);
+    // 不触发 setPlanDay——仍是实时看板，只是日期框预填明天，让录入的任务默认截止=明天
+  } else {
+    _dayInput.value = today();
+  }
+}

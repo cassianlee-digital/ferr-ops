@@ -37,6 +37,10 @@ export async function loopItemsRoutes(app) {
       note: s(b.note, 400),
       urgent: b.urgent === 1 || b.urgent === '1' || b.urgent === true ? 1 : null,
       parent_id: Number.isFinite(Number(b.parent_id)) && Number(b.parent_id) > 0 ? Number(b.parent_id) : null,
+      task_why: s(b.task_why, 400),
+      task_done_when: s(b.task_done_when, 400),
+      task_verify_date: s(b.task_verify_date, 20),
+      task_verify_how: s(b.task_verify_how, 400),
     });
     reply.code(201);
     return { item };

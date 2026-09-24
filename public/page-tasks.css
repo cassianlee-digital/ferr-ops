@@ -831,3 +831,70 @@ body.dark #panel-tasks .tcard.subtask {
   background: #0c1119;
   border-color: #202838;
 }
+
+/* 思考框架块：卡底部独占一行，有填才出现 */
+#panel-tasks .tloop {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+#panel-tasks .tloop-why,
+#panel-tasks .tloop-done,
+#panel-tasks .tloop-verify {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text3);
+}
+#panel-tasks .tloop-why i,
+#panel-tasks .tloop-done i,
+#panel-tasks .tloop-verify i {
+  flex: none;
+  margin-top: 1px;
+  font-size: 12px;
+}
+/* 文字标签替代图标 */
+#panel-tasks .tloop-label {
+  flex: none;
+  display: inline-block;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+#panel-tasks .tloop-why { color: #7d6b2e; }
+#panel-tasks .tloop-why .tloop-label { background: #fef9e7; color: #7d6b2e; }
+#panel-tasks .tloop-done { color: #2e6b4a; }
+#panel-tasks .tloop-done .tloop-label { background: #edfaf3; color: #2e6b4a; }
+#panel-tasks .tloop-verify { color: var(--primary); }
+body.dark #panel-tasks .tloop { border-top-color: #202838; }
+body.dark #panel-tasks .tloop-why { color: #b89a3c; }
+body.dark #panel-tasks .tloop-why .tloop-label { background: #2a2113; color: #b89a3c; }
+body.dark #panel-tasks .tloop-done { color: #4aab74; }
+body.dark #panel-tasks .tloop-done .tloop-label { background: #0f1f17; color: #4aab74; }
+
+/* 公司列隐藏时 SEM/SEO 平均铺满整行 */
+#panel-tasks .tboard.co-hidden {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 页头「派发公司任务」小按钮：公司列隐藏时才显示，默认隐藏 */
+#panel-tasks .co-add-task-btn {
+  display: none;
+  margin-left: auto;
+  margin-right: 8px;
+  height: 30px;
+  padding: 0 10px;
+  gap: 5px;
+  font-size: 12px;
+  border: 1px dashed var(--border2);
+  color: var(--text2);
+}

@@ -159,6 +159,13 @@ function renderTaskMeta(card){
   const srcBadge=it.fix_id?`<span class="badge b-amber src-fix" title="来自整改清单 · 点击查看依据">整改</span>`:'';
   // 备注并入 meta 行（备注居左、日期/操作居右同一行），消掉单独的备注行与空白
   const note=it.note?`<span class="tnote">${esc(it.note)}</span>`:'';
+  // 思考框架：有填才展示，挂在卡底部的 .tloop 块（不塞进 meta 行，避免同行挤爆）
+  const whyLine=it.task_why?`<span class="tloop-why"><span class="tloop-label">为什么</span>${esc(it.task_why)}</span>`:'';
+  const doneWhenLine=it.task_done_when?`<span class="tloop-done"><span class="tloop-label">完成标准</span>${esc(it.task_done_when)}</span>`:'';
+  const verifyLine=(it.task_verify_date||it.task_verify_how)
+    ?`<span class="tloop-verify"><i class="ti ti-calendar-check"></i>${it.task_verify_date?esc(it.task_verify_date.slice(5)):''}${it.task_verify_date&&it.task_verify_how?' · ':''}${it.task_verify_how?esc(it.task_verify_how):''}</span>`
+    :'';
+  const loopBlock=(whyLine||doneWhenLine||verifyLine)?`<div class="tloop">${whyLine}${doneWhenLine}${verifyLine}</div>`:'';
   // 逾期两个出口：顺延到今天 / 放弃并归档。没有出口的话逾期组就是下一个垃圾堆
   const ops=(g==='overdue'&&it.id)
     ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="顺延到今天"><i class="ti ti-calendar-plus"></i></button>`
@@ -169,6 +176,9 @@ function renderTaskMeta(card){
   // 右侧已有东西时删除键只留间距；只有它自己时才吃 auto 靠右
   const del=it.id?`<button type="button" class="btn-mini csp-task-delete ${(isCo||ops||push)?'csp-task-delete-spaced':'csp-task-delete-pushed'}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
   box.innerHTML=deptBadge+srcBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
+  // 思考框架块挂在卡尾，独占一行（flex:1 0 100%），不影响 meta 行布局
+  let lb=card.querySelector('.tloop'); if(lb)lb.remove();
+  if(loopBlock){ const tmp=document.createElement('div'); tmp.innerHTML=loopBlock; card.appendChild(tmp.firstChild); }
 }
 /* 日期胶囊：跨天显示「开始 ~ 截止」（同年省年份省宽度，完整日期放 title），单日照旧；点它改期。
    没填日期也给一个「设日期」入口——AI 生成/复盘回流的任务本来就没日期，否则永远没法补。 */
@@ -282,6 +292,39 @@ function taskDrop(btn){
 }
 function addTaskCards(s,items){ (items||[]).forEach(t=>addTaskCard(s,t)); } // 兼容复盘回流 loopBack
 
+/* 公司列有没有活跃任务（不含完成态）：有则显列，无则隐藏列并在页头显示小按钮 */
+function syncCompanyColVisibility(){
+  const col=document.getElementById('newtask-company');
+  const coBlock=document.getElementById('cocol-tasks');
+  const hdrBtn=document.getElementById('co-add-task-hdr');
+  if(!col||!coBlock)return;
+  // 任何非 .done 的顶层任务卡 = 有活跃公司任务
+  const hasActive=!!col.querySelector('.tcard:not(.done):not(.subtask)');
+  coBlock.style.display=hasActive?'':'none';
+  // 公司列隐藏时给 tboard 加 co-hidden，CSS 切换成两列均分
+  const board=document.querySelector('#panel-tasks > .tboard');
+  if(board)board.classList.toggle('co-hidden',!hasActive);
+  if(hdrBtn)hdrBtn.style.display=hasActive?'none':'';
+}
+/* 按 task_hour 给分组内的卡排序（公司列平铺也一起排），无 hour 的排最后 */
+function sortTaskCardsByTime(col){
+  if(!col)return;
+  const cmpHour=(a,b)=>{
+    const ha=(a._item&&a._item.task_hour)||'99', hb=(b._item&&b._item.task_hour)||'99';
+    return ha<hb?-1:ha>hb?1:0;
+  };
+  // 分组容器内的卡
+  col.querySelectorAll(':scope > .tgroup').forEach(g=>{
+    const cards=[...g.querySelectorAll(':scope > .tcard')].sort(cmpHour);
+    const anchor=g.querySelector('.donefold')||null;
+    cards.forEach(c=>anchor?g.insertBefore(c,anchor):g.appendChild(c));
+  });
+  // 公司列直接平铺的卡（无分组）
+  const flat=[...col.querySelectorAll(':scope > .tcard')].sort(cmpHour);
+  const anchor=col.querySelector('.donefold')||col.querySelector('.add-task');
+  flat.forEach(c=>anchor?col.insertBefore(c,anchor):col.appendChild(c));
+}
+
 /* 公司大任务拆解：子任务卡（挂在父卡 .subtasks 内）。负责人徽章 陈=紫/李=蓝；勾完只划线不消失，删按钮同普通任务。 */
 function subOwnerBadge(owner){ return owner==='陈'?'b-purple':'b-blue'; }
 function addSubTaskCard(parentCard,it){
@@ -341,6 +384,10 @@ export function openTaskModal(dept){
   const ds=document.getElementById('task-start'); if(ds)ds.value=today;
   if(hs)hs.value=''; const tc=document.getElementById('task-content'); if(tc)tc.value='';
   const tn=document.getElementById('task-note'); if(tn)tn.value='';
+  const tw=document.getElementById('task-why'); if(tw)tw.value='';
+  const tdw=document.getElementById('task-done-when'); if(tdw)tdw.value='';
+  const tvd=document.getElementById('task-verify-date'); if(tvd)tvd.value='';
+  const tvh=document.getElementById('task-verify-how'); if(tvh)tvh.value='';
   // Step C：经理/老板派发公司任务时可勾「设为紧急」；其他场景隐藏
   const role=(window.ME||{}).role; const canUrgent=(role==='manager'||role==='boss')&&dept==='公司';
   const uf=document.getElementById('task-urgent-fld'); if(uf)uf.classList.toggle('is-hidden',!canUrgent);
@@ -362,6 +409,10 @@ function openTaskEdit(el){
   if(hs)hs.value=it.task_hour||'';
   const tc=document.getElementById('task-content'); if(tc)tc.value=it.content||'';
   const tn=document.getElementById('task-note'); if(tn)tn.value=it.note||'';
+  const tw=document.getElementById('task-why'); if(tw)tw.value=it.task_why||'';
+  const tdw=document.getElementById('task-done-when'); if(tdw)tdw.value=it.task_done_when||'';
+  const tvd=document.getElementById('task-verify-date'); if(tvd)tvd.value=it.task_verify_date||'';
+  const tvh=document.getElementById('task-verify-how'); if(tvh)tvh.value=it.task_verify_how||'';
   const uf=document.getElementById('task-urgent-fld'); if(uf)uf.classList.add('is-hidden'); // 紧急标记只在派发时设
   openModal('taskMask'); if(tc)tc.focus();
 }
@@ -375,12 +426,16 @@ export async function submitTask(){
   if(start_date&&task_date&&start_date>task_date){ toast('开始日期不能晚于截止日期'); return; }
   const task_hour=document.getElementById('task-hour').value||'';
   const note=(document.getElementById('task-note').value||'').trim();
+  const task_why=(document.getElementById('task-why')&&document.getElementById('task-why').value||'').trim();
+  const task_done_when=(document.getElementById('task-done-when')&&document.getElementById('task-done-when').value||'').trim();
+  const task_verify_date=(document.getElementById('task-verify-date')&&document.getElementById('task-verify-date').value)||'';
+  const task_verify_how=(document.getElementById('task-verify-how')&&document.getElementById('task-verify-how').value||'').trim();
   const ucEl=document.getElementById('task-urgent'); const urgent=(ucEl&&ucEl.checked&&!document.getElementById('task-urgent-fld').classList.contains('is-hidden'))?1:undefined;
   if(_taskEditing){
     const card=_taskEditing, it=card._item||{};
     try{
-      const {item}=await API.patch('/api/loop-items/'+it.id,{content,task_date,start_date,task_hour,note});
-      Object.assign(it,item||{content,task_date,start_date,task_hour,note});
+      const {item}=await API.patch('/api/loop-items/'+it.id,{content,task_date,start_date,task_hour,note,task_why,task_done_when,task_verify_date,task_verify_how});
+      Object.assign(it,item||{content,task_date,start_date,task_hour,note,task_why,task_done_when,task_verify_date,task_verify_how});
       const t=card.querySelector('.ttitle'); // 只换标题文本，别动前面的勾选框
       if(t){ [...t.childNodes].forEach(n=>{ if(n.nodeType===3)n.remove(); }); t.appendChild(document.createTextNode(it.content||'')); }
       renderTaskMeta(card); placeTaskCard(card); refreshTaskCols();
@@ -389,7 +444,7 @@ export async function submitTask(){
     return;
   }
   try{
-    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,start_date,task_hour,note};
+    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,start_date,task_hour,note,task_why,task_done_when,task_verify_date,task_verify_how};
     if(urgent)body.urgent=1;
     const {item}=await API.post('/api/loop-items',body);
     addTaskCard(s,item.content,item); refreshTaskCols(); closeModal('taskMask');
@@ -407,7 +462,7 @@ export function refreshTaskCols(col){
   // null = 传进来的那一列在页面上不存在 → 到此为止。
   // 不能和「没传参数」共用一个 !col 分支：getElementById 找不到时回 null，会又拐回下面这行，自己递归自己。
   if(col===null)return;
-  if(col===undefined){ ['company','sem','seo'].forEach(k=>refreshTaskCols(document.getElementById('newtask-'+k))); return; }
+  if(col===undefined){ ['company','sem','seo'].forEach(k=>refreshTaskCols(document.getElementById('newtask-'+k))); syncCompanyColVisibility(); return; }
   const folded=col.classList.contains('folded');
   const foldable=c=>c.classList.contains('done')&&!c.classList.contains('nofold');
   // 顶层卡 = 分组容器里的 + 公司列直接平铺的；子任务嵌在父卡内，两边都不算
@@ -573,6 +628,8 @@ export async function loadClosedLoop(){
   }catch(e){ if(loadVersion!==closedLoopLoadVersion)return; if(e&&e.message!=='unauthorized'){ showLoopLoadFailure(e); toast(loadFailureText('闭环数据',e)); } }
   const de=document.getElementById('dep-empty'); if(de)de.style.display=(depTb&&depTb.children.length)?'none':'block';
   refreshTaskCols(); // 三列的「已完成 N 项」折叠条
+  ['company','sem','seo'].forEach(k=>sortTaskCardsByTime(document.getElementById('newtask-'+k)));
+  syncCompanyColVisibility();
   applyAiDoneStates(); // 给已渲染的 AI 项标灰
 }
 /* 沉淀表行（可改内容 + 删除）*/

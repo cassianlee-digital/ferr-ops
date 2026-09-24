@@ -689,6 +689,9 @@ export function migrate() {
     ['state', 'TEXT'], ['archived_at', 'TEXT'], ['deleted_at', 'TEXT'], ['archive_kind', 'TEXT'],
     // SOP 引擎（Step A）：公司新派紧急任务标记
     ['urgent', 'INTEGER'],
+    // 思考框架：为什么做 / 完成标准 / 验证日期 / 怎么验证（老板要求每条任务必须能回答这四问）
+    ['task_why', 'TEXT'], ['task_done_when', 'TEXT'],
+    ['task_verify_date', 'TEXT'], ['task_verify_how', 'TEXT'],
   ]);
   ensureColumns('fixes', [
     ['evidence', 'TEXT'],
