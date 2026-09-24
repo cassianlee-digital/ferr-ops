@@ -445,14 +445,16 @@
           <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-info-circle"></i> 记录业务/客户口中说出的真实用词</div>
           <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-keyword" data-keyword-type="customer"><i class="ti ti-plus"></i> 加词</button></div>
           <!-- 2026-09-20：「对应我们的词」后加「业务反馈」——点一下直接传图（业务常常是甩截图过来） -->
-          <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>客户原话 / 用词</th><th>来源客户</th><th>对应我们的词</th><th class="ctr kw-th-sales">业务反馈</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust"></tbody></table></div>
+          <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>客户原话 / 用词</th><th>来源客户</th><th>对应我们的词</th><th class="ctr kw-th-sales">业务反馈</th><th class="ctr">分析意图</th></tr></thead><tbody id="tb-kw-cust"></tbody></table>
+          <div class="cat-tabs"><span class="cat-tab active">全部</span><span class="cat-tab add"><i class="ti ti-plus"></i> 新建分类</span></div></div>
         </div>
         <div class="subpanel" id="sub-kw-neg">
           <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-ban csp-s-b0e08465c2"></i> SEM 质量控制核心：记录每个否词「什么时候加、为什么加」，写新广告/排查浪费时一查就有</div>
           <div class="sheet-toolbar"><button class="btn-primary" data-ui-action="add-neg"><i class="ti ti-plus"></i> 加否词</button><button class="btn-ai" data-ui-action="ai-ask" data-ai-prompt="仅根据后台真实的SEM搜索词、花费与转化、询盘质量、市场调研和已有否词记录，提出本月候选否词；按词组/精确分类，逐条说明数据依据和置信度。没有搜索词级证据时必须明确说明，不得假定地区、系列或客户类型表现。" data-ai-title="AI 建议否词"><i class="ti ti-sparkles"></i> AI 建议否词</button></div>
           <div class="card"><table class="dt"><thead><tr><th>否词</th><th class="ctr">匹配类型</th><th>加入日期</th><th>原因</th><th>来源系列</th><th class="ctr">状态</th></tr></thead><tbody id="tb-neg">
             <tr data-load-state="loading"><td colspan="6" class="dim csp-s-d48bfa87bb">正在加载真实否词记录…</td></tr>
-          </tbody></table></div>
+          </tbody></table>
+          <div class="cat-tabs"><span class="cat-tab active">全部</span><span class="cat-tab add"><i class="ti ti-plus"></i> 新建分类</span></div></div>
         </div>
         <div class="subpanel" id="sub-kw-ad">
           <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-bulb"></i> 记录已投放创意及真实 CTR / A/B 结论，验证有效后再复用</div>
