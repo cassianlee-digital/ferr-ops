@@ -886,6 +886,59 @@ body.dark #panel-tasks .tloop-done .tloop-label { background: #0f1f17; color: #4
   grid-template-columns: 1fr 1fr;
 }
 
+/* 今日分组：任务卡两列并排，每张卡占一格 */
+#panel-tasks .tgroup[data-g="today"] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+/* 分组标题横跨两列 */
+#panel-tasks .tgroup[data-g="today"] > .tgroup-cap {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+/* 「已完成」折叠条也横跨两列 */
+#panel-tasks .tgroup[data-g="today"] > .donefold {
+  grid-column: 1 / -1;
+}
+
+/* 序号徽章：卡左上角小圆角方块 */
+#panel-tasks .tseq-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+#panel-tasks .tcard.done .tseq-badge {
+  background: var(--border2);
+  color: var(--text3);
+}
+
+/* 时间段徽章：卡底部单独一行，小字灰色 */
+#panel-tasks .ttime-badge {
+  flex: 1 0 100%;
+  display: block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  background: #f5f7fa;
+  color: var(--text3);
+  font-size: 11px;
+  line-height: 1.5;
+}
+body.dark #panel-tasks .ttime-badge {
+  background: #151d28;
+}
+
 /* 页头「派发公司任务」小按钮：公司列隐藏时才显示，默认隐藏 */
 #panel-tasks .co-add-task-btn {
   display: none;

@@ -4726,8 +4726,8 @@
     const deptBadge = isCo ? `<span class="badge ${s.c || "b-gray"}">${esc2(s.dept || "")}</span>` : "";
     const srcBadge = it.fix_id ? `<span class="badge b-amber src-fix" title="\u6765\u81EA\u6574\u6539\u6E05\u5355 \xB7 \u70B9\u51FB\u67E5\u770B\u4F9D\u636E">\u6574\u6539</span>` : "";
     const note = it.note ? `<span class="tnote">${esc2(it.note)}</span>` : "";
-    const whyLine = it.task_why ? `<span class="tloop-why"><span class="tloop-label">\u4E3A\u4EC0\u4E48</span>${esc2(it.task_why)}</span>` : "";
-    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u5B8C\u6210\u6807\u51C6</span>${esc2(it.task_done_when)}</span>` : "";
+    const whyLine = it.task_why ? `<span class="tloop-why"><span class="tloop-label">\u76EE\u7684</span>${esc2(it.task_why)}</span>` : "";
+    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u68C0\u9A8C\u6807\u51C6</span>${esc2(it.task_done_when)}</span>` : "";
     const verifyLine = it.task_verify_date || it.task_verify_how ? `<span class="tloop-verify"><i class="ti ti-calendar-check"></i>${it.task_verify_date ? esc2(it.task_verify_date.slice(5)) : ""}${it.task_verify_date && it.task_verify_how ? " \xB7 " : ""}${it.task_verify_how ? esc2(it.task_verify_how) : ""}</span>` : "";
     const loopBlock = whyLine || doneWhenLine || verifyLine ? `<div class="tloop">${whyLine}${doneWhenLine}${verifyLine}</div>` : "";
     const ops = g === "overdue" && it.id ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="\u987A\u5EF6\u5230\u4ECA\u5929"><i class="ti ti-calendar-plus"></i></button><button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="\u653E\u5F03\u5E76\u5F52\u6863"><i class="ti ti-archive"></i></button>` : "";
@@ -4888,6 +4888,45 @@
     const flat = [...col.querySelectorAll(":scope > .tcard")].sort(cmpHour);
     const anchor = col.querySelector(".donefold") || col.querySelector(".add-task");
     flat.forEach((c) => anchor ? col.insertBefore(c, anchor) : col.appendChild(c));
+    const todayG = col.querySelector(':scope > .tgroup[data-g="today"]');
+    if (todayG) annotateTaskTimes(todayG);
+  }
+  var WORK_START_MIN = 8 * 60 + 30;
+  var LUNCH_START_MIN = 12 * 60;
+  var LUNCH_END_MIN = 13 * 60 + 30;
+  function minToHhmm(m) {
+    const h = Math.floor(m / 60), mm = m % 60;
+    return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+  }
+  function annotateTaskTimes(todayGroup) {
+    const cards = [...todayGroup.querySelectorAll(":scope > .tcard:not(.done)")];
+    let cursor = WORK_START_MIN;
+    cards.forEach((card, i) => {
+      let old = card.querySelector(".tseq-badge");
+      if (old) old.remove();
+      old = card.querySelector(".ttime-badge");
+      if (old) old.remove();
+      const seqEl = document.createElement("span");
+      seqEl.className = "tseq-badge";
+      seqEl.textContent = String(i + 1);
+      const ttitle = card.querySelector(".ttitle");
+      if (ttitle) ttitle.prepend(seqEl);
+      const it = card._item || {};
+      const hr = it.task_hour;
+      if (!hr) return;
+      const endMin = Number(hr) * 60;
+      const startMin = cursor;
+      let workMins = endMin - startMin;
+      if (startMin < LUNCH_START_MIN && endMin > LUNCH_START_MIN) workMins -= LUNCH_END_MIN - LUNCH_START_MIN;
+      workMins = Math.max(0, workMins);
+      const hrs = workMins / 60;
+      const hrsStr = hrs === Math.floor(hrs) ? String(hrs) + "h" : hrs.toFixed(1) + "h";
+      const badge3 = document.createElement("span");
+      badge3.className = "ttime-badge";
+      badge3.textContent = minToHhmm(startMin) + " - " + minToHhmm(endMin) + " \xB7 \u9884\u8BA1\u8017\u65F6 " + hrsStr;
+      card.appendChild(badge3);
+      cursor = endMin;
+    });
   }
   function subOwnerBadge(owner) {
     return owner === "\u9648" ? "b-purple" : "b-blue";

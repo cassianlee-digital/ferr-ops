@@ -160,8 +160,8 @@ function renderTaskMeta(card){
   // 备注并入 meta 行（备注居左、日期/操作居右同一行），消掉单独的备注行与空白
   const note=it.note?`<span class="tnote">${esc(it.note)}</span>`:'';
   // 思考框架：有填才展示，挂在卡底部的 .tloop 块（不塞进 meta 行，避免同行挤爆）
-  const whyLine=it.task_why?`<span class="tloop-why"><span class="tloop-label">为什么</span>${esc(it.task_why)}</span>`:'';
-  const doneWhenLine=it.task_done_when?`<span class="tloop-done"><span class="tloop-label">完成标准</span>${esc(it.task_done_when)}</span>`:'';
+  const whyLine=it.task_why?`<span class="tloop-why"><span class="tloop-label">目的</span>${esc(it.task_why)}</span>`:'';
+  const doneWhenLine=it.task_done_when?`<span class="tloop-done"><span class="tloop-label">检验标准</span>${esc(it.task_done_when)}</span>`:'';
   const verifyLine=(it.task_verify_date||it.task_verify_how)
     ?`<span class="tloop-verify"><i class="ti ti-calendar-check"></i>${it.task_verify_date?esc(it.task_verify_date.slice(5)):''}${it.task_verify_date&&it.task_verify_how?' · ':''}${it.task_verify_how?esc(it.task_verify_how):''}</span>`
     :'';
@@ -306,7 +306,8 @@ function syncCompanyColVisibility(){
   if(board)board.classList.toggle('co-hidden',!hasActive);
   if(hdrBtn)hdrBtn.style.display=hasActive?'none':'';
 }
-/* 按 task_hour 给分组内的卡排序（公司列平铺也一起排），无 hour 的排最后 */
+/* 按 task_hour 给分组内的卡排序（公司列平铺也一起排），无 hour 的排最后。
+   排完后对「今日」分组内的卡标序号，并计算每张卡的时间段（开始-结束·耗时）。 */
 function sortTaskCardsByTime(col){
   if(!col)return;
   const cmpHour=(a,b)=>{
@@ -323,6 +324,49 @@ function sortTaskCardsByTime(col){
   const flat=[...col.querySelectorAll(':scope > .tcard')].sort(cmpHour);
   const anchor=col.querySelector('.donefold')||col.querySelector('.add-task');
   flat.forEach(c=>anchor?col.insertBefore(c,anchor):col.appendChild(c));
+  // 今日分组：标序号 + 计算时间段
+  const todayG=col.querySelector(':scope > .tgroup[data-g="today"]');
+  if(todayG) annotateTaskTimes(todayG);
+}
+
+/* 上班 08:30；午休 12:00-13:30（90分钟）。
+   给「今日」分组内所有有 task_hour 的卡算开始时间并写入 .ttime-badge。
+   时间以分钟表示方便运算。 */
+const WORK_START_MIN=8*60+30, LUNCH_START_MIN=12*60, LUNCH_END_MIN=13*60+30;
+function addWorkMins(fromMin, durMin){
+  // 跨午休时扣掉休息段
+  let end=fromMin+durMin;
+  if(fromMin<LUNCH_START_MIN && end>LUNCH_START_MIN) end+=LUNCH_END_MIN-LUNCH_START_MIN;
+  return end;
+}
+function minToHhmm(m){ const h=Math.floor(m/60), mm=m%60; return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
+function annotateTaskTimes(todayGroup){
+  const cards=[...todayGroup.querySelectorAll(':scope > .tcard:not(.done)')];
+  let cursor=WORK_START_MIN; // 当前「前一个任务结束时间」
+  cards.forEach((card,i)=>{
+    // 移除旧的徽章
+    let old=card.querySelector('.tseq-badge'); if(old)old.remove();
+    old=card.querySelector('.ttime-badge'); if(old)old.remove();
+    // 序号徽章
+    const seqEl=document.createElement('span'); seqEl.className='tseq-badge'; seqEl.textContent=String(i+1);
+    const ttitle=card.querySelector('.ttitle'); if(ttitle)ttitle.prepend(seqEl);
+    // 时间段：只给有 task_hour 且未完成的卡
+    const it=card._item||{};
+    const hr=it.task_hour;
+    if(!hr)return; // 没填预计完成时刻，跳过时间段计算
+    const endMin=Number(hr)*60;
+    const startMin=cursor;
+    // 实际耗时（分钟），扣掉可能的午休
+    let workMins=endMin-startMin;
+    if(startMin<LUNCH_START_MIN && endMin>LUNCH_START_MIN) workMins-=(LUNCH_END_MIN-LUNCH_START_MIN);
+    workMins=Math.max(0,workMins);
+    const hrs=workMins/60;
+    const hrsStr=hrs===Math.floor(hrs)?String(hrs)+'h':hrs.toFixed(1)+'h';
+    const badge=document.createElement('span'); badge.className='ttime-badge';
+    badge.textContent=minToHhmm(startMin)+' - '+minToHhmm(endMin)+' · 预计耗时 '+hrsStr;
+    card.appendChild(badge);
+    cursor=endMin; // 下一个任务从这个结束时间开始
+  });
 }
 
 /* 公司大任务拆解：子任务卡（挂在父卡 .subtasks 内）。负责人徽章 陈=紫/李=蓝；勾完只划线不消失，删按钮同普通任务。 */
