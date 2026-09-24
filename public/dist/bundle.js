@@ -4276,7 +4276,6 @@
   window._sops = [];
   window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
   var FREQ_LABEL = { daily: "\u6BCF\u65E5\u5FC5\u505A", weekly: "\u6BCF\u5468\u5FC5\u505A", monthly: "\u6BCF\u6708\u5FC5\u505A" };
-  var FREQ_TAG = { daily: "\u65E5", weekly: "\u5468", monthly: "\u6708" };
   async function loadSops() {
     try {
       const { items } = await API.get("/api/sop");
@@ -4308,16 +4307,32 @@
       if (!anchor) return;
       const list = window._sops.filter((s) => s.dept === dept);
       anchor.innerHTML = '<div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>';
-      if (!list.length) {
-        anchor.insertAdjacentHTML("beforeend", '<div class="sop-empty-hint csp-s-fec2a1b122">\u6682\u65E0 SOP\uFF0C\u53BB\u300C\u8BBE\u7F6E \xB7 SOP \u8BBE\u7F6E\u300D\u6DFB\u52A0</div>');
-        return;
-      }
-      const box = document.createElement("div");
-      box.className = "sop-list";
+      const grid = document.createElement("div");
+      grid.className = "sop-grid";
+      grid.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:12px;";
       ["daily", "weekly", "monthly"].forEach((freq) => {
-        list.filter((s) => s.freq === freq).forEach((s) => box.appendChild(sopCardEl(s)));
+        const col = document.createElement("div");
+        col.className = "sop-freq-col";
+        const freqCap = document.createElement("div");
+        freqCap.className = "sop-freq-cap";
+        freqCap.style.cssText = "margin-bottom:8px;color:var(--text3);font-size:12px;font-weight:500;";
+        freqCap.textContent = FREQ_LABEL[freq];
+        col.appendChild(freqCap);
+        const items = list.filter((s) => s.freq === freq);
+        if (!items.length) {
+          const empty = document.createElement("div");
+          empty.className = "sop-empty-hint";
+          empty.textContent = "\u6682\u65E0\u4EFB\u52A1";
+          col.appendChild(empty);
+        } else {
+          const box = document.createElement("div");
+          box.className = "sop-list";
+          items.forEach((s) => box.appendChild(sopCardEl(s)));
+          col.appendChild(box);
+        }
+        grid.appendChild(col);
       });
-      anchor.appendChild(box);
+      anchor.appendChild(grid);
     });
   }
   function sopCardEl(s) {
@@ -4327,7 +4342,7 @@
     row.dataset.sopId = s.id;
     row.dataset.sopFreq = s.freq;
     const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(s.time_hint)}</span>` : "";
-    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc2(s.title)}</span><span class="sop-right">${due}<span class="freq-tag" title="${esc2(FREQ_LABEL[s.freq] || "")}">${esc2(FREQ_TAG[s.freq] || "")}</span></span>`;
+    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc2(s.title)}</span><span class="sop-right">${due}</span>`;
     row.querySelector(".tcheck").addEventListener("click", (e) => window.chk(e.currentTarget));
     return row;
   }
@@ -7707,7 +7722,7 @@
     { key: "SEM", label: "SEM \u4EFB\u52A1\uFF08\u9648\uFF09", badge: "b-purple" },
     { key: "SEO", label: "SEO \u4EFB\u52A1\uFF08\u674E\uFF09", badge: "b-blue" }
   ];
-  var FREQ_TAG2 = { daily: "\u65E5", weekly: "\u5468", monthly: "\u6708" };
+  var FREQ_TAG = { daily: "\u65E5", weekly: "\u5468", monthly: "\u6708" };
   var _day = null;
   function planDayIsToday() {
     return !_day || _day === formatLocalDate(/* @__PURE__ */ new Date());
@@ -7767,7 +7782,7 @@
       const sopHtml = sops.length ? '<div class="sop-list">' + sops.map((s) => `<div class="hcard hsop${s.done ? " on" : ""}">
           <div class="hrow"><span class="hcheck">${s.done ? '<i class="ti ti-check"></i>' : ""}</span>
             <span class="htext">${esc2(s.title)}</span>
-            <span class="hright">${s.active ? "" : '<span class="badge b-gray">\u5DF2\u505C\u7528</span>'}<span class="freq-tag">${FREQ_TAG2[s.freq] || ""}</span></span></div>
+            <span class="hright">${s.active ? "" : '<span class="badge b-gray">\u5DF2\u505C\u7528</span>'}<span class="freq-tag">${FREQ_TAG[s.freq] || ""}</span></span></div>
         </div>`).join("") + "</div>" : '<div class="hempty">\u5F53\u65F6\u6CA1\u6709\u914D\u7F6E SOP</div>';
       const taskHtml = tasks.length ? tasks.map((t) => {
         const subs = subsByParent.get(t.id) || [];

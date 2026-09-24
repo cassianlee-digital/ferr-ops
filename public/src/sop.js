@@ -54,19 +54,43 @@ export function renderSopCards(){
     const list=window._sops.filter(s=>s.dept===dept);
     // 三栏统一：公司块也带「SOP 固定任务」colcap
     anchor.innerHTML='<div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>';
-    if(!list.length){
-      anchor.insertAdjacentHTML('beforeend','<div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>');
-      return;
-    }
-    // 日/周/月合并进同一个清单框：频率退化为行尾小标签，不再各占一个分组标题 + 一张卡（版面太长）
-    const box=document.createElement('div'); box.className='sop-list';
+
+    // 按日/周/月分三列显示
+    const grid=document.createElement('div');
+    grid.className='sop-grid';
+    grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;';
+
     ['daily','weekly','monthly'].forEach(freq=>{
-      list.filter(s=>s.freq===freq).forEach(s=>box.appendChild(sopCardEl(s)));
+      const col=document.createElement('div');
+      col.className='sop-freq-col';
+
+      // 频率标题
+      const freqCap=document.createElement('div');
+      freqCap.className='sop-freq-cap';
+      freqCap.style.cssText='margin-bottom:8px;color:var(--text3);font-size:12px;font-weight:500;';
+      freqCap.textContent=FREQ_LABEL[freq];
+      col.appendChild(freqCap);
+
+      const items=list.filter(s=>s.freq===freq);
+      if(!items.length){
+        const empty=document.createElement('div');
+        empty.className='sop-empty-hint';
+        empty.textContent='暂无任务';
+        col.appendChild(empty);
+      } else {
+        const box=document.createElement('div');
+        box.className='sop-list';
+        items.forEach(s=>box.appendChild(sopCardEl(s)));
+        col.appendChild(box);
+      }
+
+      grid.appendChild(col);
     });
-    anchor.appendChild(box);
+
+    anchor.appendChild(grid);
   });
 }
-// 单行清单项：勾选 + 标题 + (时间提示) + 频率标签。仍是 .tcard[data-sop-id]，chk() 的完成/撤销逻辑不变。
+// 单行清单项：勾选 + 标题 + (时间提示)。频率标签不再需要（已由列标题表明）
 // 部门徽章去掉：每列本就只有一个部门，徽章冗余。
 export function sopCardEl(s){
   const done=window._sopDone[s.freq]&&window._sopDone[s.freq].has(s.id);
@@ -76,7 +100,7 @@ export function sopCardEl(s){
   const due=s.time_hint?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:'';
   row.innerHTML=`<span class="tcheck${done?' on':''}">${done?'<i class="ti ti-check"></i>':''}</span>`
     +`<span class="sop-text">${esc(s.title)}</span>`
-    +`<span class="sop-right">${due}<span class="freq-tag" title="${esc(FREQ_LABEL[s.freq]||'')}">${esc(FREQ_TAG[s.freq]||'')}</span></span>`;
+    +`<span class="sop-right">${due}</span>`;
   row.querySelector('.tcheck').addEventListener('click',e=>window.chk(e.currentTarget));
   return row;
 }
