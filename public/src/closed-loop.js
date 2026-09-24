@@ -161,9 +161,9 @@ function renderTaskMeta(card){
   const note=it.note?`<span class="tnote">${esc(it.note)}</span>`:'';
   // 思考框架：有填才展示，挂在卡底部的 .tloop 块（不塞进 meta 行，避免同行挤爆）
   const whyLine=it.task_why?`<span class="tloop-why"><span class="tloop-label">目的</span>${esc(it.task_why)}</span>`:'';
-  const doneWhenLine=it.task_done_when?`<span class="tloop-done"><span class="tloop-label">检验标准</span>${esc(it.task_done_when)}</span>`:'';
+  const doneWhenLine=it.task_done_when?`<span class="tloop-done"><span class="tloop-label">完成标准</span>${esc(it.task_done_when)}</span>`:'';
   const verifyLine=(it.task_verify_date||it.task_verify_how)
-    ?`<span class="tloop-verify"><i class="ti ti-calendar-check"></i>${it.task_verify_date?esc(it.task_verify_date.slice(5)):''}${it.task_verify_date&&it.task_verify_how?' · ':''}${it.task_verify_how?esc(it.task_verify_how):''}</span>`
+    ?`<span class="tloop-verify"><span class="tloop-label">检验时间及标准</span>${it.task_verify_date?esc(it.task_verify_date.slice(5)):''}${it.task_verify_date&&it.task_verify_how?' · ':''}${it.task_verify_how?esc(it.task_verify_how):''}</span>`
     :'';
   const loopBlock=(whyLine||doneWhenLine||verifyLine)?`<div class="tloop">${whyLine}${doneWhenLine}${verifyLine}</div>`:'';
   // 逾期两个出口：顺延到今天 / 放弃并归档。没有出口的话逾期组就是下一个垃圾堆

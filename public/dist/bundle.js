@@ -4727,8 +4727,8 @@
     const srcBadge = it.fix_id ? `<span class="badge b-amber src-fix" title="\u6765\u81EA\u6574\u6539\u6E05\u5355 \xB7 \u70B9\u51FB\u67E5\u770B\u4F9D\u636E">\u6574\u6539</span>` : "";
     const note = it.note ? `<span class="tnote">${esc2(it.note)}</span>` : "";
     const whyLine = it.task_why ? `<span class="tloop-why"><span class="tloop-label">\u76EE\u7684</span>${esc2(it.task_why)}</span>` : "";
-    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u68C0\u9A8C\u6807\u51C6</span>${esc2(it.task_done_when)}</span>` : "";
-    const verifyLine = it.task_verify_date || it.task_verify_how ? `<span class="tloop-verify"><i class="ti ti-calendar-check"></i>${it.task_verify_date ? esc2(it.task_verify_date.slice(5)) : ""}${it.task_verify_date && it.task_verify_how ? " \xB7 " : ""}${it.task_verify_how ? esc2(it.task_verify_how) : ""}</span>` : "";
+    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u5B8C\u6210\u6807\u51C6</span>${esc2(it.task_done_when)}</span>` : "";
+    const verifyLine = it.task_verify_date || it.task_verify_how ? `<span class="tloop-verify"><span class="tloop-label">\u68C0\u9A8C\u65F6\u95F4\u53CA\u6807\u51C6</span>${it.task_verify_date ? esc2(it.task_verify_date.slice(5)) : ""}${it.task_verify_date && it.task_verify_how ? " \xB7 " : ""}${it.task_verify_how ? esc2(it.task_verify_how) : ""}</span>` : "";
     const loopBlock = whyLine || doneWhenLine || verifyLine ? `<div class="tloop">${whyLine}${doneWhenLine}${verifyLine}</div>` : "";
     const ops = g === "overdue" && it.id ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="\u987A\u5EF6\u5230\u4ECA\u5929"><i class="ti ti-calendar-plus"></i></button><button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="\u653E\u5F03\u5E76\u5F52\u6863"><i class="ti ti-archive"></i></button>` : "";
     const push = taskPushHtml(it, g);
