@@ -4921,9 +4921,10 @@
       workMins = Math.max(0, workMins);
       const hrs = workMins / 60;
       const hrsStr = hrs === Math.floor(hrs) ? String(hrs) + "h" : hrs.toFixed(1) + "h";
+      const dateStr = it.task_date ? " \xB7 " + it.task_date.slice(5) : "";
       const badge3 = document.createElement("span");
       badge3.className = "ttime-badge";
-      badge3.textContent = minToHhmm(startMin) + " - " + minToHhmm(endMin) + " \xB7 \u9884\u8BA1\u8017\u65F6 " + hrsStr;
+      badge3.textContent = minToHhmm(startMin) + " - " + minToHhmm(endMin) + " \xB7 \u9884\u8BA1\u8017\u65F6 " + hrsStr + dateStr;
       const metaBox = card.querySelector(".tmeta");
       if (metaBox) metaBox.prepend(badge3);
       else card.appendChild(badge3);

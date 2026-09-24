@@ -362,8 +362,9 @@ function annotateTaskTimes(todayGroup){
     workMins=Math.max(0,workMins);
     const hrs=workMins/60;
     const hrsStr=hrs===Math.floor(hrs)?String(hrs)+'h':hrs.toFixed(1)+'h';
+    const dateStr=it.task_date?' · '+it.task_date.slice(5):''; // MM-DD
     const badge=document.createElement('span'); badge.className='ttime-badge';
-    badge.textContent=minToHhmm(startMin)+' - '+minToHhmm(endMin)+' · 预计耗时 '+hrsStr;
+    badge.textContent=minToHhmm(startMin)+' - '+minToHhmm(endMin)+' · 预计耗时 '+hrsStr+dateStr;
     // 插入 meta 行，跟日期时间戳并排；同时隐藏单独的时间胶囊（已含在徽章里）
     const metaBox=card.querySelector('.tmeta');
     if(metaBox) metaBox.prepend(badge); else card.appendChild(badge);
