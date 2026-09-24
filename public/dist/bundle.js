@@ -4927,6 +4927,8 @@
       const metaBox = card.querySelector(".tmeta");
       if (metaBox) metaBox.prepend(badge3);
       else card.appendChild(badge3);
+      const duePill = metaBox && metaBox.querySelector(".tdue");
+      if (duePill) duePill.style.display = "none";
       cursor = endMin;
     });
   }
