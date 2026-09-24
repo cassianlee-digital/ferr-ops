@@ -5138,6 +5138,8 @@
         renderTaskMeta(card);
         placeTaskCard(card);
         refreshTaskCols();
+        const col = taskColFor(s.dept);
+        if (col) sortTaskCardsByTime(col);
         closeModal("taskMask");
         _taskEditing = null;
         toast2("\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
@@ -5152,6 +5154,8 @@
       const { item } = await API.post("/api/loop-items", body);
       addTaskCard(s, item.content, item);
       refreshTaskCols();
+      const col = taskColFor(s.dept);
+      if (col) sortTaskCardsByTime(col);
       closeModal("taskMask");
       toast2((s.dept === "\u516C\u53F8" ? urgent ? "\u5DF2\u6D3E\u53D1\u7D27\u6025\u516C\u53F8\u4EFB\u52A1" : "\u5DF2\u6D3E\u53D1\u516C\u53F8\u4EFB\u52A1" : "\u5DF2\u65B0\u589E" + s.dept + "\u4EFB\u52A1") + " \xB7 \u5DF2\u5165\u5E93");
       if (urgent) loadUrgent();

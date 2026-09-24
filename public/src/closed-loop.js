@@ -488,6 +488,7 @@ export async function submitTask(){
       const t=card.querySelector('.ttitle'); // 只换标题文本，别动前面的勾选框
       if(t){ [...t.childNodes].forEach(n=>{ if(n.nodeType===3)n.remove(); }); t.appendChild(document.createTextNode(it.content||'')); }
       renderTaskMeta(card); placeTaskCard(card); refreshTaskCols();
+      const col=taskColFor(s.dept); if(col)sortTaskCardsByTime(col);
       closeModal('taskMask'); _taskEditing=null; toast('已更新 · 已入库');
     }catch(e){ toast(persistFailMsg(e)); }
     return;
@@ -496,7 +497,9 @@ export async function submitTask(){
     const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,start_date,task_hour,note,task_why,task_done_when,task_verify_date,task_verify_how};
     if(urgent)body.urgent=1;
     const {item}=await API.post('/api/loop-items',body);
-    addTaskCard(s,item.content,item); refreshTaskCols(); closeModal('taskMask');
+    addTaskCard(s,item.content,item); refreshTaskCols();
+    const col=taskColFor(s.dept); if(col)sortTaskCardsByTime(col);
+    closeModal('taskMask');
     toast((s.dept==='公司'?(urgent?'已派发紧急公司任务':'已派发公司任务'):'已新增'+s.dept+'任务')+' · 已入库');
     if(urgent)loadUrgent(); // Step C：紧急任务即时刷 banner
   }catch(e){ toast(persistFailMsg(e)); }
