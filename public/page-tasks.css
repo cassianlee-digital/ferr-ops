@@ -923,20 +923,21 @@ body.dark #panel-tasks .tloop-done .tloop-label { background: #0f1f17; color: #4
   color: var(--text3);
 }
 
-/* 时间段徽章：卡底部单独一行，小字灰色 */
+/* 时间段徽章：meta 行内联，跟日期戳并排 */
 #panel-tasks .ttime-badge {
-  flex: 1 0 100%;
-  display: block;
-  margin-top: 4px;
-  padding: 2px 6px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
   border-radius: var(--radius);
-  background: #f5f7fa;
-  color: var(--text3);
+  background: #f0f4ff;
+  color: var(--primary);
   font-size: 11px;
-  line-height: 1.5;
+  white-space: nowrap;
 }
 body.dark #panel-tasks .ttime-badge {
-  background: #151d28;
+  background: #141c2e;
 }
 
 /* 页头「派发公司任务」小按钮：公司列隐藏时才显示，默认隐藏 */

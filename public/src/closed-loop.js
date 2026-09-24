@@ -364,7 +364,9 @@ function annotateTaskTimes(todayGroup){
     const hrsStr=hrs===Math.floor(hrs)?String(hrs)+'h':hrs.toFixed(1)+'h';
     const badge=document.createElement('span'); badge.className='ttime-badge';
     badge.textContent=minToHhmm(startMin)+' - '+minToHhmm(endMin)+' · 预计耗时 '+hrsStr;
-    card.appendChild(badge);
+    // 插入 meta 行，跟日期时间戳并排；meta 行用 flex，直接 append 即可
+    const metaBox=card.querySelector('.tmeta');
+    if(metaBox) metaBox.prepend(badge); else card.appendChild(badge);
     cursor=endMin; // 下一个任务从这个结束时间开始
   });
 }

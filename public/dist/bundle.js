@@ -4924,7 +4924,9 @@
       const badge3 = document.createElement("span");
       badge3.className = "ttime-badge";
       badge3.textContent = minToHhmm(startMin) + " - " + minToHhmm(endMin) + " \xB7 \u9884\u8BA1\u8017\u65F6 " + hrsStr;
-      card.appendChild(badge3);
+      const metaBox = card.querySelector(".tmeta");
+      if (metaBox) metaBox.prepend(badge3);
+      else card.appendChild(badge3);
       cursor = endMin;
     });
   }
