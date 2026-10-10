@@ -14,7 +14,9 @@ export const LOOKBACK_DAYS = 30;   // 询盘日往前看几天的点击：外贸
 export const SOURCE_PLACEHOLDERS = new Set(['', '待补', '未知', '不详', '无', '-', '—']);
 
 const s = (v, max) => {
-  if (v == null) return null;
+  // 只收字符串和数字。对象 / 数组经 String() 会变成 "[object Object]" 这种字样混进库里，
+  // 还能让 { email: {} } 通过「邮箱或留言至少有一个」的检查
+  if (typeof v !== 'string' && !(typeof v === 'number' && Number.isFinite(v))) return null;
   const t = String(v).trim();
   return t ? t.slice(0, max) : null;
 };

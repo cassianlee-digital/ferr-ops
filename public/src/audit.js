@@ -283,6 +283,12 @@ function renderSpendKpi(root) {
   c.appendChild(table(['去向', '金额（不同币种不相加）', { label: '笔数', cls: 'num' }],
     [...pkg.spend.groups.map((g) => [g.label, amounts(g.amounts) || (g.key === 'ads' ? '没有数据' : '本期没有'), g.count == null ? '' : g.count]),
       ['合计', amounts(pkg.spend.totals) || '没有任何支出记录', '']]));
+  const gone = pkg.spend.deleted_items || [];
+  if (gone.length) {
+    c.appendChild(el('div', 'audit-sub', '本期被删除的花费记录 ' + gone.length + ' 笔（已不计入上面的合计）'));
+    c.appendChild(table(['台账', '花费日期', '内容', '金额', '负责人', '删除日'],
+      gone.map((d) => [d.kind === 'backlink' ? '外链' : '其它支出', d.date || '未填', d.what || '', (CURRENCY_LABEL[d.currency] || d.currency || '') + ' ' + num(d.amount), d.owner || '', d.deleted_date])));
+  }
   root.appendChild(c);
   const k = pkg.kpi;
   const kc = card('KPI（月度考核口径 · 本月至今）', k.scope_label + ' · ' + k.range.start_date + ' ~ ' + k.range.end_date);

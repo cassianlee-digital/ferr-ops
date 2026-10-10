@@ -51,7 +51,7 @@ export function auditAiPayload(pkg) {
     leads: { total: pkg.leads.total, converted: pkg.leads.converted, ignored: pkg.leads.ignored, ignored_items: pkg.leads.items.filter((l) => l.state === 'ignored').slice(0, 40).map((l) => ({ reason: clip(l.ignore_reason, 80), keyword: l.keyword, campaign: l.campaign, landing_page: l.landing_page })) },
     fixes: pkg.fixes.map((f) => ({ id: f.id, title: clip(f.title, 100), owner: f.owner, status: f.status, due: f.due_date, planned: f.planned, planned_done: f.planned_done })),
     tests: pkg.tests.map((t) => ({ id: t.id, content: clip(t.content, 100), dept: t.dept, hypothesis: clip(t.hypothesis, 120), conclusion: clip(t.conclusion, 160) })),
-    spend: { groups: pkg.spend.groups.map((g) => ({ label: g.label, amounts: g.amounts, count: g.count, source: g.source })), totals: pkg.spend.totals, backlinks: pkg.spend.backlink_stats },
+    spend: { groups: pkg.spend.groups.map((g) => ({ label: g.label, amounts: g.amounts, count: g.count, source: g.source })), totals: pkg.spend.totals, backlinks: pkg.spend.backlink_stats, deleted_this_period: pkg.spend.deleted_items.map((d) => ({ kind: d.kind, what: clip(d.what, 80), amount: d.amount, currency: d.currency, deleted: d.deleted_date })) },
     kpi: pkg.kpi,
     weekly_reports: pkg.weekly_reports,
   };

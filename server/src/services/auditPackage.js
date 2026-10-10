@@ -171,6 +171,17 @@ function buildSpend(range) {
       id: e.id, spend_date: e.spend_date, category: e.category, amount: e.amount, currency: e.currency, vendor: e.vendor,
       purpose: e.purpose, owner: e.owner, task_id: e.task_id, task_content: e.task_content, evidence: e.evidence, note: e.note,
     })),
+    // 本期被删掉的花费记录：已经不在上面的合计里了，单独列出来给人问一句「为什么删」
+    deleted_items: [
+      ...backlinksRepo.listDeletedPaid(range).map((b) => ({
+        kind: 'backlink', id: b.id, date: b.acquired_date, what: b.source_domain || b.source_url,
+        amount: b.cost, currency: b.currency, vendor: b.vendor, owner: b.owner, deleted_date: dayOf(b.deleted_at),
+      })),
+      ...expensesRepo.listDeleted(range).map((e) => ({
+        kind: 'expense', id: e.id, date: e.spend_date, what: e.category + (e.purpose ? ' · ' + e.purpose : ''),
+        amount: e.amount, currency: e.currency, vendor: e.vendor, owner: e.owner, deleted_date: dayOf(e.deleted_at),
+      })),
+    ],
   };
 }
 

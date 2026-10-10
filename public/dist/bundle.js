@@ -10338,6 +10338,14 @@
         ["\u5408\u8BA1", amounts(pkg.spend.totals) || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55", ""]
       ]
     ));
+    const gone = pkg.spend.deleted_items || [];
+    if (gone.length) {
+      c.appendChild(el2("div", "audit-sub", "\u672C\u671F\u88AB\u5220\u9664\u7684\u82B1\u8D39\u8BB0\u5F55 " + gone.length + " \u7B14\uFF08\u5DF2\u4E0D\u8BA1\u5165\u4E0A\u9762\u7684\u5408\u8BA1\uFF09"));
+      c.appendChild(table(
+        ["\u53F0\u8D26", "\u82B1\u8D39\u65E5\u671F", "\u5185\u5BB9", "\u91D1\u989D", "\u8D1F\u8D23\u4EBA", "\u5220\u9664\u65E5"],
+        gone.map((d) => [d.kind === "backlink" ? "\u5916\u94FE" : "\u5176\u5B83\u652F\u51FA", d.date || "\u672A\u586B", d.what || "", (CURRENCY_LABEL[d.currency] || d.currency || "") + " " + num2(d.amount), d.owner || "", d.deleted_date])
+      ));
+    }
     root.appendChild(c);
     const k = pkg.kpi;
     const kc = card("KPI\uFF08\u6708\u5EA6\u8003\u6838\u53E3\u5F84 \xB7 \u672C\u6708\u81F3\u4ECA\uFF09", k.scope_label + " \xB7 " + k.range.start_date + " ~ " + k.range.end_date);

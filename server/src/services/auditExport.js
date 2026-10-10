@@ -140,6 +140,9 @@ export function auditSheets(pkg) {
     ['id', '编号'], ['spend_date', '日期'], ['category', '类别'], ['amount', '金额'], ['currency', '币种'], ['vendor', '付给谁'], ['purpose', '用途'], ['owner', '负责人'],
     ['task_id', '任务编号'], ['task_content', '任务'], ['evidence', '凭证'], ['note', '备注'],
   ], pkg.spend.expense_items);
+  add('spend_deleted', '已删除的花费记录', [
+    ['kind', '台账'], ['id', '编号'], ['date', '花费日期'], ['what', '内容'], ['amount', '金额'], ['currency', '币种'], ['vendor', '付给谁'], ['owner', '负责人'], ['deleted_date', '删除日'],
+  ], pkg.spend.deleted_items.map((d) => ({ ...d, kind: d.kind === 'backlink' ? '外链' : '其它支出' })));
 
   add('kpi', 'KPI本月至今', [['label', '指标'], ['weight', '权重'], ['actual', '实际'], ['target', '目标'], ['unit', '单位'], ['status_label', '状态'], ['score', '得分'], ['note', '说明']], [
     ...pkg.kpi.metrics,

@@ -67,6 +67,11 @@ test('线索归一：邮箱或留言至少一个；坏网址只丢那个字段�
   assert.equal(normalizeLead(null).ok, false);
   assert.equal(normalizeLead([]).ok, false);
   assert.equal(normalizeLead({ name: '只有名字' }).ok, false);
+  // 字段只收字符串 / 数字：对象、数组、布尔不能变成 "[object Object]" 之类的字样入库，更不能顶替必填项
+  assert.equal(normalizeLead({ email: {} }).ok, false);
+  assert.equal(normalizeLead({ message: ['a', 'b'] }).ok, false);
+  const odd = normalizeLead({ email: 'a@b.com', name: { x: 1 }, company: true, campaign_id: 12345, country: ['US'] }).value;
+  assert.deepEqual([odd.contact_name, odd.contact_company, odd.campaign_id, odd.country], [null, null, '12345', null]);
   const v = normalizeLead({
     email: ' buyer@example.com ', message: 'Need 500 gate valves', referrer: 'javascript:alert(1)',
     landing_page: 'https://ferr.com/valves?gclid=abc', gclid: 'abc', keyword: 'gate valve', evil: '<script>',

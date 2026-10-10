@@ -243,6 +243,30 @@ test('审核包：区间内被删除的任务照样列出来 —— 逾期的任
   for (const id of [overdue, typo]) assert.equal((await call('DELETE', `/api/loop-items/${id}?hard=1`)).statusCode, 200);
 });
 
+test('审核包：区间内被删除的花费记录单独列出来 —— 删掉的钱不在合计里，但要查得到', async () => {
+  const before = (await call('GET', `/api/audit/weekly?${Q}`)).json().spend;
+  const bl = (await call('POST', '/api/backlinks', { source_url: 'https://seller.example.com/post', target_url: 'https://ferr.com/valves', method: '购买', rel: 'dofollow', cost: 300, currency: 'USD', acquired_date: '2026-09-15', status: '有效' })).json().item;
+  const ex = (await call('POST', '/api/expenses', { spend_date: '2026-09-15', category: '工具订阅', amount: 50, currency: 'USD', purpose: '后来删掉的订阅' })).json().item;
+  const typo = (await call('POST', '/api/expenses', { spend_date: '2026-09-15', category: '工具订阅', amount: 7, currency: 'USD', purpose: '录错了当天就删' })).json().item;
+  assert.ok(bl && ex && typo, '三条记录都要建成功');
+  for (const [url, id] of [['/api/backlinks', bl.id], ['/api/expenses', ex.id], ['/api/expenses', typo.id]]) {
+    assert.equal((await call('DELETE', `${url}/${id}`)).statusCode, 200);
+  }
+  // 建于 9-10、删于区间内的 9-16（北京时间）；typo 那条当天建当天删
+  db.prepare("UPDATE backlinks SET created_at = '2026-09-10 02:00:00', deleted_at = '2026-09-16 02:00:00' WHERE id = ?").run(bl.id);
+  db.prepare("UPDATE expenses SET created_at = '2026-09-10 02:00:00', deleted_at = '2026-09-16 02:00:00' WHERE id = ?").run(ex.id);
+  db.prepare("UPDATE expenses SET created_at = '2026-09-15 23:00:00', deleted_at = '2026-09-16 02:00:00' WHERE id = ?").run(typo.id);
+
+  const spend = (await call('GET', `/api/audit/weekly?${Q}`)).json().spend;
+  assert.deepEqual(spend.totals, before.totals, '删掉的不计入合计');
+  assert.deepEqual(spend.deleted_items.map((d) => [d.kind, d.amount, d.deleted_date]).sort(), [['backlink', 300, '2026-09-16'], ['expense', 50, '2026-09-16']]);
+  assert.equal(spend.deleted_items.find((d) => d.kind === 'backlink').what, 'seller.example.com');
+  const other = (await call('GET', '/api/audit/weekly?start_date=2026-09-21&end_date=2026-09-27')).json().spend;
+  assert.deepEqual(other.deleted_items, [], '只在被删的那一周列一次');
+  const csv = (await call('GET', `/api/audit/weekly/export?${Q}&format=csv&section=spend_deleted`)).body;
+  assert.ok(csv.includes('外链') && csv.includes('后来删掉的订阅') && !csv.includes('录错了当天就删'), csv);
+});
+
 test('审核包：按人筛选 —— 任务只留他的，SEM 的数据不给 SEO 的人，询盘仍是部门口径', async () => {
   const li = (await call('GET', `/api/audit/weekly?${Q}&person=${encodeURIComponent('李')}`)).json();
   assert.deepEqual(li.tasks.map((t) => t.id).sort((x, y) => x - y), [ids.a, ids.c]);
@@ -275,7 +299,7 @@ test('导出：JSON 是整个包；XLSX 每张表一个工作表；CSV 一次一
   assert.equal(xlsx.headers['x-content-type-options'], 'nosniff');
   const sheets = await readExcelFile(xlsx.rawPayload);
   const names = sheets.map((s) => s.sheet);
-  for (const n of ['概要', '任务', '数据变化', '询盘', '花费汇总', '口径说明']) assert.ok(names.includes(n), `缺工作表 ${n}`);
+  for (const n of ['概要', '任务', '数据变化', '询盘', '花费汇总', '已删除的花费记录', '口径说明']) assert.ok(names.includes(n), `缺工作表 ${n}`);
   const taskSheet = sheets.find((s) => s.sheet === '任务').data;
   assert.equal(taskSheet.length, 5, '表头 + 4 条任务');
   const col = (label) => taskSheet[0].indexOf(label);
