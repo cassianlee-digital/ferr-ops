@@ -25,7 +25,7 @@ export function auditAiPayload(pkg) {
     tasks_total: pkg.tasks.length,
     tasks: pkg.tasks.slice(0, MAX_TASKS).map((t) => ({
       id: t.id, person: t.person, dept: t.dept, project: t.project, content: clip(t.content, 160), state: t.audit_state,
-      start: t.start_date, due: t.task_date, done: t.done_date, deleted: t.deleted_date, est_hours: t.est_hours, actual_hours: t.actual_hours,
+      start: t.start_date, due: t.task_date, done: t.done_date, deleted: t.deleted_date, deleted_by: t.deleted_by, est_hours: t.est_hours, actual_hours: t.actual_hours,
       important: t.is_important ? t.important_reason_text : null,
       why: clip(t.why, 160), done_when: clip(t.done_when, 160), result: clip(t.result, 400), actions: clip(t.task_actions, 300),
       evidence_links: t.evidence.length, evidence_images: t.evidence_images.length,
@@ -43,6 +43,9 @@ export function auditAiPayload(pkg) {
     inquiries: {
       total: pkg.inquiries.total, by_grade: pkg.inquiries.by_grade, junk_ratio: pkg.inquiries.junk_ratio, by_channel: pkg.inquiries.by_channel,
       by_product: pkg.inquiries.by_product, by_source_verdict: pkg.inquiries.by_source_verdict, with_form_evidence: pkg.inquiries.with_form_evidence, deals: pkg.inquiries.deals, confirmation: pkg.inquiries.confirmation,
+      // 本期标为成交的（询盘可能更早）与本期被归档的（已不在上面的统计里）；带人名，不带客户信息
+      deals_marked_this_period: pkg.inquiries.deals_marked.map((d) => ({ inquiry_id: d.id, inquiry_date: d.inquiry_date, channel: d.channel, product: d.product, grade: d.grade, marked: d.marked_date, by: d.marked_by })),
+      archived_this_period: pkg.inquiries.archived_items.map((i) => ({ inquiry_id: i.id, date: i.date, channel: i.channel, grade: i.grade, was: i.confirmation_label, archived: i.archived_date, by: i.archived_by })),
       items: pkg.inquiries.items.slice(0, MAX_INQUIRIES).map((i) => ({
         id: i.id, date: i.date, country: i.country, channel: i.channel, product: i.product, grade: i.grade, deal: i.deal_status,
         source: clip(i.source, 80), campaign: i.src_campaign, landing_page: i.src_landing_page, evidence: i.src_evidence, verdict: i.source_verdict_label, confirmed: i.confirmation_label, changes: i.attr_change_count,

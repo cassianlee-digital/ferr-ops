@@ -856,7 +856,9 @@ export function migrate() {
     ['est_hours', 'REAL'],        // 预估工时（小时）
     ['actual_hours', 'REAL'],     // 实际用时（小时，完成时自报）
     ['important', 'INTEGER'],     // 1=人工标为重要；NULL=按规则判定（见 services/taskAudit.js）
+    ['deleted_by', 'INTEGER'],    // 谁删的（2026-10-10）。老的删除记录留 NULL = 不知道，不猜
   ]);
+  ensureColumns('expenses', [['deleted_by', 'INTEGER']]);
   // 外链的自动核查结果（2026-10-10）。与人工填的 status / checked_date 分开存：
   // 自动核查拿不到页面、或页面用脚本加载链接时都会「没找到」，那不等于外链失效，不能让它去改人工判断的状态。
   ensureColumns('backlinks', [
@@ -865,6 +867,7 @@ export function migrate() {
     ['auto_detail', 'TEXT'],      // 给人看的一句话：看到了什么、为什么拿不到
     ['auto_rel', 'TEXT'],         // 页面上实际的链接属性
     ['auto_anchor', 'TEXT'],      // 页面上实际的锚文本
+    ['deleted_by', 'INTEGER'],
   ]);
   ensureColumns('fixes', [
     ['evidence', 'TEXT'],

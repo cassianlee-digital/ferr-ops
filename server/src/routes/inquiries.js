@@ -146,9 +146,11 @@ export async function inquiriesRoutes(app) {
       manual = manualSource(body, taskLinksRepo.campaignNames());
       if (!manual.ok) return reply.code(400).send({ error: 'bad_source', detail: manual.detail });
     }
+    // 是否成交不锁（它本来就会随时间变），但改动要留痕：否则答不出「哪天成交的、谁标的」
+    const logged = 'deal_status' in body && (body.deal_status ?? null) !== (cur.deal_status ?? null) ? [...changed, 'deal_status'] : changed;
     // 所有校验都过了才落库，流水与改动在同一个事务里（以前流水先写，后面的校验一拒，就留下一条没发生过的改动）
     const item = repo.updateWithLog(id, body, {
-      changes: changed.map((f) => ({ field: f, oldValue: cur[f], newValue: body[f], reason, userId: request.user.id })),
+      changes: logged.map((f) => ({ field: f, oldValue: cur[f], newValue: body[f], reason, userId: request.user.id })),
       source: manual && Object.keys(manual.value).length ? { ...manual.value, src_evidence: 'manual' } : null,
     });
     recomputeActuals();

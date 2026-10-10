@@ -36,18 +36,18 @@ export function update(id, fields) {
   return get(id);
 }
 
-export function softDelete(id) {
-  return db.prepare("UPDATE expenses SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL").run(id).changes;
+export function softDelete(id, userId) {
+  return db.prepare("UPDATE expenses SET deleted_at = datetime('now'), deleted_by = ? WHERE id = ? AND deleted_at IS NULL").run(userId ?? null, id).changes;
 }
 
 // 区间内被删掉的支出（口径同 backlinks.listDeletedPaid：按北京时间的删除日，当天建当天删的不算）
 export function listDeleted(range) {
   return db.prepare(
-    `SELECT * FROM expenses
-      WHERE deleted_at IS NOT NULL AND amount > 0
-        AND date(deleted_at, '+8 hours') BETWEEN @start_date AND @end_date
-        AND date(created_at, '+8 hours') <> date(deleted_at, '+8 hours')
-      ORDER BY deleted_at DESC, id DESC`
+    `SELECT e.*, u.name AS deleted_by_name FROM expenses e LEFT JOIN users u ON u.id = e.deleted_by
+      WHERE e.deleted_at IS NOT NULL AND e.amount > 0
+        AND date(e.deleted_at, '+8 hours') BETWEEN @start_date AND @end_date
+        AND date(e.created_at, '+8 hours') <> date(e.deleted_at, '+8 hours')
+      ORDER BY e.deleted_at DESC, e.id DESC`
   ).all(range);
 }
 

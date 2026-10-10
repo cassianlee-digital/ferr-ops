@@ -60,7 +60,7 @@ function ledgerRoutes(app, base, repo, validate, extraList) {
   });
 
   app.delete(`${base}/:id`, editor, async (request, reply) => {
-    if (!repo.softDelete(Number(request.params.id))) return reply.code(404).send({ error: 'not_found' });
+    if (!repo.softDelete(Number(request.params.id), request.user?.id)) return reply.code(404).send({ error: 'not_found' });
     return { ok: true };
   });
 }

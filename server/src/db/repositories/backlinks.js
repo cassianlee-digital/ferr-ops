@@ -52,8 +52,8 @@ export function saveAutoCheck(id, result, checkedDate) {
   return get(id);
 }
 
-export function softDelete(id) {
-  return db.prepare("UPDATE backlinks SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL").run(id).changes;
+export function softDelete(id, userId) {
+  return db.prepare("UPDATE backlinks SET deleted_at = datetime('now'), deleted_by = ? WHERE id = ? AND deleted_at IS NULL").run(userId ?? null, id).changes;
 }
 
 /* 区间内被删掉的付费外链（按北京时间的删除日）。软删之后它从台账和月度汇总里一起消失，
@@ -61,11 +61,11 @@ export function softDelete(id) {
    建出来当天就删的不算：那是录错了改正。 */
 export function listDeletedPaid(range) {
   return db.prepare(
-    `SELECT * FROM backlinks
-      WHERE deleted_at IS NOT NULL AND cost > 0
-        AND date(deleted_at, '+8 hours') BETWEEN @start_date AND @end_date
-        AND date(created_at, '+8 hours') <> date(deleted_at, '+8 hours')
-      ORDER BY deleted_at DESC, id DESC`
+    `SELECT b.*, u.name AS deleted_by_name FROM backlinks b LEFT JOIN users u ON u.id = b.deleted_by
+      WHERE b.deleted_at IS NOT NULL AND b.cost > 0
+        AND date(b.deleted_at, '+8 hours') BETWEEN @start_date AND @end_date
+        AND date(b.created_at, '+8 hours') <> date(b.deleted_at, '+8 hours')
+      ORDER BY b.deleted_at DESC, b.id DESC`
   ).all(range);
 }
 

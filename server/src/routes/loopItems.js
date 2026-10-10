@@ -224,7 +224,7 @@ export async function loopItemsRoutes(app) {
       attachmentsRepo.removeByOwner(TASK_ATTACHMENT_OWNER, id);
       return { ok: true, hard: true };
     }
-    const item = repo.softDelete(id);
+    const item = repo.softDelete(id, request.user?.id);
     return { ok: true, item };
   });
 }

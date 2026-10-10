@@ -52,6 +52,7 @@ function buildTasks(range, who, today) {
     .filter((x) => x.state && (!who || personOf(x.row) === who));
   const stateOf = new Map(candidates.map((x) => [x.row.id, x.state]));
   const checkins = new Map(checkinRepo.daysInRange(range.start_date, range.end_date).map((r) => [r.loop_item_id, r.days]));
+  const deleters = loopRepo.deleterNames(candidates.filter((x) => x.state === 'deleted').map((x) => x.row.id));
 
   return decorateTasks(candidates.map((x) => x.row)).map((t) => {
     const state = stateOf.get(t.id);
@@ -70,6 +71,7 @@ function buildTasks(range, who, today) {
       task_date: t.task_date || null,
       done_date: dayOf(t.done_at),
       deleted_date: state === 'deleted' ? dayOf(t.deleted_at) : null,
+      deleted_by: deleters[t.id] || null, // 这一列上线前删的没有人名
       audit_state: state,
       est_hours: t.est_hours,
       actual_hours: t.actual_hours,
@@ -138,6 +140,17 @@ function buildInquiries(range) {
     // 等级是人评的。这些 A / B 里有多少是经理或老板确认过的，决定了上面这些数能信到什么程度
     confirmation: inqRepo.attributionCoverage(range),
     deals: items.filter((i) => i.deal_status === '已成交').length,
+    // 上面的 deals 是「本期录入的询盘里有几条已成交」；这里是「本期被标为成交的」—— 询盘可能是几个月前来的
+    deals_marked: inqRepo.dealsMarkedBetween(range).map((d) => ({
+      id: d.id, inquiry_date: d.date, country: d.country, channel: d.channel, product: d.product, grade: d.grade,
+      source: d.source, src_campaign: d.src_campaign || null, marked_date: d.marked_date, marked_by: d.marked_by_name || null,
+    })),
+    // 本期被归档的询盘：已经不在上面任何一个数里了
+    archived_items: inqRepo.listArchivedBetween(range).map((r) => ({
+      id: r.id, date: r.date, country: r.country, channel: r.channel, product: r.product, grade: r.grade, deal_status: r.deal_status,
+      confirmation_label: CONFIRMATION_LABEL[r.attribution_status] || CONFIRMATION_LABEL.legacy,
+      archived_date: dayOf(r.archived_at), archived_by: r.archived_by_name || null,
+    })),
     items,
   };
 }
@@ -175,11 +188,11 @@ function buildSpend(range) {
     deleted_items: [
       ...backlinksRepo.listDeletedPaid(range).map((b) => ({
         kind: 'backlink', id: b.id, date: b.acquired_date, what: b.source_domain || b.source_url,
-        amount: b.cost, currency: b.currency, vendor: b.vendor, owner: b.owner, deleted_date: dayOf(b.deleted_at),
+        amount: b.cost, currency: b.currency, vendor: b.vendor, owner: b.owner, deleted_date: dayOf(b.deleted_at), deleted_by: b.deleted_by_name || null,
       })),
       ...expensesRepo.listDeleted(range).map((e) => ({
         kind: 'expense', id: e.id, date: e.spend_date, what: e.category + (e.purpose ? ' · ' + e.purpose : ''),
-        amount: e.amount, currency: e.currency, vendor: e.vendor, owner: e.owner, deleted_date: dayOf(e.deleted_at),
+        amount: e.amount, currency: e.currency, vendor: e.vendor, owner: e.owner, deleted_date: dayOf(e.deleted_at), deleted_by: e.deleted_by_name || null,
       })),
     ],
   };

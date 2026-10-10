@@ -228,6 +228,7 @@ test('审核包：区间内被删除的任务照样列出来 —— 逾期的任
   assert.equal(row.audit_state, 'deleted');
   assert.equal(row.deleted_date, '2026-09-16');
   assert.deepEqual(row.flags, ['DELETED_OVERDUE']);
+  assert.equal(row.deleted_by, '测试', '谁删的要记下来（测试令牌是 id=1 的用户）');
   assert.equal(pkg.meta.flags.DELETED_OVERDUE.tone, 'bad');
   assert.equal(pkg.tasks.some((t) => t.id === typo), false, '建出来当天就删的是录错了改正，不进审核');
   assert.ok(pkg.summary.all.deleted >= 1);
@@ -239,6 +240,9 @@ test('审核包：区间内被删除的任务照样列出来 —— 逾期的任
   const csv = (await call('GET', `/api/audit/weekly/export?${Q}&format=csv&section=tasks`)).body;
   const line = csv.split('\r\n').find((l) => l.includes('逾期后被删掉的任务'));
   assert.ok(line && line.includes('已删除') && line.includes('2026-09-16') && line.includes('逾期未完成时被删除'), line);
+  // 这一列上线前删的任务没有人名：留空，不猜
+  db.prepare('UPDATE loop_items SET deleted_by = NULL WHERE id = ?').run(overdue);
+  assert.equal((await call('GET', `/api/audit/weekly?${Q}`)).json().tasks.find((t) => t.id === overdue).deleted_by, null);
   // 收尾：这个文件后面的测试在数任务条数，别把这两条留在库里
   for (const id of [overdue, typo]) assert.equal((await call('DELETE', `/api/loop-items/${id}?hard=1`)).statusCode, 200);
 });
@@ -259,12 +263,51 @@ test('审核包：区间内被删除的花费记录单独列出来 —— 删掉
 
   const spend = (await call('GET', `/api/audit/weekly?${Q}`)).json().spend;
   assert.deepEqual(spend.totals, before.totals, '删掉的不计入合计');
-  assert.deepEqual(spend.deleted_items.map((d) => [d.kind, d.amount, d.deleted_date]).sort(), [['backlink', 300, '2026-09-16'], ['expense', 50, '2026-09-16']]);
+  assert.deepEqual(spend.deleted_items.map((d) => [d.kind, d.amount, d.deleted_date, d.deleted_by]).sort(), [['backlink', 300, '2026-09-16', '测试'], ['expense', 50, '2026-09-16', '测试']]);
   assert.equal(spend.deleted_items.find((d) => d.kind === 'backlink').what, 'seller.example.com');
   const other = (await call('GET', '/api/audit/weekly?start_date=2026-09-21&end_date=2026-09-27')).json().spend;
   assert.deepEqual(other.deleted_items, [], '只在被删的那一周列一次');
   const csv = (await call('GET', `/api/audit/weekly/export?${Q}&format=csv&section=spend_deleted`)).body;
   assert.ok(csv.includes('外链') && csv.includes('后来删掉的订阅') && !csv.includes('录错了当天就删'), csv);
+});
+
+test('审核包：本期被归档的询盘、本期标为成交的询盘单独列出来（都可能是更早的询盘）', async () => {
+  const before = (await call('GET', `/api/audit/weekly?${Q}`)).json().inquiries;
+  const mk = async (over) => (await call('POST', '/api/inquiries', { date: '2026-06-01', channel: 'SEO自然', grade: 'C', country: '归档成交测试', ...over })).json().item;
+  // 三个月前的询盘，这一周被归档 / 被标为成交
+  const gone = await mk({});
+  const won = await mk({ grade: 'A' });
+  const flip = await mk({ grade: 'B' });
+  assert.equal((await call('DELETE', `/api/inquiries/${gone.id}`)).statusCode, 200);
+  assert.equal((await call('PATCH', `/api/inquiries/${won.id}`, { deal_status: '已成交' })).statusCode, 200);
+  // 标了又撤回的不算成交
+  await call('PATCH', `/api/inquiries/${flip.id}`, { deal_status: '已成交' });
+  await call('PATCH', `/api/inquiries/${flip.id}`, { deal_status: '未成交' });
+  db.prepare("UPDATE inquiries SET archived_at = '2026-09-16 02:00:00' WHERE id = ?").run(gone.id);
+  db.prepare("UPDATE inquiry_field_changes SET changed_at = '2026-09-17 02:00:00' WHERE inquiry_id IN (?, ?) AND field = 'deal_status'").run(won.id, flip.id);
+
+  // 成交状态的改动进了流水（谁、从什么改成什么），但不算进「改 N」—— 标成交是正常流程，不是疑点
+  const log = db.prepare("SELECT field, old_value, new_value, changed_by FROM inquiry_field_changes WHERE inquiry_id = ?").all(won.id);
+  assert.deepEqual(log, [{ field: 'deal_status', old_value: '未成交', new_value: '已成交', changed_by: 1 }]);
+  const listed = (await call('GET', '/api/inquiries?start_date=2026-06-01&end_date=2026-06-01')).json().items.find((i) => i.id === won.id);
+  assert.equal(listed.attr_change_count, 0);
+
+  const q = (await call('GET', `/api/audit/weekly?${Q}`)).json().inquiries;
+  assert.equal(q.total, before.total, '六月的询盘不进这一周的询盘统计');
+  assert.deepEqual(q.deals_marked.map((d) => [d.id, d.inquiry_date, d.marked_date, d.marked_by]), [[won.id, '2026-06-01', '2026-09-17', '测试']]);
+  assert.deepEqual(q.archived_items.map((i) => [i.id, i.grade, i.archived_date, i.archived_by, i.confirmation_label]), [[gone.id, 'C', '2026-09-16', '测试', '已确认']]);
+  const other = (await call('GET', '/api/audit/weekly?start_date=2026-09-21&end_date=2026-09-27')).json().inquiries;
+  assert.deepEqual([other.deals_marked, other.archived_items], [[], []]);
+  // 成交后又被归档的，不再算成交
+  await call('DELETE', `/api/inquiries/${won.id}`);
+  db.prepare("UPDATE inquiries SET archived_at = '2026-09-18 02:00:00' WHERE id = ?").run(won.id);
+  const after = (await call('GET', `/api/audit/weekly?${Q}`)).json().inquiries;
+  assert.deepEqual(after.deals_marked, []);
+  assert.equal(after.archived_items.length, 2);
+  const csv = (await call('GET', `/api/audit/weekly/export?${Q}&format=csv&section=inquiries_archived`)).body;
+  assert.ok(csv.includes('归档成交测试') && csv.includes('归档人'), csv);
+  // 收尾：后面的测试在数询盘
+  for (const id of [gone.id, won.id, flip.id]) assert.equal((await call('DELETE', `/api/inquiries/${id}?hard=1`)).statusCode, 200);
 });
 
 test('审核包：按人筛选 —— 任务只留他的，SEM 的数据不给 SEO 的人，询盘仍是部门口径', async () => {

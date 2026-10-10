@@ -247,7 +247,7 @@ export function attachChangeCounts(rows) {
     const part = ids.slice(i, i + 500);
     const found = db.prepare(
       `SELECT inquiry_id, COUNT(*) n FROM inquiry_field_changes
-        WHERE inquiry_id IN (${part.map(() => '?').join(',')}) AND field <> 'attribution_status'
+        WHERE inquiry_id IN (${part.map(() => '?').join(',')}) AND field NOT IN ('attribution_status', 'deal_status')
         GROUP BY inquiry_id`
     ).all(...part);
     for (const r of found) map[r.inquiry_id] = r.n;
@@ -287,6 +287,37 @@ export function unconfirmAttribution(id, { reason, userId }) {
     "UPDATE inquiries SET attribution_status='proposed', attribution_confirmed_by=NULL, attribution_confirmed_at=NULL WHERE id=?"
   ).run(id);
   return get(id);
+}
+
+/* 区间内被归档的询盘（按北京时间的归档日），带上是谁归档的（取最近一条归档流水；流水上线前归档的没有人名）。
+   归档 = 从所有统计和考核里消失，而还没确认的询盘录入人自己就能归档 —— 周度审核靠这个把它们亮出来。
+   与被删除的任务不同，这里**不**排除「当天录当天归档」的：一条 C 级询盘录完就归档，正是最该被看到的那种。 */
+export function listArchivedBetween(range) {
+  return db.prepare(
+    `SELECT i.*, (SELECT u.name FROM inquiry_field_changes c LEFT JOIN users u ON u.id = c.changed_by
+                   WHERE c.inquiry_id = i.id AND c.field = 'state' AND c.new_value = 'archived'
+                   ORDER BY c.id DESC LIMIT 1) AS archived_by_name
+       FROM inquiries i
+      WHERE i.state = 'archived' AND date(i.archived_at, '+8 hours') BETWEEN @start_date AND @end_date
+      ORDER BY i.archived_at DESC, i.id DESC`
+  ).all(range);
+}
+
+/* 区间内被标为「已成交」的询盘（按北京时间的标记日）。以前只有一个 deal_status 字段，答不出「哪天成交的、谁标的」；
+   现在成交状态的改动进流水，这里按流水取。只取目前仍是已成交、且没归档的（标了又撤回的不算成交）。 */
+export function dealsMarkedBetween(range) {
+  return db.prepare(
+    `SELECT i.id, i.date, i.country, i.channel, i.product, i.grade, i.source, i.src_campaign,
+            date(c.changed_at, '+8 hours') AS marked_date, u.name AS marked_by_name
+       FROM inquiry_field_changes c
+       JOIN inquiries i ON i.id = c.inquiry_id
+       LEFT JOIN users u ON u.id = c.changed_by
+      WHERE c.field = 'deal_status' AND c.new_value = '已成交'
+        AND date(c.changed_at, '+8 hours') BETWEEN @start_date AND @end_date
+        AND i.deal_status = '已成交' AND ${NOT_ARCHIVED.replace(/state/g, 'i.state')}
+        AND c.id = (SELECT MAX(c2.id) FROM inquiry_field_changes c2 WHERE c2.inquiry_id = i.id AND c2.field = 'deal_status')
+      ORDER BY c.changed_at DESC, i.id DESC`
+  ).all(range);
 }
 
 /* 确认覆盖情况：未确认占比是这套规矩的核心监督数字，必须自己亮出来。

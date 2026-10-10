@@ -132,7 +132,7 @@ function taskCell(t) {
   const span = t.start_date && t.task_date && t.start_date !== t.task_date ? md(t.start_date) + ' ~ ' + md(t.task_date) : md(t.task_date || t.start_date);
   if (span) meta.appendChild(el('span', '', '计划 ' + span));
   if (t.done_date) meta.appendChild(el('span', '', '完成 ' + md(t.done_date)));
-  if (t.deleted_date) meta.appendChild(el('span', '', '删除 ' + md(t.deleted_date)));
+  if (t.deleted_date) meta.appendChild(el('span', '', '删除 ' + md(t.deleted_date) + ' · ' + (t.deleted_by || '删除人未记录')));
   box.appendChild(meta);
   if (t.links.length) box.appendChild(el('div', 'audit-task-links', t.links.map((l) => (LINK_LABEL[l.type] || l.type) + ' ' + (l.type === 'page' ? shortUrl(l.ref) : (l.label || l.ref))).join(' · ')));
   return box;
@@ -247,6 +247,17 @@ function renderInquiries(root) {
         (i.src_evidence === 'form' ? '表单来源' : i.source_verdict_label) || '', i.deal_status || ''])));
     if (q.items.length > SHOW) c.appendChild(el('div', 'dim audit-more', '只显示前 ' + SHOW + ' 条，全部 ' + q.items.length + ' 条在导出文件里。'));
   }
+  // 这两张表不受「本期有没有录入询盘」影响：成交的可能是几个月前的询盘，归档的也是
+  if (q.deals_marked.length) {
+    c.appendChild(el('div', 'audit-sub', '本期标为成交 ' + q.deals_marked.length + ' 条（询盘可能是更早来的）'));
+    c.appendChild(table(['询盘日期', '国家', '渠道', '产品', { label: '等级', cls: 'ctr' }, '来源词 / 系列', '标记成交', '标记人'],
+      q.deals_marked.map((d) => [d.inquiry_date, d.country, d.channel, d.product, d.grade, [d.source, d.src_campaign].filter(Boolean).join(' · '), md(d.marked_date), d.marked_by || '未记录'])));
+  }
+  if (q.archived_items.length) {
+    c.appendChild(el('div', 'audit-sub', '本期被归档的询盘 ' + q.archived_items.length + ' 条（已不计入上面的任何数）'));
+    c.appendChild(table(['询盘日期', '国家', '渠道', '产品', { label: '等级', cls: 'ctr' }, '归档前', '归档日', '归档人'],
+      q.archived_items.map((i) => [i.date, i.country, i.channel, i.product, i.grade, i.confirmation_label, md(i.archived_date), i.archived_by || '未记录'])));
+  }
   const l = pkg.leads;
   c.appendChild(el('div', 'audit-sub', '表单线索'));
   c.appendChild(el('div', 'audit-line', l.total ? '收到 ' + l.total + ' 条：已转询盘 ' + l.converted + ' · 已忽略 ' + l.ignored + ' · 待处理 ' + l.new : '这段时间没有收到表单线索（没接入独立站表单时这里一直是空的）。'));
@@ -286,8 +297,8 @@ function renderSpendKpi(root) {
   const gone = pkg.spend.deleted_items || [];
   if (gone.length) {
     c.appendChild(el('div', 'audit-sub', '本期被删除的花费记录 ' + gone.length + ' 笔（已不计入上面的合计）'));
-    c.appendChild(table(['台账', '花费日期', '内容', '金额', '负责人', '删除日'],
-      gone.map((d) => [d.kind === 'backlink' ? '外链' : '其它支出', d.date || '未填', d.what || '', (CURRENCY_LABEL[d.currency] || d.currency || '') + ' ' + num(d.amount), d.owner || '', d.deleted_date])));
+    c.appendChild(table(['台账', '花费日期', '内容', '金额', '负责人', '删除日', '删除人'],
+      gone.map((d) => [d.kind === 'backlink' ? '外链' : '其它支出', d.date || '未填', d.what || '', (CURRENCY_LABEL[d.currency] || d.currency || '') + ' ' + num(d.amount), d.owner || '', d.deleted_date, d.deleted_by || '未记录'])));
   }
   root.appendChild(c);
   const k = pkg.kpi;

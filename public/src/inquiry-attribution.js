@@ -85,7 +85,7 @@ export async function loadAttrCoverage() {
 }
 
 /* ===== 改动流水弹框 ===== */
-const FIELD_LABEL = { channel: '渠道', grade: '等级', date: '日期', state: '归档', attribution_status: '确认状态' };
+const FIELD_LABEL = { channel: '渠道', grade: '等级', date: '日期', state: '归档', deal_status: '是否成交', attribution_status: '确认状态' };
 const VALUE_LABEL = { confirmed: '已确认', proposed: '待确认', active: '在册', archived: '已归档' };
 const valText = (v) => (v == null || v === '' ? '（空 / 历史未审）' : VALUE_LABEL[v] || v);
 function localTime(utc) {

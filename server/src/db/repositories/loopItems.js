@@ -186,14 +186,23 @@ export function restore(id) {
 }
 
 // 软删：DELETE 默认走这里。
-export function softDelete(id) {
+export function softDelete(id, userId) {
   const row = get(id);
   if (!row) return null;
   if (row.state === 'deleted') return row;
   db.prepare(
-    "UPDATE loop_items SET state = 'deleted', deleted_at = datetime('now') WHERE id = @id"
-  ).run({ id });
+    "UPDATE loop_items SET state = 'deleted', deleted_at = datetime('now'), deleted_by = @by WHERE id = @id"
+  ).run({ id, by: userId ?? null });
   return get(id);
+}
+
+// 这些任务分别是谁删的：{ id → 姓名 }。没记到人的（这一列上线前删的）不在结果里。
+export function deleterNames(ids) {
+  if (!ids || !ids.length) return {};
+  const rows = db.prepare(
+    `SELECT l.id, u.name FROM loop_items l JOIN users u ON u.id = l.deleted_by WHERE l.id IN (${ids.map(() => '?').join(',')})`
+  ).all(...ids);
+  return Object.fromEntries(rows.map((r) => [r.id, r.name]));
 }
 
 // 物理删除：仅 boss/管理操作用，路由层 hard=1 才会调到。

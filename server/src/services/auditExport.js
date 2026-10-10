@@ -56,7 +56,7 @@ export function auditSheets(pkg) {
 
   add('tasks', '任务', [
     ['id', '编号'], ['person', '归属'], ['owner', '负责人'], ['dept', '部门'], ['project', '产品/项目'], ['content', '任务'], ['state', '状态'],
-    ['start_date', '开始日'], ['task_date', '截止日'], ['done_date', '完成日'], ['deleted_date', '删除日'], ['est_hours', '预估工时'], ['actual_hours', '实际工时'],
+    ['start_date', '开始日'], ['task_date', '截止日'], ['done_date', '完成日'], ['deleted_date', '删除日'], ['deleted_by', '删除人'], ['est_hours', '预估工时'], ['actual_hours', '实际工时'],
     ['important', '重要任务'], ['important_reason', '重要原因'], ['why', '目的'], ['done_when', '完成标准'], ['result', '完成结果'], ['task_actions', '具体动作'],
     ['evidence', '证据链接'], ['images', '证据截图数'], ['links', '关联对象'], ['checkin_days', '区间内推进天数'], ['effect', '数据变化'], ['flags', '疑点'],
   ], pkg.tasks.map((t) => ({
@@ -140,8 +140,16 @@ export function auditSheets(pkg) {
     ['id', '编号'], ['spend_date', '日期'], ['category', '类别'], ['amount', '金额'], ['currency', '币种'], ['vendor', '付给谁'], ['purpose', '用途'], ['owner', '负责人'],
     ['task_id', '任务编号'], ['task_content', '任务'], ['evidence', '凭证'], ['note', '备注'],
   ], pkg.spend.expense_items);
+  add('deals_marked', '本期标为成交', [
+    ['id', '询盘编号'], ['inquiry_date', '询盘日期'], ['country', '国家'], ['channel', '渠道'], ['product', '产品'], ['grade', '等级'],
+    ['source', '来源词'], ['src_campaign', '系列'], ['marked_date', '标记成交日'], ['marked_by', '标记人'],
+  ], pkg.inquiries.deals_marked);
+  add('inquiries_archived', '本期归档的询盘', [
+    ['id', '询盘编号'], ['date', '询盘日期'], ['country', '国家'], ['channel', '渠道'], ['product', '产品'], ['grade', '等级'],
+    ['deal_status', '是否成交'], ['confirmation_label', '归档前的确认状态'], ['archived_date', '归档日'], ['archived_by', '归档人'],
+  ], pkg.inquiries.archived_items);
   add('spend_deleted', '已删除的花费记录', [
-    ['kind', '台账'], ['id', '编号'], ['date', '花费日期'], ['what', '内容'], ['amount', '金额'], ['currency', '币种'], ['vendor', '付给谁'], ['owner', '负责人'], ['deleted_date', '删除日'],
+    ['kind', '台账'], ['id', '编号'], ['date', '花费日期'], ['what', '内容'], ['amount', '金额'], ['currency', '币种'], ['vendor', '付给谁'], ['owner', '负责人'], ['deleted_date', '删除日'], ['deleted_by', '删除人'],
   ], pkg.spend.deleted_items.map((d) => ({ ...d, kind: d.kind === 'backlink' ? '外链' : '其它支出' })));
 
   add('kpi', 'KPI本月至今', [['label', '指标'], ['weight', '权重'], ['actual', '实际'], ['target', '目标'], ['unit', '单位'], ['status_label', '状态'], ['score', '得分'], ['note', '说明']], [

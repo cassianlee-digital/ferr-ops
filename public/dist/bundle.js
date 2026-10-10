@@ -3626,7 +3626,7 @@
       box.appendChild(bar);
     }
   }
-  var FIELD_LABEL = { channel: "\u6E20\u9053", grade: "\u7B49\u7EA7", date: "\u65E5\u671F", state: "\u5F52\u6863", attribution_status: "\u786E\u8BA4\u72B6\u6001" };
+  var FIELD_LABEL = { channel: "\u6E20\u9053", grade: "\u7B49\u7EA7", date: "\u65E5\u671F", state: "\u5F52\u6863", deal_status: "\u662F\u5426\u6210\u4EA4", attribution_status: "\u786E\u8BA4\u72B6\u6001" };
   var VALUE_LABEL = { confirmed: "\u5DF2\u786E\u8BA4", proposed: "\u5F85\u786E\u8BA4", active: "\u5728\u518C", archived: "\u5DF2\u5F52\u6863" };
   var valText = (v) => v == null || v === "" ? "\uFF08\u7A7A / \u5386\u53F2\u672A\u5BA1\uFF09" : VALUE_LABEL[v] || v;
   function localTime(utc) {
@@ -10147,7 +10147,7 @@
     const span = t.start_date && t.task_date && t.start_date !== t.task_date ? md2(t.start_date) + " ~ " + md2(t.task_date) : md2(t.task_date || t.start_date);
     if (span) meta.appendChild(el2("span", "", "\u8BA1\u5212 " + span));
     if (t.done_date) meta.appendChild(el2("span", "", "\u5B8C\u6210 " + md2(t.done_date)));
-    if (t.deleted_date) meta.appendChild(el2("span", "", "\u5220\u9664 " + md2(t.deleted_date)));
+    if (t.deleted_date) meta.appendChild(el2("span", "", "\u5220\u9664 " + md2(t.deleted_date) + " \xB7 " + (t.deleted_by || "\u5220\u9664\u4EBA\u672A\u8BB0\u5F55")));
     box.appendChild(meta);
     if (t.links.length) box.appendChild(el2("div", "audit-task-links", t.links.map((l) => (LINK_LABEL2[l.type] || l.type) + " " + (l.type === "page" ? shortUrl2(l.ref) : l.label || l.ref)).join(" \xB7 ")));
     return box;
@@ -10298,6 +10298,20 @@
       ));
       if (q.items.length > SHOW) c.appendChild(el2("div", "dim audit-more", "\u53EA\u663E\u793A\u524D " + SHOW + " \u6761\uFF0C\u5168\u90E8 " + q.items.length + " \u6761\u5728\u5BFC\u51FA\u6587\u4EF6\u91CC\u3002"));
     }
+    if (q.deals_marked.length) {
+      c.appendChild(el2("div", "audit-sub", "\u672C\u671F\u6807\u4E3A\u6210\u4EA4 " + q.deals_marked.length + " \u6761\uFF08\u8BE2\u76D8\u53EF\u80FD\u662F\u66F4\u65E9\u6765\u7684\uFF09"));
+      c.appendChild(table(
+        ["\u8BE2\u76D8\u65E5\u671F", "\u56FD\u5BB6", "\u6E20\u9053", "\u4EA7\u54C1", { label: "\u7B49\u7EA7", cls: "ctr" }, "\u6765\u6E90\u8BCD / \u7CFB\u5217", "\u6807\u8BB0\u6210\u4EA4", "\u6807\u8BB0\u4EBA"],
+        q.deals_marked.map((d) => [d.inquiry_date, d.country, d.channel, d.product, d.grade, [d.source, d.src_campaign].filter(Boolean).join(" \xB7 "), md2(d.marked_date), d.marked_by || "\u672A\u8BB0\u5F55"])
+      ));
+    }
+    if (q.archived_items.length) {
+      c.appendChild(el2("div", "audit-sub", "\u672C\u671F\u88AB\u5F52\u6863\u7684\u8BE2\u76D8 " + q.archived_items.length + " \u6761\uFF08\u5DF2\u4E0D\u8BA1\u5165\u4E0A\u9762\u7684\u4EFB\u4F55\u6570\uFF09"));
+      c.appendChild(table(
+        ["\u8BE2\u76D8\u65E5\u671F", "\u56FD\u5BB6", "\u6E20\u9053", "\u4EA7\u54C1", { label: "\u7B49\u7EA7", cls: "ctr" }, "\u5F52\u6863\u524D", "\u5F52\u6863\u65E5", "\u5F52\u6863\u4EBA"],
+        q.archived_items.map((i) => [i.date, i.country, i.channel, i.product, i.grade, i.confirmation_label, md2(i.archived_date), i.archived_by || "\u672A\u8BB0\u5F55"])
+      ));
+    }
     const l = pkg.leads;
     c.appendChild(el2("div", "audit-sub", "\u8868\u5355\u7EBF\u7D22"));
     c.appendChild(el2("div", "audit-line", l.total ? "\u6536\u5230 " + l.total + " \u6761\uFF1A\u5DF2\u8F6C\u8BE2\u76D8 " + l.converted + " \xB7 \u5DF2\u5FFD\u7565 " + l.ignored + " \xB7 \u5F85\u5904\u7406 " + l.new : "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u6536\u5230\u8868\u5355\u7EBF\u7D22\uFF08\u6CA1\u63A5\u5165\u72EC\u7ACB\u7AD9\u8868\u5355\u65F6\u8FD9\u91CC\u4E00\u76F4\u662F\u7A7A\u7684\uFF09\u3002"));
@@ -10342,8 +10356,8 @@
     if (gone.length) {
       c.appendChild(el2("div", "audit-sub", "\u672C\u671F\u88AB\u5220\u9664\u7684\u82B1\u8D39\u8BB0\u5F55 " + gone.length + " \u7B14\uFF08\u5DF2\u4E0D\u8BA1\u5165\u4E0A\u9762\u7684\u5408\u8BA1\uFF09"));
       c.appendChild(table(
-        ["\u53F0\u8D26", "\u82B1\u8D39\u65E5\u671F", "\u5185\u5BB9", "\u91D1\u989D", "\u8D1F\u8D23\u4EBA", "\u5220\u9664\u65E5"],
-        gone.map((d) => [d.kind === "backlink" ? "\u5916\u94FE" : "\u5176\u5B83\u652F\u51FA", d.date || "\u672A\u586B", d.what || "", (CURRENCY_LABEL[d.currency] || d.currency || "") + " " + num2(d.amount), d.owner || "", d.deleted_date])
+        ["\u53F0\u8D26", "\u82B1\u8D39\u65E5\u671F", "\u5185\u5BB9", "\u91D1\u989D", "\u8D1F\u8D23\u4EBA", "\u5220\u9664\u65E5", "\u5220\u9664\u4EBA"],
+        gone.map((d) => [d.kind === "backlink" ? "\u5916\u94FE" : "\u5176\u5B83\u652F\u51FA", d.date || "\u672A\u586B", d.what || "", (CURRENCY_LABEL[d.currency] || d.currency || "") + " " + num2(d.amount), d.owner || "", d.deleted_date, d.deleted_by || "\u672A\u8BB0\u5F55"])
       ));
     }
     root.appendChild(c);
