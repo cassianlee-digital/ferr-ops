@@ -4,6 +4,8 @@
 // 完成弹框就会少要证据，等提交时才被后端打回。
 import * as taskLinksRepo from '../db/repositories/taskLinks.js';
 import * as attachmentsRepo from '../db/repositories/attachments.js';
+import * as backlinksRepo from '../db/repositories/backlinks.js';
+import * as expensesRepo from '../db/repositories/expenses.js';
 import { IMPORTANT_REASON_LABEL, importance } from './taskAudit.js';
 
 export const TASK_ATTACHMENT_OWNER = 'task';
@@ -17,9 +19,9 @@ function evidenceImages(ids) {
   return map;
 }
 
-// 这条任务名下是否挂了花费。外链 / 支出台账落地后在这里接上；现在还没有台账，一律为否。
+// 名下挂了花费的任务：付费外链或支出台账里指向它的。花了钱的活必须交证据，所以它是「重要」的一条判据。
 export function spendTaskIds() {
-  return new Set();
+  return new Set([...backlinksRepo.paidTaskIds(), ...expensesRepo.spendTaskIds()]);
 }
 
 // 任务已上传的证据截图数（完成门槛用）

@@ -476,10 +476,10 @@
   var splitActionItems = [];
   var modalRequestVersion = 0;
   function hashText(s) {
-    let h = 5381;
+    let h2 = 5381;
     s = String(s || "");
-    for (let i = 0; i < s.length; i++) h = (h << 5) + h + s.charCodeAt(i);
-    return (h >>> 0).toString(36);
+    for (let i = 0; i < s.length; i++) h2 = (h2 << 5) + h2 + s.charCodeAt(i);
+    return (h2 >>> 0).toString(36);
   }
   function currentAiPage() {
     const p = document.querySelector(".panel.active");
@@ -613,8 +613,8 @@
     if (!hist.length) return "";
     const idx = aiViewIdx;
     let chips = '<button type="button" class="ai-tl-chip' + (idx < 0 ? " active" : "") + '" data-ai-snapshot="-1">\u672C\u6B21 \xB7 ' + fmtAiTime(item.updated_at) + "</button>";
-    hist.forEach((h, i) => {
-      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h.at) + "</button>";
+    hist.forEach((h2, i) => {
+      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h2.at) + "</button>";
     });
     return '<div class="ai-timeline"><span class="ai-tl-label"><i class="ti ti-history"></i> \u5386\u53F2\u5BF9\u6BD4</span>' + chips + "</div>";
   }
@@ -1251,7 +1251,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc2(h.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h2) => '<span class="seo-hl-chip ' + (h2.tone === "good" ? "good" : "bad") + '">' + esc2(h2.text) + "</span>").join("");
   }
   function renderSeoDeltaTables(d) {
     const error = d && d.error;
@@ -1266,8 +1266,8 @@
     }
     const qt = document.getElementById("seoQueriesDelta");
     if (qt) {
-      const qs = d && d.queries || [];
-      qt.innerHTML = error ? loadFailureRow(6, "SEO \u770B\u677F", error) : qs.length ? qs.map((q) => {
+      const qs2 = d && d.queries || [];
+      qt.innerHTML = error ? loadFailureRow(6, "SEO \u770B\u677F", error) : qs2.length ? qs2.map((q) => {
         const pos = q.position != null ? Number(q.position).toFixed(1) : "\u2014";
         return "<tr><td>" + esc2(q.query) + '</td><td class="num">' + (q.impressions || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(q.impressions, q.imprPrev, false, "pct") + '</td><td class="num">' + (q.clicks || 0).toLocaleString() + '</td><td class="num">' + pos + '</td><td class="num">' + _deltaHtml(q.position, q.positionPrev, true, "abs1") + "</td></tr>";
       }).join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
@@ -1616,7 +1616,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc2(h.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h2) => '<span class="seo-hl-chip ' + (h2.tone === "good" ? "good" : "bad") + '">' + esc2(h2.text) + "</span>").join("");
   }
   function renderSemDeltaTables(d) {
     const error = d && d.error;
@@ -4225,16 +4225,16 @@
   function renderSparklines() {
     document.querySelectorAll("[data-spark]").forEach((td2) => {
       const v = td2.dataset.spark.split(",").map(Number);
-      const w = 58, h = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
+      const w = 58, h2 = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
       const pts = v.map((d, i) => {
         const x = i / (v.length - 1) * (w - 4) + 2;
-        const y = (d - min) / rng * (h - 6) + 3;
+        const y = (d - min) / rng * (h2 - 6) + 3;
         return x.toFixed(1) + "," + y.toFixed(1);
       }).join(" ");
       const up = v[v.length - 1] < v[0];
       const col = up ? "var(--green)" : v[v.length - 1] > v[0] ? "var(--primary)" : "var(--text3)";
-      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h - 6) + 3;
-      td2.innerHTML = `<svg class="spark" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
+      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h2 - 6) + 3;
+      td2.innerHTML = `<svg class="spark" width="${w}" height="${h2}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
     });
   }
 
@@ -4448,8 +4448,8 @@
   });
   function isOverduePeriodFirstDay(freq) {
     const now = /* @__PURE__ */ new Date();
-    const h = now.getHours();
-    if (h < 8) return false;
+    const h2 = now.getHours();
+    if (h2 < 8) return false;
     if (freq === "daily") return true;
     if (freq === "weekly") return now.getDay() === 1;
     if (freq === "monthly") return now.getDate() === 1;
@@ -5265,8 +5265,8 @@
   var LUNCH_START_MIN = 12 * 60;
   var LUNCH_END_MIN = 13 * 60 + 30;
   function minToHhmm(m) {
-    const h = Math.floor(m / 60), mm = m % 60;
-    return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    const h2 = Math.floor(m / 60), mm = m % 60;
+    return String(h2).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
   }
   function annotateTaskTimes(todayGroup) {
     const cards = [...todayGroup.querySelectorAll(":scope > .tcard:not(.done)")];
@@ -5343,9 +5343,9 @@
     if (o) o.value = "\u674E";
     const hs = document.getElementById("subtask-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h = 0; h < 24; h++) {
+      for (let h2 = 0; h2 < 24; h2++) {
         const op = document.createElement("option");
-        const hh = String(h).padStart(2, "0");
+        const hh = String(h2).padStart(2, "0");
         op.value = hh;
         op.textContent = hh + ":00";
         hs.appendChild(op);
@@ -5394,9 +5394,9 @@
     if (lbl) lbl.textContent = dept;
     const hs = document.getElementById("task-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h = 0; h < 24; h++) {
+      for (let h2 = 0; h2 < 24; h2++) {
         const o = document.createElement("option");
-        const hh = String(h).padStart(2, "0");
+        const hh = String(h2).padStart(2, "0");
         o.value = hh;
         o.textContent = hh + ":00";
         hs.appendChild(o);
@@ -5442,9 +5442,9 @@
     if (lbl) lbl.textContent = _taskScope.dept || "";
     const hs = document.getElementById("task-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h = 0; h < 24; h++) {
+      for (let h2 = 0; h2 < 24; h2++) {
         const o = document.createElement("option");
-        const hh = String(h).padStart(2, "0");
+        const hh = String(h2).padStart(2, "0");
         o.value = hh;
         o.textContent = hh + ":00";
         hs.appendChild(o);
@@ -7087,8 +7087,8 @@
     const table = make2("table", "dt kpi-review-table");
     const thead = make2("thead");
     const hr = make2("tr");
-    for (const h of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
-      hr.appendChild(make2("th", h === "\u8003\u6838\u9879\u76EE" || h === "\u8BF4\u660E" ? "" : "ctr", h));
+    for (const h2 of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
+      hr.appendChild(make2("th", h2 === "\u8003\u6838\u9879\u76EE" || h2 === "\u8BF4\u660E" ? "" : "ctr", h2));
     }
     thead.appendChild(hr);
     table.appendChild(thead);
@@ -7813,9 +7813,9 @@
   }
   document.addEventListener("click", async (e) => {
     const r = e.target.closest(".arch-restore");
-    const h = e.target.closest(".arch-hard");
-    if (!r && !h) return;
-    const tr = (r || h).closest("tr");
+    const h2 = e.target.closest(".arch-hard");
+    if (!r && !h2) return;
+    const tr = (r || h2).closest("tr");
     if (!tr) return;
     const id = tr.dataset.id, ep = tr.dataset.ep;
     if (!id || !ep) return;
@@ -7833,7 +7833,7 @@
         toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     } else {
-      if (!inlineConfirm(h, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
+      if (!inlineConfirm(h2, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
       try {
         await API.del(ep + "/" + id + "?hard=1");
         tr.remove();
@@ -8322,8 +8322,8 @@
     const thu = new Date(mon);
     thu.setDate(thu.getDate() + 3);
     const year = thu.getFullYear();
-    const month = thu.getMonth() + 1;
-    return { monday: mon, year, month, monthKey: `${year}-${month}` };
+    const month2 = thu.getMonth() + 1;
+    return { monday: mon, year, month: month2, monthKey: `${year}-${month2}` };
   }
   function parseMonthKey(key) {
     const m = String(key || "").match(/^(\d{4})-(\d{1,2})-month$/);
@@ -8355,8 +8355,8 @@
     return p ? `${p.year}\u5E74${p.month}\u6708\u6708\u62A5` : key;
   }
   function monthGroupLabel(monthKey) {
-    const [year, month] = String(monthKey || "").split("-");
-    return `${year}\u5E74${Number(month)}\u6708\u5468\u62A5`;
+    const [year, month2] = String(monthKey || "").split("-");
+    return `${year}\u5E74${Number(month2)}\u6708\u5468\u62A5`;
   }
   function sortWeekKeys(keys) {
     return [...keys].sort((a, b) => String(b).localeCompare(String(a)));
@@ -8385,17 +8385,17 @@
   }
   function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
     const name = dept === "SEM" ? "SEM \xB7 \u9648" : "SEO \xB7 \u674E";
-    let h = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
+    let h2 = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
     sections.forEach(([field2, title, acts]) => {
       const items = rec && rec[field2] || [];
-      h += `<div class="rv-sec" data-field="${field2}" data-dept="${dept}" data-week="${key}"><h5>${title}</h5>`;
+      h2 += `<div class="rv-sec" data-field="${field2}" data-dept="${dept}" data-week="${key}"><h5>${title}</h5>`;
       if (field2 === "summary" && !items.length && prevPlan && prevPlan.length) {
-        h += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc2(x)).join("\uFF1B")}</div>`;
+        h2 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc2(x)).join("\uFF1B")}</div>`;
       }
-      h += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
-      h += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
+      h2 += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
+      h2 += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
     });
-    return h + "</div>";
+    return h2 + "</div>";
   }
   function prevPlanOf(keys, byKey, key, dept) {
     const idx = keys.indexOf(key);
@@ -8988,7 +8988,7 @@
     const table = make4("table", "dt kra-table");
     const thead = make4("thead");
     const hr = make4("tr");
-    for (const h of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h === "\u8BF4\u660E" ? "" : "ctr", h));
+    for (const h2 of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h2 === "\u8BF4\u660E" ? "" : "ctr", h2));
     thead.appendChild(hr);
     table.appendChild(thead);
     const tbody = make4("tbody", "kra-bands");
@@ -9288,6 +9288,421 @@
     setActionTab: () => setActionTab2,
     setPlanningTab: () => setPlanningTab2
   });
+
+  // public/src/spend.js
+  var $2 = (id) => document.getElementById(id);
+  var isHttp2 = (u) => /^https?:\/\//i.test(String(u || ""));
+  function h(tag, cls, text2) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (text2 != null) el.textContent = String(text2);
+    return el;
+  }
+  var money3 = (n) => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var CURRENCY_LABEL = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
+  function amountsText(amounts) {
+    return Object.entries(amounts || {}).map(([cur, v]) => (CURRENCY_LABEL[cur] || cur) + " " + money3(v)).join(" \uFF5C ");
+  }
+  function linkEl(url, text2, cls) {
+    if (!isHttp2(url)) return h("span", cls, text2 || url || "");
+    const a = h("a", cls, text2 || url);
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.title = url;
+    return a;
+  }
+  function shortUrl2(u) {
+    try {
+      const x = new URL(u);
+      const s = x.host.replace(/^www\./i, "") + (x.pathname === "/" ? "" : x.pathname);
+      return s.length > 48 ? s.slice(0, 47) + "\u2026" : s;
+    } catch (e) {
+      return u || "";
+    }
+  }
+  var bound = false;
+  var month = "";
+  var options = null;
+  var loadSeq = 0;
+  var backlinkRows = [];
+  var expenseRows = [];
+  var editing2 = { backlink: null, expense: null };
+  function monthRange(ym) {
+    const [y, m] = ym.split("-").map(Number);
+    const last = new Date(y, m, 0).getDate();
+    return { start_date: `${ym}-01`, end_date: `${ym}-${String(last).padStart(2, "0")}` };
+  }
+  function shiftMonth(ym, delta) {
+    const [y, m] = ym.split("-").map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  }
+  var qs = (range) => "?start_date=" + range.start_date + "&end_date=" + range.end_date;
+  var failText = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  function adsSourceText(g) {
+    if (g.source === "google_ads") return "Ads \u540C\u6B65\u6570\u636E \xB7 \u8D26\u6237\u5E01\u79CD";
+    if (g.source === "sem_weeks") return "\u4EBA\u5DE5\u5468\u62A5\uFF08Ads \u672C\u671F\u65E0\u540C\u6B65\u6570\u636E\uFF09\xB7 \u4EBA\u6C11\u5E01";
+    return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
+  }
+  function renderSummary2(data) {
+    const box = $2("spend-summary");
+    if (!box) return;
+    box.textContent = "";
+    const row = h("div", "spend-groups");
+    for (const g of data.groups) {
+      const card = h("div", "spend-group" + (g.key === "ads" ? " is-ads" : ""));
+      card.appendChild(h("div", "spend-group-label", g.label));
+      const text2 = amountsText(g.amounts);
+      card.appendChild(h("div", "spend-group-amount" + (text2 ? "" : " is-empty"), text2 || (g.key === "ads" ? "\u6CA1\u6709\u6570\u636E" : "\u672C\u6708\u6CA1\u6709")));
+      const sub = g.key === "ads" ? adsSourceText(g) : g.count ? g.count + " \u7B14" : "";
+      if (sub) card.appendChild(h("div", "spend-group-sub", sub));
+      row.appendChild(card);
+    }
+    box.appendChild(row);
+    const total = amountsText(data.totals);
+    const line2 = h("div", "spend-total");
+    line2.appendChild(h("b", "", "\u672C\u6708\u5408\u8BA1"));
+    line2.appendChild(h("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
+    if (Object.keys(data.totals || {}).length > 1) line2.appendChild(h("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
+    box.appendChild(line2);
+  }
+  function renderSummaryError(e) {
+    const box = $2("spend-summary");
+    if (!box) return;
+    box.textContent = "";
+    const line2 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e) + " ");
+    const btn = h("button", "btn-mini", "\u91CD\u8BD5");
+    btn.type = "button";
+    btn.addEventListener("click", loadSpend);
+    line2.appendChild(btn);
+    box.appendChild(line2);
+  }
+  function sideText(label, s) {
+    if (!s.count) return label + " 0 \u6761";
+    const parts = [label + " " + s.count + " \u6761", "\u6709\u6548 " + s.live + " / \u5931\u6548 " + s.dead + (s.pending ? " / \u5F85\u4E0A\u7EBF " + s.pending : ""), "dofollow " + s.dofollow];
+    parts.push(s.avg_dr == null ? "DR \u5747\u672A\u5F55\u5165" : "\u5E73\u5747 DR " + s.avg_dr + "\uFF08" + s.count + " \u6761\u91CC " + s.dr_known + " \u6761\u6709\u8BFB\u6570\uFF09");
+    if (s.never_checked) parts.push(s.never_checked + " \u6761\u4ECE\u672A\u6838\u67E5");
+    return parts.join(" \xB7 ");
+  }
+  function renderLinkStats(stats) {
+    const box = $2("spend-link-stats");
+    if (!box) return;
+    box.textContent = "";
+    if (!stats || !stats.total) return;
+    box.appendChild(h("div", "spend-stat", "\u5171 " + stats.total + " \u6761 \xB7 \u6765\u81EA " + stats.domains + " \u4E2A\u7AD9"));
+    const paid = h("div", "spend-stat is-paid", sideText("\u4ED8\u8D39", stats.paid));
+    const cost = amountsText(stats.paid.cost);
+    if (cost) paid.appendChild(h("b", "", "  \u82B1\u8D39 " + cost));
+    box.appendChild(paid);
+    box.appendChild(h("div", "spend-stat", sideText("\u514D\u8D39", stats.free)));
+  }
+  var STATUS_BADGE = { \u6709\u6548: "b-green", \u5931\u6548: "b-red", \u5F85\u4E0A\u7EBF: "b-amber" };
+  function rowActions(kind, id) {
+    const td2 = h("td", "ctr spend-ops");
+    const edit = h("button", "btn-mini", "\u7F16\u8F91");
+    edit.type = "button";
+    edit.dataset.spendEdit = kind;
+    edit.dataset.id = id;
+    const del = h("button", "btn-mini", "\u5220\u9664");
+    del.type = "button";
+    del.dataset.spendDel = kind;
+    del.dataset.id = id;
+    td2.append(edit, document.createTextNode(" "), del);
+    return td2;
+  }
+  function emptyRow(tb, cols, text2) {
+    const tr = h("tr");
+    const td2 = h("td", "dim spend-empty", text2);
+    td2.colSpan = cols;
+    tr.appendChild(td2);
+    tb.appendChild(tr);
+  }
+  function errorRow(tb, cols, label, e) {
+    tb.textContent = "";
+    const tr = h("tr");
+    const td2 = h("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e) + " ");
+    td2.colSpan = cols;
+    const btn = h("button", "btn-mini", "\u91CD\u8BD5");
+    btn.type = "button";
+    btn.addEventListener("click", loadSpend);
+    td2.appendChild(btn);
+    tr.appendChild(td2);
+    tb.appendChild(tr);
+  }
+  function renderBacklinks() {
+    const tb = $2("tb-backlinks");
+    if (!tb) return;
+    tb.textContent = "";
+    if (!backlinkRows.length) {
+      emptyRow(tb, 11, $2("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      return;
+    }
+    for (const b of backlinkRows) {
+      const tr = h("tr");
+      tr.appendChild(h("td", "num", b.acquired_date || "\u672A\u586B"));
+      const src = h("td", "spend-url");
+      src.appendChild(linkEl(b.source_url, shortUrl2(b.source_url)));
+      if (b.vendor) src.appendChild(h("div", "dim", "\u5356\u5BB6\uFF1A" + b.vendor));
+      if (b.quality_note) src.appendChild(h("div", "dim", b.quality_note));
+      tr.appendChild(src);
+      const tgt = h("td", "spend-url");
+      if (b.target_url) tgt.appendChild(linkEl(b.target_url, shortUrl2(b.target_url)));
+      if (b.anchor) tgt.appendChild(h("div", "dim", "\u951A\u6587\u672C\uFF1A" + b.anchor));
+      tr.appendChild(tgt);
+      tr.appendChild(h("td", "ctr", b.method || ""));
+      tr.appendChild(h("td", "ctr", b.rel || ""));
+      tr.appendChild(h("td", "num", b.dr == null ? "" : b.dr));
+      tr.appendChild(h("td", "num", b.traffic == null ? "" : Number(b.traffic).toLocaleString("en-US")));
+      tr.appendChild(h("td", "num" + (Number(b.cost) > 0 ? " spend-paid" : " dim"), Number(b.cost) > 0 ? b.currency + " " + money3(b.cost) : "\u514D\u8D39"));
+      const st2 = h("td", "ctr");
+      if (b.status) st2.appendChild(h("span", "badge " + (STATUS_BADGE[b.status] || "b-gray"), b.status));
+      st2.appendChild(h("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
+      tr.appendChild(st2);
+      tr.appendChild(h("td", "spend-task", b.task_content || ""));
+      tr.appendChild(rowActions("backlink", b.id));
+      tb.appendChild(tr);
+    }
+  }
+  function renderExpenses() {
+    const tb = $2("tb-expenses");
+    if (!tb) return;
+    tb.textContent = "";
+    if (!expenseRows.length) {
+      emptyRow(tb, 9, "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5176\u5B83\u652F\u51FA");
+      return;
+    }
+    for (const e of expenseRows) {
+      const tr = h("tr");
+      tr.appendChild(h("td", "num", e.spend_date));
+      const cat = h("td", "ctr");
+      cat.appendChild(h("span", "badge b-gray", e.category));
+      tr.appendChild(cat);
+      const purpose = h("td", "spend-url", e.purpose);
+      if (e.note) purpose.appendChild(h("div", "dim", e.note));
+      tr.appendChild(purpose);
+      tr.appendChild(h("td", "", e.vendor || ""));
+      tr.appendChild(h("td", "num spend-paid", e.currency + " " + money3(e.amount)));
+      tr.appendChild(h("td", "ctr", e.owner || ""));
+      tr.appendChild(h("td", "spend-task", e.task_content || ""));
+      const ev = h("td", "spend-url");
+      if (e.evidence) ev.appendChild(linkEl(e.evidence, "\u67E5\u770B\u51ED\u8BC1"));
+      else ev.appendChild(h("span", "spend-noev", "\u65E0\u51ED\u8BC1"));
+      tr.appendChild(ev);
+      tr.appendChild(rowActions("expense", e.id));
+      tb.appendChild(tr);
+    }
+  }
+  async function loadSpend() {
+    bind();
+    if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
+    const input = $2("spend-month");
+    if (input) input.value = month;
+    const range = monthRange(month);
+    const seq3 = ++loadSeq;
+    const allLinks = $2("spend-links-all") && $2("spend-links-all").checked;
+    const [sum, links, exps] = await Promise.allSettled([
+      API.get("/api/spend/summary" + qs(range)),
+      API.get("/api/backlinks" + (allLinks ? "" : qs(range))),
+      API.get("/api/expenses" + qs(range))
+    ]);
+    if (seq3 !== loadSeq) return;
+    if (sum.status === "fulfilled") renderSummary2(sum.value);
+    else renderSummaryError(sum.reason);
+    if (links.status === "fulfilled") {
+      backlinkRows = links.value.items || [];
+      renderLinkStats(links.value.stats);
+      renderBacklinks();
+    } else {
+      backlinkRows = [];
+      renderLinkStats(null);
+      errorRow($2("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+    }
+    if (exps.status === "fulfilled") {
+      expenseRows = exps.value.items || [];
+      renderExpenses();
+    } else {
+      expenseRows = [];
+      errorRow($2("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+    }
+  }
+  var BACKLINK_FIELDS = [
+    ["bl-source", "source_url"],
+    ["bl-target", "target_url"],
+    ["bl-anchor", "anchor"],
+    ["bl-method", "method"],
+    ["bl-rel", "rel"],
+    ["bl-cost", "cost"],
+    ["bl-currency", "currency"],
+    ["bl-vendor", "vendor"],
+    ["bl-dr", "dr"],
+    ["bl-traffic", "traffic"],
+    ["bl-status", "status"],
+    ["bl-date", "acquired_date"],
+    ["bl-checked", "checked_date"],
+    ["bl-quality", "quality_note"],
+    ["bl-task", "task_id"],
+    ["bl-owner", "owner"],
+    ["bl-note", "note"]
+  ];
+  var EXPENSE_FIELDS = [
+    ["ex-date", "spend_date"],
+    ["ex-category", "category"],
+    ["ex-amount", "amount"],
+    ["ex-currency", "currency"],
+    ["ex-purpose", "purpose"],
+    ["ex-vendor", "vendor"],
+    ["ex-owner", "owner"],
+    ["ex-task", "task_id"],
+    ["ex-evidence", "evidence"],
+    ["ex-note", "note"]
+  ];
+  var FORMS = {
+    backlink: { fields: BACKLINK_FIELDS, mask: "backlinkMask", verb: "bl-verb", api: "/api/backlinks", rows: () => backlinkRows, name: "\u5916\u94FE" },
+    expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
+  };
+  function fillSelect2(id, values, placeholder, labelOf) {
+    const sel = $2(id);
+    if (!sel) return;
+    const keep = sel.value;
+    sel.textContent = "";
+    if (placeholder != null) {
+      const o = h("option", "", placeholder);
+      o.value = "";
+      sel.appendChild(o);
+    }
+    for (const v of values) {
+      const o = h("option", "", labelOf ? labelOf(v) : v);
+      o.value = labelOf ? v.id : v;
+      sel.appendChild(o);
+    }
+    sel.value = keep;
+  }
+  async function ensureOptions() {
+    options = await API.get("/api/spend/options");
+    fillSelect2("bl-method", options.backlink_methods, "\u672A\u9009");
+    fillSelect2("bl-rel", options.backlink_rels, "\u672A\u9009");
+    fillSelect2("bl-status", options.backlink_statuses, "\u672A\u9009");
+    fillSelect2("bl-currency", options.currencies, "\u672A\u9009");
+    fillSelect2("ex-category", options.expense_categories, "\u8BF7\u9009\u62E9");
+    fillSelect2("ex-currency", options.currencies, "\u8BF7\u9009\u62E9");
+    const taskLabel = (t) => "#" + t.id + " " + (t.owner || t.dept || "") + " \xB7 " + String(t.content || "").slice(0, 40);
+    fillSelect2("bl-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
+    fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
+  }
+  function ensureTaskOption(selectId, row) {
+    const sel = $2(selectId);
+    if (!sel || !row || row.task_id == null) return;
+    if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
+    const o = h("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
+    o.value = String(row.task_id);
+    sel.appendChild(o);
+  }
+  async function openForm(kind, row) {
+    const form = FORMS[kind];
+    try {
+      await ensureOptions();
+    } catch (e) {
+      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+      return;
+    }
+    editing2[kind] = row || null;
+    $2(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
+    for (const [id, key] of form.fields) {
+      const el = $2(id);
+      if (!el) continue;
+      el.value = row && row[key] != null ? row[key] : "";
+    }
+    if (!row) {
+      const today3 = formatLocalDate(/* @__PURE__ */ new Date());
+      const me = (window.ME || {}).name || "";
+      if (kind === "backlink") {
+        $2("bl-date").value = today3;
+        $2("bl-owner").value = me;
+      } else {
+        $2("ex-date").value = today3;
+        $2("ex-currency").value = "CNY";
+        $2("ex-owner").value = me;
+      }
+    }
+    $2(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    openModal(form.mask);
+  }
+  var openBacklink = () => openForm("backlink", null);
+  var openExpense = () => openForm("expense", null);
+  async function submitForm(kind, btn) {
+    const form = FORMS[kind];
+    const body = {};
+    for (const [id, key] of form.fields) {
+      const el = $2(id);
+      if (el) body[key] = el.value;
+    }
+    const errEl = $2(kind === "backlink" ? "bl-error" : "ex-error");
+    const row = editing2[kind];
+    if (btn) btn.disabled = true;
+    try {
+      if (row) await API.patch(form.api + "/" + row.id, body);
+      else await API.post(form.api, body);
+      closeModal(form.mask);
+      editing2[kind] = null;
+      toast2((row ? "\u5DF2\u66F4\u65B0" : "\u5DF2\u767B\u8BB0") + form.name + " \xB7 \u5DF2\u5165\u5E93");
+      loadSpend();
+    } catch (e) {
+      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText(e);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  var submitBacklink = (btn) => submitForm("backlink", btn);
+  var submitExpense = (btn) => submitForm("expense", btn);
+  function bind() {
+    if (bound) return;
+    const panel = $2("panel-spend");
+    if (!panel) return;
+    bound = true;
+    panel.addEventListener("click", async (e) => {
+      const step = e.target.closest("[data-spend-month]");
+      if (step) {
+        month = shiftMonth(month, Number(step.dataset.spendMonth));
+        loadSpend();
+        return;
+      }
+      if (e.target.closest("#spend-month-now")) {
+        month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
+        loadSpend();
+        return;
+      }
+      const edit = e.target.closest("[data-spend-edit]");
+      if (edit) {
+        const kind = edit.dataset.spendEdit;
+        const row = FORMS[kind].rows().find((r) => String(r.id) === edit.dataset.id);
+        if (row) openForm(kind, row);
+        return;
+      }
+      const del = e.target.closest("[data-spend-del]");
+      if (del) {
+        if (!inlineConfirm(del, "\u786E\u8BA4\u5220\u9664")) return;
+        const form = FORMS[del.dataset.spendDel];
+        try {
+          await API.del(form.api + "/" + del.dataset.id);
+          toast2("\u5DF2\u5220\u9664" + form.name + "\u8BB0\u5F55");
+          loadSpend();
+        } catch (err) {
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText(err));
+        }
+      }
+    });
+    $2("spend-month").addEventListener("change", (e) => {
+      if (/^\d{4}-\d{2}$/.test(e.target.value)) {
+        month = e.target.value;
+        loadSpend();
+      }
+    });
+    $2("spend-links-all").addEventListener("change", loadSpend);
+  }
+
+  // public/src/app.js
   var STATIC_UI_ACTIONS = {
     "toggle-theme": () => toggleTheme(),
     go: (el) => go2(el.dataset.tab),
@@ -9346,6 +9761,10 @@
     "task-link-add": () => addTaskLink(),
     "pick-task-evidence": () => pickTaskEvidence(),
     "submit-task-done": (el) => submitTaskDone(el),
+    "open-backlink": () => openBacklink(),
+    "open-expense": () => openExpense(),
+    "submit-backlink": (el) => submitBacklink(el),
+    "submit-expense": (el) => submitExpense(el),
     "submit-sop": () => submitSop(),
     "adopt-ai": () => adoptAi()
   };
@@ -9492,6 +9911,12 @@
       } catch (e) {
       }
     }, 80);
+    if (tab === "spend") {
+      try {
+        loadSpend();
+      } catch (e) {
+      }
+    }
     if (tab === "archive") {
       try {
         loadArchive2();

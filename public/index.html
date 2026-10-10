@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="/page-keywords.css">
 <link rel="stylesheet" href="/page-ga4.css">
 <link rel="stylesheet" href="/page-archive.css">
+<link rel="stylesheet" href="/page-spend.css">
 <link rel="stylesheet" href="/components.css">
 <link rel="stylesheet" href="/csp-utilities.css">
 </head>
@@ -39,7 +40,8 @@
       <div class="nav-item" data-tab="kpi"><i class="ti ti-award"></i> KPI 考核<span class="dot dot-amber"></span></div>
       <div class="nav-item" data-tab="inquiry"><i class="ti ti-mail-star"></i> 询盘评级<span class="dot dot-green"></span></div></div>
     <div class="nav-section"><div class="nav-label">数据中心</div>
-      <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div></div>
+      <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div>
+      <div class="nav-item" data-tab="spend"><i class="ti ti-receipt-2"></i> 投入台账</div></div>
     <div class="nav-section"><div class="nav-label">行动中心</div>
       <div class="nav-item" data-tab="planning"><i class="ti ti-calendar-stats"></i> 计划 / 总结<span class="dot dot-red is-hidden" id="nav-tasks-dot"></span></div>
       <div class="nav-item" data-tab="action"><i class="ti ti-git-branch"></i> 测试 / 整改</div>
@@ -621,6 +623,31 @@
       </div>
 
       <!-- ============ 任务看板 V3 ============ -->
+      <!-- ============ 投入台账（2026-10-10）：钱花在哪 —— 广告 / 外链 / 其它支出。渲染与事件全在 src/spend.js ============ -->
+      <div class="panel" id="panel-spend">
+        <div class="page-head"><div><div class="page-title">投入台账</div><div class="page-sub">钱花在哪：广告费取自 Ads 同步，外链和其它支出逐笔登记 · 每一笔都要查得到是哪一条、花在哪条任务上</div></div></div>
+        <div class="spend-month">
+          <button class="btn-mini" type="button" data-spend-month="-1" title="上个月"><i class="ti ti-chevron-left"></i></button>
+          <input type="month" id="spend-month" class="cell-date">
+          <button class="btn-mini" type="button" data-spend-month="1" title="下个月"><i class="ti ti-chevron-right"></i></button>
+          <button class="btn-mini" type="button" id="spend-month-now"><i class="ti ti-calendar-due"></i> 本月</button>
+        </div>
+        <div class="spend-summary" id="spend-summary"></div>
+        <div class="subtabs">
+          <div class="subtab active" data-sub="spend-links"><i class="ti ti-link"></i> 外链台账</div>
+          <div class="subtab" data-sub="spend-exp"><i class="ti ti-receipt-2"></i> 其它支出</div>
+        </div>
+        <div class="subpanel active" id="sub-spend-links">
+          <div class="spend-toolbar"><label class="spend-all"><input type="checkbox" id="spend-links-all"> 显示全部时间的外链（不限本月）</label><button class="btn-primary" data-ui-action="open-backlink"><i class="ti ti-plus"></i> 登记外链</button></div>
+          <div class="spend-stats" id="spend-link-stats"></div>
+          <div class="card spend-card"><table class="dt spend-table"><thead><tr><th class="num">日期</th><th>外链所在页面</th><th>指向页面 / 锚文本</th><th class="ctr">方式</th><th class="ctr">属性</th><th class="num">DR</th><th class="num">月流量</th><th class="num">费用</th><th class="ctr">状态</th><th>关联任务</th><th class="ctr">操作</th></tr></thead><tbody id="tb-backlinks"></tbody></table></div>
+        </div>
+        <div class="subpanel" id="sub-spend-exp">
+          <div class="spend-toolbar"><span class="dim">广告费来自 Ads 同步、外链费记在外链台账，这里只记其余的钱（同一笔不要记两处）</span><button class="btn-primary" data-ui-action="open-expense"><i class="ti ti-plus"></i> 登记支出</button></div>
+          <div class="card spend-card"><table class="dt spend-table"><thead><tr><th class="num">日期</th><th class="ctr">类别</th><th>用途</th><th>付给谁</th><th class="num">金额</th><th class="ctr">负责人</th><th>关联任务</th><th>凭证</th><th class="ctr">操作</th></tr></thead><tbody id="tb-expenses"></tbody></table></div>
+        </div>
+      </div>
+
       <div class="panel" id="panel-tasks">
         <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">每列上=SOP 固定清单(日/周/月合并一条一行)、下=每日新增 · 陈=SEM、李=SEO、公司任务在左</div></div>
           <button class="btn-ghost btn-mini co-add-task-btn" id="co-add-task-hdr" data-ui-action="open-task" data-dept="公司" title="派发公司任务"><i class="ti ti-building"></i> 派发公司任务</button>
@@ -1081,6 +1108,75 @@
       <div class="task-done-error" id="task-done-error"></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskDoneMask">取消</button><button class="btn-primary" data-ui-action="submit-task-done"><i class="ti ti-check"></i> <span id="task-done-submit-label">确认完成</span></button></div>
+  </div>
+</div>
+
+<!-- 投入台账：登记 / 编辑外链。下拉选项由 /api/spend/options 运行时填充（HTML 里刻意留空，只有后端一份）。逻辑在 src/spend.js -->
+<div class="modal-mask" id="backlinkMask">
+  <div class="modal spend-modal">
+    <div class="modal-head"><i class="ti ti-link csp-s-b0e08465c2"></i> <span id="bl-verb">登记</span>外链<span class="x" data-ui-action="close-modal" data-modal="backlinkMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld"><label>外链所在页面（必填，完整网址）</label><input type="text" id="bl-source" placeholder="https://…"></div>
+      <div class="fld-row">
+        <div class="fld"><label>指向我们的哪个页面</label><input type="text" id="bl-target" placeholder="https://…"></div>
+        <div class="fld"><label>锚文本</label><input type="text" id="bl-anchor" maxlength="200"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>获得方式</label><select id="bl-method"></select></div>
+        <div class="fld"><label>链接属性</label><select id="bl-rel"></select></div>
+        <div class="fld"><label>状态</label><select id="bl-status"></select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>费用（免费留空）</label><input type="number" id="bl-cost" min="0" step="0.01"></div>
+        <div class="fld"><label>币种</label><select id="bl-currency"></select></div>
+        <div class="fld"><label>卖家 / 中介</label><input type="text" id="bl-vendor" maxlength="100"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>来源站 DR（0~100）</label><input type="number" id="bl-dr" min="0" max="100" step="1"></div>
+        <div class="fld"><label>来源站月流量</label><input type="number" id="bl-traffic" min="0" step="1"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>日期（上线日；未上线填付款日）</label><input type="date" id="bl-date"></div>
+        <div class="fld"><label>最近核查日（确认还在的那天）</label><input type="date" id="bl-checked"></div>
+      </div>
+      <div class="fld"><label>质量判断（相关性、页面质量、为什么值这个钱）</label><textarea id="bl-quality" rows="2" maxlength="500"></textarea></div>
+      <div class="fld-row">
+        <div class="fld"><label>关联任务</label><select id="bl-task"></select></div>
+        <div class="fld"><label>负责人</label><input type="text" id="bl-owner" maxlength="20"></div>
+      </div>
+      <div class="fld"><label>备注</label><textarea id="bl-note" rows="2" maxlength="500"></textarea></div>
+      <div class="task-done-error" id="bl-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="backlinkMask">取消</button><button class="btn-primary" data-ui-action="submit-backlink"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- 投入台账：登记 / 编辑其它支出 -->
+<div class="modal-mask" id="expenseMask">
+  <div class="modal spend-modal">
+    <div class="modal-head"><i class="ti ti-receipt-2 csp-s-b0e08465c2"></i> <span id="ex-verb">登记</span>支出<span class="x" data-ui-action="close-modal" data-modal="expenseMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld-row">
+        <div class="fld"><label>日期（必填）</label><input type="date" id="ex-date"></div>
+        <div class="fld"><label>类别（必填）</label><select id="ex-category"></select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>金额（必填）</label><input type="number" id="ex-amount" min="0" step="0.01"></div>
+        <div class="fld"><label>币种（必填）</label><select id="ex-currency"></select></div>
+      </div>
+      <div class="fld"><label>用途（必填）· 买了什么、为什么买</label><textarea id="ex-purpose" rows="2" maxlength="300"></textarea></div>
+      <div class="fld-row">
+        <div class="fld"><label>付给谁</label><input type="text" id="ex-vendor" maxlength="100"></div>
+        <div class="fld"><label>负责人</label><input type="text" id="ex-owner" maxlength="20"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>关联任务</label><select id="ex-task"></select></div>
+        <div class="fld"><label>订单 / 发票链接</label><input type="text" id="ex-evidence" placeholder="https://…"></div>
+      </div>
+      <div class="fld"><label>备注</label><textarea id="ex-note" rows="2" maxlength="500"></textarea></div>
+      <div class="task-done-error" id="ex-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="expenseMask">取消</button><button class="btn-primary" data-ui-action="submit-expense"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
   </div>
 </div>
 

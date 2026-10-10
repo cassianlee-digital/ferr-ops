@@ -18,7 +18,7 @@ const ALL_TABLES = [
   'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'hermes_action_runs',
+  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily', 'ga4_event_daily',
@@ -623,6 +623,59 @@ CREATE TABLE IF NOT EXISTS task_links (
 );
 CREATE INDEX IF NOT EXISTS idx_task_links_item ON task_links(loop_item_id);
 CREATE INDEX IF NOT EXISTS idx_task_links_ref ON task_links(link_type, ref);
+
+-- 外链台账（2026-10-10）。经理的原话：花钱买的外链要能直接查到是哪一条、值不值；
+-- 不花钱的外链做了哪些、质量怎么样，也要看得到。所以付费与免费记在同一张表里，才能并排比。
+-- dr / traffic 是第三方工具（Ahrefs 等）读数，人工录入：没接这些工具的 API，不录就留空，绝不估。
+-- status + checked_date：外链会失效，「最近一次核查是哪天」本身就是质量信息。
+CREATE TABLE IF NOT EXISTS backlinks (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_url    TEXT NOT NULL,          -- 外链所在页面
+  source_domain TEXT,                   -- 由 source_url 推出，按域名汇总用
+  target_url    TEXT,                   -- 指向我们的哪个页面
+  anchor        TEXT,                   -- 锚文本
+  method        TEXT,                   -- 购买 / 客座投稿 / 交换 / 目录提交 / 自然获得 / 其他
+  rel           TEXT,                   -- dofollow / nofollow / sponsored / ugc
+  cost          REAL,                   -- 花了多少；NULL 或 0 = 没花钱
+  currency      TEXT,                   -- 有 cost 时必填
+  vendor        TEXT,                   -- 卖家 / 中介
+  dr            REAL,                   -- 来源域名评级（0~100）
+  traffic       REAL,                   -- 来源站月自然流量
+  quality_note  TEXT,                   -- 相关性 / 质量判断
+  status        TEXT,                   -- 待上线 / 有效 / 失效
+  acquired_date TEXT,                   -- 上线日（还没上线的付费外链填付款日）；花费按它归月
+  checked_date  TEXT,                   -- 最近一次人工核查
+  owner         TEXT,
+  task_id       INTEGER,                -- 这条外链是哪条任务做出来的
+  note          TEXT,
+  created_by    INTEGER REFERENCES users(id),
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at    TEXT                    -- 软删：台账是审计材料，不物理删
+);
+CREATE INDEX IF NOT EXISTS idx_backlinks_date ON backlinks(acquired_date);
+CREATE INDEX IF NOT EXISTS idx_backlinks_task ON backlinks(task_id);
+
+-- 其它支出台账：广告费从 Ads 同步、外链费在 backlinks，除此之外的钱（工具订阅、内容外包、建站技术…）记这里。
+-- 三处合起来才答得上「这个月的钱都花在哪」。外链费不许记到这里 —— 否则同一笔钱会被数两遍。
+CREATE TABLE IF NOT EXISTS expenses (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  spend_date  TEXT NOT NULL,            -- YYYY-MM-DD
+  category    TEXT NOT NULL,            -- 工具订阅 / 内容外包 / 建站技术 / 设计素材 / 其他
+  amount      REAL NOT NULL,
+  currency    TEXT NOT NULL,
+  vendor      TEXT,                     -- 付给谁
+  purpose     TEXT NOT NULL,            -- 买了什么、为什么买
+  dept        TEXT,
+  owner       TEXT,
+  task_id     INTEGER,                  -- 这笔钱花在哪条任务上
+  evidence    TEXT,                     -- 订单 / 发票链接
+  note        TEXT,
+  created_by  INTEGER REFERENCES users(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(spend_date);
+CREATE INDEX IF NOT EXISTS idx_expenses_task ON expenses(task_id);
 
 -- 跟踪反馈改成「多条带时间的记录」（2026-08-27）。
 -- 原来 inquiries.tracking_feedback 是单个 TEXT：一条询盘只能存一段话，覆盖式保存，
