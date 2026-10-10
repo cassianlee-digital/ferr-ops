@@ -2531,7 +2531,7 @@
     renderShell(el5, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
     const chartEl = el5.querySelector(".inq-echarts-map");
     if (!chartEl || !window.echarts) return;
-    inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "svg" });
+    inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "canvas" });
     bindResize();
     const lineData = groups.map((group) => ({
       name: `\u9752\u5C9B \u2192 ${group.country}`,

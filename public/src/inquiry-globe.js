@@ -266,7 +266,12 @@ export async function renderGlobe(){
   const chartEl = el.querySelector('.inq-echarts-map');
   if (!chartEl || !window.echarts) return;
 
-  inqGlobeChart = window.echarts.init(chartEl, null, { renderer:'svg' });
+  /* 用 canvas 渲染，不用 svg（2026-10-10 改）。ECharts 的 svg 渲染器是用 setAttribute('style', …) 给
+     <svg> 和每个 <text> 写样式的，而本站 CSP 是 style-src-attr 'none' —— 浏览器把这些样式整条丢掉：
+     标签上配的字号 / 字重（下面 label 里的 fontSize:14、fontWeight:800）根本没生效，
+     控制台每画一次地图还报两条 CSP 违规。canvas 渲染器只走 CSSOM，不受影响；
+     全站其它图表本来就都是 canvas。飞线拖尾（effect.trailLength）和光晕（shadowBlur）也只有 canvas 画得全。 */
+  inqGlobeChart = window.echarts.init(chartEl, null, { renderer:'canvas' });
   bindResize();
 
   const lineData = groups.map(group => ({
