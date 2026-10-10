@@ -167,15 +167,19 @@ function buildSpend(range) {
 
 /* ---------- KPI：月度考核口径，取「本月至今」 ----------
    月度目标拿一周的实际去比没有意义（一周的 A 级数量永远远低于月目标），所以这里固定看区间结束日所在月份的月初到结束日。 */
+// 考核状态码 → 给人看的话（页面和导出都用这一份）
+const KPI_STATUS_LABEL = { GRADED: '已出分', CONFIG_INCOMPLETE: '考核目标未设全', INSUFFICIENT_COVERAGE: '有效指标覆盖不足', NO_VALID_DATA: '没有可计分的数据' };
+const KPI_METRIC_LABEL = { VALID: '计分', NO_TARGET: '目标待定', MISSING_DATA: '缺数据', NOT_APPLICABLE: '不适用', NO_BASELINE: '本期无此类事项' };
+
 function buildKpi(range, who) {
   const mtd = { start_date: range.end_date.slice(0, 8) + '01', end_date: range.end_date };
   const scope = who === '李' ? 'seo' : (who === '陈' ? 'sem' : 'department');
   const r = buildReview(mtd, scope);
   return {
-    range: mtd, scope, scope_label: r.scope_label, status: r.status, gradable: r.gradable,
+    range: mtd, scope, scope_label: r.scope_label, status: r.status, status_label: KPI_STATUS_LABEL[r.status] || r.status, gradable: r.gradable,
     score: r.score, provisional_score: r.provisionalScore, coverage: r.coverage,
     band: r.band ? r.band.label : null,
-    metrics: r.metrics.map((m) => ({ key: m.key, label: m.label, weight: m.weight, actual: m.actual, target: m.target, unit: m.unit, status: m.status, score: m.score, note: m.note })),
+    metrics: r.metrics.map((m) => ({ key: m.key, label: m.label, weight: m.weight, actual: m.actual, target: m.target, unit: m.unit, status: m.status, status_label: KPI_METRIC_LABEL[m.status] || m.status, score: m.score, note: m.note })),
   };
 }
 

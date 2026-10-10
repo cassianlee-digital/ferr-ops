@@ -141,9 +141,9 @@ export function auditSheets(pkg) {
     ['task_id', '任务编号'], ['task_content', '任务'], ['evidence', '凭证'], ['note', '备注'],
   ], pkg.spend.expense_items);
 
-  add('kpi', 'KPI本月至今', [['label', '指标'], ['weight', '权重'], ['actual', '实际'], ['target', '目标'], ['unit', '单位'], ['status', '状态'], ['score', '得分'], ['note', '说明']], [
+  add('kpi', 'KPI本月至今', [['label', '指标'], ['weight', '权重'], ['actual', '实际'], ['target', '目标'], ['unit', '单位'], ['status_label', '状态'], ['score', '得分'], ['note', '说明']], [
     ...pkg.kpi.metrics,
-    { label: '合计（' + pkg.kpi.scope_label + '，' + pkg.kpi.range.start_date + ' ~ ' + pkg.kpi.range.end_date + '）', score: pkg.kpi.score ?? pkg.kpi.provisional_score, status: pkg.kpi.status, note: pkg.kpi.gradable ? '' : '参考分，未出正式分' },
+    { label: '合计（' + pkg.kpi.scope_label + '，' + pkg.kpi.range.start_date + ' ~ ' + pkg.kpi.range.end_date + '）', score: pkg.kpi.score ?? pkg.kpi.provisional_score, status_label: pkg.kpi.status_label, note: pkg.kpi.gradable ? '' : '参考分，未出正式分' },
   ]);
 
   add('reports', '周报', [['week_key', '周一'], ['dept', '部门'], ['summary', '本周工作总结'], ['problems', '遇到的问题'], ['analysis', '分析'], ['next_plan', '下周计划']],

@@ -234,7 +234,9 @@ test('导出：JSON 是整个包；XLSX 每张表一个工作表；CSV 一次一
   const row = taskSheet.find((r) => r[col('任务')] === '重写阀门落地页');
   assert.equal(row[col('状态')], '已完成');
   assert.equal(row[col('实际工时')], 3.5);
-  assert.equal(row[col('疑点')], '完成后的数据还没满，暂时看不出变化');
+  assert.equal(row[col('疑点')], '前后对比的数据还没满，先别下结论');
+  const kpiSheet = sheets.find((s) => s.sheet === 'KPI本月至今').data;
+  assert.ok(kpiSheet.slice(1).every((r) => !/^[A-Z_]+$/.test(String(r[kpiSheet[0].indexOf('状态')] || ''))), '状态要是给人看的话，不是内部状态码');
   const effects = sheets.find((s) => s.sheet === '数据变化').data;
   assert.equal(effects.length, 4, '表头 + 点击 / 曝光 / 排名三个指标各一行');
 

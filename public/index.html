@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="/page-ga4.css">
 <link rel="stylesheet" href="/page-archive.css">
 <link rel="stylesheet" href="/page-spend.css">
+<link rel="stylesheet" href="/page-audit.css">
 <link rel="stylesheet" href="/components.css">
 <link rel="stylesheet" href="/csp-utilities.css">
 </head>
@@ -45,6 +46,7 @@
     <div class="nav-section"><div class="nav-label">行动中心</div>
       <div class="nav-item" data-tab="planning"><i class="ti ti-calendar-stats"></i> 计划 / 总结<span class="dot dot-red is-hidden" id="nav-tasks-dot"></span></div>
       <div class="nav-item" data-tab="action"><i class="ti ti-git-branch"></i> 测试 / 整改</div>
+      <div class="nav-item" data-tab="audit"><i class="ti ti-clipboard-check"></i> 周度审核</div>
     </div>
     <div class="nav-section"><div class="nav-label">资产库</div>
       <div class="nav-item" data-tab="keywords"><i class="ti ti-key"></i> 关键词库</div>
@@ -633,6 +635,32 @@
       </div>
 
       <!-- ============ 任务看板 V3 ============ -->
+      <!-- ============ 周度审核（2026-10-10）：按日期和人员，一次看全任务 / 数据 / 询盘 / 测试 / 整改 / 花费 / KPI。
+           页面只读后端的审核包（/api/audit/weekly），导出和 AI 审核吃的是同一份数。渲染与事件在 src/audit.js ============ -->
+      <div class="panel" id="panel-audit">
+        <div class="page-head"><div><div class="page-title">周度审核</div><div class="page-sub">这段时间做了什么、证据在哪、数据变没变、钱花在哪 · 每个数都能回到任务和询盘上核对</div></div></div>
+        <div class="audit-bar">
+          <button class="btn-mini" type="button" data-audit-week="-1" title="上一周"><i class="ti ti-chevron-left"></i></button>
+          <input type="date" id="audit-start" class="cell-date"><span class="dim">~</span><input type="date" id="audit-end" class="cell-date">
+          <button class="btn-mini" type="button" data-audit-week="1" title="下一周"><i class="ti ti-chevron-right"></i></button>
+          <button class="btn-mini" type="button" data-audit-week="0"><i class="ti ti-calendar-due"></i> 本周</button>
+          <select id="audit-person"><option value="all">全部人员</option><option value="李">李 · SEO</option><option value="陈">陈 · SEM</option></select>
+          <span class="audit-bar-gap"></span>
+          <button class="btn-primary" type="button" data-ui-action="audit-ai"><i class="ti ti-sparkles"></i> <span id="audit-ai-label">AI 审核</span></button>
+          <button class="btn-ghost" type="button" data-ui-action="audit-export" data-format="xlsx"><i class="ti ti-file-spreadsheet"></i> 导出 XLSX</button>
+          <button class="btn-ghost" type="button" data-ui-action="audit-export" data-format="json"><i class="ti ti-braces"></i> 导出 JSON</button>
+          <select id="audit-csv-section">
+            <option value="">CSV 导哪张表…</option>
+            <option value="tasks">任务</option><option value="effects">数据变化</option><option value="inquiries">询盘</option><option value="leads">表单线索</option>
+            <option value="fixes">整改</option><option value="tests">测试</option><option value="sop">SOP</option><option value="spend">花费汇总</option>
+            <option value="backlinks">外链</option><option value="expenses">其它支出</option><option value="geo">GEO</option><option value="kpi">KPI</option><option value="summary">概要</option>
+          </select>
+          <button class="btn-ghost" type="button" data-ui-action="audit-export" data-format="csv"><i class="ti ti-file-type-csv"></i> 导出 CSV</button>
+        </div>
+        <div id="audit-ai"></div>
+        <div id="audit-body"></div>
+      </div>
+
       <!-- ============ 投入台账（2026-10-10）：钱花在哪 —— 广告 / 外链 / 其它支出。渲染与事件全在 src/spend.js ============ -->
       <div class="panel" id="panel-spend">
         <div class="page-head"><div><div class="page-title">投入台账</div><div class="page-sub">钱花在哪：广告费取自 Ads 同步，外链和其它支出逐笔登记 · 每一笔都要查得到是哪一条、花在哪条任务上</div></div></div>

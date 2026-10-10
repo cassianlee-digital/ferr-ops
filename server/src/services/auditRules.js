@@ -33,7 +33,7 @@ export const FLAGS = {
   OVERRUN: { label: '实际用时明显超出预估', tone: 'warn' },
   UNDERRUN: { label: '实际用时不到预估的一半', tone: 'warn' },
   LATE: { label: '晚于截止日完成', tone: 'warn' },
-  EFFECT_PENDING: { label: '完成后的数据还没满，暂时看不出变化', tone: 'muted' },
+  EFFECT_PENDING: { label: '前后对比的数据还没满，先别下结论', tone: 'muted' },
   EFFECT_NO_DATA: { label: '关联对象前后都没有数据', tone: 'warn' },
   OVERDUE: { label: '已过截止日仍未完成', tone: 'bad' },
   STALLED: { label: '跨天任务在区间内没有任何推进记录', tone: 'bad' },
