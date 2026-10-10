@@ -66,6 +66,11 @@ export const METRICS = {
     { key: 'conversions', label: '转化', better: 'higher' },
     { key: 'cpa', label: '每转化成本', better: 'lower' },
   ],
+  // GA4：以这个页面为落地页进站的会话，以及这些会话里发生的关键事件（表单提交 / 邮件点击等，以 GA4 里标记的为准）
+  ga4: [
+    { key: 'sessions', label: '进站会话', better: 'higher' },
+    { key: 'keyEvents', label: '关键事件', better: 'higher' },
+  ],
 };
 
 // 库里的聚合行 → 对外的指标对象（Ads 的 micros 换成账户币种的金额；零转化时 CPA 为空而不是无穷大）
@@ -74,6 +79,7 @@ export function shapeMetrics(source, row) {
   if (source === 'gsc') {
     return { clicks: row.clicks || 0, impressions: row.impressions || 0, position: round(row.position, 1) };
   }
+  if (source === 'ga4') return { sessions: row.sessions || 0, keyEvents: round(row.keyEvents || 0) };
   const cost = (row.costMicros || 0) / 1e6;
   const conversions = row.conversions || 0;
   return { cost: round(cost), clicks: row.clicks || 0, conversions: round(conversions), cpa: conversions > 0 ? round(cost / conversions) : null };

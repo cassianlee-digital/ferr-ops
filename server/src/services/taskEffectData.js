@@ -9,6 +9,11 @@ function projectScope() {
   try { return resolveProject({}); } catch (e) { return {}; }
 }
 
+// 完整网址 → 路径（GA4 的落地页维度只有路径，没有域名）
+function pathOf(url) {
+  try { return new URL(url).pathname || '/'; } catch (e) { return null; }
+}
+
 function measure(source, window, fetch) {
   if (!window.before) return { source, status: window.status };
   const before = fetch(window.before);
@@ -30,6 +35,7 @@ function buildEffect({ subject, originDate, links, days, note, missing }) {
   const windows = {
     gsc: { ...effectWindow(doneDate, days, latest.gsc), latest_date: latest.gsc },
     ads: { ...effectWindow(doneDate, days, latest.ads), latest_date: latest.ads },
+    ga4: { ...effectWindow(doneDate, days, latest.ga4), latest_date: latest.ga4 },
   };
 
   const items = [];
@@ -37,6 +43,14 @@ function buildEffect({ subject, originDate, links, days, note, missing }) {
     const head = { type: l.type, ref: l.ref, label: l.label || null };
     if (l.type === 'page') {
       items.push({ ...head, ...measure('gsc', windows.gsc, (r) => repo.gscPage(l.ref, r, scope)) });
+      /* 同一个页面在 GA4 里的表现：有多少会话从它进站、其中发生了多少关键事件。
+         搜索点击涨了不等于带来了询盘，这一行才接近「这次改页面有没有带来转化」。
+         只在 GA4 真有这个页面的数据时才列（没同步 / 没人从这页进站时多列一行空的只是噪音）。 */
+      const pagePath = pathOf(l.ref);
+      if (pagePath) {
+        const ga4 = measure('ga4', windows.ga4, (r) => repo.ga4LandingPage(pagePath, r, scope));
+        if (ga4.status === 'OK' || ga4.status === 'PARTIAL') items.push({ ...head, ...ga4 });
+      }
     } else if (l.type === 'keyword') {
       items.push({ ...head, ...measure('gsc', windows.gsc, (r) => repo.gscQuery(l.ref, r, scope)) });
       // 同一个词可能也在投广告：只有 Ads 里真有它的数据才多列一行，否则每个 SEO 词都会带一行空的「广告」
@@ -53,6 +67,7 @@ function buildEffect({ subject, originDate, links, days, note, missing }) {
   const baseline = {};
   if (items.some((i) => i.source === 'gsc')) baseline.gsc = measure('gsc', windows.gsc, (r) => repo.gscSite(r, scope));
   if (items.some((i) => i.source === 'ads')) baseline.ads = measure('ads', windows.ads, (r) => repo.adsAccount(r, scope));
+  if (items.some((i) => i.source === 'ga4')) baseline.ga4 = measure('ga4', windows.ga4, (r) => repo.ga4Site(r, scope));
 
   return { ...base, status: 'OK', done_date: doneDate, windows, items, baseline };
 }

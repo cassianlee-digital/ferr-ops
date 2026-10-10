@@ -334,6 +334,7 @@ export async function submitTaskDone(btn) {
    口径全在后端（services/taskEffect.js）：窗口等长、完成当天不算、给全站参照。这里只负责照着画，
    并把「数据未满 / 待数据 / 未同步 / 无数据」这些状态原样说出来 —— 状态比数字重要，
    一个没满的窗口画成正常的涨跌，就是在误导人。 */
+const SOURCE_SUFFIX = { gsc: ' · 自然搜索', ads: ' · 广告', ga4: ' · 作为落地页（GA4）' };
 const EFFECT_STATUS_TEXT = {
   NO_DATA: '前后两段时间都没有数据（没有曝光或没有投放）',
   DECLARED: '部门级指标，不做单条任务的前后对比',
@@ -412,6 +413,7 @@ function renderEffect(data) {
   const wins = el('div', 'teffect-windows');
   if (used.has('gsc')) wins.appendChild(el('div', '', windowText('自然搜索（GSC）', data.windows.gsc)));
   if (used.has('ads')) wins.appendChild(el('div', '', windowText('广告（Ads）', data.windows.ads)));
+  if (used.has('ga4')) wins.appendChild(el('div', '', windowText('站内行为（GA4）', data.windows.ga4)));
   box.appendChild(wins);
 
   const table = el('table', 'dt teffect-table');
@@ -421,12 +423,13 @@ function renderEffect(data) {
   const tbody = el('tbody');
   for (const item of data.items) {
     const kind = LINK_LABEL[item.type] || item.type;
-    const where = item.source === 'ads' ? ' · 广告' : (item.source === 'gsc' ? ' · 自然搜索' : '');
+    const where = SOURCE_SUFFIX[item.source] || '';
     effectRows(tbody, kind + where, item.type === 'page' ? linkText(item) : (item.label || item.ref), item, data.metrics);
   }
   // 参照行：全站都涨的时候，单个页面跟着涨不算这条任务的功劳
   if (data.baseline.gsc) effectRows(tbody, '参照 · 全站自然搜索同期', '', data.baseline.gsc, data.metrics, 'is-baseline');
   if (data.baseline.ads) effectRows(tbody, '参照 · 全账户广告同期', '金额为 Ads 账户币种', data.baseline.ads, data.metrics, 'is-baseline');
+  if (data.baseline.ga4) effectRows(tbody, '参照 · 全站 GA4 同期', '', data.baseline.ga4, data.metrics, 'is-baseline');
   table.appendChild(tbody); box.appendChild(table);
 }
 

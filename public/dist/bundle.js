@@ -5418,6 +5418,7 @@
       if (btn) btn.disabled = false;
     }
   }
+  var SOURCE_SUFFIX = { gsc: " \xB7 \u81EA\u7136\u641C\u7D22", ads: " \xB7 \u5E7F\u544A", ga4: " \xB7 \u4F5C\u4E3A\u843D\u5730\u9875\uFF08GA4\uFF09" };
   var EFFECT_STATUS_TEXT = {
     NO_DATA: "\u524D\u540E\u4E24\u6BB5\u65F6\u95F4\u90FD\u6CA1\u6709\u6570\u636E\uFF08\u6CA1\u6709\u66DD\u5149\u6216\u6CA1\u6709\u6295\u653E\uFF09",
     DECLARED: "\u90E8\u95E8\u7EA7\u6307\u6807\uFF0C\u4E0D\u505A\u5355\u6761\u4EFB\u52A1\u7684\u524D\u540E\u5BF9\u6BD4"
@@ -5504,6 +5505,7 @@
     const wins = el("div", "teffect-windows");
     if (used.has("gsc")) wins.appendChild(el("div", "", windowText("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", data2.windows.gsc)));
     if (used.has("ads")) wins.appendChild(el("div", "", windowText("\u5E7F\u544A\uFF08Ads\uFF09", data2.windows.ads)));
+    if (used.has("ga4")) wins.appendChild(el("div", "", windowText("\u7AD9\u5185\u884C\u4E3A\uFF08GA4\uFF09", data2.windows.ga4)));
     box.appendChild(wins);
     const table2 = el("table", "dt teffect-table");
     const thead = el("thead");
@@ -5514,11 +5516,12 @@
     const tbody = el("tbody");
     for (const item of data2.items) {
       const kind = LINK_LABEL[item.type] || item.type;
-      const where = item.source === "ads" ? " \xB7 \u5E7F\u544A" : item.source === "gsc" ? " \xB7 \u81EA\u7136\u641C\u7D22" : "";
+      const where = SOURCE_SUFFIX[item.source] || "";
       effectRows(tbody, kind + where, item.type === "page" ? linkText(item) : item.label || item.ref, item, data2.metrics);
     }
     if (data2.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F", "", data2.baseline.gsc, data2.metrics, "is-baseline");
     if (data2.baseline.ads) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u8D26\u6237\u5E7F\u544A\u540C\u671F", "\u91D1\u989D\u4E3A Ads \u8D26\u6237\u5E01\u79CD", data2.baseline.ads, data2.metrics, "is-baseline");
+    if (data2.baseline.ga4) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9 GA4 \u540C\u671F", "", data2.baseline.ga4, data2.metrics, "is-baseline");
     table2.appendChild(tbody);
     box.appendChild(table2);
   }
@@ -10171,7 +10174,7 @@
       return box;
     }
     for (const e of t.effect) {
-      const head = el2("div", "audit-effect-head", (LINK_LABEL2[e.type] || e.type) + " " + (e.type === "page" ? shortUrl2(e.ref) : e.label || e.ref) + (e.source === "ads" ? " \xB7 \u5E7F\u544A" : ""));
+      const head = el2("div", "audit-effect-head", (LINK_LABEL2[e.type] || e.type) + " " + (e.type === "page" ? shortUrl2(e.ref) : e.label || e.ref) + (e.source === "ads" ? " \xB7 \u5E7F\u544A" : e.source === "ga4" ? " \xB7 \u843D\u5730\u9875\uFF08GA4\uFF09" : ""));
       if (e.status !== "OK") head.appendChild(el2("span", "badge b-gray", (EFFECT_STATUS[e.status] || e.status) + (e.days ? " " + e.days + " \u5929" : "")));
       box.appendChild(head);
       e.metrics.filter((m) => m.delta).forEach((m) => {

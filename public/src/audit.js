@@ -153,7 +153,7 @@ function effectCell(t) {
   if (t.audit_state !== 'completed') return box;
   if (!t.effect.length) { box.appendChild(el('span', 'dim', '没有可量化的关联对象')); return box; }
   for (const e of t.effect) {
-    const head = el('div', 'audit-effect-head', (LINK_LABEL[e.type] || e.type) + ' ' + (e.type === 'page' ? shortUrl(e.ref) : (e.label || e.ref)) + (e.source === 'ads' ? ' · 广告' : ''));
+    const head = el('div', 'audit-effect-head', (LINK_LABEL[e.type] || e.type) + ' ' + (e.type === 'page' ? shortUrl(e.ref) : (e.label || e.ref)) + (e.source === 'ads' ? ' · 广告' : e.source === 'ga4' ? ' · 落地页（GA4）' : ''));
     if (e.status !== 'OK') head.appendChild(el('span', 'badge b-gray', (EFFECT_STATUS[e.status] || e.status) + (e.days ? ' ' + e.days + ' 天' : '')));
     box.appendChild(head);
     e.metrics.filter((m) => m.delta).forEach((m) => {

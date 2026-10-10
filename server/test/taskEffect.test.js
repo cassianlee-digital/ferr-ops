@@ -195,3 +195,48 @@ test('没有原点时由后端给出原因（前端不再自己写一份文案�
   assert.deepEqual(row.links, [{ type: 'keyword', ref: 'gate valve', label: null }]);
   assert.equal(typeof row.is_important, 'boolean');
 });
+
+test('GA4 落地页：同一页面的各种写法归并到一起，路径相近的别的页面不混进来', async () => {
+  const ins = db.prepare("INSERT INTO ga4_dimension_daily (date, property_id, dimension_type, dimension_value, sessions, key_events) VALUES (?, 'p1', ?, ?, ?, ?)");
+  const day = db.prepare("INSERT INTO ga4_daily (date, property_id, sessions, key_events) VALUES (?, 'p1', ?, ?)");
+  for (let d = 8; d <= 22; d++) {
+    const date = ymd(d); const after = d > 15;
+    day.run(date, 200, 4);
+    ins.run(date, 'landing_page', '/ga-page', after ? 6 : 2, after ? 1 : 0);                 // 不带尾斜杠
+    ins.run(date, 'landing_page', '/ga-page/', 1, 0);                                         // 带尾斜杠
+    ins.run(date, 'landing_page', '/ga-page/?gclid=abc' + d, after ? 3 : 1, 0);               // 广告参数把它拆成了另一行
+    ins.run(date, 'landing_page', '/ga-page-old', 50, 9);                                     // 只是前缀相同的另一个页面
+    ins.run(date, 'landing_page', '/gaXpage', 70, 9);                                         // 路径里没有通配符时不该被 LIKE 误伤
+    ins.run(date, 'source_medium', '/ga-page', 999, 99);                                      // 别的维度里长得一样的值
+  }
+  const task = (await call('POST', '/api/loop-items', { kind: 'task', dept: 'SEO', content: '改 GA 页', links: [{ type: 'page', ref: 'https://ferr.com/ga-page/' }] })).json().item;
+  db.prepare("UPDATE loop_items SET state='done', status='done', result='已上线', done_at='2026-09-15 03:00:00' WHERE id=?").run(task.id);
+
+  const body = (await call('GET', `/api/loop-items/${task.id}/effect?days=7`)).json();
+  const ga4 = body.items.find((i) => i.source === 'ga4');
+  assert.ok(ga4, '这个页面在 GA4 里有数据，应当多列一行');
+  assert.equal(ga4.type, 'page');
+  assert.deepEqual(ga4.before, { sessions: 28, keyEvents: 0 }, '7 天 ×（2 + 1 + 1）；前缀相同的 /ga-page-old 没被算进来');
+  assert.deepEqual(ga4.after, { sessions: 70, keyEvents: 7 }, '7 天 ×（6 + 1 + 3）');
+  assert.deepEqual(body.baseline.ga4.before, { sessions: 1400, keyEvents: 28 });
+  assert.equal(body.windows.ga4.status, 'OK');
+  assert.ok(body.metrics.ga4.some((m) => m.key === 'keyEvents'));
+});
+
+test('GA4 落地页：路径里的下划线按字面匹配（它在 LIKE 里是通配符）；GA4 里没有这个页面就不多列一行', async () => {
+  const ins = db.prepare("INSERT INTO ga4_dimension_daily (date, property_id, dimension_type, dimension_value, sessions, key_events) VALUES (?, 'p1', 'landing_page', ?, ?, 0)");
+  for (let d = 8; d <= 22; d++) {
+    ins.run(ymd(d), '/a_b?x=1', 2);   // 目标页（带查询串）
+    ins.run(ymd(d), '/aXb?x=1', 40);  // 下划线若被当通配符，这一行会被误算进来
+  }
+  const mk = async (ref) => {
+    const t = (await call('POST', '/api/loop-items', { kind: 'task', dept: 'SEO', content: 'x', links: [{ type: 'page', ref }] })).json().item;
+    db.prepare("UPDATE loop_items SET state='done', status='done', result='已上线', done_at='2026-09-15 03:00:00' WHERE id=?").run(t.id);
+    return (await call('GET', `/api/loop-items/${t.id}/effect?days=7`)).json();
+  };
+  const under = (await mk('https://ferr.com/a_b')).items.find((i) => i.source === 'ga4');
+  assert.deepEqual(under.before, { sessions: 14, keyEvents: 0 }, '只有 /a_b 自己的 7 × 2，没有 /aXb 的 40');
+  const none = await mk('https://ferr.com/no-ga4-data-for-this-page');
+  assert.equal(none.items.filter((i) => i.source === 'ga4').length, 0);
+  assert.equal(none.baseline.ga4, undefined, '没有 GA4 行就不需要 GA4 的参照');
+});

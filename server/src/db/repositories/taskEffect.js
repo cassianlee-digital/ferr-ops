@@ -18,7 +18,38 @@ export function latestDates(scope) {
     .get({ siteUrl: scope?.gsc_site_url || null }).d;
   const ads = db.prepare('SELECT MAX(date) d FROM google_ads_campaign_daily WHERE (@customerId IS NULL OR customer_id = @customerId)')
     .get({ customerId: scope?.ads_customer_id || null }).d;
-  return { gsc: gsc || null, ads: ads || null };
+  const ga4 = db.prepare('SELECT MAX(date) d FROM ga4_daily WHERE (@propertyId IS NULL OR property_id = @propertyId)')
+    .get({ propertyId: scope?.ga4_property_id || null }).d;
+  return { gsc: gsc || null, ads: ads || null, ga4: ga4 || null };
+}
+
+/* ---------- GA4：以某个页面为落地页的会话与关键事件 ----------
+   GA4 的落地页维度是「路径 + 查询串」（landingPagePlusQueryString），同一个页面会被广告参数拆成很多行
+   （/valves、/valves/、/valves?gclid=…）。这里按路径归并：带不带尾斜杠、后面跟不跟查询串都算同一个页面。
+   LIKE 里的 % 和 _ 要转义 —— 路径里有下划线是常事，不转义会把别的页面也算进来。 */
+const GA4_AGG = `COUNT(*) n, COUNT(DISTINCT date) days, COALESCE(SUM(sessions),0) sessions, COALESCE(SUM(key_events),0) keyEvents`;
+const likeEscape = (s) => s.replace(/[\\%_]/g, (c) => '\\' + c);
+
+export function ga4LandingPage(pagePath, range, scope) {
+  const base = pagePath.length > 1 && pagePath.endsWith('/') ? pagePath.slice(0, -1) : pagePath; // '/valves/' → '/valves'；首页保持 '/'
+  const slash = base === '/' ? '/' : base + '/';
+  return db.prepare(
+    `SELECT ${GA4_AGG} FROM ga4_dimension_daily
+      WHERE date BETWEEN @start AND @end AND dimension_type = 'landing_page'
+        AND (@propertyId IS NULL OR property_id = @propertyId)
+        AND (dimension_value IN (@base, @slash)
+             OR dimension_value LIKE @baseQ ESCAPE '\\' OR dimension_value LIKE @slashQ ESCAPE '\\')`
+  ).get({
+    start: range.start_date, end: range.end_date, propertyId: scope?.ga4_property_id || null,
+    base, slash, baseQ: likeEscape(base) + '?%', slashQ: likeEscape(slash) + '?%',
+  });
+}
+
+// 全站同期（GA4 每日汇总）
+export function ga4Site(range, scope) {
+  return db.prepare(
+    `SELECT ${GA4_AGG} FROM ga4_daily WHERE date BETWEEN @start AND @end AND (@propertyId IS NULL OR property_id = @propertyId)`
+  ).get({ start: range.start_date, end: range.end_date, propertyId: scope?.ga4_property_id || null });
 }
 
 // 页面：GSC 里同一个页面有时带尾斜杠有时不带，两种写法都认

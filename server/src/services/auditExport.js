@@ -69,7 +69,7 @@ export function auditSheets(pkg) {
   const effectRows = [];
   for (const t of pkg.tasks) {
     for (const e of t.effect || []) {
-      const head = { task_id: t.id, task: t.content, person: t.person, type: LINK_LABEL[e.type] || e.type, ref: e.label || e.ref, source: e.source === 'ads' ? '广告' : '自然搜索', status: EFFECT_STATUS[e.status] || e.status, days: e.days };
+      const head = { task_id: t.id, task: t.content, person: t.person, type: LINK_LABEL[e.type] || e.type, ref: e.label || e.ref, source: { ads: '广告', ga4: '落地页（GA4）' }[e.source] || '自然搜索', status: EFFECT_STATUS[e.status] || e.status, days: e.days };
       if (!e.metrics.length) effectRows.push(head);
       for (const m of e.metrics) effectRows.push({ ...head, metric: m.label, before: m.before, after: m.after, change: m.delta ? m.delta.abs : null, change_pct: pct(m.delta) });
     }
