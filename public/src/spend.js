@@ -172,7 +172,11 @@ function renderBacklinks() {
     st.appendChild(h('div', 'dim', b.checked_date ? '核查 ' + b.checked_date.slice(5) : '未核查'));
     // 自动核查：服务器去那个页面上找一次链接。结果单独显示，不改上面人工填的状态
     if (b.auto_status) {
-      const auto = h('div', 'spend-auto is-' + b.auto_status, AUTO_LABEL[b.auto_status] || b.auto_status);
+      // 链接在、但页面上的属性和台账登记的不一样（比如买的是 dofollow，实际挂的是 nofollow）：
+      // 这是自动核查最值钱的发现，不能只藏在悬停提示里，直接写在行上并换成警示色
+      const relDiffers = b.auto_status === 'found' && b.rel && b.auto_rel && b.rel !== b.auto_rel;
+      const auto = h('div', 'spend-auto is-' + (relDiffers ? 'mismatch' : b.auto_status),
+        relDiffers ? '自动核查：链接在，但页面上是 ' + b.auto_rel : (AUTO_LABEL[b.auto_status] || b.auto_status));
       auto.title = (b.auto_detail || '') + (b.auto_anchor ? '\n页面上的锚文本：' + b.auto_anchor : '');
       st.appendChild(auto);
     }

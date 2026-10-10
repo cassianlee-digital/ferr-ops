@@ -177,6 +177,20 @@ export function relKind(rel) {
   return 'dofollow';
 }
 
+// 网络层的错误码 → 给人看的话。系统原始报错（getaddrinfo ENOTFOUND …）对运营没有意义。
+const FAILURE_TEXT = {
+  ENOTFOUND: '域名解析不到（域名可能已失效）', EAI_AGAIN: '域名解析超时，稍后再试', ECONNREFUSED: '对方服务器拒绝连接',
+  ECONNRESET: '连接被对方中断', ETIMEDOUT: '请求超时', EHOSTUNREACH: '对方服务器不可达', ENETUNREACH: '网络不可达',
+  CERT_HAS_EXPIRED: '对方站点的证书已过期', DEPTH_ZERO_SELF_SIGNED_CERT: '对方站点用的是自签证书',
+  UNABLE_TO_VERIFY_LEAF_SIGNATURE: '对方站点的证书无法验证', ERR_TLS_CERT_ALTNAME_INVALID: '对方站点的证书与域名不符',
+};
+const fetchFailure = (e) => FAILURE_TEXT[e && e.code] || (e && e.message) || '请求失败';
+// 状态码的含义：403 / 429 多半是对方拦了非浏览器请求，不代表外链没了；404 / 410 则是页面本身没了
+const STATUS_HINT = {
+  403: '（多半是对方拦了自动访问，不代表外链没了）', 429: '（对方限制了访问频率，不代表外链没了）',
+  404: '（页面不存在了，外链很可能已经失效，请人工确认）', 410: '（页面已被对方删除，外链很可能已经失效，请人工确认）',
+};
+
 /* 核查一条外链。fetcher 可注入（测试不走真实网络）。返回要写回台账的字段，不抛错 ——
    拿不到页面本身就是一种核查结果。 */
 export async function checkBacklink(row, fetcher = fetchPage) {
@@ -185,11 +199,11 @@ export async function checkBacklink(row, fetcher = fetchPage) {
   try {
     page = await fetcher(row.source_url);
   } catch (e) {
-    return { auto_status: 'unreachable', auto_detail: '页面没取到：' + (e.message || e.code || '请求失败'), auto_rel: null, auto_anchor: null };
+    return { auto_status: 'unreachable', auto_detail: '页面没取到：' + fetchFailure(e), auto_rel: null, auto_anchor: null };
   }
   if (page.status < 200 || page.status >= 300) {
     // 403 / 429 多半是对方拦了非浏览器请求，不代表页面或外链没了
-    return { auto_status: 'unreachable', auto_detail: '页面返回 HTTP ' + page.status + (page.status === 403 || page.status === 429 ? '（多半是对方拦了自动访问，不代表外链没了）' : ''), auto_rel: null, auto_anchor: null };
+    return { auto_status: 'unreachable', auto_detail: '页面返回 HTTP ' + page.status + (STATUS_HINT[page.status] || ''), auto_rel: null, auto_anchor: null };
   }
   const hit = findBacklink(page.body || '', page.finalUrl || row.source_url, row.target_url);
   if (!hit.found) {

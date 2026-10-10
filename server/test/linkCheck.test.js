@@ -139,6 +139,11 @@ test('核查结论：找到 / 没找到 / 没取到三种，后两种都明说�
   assert.equal(blocked.auto_status, 'unreachable');
   assert.match(blocked.auto_detail, /HTTP 403.*不代表外链没了/);
 
+  const gone = await checkBacklink(row, page('', 404));
+  assert.match(gone.auto_detail, /HTTP 404.*很可能已经失效/, '页面都没了，这和被拦截是两回事，要提示人去确认');
+  const dns = await checkBacklink(row, async () => { throw Object.assign(new Error('getaddrinfo ENOTFOUND x.invalid'), { code: 'ENOTFOUND' }); });
+  assert.equal(dns.auto_detail, '页面没取到：域名解析不到（域名可能已失效）', '系统原始报错要翻成人话');
+
   const down = await checkBacklink(row, async () => { throw new Error('请求超时'); });
   assert.deepEqual(down, { auto_status: 'unreachable', auto_detail: '页面没取到：请求超时', auto_rel: null, auto_anchor: null });
 

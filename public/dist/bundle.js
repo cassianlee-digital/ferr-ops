@@ -11095,7 +11095,12 @@
       if (b.status) st2.appendChild(h("span", "badge " + (STATUS_BADGE[b.status] || "b-gray"), b.status));
       st2.appendChild(h("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
       if (b.auto_status) {
-        const auto = h("div", "spend-auto is-" + b.auto_status, AUTO_LABEL[b.auto_status] || b.auto_status);
+        const relDiffers = b.auto_status === "found" && b.rel && b.auto_rel && b.rel !== b.auto_rel;
+        const auto = h(
+          "div",
+          "spend-auto is-" + (relDiffers ? "mismatch" : b.auto_status),
+          relDiffers ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728\uFF0C\u4F46\u9875\u9762\u4E0A\u662F " + b.auto_rel : AUTO_LABEL[b.auto_status] || b.auto_status
+        );
         auto.title = (b.auto_detail || "") + (b.auto_anchor ? "\n\u9875\u9762\u4E0A\u7684\u951A\u6587\u672C\uFF1A" + b.auto_anchor : "");
         st2.appendChild(auto);
       }
