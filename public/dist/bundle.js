@@ -32,8 +32,8 @@
   function esc2(s) {
     return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function renderText(el2, s) {
-    if (el2) el2.textContent = s == null ? "" : String(s);
+  function renderText(el3, s) {
+    if (el3) el3.textContent = s == null ? "" : String(s);
   }
   function mdToHtml(t) {
     const src = esc2(t).split(/\n/);
@@ -332,8 +332,8 @@
     document.querySelectorAll("[data-time][data-scope]").forEach((bar) => {
       const s = st(bar.dataset.scope);
       bar.querySelectorAll(".trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === s.label));
-      bar.querySelectorAll("[data-tauto]").forEach((el2) => {
-        el2.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      bar.querySelectorAll("[data-tauto]").forEach((el3) => {
+        el3.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
       });
     });
     const top = document.getElementById("topRange");
@@ -1083,19 +1083,19 @@
     return [...m.keys()].sort().map((k) => ({ label: gran === "month" ? k : k.slice(5), clicks: m.get(k).clicks, impr: m.get(k).impr }));
   }
   function _seoDelta(id, cur, prev, lowerBetter, fmt2) {
-    const el2 = document.getElementById(id);
-    if (!el2) return;
+    const el3 = document.getElementById(id);
+    if (!el3) return;
     if (prev == null || !isFinite(prev) || prev === 0 || cur == null) {
-      el2.textContent = "";
-      el2.className = "metric-delta";
+      el3.textContent = "";
+      el3.className = "metric-delta";
       return;
     }
     const diff = cur - prev;
     const better = lowerBetter ? diff < 0 : diff > 0;
     const arrow = diff > 0 ? "\u25B2" : diff < 0 ? "\u25BC" : "\u2014";
     const txt = fmt2 === "pct" ? Math.abs(diff / prev * 100).toFixed(1) + "%" : Math.abs(diff).toFixed(1);
-    el2.textContent = arrow + " " + txt;
-    el2.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
+    el3.textContent = arrow + " " + txt;
+    el3.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
   }
   function _seoPath(u) {
     try {
@@ -1293,12 +1293,12 @@
     }).join("") + "</div>";
   }
   function renderSeoScatter(d) {
-    const el2 = document.getElementById("seoScatter"), empty = document.getElementById("seoScatterEmpty");
-    if (!el2) return;
+    const el3 = document.getElementById("seoScatter"), empty = document.getElementById("seoScatterEmpty");
+    if (!el3) return;
     const _tb = document.getElementById("seoScatterTargets");
     if (_tb) _tb.innerHTML = "";
     if (d && d.error) {
-      el2.style.display = "none";
+      el3.style.display = "none";
       if (empty) {
         empty.classList.remove("is-hidden");
         empty.textContent = loadFailureText("SEO \u6563\u70B9", d.error);
@@ -1307,7 +1307,7 @@
     }
     const ps = d && d.pageScatter || [];
     if (ps.length && typeof echarts !== "undefined") {
-      el2.style.display = "";
+      el3.style.display = "";
       if (empty) empty.classList.add("is-hidden");
       _seoScatterTitles("\u627E\u51FA\u9700\u8981\u4F18\u5316\u7684\u9875\u9762 \xB7 \u4F1A\u8BDD \xD7 \u8DF3\u51FA\u7387", "\u53F3\u4E0A\u7EA2\u533A=\u9AD8\u6D41\u91CF+\u9AD8\u8DF3\u51FA=\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61\uFF1B\u4E2D\u4F4D\u7EBF\u5206\u56DB\u8C61\u9650\uFF1B\u70B9=\u843D\u5730\u9875");
       if (window._seoScatterChart) {
@@ -1316,7 +1316,7 @@
         } catch (e) {
         }
       }
-      window._seoScatterChart = echarts.init(el2);
+      window._seoScatterChart = echarts.init(el3);
       const medS = _median(ps.map((p) => p.sessions)), medB = _median(ps.map((p) => (p.bounceRate || 0) * 100));
       const maxS = Math.max(...ps.map((p) => p.sessions), 1) * 1.6;
       const isTarget = (p) => p.sessions >= medS && (p.bounceRate || 0) * 100 >= medB;
@@ -1350,11 +1350,11 @@
     }
     const pts = d && d.scatter || [];
     if (typeof echarts === "undefined" || !pts.length) {
-      el2.style.display = "none";
+      el3.style.display = "none";
       if (empty) empty.classList.remove("is-hidden");
       return;
     }
-    el2.style.display = "";
+    el3.style.display = "";
     if (empty) empty.classList.add("is-hidden");
     _seoScatterTitles("\u673A\u4F1A\u8BCD\u8C61\u9650 \xB7 \u5C55\u73B0 \xD7 \u6392\u540D", "\uFF08GA4 \u8DF3\u51FA\u7387\u5F85\u91CD\u65B0\u540C\u6B65\u540E\u5207\u6362\u4E3A\u201C\u4F1A\u8BDD\xD7\u8DF3\u51FA\u7387\u201D\uFF09\u53F3\u4E0A=\u9AD8\u5C55\u73B0\u5DEE\u6392\u540D=\u91CD\u70B9\u653B\uFF1B\u70B9=\u5173\u952E\u8BCD");
     if (window._seoScatterChart) {
@@ -1363,7 +1363,7 @@
       } catch (e) {
       }
     }
-    window._seoScatterChart = echarts.init(el2);
+    window._seoScatterChart = echarts.init(el3);
     const data = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
     const medImpr = _median(pts.map((p) => p.impressions)), medPos = _median(pts.map((p) => p.position));
     window._seoScatterChart.setOption({
@@ -1450,8 +1450,8 @@
     return p;
   }
   function _semScopeNote() {
-    const el2 = document.getElementById("semAttrScope");
-    if (el2) el2.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
+    const el3 = document.getElementById("semAttrScope");
+    if (el3) el3.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
   }
   function onSemCampaignChange(v) {
     window._semCampaign = v || "";
@@ -1663,12 +1663,12 @@
     }).join("") + "</div>";
   }
   function renderSemScatter(d) {
-    const el2 = document.getElementById("semScatter"), empty = document.getElementById("semScatterEmpty");
-    if (!el2) return;
+    const el3 = document.getElementById("semScatter"), empty = document.getElementById("semScatterEmpty");
+    if (!el3) return;
     const _tb = document.getElementById("semScatterTargets");
     if (_tb) _tb.innerHTML = "";
     if (d && d.error) {
-      el2.style.display = "none";
+      el3.style.display = "none";
       if (empty) {
         empty.classList.remove("is-hidden");
         empty.textContent = loadFailureText("SEM \u6563\u70B9", d.error);
@@ -1679,7 +1679,7 @@
     const conv = all.filter((p) => Number(p.conversions || 0) > 0).map((p) => ({ ...p, cost: p.costMicros / 1e6, cpa: p.costMicros / 1e6 / Number(p.conversions) }));
     _semScatterTitles("\u82B1\u8D39 \xD7 \u6BCF\u8F6C\u5316\u6210\u672C \xB7 \u627E\u53C8\u8D35\u53C8\u4E0D\u5212\u7B97\u7684\u8BCD", "\u70B9=\u6709\u8F6C\u5316\u7684\u6295\u653E\u5173\u952E\u8BCD\uFF1B\u4E0B\u65B9\u5019\u9009\u5426\u8BCD\u53EA\u4F7F\u7528\u771F\u5B9E\u641C\u7D22\u8BCD\u660E\u7EC6");
     if (typeof echarts !== "undefined" && conv.length) {
-      el2.style.display = "";
+      el3.style.display = "";
       if (empty) empty.classList.add("is-hidden");
       if (window._semScatterChart) {
         try {
@@ -1687,7 +1687,7 @@
         } catch (e) {
         }
       }
-      window._semScatterChart = echarts.init(el2);
+      window._semScatterChart = echarts.init(el3);
       const medCpa = _median(conv.map((p) => p.cpa));
       const short = (s) => {
         s = String(s || "");
@@ -1711,7 +1711,7 @@
         }]
       });
     } else {
-      el2.style.display = "none";
+      el3.style.display = "none";
       if (window._semScatterChart) {
         try {
           window._semScatterChart.dispose();
@@ -1874,13 +1874,13 @@
     }
   }
   async function loadDataFreshness() {
-    const el2 = document.getElementById("dataFreshness");
-    if (!el2) return;
+    const el3 = document.getElementById("dataFreshness");
+    if (!el3) return;
     let d = null;
     try {
       d = await API.get(withRange2("/api/data-freshness", "data"));
     } catch (e) {
-      el2.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
+      el3.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
       return;
     }
     const fmt2 = (v) => {
@@ -1900,7 +1900,7 @@
       const tone = s.daysWithData === 0 ? "bad" : cov < 70 ? "warn" : "good";
       return '<span class="fresh-chip ' + tone + '"><b>' + name + "</b> \u6709\u6570\u636E " + s.daysWithData + "/" + s.days + ' \u5929<span class="dim"> \xB7 ' + fmt2(s.lastSync) + (s.status === "failed" ? ' <b class="csp-s-b0e08465c2">\u5931\u8D25</b>' : "") + "</span></span>";
     };
-    el2.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
+    el3.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
   }
   window._ovSeoMini = null;
   window._ovSemMini = null;
@@ -2475,8 +2475,8 @@
     </div>
   `;
   }
-  function renderShell(el2, groups, bodyHtml, unmappedList, unmappedTotal) {
-    el2.innerHTML = `
+  function renderShell(el3, groups, bodyHtml, unmappedList, unmappedTotal) {
+    el3.innerHTML = `
     <div class="inq-flat-map inq-blue-map">
       <div class="inq-map-head">
         <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
@@ -2505,21 +2505,21 @@
     });
   }
   async function renderGlobe() {
-    const el2 = document.getElementById("inqGlobe");
-    if (!el2) return;
-    const seq3 = ++renderSeq;
+    const el3 = document.getElementById("inqGlobe");
+    if (!el3) return;
+    const seq4 = ++renderSeq;
     const { groups, unmappedList, unmappedTotal } = collectMapData();
     const empty = document.getElementById("inqGlobe-empty");
     if (empty) empty.style.display = "none";
     disposeMap();
-    renderShell(el2, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
+    renderShell(el3, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
     try {
       await ensureWorldMap();
-      if (seq3 !== renderSeq) return;
+      if (seq4 !== renderSeq) return;
     } catch (err) {
-      if (seq3 !== renderSeq) return;
+      if (seq4 !== renderSeq) return;
       const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
-      renderShell(el2, groups, `
+      renderShell(el3, groups, `
       <div class="inq-map-error">
         <b>\u4E16\u754C\u5730\u56FE\u52A0\u8F7D\u5931\u8D25</b>
         <span>${msg}</span>
@@ -2528,8 +2528,8 @@
     `, unmappedList, unmappedTotal);
       return;
     }
-    renderShell(el2, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
-    const chartEl = el2.querySelector(".inq-echarts-map");
+    renderShell(el3, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
+    const chartEl = el3.querySelector(".inq-echarts-map");
     if (!chartEl || !window.echarts) return;
     inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "svg" });
     bindResize();
@@ -2675,29 +2675,29 @@
     if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
     return { ok: true, value };
   }
-  function setSavingState(el2, state2) {
-    if (!el2) return;
-    el2.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
-    if (state2 === "saving") el2.classList.add("kpi-saving");
+  function setSavingState(el3, state2) {
+    if (!el3) return;
+    el3.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
+    if (state2 === "saving") el3.classList.add("kpi-saving");
     else if (state2 === "ok") {
-      el2.classList.add("kpi-ok");
-      setTimeout(() => el2.classList.remove("kpi-ok"), 1200);
+      el3.classList.add("kpi-ok");
+      setTimeout(() => el3.classList.remove("kpi-ok"), 1200);
     } else if (state2 === "error") {
-      el2.classList.add("kpi-error");
-      setTimeout(() => el2.classList.remove("kpi-error"), 2e3);
+      el3.classList.add("kpi-error");
+      setTimeout(() => el3.classList.remove("kpi-error"), 2e3);
     }
   }
-  function rollbackEditable(el2, oldValue) {
-    if (el2) el2.textContent = oldValue == null ? "" : String(oldValue);
+  function rollbackEditable(el3, oldValue) {
+    if (el3) el3.textContent = oldValue == null ? "" : String(oldValue);
   }
-  function showSaveError(el2, msg) {
-    setSavingState(el2, "error");
+  function showSaveError(el3, msg) {
+    setSavingState(el3, "error");
     toast2(msg);
   }
-  function placeCaretEnd(el2) {
+  function placeCaretEnd(el3) {
     try {
       const range = document.createRange();
-      range.selectNodeContents(el2);
+      range.selectNodeContents(el3);
       range.collapse(false);
       const selection = getSelection();
       selection.removeAllRanges();
@@ -2899,14 +2899,14 @@
   var REGION_BADGE = toMap(REGIONS, LEGACY_REGION_BADGE);
   var PRODUCT_NAMES = PRODUCTS.map((p) => p[0]);
   var REGION_NAMES = REGIONS.map((r) => r[0]);
-  function fillSelect(el2, names, { placeholder = null } = {}) {
-    if (!el2) return;
-    const keepValue = el2.value;
+  function fillSelect(el3, names, { placeholder = null } = {}) {
+    if (!el3) return;
+    const keepValue = el3.value;
     const opts = [];
     if (placeholder != null) opts.push(`<option value="">${placeholder}</option>`);
     for (const n of names) opts.push(`<option>${n}</option>`);
-    el2.innerHTML = opts.join("");
-    if (keepValue && names.indexOf(keepValue) >= 0) el2.value = keepValue;
+    el3.innerHTML = opts.join("");
+    if (keepValue && names.indexOf(keepValue) >= 0) el3.value = keepValue;
   }
 
   // public/src/attachments.js
@@ -3042,7 +3042,7 @@
     const box = ensureLightbox();
     const img = box.querySelector(".att-lightbox-img");
     const url = rawUrl(id);
-    const seq3 = ++lightboxSeq;
+    const seq4 = ++lightboxSeq;
     img.src = url;
     box.querySelector(".att-lightbox-name").textContent = meta.name || "\u56FE\u7247";
     box.querySelector(".att-lightbox-open").href = url;
@@ -3050,7 +3050,7 @@
     const sizeText = meta.bytes ? humanBytes(meta.bytes) : "";
     dim.textContent = sizeText;
     const showDim = () => {
-      if (seq3 !== lightboxSeq || !img.naturalWidth) return;
+      if (seq4 !== lightboxSeq || !img.naturalWidth) return;
       const px = img.naturalWidth + " \xD7 " + img.naturalHeight;
       dim.textContent = sizeText ? px + " \xB7 " + sizeText : px;
     };
@@ -3278,17 +3278,17 @@
     return `<button type="button" class="inq-src" data-inq-source="${esc2(r.id)}" title="${esc2(v && v.hint || "\u70B9\u51FB\u67E5\u770B / \u586B\u5199\u6765\u6E90")}"><span class="inq-src-term">${esc2(r.source || "")}</span>${subs.join("")}${badge3}</button>`;
   }
   async function loadSourceChecks() {
-    const seq3 = ++checkSeq;
+    const seq4 = ++checkSeq;
     refreshLeadBadge();
     try {
       const data = await API.get(withRange2("/api/inquiries/source-check", "inquiry"));
-      if (seq3 !== checkSeq) return;
+      if (seq4 !== checkSeq) return;
       checks = new Map((data.items || []).map((i) => [i.id, i]));
       verdicts = data.verdicts || {};
       lookbackDays = data.lookback_days || 30;
       changed();
     } catch (e) {
-      if (seq3 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+      if (seq4 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
     }
   }
   var editing2 = null;
@@ -3416,14 +3416,14 @@
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
   }
   async function refreshLeadBadge() {
-    const el2 = $("inq-leads-count");
-    if (!el2) return;
+    const el3 = $("inq-leads-count");
+    if (!el3) return;
     try {
       const data = await API.get("/api/inquiry-leads?state=new");
-      el2.textContent = data.configured ? String(data.counts.new || 0) : "\u672A\u63A5\u5165";
-      el2.classList.toggle("has-new", data.configured && data.counts.new > 0);
+      el3.textContent = data.configured ? String(data.counts.new || 0) : "\u672A\u63A5\u5165";
+      el3.classList.toggle("has-new", data.configured && data.counts.new > 0);
     } catch (e) {
-      el2.textContent = "\u2014";
+      el3.textContent = "\u2014";
     }
   }
   function leadCard(l) {
@@ -3826,8 +3826,8 @@
       const opts = col.type === "has" ? [{ value: "\u6709", label: "\u6709\u53CD\u9988" }, { value: "\u65E0", label: "\u65E0\u53CD\u9988" }] : optionsFor(col);
       return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${col.key}"><option value="">${esc2(col.ph)}</option>` + opts.map((o) => `<option value="${esc2(o.value)}"${o.value === cur ? " selected" : ""}>${esc2(o.label)}</option>`).join("") + "</select></td>";
     }).join("");
-    row.querySelectorAll("[data-inq-filter]").forEach((el2) => {
-      el2.value = FILTERS[el2.dataset.inqFilter] || "";
+    row.querySelectorAll("[data-inq-filter]").forEach((el3) => {
+      el3.value = FILTERS[el3.dataset.inqFilter] || "";
     });
   }
   function syncClearBadge() {
@@ -3838,14 +3838,14 @@
     btn.innerHTML = '<i class="ti ti-filter-off"></i>' + (n ? " " + n : "");
   }
   function renderInqSummary(total, shown) {
-    const el2 = document.getElementById("inqSummary");
-    if (!el2) return;
+    const el3 = document.getElementById("inqSummary");
+    if (!el3) return;
     const n = activeFilterCount();
     if (!n) {
-      el2.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
+      el3.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
       return;
     }
-    el2.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
+    el3.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
   }
   function pageNumbers(page, pages) {
     if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
@@ -3866,14 +3866,14 @@
     return out;
   }
   function renderInqPager(total, pages, from, to) {
-    const el2 = document.getElementById("inqPager");
-    if (!el2) return;
+    const el3 = document.getElementById("inqPager");
+    if (!el3) return;
     if (!total) {
-      el2.innerHTML = "";
+      el3.innerHTML = "";
       return;
     }
     const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${n}">${n}</button>`).join("");
-    el2.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
+    el3.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
   }
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".inq-tb .inq-del");
@@ -3919,8 +3919,8 @@
     openInquiry();
     pendingLead = lead;
     const set = (id, v) => {
-      const el2 = document.getElementById(id);
-      if (el2 && v != null && v !== "") el2.value = v;
+      const el3 = document.getElementById(id);
+      if (el3 && v != null && v !== "") el3.value = v;
     };
     set("f-date", d.date);
     set("f-country", lead.country);
@@ -4003,9 +4003,9 @@
     }
   }
   document.addEventListener("input", (e) => {
-    const el2 = e.target.closest("#inqFilterRow input[data-inq-filter]");
-    if (!el2) return;
-    FILTERS[el2.dataset.inqFilter] = el2.value.trim();
+    const el3 = e.target.closest("#inqFilterRow input[data-inq-filter]");
+    if (!el3) return;
+    FILTERS[el3.dataset.inqFilter] = el3.value.trim();
     afterFilterChange(false);
   });
   document.addEventListener("change", (e) => {
@@ -4143,9 +4143,9 @@
     }
     menu.style.display = "none";
   });
-  async function persistTagChange(el2, value) {
-    const kind = el2.dataset.kind;
-    const tr = el2.closest("tr");
+  async function persistTagChange(el3, value) {
+    const kind = el3.dataset.kind;
+    const tr = el3.closest("tr");
     const id = tr && tr.dataset.id;
     if (!id) return;
     if (tr.dataset.kwType) {
@@ -4700,12 +4700,12 @@
   }
   function updateSopCounts() {
     [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
-      const el2 = document.getElementById("kcount-" + key);
-      if (!el2) return;
+      const el3 = document.getElementById("kcount-" + key);
+      if (!el3) return;
       const sopN = window._sops.filter((s) => s.dept === dept).length;
       const addCol = document.getElementById("newtask-" + key);
       const addN = addCol ? addCol.querySelectorAll(".tcard:not(.subtask)").length : 0;
-      el2.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
+      el3.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
     });
   }
   function isSopWritable() {
@@ -5114,8 +5114,8 @@
   var doneCtx = null;
   var doneBound = false;
   function doneError(msg) {
-    const el2 = $2("task-done-error");
-    if (el2) el2.textContent = msg || "";
+    const el3 = $2("task-done-error");
+    if (el3) el3.textContent = msg || "";
   }
   function renderDoneThumbs() {
     const box = $2("task-done-thumbs");
@@ -5311,15 +5311,15 @@
   }
   async function loadEffect() {
     const box = $2("task-effect-body");
-    const seq3 = ++effectSeq;
+    const seq4 = ++effectSeq;
     document.querySelectorAll("#taskEffectMask [data-effect-days]").forEach((b) => b.classList.toggle("active", Number(b.dataset.effectDays) === effectDays));
     box.textContent = "";
     box.appendChild(el("div", "dim", "\u52A0\u8F7D\u4E2D\u2026"));
     try {
       const data = await API.get("/api/loop-items/" + effectTaskId + "/effect?days=" + effectDays);
-      if (seq3 === effectSeq) renderEffect(data);
+      if (seq4 === effectSeq) renderEffect(data);
     } catch (e) {
-      if (seq3 !== effectSeq) return;
+      if (seq4 !== effectSeq) return;
       box.textContent = "";
       box.appendChild(el("div", "task-done-error", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25") + " "));
       const retry = el("button", "btn-mini", "\u91CD\u8BD5");
@@ -5530,18 +5530,18 @@
     return "today";
   }
   function taskGroupEl(col, g) {
-    let el2 = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
-    if (el2) return el2;
+    let el3 = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
+    if (el3) return el3;
     const label = (TASK_GROUPS.find((x) => x[0] === g) || [, g])[1];
-    el2 = document.createElement("div");
-    el2.className = "tgroup";
-    el2.dataset.g = g;
-    el2.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
+    el3 = document.createElement("div");
+    el3.className = "tgroup";
+    el3.dataset.g = g;
+    el3.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
     const order = TASK_GROUPS.map((x) => x[0]);
     const after = [...col.querySelectorAll(":scope > .tgroup")].find((x) => order.indexOf(x.dataset.g) > order.indexOf(g)) || col.querySelector(".donefold") || col.querySelector(".add-task");
-    if (after) col.insertBefore(el2, after);
-    else col.appendChild(el2);
-    return el2;
+    if (after) col.insertBefore(el3, after);
+    else col.appendChild(el3);
+    return el3;
   }
   function addTaskCard(s, content, it) {
     const col = taskColFor(s.dept);
@@ -5928,8 +5928,8 @@
     openModal("taskMask");
     if (tc) tc.focus();
   }
-  function openTaskEdit(el2) {
-    const card = el2.closest(".tcard");
+  function openTaskEdit(el3) {
+    const card = el3.closest(".tcard");
     const it = card && card._item;
     if (!it || !it.id) return;
     _taskScope = card._scope || coScope();
@@ -6186,7 +6186,7 @@
     ["company", "sem", "seo"].forEach((key) => {
       const col = document.getElementById("newtask-" + key);
       if (!col) return;
-      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el2) => el2.remove());
+      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el3) => el3.remove());
       col.classList.remove("folded");
     });
     const depEmpty = document.getElementById("dep-empty");
@@ -6227,7 +6227,7 @@
       btn.addEventListener("click", async () => {
         const retryError = await loadTaskCheckins();
         if (retryError) return;
-        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el2) => el2.remove());
+        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el3) => el3.remove());
         rerenderTaskCards();
       });
       const anchor = col.querySelector(".add-task");
@@ -6919,11 +6919,11 @@
     });
   }
   function syncKpiInputs() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el2) => {
-      const p = el2.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el3) => {
+      const p = el3.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
       if (arr && arr[idx] && arr[idx].t != null) {
-        el2.textContent = String(arr[idx].t);
-        el2.dataset.kpiOld = String(arr[idx].t);
+        el3.textContent = String(arr[idx].t);
+        el3.dataset.kpiOld = String(arr[idx].t);
       }
     });
   }
@@ -6980,9 +6980,9 @@
     });
   });
   var _fnum = (id) => {
-    const el2 = document.getElementById(id);
-    if (!el2) return null;
-    const v = parseFloat(el2.value);
+    const el3 = document.getElementById(id);
+    if (!el3) return null;
+    const v = parseFloat(el3.value);
     return isNaN(v) ? null : v;
   };
   async function submitSeoWeek() {
@@ -7117,8 +7117,8 @@
     e.preventDefault();
     const channel = form.getAttribute("data-exec-form");
     const body = { channel };
-    for (const el2 of form.elements) {
-      if (el2.name && el2.value) body[el2.name] = el2.value;
+    for (const el3 of form.elements) {
+      if (el3.name && el3.value) body[el3.name] = el3.value;
     }
     if (!body.problem) {
       toast("\u95EE\u9898\u5FC5\u586B");
@@ -7237,15 +7237,15 @@
     SPEND_WITH_ZERO_DEAL: "\u6709\u82B1\u8D39\xB7\u96F6\u6210\u4EA4"
   };
   function make(tag, className, text2) {
-    const el2 = document.createElement(tag);
-    if (className) el2.className = className;
-    if (text2 != null) el2.textContent = String(text2);
-    return el2;
+    const el3 = document.createElement(tag);
+    if (className) el3.className = className;
+    if (text2 != null) el3.textContent = String(text2);
+    return el3;
   }
   function cell(tag, className, text2, title) {
-    const el2 = make(tag, className, text2);
-    if (title) el2.title = title;
-    return el2;
+    const el3 = make(tag, className, text2);
+    if (title) el3.title = title;
+    return el3;
   }
   var money = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
   var CURRENCY_HINT = "\u91D1\u989D\u4E3A\u5E7F\u544A\u8D26\u6237\u5E01\u79CD\uFF08Ads \u540C\u6B65\u672A\u5B58\u5E01\u79CD\uFF09\uFF0C\u6545\u4E0D\u52A0\u8D27\u5E01\u7B26\u53F7";
@@ -7449,15 +7449,15 @@
     NO_VALID_DATA: "\u672C\u533A\u95F4\u6682\u65E0\u53EF\u8BC4\u5206\u6570\u636E"
   };
   function make2(tag, className, text2) {
-    const el2 = document.createElement(tag);
-    if (className) el2.className = className;
-    if (text2 != null) el2.textContent = String(text2);
-    return el2;
+    const el3 = document.createElement(tag);
+    if (className) el3.className = className;
+    if (text2 != null) el3.textContent = String(text2);
+    return el3;
   }
   function cell2(tag, className, text2, title) {
-    const el2 = make2(tag, className, text2);
-    if (title) el2.title = title;
-    return el2;
+    const el3 = make2(tag, className, text2);
+    if (title) el3.title = title;
+    return el3;
   }
   var pct3 = (v, digits) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(digits == null ? 1 : digits) + "%";
   var money2 = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
@@ -7619,9 +7619,9 @@
   }
   function actualText(m) {
     if (m.status !== "VALID") return STATUS_TEXT[m.status] || "\u2014";
-    const num2 = metricValueText(m, "actual");
-    if (m.display_value && num2) return num2 + "\uFF08" + m.display_value + "\uFF09";
-    return m.display_value || num2 || "\u2014";
+    const num3 = metricValueText(m, "actual");
+    if (m.display_value && num3) return num3 + "\uFF08" + m.display_value + "\uFF09";
+    return m.display_value || num3 || "\u2014";
   }
   function statusNote(m) {
     if (m.status === "VALID") return m.note || "";
@@ -7794,13 +7794,13 @@
     return r >= 0.9 ? "kpi-tone-green" : r >= 0.7 ? "kpi-tone-blue" : r >= 0.5 ? "kpi-tone-amber" : "kpi-tone-primary";
   }
   function rows(arr, box) {
-    const el2 = document.getElementById(box);
-    if (!el2) return;
-    el2.innerHTML = arr.map((k) => {
+    const el3 = document.getElementById(box);
+    if (!el3) return;
+    el3.innerHTML = arr.map((k) => {
       const available = k.actualAvailable !== false && k.a != null, r = available ? ratio(k) : 0, tone = available ? scoreTone(r) : "kpi-tone-muted", progress = Math.max(0, Math.min(100, Number.isFinite(r) ? r * 100 : 0));
       return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
     }).join("");
-    el2.querySelectorAll("[data-progress]").forEach((fill) => {
+    el3.querySelectorAll("[data-progress]").forEach((fill) => {
       const progress = Number(fill.dataset.progress);
       fill.style.width = `${Number.isFinite(progress) ? progress : 0}%`;
     });
@@ -7815,9 +7815,9 @@
       ["A\u7EA7\u5360\u6BD4", c.aRatio != null ? c.aRatio + "%" : "\u2014", "", momTxt(d.aRatio)],
       ["\u6709\u6548\u8BE2\u76D8\u7387", c.validRate != null ? c.validRate + "%" : "\u2014", "", momTxt(d.validRate)]
     ];
-    const el2 = document.getElementById("miniScores");
-    if (!el2) return;
-    el2.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
+    const el3 = document.getElementById("miniScores");
+    if (!el3) return;
+    el3.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
   }
   var overviewRequestSequence = 0;
   async function loadOverview() {
@@ -7839,14 +7839,14 @@
         tg.textContent = c.grade || "";
         tg.className = "kpi-delta " + (c.company >= 75 ? "delta-pos" : "delta-neg");
       }
-      const mom = (el2, v) => {
-        if (!el2) return;
+      const mom = (el3, v) => {
+        if (!el3) return;
         if (v == null) {
-          el2.textContent = "";
+          el3.textContent = "";
           return;
         }
-        el2.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " " + comparison;
-        el2.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
+        el3.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " " + comparison;
+        el3.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
       };
       mom(document.getElementById("topAratioMoM"), d.aRatio);
       mom(document.getElementById("topRateMoM"), d.validRate);
@@ -7943,8 +7943,8 @@
     return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc2(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
   }
   function renderBlock(grp, containerId, a) {
-    const el2 = document.getElementById(containerId);
-    if (!el2) return;
+    const el3 = document.getElementById(containerId);
+    if (!el3) return;
     const block = a.blocks && a.blocks[grp] || { metrics: [] };
     const diags = (a.diagnostics || []).filter((d) => d.grp === grp);
     const summaries = (a.summaries || []).filter((d) => d.grp === grp);
@@ -7967,8 +7967,8 @@
     } else html += '<div class="kpi-empty">\u6682\u65E0\u53EF\u8BC4\u5206\u6307\u6807 \xB7 \u5F85\u63A5\u5165</div>';
     if (diags.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u8BCA\u65AD\u6307\u6807\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + diags.map(diagChip).join("") + "</div>";
     if (summaries.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u4E1A\u52A1\u6C47\u603B\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + summaries.map(diagChip).join("") + "</div>";
-    el2.innerHTML = html;
-    el2.querySelectorAll("[data-progress]").forEach((f) => {
+    el3.innerHTML = html;
+    el3.querySelectorAll("[data-progress]").forEach((f) => {
       const p = Number(f.dataset.progress);
       f.style.width = (Number.isFinite(p) ? p : 0) + "%";
     });
@@ -8367,12 +8367,12 @@
   function text(value) {
     return value == null ? "" : String(value);
   }
-  function setText2(el2, value) {
-    if (el2) el2.textContent = text(value);
+  function setText2(el3, value) {
+    if (el3) el3.textContent = text(value);
   }
   function field(id) {
-    const el2 = byId(id);
-    return el2 ? el2.value.trim() : "";
+    const el3 = byId(id);
+    return el3 ? el3.value.trim() : "";
   }
   var FEEDBACK_LABEL = {
     adopted: "\u91C7\u7EB3 \xB7 \u6709\u4EF7\u503C",
@@ -8464,8 +8464,8 @@
   }
   function resetHermesMemoryForm() {
     ["hm-id", "hm-title", "hm-content", "hm-evidence"].forEach((id) => {
-      const el2 = byId(id);
-      if (el2) el2.value = "";
+      const el3 = byId(id);
+      if (el3) el3.value = "";
     });
     const kind = byId("hm-kind");
     if (kind) kind.value = "market";
@@ -8531,8 +8531,8 @@
   }
   function resetHermesFeedbackForm() {
     ["hf-scope", "hf-suggestion", "hf-note"].forEach((id) => {
-      const el2 = byId(id);
-      if (el2) el2.value = "";
+      const el3 = byId(id);
+      if (el3) el3.value = "";
     });
     const result = byId("hf-result");
     if (result) result.value = "adopted";
@@ -8739,28 +8739,28 @@
     <div class="sr-misses">${missHtml}</div>
   </div>`;
   }
-  async function mountSopRate(el2) {
-    if (!el2 || el2.dataset.loaded === "1") return;
-    const from = el2.dataset.from;
-    const to = el2.dataset.to;
+  async function mountSopRate(el3) {
+    if (!el3 || el3.dataset.loaded === "1") return;
+    const from = el3.dataset.from;
+    const to = el3.dataset.to;
     if (!from || !to) return;
-    el2.dataset.loaded = "1";
-    el2.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
+    el3.dataset.loaded = "1";
+    el3.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
     try {
       const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date()))}`;
       const data = await API.get("/api/sop/stats" + q);
       const items = data.items || [];
       if (!items.length) {
-        el2.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
+        el3.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
         return;
       }
       const hasMonthly = items.some((i) => i.expected === null);
-      el2.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
+      el3.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
         <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc2(data.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
       <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
     } catch (e) {
-      el2.dataset.loaded = "";
-      el2.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
+      el3.dataset.loaded = "";
+      el3.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
     }
   }
   document.addEventListener("click", (e) => {
@@ -8768,8 +8768,8 @@
     if (!bar) return;
     const week = bar.parentElement;
     if (!week || week.classList.contains("collapsed")) return;
-    const el2 = week.querySelector(".sop-rate");
-    if (el2) mountSopRate(el2);
+    const el3 = week.querySelector(".sop-rate");
+    if (el3) mountSopRate(el3);
   });
 
   // public/src/weekly-review.js
@@ -8872,13 +8872,13 @@
   }
   function bindReviewActions(root) {
     root.onclick = (e) => {
-      const el2 = e.target.closest("[data-review-action]");
-      if (!el2 || !root.contains(el2)) return;
-      const action = el2.dataset.reviewAction;
-      if (action === "act") rvAct(el2, el2.dataset.kind);
-      else if (action === "delete") rvDel(el2);
-      else if (action === "add") rvAdd(el2);
-      else if (action === "toggle" && el2.parentElement) el2.parentElement.classList.toggle("collapsed");
+      const el3 = e.target.closest("[data-review-action]");
+      if (!el3 || !root.contains(el3)) return;
+      const action = el3.dataset.reviewAction;
+      if (action === "act") rvAct(el3, el3.dataset.kind);
+      else if (action === "delete") rvDel(el3);
+      else if (action === "add") rvAdd(el3);
+      else if (action === "toggle" && el3.parentElement) el3.parentElement.classList.toggle("collapsed");
     };
   }
   function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
@@ -8962,8 +8962,8 @@
     }).join("");
     acc.innerHTML = currentHtml + groupHtml;
     bindReviewActions(acc);
-    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el2) => {
-      mountSopRate(el2);
+    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el3) => {
+      mountSopRate(el3);
     });
   }
   async function renderMonthReview() {
@@ -8999,8 +8999,8 @@
     const items = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
     API.put("/api/weekly-reports", { week_key: week, dept, field: field2, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
   }
-  function rvAdd(el2) {
-    const sec = el2.closest(".rv-sec");
+  function rvAdd(el3) {
+    const sec = el3.closest(".rv-sec");
     const list = sec.querySelector(".rv-list");
     const isMonth = !!parseMonthKey(sec.dataset.week);
     const sections = isMonth ? RV_MONTH_SECTIONS : RV_SECTIONS;
@@ -9012,19 +9012,19 @@
     const t = node.querySelector(".txt");
     if (t) t.focus();
   }
-  function rvDel(el2) {
-    const sec = el2.closest(".rv-sec");
-    el2.closest(".rv-item").remove();
+  function rvDel(el3) {
+    const sec = el3.closest(".rv-sec");
+    el3.closest(".rv-item").remove();
     rvSectionSave(sec);
   }
-  async function rvAct(el2, kind) {
-    const item = el2.closest(".rv-item");
+  async function rvAct(el3, kind) {
+    const item = el3.closest(".rv-item");
     const text2 = item.querySelector(".txt").innerText.trim();
     if (!text2) {
       toast2("\u8BF7\u5148\u586B\u5199\u5185\u5BB9");
       return;
     }
-    const sec = el2.closest(".rv-sec");
+    const sec = el3.closest(".rv-sec");
     const s = sFromDept(sec.dataset.dept);
     try {
       if (kind === "\u6D4B\u8BD5") {
@@ -9048,53 +9048,53 @@
 
   // public/src/settings.js
   function bindSettings() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el2) => {
-      if (el2.dataset.settingsBound === "1") return;
-      el2.dataset.settingsBound = "1";
-      el2.addEventListener("focusin", () => {
-        el2.dataset.kpiOld = el2.textContent;
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el3) => {
+      if (el3.dataset.settingsBound === "1") return;
+      el3.dataset.settingsBound = "1";
+      el3.addEventListener("focusin", () => {
+        el3.dataset.kpiOld = el3.textContent;
       });
       const commit = async () => {
         if (!can("kpiTarget")) {
-          rollbackEditable(el2, el2.dataset.kpiOld != null ? el2.dataset.kpiOld : el2.textContent);
+          rollbackEditable(el3, el3.dataset.kpiOld != null ? el3.dataset.kpiOld : el3.textContent);
           toast2("\u4EC5\u8001\u677F/\u4E3B\u7BA1\u53EF\u6539 KPI \u76EE\u6807");
           return;
         }
-        const parts = el2.dataset.kpi.split(":");
+        const parts = el3.dataset.kpi.split(":");
         const values = { TOTAL, SEO, SEM }[parts[0]];
         const item = values && values[Number(parts[1])];
         if (!item) return;
-        const oldValue = el2.dataset.kpiOld != null ? el2.dataset.kpiOld : String(item.t);
-        const result = validateEditableValue(el2.textContent, "number", { min: 0 });
+        const oldValue = el3.dataset.kpiOld != null ? el3.dataset.kpiOld : String(item.t);
+        const result = validateEditableValue(el3.textContent, "number", { min: 0 });
         if (!result.ok) {
-          rollbackEditable(el2, oldValue);
-          showSaveError(el2, result.msg);
+          rollbackEditable(el3, oldValue);
+          showSaveError(el3, result.msg);
           return;
         }
         if (result.value === item.t) {
-          el2.textContent = String(result.value);
-          setSavingState(el2, null);
+          el3.textContent = String(result.value);
+          setSavingState(el3, null);
           return;
         }
-        setSavingState(el2, "saving");
+        setSavingState(el3, "saving");
         try {
           const { rows: rows2 } = await API.put(withRange2("/api/kpi-targets", "kpi"), { updates: [{ id: item.id, target: result.value }] });
           applyKpiServer(rows2);
           renderKPI2();
-          el2.textContent = String(item.t);
-          el2.dataset.kpiOld = String(item.t);
-          setSavingState(el2, "ok");
+          el3.textContent = String(item.t);
+          el3.dataset.kpiOld = String(item.t);
+          setSavingState(el3, "ok");
           toast2("\u5DF2\u66F4\u65B0\u300C" + item.n + "\u300D\u76EE\u6807 \u2192 " + item.t + " \xB7 \u5DF2\u5165\u5E93, \u8BC4\u5206\u5DF2\u91CD\u7B97");
         } catch (error) {
-          rollbackEditable(el2, oldValue);
-          showSaveError(el2, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+          rollbackEditable(el3, oldValue);
+          showSaveError(el3, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
         }
       };
-      el2.addEventListener("blur", commit);
-      el2.addEventListener("keydown", (event) => {
+      el3.addEventListener("blur", commit);
+      el3.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
-          el2.blur();
+          el3.blur();
         }
       });
     });
@@ -9416,10 +9416,10 @@
   var loaded = null;
   var mounted = false;
   function make4(tag, className, text2) {
-    const el2 = document.createElement(tag);
-    if (className) el2.className = className;
-    if (text2 != null) el2.textContent = String(text2);
-    return el2;
+    const el3 = document.createElement(tag);
+    if (className) el3.className = className;
+    if (text2 != null) el3.textContent = String(text2);
+    return el3;
   }
   function numInput(name, value, step) {
     const input = document.createElement("input");
@@ -9628,8 +9628,8 @@
     foot.appendChild(make4("span", "kra-hint", "\u4FDD\u5B58\u540E KPI \u9875\u7684\u300C\u6708\u5EA6\u7EE9\u6548\u8003\u6838\u300D\u7ACB\u5373\u6309\u65B0\u65B9\u6848\u91CD\u7B97\u3002\u5386\u53F2\u5DF2\u7ED3\u7B97\u7684\u8003\u6838\u671F\u4E0D\u53D7\u5F71\u54CD\u3002"));
     wrap.appendChild(foot);
     host.appendChild(wrap);
-    if (!canEdit()) host.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el2) => {
-      el2.disabled = true;
+    if (!canEdit()) host.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el3) => {
+      el3.disabled = true;
     });
     syncWeightSum(host);
   }
@@ -9787,14 +9787,103 @@
     setPlanningTab: () => setPlanningTab2
   });
 
-  // public/src/spend.js
+  // public/src/geo.js
   var $3 = (id) => document.getElementById(id);
+  var seq3 = 0;
+  function el2(tag, cls, text2) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text2 != null) n.textContent = String(text2);
+    return n;
+  }
+  var num2 = (v) => Number(v).toLocaleString("en-US", { maximumFractionDigits: 1 });
+  function deltaText(cur, prev) {
+    if (prev == null) return "\u4E0A\u671F\u6CA1\u6709\u6570\u636E\uFF0C\u65E0\u6CD5\u5BF9\u6BD4";
+    const d = cur - prev;
+    if (!prev) return d ? "\u4E0A\u671F\u4E3A 0\uFF0C\u672C\u671F " + num2(cur) : "\u4E0E\u4E0A\u671F\u6301\u5E73";
+    return "\u8F83\u4E0A\u671F " + (d > 0 ? "+" : "") + num2(d) + "\uFF08" + (d > 0 ? "+" : "") + Math.round(d / prev * 100) + "%\uFF09";
+  }
+  function render5(data) {
+    const body = $3("geo-body");
+    body.textContent = "";
+    const sub = $3("geo-range");
+    if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data.range);
+    if (data.status === "NOT_SYNCED") {
+      body.appendChild(el2("div", "geo-empty", "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u6D41\u91CF\u3002\u8BF7\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GA4 \u6D41\u91CF\u300D\u786E\u8BA4\u540C\u6B65\u72B6\u6001\u3002"));
+      return;
+    }
+    const t = data.totals;
+    const grid = el2("div", "geo-grid");
+    const head = el2("div", "geo-block");
+    head.appendChild(el2("div", "geo-label", "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE"));
+    head.appendChild(el2("div", "geo-big", num2(t.sessions)));
+    head.appendChild(el2("div", "geo-sub", "\u5360\u5168\u7AD9 " + (t.share == null ? "\u2014" : (t.share * 100).toFixed(1) + "%") + "\uFF08\u5168\u7AD9 " + num2(t.site_sessions) + " \u6B21\uFF09"));
+    head.appendChild(el2("div", "geo-sub", deltaText(t.sessions, t.prev_sessions)));
+    if (data.data_days) head.appendChild(el2("div", "geo-sub", "\u533A\u95F4\u5185 GA4 \u6709 " + data.data_days + " \u5929\u6570\u636E \xB7 \u5173\u952E\u4E8B\u4EF6 " + num2(t.key_events)));
+    grid.appendChild(head);
+    const list = el2("div", "geo-block");
+    list.appendChild(el2("div", "geo-label", "\u6309\u5F15\u64CE"));
+    if (!data.engines.length) {
+      list.appendChild(el2("div", "geo-sub", "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u4EFB\u4F55\u6765\u81EA AI \u5F15\u64CE\u7684\u8BBF\u95EE\u3002"));
+    } else {
+      const max = Math.max(...data.engines.map((e) => e.sessions), 1);
+      for (const e of data.engines) {
+        const row = el2("div", "geo-row");
+        row.title = e.sources.length ? "GA4 \u6765\u6E90\u503C\uFF1A" + e.sources.join("\u3001") : "\u672C\u671F\u6CA1\u6709\u8BBF\u95EE";
+        row.appendChild(el2("span", "geo-name", e.label));
+        const track = el2("span", "geo-track");
+        const bar = el2("span", "geo-bar");
+        bar.style.width = Math.round(e.sessions / max * 100) + "%";
+        track.appendChild(bar);
+        row.appendChild(track);
+        row.appendChild(el2("span", "geo-val", num2(e.sessions) + (e.prevSessions == null ? "" : " \xB7 \u4E0A\u671F " + num2(e.prevSessions))));
+        list.appendChild(row);
+      }
+    }
+    grid.appendChild(list);
+    const inq = el2("div", "geo-block");
+    inq.appendChild(el2("div", "geo-label", "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BE2\u76D8"));
+    inq.appendChild(el2("div", "geo-big", data.inquiries.total));
+    inq.appendChild(el2("div", "geo-sub", "A " + data.inquiries.a + " \xB7 B " + data.inquiries.b + " \xB7 C " + data.inquiries.c));
+    inq.appendChild(el2("div", "geo-sub", "\u8868\u5355\u7EBF\u7D22 " + data.leads.total + " \u6761" + (data.leads.ignored ? "\uFF08\u5176\u4E2D " + data.leads.ignored + " \u6761\u88AB\u5FFD\u7565\uFF09" : "")));
+    inq.appendChild(el2("div", "geo-sub", "\u53EA\u6570\u72EC\u7ACB\u7AD9\u8868\u5355\u5E26\u56DE\u6765\u8DEF\u7684\u8BE2\u76D8\uFF1B\u4EBA\u5DE5\u5F55\u5165\u7684\u8BE2\u76D8\u6CA1\u6709\u53EF\u4FE1\u7684\u6765\u8DEF\uFF0C\u4E0D\u8BA1\u3002"));
+    grid.appendChild(inq);
+    body.appendChild(grid);
+    body.appendChild(el2("div", "geo-note", "\u8FD9\u91CC\u53EA\u6709\u300C\u4ECE AI \u56DE\u7B54\u91CC\u70B9\u94FE\u63A5\u8FDB\u7AD9\u300D\u7684\u8BBF\u95EE\u3002AI \u63D0\u5230\u4E86\u6211\u4EEC\u4F46\u7528\u6237\u6CA1\u70B9\u94FE\u63A5\u7684\uFF0C\u6D41\u91CF\u6570\u636E\u91CC\u770B\u4E0D\u5230\uFF0C\u6240\u4EE5\u5B9E\u9645\u5F71\u54CD\u53EA\u4F1A\u6BD4\u8FD9\u91CC\u591A\u3002\u88AB AI \u5F15\u7528\u7684\u60C5\u51B5\u8981\u9760\u56FA\u5B9A\u9898\u5E93\u4EBA\u5DE5\u62BD\u67E5\uFF0C\u5C1A\u672A\u5EFA\u7ACB\u3002\u8BC6\u522B\u7684\u5F15\u64CE\uFF1A" + data.known_engines.join("\u3001") + "\u3002"));
+  }
+  async function loadGeo() {
+    const body = $3("geo-body");
+    if (!body) return;
+    const range = getCurrentRange("dashboard");
+    if (!range || !range.start_date) return;
+    const my = ++seq3;
+    try {
+      const data = await API.get(withRange2("/api/geo/summary", range));
+      if (my === seq3) render5(data);
+    } catch (e) {
+      if (my !== seq3 || e && e.message === "unauthorized") return;
+      body.textContent = "";
+      body.appendChild(el2("div", "geo-empty", "GEO \u6570\u636E\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25") + " "));
+      const retry = el2("button", "btn-mini", "\u91CD\u8BD5");
+      retry.type = "button";
+      retry.addEventListener("click", loadGeo);
+      body.appendChild(retry);
+    }
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("timerange", (e) => {
+      if (e.detail && e.detail.scope === "dashboard") loadGeo();
+    });
+  }
+
+  // public/src/spend.js
+  var $4 = (id) => document.getElementById(id);
   var isHttp3 = (u) => /^https?:\/\//i.test(String(u || ""));
   function h(tag, cls, text2) {
-    const el2 = document.createElement(tag);
-    if (cls) el2.className = cls;
-    if (text2 != null) el2.textContent = String(text2);
-    return el2;
+    const el3 = document.createElement(tag);
+    if (cls) el3.className = cls;
+    if (text2 != null) el3.textContent = String(text2);
+    return el3;
   }
   var money3 = (n) => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   var CURRENCY_LABEL = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
@@ -9844,7 +9933,7 @@
     return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
   }
   function renderSummary2(data) {
-    const box = $3("spend-summary");
+    const box = $4("spend-summary");
     if (!box) return;
     box.textContent = "";
     const row = h("div", "spend-groups");
@@ -9866,7 +9955,7 @@
     box.appendChild(line2);
   }
   function renderSummaryError(e) {
-    const box = $3("spend-summary");
+    const box = $4("spend-summary");
     if (!box) return;
     box.textContent = "";
     const line2 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e) + " ");
@@ -9884,7 +9973,7 @@
     return parts.join(" \xB7 ");
   }
   function renderLinkStats(stats) {
-    const box = $3("spend-link-stats");
+    const box = $4("spend-link-stats");
     if (!box) return;
     box.textContent = "";
     if (!stats || !stats.total) return;
@@ -9929,11 +10018,11 @@
     tb.appendChild(tr);
   }
   function renderBacklinks() {
-    const tb = $3("tb-backlinks");
+    const tb = $4("tb-backlinks");
     if (!tb) return;
     tb.textContent = "";
     if (!backlinkRows.length) {
-      emptyRow(tb, 11, $3("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      emptyRow(tb, 11, $4("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
       return;
     }
     for (const b of backlinkRows) {
@@ -9963,7 +10052,7 @@
     }
   }
   function renderExpenses() {
-    const tb = $3("tb-expenses");
+    const tb = $4("tb-expenses");
     if (!tb) return;
     tb.textContent = "";
     if (!expenseRows.length) {
@@ -9994,17 +10083,17 @@
   async function loadSpend() {
     bind();
     if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
-    const input = $3("spend-month");
+    const input = $4("spend-month");
     if (input) input.value = month;
     const range = monthRange(month);
-    const seq3 = ++loadSeq;
-    const allLinks = $3("spend-links-all") && $3("spend-links-all").checked;
+    const seq4 = ++loadSeq;
+    const allLinks = $4("spend-links-all") && $4("spend-links-all").checked;
     const [sum, links, exps] = await Promise.allSettled([
       API.get("/api/spend/summary" + qs(range)),
       API.get("/api/backlinks" + (allLinks ? "" : qs(range))),
       API.get("/api/expenses" + qs(range))
     ]);
-    if (seq3 !== loadSeq) return;
+    if (seq4 !== loadSeq) return;
     if (sum.status === "fulfilled") renderSummary2(sum.value);
     else renderSummaryError(sum.reason);
     if (links.status === "fulfilled") {
@@ -10014,14 +10103,14 @@
     } else {
       backlinkRows = [];
       renderLinkStats(null);
-      errorRow($3("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+      errorRow($4("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
     }
     if (exps.status === "fulfilled") {
       expenseRows = exps.value.items || [];
       renderExpenses();
     } else {
       expenseRows = [];
-      errorRow($3("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+      errorRow($4("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
     }
   }
   var BACKLINK_FIELDS = [
@@ -10060,7 +10149,7 @@
     expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
   };
   function fillSelect2(id, values, placeholder, labelOf) {
-    const sel = $3(id);
+    const sel = $4(id);
     if (!sel) return;
     const keep = sel.value;
     sel.textContent = "";
@@ -10089,7 +10178,7 @@
     fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
   }
   function ensureTaskOption(selectId, row) {
-    const sel = $3(selectId);
+    const sel = $4(selectId);
     if (!sel || !row || row.task_id == null) return;
     if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
     const o = h("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
@@ -10105,26 +10194,26 @@
       return;
     }
     editing3[kind] = row || null;
-    $3(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    $4(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
     ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el2 = $3(id);
-      if (!el2) continue;
-      el2.value = row && row[key] != null ? row[key] : "";
+      const el3 = $4(id);
+      if (!el3) continue;
+      el3.value = row && row[key] != null ? row[key] : "";
     }
     if (!row) {
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
       const me = (window.ME || {}).name || "";
       if (kind === "backlink") {
-        $3("bl-date").value = today3;
-        $3("bl-owner").value = me;
+        $4("bl-date").value = today3;
+        $4("bl-owner").value = me;
       } else {
-        $3("ex-date").value = today3;
-        $3("ex-currency").value = "CNY";
-        $3("ex-owner").value = me;
+        $4("ex-date").value = today3;
+        $4("ex-currency").value = "CNY";
+        $4("ex-owner").value = me;
       }
     }
-    $3(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    $4(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
     openModal(form.mask);
   }
   var openBacklink = () => openForm("backlink", null);
@@ -10133,10 +10222,10 @@
     const form = FORMS[kind];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el2 = $3(id);
-      if (el2) body[key] = el2.value;
+      const el3 = $4(id);
+      if (el3) body[key] = el3.value;
     }
-    const errEl = $3(kind === "backlink" ? "bl-error" : "ex-error");
+    const errEl = $4(kind === "backlink" ? "bl-error" : "ex-error");
     const row = editing3[kind];
     if (btn) btn.disabled = true;
     try {
@@ -10156,7 +10245,7 @@
   var submitExpense = (btn) => submitForm("expense", btn);
   function bind() {
     if (bound) return;
-    const panel = $3("panel-spend");
+    const panel = $4("panel-spend");
     if (!panel) return;
     bound = true;
     panel.addEventListener("click", async (e) => {
@@ -10191,33 +10280,33 @@
         }
       }
     });
-    $3("spend-month").addEventListener("change", (e) => {
+    $4("spend-month").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}$/.test(e.target.value)) {
         month = e.target.value;
         loadSpend();
       }
     });
-    $3("spend-links-all").addEventListener("change", loadSpend);
+    $4("spend-links-all").addEventListener("change", loadSpend);
   }
 
   // public/src/app.js
   var STATIC_UI_ACTIONS = {
     "toggle-theme": () => toggleTheme(),
-    go: (el2) => go2(el2.dataset.tab),
-    ai: (el2) => runAiAnalysis(el2, el2.dataset.aiPrompt, el2.dataset.aiTitle || "AI \u5206\u6790", false),
-    "ai-box": (el2) => aiBox(el2, el2.dataset.aiPrompt),
-    "ai-ask": (el2) => runAiAnalysis(el2, el2.dataset.aiPrompt, el2.dataset.aiTitle, false),
+    go: (el3) => go2(el3.dataset.tab),
+    ai: (el3) => runAiAnalysis(el3, el3.dataset.aiPrompt, el3.dataset.aiTitle || "AI \u5206\u6790", false),
+    "ai-box": (el3) => aiBox(el3, el3.dataset.aiPrompt),
+    "ai-ask": (el3) => runAiAnalysis(el3, el3.dataset.aiPrompt, el3.dataset.aiTitle, false),
     "open-inquiry": () => openInquiry(),
-    "add-plan": (el2) => addPlanRow(el2.dataset.dept),
-    "add-test": (el2) => addTestRow(el2.dataset.dept),
+    "add-plan": (el3) => addPlanRow(el3.dataset.dept),
+    "add-test": (el3) => addTestRow(el3.dataset.dept),
     "snapshot-ranks": () => snapshotRanks(),
     "reload-ga4": () => loadGa42(),
     "add-fix": () => addFixRow(),
-    "add-keyword": (el2) => addKeyword(el2.dataset.keywordType),
+    "add-keyword": (el3) => addKeyword(el3.dataset.keywordType),
     "add-neg": () => addNeg(),
     "add-ad": () => addAd(),
     "add-content": () => addContent(),
-    "refresh-brain": (el2) => refreshBrain(el2),
+    "refresh-brain": (el3) => refreshBrain(el3),
     "create-hermes-daily-learning": () => createHermesDailyLearning(),
     "load-hermes-memories": () => loadHermesMemories(true),
     "reset-hermes-memory-form": () => resetHermesMemoryForm(),
@@ -10225,16 +10314,16 @@
     "reset-hermes-feedback-form": () => resetHermesFeedbackForm(),
     "save-hermes-feedback": () => saveHermesFeedback(),
     "add-deposit": () => addDepositRow(),
-    "open-task": (el2) => openTaskModal(el2.dataset.dept),
+    "open-task": (el3) => openTaskModal(el3.dataset.dept),
     "open-password": () => openPwd(),
     logout: () => API.logout(),
     "open-sop": () => openSopModal(),
     "open-hermes-panel": () => openHermesPanel(),
-    toast: (el2) => toast2(el2.dataset.message),
+    toast: (el3) => toast2(el3.dataset.message),
     "close-hermes-panel": () => closeHermesPanel(),
     "toggle-hermes-maximize": () => toggleHermesMaximize(),
     "load-hermes-morning-brief": () => loadHermesMorningBrief(),
-    "ask-hermes-starter": (el2) => askHermesStarter(el2.dataset.prompt),
+    "ask-hermes-starter": (el3) => askHermesStarter(el3.dataset.prompt),
     "sync-hermes-page-detail": () => syncHermesPageDetail(true),
     "toggle-hermes-deep-thinking": () => toggleHermesDeepThinking(),
     "send-hermes-prompt": () => sendHermesPrompt(),
@@ -10245,7 +10334,7 @@
     "archive-hermes-conversation": () => archiveHermesConversation(),
     "refresh-hermes-status": () => refreshHermesStatus(true),
     "reset-hermes-window": () => resetHermesWindow(),
-    "close-modal": (el2) => closeModal(el2.dataset.modal),
+    "close-modal": (el3) => closeModal(el3.dataset.modal),
     "submit-inquiry": () => submitInquiry(),
     "submit-custom-range": () => submitCustomRange(),
     "submit-track": () => submitTrack(),
@@ -10258,21 +10347,21 @@
     "submit-subtask": () => submitSubtask(),
     "task-link-add": () => addTaskLink(),
     "pick-task-evidence": () => pickTaskEvidence(),
-    "submit-task-done": (el2) => submitTaskDone(el2),
+    "submit-task-done": (el3) => submitTaskDone(el3),
     "open-leads": () => openLeads(),
-    "submit-inq-source": (el2) => submitInquirySource(el2),
+    "submit-inq-source": (el3) => submitInquirySource(el3),
     "open-backlink": () => openBacklink(),
     "open-expense": () => openExpense(),
-    "submit-backlink": (el2) => submitBacklink(el2),
-    "submit-expense": (el2) => submitExpense(el2),
+    "submit-backlink": (el3) => submitBacklink(el3),
+    "submit-expense": (el3) => submitExpense(el3),
     "submit-sop": () => submitSop(),
     "adopt-ai": () => adoptAi()
   };
   document.addEventListener("click", (e) => {
-    const el2 = e.target.closest && e.target.closest("[data-ui-action]");
-    if (!el2) return;
-    const action = STATIC_UI_ACTIONS[el2.dataset.uiAction];
-    if (action) action(el2);
+    const el3 = e.target.closest && e.target.closest("[data-ui-action]");
+    if (!el3) return;
+    const action = STATIC_UI_ACTIONS[el3.dataset.uiAction];
+    if (action) action(el3);
   });
   var semCampFilter = document.getElementById("semCampFilter");
   if (semCampFilter) semCampFilter.addEventListener("change", (e) => onSemCampaignChange(e.target.value));
@@ -10588,9 +10677,9 @@
   }
   renderLoopbars();
   var taskChanged = (card) => document.dispatchEvent(new CustomEvent("taskchanged", { detail: { card } }));
-  function taskDoneApplied(el2, c) {
-    el2.classList.add("on");
-    el2.innerHTML = '<i class="ti ti-check"></i>';
+  function taskDoneApplied(el3, c) {
+    el3.classList.add("on");
+    el3.innerHTML = '<i class="ti ti-check"></i>';
     c.classList.add("done", "nofold");
     taskChanged(c);
     refreshTaskCols();
@@ -10605,26 +10694,26 @@
       return;
     }
     const fx = c._item && c._item.fix_id;
-    toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el2));
+    toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el3));
     loadUrgent();
   }
-  function chk2(el2) {
-    const c = el2.closest(".tcard");
-    if (c && c.dataset.id && !el2.classList.contains("on")) {
+  function chk2(el3) {
+    const c = el3.closest(".tcard");
+    if (c && c.dataset.id && !el3.classList.contains("on")) {
       if (!c._item) {
         toast2("\u4EFB\u52A1\u6570\u636E\u672A\u5C31\u7EEA\uFF0C\u8BF7\u5237\u65B0\u540E\u518D\u8BD5");
         return;
       }
-      openTaskDone(c._item, { onDone: () => taskDoneApplied(el2, c) });
+      openTaskDone(c._item, { onDone: () => taskDoneApplied(el3, c) });
       return;
     }
-    el2.classList.toggle("on");
-    const on = el2.classList.contains("on");
+    el3.classList.toggle("on");
+    const on = el3.classList.contains("on");
     if (on) {
-      el2.innerHTML = '<i class="ti ti-check"></i>';
+      el3.innerHTML = '<i class="ti ti-check"></i>';
       c.classList.add("done");
     } else {
-      el2.innerHTML = "";
+      el3.innerHTML = "";
       c.classList.remove("done");
     }
     if (c) {
@@ -10637,12 +10726,12 @@
       if (typeof refreshTaskCols === "function") refreshTaskCols();
     };
     const rollback = () => {
-      el2.classList.toggle("on");
+      el3.classList.toggle("on");
       if (on) {
-        el2.innerHTML = "";
+        el3.innerHTML = "";
         c.classList.remove("done");
       } else {
-        el2.innerHTML = '<i class="ti ti-check"></i>';
+        el3.innerHTML = '<i class="ti ti-check"></i>';
         c.classList.add("done");
       }
       recount();
@@ -10694,6 +10783,7 @@
     await hydrate();
     loadDashboardInq();
     loadDashboardBoards();
+    loadGeo();
     await loadKeywords();
     await loadClosedLoop();
     await loadAiAnalyses();
@@ -10727,9 +10817,9 @@
     const pu = document.getElementById("prof-user");
     if (pu) pu.textContent = me.username || "\u2014";
     if (!can("kpiTarget")) {
-      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el2) => {
-        el2.removeAttribute("contenteditable");
-        el2.style.opacity = ".7";
+      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el3) => {
+        el3.removeAttribute("contenteditable");
+        el3.style.opacity = ".7";
       });
     }
     if (!can("inquiry")) {

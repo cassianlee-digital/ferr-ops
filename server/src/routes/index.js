@@ -32,6 +32,7 @@ import { risksRoutes } from './risks.js';
 import { attachmentsRoutes } from './attachments.js';
 import { spendRoutes } from './spend.js';
 import { inquiryLeadsRoutes } from './inquiryLeads.js';
+import { geoRoutes } from './geo.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -67,4 +68,5 @@ export async function registerRoutes(app) {
   await app.register(attachmentsRoutes);
   await app.register(spendRoutes);
   await app.register(inquiryLeadsRoutes);
+  await app.register(geoRoutes);
 }

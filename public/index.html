@@ -112,15 +112,11 @@
             <div class="legend"><div class="legend-item"><div class="legend-dot csp-s-2eeb30cb25"></div>有效询盘</div><div class="legend-item"><div class="legend-dot csp-s-9a7b826d35"></div>询盘总量</div></div>
             <div class="chart-wrap csp-s-f6f4334f92"><canvas id="inqTrend"></canvas></div></div>
         </div>
-        <!-- 6.23 文档 4：GEO 监控（占位，后续接入） -->
-        <div class="card csp-s-0c2d35ec2b">
-          <div class="csp-s-5c7facb46f">
-            <i class="ti ti-world-search csp-s-551dec436c"></i>
-            <div class="csp-s-0deeda8007">
-              <div class="csp-s-b44f80d0fa">GEO 监控</div>
-              <div class="csp-s-bd299c8ad6">占位中 · 后期接入地理位置/区域级 SEO/SEM 监控</div>
-            </div>
-          </div>
+        <!-- GEO（生成式引擎优化，2026-10-10 接入真实数据，原占位已撤）：AI 引擎带来的访问与询盘。
+             跟随总览页时间范围；渲染在 src/geo.js，口径在 server/src/services/geo.js -->
+        <div class="card geo-card">
+          <div class="card-head"><span class="card-title"><i class="ti ti-sparkles csp-s-e1bc9acca5"></i> GEO · AI 引擎带来的流量</span><span class="card-sub" id="geo-range">GA4 · 所选区间</span></div>
+          <div class="geo-body" id="geo-body"><div class="geo-empty">加载中…</div></div>
         </div>
         <div class="grid2">
           <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search csp-s-e1bc9acca5"></i> SEO 总览</span><span class="card-sub" id="ov-seo-range">GSC · 所选区间</span></div>

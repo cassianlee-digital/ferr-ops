@@ -12,6 +12,7 @@ import { loadArchive } from './archive.js';
 import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, resizeScatters, toggleHier } from './charts.js';
 import { addContent, addDepositRow, addFixRow, addPlanRow, addTestRow, loadClosedLoop, loadContent, openTaskModal, prepend, refreshTaskCols, submitSubtask, submitTask } from './closed-loop.js';
 import { loadGa4 } from './ga4-view.js';
+import { loadGeo } from './geo.js';
 import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
 import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
@@ -399,6 +400,7 @@ window.addEventListener('load',async()=>{
   await hydrate();             // 询盘/否词/广告/排名快照
   loadDashboardInq();          // 总览询盘趋势按当前时间范围重算
   loadDashboardBoards();       // 总览 SEO/SEM 两卡按当前时间范围重算
+  loadGeo();                   // 总览 GEO 卡：AI 引擎带来的访问与询盘（之后随时间范围自己重拉）
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目 + 沉淀表
   await loadAiAnalyses();      // AI 分析记录：恢复“已分析”状态和历史文档
