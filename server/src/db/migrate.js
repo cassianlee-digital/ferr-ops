@@ -9,7 +9,7 @@ import { db } from './connection.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // schema 版本仅作记录与未来增量迁移的挂钩点；不再触发任何自动清库。
-const SCHEMA_VERSION = '12';
+const SCHEMA_VERSION = '13';
 
 const ALL_TABLES = [
   'users', 'inquiries', 'inquiry_feedbacks', 'inquiry_sales_notes', 'attachments',
@@ -18,7 +18,7 @@ const ALL_TABLES = [
   'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions', 'task_checkins', 'hermes_action_runs',
+  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily', 'ga4_event_daily',
@@ -605,6 +605,25 @@ CREATE TABLE IF NOT EXISTS task_checkins (
 );
 CREATE INDEX IF NOT EXISTS idx_task_checkins_item ON task_checkins(loop_item_id);
 
+-- 任务关联键（2026-10-10）：一条任务指向它动过的页面 / 广告系列 / 关键词，以及它想推动的 KPI。
+-- 没有这张表，任务和 GSC/Ads 同步数据就是两座孤岛：能看到「做了什么」，却永远对不上
+-- 「做完之后哪个数变了」。ref 的取值按 link_type：
+--   page     = 页面 URL（与 gsc_query_daily.page 同写法才能对上）
+--   campaign = google_ads_campaign_daily.campaign_id（只收已同步过的系列，手敲的名字对不上任何数据）
+--   keyword  = 关键词原文（小写；对 gsc_query_daily.query / google_ads_keyword_daily.keyword_text）
+--   kpi      = services/taskAudit.js 的 TASK_KPIS 里的 key
+CREATE TABLE IF NOT EXISTS task_links (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  loop_item_id  INTEGER NOT NULL,
+  link_type     TEXT NOT NULL CHECK (link_type IN ('page','campaign','keyword','kpi')),
+  ref           TEXT NOT NULL,
+  label         TEXT,                                       -- 展示名（系列名 / KPI 名）；page、keyword 留空
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(loop_item_id, link_type, ref)
+);
+CREATE INDEX IF NOT EXISTS idx_task_links_item ON task_links(loop_item_id);
+CREATE INDEX IF NOT EXISTS idx_task_links_ref ON task_links(link_type, ref);
+
 -- 跟踪反馈改成「多条带时间的记录」（2026-08-27）。
 -- 原来 inquiries.tracking_feedback 是单个 TEXT：一条询盘只能存一段话，覆盖式保存，
 -- 既不知道是哪天写的，也看不出跟进了几次 —— 复盘时等于没有证据。
@@ -625,7 +644,7 @@ CREATE INDEX IF NOT EXISTS idx_inquiry_feedbacks_inq ON inquiry_feedbacks(inquir
 -- 列表接口只回元数据（不含 data），原图走 GET /api/attachments/:id/raw，避免列表把图片一起拖回来。
 CREATE TABLE IF NOT EXISTS attachments (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  owner_type  TEXT NOT NULL,          -- 'inquiry_sales_note' | 'keyword'
+  owner_type  TEXT NOT NULL,          -- 'inquiry_sales_note' | 'keyword' | 'task'（任务完成证据截图）
   owner_id    INTEGER NOT NULL,
   name        TEXT,
   mime        TEXT NOT NULL,
@@ -692,6 +711,15 @@ export function migrate() {
     // 思考框架：为什么做 / 完成标准 / 验证日期 / 怎么验证（老板要求每条任务必须能回答这四问）
     ['task_why', 'TEXT'], ['task_done_when', 'TEXT'],
     ['task_verify_date', 'TEXT'], ['task_verify_how', 'TEXT'],
+    // 可审计任务（2026-10-10，经理反馈）：光有任务名不够，要能回答「做了什么、结果如何、证据在哪、花了多久」。
+    // 老行全部留 NULL —— 以前没记就是没记，归档页显示「结果未记录」，不补假值。
+    ['project', 'TEXT'],          // 产品 / 项目
+    ['result', 'TEXT'],           // 完成结果（勾完成时必填）
+    ['task_actions', 'TEXT'],     // 具体动作：实际做了哪几件事
+    ['evidence', 'TEXT'],         // 证据链接，一行一个 http(s) URL；截图走 attachments(owner_type='task')
+    ['est_hours', 'REAL'],        // 预估工时（小时）
+    ['actual_hours', 'REAL'],     // 实际用时（小时，完成时自报）
+    ['important', 'INTEGER'],     // 1=人工标为重要；NULL=按规则判定（见 services/taskAudit.js）
   ]);
   ensureColumns('fixes', [
     ['evidence', 'TEXT'],

@@ -356,7 +356,7 @@ test('整改排进日计划：幂等、带出身、把整改推到进行中', as
   assert.equal(row.planned_done, false);
 
   // 回写：勾完 → 已改；撤销 → 进行中
-  await app.inject({ method: 'PATCH', url: `/api/loop-items/${task.id}`, headers: auth('seo'), payload: { state: 'done', status: 'done' } });
+  await app.inject({ method: 'PATCH', url: `/api/loop-items/${task.id}`, headers: auth('seo'), payload: { state: 'done', status: 'done', result: 'H1 已补齐并上线', evidence: 'https://ferr.com/landing' } });
   let cur = await app.inject({ method: 'GET', url: '/api/fixes', headers: auth('boss') });
   assert.equal(cur.json().items.find((f) => f.id === fixId).status, '已改');
   assert.equal(cur.json().items.find((f) => f.id === fixId).planned_done, true);
@@ -372,7 +372,7 @@ test('放弃的整改不被任务状态牵着走；归档的整改不能再排',
   });
   const fixId = fix.json().item.id;
   const task = (await app.inject({ method: 'POST', url: `/api/fixes/${fixId}/plan`, headers: auth('boss') })).json().item;
-  await app.inject({ method: 'PATCH', url: `/api/loop-items/${task.id}`, headers: auth('boss'), payload: { state: 'done', status: 'done' } });
+  await app.inject({ method: 'PATCH', url: `/api/loop-items/${task.id}`, headers: auth('boss'), payload: { state: 'done', status: 'done', result: '按要求处理完毕', evidence: 'https://ferr.com/x' } });
   const list = await app.inject({ method: 'GET', url: '/api/fixes', headers: auth('boss') });
   assert.equal(list.json().items.find((f) => f.id === fixId).status, '放弃', '放弃是人的决定，不该被勾选覆盖');
 
@@ -390,7 +390,7 @@ test('日计划回放：跨天任务的每一天都在、当天完成的算数�
 
   // 勾完 → done_at 被戳上
   const done = await app.inject({
-    method: 'PATCH', url: `/api/loop-items/${oneDay.id}`, headers: auth('seo'), payload: { state: 'done', status: 'done' },
+    method: 'PATCH', url: `/api/loop-items/${oneDay.id}`, headers: auth('seo'), payload: { state: 'done', status: 'done', result: '当天的活已做完' },
   });
   assert.ok(done.json().item.done_at, '完成必须留下时刻，否则回放答不出"那天完成了什么"');
 

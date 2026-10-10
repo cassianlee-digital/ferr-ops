@@ -2,6 +2,7 @@
 import * as repo from '../db/repositories/fixes.js';
 import * as loopRepo from '../db/repositories/loopItems.js';
 import { requireAuth, editor } from '../auth/middleware.js';
+import { decorateTask } from '../services/taskAuditData.js';
 
 const ARCHIVE_KINDS = ['sem', 'seo', 'company'];
 const s = (v, n = 300) => (v == null ? null : String(v).slice(0, n));
@@ -35,7 +36,7 @@ export async function fixesRoutes(app) {
       return reply.code(409).send({ error: 'fix_not_active' });
     }
     const existing = loopRepo.findActiveByFixId(fix.id);
-    if (existing) return { item: existing, existed: true };
+    if (existing) return { item: decorateTask(existing), existed: true };
 
     // 开始日由前端按本地日期传（服务器时区不该决定"今天"，与打卡同口径）
     const startDate = s(request.body?.start_date, 20) || new Date().toISOString().slice(0, 10);
@@ -52,7 +53,7 @@ export async function fixesRoutes(app) {
     // 排进日计划 = 已经开工，把整改状态从「计划下周」推到「进行中」；已改/放弃的不动
     if (fix.status !== '已改' && fix.status !== '放弃') repo.update(fix.id, { status: '进行中' });
     reply.code(201);
-    return { item, existed: false, fix: repo.get(fix.id) };
+    return { item: decorateTask(item), existed: false, fix: repo.get(fix.id) };
   });
 
   app.post('/api/fixes', editor, async (request, reply) => {

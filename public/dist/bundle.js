@@ -50,9 +50,9 @@
         inList = false;
       }
     };
-    for (let line of src) {
-      line = line.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
-      const m = line.match(/^\s*[-*]\s+(.*)$/);
+    for (let line2 of src) {
+      line2 = line2.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
+      const m = line2.match(/^\s*[-*]\s+(.*)$/);
       if (m) {
         flushP();
         if (!inList) {
@@ -60,12 +60,12 @@
           inList = true;
         }
         html += "<li>" + m[1] + "</li>";
-      } else if (line.trim() === "") {
+      } else if (line2.trim() === "") {
         flushP();
         flushL();
       } else {
         flushL();
-        para.push(line);
+        para.push(line2);
       }
     }
     flushP();
@@ -4521,6 +4521,338 @@
     dot.classList.toggle("is-hidden", !(overdue || urgent));
   }
 
+  // public/src/task-audit.js
+  var $ = (id) => document.getElementById(id);
+  var LINK_LABEL = { page: "\u9875\u9762", campaign: "\u7CFB\u5217", keyword: "\u5173\u952E\u8BCD", kpi: "KPI" };
+  var KPI_GROUP_LABEL = { review: "\u8003\u6838\u6307\u6807", process: "\u8FC7\u7A0B\u6307\u6807\uFF08\u4E0D\u8BA1\u5165\u8003\u6838\uFF09" };
+  var isHttp = (u) => /^https?:\/\//i.test(String(u || ""));
+  var OPTIONS_TTL_MS = 10 * 60 * 1e3;
+  var linkOptions = null;
+  var linkOptionsAt = 0;
+  var draftLinks = [];
+  var linkEditorBound = false;
+  async function loadLinkOptions() {
+    if (linkOptions && Date.now() - linkOptionsAt < OPTIONS_TTL_MS) return linkOptions;
+    try {
+      linkOptions = await API.get("/api/loop-items/link-options");
+      linkOptionsAt = Date.now();
+    } catch (e) {
+      if (e && e.message !== "unauthorized") toast2("\u5173\u8054\u5019\u9009\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25"));
+      linkOptions = linkOptions || { campaigns: [], pages: [], keywords: [], kpis: [] };
+    }
+    return linkOptions;
+  }
+  function option(value, text2) {
+    const o = document.createElement("option");
+    o.value = value;
+    o.textContent = text2;
+    return o;
+  }
+  function renderLinkInput() {
+    const box = $("task-link-value");
+    const typeEl = $("task-link-type");
+    if (!box || !typeEl) return;
+    const type = typeEl.value;
+    const opts = linkOptions || {};
+    box.textContent = "";
+    if (type === "page" || type === "keyword") {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.id = "task-link-input";
+      input.placeholder = type === "page" ? "https://\u2026 \u5B8C\u6574\u7F51\u5740" : "\u5173\u952E\u8BCD\u539F\u6587";
+      input.setAttribute("list", "task-link-list");
+      const list = document.createElement("datalist");
+      list.id = "task-link-list";
+      ((type === "page" ? opts.pages : opts.keywords) || []).forEach((v) => list.appendChild(option(v, v)));
+      box.append(input, list);
+      return;
+    }
+    const sel = document.createElement("select");
+    sel.id = "task-link-input";
+    if (type === "campaign") {
+      const list = opts.campaigns || [];
+      sel.appendChild(option("", list.length ? "\u9009\u62E9\u5E7F\u544A\u7CFB\u5217\u2026" : "\u5C1A\u65E0\u5DF2\u540C\u6B65\u7684\u5E7F\u544A\u7CFB\u5217"));
+      sel.disabled = !list.length;
+      list.forEach((c) => sel.appendChild(option(c.id, c.name || c.id)));
+    } else {
+      sel.appendChild(option("", "\u9009\u62E9 KPI\u2026"));
+      for (const group of Object.keys(KPI_GROUP_LABEL)) {
+        const items = (opts.kpis || []).filter((k) => k.group === group);
+        if (!items.length) continue;
+        const og = document.createElement("optgroup");
+        og.label = KPI_GROUP_LABEL[group];
+        items.forEach((k) => og.appendChild(option(k.key, k.label)));
+        sel.appendChild(og);
+      }
+    }
+    box.appendChild(sel);
+  }
+  function linkText(l) {
+    if (l.type === "page") {
+      try {
+        const u = new URL(l.ref);
+        return u.pathname + u.search || "/";
+      } catch (e) {
+        return l.ref;
+      }
+    }
+    return l.label || l.ref;
+  }
+  function renderLinkChips() {
+    const box = $("task-link-chips");
+    if (!box) return;
+    box.textContent = "";
+    draftLinks.forEach((l, i) => {
+      const chip = document.createElement("span");
+      chip.className = "tlink-chip";
+      chip.title = l.ref;
+      const kind = document.createElement("b");
+      kind.textContent = LINK_LABEL[l.type] || l.type;
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "tlink-del";
+      del.dataset.linkIdx = String(i);
+      del.title = "\u79FB\u9664";
+      del.textContent = "\xD7";
+      chip.append(kind, document.createTextNode(linkText(l)), del);
+      box.appendChild(chip);
+    });
+  }
+  function pendingLink() {
+    const typeEl = $("task-link-type");
+    const input = $("task-link-input");
+    if (!typeEl || !input) return null;
+    const type = typeEl.value;
+    let ref = String(input.value || "").trim();
+    if (!ref) return null;
+    let label = null;
+    if (type === "page" && !isHttp(ref)) return "\u9875\u9762\u8981\u586B\u5B8C\u6574\u7F51\u5740\uFF08http/https \u5F00\u5934\uFF09";
+    if (type === "keyword") ref = ref.toLowerCase().replace(/\s+/g, " ");
+    if (type === "campaign" || type === "kpi") label = input.options[input.selectedIndex].textContent;
+    return { type, ref, label };
+  }
+  function addTaskLink() {
+    const l = pendingLink();
+    if (l === null) {
+      toast2("\u5148\u9009\u62E9\u6216\u586B\u5199\u8981\u5173\u8054\u7684\u5BF9\u8C61");
+      return false;
+    }
+    if (typeof l === "string") {
+      toast2(l);
+      return false;
+    }
+    if (!draftLinks.some((x) => x.type === l.type && x.ref === l.ref)) draftLinks.push(l);
+    const input = $("task-link-input");
+    if (input) input.value = "";
+    renderLinkChips();
+    return true;
+  }
+  function bindLinkEditor() {
+    if (linkEditorBound) return;
+    const typeEl = $("task-link-type");
+    const chips = $("task-link-chips");
+    if (!typeEl || !chips) return;
+    linkEditorBound = true;
+    typeEl.addEventListener("change", renderLinkInput);
+    chips.addEventListener("click", (e) => {
+      const del = e.target.closest("[data-link-idx]");
+      if (!del) return;
+      draftLinks.splice(Number(del.dataset.linkIdx), 1);
+      renderLinkChips();
+    });
+    $("task-link-value").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addTaskLink();
+      }
+    });
+  }
+  function fillTaskAuditFields(item) {
+    const it = item || {};
+    bindLinkEditor();
+    const plist = $("task-project-list");
+    if (plist && !plist.children.length) PRODUCT_NAMES.forEach((n) => plist.appendChild(option(n, n)));
+    const p = $("task-project");
+    if (p) p.value = it.project || "";
+    const eh = $("task-est-hours");
+    if (eh) eh.value = it.est_hours == null ? "" : it.est_hours;
+    const imp = $("task-important");
+    if (imp) {
+      imp.checked = Number(it.important) === 1;
+      const role = (window.ME || {}).role;
+      imp.disabled = imp.checked && role !== "manager" && role !== "boss";
+    }
+    draftLinks = (it.links || []).map((l) => ({ type: l.type, ref: l.ref, label: l.label || null }));
+    const typeEl = $("task-link-type");
+    if (typeEl) typeEl.value = "page";
+    renderLinkChips();
+    renderLinkInput();
+    loadLinkOptions().then(() => {
+      const cur = $("task-link-input");
+      if (!cur || !cur.value) renderLinkInput();
+    });
+  }
+  function readTaskAuditFields() {
+    const out = {};
+    out.project = (($("task-project") || {}).value || "").trim();
+    const eh = (($("task-est-hours") || {}).value || "").trim();
+    if (eh !== "" && !(Number(eh) >= 0)) {
+      toast2("\u9884\u4F30\u5DE5\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
+      return null;
+    }
+    out.est_hours = eh === "" ? null : Number(eh);
+    const imp = $("task-important");
+    out.important = imp && imp.checked ? 1 : null;
+    const pending = pendingLink();
+    if (typeof pending === "string") {
+      toast2(pending);
+      return null;
+    }
+    if (pending && !draftLinks.some((x) => x.type === pending.type && x.ref === pending.ref)) draftLinks.push(pending);
+    out.links = draftLinks.map((l) => ({ type: l.type, ref: l.ref }));
+    return out;
+  }
+  var wasCompleted = (it) => !!it && (it.state === "done" || it.status === "done" || !!it.done_at);
+  function auditBadgesHtml(it) {
+    const imp = it.is_important ? `<span class="badge b-red taudit-imp" title="\u91CD\u8981\u4EFB\u52A1\uFF08${esc2(it.important_reason_text || "")}\uFF09\xB7 \u5B8C\u6210\u65F6\u9700\u8981\u8BC1\u636E">\u91CD\u8981</span>` : "";
+    const proj = it.project ? `<span class="badge b-gray taudit-proj" title="\u4EA7\u54C1 / \u9879\u76EE">${esc2(it.project)}</span>` : "";
+    return imp + proj;
+  }
+  function shortUrl(u) {
+    try {
+      const x = new URL(u);
+      const s = x.host + (x.pathname === "/" ? "" : x.pathname);
+      return s.length > 46 ? s.slice(0, 45) + "\u2026" : s;
+    } catch (e) {
+      return u;
+    }
+  }
+  function evidenceHtml(it) {
+    const links = String(it.evidence || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((u) => isHttp(u) ? `<a class="taudit-ev" href="${esc2(u)}" target="_blank" rel="noopener noreferrer" title="${esc2(u)}">${esc2(shortUrl(u))}</a>` : `<span class="taudit-ev">${esc2(u)}</span>`);
+    return links.join("") + thumbsHtml(it.evidence_images);
+  }
+  function hoursText(it) {
+    const parts = [];
+    if (it.est_hours != null) parts.push("\u9884\u4F30 " + it.est_hours + "h");
+    if (it.actual_hours != null) parts.push("\u5B9E\u9645 " + it.actual_hours + "h");
+    return parts.join(" \xB7 ");
+  }
+  var line = (label, html, cls = "") => `<span class="taudit-line ${cls}"><span class="taudit-label">${label}</span><span class="taudit-val">${html}</span></span>`;
+  function auditBlockHtml(it, { editable = false, archived = false } = {}) {
+    const lines = [];
+    const links = it.links || [];
+    if (links.length) {
+      lines.push(line("\u5173\u8054", links.map((l) => `<span class="taudit-link" title="${esc2(l.ref)}"><b>${LINK_LABEL[l.type] || esc2(l.type)}</b>${esc2(linkText(l))}</span>`).join("")));
+    }
+    const done = wasCompleted(it);
+    if (done || archived || it.result) {
+      const edit = editable && done && it.id ? ` <button type="button" class="btn-mini taudit-edit" data-loop-action="task-result">${it.result ? "\u6539" : "\u8865\u7ED3\u679C"}</button>` : "";
+      const text2 = it.result ? esc2(it.result) : `<span class="taudit-missing">${done ? "\u7ED3\u679C\u672A\u8BB0\u5F55" : "\u65E0\u5B8C\u6210\u8BB0\u5F55"}</span>`;
+      lines.push(line("\u7ED3\u679C", text2 + edit, "taudit-result"));
+    }
+    if (it.task_actions) lines.push(line("\u52A8\u4F5C", esc2(it.task_actions)));
+    const ev = evidenceHtml(it);
+    if (ev) lines.push(line("\u8BC1\u636E", ev));
+    else if (done && it.is_important) lines.push(line("\u8BC1\u636E", '<span class="taudit-missing">\u65E0\u8BC1\u636E</span>'));
+    const hours = hoursText(it);
+    if (hours) lines.push(line("\u5DE5\u65F6", esc2(hours)));
+    return lines.length ? `<div class="taudit">${lines.join("")}</div>` : "";
+  }
+  var doneCtx = null;
+  var doneBound = false;
+  function doneError(msg) {
+    const el = $("task-done-error");
+    if (el) el.textContent = msg || "";
+  }
+  function renderDoneThumbs() {
+    const box = $("task-done-thumbs");
+    if (!box || !doneCtx) return;
+    box.innerHTML = thumbsHtml(doneCtx.item.evidence_images, { deletable: true });
+  }
+  function bindDone() {
+    if (doneBound) return;
+    const box = $("task-done-thumbs");
+    if (!box) return;
+    doneBound = true;
+    box.addEventListener("click", async (e) => {
+      const del = e.target.closest("[data-att-del]");
+      if (!del || !doneCtx) return;
+      if (!inlineConfirm(del, "\u5220\u9664")) return;
+      const ctx = doneCtx;
+      try {
+        await deleteImage(del.dataset.attDel);
+        ctx.item.evidence_images = (ctx.item.evidence_images || []).filter((im) => String(im.id) !== String(del.dataset.attDel));
+        renderDoneThumbs();
+        if (ctx.onImages) ctx.onImages();
+      } catch (err) {
+        toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      }
+    });
+  }
+  function openTaskDone(item, { edit = false, onDone = null, onImages = null } = {}) {
+    if (!item || !item.id) return;
+    bindDone();
+    doneCtx = { item, edit, onDone, onImages };
+    $("task-done-verb").textContent = edit ? "\u5B8C\u6210\u8BB0\u5F55" : "\u5B8C\u6210\u4EFB\u52A1";
+    $("task-done-submit-label").textContent = edit ? "\u4FDD\u5B58" : "\u786E\u8BA4\u5B8C\u6210";
+    $("task-done-title").textContent = item.content || "";
+    const rule = $("task-done-rule");
+    rule.classList.toggle("is-important", !!item.is_important);
+    rule.textContent = item.is_important ? "\u91CD\u8981\u4EFB\u52A1\uFF08" + (item.important_reason_text || "") + "\uFF09\uFF1A\u9664\u4E86\u5B8C\u6210\u7ED3\u679C\uFF0C\u8FD8\u9700\u8981\u81F3\u5C11\u4E00\u6761\u8BC1\u636E\u94FE\u63A5\u6216\u4E00\u5F20\u8BC1\u636E\u622A\u56FE\u3002" : "\u5199\u6E05\u5B8C\u6210\u7ED3\u679C\u5373\u53EF\uFF1B\u6709\u8BC1\u636E\u94FE\u63A5\u6216\u622A\u56FE\u66F4\u597D\u2014\u2014\u5468\u5EA6\u5BA1\u6838\u770B\u7684\u5C31\u662F\u8FD9\u4E9B\u3002";
+    $("task-done-result").value = item.result || "";
+    $("task-done-actions").value = item.task_actions || "";
+    $("task-done-evidence").value = item.evidence || "";
+    $("task-done-hours").value = item.actual_hours == null ? "" : item.actual_hours;
+    $("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
+    doneError("");
+    renderDoneThumbs();
+    openModal("taskDoneMask");
+    setTimeout(() => $("task-done-result").focus(), 50);
+  }
+  async function pickTaskEvidence() {
+    const ctx = doneCtx;
+    if (!ctx) return;
+    const added = await pickAndUpload("task", ctx.item.id);
+    if (!added.length) return;
+    ctx.item.evidence_images = (ctx.item.evidence_images || []).concat(added);
+    if (doneCtx === ctx) {
+      renderDoneThumbs();
+      doneError("");
+    }
+    if (ctx.onImages) ctx.onImages();
+  }
+  async function submitTaskDone(btn) {
+    const ctx = doneCtx;
+    if (!ctx) return;
+    const hoursRaw = String($("task-done-hours").value || "").trim();
+    if (hoursRaw !== "" && !(Number(hoursRaw) >= 0)) {
+      doneError("\u5B9E\u9645\u7528\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
+      return;
+    }
+    const body = {
+      result: $("task-done-result").value,
+      task_actions: $("task-done-actions").value,
+      evidence: $("task-done-evidence").value,
+      actual_hours: hoursRaw === "" ? null : Number(hoursRaw)
+    };
+    if (!ctx.edit) {
+      body.state = "done";
+      body.status = "done";
+    }
+    if (btn) btn.disabled = true;
+    try {
+      const { item } = await API.patch("/api/loop-items/" + ctx.item.id, body);
+      Object.assign(ctx.item, item);
+      closeModal("taskDoneMask");
+      doneCtx = null;
+      if (ctx.onDone) ctx.onDone(item);
+    } catch (e) {
+      doneError(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u672A\u5165\u5E93\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25"));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
   // public/src/closed-loop.js
   var _2 = (n) => String(n).padStart(2, "0");
   var today = () => {
@@ -4617,6 +4949,7 @@
       else if (kind === "task-delete") taskDel(action);
       else if (kind === "task-edit") openTaskEdit(action);
       else if (kind === "task-push") taskPush(action);
+      else if (kind === "task-result") taskResult(action);
       else if (kind === "deposit-delete") depDel(action);
       else if (kind === "content-delete") contentDel(action);
       else if (kind === "ai-action") aiAct(action, action.dataset.kind);
@@ -4749,7 +5082,7 @@
     const push = taskPushHtml(it, g);
     const split = isCo ? `<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> \u5206\u53D1</button>` : "";
     const del = it.id ? `<button type="button" class="btn-mini csp-task-delete ${isCo || ops || push ? "csp-task-delete-spaced" : "csp-task-delete-pushed"}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
-    box.innerHTML = deptBadge + srcBadge + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
+    box.innerHTML = deptBadge + srcBadge + auditBadgesHtml(it) + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
     let lb = card.querySelector(".tloop");
     if (lb) lb.remove();
     if (loopBlock) {
@@ -4757,6 +5090,28 @@
       tmp.innerHTML = loopBlock;
       card.appendChild(tmp.firstChild);
     }
+    const ab = card.querySelector(":scope > .taudit");
+    if (ab) ab.remove();
+    const auditHtml = auditBlockHtml(it, { editable: true });
+    if (auditHtml) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = auditHtml;
+      card.appendChild(tmp.firstChild);
+    }
+  }
+  document.addEventListener("taskchanged", (e) => {
+    const card = e.detail && e.detail.card;
+    if (card && card._item && !card.classList.contains("subtask")) renderTaskMeta(card);
+  });
+  function taskResult(btn) {
+    const card = btn.closest(".tcard");
+    const it = card && card._item;
+    if (!it || !it.id) return;
+    const redraw = () => renderTaskMeta(card);
+    openTaskDone(it, { edit: true, onDone: () => {
+      redraw();
+      toast2("\u5B8C\u6210\u8BB0\u5F55\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
+    }, onImages: redraw });
   }
   function taskDueHtml(it) {
     const due = it.task_date || "", st2 = it.start_date || "", hr = it.task_hour || "";
@@ -4963,6 +5318,7 @@
     const card = document.createElement("div");
     card.className = "tcard subtask" + (done ? " done" : "");
     if (it && it.id) card.dataset.id = it.id;
+    card._item = it;
     const owner = it && it.owner || "\u674E";
     const oc = subOwnerBadge(owner);
     const del = it && it.id ? `<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
@@ -5070,6 +5426,7 @@
     if (uf) uf.classList.toggle("is-hidden", !canUrgent);
     const uc = document.getElementById("task-urgent");
     if (uc) uc.checked = false;
+    fillTaskAuditFields(null);
     openModal("taskMask");
     if (tc) tc.focus();
   }
@@ -5112,6 +5469,7 @@
     if (tvh) tvh.value = it.task_verify_how || "";
     const uf = document.getElementById("task-urgent-fld");
     if (uf) uf.classList.add("is-hidden");
+    fillTaskAuditFields(it);
     openModal("taskMask");
     if (tc) tc.focus();
   }
@@ -5136,12 +5494,14 @@
     const task_done_when = (document.getElementById("task-done-when") && document.getElementById("task-done-when").value || "").trim();
     const task_verify_date = document.getElementById("task-verify-date") && document.getElementById("task-verify-date").value || "";
     const task_verify_how = (document.getElementById("task-verify-how") && document.getElementById("task-verify-how").value || "").trim();
+    const audit = readTaskAuditFields();
+    if (!audit) return;
     const ucEl = document.getElementById("task-urgent");
     const urgent = ucEl && ucEl.checked && !document.getElementById("task-urgent-fld").classList.contains("is-hidden") ? 1 : void 0;
     if (_taskEditing) {
       const card = _taskEditing, it = card._item || {};
       try {
-        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how });
+        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how, ...audit });
         Object.assign(it, item || { content, task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how });
         const t = card.querySelector(".ttitle");
         if (t) {
@@ -5164,7 +5524,7 @@
       return;
     }
     try {
-      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how };
+      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how, ...audit };
       if (urgent) body.urgent = 1;
       const { item } = await API.post("/api/loop-items", body);
       addTaskCard(s, item.content, item);
@@ -6451,11 +6811,11 @@
     const box = make("div", "ledger-targets");
     box.appendChild(make("div", "ledger-sec-title", "\u76EE\u6807 vs \u5F53\u524D\uFF08\u76EE\u6807\u4E3A\u8BBE\u7F6E\u9875\u6708\u5EA6\u76EE\u6807\uFF0C\u672A\u6309\u533A\u95F4\u6298\u7B97\uFF09"));
     (targets || []).forEach((t) => {
-      const line = make("div", "ledger-target");
-      line.appendChild(make("div", "ledger-target-name", t.label));
+      const line2 = make("div", "ledger-target");
+      line2.appendChild(make("div", "ledger-target-name", t.label));
       const actualText2 = t.actual == null ? "\u2014" : t.unit === "\xA5" ? money(t.actual, t.currency) : Number(t.actual).toLocaleString("zh-CN") + t.unit;
       const targetText = t.target == null ? "\u76EE\u6807\u5F85\u5B9A" : "\u76EE\u6807 " + (t.unit === "\xA5" ? money(t.target, "CNY") : Number(t.target).toLocaleString("zh-CN") + t.unit);
-      line.appendChild(cell(
+      line2.appendChild(cell(
         "div",
         "ledger-target-val" + (t.currency_mismatch ? " ledger-warn" : ""),
         actualText2 + " / " + targetText,
@@ -6467,15 +6827,15 @@
       fill.style.width = p + "%";
       fill.classList.add(t.progress == null ? "ledger-fill-muted" : t.progress >= 1 ? "ledger-fill-green" : t.progress >= 0.6 ? "ledger-fill-blue" : "ledger-fill-amber");
       bar.appendChild(fill);
-      line.appendChild(bar);
+      line2.appendChild(bar);
       const tail = t.status === "NO_TARGET" ? "\u5F85\u8001\u677F\u62CD\u677F" : t.status === "NO_ACTUAL" ? "\u6682\u65E0\u5B9E\u9645\u503C" : Math.round(t.progress * 100) + "%";
-      line.appendChild(cell(
+      line2.appendChild(cell(
         "div",
         "ledger-target-pct" + (t.status === "VALID" ? "" : " dim"),
         tail,
         t.inverse ? "\u53CD\u5411\u6307\u6807\uFF1A\u8D8A\u4F4E\u8D8A\u597D\uFF0C\u8FBE\u6807\u5373\u5C01\u9876 100%" : ""
       ));
-      box.appendChild(line);
+      box.appendChild(line2);
     });
     return box;
   }
@@ -7383,7 +7743,8 @@
     const fromBadge = '<span class="badge ' + (from === "fix" ? "b-amber" : "b-blue") + '">' + (from === "fix" ? "\u6574\u6539" : it.kind === "task" ? "\u4EFB\u52A1" : it.kind === "plan" ? "\u8BA1\u5212" : it.kind === "test" ? "\u6D4B\u8BD5" : it.kind === "deposit" ? "\u6C89\u6DC0" : "\u95ED\u73AF") + "</span>";
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u539F\u9875"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
-    return `<td class="archive-date num">${esc2(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc2(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
+    const audit = from !== "fix" && it.kind === "task" ? auditBadgesHtml(it) + auditBlockHtml(it, { archived: true }) : "";
+    return `<td class="archive-date num">${esc2(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span>${audit}</td><td class="archive-dept ctr">${esc2(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
   }
   function archInqRowHtml(it) {
     const date = (it.archived_at || "").slice(0, 10);
@@ -8429,7 +8790,7 @@
     const lines = evidenceLines(item.evidence);
     if (lines.length) {
       const list = make3("ul", "risk-evidence-list");
-      lines.forEach((line) => list.appendChild(make3("li", "", line)));
+      lines.forEach((line2) => list.appendChild(make3("li", "", line2)));
       cell3.appendChild(list);
     }
     cell3.appendChild(make3("div", "risk-evidence-source", SOURCE_LABELS[item.source] || "\u5F53\u524D\u68C0\u67E5"));
@@ -8982,6 +9343,9 @@
     "submit-password": () => submitPwd(),
     "submit-task": () => submitTask(),
     "submit-subtask": () => submitSubtask(),
+    "task-link-add": () => addTaskLink(),
+    "pick-task-evidence": () => pickTaskEvidence(),
+    "submit-task-done": (el) => submitTaskDone(el),
     "submit-sop": () => submitSop(),
     "adopt-ai": () => adoptAi()
   };
@@ -9295,9 +9659,38 @@
     });
   }
   renderLoopbars();
+  var taskChanged = (card) => document.dispatchEvent(new CustomEvent("taskchanged", { detail: { card } }));
+  function taskDoneApplied(el, c) {
+    el.classList.add("on");
+    el.innerHTML = '<i class="ti ti-check"></i>';
+    c.classList.add("done", "nofold");
+    taskChanged(c);
+    refreshTaskCols();
+    if (c.classList.contains("cotask")) {
+      API.post("/api/loop-items/" + c.dataset.id + "/archive", { archive_kind: "company" }).then(() => {
+        toast2("\u5927\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5F52\u6863\uFF08\u542B\u5B50\u4EFB\u52A1\uFF09");
+        c.remove();
+        refreshTaskCols();
+        loadUrgent();
+        updateSopCounts();
+      }).catch((e) => toast2("\u5DF2\u5B8C\u6210\u5E76\u5165\u5E93\uFF0C\u4F46\u5F52\u6863\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25")));
+      return;
+    }
+    const fx = c._item && c._item.fix_id;
+    toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el));
+    loadUrgent();
+  }
   function chk2(el) {
-    el.classList.toggle("on");
     const c = el.closest(".tcard");
+    if (c && c.dataset.id && !el.classList.contains("on")) {
+      if (!c._item) {
+        toast2("\u4EFB\u52A1\u6570\u636E\u672A\u5C31\u7EEA\uFF0C\u8BF7\u5237\u65B0\u540E\u518D\u8BD5");
+        return;
+      }
+      openTaskDone(c._item, { onDone: () => taskDoneApplied(el, c) });
+      return;
+    }
+    el.classList.toggle("on");
     const on = el.classList.contains("on");
     if (on) {
       el.innerHTML = '<i class="ti ti-check"></i>';
@@ -9327,23 +9720,11 @@
       recount();
     };
     if (id) {
-      if (on && c.classList.contains("cotask")) {
-        API.post("/api/loop-items/" + id + "/archive", { archive_kind: "company" }).then(() => {
-          toast2("\u5927\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5F52\u6863\uFF08\u542B\u5B50\u4EFB\u52A1\uFF09");
-          c.remove();
-          recount();
-          loadUrgent();
-          if (typeof updateSopCounts === "function") updateSopCounts();
-        }).catch((e) => {
-          rollback();
-          toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
-        });
-        return;
-      }
-      API.patch("/api/loop-items/" + id, { state: on ? "done" : "todo", status: on ? "done" : "\u5F85\u529E" }).then(() => {
+      API.patch("/api/loop-items/" + id, { state: "todo", status: "\u5F85\u529E" }).then(({ item }) => {
+        if (c._item && item) Object.assign(c._item, item);
+        taskChanged(c);
         const fx = c._item && c._item.fix_id;
-        if (on) toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el));
-        else toast2("\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u56DE\u5230\u300C\u8FDB\u884C\u4E2D\u300D" : ""));
+        toast2("\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u56DE\u5230\u300C\u8FDB\u884C\u4E2D\u300D" : ""));
         loadUrgent();
       }).catch((e) => {
         rollback();

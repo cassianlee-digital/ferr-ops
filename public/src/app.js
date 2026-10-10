@@ -27,6 +27,7 @@ import { loadRisks } from './risks.js';
 import { bindSettings, openPwd, submitPwd } from './settings.js';
 import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, updateSopCounts } from './sop.js';
 import { getRangeRevision, submitCustomRange, syncRangeUi, withRange } from './timerange.js';
+import { addTaskLink, openTaskDone, pickTaskEvidence, submitTaskDone } from './task-audit.js';
 import { closeModal, esc, tableLoadState, toast, toastUndo } from './ui-kit.js';
 import { renderMonthReview, renderReview } from './weekly-review.js';
 
@@ -111,6 +112,9 @@ const STATIC_UI_ACTIONS={
   'submit-password':()=>submitPwd(),
   'submit-task':()=>submitTask(),
   'submit-subtask':()=>submitSubtask(),
+  'task-link-add':()=>addTaskLink(),
+  'pick-task-evidence':()=>pickTaskEvidence(),
+  'submit-task-done':el=>submitTaskDone(el),
   'submit-sop':()=>submitSop(),
   'adopt-ai':()=>adoptAi()
 };
@@ -270,8 +274,36 @@ renderLoopbars();
 
 /* ---------- task check ---------- */
 /* BUG-23 / SOP-B：动态任务卡(loop_items id) PATCH state；SOP 卡(sopId+freq) POST/DELETE sop completions */
+// 任务卡的数据变了（完成 / 撤销）→ 通知 closed-loop 重画那张卡。用事件而不是 import，原因见 closed-loop.js 的监听处。
+const taskChanged=card=>document.dispatchEvent(new CustomEvent('taskchanged',{detail:{card}}));
+/* 任务完成已入库之后的界面收尾：标勾、重画卡片；公司大任务接着归档（连同子任务）。 */
+function taskDoneApplied(el,c){
+  el.classList.add('on'); el.innerHTML='<i class="ti ti-check"></i>';
+  c.classList.add('done','nofold'); // nofold：刚勾的卡本次会话不被「已完成」折叠条收走
+  taskChanged(c); refreshTaskCols();
+  // 公司大任务完成 → 归档自己 + 级联名下子任务，一起从日计划消失（留痕在归档页，结果与证据跟着走）
+  if(c.classList.contains('cotask')){
+    API.post('/api/loop-items/'+c.dataset.id+'/archive',{archive_kind:'company'})
+      .then(()=>{ toast('大任务完成 · 已归档（含子任务）'); c.remove(); refreshTaskCols(); loadUrgent(); updateSopCounts(); })
+      // 完成本身已经入库，别回滚成未完成；只是没归档，卡留在原地，下次加载会再试
+      .catch(e=>toast('已完成并入库，但归档失败：'+((e&&e.message)||'请求失败')));
+    return;
+  }
+  const fx=c._item&&c._item.fix_id;
+  // 出身于整改项的任务：后端会把那条整改回写成「已改」，这里得说出来，否则用户不知道另一张表也动了
+  toastUndo('任务完成 · 已入库'+(fx?' · 整改已标「已改」':''),()=>chk(el));
+  loadUrgent(); // Step C：完成 urgent 任务 → banner 自动消失
+}
 export function chk(el){
-  el.classList.toggle('on'); const c=el.closest('.tcard');
+  const c=el.closest('.tcard');
+  /* 任务勾完成不再是「点一下就算」：先过完成弹框写结果（重要任务还要证据），
+     入库成功后才把卡标成完成。取消弹框 = 什么都没发生，所以这里不需要回滚。 */
+  if(c&&c.dataset.id&&!el.classList.contains('on')){
+    if(!c._item){ toast('任务数据未就绪，请刷新后再试'); return; }
+    openTaskDone(c._item,{onDone:()=>taskDoneApplied(el,c)});
+    return;
+  }
+  el.classList.toggle('on');
   const on=el.classList.contains('on');
   if(on){el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
   else  {el.innerHTML='';                            c.classList.remove('done');}
@@ -283,17 +315,10 @@ export function chk(el){
   const recount=()=>{ if(typeof refreshTaskCols==='function')refreshTaskCols(); };
   const rollback=()=>{ el.classList.toggle('on'); if(on){el.innerHTML='';c.classList.remove('done');} else {el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');} recount(); };
   if(id){
-    // 公司大任务完成 → 归档自己 + 级联名下子任务，一起从日计划消失（留痕在归档页；子任务勾完不消失，只有大任务完成才连带清掉）
-    if(on && c.classList.contains('cotask')){
-      API.post('/api/loop-items/'+id+'/archive',{archive_kind:'company'})
-        .then(()=>{ toast('大任务完成 · 已归档（含子任务）'); c.remove(); recount(); loadUrgent(); if(typeof updateSopCounts==='function')updateSopCounts(); })
-        .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
-      return;
-    }
-    // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看
-    API.patch('/api/loop-items/'+id,{state:on?'done':'todo',status:on?'done':'待办'})
-      // 出身于整改项的任务：后端会把那条整改回写成「已改」，这里得说出来，否则用户不知道另一张表也动了
-      .then(()=>{ const fx=c._item&&c._item.fix_id; if(on)toastUndo('任务完成 · 已入库'+(fx?' · 整改已标「已改」':''),()=>chk(el)); else toast('撤销完成 · 已入库'+(fx?' · 整改回到「进行中」':'')); loadUrgent(); }) // Step C：完成 urgent 任务 → banner 自动消失
+    // 走到这里只可能是「撤销完成」（勾完成在函数开头进了完成弹框）。
+    // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看。结果与证据保留，不随撤销清空。
+    API.patch('/api/loop-items/'+id,{state:'todo',status:'待办'})
+      .then(({item})=>{ if(c._item&&item)Object.assign(c._item,item); taskChanged(c); const fx=c._item&&c._item.fix_id; toast('撤销完成 · 已入库'+(fx?' · 整改回到「进行中」':'')); loadUrgent(); })
       .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
   } else if(sopId){
     // SOP-B：完成→POST /api/sop/completions；撤销→DELETE。period_key 按当前频率算

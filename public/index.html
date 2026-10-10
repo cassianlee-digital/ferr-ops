@@ -1038,11 +1038,49 @@
         <div class="fld"><label>验证日期（可选）</label><input type="date" id="task-verify-date"></div>
         <div class="fld"><label>怎么验证（可选）</label><input type="text" id="task-verify-how" placeholder="截图对比 / 看数据 / 客户反馈…"></div>
       </div>
+      <!-- 可审计任务（2026-10-10）：产品/项目、预估工时、关联对象、重要标记。逻辑在 src/task-audit.js -->
+      <div class="fld-row">
+        <div class="fld"><label>产品 / 项目（可选）</label><input type="text" id="task-project" list="task-project-list" maxlength="60" placeholder="阀门 / 官网改版…"><datalist id="task-project-list"></datalist></div>
+        <div class="fld"><label>预估工时（小时，可选）</label><input type="number" id="task-est-hours" min="0" step="0.5" placeholder="例如 2"></div>
+      </div>
+      <div class="fld"><label>关联对象（可选）· 动的是哪个页面 / 系列 / 关键词，想推动哪个指标</label>
+        <div class="tlink-add">
+          <select id="task-link-type"><option value="page">页面</option><option value="campaign">广告系列</option><option value="keyword">关键词</option><option value="kpi">KPI</option></select>
+          <span class="tlink-value" id="task-link-value"></span>
+          <button type="button" class="btn-mini" data-ui-action="task-link-add"><i class="ti ti-plus"></i> 添加</button>
+        </div>
+        <div class="tlink-chips" id="task-link-chips"></div>
+      </div>
       <div class="fld"><label>备注（可选）</label><textarea id="task-note" placeholder="补充说明…"></textarea></div>
+      <div class="fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="task-important"> 标为重要任务（完成时必须附证据；只有经理/老板能取消）</label></div>
       <!-- Step C：urgent 勾选，仅经理/老板派发公司任务时显示 -->
       <div class="fld is-hidden" id="task-urgent-fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="task-urgent"> ⚠️ 设为紧急（顶部强提示，所有人可见，完成后消失）</label></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskMask">取消</button><button class="btn-primary" data-ui-action="submit-task"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- 任务完成弹框：勾完成 = 交结果。所有任务必须写完成结果；重要任务还要证据（链接或截图）。
+     缺什么由后端判并回原因，显示在 #task-done-error，不关窗让人直接补。逻辑在 src/task-audit.js -->
+<div class="modal-mask" id="taskDoneMask">
+  <div class="modal task-done-modal">
+    <div class="modal-head"><i class="ti ti-circle-check csp-s-b0e08465c2"></i> <span id="task-done-verb">完成任务</span><span class="x" data-ui-action="close-modal" data-modal="taskDoneMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="task-done-title" id="task-done-title"></div>
+      <div class="task-done-rule" id="task-done-rule"></div>
+      <div class="fld"><label>完成结果（必填）</label><textarea id="task-done-result" rows="3" maxlength="2000" placeholder="结果是什么：上线了什么 / 改成了什么 / 数据到了多少…"></textarea></div>
+      <div class="fld"><label>具体动作（可选）</label><textarea id="task-done-actions" rows="2" maxlength="2000" placeholder="实际做了哪几件事，一行一件…"></textarea></div>
+      <div class="fld"><label>证据链接（一行一个，http/https 开头）</label><textarea id="task-done-evidence" rows="2" placeholder="上线后的页面 / 后台改动记录 / 文档链接…"></textarea></div>
+      <div class="fld"><label>证据截图</label>
+        <div class="task-done-shots"><span id="task-done-thumbs"></span><button type="button" class="btn-mini" data-ui-action="pick-task-evidence"><i class="ti ti-photo-plus"></i> 上传截图</button></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>实际用时（小时，可选）</label><input type="number" id="task-done-hours" min="0" step="0.5" placeholder="例如 1.5"></div>
+        <div class="fld"><label>&nbsp;</label><div class="dim csp-s-25b23d2157" id="task-done-est"></div></div>
+      </div>
+      <div class="task-done-error" id="task-done-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskDoneMask">取消</button><button class="btn-primary" data-ui-action="submit-task-done"><i class="ti ti-check"></i> <span id="task-done-submit-label">确认完成</span></button></div>
   </div>
 </div>
 

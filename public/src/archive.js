@@ -11,6 +11,7 @@ import { GRADE_BADGE, loadInquiries } from './inquiries.js';
 import { loadDashboardInq } from './charts.js';
 import { depRowHtml, persistLoop } from './closed-loop.js';
 import { inlineConfirm } from './keywords.js';
+import { auditBadgesHtml, auditBlockHtml } from './task-audit.js';
 
 /* 归档②：行级「沉淀 / 归档」按钮事件委托——整改/测试/计划 通用 */
 document.addEventListener('click',async e=>{
@@ -54,7 +55,10 @@ function archRowHtml(it,from){
   const isBoss=(window.ME||{}).role==='boss';
   const ops='<button class="btn-mini arch-restore" title="恢复到原页"><i class="ti ti-rotate"></i> 恢复</button>'
     +(isBoss?' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="彻底删除（不可恢复）"><i class="ti ti-trash"></i> 彻底删除</button>':'');
-  return `<td class="archive-date num">${esc(date||'—')}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
+  // 归档的任务不只留一个名字：完成结果、具体动作、证据、关联对象、工时一并带出来（经理 2026-10-10 要求）。
+  // 没记的明说没记 —— 门槛上线前完成的老任务就是没有结果，不补假值。
+  const audit=(from!=='fix'&&it.kind==='task')?auditBadgesHtml(it)+auditBlockHtml(it,{archived:true}):'';
+  return `<td class="archive-date num">${esc(date||'—')}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span>${audit}</td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
 }
 // P3：询盘归档行（7 列，对齐 #sub-arc-inquiry 表头）；恢复/彻删复用 arch-restore/arch-hard 委托
 function archInqRowHtml(it){

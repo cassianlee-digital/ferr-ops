@@ -33,27 +33,33 @@ export function list(kind, opts = {}) {
 // 调用方少给的补 null、多给的丢掉，新增列不再逼着每个调用方同步改。
 const CREATE_COLS = ['kind', 'dept', 'content', 'owner', 'status',
   'task_date', 'start_date', 'task_hour', 'note', 'urgent', 'parent_id', 'fix_id',
-  'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how'];
+  'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how',
+  'project', 'est_hours', 'important'];
 
+// 列清单是上面的硬编码常量（不含任何请求输入），拼进 SQL 是安全的；INSERT 的列与占位符由它一处生成，不再手抄三遍。
 export function create(rec) {
   const row = {};
   for (const c of CREATE_COLS) row[c] = rec?.[c] ?? null;
   const info = db
     .prepare(
-      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, start_date, task_hour, note, urgent, parent_id, fix_id, task_why, task_done_when, task_verify_date, task_verify_how)
-       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@start_date,@task_hour,@note,@urgent,@parent_id,@fix_id,@task_why,@task_done_when,@task_verify_date,@task_verify_how)`
+      `INSERT INTO loop_items (${CREATE_COLS.join(', ')})
+       VALUES (${CREATE_COLS.map((c) => '@' + c).join(',')})`
     )
     .run(row);
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(info.lastInsertRowid);
 }
 
+// PATCH 可写的列。导出给路由：完成门槛要按「更新后的样子」预判，只能拿白名单内的字段去合并，
+// 否则请求里夹一个白名单外的 parent_id / fix_id 就能把「重要任务」伪装成普通任务。
+export const UPDATABLE = ['dept', 'content', 'owner', 'status',
+  'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis',
+  'task_date', 'start_date', 'task_hour', 'note',
+  'state', 'archived_at', 'deleted_at', 'archive_kind',
+  'urgent', 'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how',
+  'project', 'result', 'task_actions', 'evidence', 'est_hours', 'actual_hours', 'important'];
+
 export function update(id, fields) {
-  const allowed = ['dept', 'content', 'owner', 'status',
-    'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis',
-    'task_date', 'start_date', 'task_hour', 'note',
-    'state', 'archived_at', 'deleted_at', 'archive_kind',
-    'urgent', 'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how'];
-  updateById('loop_items', id, fields, allowed);
+  updateById('loop_items', id, fields, UPDATABLE);
   return get(id);
 }
 

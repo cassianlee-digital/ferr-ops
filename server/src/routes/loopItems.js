@@ -1,11 +1,24 @@
 // 闭环条目 API（FR-10）：月度计划/测试登记/沉淀表/任务看板 + 归档地基（state/archived/deleted）。写入限李/陈。
 import * as repo from '../db/repositories/loopItems.js';
 import * as fixesRepo from '../db/repositories/fixes.js';
+import * as taskLinksRepo from '../db/repositories/taskLinks.js';
+import * as attachmentsRepo from '../db/repositories/attachments.js';
 import { requireAuth, editor } from '../auth/middleware.js';
+import {
+  TASK_KPIS, completionMissing, gateDetail, importance, isDone, normalizeEvidence, normalizeLinks,
+} from '../services/taskAudit.js';
+import {
+  TASK_ATTACHMENT_OWNER, decorateTask, decorateTasks, evidenceImageCount, spendTaskIds,
+} from '../services/taskAuditData.js';
 
 const KINDS = ['plan', 'test', 'deposit', 'task'];
 const ARCHIVE_KINDS = ['sem', 'seo', 'company'];
 const s = (v, n = 400) => (v == null ? null : String(v).slice(0, n));
+const truthy = (v) => v === 1 || v === '1' || v === true;
+const isManager = (request) => ['manager', 'boss'].includes(request.user?.role);
+
+// 审计字段的长度上限（文本）。超长截断而不是报错：这些是人写的说明，截断不影响判定。
+const AUDIT_TEXT = { project: 60, result: 2000, task_actions: 2000 };
 
 function resolveView(q) {
   if (q?.archived === '1' || q?.view === 'archived') return 'archived';
@@ -14,17 +27,74 @@ function resolveView(q) {
   return 'active'; // 默认排除 archived/deleted
 }
 
+const bad = (reply, error, detail, extra) => reply.code(400).send({ error, detail, ...extra });
+
+// 工时：空 = 没填（null）；否则必须是 0~9999 的数字。返回 undefined 表示不合法。
+function hours(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 && n <= 9999 ? n : undefined;
+}
+
+/* 归一并校验任务的审计字段（就地改 body）。出错时已经回了响应，返回 false。
+   必须在完成门槛之前跑：门槛要拿归一后的 result / evidence 去判，
+   而一个对象类型的 result 会让 .trim() 直接抛 500，把客户端传错类型伪装成服务端故障。 */
+function normalizeAuditFields(body, reply) {
+  for (const [k, max] of Object.entries(AUDIT_TEXT)) {
+    if (!(k in body) || body[k] == null) continue;
+    if (typeof body[k] !== 'string') { bad(reply, 'bad_field', `字段 ${k} 需要字符串`); return false; }
+    body[k] = body[k].trim().slice(0, max) || null;
+  }
+  for (const k of ['est_hours', 'actual_hours']) {
+    if (!(k in body)) continue;
+    const h = hours(body[k]);
+    if (h === undefined) { bad(reply, 'bad_hours', '工时需要是 0~9999 之间的数字（小时）'); return false; }
+    body[k] = h;
+  }
+  if ('evidence' in body) {
+    const ev = normalizeEvidence(body.evidence);
+    if (!ev.ok) { bad(reply, 'bad_evidence', ev.detail); return false; }
+    body.evidence = ev.value;
+  }
+  return true;
+}
+
+// links 不是 loop_items 的列，单独校验后整组替换。没传 = 不动；返回 false = 已回 400。
+function readLinks(body, reply) {
+  if (!('links' in body)) return null;
+  const r = normalizeLinks(body.links, { campaigns: taskLinksRepo.campaignNames() });
+  if (!r.ok) { bad(reply, 'bad_links', r.detail); return false; }
+  return r.links;
+}
+
 export async function loopItemsRoutes(app) {
   app.get('/api/loop-items', { preHandler: requireAuth }, async (request) => {
     const kind = request.query?.kind;
     const onlyUrgent = request.query?.urgent === '1';
     const all = repo.list(KINDS.includes(kind) ? kind : undefined, { view: resolveView(request.query) });
-    return { items: onlyUrgent ? all.filter((r) => r.urgent === 1) : all };
+    return { items: decorateTasks(onlyUrgent ? all.filter((r) => r.urgent === 1) : all) };
   });
 
+  // 任务弹框「关联对象」的候选：已同步数据里真实出现过的页面 / 系列 / 关键词 + 可选 KPI
+  app.get('/api/loop-items/link-options', { preHandler: requireAuth }, async () => ({
+    ...taskLinksRepo.options(),
+    kpis: TASK_KPIS,
+  }));
+
   app.post('/api/loop-items', editor, async (request, reply) => {
-    const b = request.body || {};
+    const b = { ...(request.body || {}) };
     if (!KINDS.includes(b.kind)) return reply.code(400).send({ error: 'bad_kind' });
+    const isTask = b.kind === 'task';
+    // 任务不能「生来就是完成的」：那等于绕过完成门槛（不写结果、不交证据）
+    if (isTask && b.status === 'done') {
+      return bad(reply, 'create_done_forbidden', '任务要先建出来再勾完成（完成时需要填写结果）');
+    }
+    let links = null;
+    if (isTask) {
+      if (!normalizeAuditFields(b, reply)) return reply;
+      links = readLinks(b, reply);
+      if (links === false) return reply;
+    }
     const item = repo.create({
       kind: b.kind,
       dept: s(b.dept, 10),
@@ -35,37 +105,72 @@ export async function loopItemsRoutes(app) {
       start_date: s(b.start_date, 20),
       task_hour: s(b.task_hour, 10),
       note: s(b.note, 400),
-      urgent: b.urgent === 1 || b.urgent === '1' || b.urgent === true ? 1 : null,
+      urgent: truthy(b.urgent) ? 1 : null,
       parent_id: Number.isFinite(Number(b.parent_id)) && Number(b.parent_id) > 0 ? Number(b.parent_id) : null,
       task_why: s(b.task_why, 400),
       task_done_when: s(b.task_done_when, 400),
       task_verify_date: s(b.task_verify_date, 20),
       task_verify_how: s(b.task_verify_how, 400),
+      project: isTask ? b.project ?? null : null,
+      est_hours: isTask ? b.est_hours ?? null : null,
+      important: isTask && truthy(b.important) ? 1 : null,
     });
+    if (links && links.length) taskLinksRepo.replace(item.id, links);
     reply.code(201);
-    return { item };
+    return { item: decorateTask(item) };
   });
 
   // 回写：任务勾完 → 它出身的那条整改项自动变「已改」，撤销则回「进行中」。
   // 闭环的最后一步；靠人去整改清单里手动改状态，那条状态就永远是脏的。
-  app.patch('/api/loop-items/:id', editor, async (request) => {
+  app.patch('/api/loop-items/:id', editor, async (request, reply) => {
     const id = Number(request.params.id);
-    const body = request.body || {};
+    const body = { ...(request.body || {}) };
+    const cur = repo.get(id);
+    if (!cur) return reply.code(404).send({ error: 'not_found' });
+
+    let links = null;
+    if (cur.kind === 'task') {
+      if (!normalizeAuditFields(body, reply)) return reply;
+      if ('important' in body) {
+        const want = truthy(body.important) ? 1 : null;
+        // 「重要」可以谁都加，但只有经理/老板能摘：否则被要求交证据的人自己把标记去掉就行了
+        if (want === null && Number(cur.important) === 1 && !isManager(request)) {
+          return reply.code(403).send({ error: 'important_locked', detail: '「重要」标记只能由经理或老板取消' });
+        }
+        body.important = want;
+      }
+      links = readLinks(body, reply);
+      if (links === false) return reply;
+
+      /* 完成门槛：所有任务必须写完成结果；重要任务还必须有证据（链接或截图）。
+         判的是「更新之后的样子」。除了「未完成→完成」这一下，已完成的任务再改 result / evidence 也要过，
+         否则先随便填一句勾完成、再把它清空，门槛就形同虚设。
+         老的已完成任务（门槛上线前勾的，没有结果）改别的字段不受影响 —— 不追溯。 */
+      const next = { ...cur };
+      for (const k of repo.UPDATABLE) if (k in body) next[k] = body[k];
+      if (isDone(next) && (!isDone(cur) || 'result' in body || 'evidence' in body)) {
+        const imp = importance(next, { spend: spendTaskIds().has(id) });
+        const missing = completionMissing(next, { important: imp.important, attachments: evidenceImageCount(id) });
+        if (missing.length) {
+          return bad(reply, 'completion_incomplete', gateDetail(missing), { missing, important_reasons: imp.reasons });
+        }
+      }
+    }
+
     let item = repo.update(id, body);
+    if (links) taskLinksRepo.replace(id, links);
     if (item && ('state' in body || 'status' in body)) {
-      const done = item.state === 'done' || item.status === 'done';
-      item = repo.stampDone(id, done); // 记完成时刻，日计划回放要用
+      item = repo.stampDone(id, isDone(item)); // 记完成时刻，日计划回放要用
     }
     if (item && item.fix_id && ('state' in body || 'status' in body)) {
-      const done = item.state === 'done' || item.status === 'done';
       const fix = fixesRepo.get(item.fix_id);
       // 已归档/已放弃的整改项不被任务状态牵着走
       if (fix && fix.state !== 'archived' && fix.state !== 'deleted' && fix.status !== '放弃') {
-        const next = done ? '已改' : '进行中';
-        if (fix.status !== next) fixesRepo.update(fix.id, { status: next });
+        const nextStatus = isDone(item) ? '已改' : '进行中';
+        if (fix.status !== nextStatus) fixesRepo.update(fix.id, { status: nextStatus });
       }
     }
-    return { item };
+    return { item: decorateTask(item) };
   });
 
   // 归档：服务端打时间戳、推导 archive_kind；幂等。前端调这个最稳。
@@ -90,6 +195,9 @@ export async function loopItemsRoutes(app) {
     const id = Number(request.params.id);
     if (request.query?.hard === '1') {
       repo.hardDelete(id);
+      // 行都没了，它的关联键和证据截图留着只会成为取不到宿主的孤儿
+      taskLinksRepo.removeByItem(id);
+      attachmentsRepo.removeByOwner(TASK_ATTACHMENT_OWNER, id);
       return { ok: true, hard: true };
     }
     const item = repo.softDelete(id);
