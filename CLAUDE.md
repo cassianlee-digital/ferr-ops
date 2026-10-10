@@ -14,7 +14,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **后端不是单文件**:Fastify,模块化良好。
   - `server/src/routes/`(**36 个路由文件**,2026-10-10 实测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1345 行 / 135KB**(2026-10-10 实测;ES 模块 **42 个**),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1374 行 / 138KB**(2026-10-10 实测;ES 模块 **43 个**),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -25,7 +25,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **全局面已腰斩:实测 190 名字 / 154 函数**(2026-08-27 合并后活站 iframe 差集,含 vendor;2026-07-15 同口径是 338/302)。降幅主要来自 `app.js` 迁入 ES 模块 —— 它原有 **35 个顶层符号自动是全局**,现在只导出 **4 个**给兼容层(第三刀又从 10 收到 4)。
   - **别用 grep 数 `window.X =` 去估全局面**——经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量(建空 iframe 取 `Object.getOwnPropertyNames` 做差集)。
-- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **149 处 `data-ui-action=`**(2026-10-10 实测,口径 `grep -ro 'data-ui-action=' public --include=*.html --include=*.js | grep -v /dist/ | grep -v /vendor/`)(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo 已随 ui-kit 迁走,现为 `src/app.js` 的 loop-tab 委托 + `google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
+- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **154 处 `data-ui-action=`**(2026-10-10 实测,口径 `grep -ro 'data-ui-action=' public --include=*.html --include=*.js | grep -v /dist/ | grep -v /vendor/`)(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo 已随 ui-kit 迁走,现为 `src/app.js` 的 loop-tab 委托 + `google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
 - **`public/src/ui-kit.js` 是全站 UI 基础工具的唯一实现**(2026-08-26 新增):`esc`/`renderText`/`mdToHtml`/`openModal`/`closeModal`/`toast`/`toastUndo`/`toastGo`/`showToast`/`hideToast` 从 app.js 搬来。**22 个 ES 模块已全部改为显式 `import { esc, toast } from './ui-kit.js'`,模块侧不再读 `window`**(校验脚本口径:模块里出现这些名字却没 import = 漏网)。收益是**编译期保护**:名字写错 esbuild 当场报错;此前它们是隐式全局,对打包器完全隐形。⚠ **本模块必须保持「无 DOM 也能被 import」**——`table-editor.js` 会被 `node --test` 真实 import,求值期碰 `document` 会让整个测试文件崩(已踩过);故遮罩绑定带 `typeof document` 守卫、toast 系列取不到 `#toast` 就安静退场。
 - **`public/src/app.js` 是应用组装层**(2026-08-26 由经典脚本迁入 ES 模块):`STATIC_UI_ACTIONS` 委托表 + 导航 `go()` + `window load` 启动序列 + `applyRoleUi()`。**依赖方向单向**:它 import 21 个业务模块,**没有任何模块 import 它** —— 依赖图顶点,无环。故 `main.js` 里它**必须是最后一个 import**(模块求值期要做 DOM 绑定并注册 window load,等价于原来「bundle.js 之后再加载 app.js」),`Object.assign(window, …, app)` 里也**必须最后合并**(还原它的全局后定义、同名覆盖的语义)。这两条已被 `frontendXss.test.js` 焊死。它调用的 ~90 个模块函数现在**全部编译期校验**,写错 esbuild 当场失败。
 - **`Object.assign(window, …)` 兼容层仍要留**,消费者两类:`public/hermes.js`(只读 `window.API`/`ME`/`_curTab`/`esc`/`toast`/`go`/`loadClosedLoop`,全部带 `window.` 前缀且有兜底),以及 `closed-loop.js` 裸调用的 `go`/`chk`/`setPlanningTab`/`setActionTab`。
@@ -199,6 +199,24 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
     给站点负责人的接入说明在 `docs/INQUIRY_INTAKE.md`(含 Ads 跟踪模板)。**谁能改独立站表单,用户尚未答复。**
   - **AI 引擎暂归渠道「其他」**:渠道目录只有四个值,加第五个会牵动考核口径,是老板要定的事。引擎本身记在来路里。
   - 邮件 / WhatsApp 直接来的询盘带不了参数,仍是人填 + 对账。历史询盘不回填。
+- **询盘的确认权与改动留痕已上线(2026-10-10)** —— 等级(A/B/C)决定月度考核里 60 分的 A / B 询价数量,渠道决定「这条询盘算谁带来的」,
+  而录入人自己就能填、能改。没有表单证据的询盘拿不到独立于录入人的机器证据,能立的只有流程规矩。
+  规则在 `routes/inquiries.js` + `repositories/inquiries.js`,前端 `public/src/inquiry-attribution.js`(与 inquiry-sales / inquiry-source 同模式,
+  反向走 `attributionchanged` 事件)。测试 `server/test/attributionGate.test.js` 19 例。
+  - **三条规矩**:① 录入 = 建议值(`inquiries.attribution_status='proposed'`);**manager / boss 录入即确认**,也只有他们能确认(单条 / 批量)和撤销确认;
+    ② 已确认后李 / 陈改不动渠道和等级(`403 attribution_locked`),manager / boss 改必须带 `reason`(`400 reason_required`);
+    ③ 每次改动进 `inquiry_field_changes`(谁 / 何时 / 从什么改成什么 / 为什么),相同值不记。
+    老行状态为 NULL = **历史未审**,既不算已确认也不算待确认,不补假值。
+  - 顺带补了一直缺的校验:`channel` 只认 `SEO自然 / SEM付费 / 直接 / 其他`,`grade` 只认 A / B / C(以前 PATCH 不校验,任何字符串都能写进去)。
+  - 界面:每行渠道格下标 待确认 / 已确认 / 历史未审 +「改 N」(可点看流水);已确认的渠道 / 等级换成带锁的静态徽章;
+    表格上方亮出确认进度(未确认 ≥50% 标红),经理 / 老板有「全部确认」(要点两次;**确认的是当前时间范围内全部未确认的,不受表头筛选影响**)。
+    周度审核包的 `inquiries.confirmation` 与每条询盘的 `confirmation_label` / `attr_change_count` 同源。
+  - **只管「谁能改、改了留痕、未确认看得见」,不改任何考核口径** —— 月度考核照旧数全部询盘。
+    旧分支里绑在旧版 KPI 上的「严格模式(只认已确认的询盘)」**没有移植**:现在的考核口径是老板亲定的,要不要只认已确认的询盘得他来定。
+  - **来历**:设计与大部分后端代码移植自旧分支 `claude/inquiry-channel-attribution-aed2c6` 的提交 `a298574`。
+    **那条分支不要合并** —— 它落后 main 26 个提交,且与已被月度考核替换掉的旧版 KPI(三层考核)绑在一起。
+  - **踩过的坑**:`inquiry_field_changes.inquiry_id` 有外键,彻底删除询盘前必须先清流水(`repo.remove` 已处理,有测试),否则 500。
+    以后给任何「可被彻底删除」的表加外键子表,都要回头看它的删除路径。
 - **GEO 卡已接真实数据(2026-10-10,总览页,原「占位」已撤)** —— `GET /api/geo/summary`(`routes/geo.js` + `services/geo.js` + `public/src/geo.js`)。
   从 GA4 会话来源(`ga4_dimension_daily` 的 `source_medium`)按域名识别 AI 引擎(`services/aiEngines.js`,**加引擎只改那张表**;
   后缀匹配卡在域名边界上,Gemini 先于谷歌搜索判定),给各引擎会话数、占全站比例、与上一等长区间对比;

@@ -71,7 +71,9 @@ export async function persistTagChange(el,value){
       const it=(window._inqCache||[]).find(x=>String(x.id)===String(id));
       if(it){
         it[field]=value;
-        if(field==='grade'&&tr){
+        // 渠道 / 等级的每次改动后端都记了流水，行上的「改 N」要同步涨 —— 所以改渠道也要重渲这一行
+        if(field==='channel'||field==='grade')it.attr_change_count=(Number(it.attr_change_count)||0)+1;
+        if((field==='grade'||field==='channel')&&tr){
           // 重渲会用缓存覆盖整行：先把行内已手改的可编辑单元格(客户编码/业务员)收回缓存，否则显示回滚
           tr.querySelectorAll('td[contenteditable][data-field]').forEach(td=>{ it[td.dataset.field]=td.innerText.trim(); });
           tr.innerHTML=inqRowHtml(it);
@@ -87,5 +89,10 @@ export async function persistTagChange(el,value){
       await API.post(ep+'/'+id+'/archive',{archive_kind:ak});
       tr.remove(); toast('已完成 · 已自动归档');
     }
-  }catch(err){ toast(err.status===403?'无权修改':'保存失败：'+(err.message||'请求失败')); }
+  }catch(err){
+    // 渠道 / 等级已确认后李陈改不动（403 attribution_locked）；经理改要填原因（400 reason_required）。
+    // 这两种后端都给了说得清的话，原样显示，别只说「无权修改」。
+    const code=err&&err.body&&err.body.error;
+    toast(code==='attribution_locked'||code==='reason_required'?err.message:(err.status===403?'无权修改':'保存失败：'+(err.message||'请求失败')));
+  }
 }

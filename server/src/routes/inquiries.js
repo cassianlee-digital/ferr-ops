@@ -1,7 +1,7 @@
 // 询盘 API（FR-1）。写入限销售；所有登录用户可读。
 import * as repo from '../db/repositories/inquiries.js';
 import * as salesNotesRepo from '../db/repositories/inquirySalesNotes.js';
-import { requireAuth, editor } from '../auth/middleware.js';
+import { requireAuth, editor, onlyManagerBoss } from '../auth/middleware.js';
 import { recomputeActuals } from '../services/kpi.js';
 import { parseDateRange } from '../lib/parseDateRange.js';
 import * as leadsRepo from '../db/repositories/inquiryLeads.js';
@@ -14,6 +14,10 @@ const GRADES = ['A', 'B', 'C'];
 const DEALS = ['未成交', '已成交'];
 // 公司：询价通过哪个主体来的。只认这两家，没选就留 NULL（表格显示「未标注」，不替业务瞎归属）
 const COMPANIES = ['贝孚特', '费尔瑞'];
+// 渠道：只认这四个（与 services/attribution.js 的 classify 同口径）。以前 PATCH 不校验渠道，任何字符串都能写进去。
+const CHANNELS = ['SEO自然', 'SEM付费', '直接', '其他'];
+// 确认权在经理 / 老板：他们录入即确认，也只有他们能确认、能改已确认的渠道和等级
+const isAuthority = (request) => request.user?.role === 'manager' || request.user?.role === 'boss';
 
 function clean(body) {
   const s = (v) => (v == null ? null : String(v).slice(0, 500));
@@ -59,6 +63,11 @@ export async function inquiriesRoutes(app) {
   app.post('/api/inquiries', editor, async (request, reply) => {
     const body = request.body || {};
     const rec = clean(body);
+    if (rec.channel != null && !CHANNELS.includes(rec.channel)) {
+      return reply.code(400).send({ error: 'invalid_channel', detail: '渠道只能是：' + CHANNELS.join(' / ') });
+    }
+    // 李 / 陈录的是建议值；经理 / 老板录入即确认
+    rec.attribution_status = isAuthority(request) ? 'confirmed' : 'proposed';
     // 从表单线索转来：来源字段一律取线索里的（服务端自己读，不信前端回传的），并把线索标为已转
     let lead = null;
     if (body.lead_id != null && body.lead_id !== '') {
@@ -93,20 +102,44 @@ export async function inquiriesRoutes(app) {
     if (body.company != null && !COMPANIES.includes(body.company)) {
       return reply.code(400).send({ error: 'invalid_company' });
     }
-    // 6.23 文档 9：若本次 PATCH 改 grade 且历史数据 original_grade=NULL，
-    // 先把「修改前的旧 grade」锁为 original_grade（必须在 update 之前调用，否则锁到的就是新 grade）
+    if (body.channel != null && !CHANNELS.includes(body.channel)) {
+      return reply.code(400).send({ error: 'invalid_channel', detail: '渠道只能是：' + CHANNELS.join(' / ') });
+    }
+    if (body.grade != null && !GRADES.includes(body.grade)) {
+      return reply.code(400).send({ error: 'invalid_grade', detail: '等级只能是 A / B / C' });
+    }
+    const cur = repo.get(id);
+    if (!cur) return reply.code(404).send({ error: 'not_found' });
+
+    /* 确认闸门：渠道 / 等级一旦被经理或老板确认，录入人就不能再改 —— 等级决定考核里 A / B 询价的数量。
+       经理 / 老板仍可改，但必须给理由。建议阶段谁都能改，但每次改动都进流水。 */
+    const changed = repo.ATTR_FIELDS.filter((f) => body[f] != null && body[f] !== cur[f]);
+    if (changed.length) {
+      const confirmed = cur.attribution_status === 'confirmed';
+      if (confirmed && !isAuthority(request)) {
+        return reply.code(403).send({ error: 'attribution_locked', detail: '渠道和等级已经确认，如需更正请找经理或老板' });
+      }
+      const reason = String(body.reason ?? '').trim();
+      if (confirmed && !reason) {
+        return reply.code(400).send({ error: 'reason_required', detail: '修改已确认的渠道 / 等级必须填写原因' });
+      }
+      for (const f of changed) {
+        repo.logFieldChange({ inquiryId: id, field: f, oldValue: cur[f], newValue: body[f], reason, userId: request.user.id });
+      }
+    }
+
     // 来源字段：表单带回的是机器证据，谁都不能手改（改了它就不再是证据）；手填的可以改，改完标记为「人填」
     const touchesSource = ['source', 'src_campaign_id', 'src_landing_page'].some((k) => k in body);
     let manual = null;
     if (touchesSource) {
-      const cur = repo.get(id);
-      if (!cur) return reply.code(404).send({ error: 'not_found' });
       if (cur.src_evidence === 'form') {
         return reply.code(409).send({ error: 'source_locked', detail: '这条询盘的来源是独立站表单带回的机器证据，不能手改' });
       }
       manual = manualSource(body, taskLinksRepo.campaignNames());
       if (!manual.ok) return reply.code(400).send({ error: 'bad_source', detail: manual.detail });
     }
+    // 6.23 文档 9：若本次 PATCH 改 grade 且历史数据 original_grade=NULL，
+    // 先把「修改前的旧 grade」锁为 original_grade（必须在 update 之前调用，否则锁到的就是新 grade）
     if (body.grade != null) repo.lockOriginalGradeIfNull(id);
     let item = repo.update(id, body);
     if (manual && Object.keys(manual.value).length) item = repo.setSource(id, { ...manual.value, src_evidence: 'manual' });
@@ -191,6 +224,64 @@ export async function inquiriesRoutes(app) {
   app.post('/api/inquiries/:id/restore', editor, async (request, reply) => {
     const item = repo.restore(Number(request.params.id));
     if (!item) return reply.code(404).send({ error: 'not_found' });
+    recomputeActuals();
+    return { item };
+  });
+
+  /* ===== 确认权与改动留痕（2026-10-10）=====
+     录入 = 建议值，经理 / 老板确认后才是定稿；改动一律留痕。
+     这里只立「谁能改、改了留痕、未确认看得见」三条规矩，**不改任何考核口径** ——
+     月度考核照旧数全部询盘。先有可见性，再谈约束。 */
+
+  // 某条询盘的渠道 / 等级 / 确认状态改动流水（谁、何时、从什么改成什么、为什么）
+  app.get('/api/inquiries/:id/changes', { preHandler: requireAuth }, async (request, reply) => {
+    const id = Number(request.params.id);
+    if (!repo.get(id)) return reply.code(404).send({ error: 'not_found' });
+    return { items: repo.listFieldChanges(id) };
+  });
+
+  // 区间内的确认覆盖情况：未确认占比要能被页面直接读到
+  app.get('/api/inquiries/attribution-coverage', { preHandler: requireAuth }, async (request, reply) => {
+    const { range, error } = parseDateRange(request.query || {});
+    if (error) return reply.code(400).send({ error });
+    return repo.attributionCoverage(range);
+  });
+
+  // 确认（仅经理 / 老板）。可在确认的同时纠正渠道 / 等级。
+  app.post('/api/inquiries/:id/confirm', onlyManagerBoss, async (request, reply) => {
+    const id = Number(request.params.id);
+    if (!repo.get(id)) return reply.code(404).send({ error: 'not_found' });
+    const b = request.body || {};
+    if (b.channel != null && !CHANNELS.includes(b.channel)) return reply.code(400).send({ error: 'invalid_channel' });
+    if (b.grade != null && !GRADES.includes(b.grade)) return reply.code(400).send({ error: 'invalid_grade' });
+    const item = repo.confirmAttribution(id, { channel: b.channel, grade: b.grade, reason: b.reason, userId: request.user.id });
+    recomputeActuals();
+    return { item, stats: repo.stats() };
+  });
+
+  // 批量确认：否则经理要一条条点，迟早变成瓶颈，然后没人确认
+  app.post('/api/inquiries/confirm', onlyManagerBoss, async (request, reply) => {
+    const ids = Array.isArray(request.body?.ids) ? [...new Set(request.body.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))] : [];
+    if (!ids.length) return reply.code(400).send({ error: 'ids_required', detail: '没有可确认的询盘' });
+    if (ids.length > 500) return reply.code(400).send({ error: 'too_many', detail: '一次最多确认 500 条' });
+    const items = [];
+    for (const id of ids) {
+      if (!repo.get(id)) continue; // 批量里混了不存在的 id 就跳过，不让整批失败
+      items.push(repo.confirmAttribution(id, { reason: request.body?.reason, userId: request.user.id }));
+    }
+    recomputeActuals();
+    return { confirmed: items.length, requested: ids.length };
+  });
+
+  // 撤销确认：必须给理由，退回建议态
+  app.post('/api/inquiries/:id/unconfirm', onlyManagerBoss, async (request, reply) => {
+    const id = Number(request.params.id);
+    const cur = repo.get(id);
+    if (!cur) return reply.code(404).send({ error: 'not_found' });
+    const reason = String(request.body?.reason ?? '').trim();
+    if (!reason) return reply.code(400).send({ error: 'reason_required', detail: '撤销确认必须填写原因' });
+    if (cur.attribution_status !== 'confirmed') return reply.code(409).send({ error: 'not_confirmed', detail: '这条询盘本来就没有确认' });
+    const item = repo.unconfirmAttribution(id, { reason, userId: request.user.id });
     recomputeActuals();
     return { item };
   });

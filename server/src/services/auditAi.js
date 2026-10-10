@@ -42,10 +42,10 @@ export function auditAiPayload(pkg) {
     geo: pkg.geo && { status: pkg.geo.status, totals: pkg.geo.totals, engines: (pkg.geo.engines || []).map((e) => ({ engine: e.label, sessions: e.sessions, prev: e.prevSessions })), inquiries: pkg.geo.inquiries, citations: pkg.geo.citations && pkg.geo.citations.totals },
     inquiries: {
       total: pkg.inquiries.total, by_grade: pkg.inquiries.by_grade, junk_ratio: pkg.inquiries.junk_ratio, by_channel: pkg.inquiries.by_channel,
-      by_product: pkg.inquiries.by_product, by_source_verdict: pkg.inquiries.by_source_verdict, with_form_evidence: pkg.inquiries.with_form_evidence, deals: pkg.inquiries.deals,
+      by_product: pkg.inquiries.by_product, by_source_verdict: pkg.inquiries.by_source_verdict, with_form_evidence: pkg.inquiries.with_form_evidence, deals: pkg.inquiries.deals, confirmation: pkg.inquiries.confirmation,
       items: pkg.inquiries.items.slice(0, MAX_INQUIRIES).map((i) => ({
         id: i.id, date: i.date, country: i.country, channel: i.channel, product: i.product, grade: i.grade, deal: i.deal_status,
-        source: clip(i.source, 80), campaign: i.src_campaign, landing_page: i.src_landing_page, evidence: i.src_evidence, verdict: i.source_verdict_label,
+        source: clip(i.source, 80), campaign: i.src_campaign, landing_page: i.src_landing_page, evidence: i.src_evidence, verdict: i.source_verdict_label, confirmed: i.confirmation_label, changes: i.attr_change_count,
       })),
     },
     leads: { total: pkg.leads.total, converted: pkg.leads.converted, ignored: pkg.leads.ignored, ignored_items: pkg.leads.items.filter((l) => l.state === 'ignored').slice(0, 40).map((l) => ({ reason: clip(l.ignore_reason, 80), keyword: l.keyword, campaign: l.campaign, landing_page: l.landing_page })) },

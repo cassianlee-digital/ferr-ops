@@ -21,6 +21,7 @@ import { commitPendingCellEdit } from './table-editor.js';
 import { PRODUCT_BADGE, REGION_BADGE, PRODUCT_NAMES, REGION_NAMES, fillSelect } from './catalog.js';
 import { salesCellHtml } from './inquiry-sales.js';
 import { loadSourceChecks, sourceCellHtml } from './inquiry-source.js';
+import { attrConfirmBtnHtml, attrLockHtml, attrMarkHtml, isConfirmed, loadAttrCoverage } from './inquiry-attribution.js';
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
 // 产品 / 大区的可选值与配色统一来自 catalog.js —— 以前这里各写一份，加个产品要改四处，
@@ -169,21 +170,23 @@ export function inqRowHtml(r){
   // 国家/大区后期可改（2026-09-20 老板要求）：录入当下常常不知道客户是哪来的，
   // 先留空或填错，等业务问清楚再补。国家是自由文本（带国旗 emoji），故用可编辑格；
   // 大区是固定几个值，改成彩色标签下拉，和渠道/产品一致，点一下就换。
+  // 确认闸门：渠道 / 等级一旦被经理或老板确认，就不再给下拉（点了后端也会拒绝），换成带锁的静态徽章
+  const locked=isConfirmed(r);
   return `<td>${esc(r.date.slice(5))}</td>`
     +`<td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code||'')}</td>`
     +`<td class="editable" contenteditable data-field="country">${esc(r.country||'')}</td>`
     +`<td class="ctr"><span class="tagselect ${REGION_BADGE[r.region]||'b-gray'}" data-kind="region">${esc(r.region||'未填')}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr inq-attr-cell">${locked?attrLockHtml(CH_BADGE[r.channel]||'b-gray',r.channel):`<span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td>`
     +`<td class="inq-source">${sourceCellHtml(r)}</td>`
     +`<td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
+    +`<td class="ctr inq-attr-cell">${locked?attrLockHtml(GRADE_BADGE[r.grade]||'b-gray',r.grade):`<span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td>`
     +`<td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company]||'b-gray'}" data-kind="company">${esc(r.company||'未标注')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson||'')}</td>`
     +`<td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td>`
     +`<td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status]||'b-gray'}" data-kind="deal">${esc(r.deal_status||'未标记')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="dim csp-s-33ee298127">${esc(r.note||'')}</td>`
     +`<td class="ctr inq-track-feedback">${trackCellHtml(r)}</td>`
-    +`<td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="删除（归档到归档页）"><i class="ti ti-trash"></i></button></td>`;
+    +`<td class="ctr inq-ops">${attrConfirmBtnHtml(r)}<button class="btn-mini inq-del csp-s-7ee38adc7c" title="删除（归档到归档页）"><i class="ti ti-trash"></i></button></td>`;
 }
 function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
 
@@ -358,6 +361,9 @@ document.addEventListener('salesnoteschanged',()=>renderInqTable());
 /* 来源格（来源词 / 系列 / 落地页 + 对账徽章）由 inquiry-source.js 管：对账结果回来、或来源被改了，
    它广播 inqsourcechanged，这里重画整表（来源词同时是表头筛选的一列）。同样用事件，不互相 import。 */
 document.addEventListener('inqsourcechanged',()=>renderInqTable());
+/* 渠道 / 等级被确认、撤销确认或被经理改过之后整页重拉：行上的锁、确认标记、改动次数、顶部进度都要跟着变。
+   inquiry-attribution.js 广播 attributionchanged，同样用事件而不是互相 import。 */
+document.addEventListener('attributionchanged',()=>loadInquiries());
 /* 表单线索「转为询盘」：inquiry-source.js 把线索交过来，这里打开录入弹框并预填。
    来源字段（系列 / 关键词 / 落地页 / gclid…）不在这里填 —— 提交时只带 lead_id，后端自己从线索里取，
    免得「机器证据」在前端转一道手。等级不预填：评级是人的判断。 */
@@ -480,6 +486,7 @@ export async function loadInquiries(){
     window._inqCache=items||[];
     renderInqList(); // 唯一一张表：表头筛选 + 日期倒序 + 月份分隔 + 分页
     refreshInqStats(stats);
+    loadAttrCoverage(); // 渠道 / 等级的确认进度：未确认占比跟着列表一起刷
     loadSourceChecks(); // 来源对账 + 表单线索待处理数：表格先出来，这些随后补上（不 await，不拖慢列表）
     // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
     loadKpiInqDonuts(); // KPI 页两个 donut 按 KPI 页自己的区间取数（不受询盘页区间/筛选影响）

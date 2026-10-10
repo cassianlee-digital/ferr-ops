@@ -12,7 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_VERSION = '13';
 
 const ALL_TABLES = [
-  'users', 'inquiries', 'inquiry_feedbacks', 'inquiry_sales_notes', 'inquiry_leads', 'attachments',
+  'users', 'inquiries', 'inquiry_feedbacks', 'inquiry_sales_notes', 'inquiry_leads', 'inquiry_field_changes', 'attachments',
   'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'kpi_period_snapshots', 'kpi_config', 'kpi_review_targets',
   'execution_loops', 'keywords', 'fixes', 'loop_items',
@@ -746,6 +746,26 @@ CREATE TABLE IF NOT EXISTS geo_checks (
 );
 CREATE INDEX IF NOT EXISTS idx_geo_checks_round ON geo_checks(round_date);
 
+-- 询盘确认权与改动留痕（2026-10-10 移植自旧分支的设计）。
+-- 等级（A/B/C）决定月度考核里 60 分的 A / B 询价数量，渠道决定「这条询盘算谁带来的」，
+-- 而这两个字段录入人自己就能填、能改 —— 等于被考核的人给自己评分。
+-- 没有表单证据的询盘拿不到独立于录入人的机器证据，能立的只有流程规矩：
+--   ① 录入的是建议值，经理 / 老板确认后才是定稿（inquiries.attribution_status）；
+--   ② 改动留痕：谁、什么时候、从什么改成什么、为什么 —— 就是本表；
+--   ③ 未确认占比是页面上的明数字。
+-- 老列 channel / grade 仍是生效值（所有既有消费者不用改）。
+CREATE TABLE IF NOT EXISTS inquiry_field_changes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  inquiry_id  INTEGER NOT NULL REFERENCES inquiries(id),
+  field       TEXT NOT NULL,               -- 'channel' | 'grade' | 'attribution_status'
+  old_value   TEXT,
+  new_value   TEXT,
+  reason      TEXT,                        -- 改已确认的值时必填；建议阶段的修改可空
+  changed_by  INTEGER REFERENCES users(id),
+  changed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_inquiry_field_changes_inq ON inquiry_field_changes(inquiry_id, id);
+
 -- 表单线索（2026-10-10）：独立站询盘表单提交时带着来源参数进来的原始记录。
 -- 线索不是询盘：不进任何统计，要有人确认「这就是业务收到的那条」并评了等级才转成询盘（inquiry_id 回指）。
 -- 被忽略的也留着并记原因 —— 垃圾询价从哪个系列 / 关键词来，正是要靠这些行去查。
@@ -864,6 +884,9 @@ export function migrate() {
     ['src_campaign_id', 'TEXT'], ['src_campaign', 'TEXT'], ['src_landing_page', 'TEXT'],
     ['src_referrer', 'TEXT'], ['src_gclid', 'TEXT'], ['src_utm', 'TEXT'],
     ['src_evidence', 'TEXT'], ['lead_id', 'INTEGER'],
+    // 确认状态：proposed = 录入人填的建议值 / confirmed = 经理或老板已确认。
+    // 老行留 NULL = 历史未审：既不算已确认也不算刚提交，不补假值。
+    ['attribution_status', 'TEXT'], ['attribution_confirmed_by', 'INTEGER'], ['attribution_confirmed_at', 'TEXT'],
   ]);
   ensureColumns('google_sync_runs', [
     ['project_id', 'INTEGER'],

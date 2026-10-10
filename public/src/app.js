@@ -21,6 +21,7 @@ import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInqui
 import { renderGlobe } from './inquiry-globe.js';
 import { pickSalesImages, submitSalesNote } from './inquiry-sales.js';
 import { openLeads, refreshLeadBadge, submitInquirySource } from './inquiry-source.js';
+import { submitAttrEdit } from './inquiry-attribution.js';
 import { addKeyword, filterKwByCat, loadKeywords, renderSparklines } from './keywords.js';
 import { loadOverview, renderKPI } from './kpi-view.js';
 import { loadMetrics, loadWeeks, submitSemWeek, submitSeoWeek } from './kpi.js';
@@ -126,6 +127,7 @@ const STATIC_UI_ACTIONS={
   'submit-geo-check':el=>submitGeoCheck(el),
   'pick-geo-shot':()=>pickGeoShot(),
   'submit-inq-source':el=>submitInquirySource(el),
+  'submit-attr-edit':el=>submitAttrEdit(el),
   'open-backlink':()=>openBacklink(),
   'open-expense':()=>openExpense(),
   'submit-backlink':el=>submitBacklink(el),

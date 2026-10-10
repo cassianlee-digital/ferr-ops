@@ -6,13 +6,16 @@ import * as salesNotesRepo from './inquirySalesNotes.js';
 // range 可选：{ start_date, end_date }(YYYY-MM-DD)。提供则按 date 区间过滤(参数化)；不提供返回全量。
 // P3：默认排除已归档（state='archived'）；归档项只在归档页通过 listArchived() 取。
 const NOT_ARCHIVED = "(state IS NULL OR state <> 'archived')";
+// 列表统一走这里：挂 feedbacks + 渠道 / 等级被改过几次（都是批量取，不做 N+1）
+function decorate(rows) { return attachChangeCounts(attachFeedbacks(rows)); }
+
 export function list(range) {
   if (range && range.start_date && range.end_date) {
-    return attachFeedbacks(db
+    return decorate(db
       .prepare(`SELECT * FROM inquiries WHERE ${NOT_ARCHIVED} AND date BETWEEN @start_date AND @end_date ORDER BY date DESC, id DESC`)
       .all({ start_date: range.start_date, end_date: range.end_date }));
   }
-  return attachFeedbacks(db
+  return decorate(db
     .prepare(`SELECT * FROM inquiries WHERE ${NOT_ARCHIVED} ORDER BY date DESC, id DESC`)
     .all());
 }
@@ -46,9 +49,11 @@ export function create(rec, userId) {
   const info = db
     .prepare(
       `INSERT INTO inquiries (date, country, region, channel, source, product, grade, note, created_by,
-                              customer_code, company, salesperson, deal_status, tracking_feedback, original_grade)
+                              customer_code, company, salesperson, deal_status, tracking_feedback, original_grade,
+                              attribution_status, attribution_confirmed_by, attribution_confirmed_at)
        VALUES (@date, @country, @region, @channel, @source, @product, @grade, @note, @created_by,
-               @customer_code, @company, @salesperson, @deal_status, @tracking_feedback, @original_grade)`
+               @customer_code, @company, @salesperson, @deal_status, @tracking_feedback, @original_grade,
+               @attribution_status, @attribution_confirmed_by, @attribution_confirmed_at)`
     )
     .run({
       ...rec,
@@ -59,6 +64,10 @@ export function create(rec, userId) {
       deal_status: rec.deal_status ?? null,
       tracking_feedback: rec.tracking_feedback ?? null,
       original_grade: rec.original_grade ?? rec.grade ?? null,
+      // 李 / 陈录的是建议值（proposed）；经理 / 老板录的直接算已确认 —— 确认权本来就在他们手里
+      attribution_status: rec.attribution_status ?? 'proposed',
+      attribution_confirmed_by: rec.attribution_status === 'confirmed' ? (userId ?? null) : null,
+      attribution_confirmed_at: rec.attribution_status === 'confirmed' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null,
     });
   return get(info.lastInsertRowid); // 与列表同形（带空的 feedbacks 数组）
 }
@@ -143,7 +152,7 @@ export function removeFeedback(id) {
 
 export function get(id) {
   const row = db.prepare('SELECT * FROM inquiries WHERE id = ?').get(id);
-  if (row) attachFeedbacks([row]); // 单行也带 feedbacks，PATCH 返回的 item 与列表同形
+  if (row) decorate([row]); // 单行也带 feedbacks 与改动次数，PATCH 返回的 item 与列表同形
   return row;
 }
 
@@ -151,6 +160,9 @@ export function remove(id) {
   // 物理删除询盘时一并清掉它的跟踪记录与业务反馈（含图片 BLOB），
   // 避免留下指向不存在询盘的孤儿行——图片尤其要清，不然会一直占着库体积
   db.prepare('DELETE FROM inquiry_feedbacks WHERE inquiry_id = ?').run(id);
+  // 改动流水有外键指着这条询盘：不先清掉，彻底删除会直接被外键拦成 500（2026-10-10 实测踩到）。
+  // 彻底删除本来就是「连痕迹一起抹掉」的操作（仅老板在归档页可做），流水跟着走。
+  db.prepare('DELETE FROM inquiry_field_changes WHERE inquiry_id = ?').run(id);
   salesNotesRepo.removeByInquiry(id);
   db.prepare('DELETE FROM inquiries WHERE id = ?').run(id);
 }
@@ -175,5 +187,104 @@ export function stats(range) {
     total, a, b, c, valid,
     aRatio: valid ? Math.round((a / valid) * 100) : 0,
     rate: total ? Math.round((valid / total) * 100) : 0,
+  };
+}
+
+/* ===== 确认权与改动留痕（2026-10-10，设计移植自旧分支 a298574）=====
+   渠道 / 等级录入时是建议值（proposed），经理或老板确认后才是定稿（confirmed），一切改动留痕。
+   老行 attribution_status 为 NULL = 历史未审，既不算已确认也不算刚提交。 */
+
+export const ATTR_FIELDS = ['channel', 'grade'];
+
+const CHANGE_SELECT = `SELECT c.id, c.inquiry_id, c.field, c.old_value, c.new_value, c.reason,
+                              c.changed_at, u.name AS changed_by_name
+                         FROM inquiry_field_changes c LEFT JOIN users u ON u.id = c.changed_by`;
+
+// 记一条改动。old === new 不记（避免「确认时顺手保存」刷出一堆空流水）。
+export function logFieldChange({ inquiryId, field, oldValue, newValue, reason, userId }) {
+  const o = oldValue == null ? null : String(oldValue);
+  const n = newValue == null ? null : String(newValue);
+  if (o === n) return null;
+  const info = db.prepare(
+    `INSERT INTO inquiry_field_changes (inquiry_id, field, old_value, new_value, reason, changed_by)
+     VALUES (?,?,?,?,?,?)`
+  ).run(inquiryId, field, o, n, reason ? String(reason).slice(0, 500) : null, userId ?? null);
+  return db.prepare(`${CHANGE_SELECT} WHERE c.id = ?`).get(info.lastInsertRowid);
+}
+
+// 某条询盘的全部改动，新的在前
+export function listFieldChanges(inquiryId) {
+  return db.prepare(`${CHANGE_SELECT} WHERE c.inquiry_id = ? ORDER BY c.id DESC`).all(inquiryId);
+}
+
+/* 给一批询盘挂上「渠道 / 等级被改过几次」。这个数本身就是监督信号：
+   谁在月底前批量把 C 改成 B，一眼看得出来。只数这两个字段，确认 / 撤销确认本身不算「改」。 */
+export function attachChangeCounts(rows) {
+  const ids = rows.map((r) => r.id);
+  const map = {};
+  for (let i = 0; i < ids.length; i += 500) {
+    const part = ids.slice(i, i + 500);
+    const found = db.prepare(
+      `SELECT inquiry_id, COUNT(*) n FROM inquiry_field_changes
+        WHERE inquiry_id IN (${part.map(() => '?').join(',')}) AND field IN ('channel','grade')
+        GROUP BY inquiry_id`
+    ).all(...part);
+    for (const r of found) map[r.inquiry_id] = r.n;
+  }
+  for (const r of rows) r.attr_change_count = map[r.id] || 0;
+  return rows;
+}
+
+// 经理 / 老板确认。可以在确认的同时纠正渠道 / 等级（那是最常见的动作），纠正本身也留痕。
+export function confirmAttribution(id, { channel, grade, reason, userId }) {
+  const before = get(id);
+  if (!before) return null;
+  if (channel != null && channel !== before.channel) {
+    logFieldChange({ inquiryId: id, field: 'channel', oldValue: before.channel, newValue: channel, reason, userId });
+    db.prepare('UPDATE inquiries SET channel = ? WHERE id = ?').run(channel, id);
+  }
+  if (grade != null && grade !== before.grade) {
+    lockOriginalGradeIfNull(id); // 与 PATCH 同规矩：先锁最初等级，再改
+    logFieldChange({ inquiryId: id, field: 'grade', oldValue: before.grade, newValue: grade, reason, userId });
+    db.prepare('UPDATE inquiries SET grade = ? WHERE id = ?').run(grade, id);
+  }
+  if (before.attribution_status !== 'confirmed') {
+    logFieldChange({ inquiryId: id, field: 'attribution_status', oldValue: before.attribution_status, newValue: 'confirmed', reason, userId });
+  }
+  db.prepare(
+    "UPDATE inquiries SET attribution_status='confirmed', attribution_confirmed_by=?, attribution_confirmed_at=datetime('now') WHERE id=?"
+  ).run(userId ?? null, id);
+  return get(id);
+}
+
+// 撤销确认（确认错了要能退回建议态，不能只能去改库）。同样留痕。
+export function unconfirmAttribution(id, { reason, userId }) {
+  const before = get(id);
+  if (!before) return null;
+  logFieldChange({ inquiryId: id, field: 'attribution_status', oldValue: before.attribution_status, newValue: 'proposed', reason, userId });
+  db.prepare(
+    "UPDATE inquiries SET attribution_status='proposed', attribution_confirmed_by=NULL, attribution_confirmed_at=NULL WHERE id=?"
+  ).run(id);
+  return get(id);
+}
+
+/* 确认覆盖情况：未确认占比是这套规矩的核心监督数字，必须自己亮出来。
+   legacy = 这套规矩上线前录的老行。0 条询盘时比例返回 null —— 返回 0 会被读成「全部已确认」或「全部未确认」。 */
+export function attributionCoverage(range) {
+  const ranged = !!(range && range.start_date && range.end_date);
+  const row = db.prepare(
+    `SELECT COUNT(*) total,
+            SUM(CASE WHEN attribution_status='confirmed' THEN 1 ELSE 0 END) confirmed,
+            SUM(CASE WHEN attribution_status='proposed'  THEN 1 ELSE 0 END) proposed,
+            SUM(CASE WHEN attribution_status IS NULL     THEN 1 ELSE 0 END) legacy
+       FROM inquiries
+      WHERE ${NOT_ARCHIVED}${ranged ? ' AND date BETWEEN @start_date AND @end_date' : ''}`
+  ).get(ranged ? { start_date: range.start_date, end_date: range.end_date } : {});
+  const total = row.total || 0;
+  const confirmed = row.confirmed || 0;
+  return {
+    total, confirmed, proposed: row.proposed || 0, legacy: row.legacy || 0,
+    confirmedRate: total > 0 ? Math.round((confirmed / total) * 1000) / 10 : null,
+    unconfirmedRate: total > 0 ? Math.round(((total - confirmed) / total) * 1000) / 10 : null,
   };
 }

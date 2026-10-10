@@ -523,3 +523,36 @@ body.dark .sales-pending-item{background:#0f172a;border-color:#273142}
 .lead-ops{display:flex;align-items:center;gap:6px;margin-top:8px}
 .lead-reason{flex:1 1 auto;min-width:0;height:28px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text1);font-size:12px;font-family:var(--font)}
 .lead-empty{padding:20px 0;text-align:center}
+
+/* ================= 渠道 / 等级的确认与改动留痕（2026-10-10）=================
+   界面要说清三件事：这条确认了没、被改过几次、已确认的改不动。渲染在 src/inquiry-attribution.js。 */
+.inq-attr-bar-box{display:inline-flex;align-items:center;gap:6px;margin-right:10px}
+.attr-bar{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius);font-size:12px;font-weight:600}
+.attr-bar-ok{background:var(--green-soft);color:var(--green)}
+.attr-bar-mid{background:var(--amber-soft);color:var(--amber)}
+.attr-bar-warn{background:var(--danger-soft);color:var(--danger)}
+/* 行内标记：待确认 / 已确认 / 历史未审，落在渠道徽章下面 */
+#panel-inquiry .inq-attr-cell{white-space:normal}
+.attr-mark{display:block;width:fit-content;margin:3px auto 0;padding:0 5px;border-radius:var(--radius);font-size:10px;font-weight:600;line-height:16px}
+.attr-confirmed{background:var(--green-soft);color:var(--green)}
+.attr-proposed{background:var(--amber-soft);color:var(--amber)}
+.attr-legacy{background:var(--bg3);color:var(--text3)}
+/* 改动次数：可点，点开看是谁在什么时候改成什么的 */
+.attr-changes{display:block;margin:2px auto 0;padding:0 5px;border:0;border-radius:var(--radius);background:var(--danger-soft);color:var(--danger);font-size:10px;font-weight:600;line-height:16px;font-family:var(--font);cursor:pointer}
+.attr-changes:hover{background:var(--danger);color:#fff}
+/* 已确认 → 带锁的静态徽章（不是下拉） */
+.attr-locked{display:inline-flex;align-items:center;gap:3px}
+.attr-locked[data-attr-edit]{cursor:pointer}
+.attr-lock-ico{font-size:10px;opacity:.65}
+/* 操作列原来只放一个删除键（60px）；经理 / 老板多了一个确认 / 撤销键，两个键要 84px 才不溢出到表格外 */
+#panel-inquiry .inq-table th:nth-child(15),#panel-inquiry .inq-table td.inq-ops{width:84px;white-space:nowrap}
+.btn-mini.attr-confirm{margin-right:3px;color:var(--green)}
+.btn-mini.attr-unconfirm{margin-right:3px;color:var(--text3)}
+/* 改动流水弹框 */
+.attr-log{max-height:52vh;overflow-y:auto;margin-bottom:10px}
+.attr-log-empty{padding:14px 2px;font-size:12px;color:var(--text3)}
+.attr-log-item{padding:6px 0 6px 10px;border-left:2px solid var(--border2);margin-bottom:6px}
+.attr-log-item:first-child{border-left-color:var(--blue)}
+.attr-log-head{font-size:12px;font-weight:600;color:var(--text1);overflow-wrap:anywhere}
+.attr-log-meta{margin-top:2px;font-size:11px;color:var(--text3)}
+.attr-log-reason{margin-top:3px;font-size:12px;color:var(--text2);overflow-wrap:anywhere}

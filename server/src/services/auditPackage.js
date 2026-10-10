@@ -99,6 +99,8 @@ function trend(source, fetch, range) {
   return { status: 'OK', days_with_data: cur.days, range, previous_range: prev, current: c.after, previous: c.before, delta: c.delta };
 }
 
+const CONFIRMATION_LABEL = { confirmed: '已确认', proposed: '待确认', legacy: '历史未审' };
+
 /* ---------- 询盘（部门口径） ---------- */
 function buildInquiries(range) {
   const rows = inqRepo.list(range);
@@ -112,6 +114,10 @@ function buildInquiries(range) {
       source: r.source, src_campaign: r.src_campaign || null, src_landing_page: r.src_landing_page || null,
       src_evidence: r.src_evidence || null,
       source_verdict: verdict, source_verdict_label: verdict ? VERDICTS[verdict].label : null,
+      // 渠道 / 等级有没有经过经理或老板确认；被改过几次
+      confirmation: r.attribution_status || 'legacy',
+      confirmation_label: CONFIRMATION_LABEL[r.attribution_status] || CONFIRMATION_LABEL.legacy,
+      attr_change_count: r.attr_change_count || 0,
       followups: (r.feedbacks || []).length, note: r.note || null,
     };
   });
@@ -128,6 +134,8 @@ function buildInquiries(range) {
     by_product: count((i) => i.product),
     by_source_verdict: count((i) => i.source_verdict_label),
     with_form_evidence: items.filter((i) => i.src_evidence === 'form').length,
+    // 等级是人评的。这些 A / B 里有多少是经理或老板确认过的，决定了上面这些数能信到什么程度
+    confirmation: inqRepo.attributionCoverage(range),
     deals: items.filter((i) => i.deal_status === '已成交').length,
     items,
   };

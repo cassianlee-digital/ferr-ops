@@ -175,7 +175,7 @@
         <div class="timebar-inline" data-time data-scope="inquiry" data-gran="day,week,month"></div>
 <!-- 询盘明细表（全宽 · 唯一一张表：表头筛选行 + 月份分隔行 + 底部分页）-->
         <div>
-          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；表头第二行按列筛选，下方地图跟随筛选结果</span><span class="inq-summary" id="inqSummary"></span></div>
+          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；表头第二行按列筛选，下方地图跟随筛选结果</span><span class="inq-attr-bar-box" id="inqAttrBar"></span><span class="inq-summary" id="inqSummary"></span></div>
           <div class="card"><table class="dt inq-table">
           <!-- 6.23 文档 11/12/7：删销售确认列；加跟踪反馈（备注后）；P3 末尾加「操作」删除列 -->
           <!-- 录入改版：客户姓名 → 客户编码，等级后加 公司 / 业务员 / 是否成交 -->
@@ -1233,6 +1233,35 @@
       <div id="task-effect-body"></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskEffectMask">关闭</button></div>
+  </div>
+</div>
+
+<!-- 渠道 / 等级 / 确认状态的改动流水：谁、什么时候、从什么改成什么、为什么。逻辑在 src/inquiry-attribution.js -->
+<div class="modal-mask" id="attrLogModal">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-history csp-s-b0e08465c2"></i> 渠道与等级的改动流水<span class="x" data-ui-action="close-modal" data-modal="attrLogModal"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="attr-log" id="attrLogBody"></div>
+      <div class="task-done-rule">等级决定考核里 A / B 询价的数量，所以每次改动都留档；改已确认的值必须填原因。</div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="attrLogModal">关闭</button></div>
+  </div>
+</div>
+
+<!-- 修改已确认的渠道 / 等级，或撤销确认（仅经理 / 老板有入口）：强制填原因 -->
+<div class="modal-mask" id="attrEditModal">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-shield-check csp-s-b0e08465c2"></i> <span id="attrEditTitle">修改已确认的渠道 / 等级</span><span class="x" data-ui-action="close-modal" data-modal="attrEditModal"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld-row" id="attrEditFields">
+        <div class="fld"><label>渠道</label><select id="attrEditChannel"><option>SEO自然</option><option>SEM付费</option><option>直接</option><option>其他</option></select></div>
+        <div class="fld"><label>等级</label><select id="attrEditGrade"><option>A</option><option>B</option><option>C</option></select></div>
+      </div>
+      <div class="fld"><label>原因（必填）</label><textarea id="attrEditReason" rows="3" maxlength="500" placeholder="例：业务确认客户已下样品单，等级上调为 A"></textarea></div>
+      <div class="task-done-rule">这次操作会写进改动流水，包含你的名字、时间和原因。</div>
+      <div class="task-done-error" id="attrEditError"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="attrEditModal">取消</button><button class="btn-primary" data-ui-action="submit-attr-edit"><i class="ti ti-device-floppy"></i> 保存</button></div>
   </div>
 </div>
 

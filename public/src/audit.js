@@ -230,11 +230,18 @@ function renderInquiries(root) {
   else {
     c.appendChild(el('div', 'audit-line', '共 ' + q.total + ' 条：A ' + q.by_grade.A + ' · B ' + q.by_grade.B + ' · C ' + q.by_grade.C
       + '（C 级占 ' + Math.round(q.junk_ratio * 100) + '%）· 成交 ' + q.deals + ' · 有表单来源证据 ' + q.with_form_evidence + '/' + q.total));
+    const cf = q.confirmation;
+    if (cf && cf.total) {
+      // 等级是录入人自己评的：上面的 A / B 数里有多少经过经理或老板确认，决定了它能信到什么程度
+      c.appendChild(el('div', 'audit-line' + (cf.unconfirmedRate >= 50 ? ' audit-missing' : ''),
+        '渠道与等级已确认 ' + cf.confirmed + '/' + cf.total + '（' + cf.confirmedRate + '%）· 待确认 ' + cf.proposed + ' · 历史未审 ' + cf.legacy));
+    }
     c.appendChild(el('div', 'audit-line', '渠道：' + mapText(q.by_channel)));
     c.appendChild(el('div', 'audit-line', '来源对账：' + mapText(q.by_source_verdict)));
     const SHOW = 40;
-    c.appendChild(table(['日期', '国家', '渠道', '产品', { label: '等级', cls: 'ctr' }, '来源词 / 系列 / 落地页', '对账', '成交'],
+    c.appendChild(table(['日期', '国家', '渠道', '产品', { label: '等级', cls: 'ctr' }, '确认', '来源词 / 系列 / 落地页', '对账', '成交'],
       q.items.slice(0, SHOW).map((i) => [md(i.date), i.country, i.channel, i.product, i.grade,
+        i.confirmation_label + (i.attr_change_count ? ' · 改 ' + i.attr_change_count : ''),
         [i.source, i.src_campaign, i.src_landing_page && shortUrl(i.src_landing_page)].filter(Boolean).join(' · '),
         (i.src_evidence === 'form' ? '表单来源' : i.source_verdict_label) || '', i.deal_status || ''])));
     if (q.items.length > SHOW) c.appendChild(el('div', 'dim audit-more', '只显示前 ' + SHOW + ' 条，全部 ' + q.items.length + ' 条在导出文件里。'));

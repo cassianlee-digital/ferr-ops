@@ -50,9 +50,9 @@
         inList = false;
       }
     };
-    for (let line2 of src) {
-      line2 = line2.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
-      const m = line2.match(/^\s*[-*]\s+(.*)$/);
+    for (let line3 of src) {
+      line3 = line3.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
+      const m = line3.match(/^\s*[-*]\s+(.*)$/);
       if (m) {
         flushP();
         if (!inList) {
@@ -60,12 +60,12 @@
           inList = true;
         }
         html += "<li>" + m[1] + "</li>";
-      } else if (line2.trim() === "") {
+      } else if (line3.trim() === "") {
         flushP();
         flushL();
       } else {
         flushL();
-        para.push(line2);
+        para.push(line3);
       }
     }
     flushP();
@@ -3566,6 +3566,214 @@
     });
   }
 
+  // public/src/inquiry-attribution.js
+  var $2 = (id) => document.getElementById(id);
+  var isAuthority = () => {
+    const r = window.ME && window.ME.role;
+    return r === "manager" || r === "boss";
+  };
+  var failText2 = (e) => e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var changed2 = () => document.dispatchEvent(new CustomEvent("attributionchanged"));
+  var isConfirmed = (r) => !!r && r.attribution_status === "confirmed";
+  var statusOf = (r) => isConfirmed(r) ? "confirmed" : r && r.attribution_status === "proposed" ? "proposed" : "legacy";
+  var STATUS_LABEL = { confirmed: "\u5DF2\u786E\u8BA4", proposed: "\u5F85\u786E\u8BA4", legacy: "\u5386\u53F2\u672A\u5BA1" };
+  function attrMarkHtml(r) {
+    const st2 = statusOf(r);
+    const n = Number(r.attr_change_count) || 0;
+    const changes = n > 0 ? `<button type="button" class="attr-changes" data-attr-log title="\u6E20\u9053 / \u7B49\u7EA7\u88AB\u6539\u8FC7 ${n} \u6B21\uFF0C\u70B9\u51FB\u770B\u662F\u8C01\u6539\u7684\u3001\u4E3A\u4EC0\u4E48">\u6539 ${n}</button>` : "";
+    return `<span class="attr-mark attr-${st2}">${STATUS_LABEL[st2]}</span>${changes}`;
+  }
+  function attrLockHtml(cls, text2) {
+    const auth = isAuthority();
+    const hint = auth ? "\u5DF2\u786E\u8BA4\uFF1B\u70B9\u51FB\u4FEE\u6539\uFF08\u9700\u586B\u539F\u56E0\uFF09" : "\u5DF2\u786E\u8BA4\uFF0C\u5982\u9700\u66F4\u6B63\u8BF7\u627E\u7ECF\u7406\u6216\u8001\u677F";
+    return `<span class="badge ${esc2(cls)} attr-locked"${auth ? " data-attr-edit" : ""} title="${esc2(hint)}">${esc2(text2)}<i class="ti ti-lock attr-lock-ico"></i></span>`;
+  }
+  function attrConfirmBtnHtml(r) {
+    if (!isAuthority()) return "";
+    return isConfirmed(r) ? '<button type="button" class="btn-mini attr-unconfirm" data-attr-unconfirm title="\u64A4\u9500\u786E\u8BA4\uFF08\u9700\u586B\u539F\u56E0\uFF09"><i class="ti ti-arrow-back-up"></i></button>' : '<button type="button" class="btn-mini attr-confirm" data-attr-confirm title="\u786E\u8BA4\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u4E0E\u7B49\u7EA7"><i class="ti ti-check"></i></button>';
+  }
+  function renderBar(cov) {
+    const box = $2("inqAttrBar");
+    if (!box) return;
+    box.textContent = "";
+    if (!cov || !cov.total) return;
+    const pending = cov.proposed + cov.legacy;
+    const bar = document.createElement("span");
+    bar.className = "attr-bar " + (cov.unconfirmedRate >= 50 ? "attr-bar-warn" : cov.unconfirmedRate > 0 ? "attr-bar-mid" : "attr-bar-ok");
+    bar.textContent = "\u6E20\u9053\u4E0E\u7B49\u7EA7\u5DF2\u786E\u8BA4 " + cov.confirmed + "/" + cov.total + (cov.confirmedRate != null ? "\uFF08" + cov.confirmedRate + "%\uFF09" : "") + (pending ? " \xB7 \u5F85\u786E\u8BA4 " + cov.proposed + " \xB7 \u5386\u53F2\u672A\u5BA1 " + cov.legacy : "");
+    bar.title = "\u7B49\u7EA7\u7531\u5F55\u5165\u4EBA\u81EA\u5DF1\u586B\uFF1B\u7ECF\u7406\u6216\u8001\u677F\u786E\u8BA4\u8FC7\u7684\u624D\u7B97\u5B9A\u7A3F";
+    box.appendChild(bar);
+    if (isAuthority() && pending > 0) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-mini attr-bar-btn";
+      btn.dataset.attrConfirmAll = "1";
+      btn.textContent = "\u5168\u90E8\u786E\u8BA4\uFF08" + pending + "\uFF09";
+      btn.title = "\u786E\u8BA4\u5F53\u524D\u65F6\u95F4\u8303\u56F4\u5185\u6240\u6709\u672A\u786E\u8BA4\u7684\u8BE2\u76D8\uFF08\u4E0D\u53D7\u8868\u5934\u7B5B\u9009\u5F71\u54CD\uFF09\uFF1B\u60F3\u9010\u6761\u770B\u518D\u786E\u8BA4\uFF0C\u5C31\u7528\u6BCF\u884C\u7684 \u2713";
+      box.appendChild(btn);
+    }
+  }
+  async function loadAttrCoverage() {
+    try {
+      renderBar(await API.get(withRange2("/api/inquiries/attribution-coverage", "inquiry")));
+    } catch (e) {
+      const box = $2("inqAttrBar");
+      if (!box || e && e.message === "unauthorized") return;
+      box.textContent = "";
+      const bar = document.createElement("span");
+      bar.className = "attr-bar attr-bar-warn";
+      bar.textContent = "\u786E\u8BA4\u8FDB\u5EA6\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e);
+      box.appendChild(bar);
+    }
+  }
+  var FIELD_LABEL = { channel: "\u6E20\u9053", grade: "\u7B49\u7EA7", attribution_status: "\u786E\u8BA4\u72B6\u6001" };
+  var VALUE_LABEL = { confirmed: "\u5DF2\u786E\u8BA4", proposed: "\u5F85\u786E\u8BA4" };
+  var valText = (v) => v == null || v === "" ? "\uFF08\u7A7A / \u5386\u53F2\u672A\u5BA1\uFF09" : VALUE_LABEL[v] || v;
+  function localTime(utc) {
+    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
+    if (isNaN(d)) return utc || "\u65F6\u95F4\u4E0D\u8BE6";
+    const p = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  function line(parent, cls, text2) {
+    const d = document.createElement("div");
+    d.className = cls;
+    d.textContent = text2;
+    parent.appendChild(d);
+    return d;
+  }
+  async function openChangeLog(id) {
+    const box = $2("attrLogBody");
+    if (!box) return;
+    box.textContent = "";
+    line(box, "attr-log-empty", "\u52A0\u8F7D\u4E2D\u2026");
+    openModal("attrLogModal");
+    try {
+      const { items } = await API.get("/api/inquiries/" + id + "/changes");
+      box.textContent = "";
+      if (!items.length) {
+        line(box, "attr-log-empty", "\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u3001\u7B49\u7EA7\u548C\u786E\u8BA4\u72B6\u6001\u4ECE\u672A\u88AB\u6539\u8FC7\u3002");
+        return;
+      }
+      for (const c of items) {
+        const item = document.createElement("div");
+        item.className = "attr-log-item";
+        line(item, "attr-log-head", (FIELD_LABEL[c.field] || c.field) + "\uFF1A" + valText(c.old_value) + " \u2192 " + valText(c.new_value));
+        line(item, "attr-log-meta", (c.changed_by_name || "\u672A\u77E5") + " \xB7 " + localTime(c.changed_at));
+        if (c.reason) line(item, "attr-log-reason", "\u539F\u56E0\uFF1A" + c.reason);
+        box.appendChild(item);
+      }
+    } catch (e) {
+      box.textContent = "";
+      line(box, "attr-log-empty", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e));
+    }
+  }
+  var editing3 = null;
+  function openAttrEdit(row, mode) {
+    editing3 = { row, mode };
+    const unconfirm = mode === "unconfirm";
+    $2("attrEditTitle").textContent = (unconfirm ? "\u64A4\u9500\u786E\u8BA4 \xB7 " : "\u4FEE\u6539\u5DF2\u786E\u8BA4\u7684\u6E20\u9053 / \u7B49\u7EA7 \xB7 ") + (row.customer_code || row.country || "#" + row.id);
+    $2("attrEditChannel").value = row.channel || "";
+    $2("attrEditGrade").value = row.grade || "";
+    $2("attrEditFields").classList.toggle("is-hidden", unconfirm);
+    $2("attrEditReason").value = "";
+    $2("attrEditError").textContent = "";
+    openModal("attrEditModal");
+    setTimeout(() => $2("attrEditReason").focus(), 50);
+  }
+  async function submitAttrEdit(btn) {
+    const e = editing3;
+    if (!e) return;
+    const reason = $2("attrEditReason").value.trim();
+    if (!reason) {
+      $2("attrEditError").textContent = "\u5FC5\u987B\u5199\u6E05\u695A\u539F\u56E0\uFF1A\u5B83\u4F1A\u8FDE\u540C\u4F60\u7684\u540D\u5B57\u548C\u65F6\u95F4\u4E00\u8D77\u8BB0\u8FDB\u6D41\u6C34";
+      return;
+    }
+    if (btn) btn.disabled = true;
+    try {
+      if (e.mode === "unconfirm") await API.post("/api/inquiries/" + e.row.id + "/unconfirm", { reason });
+      else await API.patch("/api/inquiries/" + e.row.id, { channel: $2("attrEditChannel").value, grade: $2("attrEditGrade").value, reason });
+      closeModal("attrEditModal");
+      editing3 = null;
+      toast2(e.mode === "unconfirm" ? "\u5DF2\u64A4\u9500\u786E\u8BA4 \xB7 \u5DF2\u8BB0\u5165\u6D41\u6C34" : "\u5DF2\u4FEE\u6539 \xB7 \u5DF2\u8BB0\u5165\u6D41\u6C34");
+      changed2();
+    } catch (err) {
+      $2("attrEditError").textContent = "\u672A\u5165\u5E93\uFF1A" + failText2(err);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", async (e) => {
+      const inTable = (sel) => e.target.closest("#tb-inq " + sel);
+      const rowOf = (el5) => {
+        const tr = el5.closest("tr");
+        return (window._inqCache || []).find((x) => String(x.id) === String(tr && tr.dataset.id));
+      };
+      const logBtn = inTable("[data-attr-log]");
+      if (logBtn) {
+        const row = rowOf(logBtn);
+        if (row) openChangeLog(row.id);
+        return;
+      }
+      const editBtn = inTable("[data-attr-edit]");
+      if (editBtn) {
+        const row = rowOf(editBtn);
+        if (row) openAttrEdit(row, "edit");
+        return;
+      }
+      const undoBtn = inTable("[data-attr-unconfirm]");
+      if (undoBtn) {
+        const row = rowOf(undoBtn);
+        if (row) openAttrEdit(row, "unconfirm");
+        return;
+      }
+      const okBtn = inTable("[data-attr-confirm]");
+      if (okBtn) {
+        const row = rowOf(okBtn);
+        if (!row) return;
+        okBtn.disabled = true;
+        try {
+          await API.post("/api/inquiries/" + row.id + "/confirm", {});
+          toast2("\u5DF2\u786E\u8BA4");
+          changed2();
+        } catch (err) {
+          okBtn.disabled = false;
+          toast2("\u786E\u8BA4\u5931\u8D25\uFF1A" + failText2(err));
+        }
+        return;
+      }
+      const allBtn = e.target.closest("[data-attr-confirm-all]");
+      if (allBtn) {
+        const pending = (window._inqCache || []).filter((r) => !isConfirmed(r)).map((r) => r.id);
+        if (!pending.length) {
+          toast2("\u5F53\u524D\u65F6\u95F4\u8303\u56F4\u5185\u6CA1\u6709\u5F85\u786E\u8BA4\u7684\u8BE2\u76D8");
+          return;
+        }
+        if (allBtn.dataset.armed !== "1") {
+          allBtn.dataset.armed = "1";
+          allBtn.textContent = "\u518D\u70B9\u4E00\u6B21\uFF1A\u786E\u8BA4 " + pending.length + " \u6761";
+          setTimeout(() => {
+            if (allBtn.isConnected) {
+              allBtn.dataset.armed = "";
+              allBtn.textContent = "\u5168\u90E8\u786E\u8BA4\uFF08" + pending.length + "\uFF09";
+            }
+          }, 4e3);
+          return;
+        }
+        allBtn.disabled = true;
+        try {
+          const r = await API.post("/api/inquiries/confirm", { ids: pending });
+          toast2("\u5DF2\u786E\u8BA4 " + r.confirmed + " \u6761");
+          changed2();
+        } catch (err) {
+          allBtn.disabled = false;
+          toast2("\u6279\u91CF\u786E\u8BA4\u5931\u8D25\uFF1A" + failText2(err));
+        }
+      }
+    });
+  }
+
   // public/src/inquiries.js
   var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
   var GRADE_BADGE = { A: "b-green", B: "b-blue", C: "b-gray" };
@@ -3721,7 +3929,8 @@
   function inqRowHtml(r) {
     const up = isUpgraded(r);
     const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc2(r.original_grade)} \u2192 \u73B0 ${esc2(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
-    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc2(r.country || "")}</td><td class="ctr"><span class="tagselect ${REGION_BADGE[r.region] || "b-gray"}" data-kind="region">${esc2(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td class="inq-source">${sourceCellHtml(r)}</td><td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    const locked = isConfirmed(r);
+    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc2(r.country || "")}</td><td class="ctr"><span class="tagselect ${REGION_BADGE[r.region] || "b-gray"}" data-kind="region">${esc2(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(CH_BADGE[r.channel] || "b-gray", r.channel) : `<span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td><td class="inq-source">${sourceCellHtml(r)}</td><td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(GRADE_BADGE[r.grade] || "b-gray", r.grade) : `<span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr inq-ops">${attrConfirmBtnHtml(r)}<button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
@@ -3911,6 +4120,7 @@
   });
   document.addEventListener("salesnoteschanged", () => renderInqTable());
   document.addEventListener("inqsourcechanged", () => renderInqTable());
+  document.addEventListener("attributionchanged", () => loadInquiries());
   var pendingLead = null;
   document.addEventListener("leadconvert", (e) => {
     const d = e.detail || {};
@@ -4058,6 +4268,7 @@
       window._inqCache = items || [];
       renderInqList();
       refreshInqStats(stats);
+      loadAttrCoverage();
       loadSourceChecks();
       loadKpiInqDonuts();
       if (window._curTab === "inquiry") {
@@ -4189,7 +4400,8 @@
         const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
         if (it) {
           it[field2] = value;
-          if (field2 === "grade" && tr) {
+          if (field2 === "channel" || field2 === "grade") it.attr_change_count = (Number(it.attr_change_count) || 0) + 1;
+          if ((field2 === "grade" || field2 === "channel") && tr) {
             tr.querySelectorAll("td[contenteditable][data-field]").forEach((td2) => {
               it[td2.dataset.field] = td2.innerText.trim();
             });
@@ -4207,7 +4419,8 @@
         toast2("\u5DF2\u5B8C\u6210 \xB7 \u5DF2\u81EA\u52A8\u5F52\u6863");
       }
     } catch (err) {
-      toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      const code = err && err.body && err.body.error;
+      toast2(code === "attribution_locked" || code === "reason_required" ? err.message : err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
 
@@ -4874,7 +5087,7 @@
   }
 
   // public/src/task-audit.js
-  var $2 = (id) => document.getElementById(id);
+  var $3 = (id) => document.getElementById(id);
   var LINK_LABEL = { page: "\u9875\u9762", campaign: "\u7CFB\u5217", keyword: "\u5173\u952E\u8BCD", kpi: "KPI" };
   var KPI_GROUP_LABEL = { review: "\u8003\u6838\u6307\u6807", process: "\u8FC7\u7A0B\u6307\u6807\uFF08\u4E0D\u8BA1\u5165\u8003\u6838\uFF09" };
   var isHttp2 = (u) => /^https?:\/\//i.test(String(u || ""));
@@ -4901,8 +5114,8 @@
     return o;
   }
   function renderLinkInput() {
-    const box = $2("task-link-value");
-    const typeEl = $2("task-link-type");
+    const box = $3("task-link-value");
+    const typeEl = $3("task-link-type");
     if (!box || !typeEl) return;
     const type = typeEl.value;
     const opts = linkOptions || {};
@@ -4951,7 +5164,7 @@
     return l.label || l.ref;
   }
   function renderLinkChips() {
-    const box = $2("task-link-chips");
+    const box = $3("task-link-chips");
     if (!box) return;
     box.textContent = "";
     draftLinks.forEach((l, i) => {
@@ -4971,8 +5184,8 @@
     });
   }
   function pendingLink() {
-    const typeEl = $2("task-link-type");
-    const input = $2("task-link-input");
+    const typeEl = $3("task-link-type");
+    const input = $3("task-link-input");
     if (!typeEl || !input) return null;
     const type = typeEl.value;
     let ref2 = String(input.value || "").trim();
@@ -4994,15 +5207,15 @@
       return false;
     }
     if (!draftLinks.some((x) => x.type === l.type && x.ref === l.ref)) draftLinks.push(l);
-    const input = $2("task-link-input");
+    const input = $3("task-link-input");
     if (input) input.value = "";
     renderLinkChips();
     return true;
   }
   function bindLinkEditor() {
     if (linkEditorBound) return;
-    const typeEl = $2("task-link-type");
-    const chips = $2("task-link-chips");
+    const typeEl = $3("task-link-type");
+    const chips = $3("task-link-chips");
     if (!typeEl || !chips) return;
     linkEditorBound = true;
     typeEl.addEventListener("change", renderLinkInput);
@@ -5012,7 +5225,7 @@
       draftLinks.splice(Number(del.dataset.linkIdx), 1);
       renderLinkChips();
     });
-    $2("task-link-value").addEventListener("keydown", (e) => {
+    $3("task-link-value").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         addTaskLink();
@@ -5022,38 +5235,38 @@
   function fillTaskAuditFields(item) {
     const it = item || {};
     bindLinkEditor();
-    const plist = $2("task-project-list");
+    const plist = $3("task-project-list");
     if (plist && !plist.children.length) PRODUCT_NAMES.forEach((n) => plist.appendChild(option(n, n)));
-    const p = $2("task-project");
+    const p = $3("task-project");
     if (p) p.value = it.project || "";
-    const eh = $2("task-est-hours");
+    const eh = $3("task-est-hours");
     if (eh) eh.value = it.est_hours == null ? "" : it.est_hours;
-    const imp = $2("task-important");
+    const imp = $3("task-important");
     if (imp) {
       imp.checked = Number(it.important) === 1;
       const role = (window.ME || {}).role;
       imp.disabled = imp.checked && role !== "manager" && role !== "boss";
     }
     draftLinks = (it.links || []).map((l) => ({ type: l.type, ref: l.ref, label: l.label || null }));
-    const typeEl = $2("task-link-type");
+    const typeEl = $3("task-link-type");
     if (typeEl) typeEl.value = "page";
     renderLinkChips();
     renderLinkInput();
     loadLinkOptions().then(() => {
-      const cur = $2("task-link-input");
+      const cur = $3("task-link-input");
       if (!cur || !cur.value) renderLinkInput();
     });
   }
   function readTaskAuditFields() {
     const out = {};
-    out.project = (($2("task-project") || {}).value || "").trim();
-    const eh = (($2("task-est-hours") || {}).value || "").trim();
+    out.project = (($3("task-project") || {}).value || "").trim();
+    const eh = (($3("task-est-hours") || {}).value || "").trim();
     if (eh !== "" && !(Number(eh) >= 0)) {
       toast2("\u9884\u4F30\u5DE5\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
       return null;
     }
     out.est_hours = eh === "" ? null : Number(eh);
-    const imp = $2("task-important");
+    const imp = $3("task-important");
     out.important = imp && imp.checked ? 1 : null;
     const pending = pendingLink();
     if (typeof pending === "string") {
@@ -5089,42 +5302,42 @@
     if (it.actual_hours != null) parts.push("\u5B9E\u9645 " + it.actual_hours + "h");
     return parts.join(" \xB7 ");
   }
-  var line = (label, html, cls = "") => `<span class="taudit-line ${cls}"><span class="taudit-label">${label}</span><span class="taudit-val">${html}</span></span>`;
+  var line2 = (label, html, cls = "") => `<span class="taudit-line ${cls}"><span class="taudit-label">${label}</span><span class="taudit-val">${html}</span></span>`;
   function auditBlockHtml(it, { editable = false, archived = false } = {}) {
     const lines = [];
     const links = it.links || [];
     const done = wasCompleted(it);
     if (links.length) {
       const effect = done && it.id && links.some((l) => l.type !== "kpi") ? ` <button type="button" class="btn-mini taudit-effect" data-task-effect="${esc2(it.id)}"><i class="ti ti-chart-line"></i> \u6570\u636E\u53D8\u5316</button>` : "";
-      lines.push(line("\u5173\u8054", links.map((l) => `<span class="taudit-link" title="${esc2(l.ref)}"><b>${LINK_LABEL[l.type] || esc2(l.type)}</b>${esc2(linkText(l))}</span>`).join("") + effect));
+      lines.push(line2("\u5173\u8054", links.map((l) => `<span class="taudit-link" title="${esc2(l.ref)}"><b>${LINK_LABEL[l.type] || esc2(l.type)}</b>${esc2(linkText(l))}</span>`).join("") + effect));
     }
     if (done || archived || it.result) {
       const edit = editable && done && it.id ? ` <button type="button" class="btn-mini taudit-edit" data-loop-action="task-result">${it.result ? "\u6539" : "\u8865\u7ED3\u679C"}</button>` : "";
       const text2 = it.result ? esc2(it.result) : `<span class="taudit-missing">${done ? "\u7ED3\u679C\u672A\u8BB0\u5F55" : "\u65E0\u5B8C\u6210\u8BB0\u5F55"}</span>`;
-      lines.push(line("\u7ED3\u679C", text2 + edit, "taudit-result"));
+      lines.push(line2("\u7ED3\u679C", text2 + edit, "taudit-result"));
     }
-    if (it.task_actions) lines.push(line("\u52A8\u4F5C", esc2(it.task_actions)));
+    if (it.task_actions) lines.push(line2("\u52A8\u4F5C", esc2(it.task_actions)));
     const ev = evidenceHtml(it);
-    if (ev) lines.push(line("\u8BC1\u636E", ev));
-    else if (done && it.is_important) lines.push(line("\u8BC1\u636E", '<span class="taudit-missing">\u65E0\u8BC1\u636E</span>'));
+    if (ev) lines.push(line2("\u8BC1\u636E", ev));
+    else if (done && it.is_important) lines.push(line2("\u8BC1\u636E", '<span class="taudit-missing">\u65E0\u8BC1\u636E</span>'));
     const hours = hoursText(it);
-    if (hours) lines.push(line("\u5DE5\u65F6", esc2(hours)));
+    if (hours) lines.push(line2("\u5DE5\u65F6", esc2(hours)));
     return lines.length ? `<div class="taudit">${lines.join("")}</div>` : "";
   }
   var doneCtx = null;
   var doneBound = false;
   function doneError(msg) {
-    const el5 = $2("task-done-error");
+    const el5 = $3("task-done-error");
     if (el5) el5.textContent = msg || "";
   }
   function renderDoneThumbs() {
-    const box = $2("task-done-thumbs");
+    const box = $3("task-done-thumbs");
     if (!box || !doneCtx) return;
     box.innerHTML = thumbsHtml(doneCtx.item.evidence_images, { deletable: true });
   }
   function bindDone() {
     if (doneBound) return;
-    const box = $2("task-done-thumbs");
+    const box = $3("task-done-thumbs");
     if (!box) return;
     doneBound = true;
     box.addEventListener("click", async (e) => {
@@ -5146,21 +5359,21 @@
     if (!item || !item.id) return;
     bindDone();
     doneCtx = { item, edit, onDone, onImages };
-    $2("task-done-verb").textContent = edit ? "\u5B8C\u6210\u8BB0\u5F55" : "\u5B8C\u6210\u4EFB\u52A1";
-    $2("task-done-submit-label").textContent = edit ? "\u4FDD\u5B58" : "\u786E\u8BA4\u5B8C\u6210";
-    $2("task-done-title").textContent = item.content || "";
-    const rule = $2("task-done-rule");
+    $3("task-done-verb").textContent = edit ? "\u5B8C\u6210\u8BB0\u5F55" : "\u5B8C\u6210\u4EFB\u52A1";
+    $3("task-done-submit-label").textContent = edit ? "\u4FDD\u5B58" : "\u786E\u8BA4\u5B8C\u6210";
+    $3("task-done-title").textContent = item.content || "";
+    const rule = $3("task-done-rule");
     rule.classList.toggle("is-important", !!item.is_important);
     rule.textContent = item.is_important ? "\u91CD\u8981\u4EFB\u52A1\uFF08" + (item.important_reason_text || "") + "\uFF09\uFF1A\u9664\u4E86\u5B8C\u6210\u7ED3\u679C\uFF0C\u8FD8\u9700\u8981\u81F3\u5C11\u4E00\u6761\u8BC1\u636E\u94FE\u63A5\u6216\u4E00\u5F20\u8BC1\u636E\u622A\u56FE\u3002" : "\u5199\u6E05\u5B8C\u6210\u7ED3\u679C\u5373\u53EF\uFF1B\u6709\u8BC1\u636E\u94FE\u63A5\u6216\u622A\u56FE\u66F4\u597D\u2014\u2014\u5468\u5EA6\u5BA1\u6838\u770B\u7684\u5C31\u662F\u8FD9\u4E9B\u3002";
-    $2("task-done-result").value = item.result || "";
-    $2("task-done-actions").value = item.task_actions || "";
-    $2("task-done-evidence").value = item.evidence || "";
-    $2("task-done-hours").value = item.actual_hours == null ? "" : item.actual_hours;
-    $2("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
+    $3("task-done-result").value = item.result || "";
+    $3("task-done-actions").value = item.task_actions || "";
+    $3("task-done-evidence").value = item.evidence || "";
+    $3("task-done-hours").value = item.actual_hours == null ? "" : item.actual_hours;
+    $3("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
     doneError("");
     renderDoneThumbs();
     openModal("taskDoneMask");
-    setTimeout(() => $2("task-done-result").focus(), 50);
+    setTimeout(() => $3("task-done-result").focus(), 50);
   }
   async function pickTaskEvidence() {
     const ctx = doneCtx;
@@ -5177,15 +5390,15 @@
   async function submitTaskDone(btn) {
     const ctx = doneCtx;
     if (!ctx) return;
-    const hoursRaw = String($2("task-done-hours").value || "").trim();
+    const hoursRaw = String($3("task-done-hours").value || "").trim();
     if (hoursRaw !== "" && !(Number(hoursRaw) >= 0)) {
       doneError("\u5B9E\u9645\u7528\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
       return;
     }
     const body = {
-      result: $2("task-done-result").value,
-      task_actions: $2("task-done-actions").value,
-      evidence: $2("task-done-evidence").value,
+      result: $3("task-done-result").value,
+      task_actions: $3("task-done-actions").value,
+      evidence: $3("task-done-evidence").value,
       actual_hours: hoursRaw === "" ? null : Number(hoursRaw)
     };
     if (!ctx.edit) {
@@ -5279,9 +5492,9 @@
     }
   }
   function renderEffect(data2) {
-    const box = $2("task-effect-body");
+    const box = $3("task-effect-body");
     box.textContent = "";
-    $2("task-effect-title").textContent = data2.task.content || "";
+    $3("task-effect-title").textContent = data2.task.content || "";
     if (data2.status !== "OK") {
       box.appendChild(el("div", "teffect-note", data2.message || "\u6CA1\u6709\u53EF\u5BF9\u6BD4\u7684\u6570\u636E\u3002"));
       return;
@@ -5310,7 +5523,7 @@
     box.appendChild(table2);
   }
   async function loadEffect() {
-    const box = $2("task-effect-body");
+    const box = $3("task-effect-body");
     const seq6 = ++effectSeq;
     document.querySelectorAll("#taskEffectMask [data-effect-days]").forEach((b) => b.classList.toggle("active", Number(b.dataset.effectDays) === effectDays));
     box.textContent = "";
@@ -5332,7 +5545,7 @@
     if (!path) return;
     if (!effectBound) {
       effectBound = true;
-      $2("taskEffectMask").addEventListener("click", (e) => {
+      $3("taskEffectMask").addEventListener("click", (e) => {
         const b = e.target.closest("[data-effect-days]");
         if (!b) return;
         effectDays = Number(b.dataset.effectDays);
@@ -5340,7 +5553,7 @@
       });
     }
     effectPath = path;
-    $2("task-effect-title").textContent = "";
+    $3("task-effect-title").textContent = "";
     openModal("taskEffectMask");
     loadEffect();
   }
@@ -7314,11 +7527,11 @@
     const box = make("div", "ledger-targets");
     box.appendChild(make("div", "ledger-sec-title", "\u76EE\u6807 vs \u5F53\u524D\uFF08\u76EE\u6807\u4E3A\u8BBE\u7F6E\u9875\u6708\u5EA6\u76EE\u6807\uFF0C\u672A\u6309\u533A\u95F4\u6298\u7B97\uFF09"));
     (targets || []).forEach((t) => {
-      const line2 = make("div", "ledger-target");
-      line2.appendChild(make("div", "ledger-target-name", t.label));
+      const line3 = make("div", "ledger-target");
+      line3.appendChild(make("div", "ledger-target-name", t.label));
       const actualText2 = t.actual == null ? "\u2014" : t.unit === "\xA5" ? money(t.actual, t.currency) : Number(t.actual).toLocaleString("zh-CN") + t.unit;
       const targetText = t.target == null ? "\u76EE\u6807\u5F85\u5B9A" : "\u76EE\u6807 " + (t.unit === "\xA5" ? money(t.target, "CNY") : Number(t.target).toLocaleString("zh-CN") + t.unit);
-      line2.appendChild(cell(
+      line3.appendChild(cell(
         "div",
         "ledger-target-val" + (t.currency_mismatch ? " ledger-warn" : ""),
         actualText2 + " / " + targetText,
@@ -7330,15 +7543,15 @@
       fill.style.width = p + "%";
       fill.classList.add(t.progress == null ? "ledger-fill-muted" : t.progress >= 1 ? "ledger-fill-green" : t.progress >= 0.6 ? "ledger-fill-blue" : "ledger-fill-amber");
       bar.appendChild(fill);
-      line2.appendChild(bar);
+      line3.appendChild(bar);
       const tail = t.status === "NO_TARGET" ? "\u5F85\u8001\u677F\u62CD\u677F" : t.status === "NO_ACTUAL" ? "\u6682\u65E0\u5B9E\u9645\u503C" : Math.round(t.progress * 100) + "%";
-      line2.appendChild(cell(
+      line3.appendChild(cell(
         "div",
         "ledger-target-pct" + (t.status === "VALID" ? "" : " dim"),
         tail,
         t.inverse ? "\u53CD\u5411\u6307\u6807\uFF1A\u8D8A\u4F4E\u8D8A\u597D\uFF0C\u8FBE\u6807\u5373\u5C01\u9876 100%" : ""
       ));
-      box.appendChild(line2);
+      box.appendChild(line3);
     });
     return box;
   }
@@ -9296,7 +9509,7 @@
     const lines = evidenceLines(item.evidence);
     if (lines.length) {
       const list = make3("ul", "risk-evidence-list");
-      lines.forEach((line2) => list.appendChild(make3("li", "", line2)));
+      lines.forEach((line3) => list.appendChild(make3("li", "", line3)));
       cell3.appendChild(list);
     }
     cell3.appendChild(make3("div", "risk-evidence-source", SOURCE_LABELS[item.source] || "\u5F53\u524D\u68C0\u67E5"));
@@ -9796,8 +10009,8 @@
   });
 
   // public/src/audit.js
-  var $3 = (id) => document.getElementById(id);
-  var failText2 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var $4 = (id) => document.getElementById(id);
+  var failText3 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   var isHttp3 = (u) => /^https?:\/\//i.test(String(u || ""));
   function el2(tag, cls, text2) {
     const n = document.createElement(tag);
@@ -9895,14 +10108,14 @@
     big.appendChild(el2("b", "", s.completed));
     big.appendChild(document.createTextNode(" \u6761\u5B8C\u6210"));
     b.appendChild(big);
-    const line2 = (t, cls) => b.appendChild(el2("div", "audit-person-line " + (cls || ""), t));
-    line2("\u8FDB\u884C\u4E2D " + s.in_progress + " \xB7 \u903E\u671F " + s.overdue + " \xB7 \u672A\u5B8C\u6210\u5373\u5F52\u6863 " + s.abandoned, s.overdue ? "is-bad" : "");
+    const line3 = (t, cls) => b.appendChild(el2("div", "audit-person-line " + (cls || ""), t));
+    line3("\u8FDB\u884C\u4E2D " + s.in_progress + " \xB7 \u903E\u671F " + s.overdue + " \xB7 \u672A\u5B8C\u6210\u5373\u5F52\u6863 " + s.abandoned, s.overdue ? "is-bad" : "");
     if (s.completed) {
-      line2("\u6709\u7ED3\u679C " + s.with_result + "/" + s.completed + " \xB7 \u6709\u8BC1\u636E " + s.with_evidence + "/" + s.completed);
-      line2("\u6709\u53EF\u91CF\u5316\u5173\u8054 " + s.with_links + "/" + s.completed + " \xB7 \u6709\u5B8C\u6574\u524D\u540E\u6570\u636E " + s.with_effect_data + "/" + s.completed);
-      line2(s.hours_known ? "\u5DE5\u65F6\uFF1A\u9884\u4F30 " + num2(s.est_hours) + "h \u2192 \u5B9E\u9645 " + num2(s.actual_hours) + "h\uFF08" + s.hours_known + "/" + s.completed + " \u6761\u4E24\u9879\u90FD\u586B\u4E86\uFF09" : "\u5DE5\u65F6\uFF1A\u6CA1\u6709\u4E00\u6761\u540C\u65F6\u586B\u4E86\u9884\u4F30\u548C\u5B9E\u9645\uFF0C\u65E0\u6CD5\u6BD4\u8F83", s.hours_known ? "" : "is-warn");
+      line3("\u6709\u7ED3\u679C " + s.with_result + "/" + s.completed + " \xB7 \u6709\u8BC1\u636E " + s.with_evidence + "/" + s.completed);
+      line3("\u6709\u53EF\u91CF\u5316\u5173\u8054 " + s.with_links + "/" + s.completed + " \xB7 \u6709\u5B8C\u6574\u524D\u540E\u6570\u636E " + s.with_effect_data + "/" + s.completed);
+      line3(s.hours_known ? "\u5DE5\u65F6\uFF1A\u9884\u4F30 " + num2(s.est_hours) + "h \u2192 \u5B9E\u9645 " + num2(s.actual_hours) + "h\uFF08" + s.hours_known + "/" + s.completed + " \u6761\u4E24\u9879\u90FD\u586B\u4E86\uFF09" : "\u5DE5\u65F6\uFF1A\u6CA1\u6709\u4E00\u6761\u540C\u65F6\u586B\u4E86\u9884\u4F30\u548C\u5B9E\u9645\uFF0C\u65E0\u6CD5\u6BD4\u8F83", s.hours_known ? "" : "is-warn");
     }
-    if (s.flagged) line2(s.flagged + " \u6761\u6709\u4E25\u91CD\u7591\u70B9", "is-bad");
+    if (s.flagged) line3(s.flagged + " \u6761\u6709\u4E25\u91CD\u7591\u70B9", "is-bad");
     return b;
   }
   function renderSummary2(root) {
@@ -9962,9 +10175,9 @@
       if (e.status !== "OK") head.appendChild(el2("span", "badge b-gray", (EFFECT_STATUS[e.status] || e.status) + (e.days ? " " + e.days + " \u5929" : "")));
       box.appendChild(head);
       e.metrics.filter((m) => m.delta).forEach((m) => {
-        const line2 = el2("div", "audit-effect-line", m.label + " " + num2(m.before) + " \u2192 " + num2(m.after) + " ");
-        line2.appendChild(deltaSpan(m));
-        box.appendChild(line2);
+        const line3 = el2("div", "audit-effect-line", m.label + " " + num2(m.before) + " \u2192 " + num2(m.after) + " ");
+        line3.appendChild(deltaSpan(m));
+        box.appendChild(line3);
       });
     }
     const btn = el2("button", "btn-mini", "\u5B8C\u6574\u5BF9\u6BD4");
@@ -10038,9 +10251,9 @@
     const g = pkg.geo;
     if (g) {
       c.appendChild(el2("div", "audit-sub", "GEO\uFF08AI \u5F15\u64CE\uFF09"));
-      const line2 = el2("div", "audit-line");
-      line2.textContent = g.status === "OK" ? "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE " + num2(g.totals.sessions) + "\uFF08\u4E0A\u671F " + (g.totals.prev_sessions == null ? "\u65E0\u6570\u636E" : num2(g.totals.prev_sessions)) + "\uFF09" + (g.engines.length ? "\uFF1A" + g.engines.map((e) => e.label + " " + num2(e.sessions)).join("\u3001") : "") + " \xB7 \u5E26\u6765\u8BE2\u76D8 " + g.inquiries.total + " \u6761" : "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE\u3002";
-      c.appendChild(line2);
+      const line3 = el2("div", "audit-line");
+      line3.textContent = g.status === "OK" ? "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE " + num2(g.totals.sessions) + "\uFF08\u4E0A\u671F " + (g.totals.prev_sessions == null ? "\u65E0\u6570\u636E" : num2(g.totals.prev_sessions)) + "\uFF09" + (g.engines.length ? "\uFF1A" + g.engines.map((e) => e.label + " " + num2(e.sessions)).join("\u3001") : "") + " \xB7 \u5E26\u6765\u8BE2\u76D8 " + g.inquiries.total + " \u6761" : "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE\u3002";
+      c.appendChild(line3);
       const cite = g.citations;
       c.appendChild(el2("div", "audit-line", cite ? "\u5F15\u7528\u62BD\u67E5\uFF08" + cite.round_date + "\uFF09\uFF1A\u5DF2\u67E5 " + cite.totals.checked + "/" + cite.totals.expected + " \u683C \xB7 \u63D0\u5230\u6211\u4EEC " + cite.totals.mentioned + " \xB7 \u5F15\u7528\u6211\u4EEC\u7684\u9875\u9762 " + cite.totals.cited : "\u5F15\u7528\u62BD\u67E5\uFF1A\u8FD9\u6BB5\u65F6\u95F4\u7ED3\u675F\u4E4B\u524D\u8FD8\u6CA1\u6709\u505A\u8FC7\u3002"));
     }
@@ -10054,17 +10267,26 @@
       c.appendChild(empty("\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u5F55\u5165\u8BE2\u76D8\u3002"));
     } else {
       c.appendChild(el2("div", "audit-line", "\u5171 " + q.total + " \u6761\uFF1AA " + q.by_grade.A + " \xB7 B " + q.by_grade.B + " \xB7 C " + q.by_grade.C + "\uFF08C \u7EA7\u5360 " + Math.round(q.junk_ratio * 100) + "%\uFF09\xB7 \u6210\u4EA4 " + q.deals + " \xB7 \u6709\u8868\u5355\u6765\u6E90\u8BC1\u636E " + q.with_form_evidence + "/" + q.total));
+      const cf = q.confirmation;
+      if (cf && cf.total) {
+        c.appendChild(el2(
+          "div",
+          "audit-line" + (cf.unconfirmedRate >= 50 ? " audit-missing" : ""),
+          "\u6E20\u9053\u4E0E\u7B49\u7EA7\u5DF2\u786E\u8BA4 " + cf.confirmed + "/" + cf.total + "\uFF08" + cf.confirmedRate + "%\uFF09\xB7 \u5F85\u786E\u8BA4 " + cf.proposed + " \xB7 \u5386\u53F2\u672A\u5BA1 " + cf.legacy
+        ));
+      }
       c.appendChild(el2("div", "audit-line", "\u6E20\u9053\uFF1A" + mapText(q.by_channel)));
       c.appendChild(el2("div", "audit-line", "\u6765\u6E90\u5BF9\u8D26\uFF1A" + mapText(q.by_source_verdict)));
       const SHOW = 40;
       c.appendChild(table(
-        ["\u65E5\u671F", "\u56FD\u5BB6", "\u6E20\u9053", "\u4EA7\u54C1", { label: "\u7B49\u7EA7", cls: "ctr" }, "\u6765\u6E90\u8BCD / \u7CFB\u5217 / \u843D\u5730\u9875", "\u5BF9\u8D26", "\u6210\u4EA4"],
+        ["\u65E5\u671F", "\u56FD\u5BB6", "\u6E20\u9053", "\u4EA7\u54C1", { label: "\u7B49\u7EA7", cls: "ctr" }, "\u786E\u8BA4", "\u6765\u6E90\u8BCD / \u7CFB\u5217 / \u843D\u5730\u9875", "\u5BF9\u8D26", "\u6210\u4EA4"],
         q.items.slice(0, SHOW).map((i) => [
           md2(i.date),
           i.country,
           i.channel,
           i.product,
           i.grade,
+          i.confirmation_label + (i.attr_change_count ? " \xB7 \u6539 " + i.attr_change_count : ""),
           [i.source, i.src_campaign, i.src_landing_page && shortUrl2(i.src_landing_page)].filter(Boolean).join(" \xB7 "),
           (i.src_evidence === "form" ? "\u8868\u5355\u6765\u6E90" : i.source_verdict_label) || "",
           i.deal_status || ""
@@ -10142,7 +10364,7 @@
     box.appendChild(ul);
   }
   function renderAi(item) {
-    const box = $3("audit-ai");
+    const box = $4("audit-ai");
     box.textContent = "";
     if (!item) return;
     const c = card("AI \u5BA1\u6838\u610F\u89C1", "\u751F\u6210\u4E8E " + String(item.updated_at || "").replace("T", " ").slice(0, 16) + " UTC" + (item.history ? " \xB7 \u4E4B\u524D\u8FD8\u8DD1\u8FC7 " + item.history + " \u6B21" : ""));
@@ -10191,7 +10413,7 @@
     box.appendChild(c);
   }
   function render5() {
-    const root = $3("audit-body");
+    const root = $4("audit-body");
     root.textContent = "";
     renderSummary2(root);
     renderTasks(root);
@@ -10205,14 +10427,14 @@
   async function loadAudit() {
     bind();
     if (!range) range = weekOf(formatLocalDate(/* @__PURE__ */ new Date()));
-    $3("audit-start").value = range.start_date;
-    $3("audit-end").value = range.end_date;
-    $3("audit-person").value = person;
+    $4("audit-start").value = range.start_date;
+    $4("audit-end").value = range.end_date;
+    $4("audit-person").value = person;
     const my = ++seq3;
-    const root = $3("audit-body");
+    const root = $4("audit-body");
     root.textContent = "";
     root.appendChild(empty("\u6B63\u5728\u53D6\u8FD9\u6BB5\u65F6\u95F4\u7684\u8BB0\u5F55\u2026"));
-    $3("audit-ai").textContent = "";
+    $4("audit-ai").textContent = "";
     try {
       const [data2, ai] = await Promise.all([API.get("/api/audit/weekly?" + query()), API.get("/api/audit/weekly/ai?" + query()).catch(() => ({ item: null }))]);
       if (my !== seq3) return;
@@ -10222,7 +10444,7 @@
     } catch (e) {
       if (my !== seq3 || e && e.message === "unauthorized") return;
       root.textContent = "";
-      root.appendChild(el2("div", "audit-missing", "\u5BA1\u6838\u6570\u636E\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e) + " "));
+      root.appendChild(el2("div", "audit-missing", "\u5BA1\u6838\u6570\u636E\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText3(e) + " "));
       const retry = el2("button", "btn-mini", "\u91CD\u8BD5");
       retry.type = "button";
       retry.addEventListener("click", loadAudit);
@@ -10232,17 +10454,17 @@
   async function runAuditAi(btn) {
     if (!range) return;
     const body = { start_date: range.start_date, end_date: range.end_date, person, today: formatLocalDate(/* @__PURE__ */ new Date()) };
-    const labelEl = $3("audit-ai-label");
+    const labelEl = $4("audit-ai-label");
     const label = labelEl.textContent;
     if (btn) btn.disabled = true;
     labelEl.textContent = "AI \u5BA1\u6838\u4E2D\uFF0C\u7EA6\u9700\u4E00\u5206\u949F\u2026";
     try {
       const { item } = await API.post("/api/audit/weekly/ai", body);
       renderAi(item);
-      $3("audit-ai").scrollIntoView({ behavior: "smooth", block: "start" });
+      $4("audit-ai").scrollIntoView({ behavior: "smooth", block: "start" });
       toast2("AI \u5BA1\u6838\u610F\u89C1\u5DF2\u751F\u6210");
     } catch (e) {
-      toast2("AI \u5BA1\u6838\u6CA1\u6709\u8DD1\u6210\uFF1A" + failText2(e));
+      toast2("AI \u5BA1\u6838\u6CA1\u6709\u8DD1\u6210\uFF1A" + failText3(e));
     } finally {
       if (btn) btn.disabled = false;
       labelEl.textContent = label;
@@ -10252,7 +10474,7 @@
     if (!range) return;
     let url = "/api/audit/weekly/export?" + query() + "&format=" + format;
     if (format === "csv") {
-      const section = $3("audit-csv-section").value;
+      const section = $4("audit-csv-section").value;
       if (!section) {
         toast2("\u5148\u9009\u8981\u5BFC\u51FA\u54EA\u4E00\u5F20\u8868");
         return;
@@ -10268,7 +10490,7 @@
   }
   function bind() {
     if (bound) return;
-    const panel = $3("panel-audit");
+    const panel = $4("panel-audit");
     if (!panel) return;
     bound = true;
     panel.addEventListener("click", (e) => {
@@ -10280,8 +10502,8 @@
       }
     });
     const onDate = () => {
-      const s = $3("audit-start").value;
-      const en = $3("audit-end").value;
+      const s = $4("audit-start").value;
+      const en = $4("audit-end").value;
       if (!s || !en) return;
       if (s > en) {
         toast2("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
@@ -10290,16 +10512,16 @@
       range = { start_date: s, end_date: en };
       loadAudit();
     };
-    $3("audit-start").addEventListener("change", onDate);
-    $3("audit-end").addEventListener("change", onDate);
-    $3("audit-person").addEventListener("change", (e) => {
+    $4("audit-start").addEventListener("change", onDate);
+    $4("audit-end").addEventListener("change", onDate);
+    $4("audit-person").addEventListener("change", (e) => {
       person = e.target.value;
       loadAudit();
     });
   }
 
   // public/src/geo.js
-  var $4 = (id) => document.getElementById(id);
+  var $5 = (id) => document.getElementById(id);
   var seq4 = 0;
   function el3(tag, cls, text2) {
     const n = document.createElement(tag);
@@ -10315,9 +10537,9 @@
     return "\u8F83\u4E0A\u671F " + (d > 0 ? "+" : "") + num3(d) + "\uFF08" + (d > 0 ? "+" : "") + Math.round(d / prev * 100) + "%\uFF09";
   }
   function render6(data2) {
-    const body = $4("geo-body");
+    const body = $5("geo-body");
     body.textContent = "";
-    const sub = $4("geo-range");
+    const sub = $5("geo-range");
     if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data2.range);
     if (data2.status === "NOT_SYNCED") {
       body.appendChild(el3("div", "geo-empty", "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u6D41\u91CF\u3002\u8BF7\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GA4 \u6D41\u91CF\u300D\u786E\u8BA4\u540C\u6B65\u72B6\u6001\u3002"));
@@ -10380,7 +10602,7 @@
     return box;
   }
   async function loadGeo() {
-    const body = $4("geo-body");
+    const body = $5("geo-body");
     if (!body) return;
     const range2 = getCurrentRange("dashboard");
     if (!range2 || !range2.start_date) return;
@@ -10405,8 +10627,8 @@
   }
 
   // public/src/geo-checks.js
-  var $5 = (id) => document.getElementById(id);
-  var failText3 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var $6 = (id) => document.getElementById(id);
+  var failText4 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   function el4(tag, cls, text2) {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -10418,7 +10640,7 @@
   var questions = [];
   var data = null;
   var seq5 = 0;
-  var editing3 = null;
+  var editing4 = null;
   var checkOf = (qid, engine) => data ? data.items.find((c) => c.question_id === qid && c.engine === engine) : null;
   function engineLine(e, prev) {
     if (!e.checked) return e.label + "\uFF1A\u8FD8\u6CA1\u67E5\uFF08\u5E94\u67E5 " + e.expected + " \u9898\uFF09";
@@ -10428,7 +10650,7 @@
     return s;
   }
   function renderSummary3() {
-    const box = $5("geochk-summary");
+    const box = $6("geochk-summary");
     box.textContent = "";
     const t = data.summary.totals;
     const head = el4("div", "geochk-total");
@@ -10460,8 +10682,8 @@
     return btn;
   }
   function renderMatrix() {
-    const head = $5("geochk-head");
-    const body = $5("geochk-body");
+    const head = $6("geochk-head");
+    const body = $6("geochk-body");
     head.textContent = "";
     body.textContent = "";
     const hr = el4("tr");
@@ -10469,7 +10691,7 @@
     data.engines.forEach((e) => hr.appendChild(el4("th", "ctr", e.label)));
     hr.appendChild(el4("th", "ctr", ""));
     head.appendChild(hr);
-    const showOff = $5("geochk-show-off").checked;
+    const showOff = $6("geochk-show-off").checked;
     const rows2 = questions.filter((q) => q.active || showOff || data.items.some((c) => c.question_id === q.id));
     if (!rows2.length) {
       const tr = el4("tr");
@@ -10502,14 +10724,14 @@
   async function loadGeoChecks() {
     bind2();
     if (!round) round = formatLocalDate(/* @__PURE__ */ new Date());
-    $5("geochk-date").value = round;
+    $6("geochk-date").value = round;
     const my = ++seq5;
     try {
       const [qs2, checks2] = await Promise.all([API.get("/api/geo/questions"), API.get("/api/geo/checks?round_date=" + round)]);
       if (my !== seq5) return;
       questions = qs2.items || [];
       data = checks2;
-      const sel = $5("geochk-rounds");
+      const sel = $6("geochk-rounds");
       sel.textContent = "";
       const first = el4("option", "", data.rounds.length ? "\u5386\u53F2\u8F6E\u6B21\u2026" : "\u8FD8\u6CA1\u6709\u5386\u53F2\u8F6E\u6B21");
       first.value = "";
@@ -10523,9 +10745,9 @@
       renderMatrix();
     } catch (e) {
       if (my !== seq5 || e && e.message === "unauthorized") return;
-      const box = $5("geochk-summary");
+      const box = $6("geochk-summary");
       box.textContent = "";
-      box.appendChild(el4("div", "task-done-error", "GEO \u62BD\u67E5\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText3(e) + " "));
+      box.appendChild(el4("div", "task-done-error", "GEO \u62BD\u67E5\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText4(e) + " "));
       const retry = el4("button", "btn-mini", "\u91CD\u8BD5");
       retry.type = "button";
       retry.addEventListener("click", loadGeoChecks);
@@ -10533,68 +10755,68 @@
     }
   }
   function renderShots() {
-    const box = $5("geochk-thumbs");
-    const c = editing3 && editing3.check;
+    const box = $6("geochk-thumbs");
+    const c = editing4 && editing4.check;
     box.innerHTML = c ? thumbsHtml(c.evidence_images, { deletable: true }) : "";
-    $5("geochk-shot-btn").disabled = !c;
-    $5("geochk-shot-tip").textContent = c ? "" : "\u5148\u4FDD\u5B58\u8FD9\u4E00\u683C\uFF0C\u518D\u4E0A\u4F20\u622A\u56FE";
+    $6("geochk-shot-btn").disabled = !c;
+    $6("geochk-shot-tip").textContent = c ? "" : "\u5148\u4FDD\u5B58\u8FD9\u4E00\u683C\uFF0C\u518D\u4E0A\u4F20\u622A\u56FE";
   }
   function openCell(qid, engineKey) {
     const question = questions.find((q) => q.id === qid);
     const engine = data.engines.find((e) => e.key === engineKey);
     if (!question || !engine) return;
     const check = checkOf(qid, engineKey) || null;
-    editing3 = { question, engine, check };
-    $5("geochk-title").textContent = engine.label + " \xB7 " + round;
-    $5("geochk-question").textContent = question.question;
-    $5("geochk-mentioned").checked = !!(check && check.mentioned);
-    $5("geochk-cited").checked = !!(check && check.cited);
-    $5("geochk-url").value = check && check.cited_url || "";
-    $5("geochk-note").value = check && check.note || "";
-    $5("geochk-error").textContent = "";
-    $5("geochk-del").classList.toggle("is-hidden", !check);
+    editing4 = { question, engine, check };
+    $6("geochk-title").textContent = engine.label + " \xB7 " + round;
+    $6("geochk-question").textContent = question.question;
+    $6("geochk-mentioned").checked = !!(check && check.mentioned);
+    $6("geochk-cited").checked = !!(check && check.cited);
+    $6("geochk-url").value = check && check.cited_url || "";
+    $6("geochk-note").value = check && check.note || "";
+    $6("geochk-error").textContent = "";
+    $6("geochk-del").classList.toggle("is-hidden", !check);
     renderShots();
     openModal("geoCheckMask");
   }
   async function submitGeoCheck(btn) {
-    const e = editing3;
+    const e = editing4;
     if (!e) return;
     const body = {
       question_id: e.question.id,
       engine: e.engine.key,
       round_date: round,
-      mentioned: $5("geochk-mentioned").checked,
-      cited: $5("geochk-cited").checked,
-      cited_url: $5("geochk-url").value.trim(),
-      note: $5("geochk-note").value
+      mentioned: $6("geochk-mentioned").checked,
+      cited: $6("geochk-cited").checked,
+      cited_url: $6("geochk-url").value.trim(),
+      note: $6("geochk-note").value
     };
     if (btn) btn.disabled = true;
     try {
       const { item } = await API.put("/api/geo/checks", body);
       e.check = item;
-      $5("geochk-error").textContent = "";
-      $5("geochk-del").classList.remove("is-hidden");
+      $6("geochk-error").textContent = "";
+      $6("geochk-del").classList.remove("is-hidden");
       renderShots();
       toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93" + (item.evidence_images.length ? "" : "\uFF0C\u8BF7\u8865\u4E0A\u622A\u56FE"));
       loadGeoChecks();
     } catch (err) {
-      $5("geochk-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText3(err);
+      $6("geochk-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText4(err);
     } finally {
       if (btn) btn.disabled = false;
     }
   }
   async function pickGeoShot() {
-    const e = editing3;
+    const e = editing4;
     if (!e || !e.check) return;
     const added = await pickAndUpload("geo_check", e.check.id);
     if (!added.length) return;
     e.check.evidence_images = (e.check.evidence_images || []).concat(added);
-    if (editing3 === e) renderShots();
+    if (editing4 === e) renderShots();
     loadGeoChecks();
   }
   function bind2() {
     if (bound2) return;
-    const panel = $5("sub-data-geo");
+    const panel = $6("sub-data-geo");
     if (!panel) return;
     bound2 = true;
     panel.addEventListener("click", async (e) => {
@@ -10609,12 +10831,12 @@
           await API.patch("/api/geo/questions/" + toggle.dataset.geoToggle, { active: toggle.dataset.active === "1" });
           loadGeoChecks();
         } catch (err) {
-          toast2("\u672A\u5165\u5E93\uFF1A" + failText3(err));
+          toast2("\u672A\u5165\u5E93\uFF1A" + failText4(err));
         }
         return;
       }
       if (e.target.closest("#geochk-add")) {
-        const input = $5("geochk-new");
+        const input = $6("geochk-new");
         const question = input.value.trim();
         if (!question) {
           toast2("\u5148\u5199\u4E0B\u8981\u95EE AI \u7684\u95EE\u9898");
@@ -10626,7 +10848,7 @@
           toast2("\u5DF2\u52A0\u5165\u9898\u5E93");
           loadGeoChecks();
         } catch (err) {
-          toast2("\u672A\u5165\u5E93\uFF1A" + failText3(err));
+          toast2("\u672A\u5165\u5E93\uFF1A" + failText4(err));
         }
         return;
       }
@@ -10635,54 +10857,54 @@
         loadGeoChecks();
       }
     });
-    $5("geochk-date").addEventListener("change", (e) => {
+    $6("geochk-date").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) {
         round = e.target.value;
         loadGeoChecks();
       }
     });
-    $5("geochk-show-off").addEventListener("change", () => {
+    $6("geochk-show-off").addEventListener("change", () => {
       if (data) renderMatrix();
     });
-    $5("geochk-rounds").addEventListener("change", (e) => {
+    $6("geochk-rounds").addEventListener("change", (e) => {
       if (e.target.value) {
         round = e.target.value;
         loadGeoChecks();
       }
     });
-    $5("geochk-new").addEventListener("keydown", (e) => {
+    $6("geochk-new").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        $5("geochk-add").click();
+        $6("geochk-add").click();
       }
     });
-    const mask = $5("geoCheckMask");
+    const mask = $6("geoCheckMask");
     mask.addEventListener("click", async (e) => {
       const delShot = e.target.closest("[data-att-del]");
-      if (delShot && editing3 && editing3.check) {
+      if (delShot && editing4 && editing4.check) {
         if (!inlineConfirm(delShot, "\u5220\u9664")) return;
-        const cur = editing3;
+        const cur = editing4;
         try {
           await deleteImage(delShot.dataset.attDel);
           cur.check.evidence_images = cur.check.evidence_images.filter((im) => String(im.id) !== String(delShot.dataset.attDel));
-          if (editing3 === cur) renderShots();
+          if (editing4 === cur) renderShots();
           loadGeoChecks();
         } catch (err) {
-          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText3(err));
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText4(err));
         }
         return;
       }
       const del = e.target.closest("#geochk-del");
-      if (del && editing3 && editing3.check) {
+      if (del && editing4 && editing4.check) {
         if (!inlineConfirm(del, "\u786E\u8BA4\u5220\u9664\u8FD9\u4E00\u683C")) return;
         try {
-          await API.del("/api/geo/checks/" + editing3.check.id);
+          await API.del("/api/geo/checks/" + editing4.check.id);
           closeModal("geoCheckMask");
-          editing3 = null;
+          editing4 = null;
           toast2("\u5DF2\u5220\u9664\u8FD9\u4E00\u683C\u7684\u8BB0\u5F55");
           loadGeoChecks();
         } catch (err) {
-          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText3(err));
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText4(err));
         }
       }
     });
@@ -10694,7 +10916,7 @@
   }
 
   // public/src/spend.js
-  var $6 = (id) => document.getElementById(id);
+  var $7 = (id) => document.getElementById(id);
   var isHttp4 = (u) => /^https?:\/\//i.test(String(u || ""));
   function h(tag, cls, text2) {
     const el5 = document.createElement(tag);
@@ -10731,7 +10953,7 @@
   var loadSeq = 0;
   var backlinkRows = [];
   var expenseRows = [];
-  var editing4 = { backlink: null, expense: null };
+  var editing5 = { backlink: null, expense: null };
   function monthRange(ym) {
     const [y, m] = ym.split("-").map(Number);
     const last = new Date(y, m, 0).getDate();
@@ -10743,14 +10965,14 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
   }
   var qs = (range2) => "?start_date=" + range2.start_date + "&end_date=" + range2.end_date;
-  var failText4 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var failText5 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   function adsSourceText(g) {
     if (g.source === "google_ads") return "Ads \u540C\u6B65\u6570\u636E \xB7 \u8D26\u6237\u5E01\u79CD";
     if (g.source === "sem_weeks") return "\u4EBA\u5DE5\u5468\u62A5\uFF08Ads \u672C\u671F\u65E0\u540C\u6B65\u6570\u636E\uFF09\xB7 \u4EBA\u6C11\u5E01";
     return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
   }
   function renderSummary4(data2) {
-    const box = $6("spend-summary");
+    const box = $7("spend-summary");
     if (!box) return;
     box.textContent = "";
     const row = h("div", "spend-groups");
@@ -10765,22 +10987,22 @@
     }
     box.appendChild(row);
     const total = amountsText(data2.totals);
-    const line2 = h("div", "spend-total");
-    line2.appendChild(h("b", "", "\u672C\u6708\u5408\u8BA1"));
-    line2.appendChild(h("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
-    if (Object.keys(data2.totals || {}).length > 1) line2.appendChild(h("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
-    box.appendChild(line2);
+    const line3 = h("div", "spend-total");
+    line3.appendChild(h("b", "", "\u672C\u6708\u5408\u8BA1"));
+    line3.appendChild(h("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
+    if (Object.keys(data2.totals || {}).length > 1) line3.appendChild(h("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
+    box.appendChild(line3);
   }
   function renderSummaryError(e) {
-    const box = $6("spend-summary");
+    const box = $7("spend-summary");
     if (!box) return;
     box.textContent = "";
-    const line2 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText4(e) + " ");
+    const line3 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText5(e) + " ");
     const btn = h("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
     btn.addEventListener("click", loadSpend);
-    line2.appendChild(btn);
-    box.appendChild(line2);
+    line3.appendChild(btn);
+    box.appendChild(line3);
   }
   function sideText(label, s) {
     if (!s.count) return label + " 0 \u6761";
@@ -10790,7 +11012,7 @@
     return parts.join(" \xB7 ");
   }
   function renderLinkStats(stats) {
-    const box = $6("spend-link-stats");
+    const box = $7("spend-link-stats");
     if (!box) return;
     box.textContent = "";
     if (!stats || !stats.total) return;
@@ -10825,7 +11047,7 @@
   function errorRow(tb, cols, label, e) {
     tb.textContent = "";
     const tr = h("tr");
-    const td2 = h("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText4(e) + " ");
+    const td2 = h("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText5(e) + " ");
     td2.colSpan = cols;
     const btn = h("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
@@ -10835,11 +11057,11 @@
     tb.appendChild(tr);
   }
   function renderBacklinks() {
-    const tb = $6("tb-backlinks");
+    const tb = $7("tb-backlinks");
     if (!tb) return;
     tb.textContent = "";
     if (!backlinkRows.length) {
-      emptyRow(tb, 11, $6("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      emptyRow(tb, 11, $7("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
       return;
     }
     for (const b of backlinkRows) {
@@ -10875,7 +11097,7 @@
     }
   }
   function renderExpenses() {
-    const tb = $6("tb-expenses");
+    const tb = $7("tb-expenses");
     if (!tb) return;
     tb.textContent = "";
     if (!expenseRows.length) {
@@ -10906,11 +11128,11 @@
   async function loadSpend() {
     bind3();
     if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
-    const input = $6("spend-month");
+    const input = $7("spend-month");
     if (input) input.value = month;
     const range2 = monthRange(month);
     const seq6 = ++loadSeq;
-    const allLinks = $6("spend-links-all") && $6("spend-links-all").checked;
+    const allLinks = $7("spend-links-all") && $7("spend-links-all").checked;
     const [sum, links, exps] = await Promise.allSettled([
       API.get("/api/spend/summary" + qs(range2)),
       API.get("/api/backlinks" + (allLinks ? "" : qs(range2))),
@@ -10926,14 +11148,14 @@
     } else {
       backlinkRows = [];
       renderLinkStats(null);
-      errorRow($6("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+      errorRow($7("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
     }
     if (exps.status === "fulfilled") {
       expenseRows = exps.value.items || [];
       renderExpenses();
     } else {
       expenseRows = [];
-      errorRow($6("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+      errorRow($7("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
     }
   }
   var BACKLINK_FIELDS = [
@@ -10972,7 +11194,7 @@
     expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
   };
   function fillSelect2(id, values, placeholder, labelOf) {
-    const sel = $6(id);
+    const sel = $7(id);
     if (!sel) return;
     const keep = sel.value;
     sel.textContent = "";
@@ -11001,7 +11223,7 @@
     fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
   }
   function ensureTaskOption(selectId, row) {
-    const sel = $6(selectId);
+    const sel = $7(selectId);
     if (!sel || !row || row.task_id == null) return;
     if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
     const o = h("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
@@ -11013,14 +11235,14 @@
     try {
       await ensureOptions();
     } catch (e) {
-      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText4(e));
+      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText5(e));
       return;
     }
-    editing4[kind] = row || null;
-    $6(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    editing5[kind] = row || null;
+    $7(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
     ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el5 = $6(id);
+      const el5 = $7(id);
       if (!el5) continue;
       el5.value = row && row[key] != null ? row[key] : "";
     }
@@ -11028,15 +11250,15 @@
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
       const me = (window.ME || {}).name || "";
       if (kind === "backlink") {
-        $6("bl-date").value = today3;
-        $6("bl-owner").value = me;
+        $7("bl-date").value = today3;
+        $7("bl-owner").value = me;
       } else {
-        $6("ex-date").value = today3;
-        $6("ex-currency").value = "CNY";
-        $6("ex-owner").value = me;
+        $7("ex-date").value = today3;
+        $7("ex-currency").value = "CNY";
+        $7("ex-owner").value = me;
       }
     }
-    $6(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    $7(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
     openModal(form.mask);
   }
   var openBacklink = () => openForm("backlink", null);
@@ -11045,21 +11267,21 @@
     const form = FORMS[kind];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el5 = $6(id);
+      const el5 = $7(id);
       if (el5) body[key] = el5.value;
     }
-    const errEl = $6(kind === "backlink" ? "bl-error" : "ex-error");
-    const row = editing4[kind];
+    const errEl = $7(kind === "backlink" ? "bl-error" : "ex-error");
+    const row = editing5[kind];
     if (btn) btn.disabled = true;
     try {
       if (row) await API.patch(form.api + "/" + row.id, body);
       else await API.post(form.api, body);
       closeModal(form.mask);
-      editing4[kind] = null;
+      editing5[kind] = null;
       toast2((row ? "\u5DF2\u66F4\u65B0" : "\u5DF2\u767B\u8BB0") + form.name + " \xB7 \u5DF2\u5165\u5E93");
       loadSpend();
     } catch (e) {
-      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText4(e);
+      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText5(e);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -11068,7 +11290,7 @@
   var submitExpense = (btn) => submitForm("expense", btn);
   function bind3() {
     if (bound3) return;
-    const panel = $6("panel-spend");
+    const panel = $7("panel-spend");
     if (!panel) return;
     bound3 = true;
     panel.addEventListener("click", async (e) => {
@@ -11099,17 +11321,17 @@
           toast2("\u5DF2\u5220\u9664" + form.name + "\u8BB0\u5F55");
           loadSpend();
         } catch (err) {
-          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText4(err));
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText5(err));
         }
       }
     });
-    $6("spend-month").addEventListener("change", (e) => {
+    $7("spend-month").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}$/.test(e.target.value)) {
         month = e.target.value;
         loadSpend();
       }
     });
-    $6("spend-links-all").addEventListener("change", loadSpend);
+    $7("spend-links-all").addEventListener("change", loadSpend);
   }
 
   // public/src/app.js
@@ -11177,6 +11399,7 @@
     "submit-geo-check": (el5) => submitGeoCheck(el5),
     "pick-geo-shot": () => pickGeoShot(),
     "submit-inq-source": (el5) => submitInquirySource(el5),
+    "submit-attr-edit": (el5) => submitAttrEdit(el5),
     "open-backlink": () => openBacklink(),
     "open-expense": () => openExpense(),
     "submit-backlink": (el5) => submitBacklink(el5),

@@ -105,7 +105,7 @@ export function auditSheets(pkg) {
   add('inquiries', '询盘', [
     ['id', '编号'], ['date', '日期'], ['country', '国家'], ['region', '大区'], ['channel', '渠道'], ['product', '产品'], ['grade', '等级'], ['original_grade', '原始等级'],
     ['deal_status', '是否成交'], ['company', '公司'], ['customer_code', '客户编码'], ['salesperson', '业务员'], ['source', '来源词'], ['src_campaign', '广告系列'],
-    ['src_landing_page', '落地页'], ['evidence', '来源证据'], ['source_verdict_label', '对账结论'], ['followups', '跟进次数'], ['note', '备注'],
+    ['src_landing_page', '落地页'], ['evidence', '来源证据'], ['source_verdict_label', '对账结论'], ['confirmation_label', '渠道等级确认'], ['attr_change_count', '渠道等级被改次数'], ['followups', '跟进次数'], ['note', '备注'],
   ], pkg.inquiries.items.map((i) => ({ ...i, evidence: EVIDENCE_LABEL[i.src_evidence] || '无' })));
 
   add('leads', '表单线索', [
