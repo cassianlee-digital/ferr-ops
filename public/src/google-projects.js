@@ -1,5 +1,5 @@
 /* Google 接入 / 数据源状态（ES 模块 · esbuild 打包为 IIFE）。
-   运行时依赖的全局（调用时解析）：API、esc()、toast()、window.DEMO_MODE（timerange 初始化）、
+   运行时依赖的全局（调用时解析）：API、esc()、toast()、
    loadGa4()（已迁入本包）。数据新鲜度刷新显式导入 charts.js。
    必须挂 window（main.js 统一处理）：
      - startGoogleAuth/backfillGoogle/syncGoogle —— Google 接入卡的局部事件委托调用；
@@ -53,13 +53,10 @@ function dsRow(key,s){
 }
 export async function loadDataSourcesStatus(){
   const box=document.getElementById('ds-status-rows'); if(!box)return; // 容器不存在直接返回，不报错
-  const tag=document.getElementById('ds-demo-tag');
-  if(tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber csp-s-9d5367afed">示例模式</span>' : '';
   try{
     const r=await API.get('/api/data-sources/status');
     const src=(r&&r.sources)||{};
-    box.innerHTML = DS_ORDER.map(k=>dsRow(k,src[k])).join('')
-      + (window.DEMO_MODE ? '<div class="dim csp-s-5698104cf1">当前为演示标记，下方仍为接口真实状态。</div>' : '');
+    box.innerHTML = DS_ORDER.map(k=>dsRow(k,src[k])).join('');
   }catch(e){
     // 整卡显示「状态获取失败」，不渲染任何假数据源，不 fallback 成已接入
     box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">状态获取失败</div><div class="banner-s">${esc(e&&e.message?e.message:'请求失败')}</div></div></div>`;

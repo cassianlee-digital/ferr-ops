@@ -7,18 +7,6 @@ import { formatLocalDate, getCurrentRange, getRangeRevision, rangeText, withRang
 import { createEvidenceFix, persistFailMsg } from './closed-loop.js';
 import { runAiAnalysis } from './ai.js';
 
-/* ===== 1a: DEMO_MODE —— 真实模式(false)禁止任何硬编码示例数据；仅 true 时展示下方 fixture ===== */
-window.DEMO_MODE = window.DEMO_MODE || false;
-const DEMO = {
-  inqTrend: { a:[2,1,2,1,2,1,2,1], total:[6,5,7,8,6,7,8,8] },
-  seoMini:  [95,98,92,100,104,99,108,112],
-  semMini:  [2.8,2.9,3.0,2.95,3.1,3.0,3.15,3.2],
-  inqDonut: { a:7, b:5, c:43, rate:'22%' },
-  chanDonut:{ seo:42, sem:33, direct:17, other:8 },
-  seoSeries:{ labels:Array.from({length:14},(_,i)=>5+'/'+(4+i*2)),
-              clicks:[95,98,92,100,104,99,108,112,109,115,118,114,120,124],
-              impr:[120,128,124,132,140,134,145,150,148,155,160,156,165,170] },
-};
 function loadFailureText(label,error){
   const reason=error&&error.message&&error.message!=='unauthorized'?error.message:'登录状态已失效或服务不可用';
   return label+'加载失败：'+reason;
@@ -35,7 +23,6 @@ function chartEmpty(id,detail,title){
   box.querySelector('.ce-sub').textContent=detail||'请录入数据或完成同步';
 }
 function setDonutLegend(map){ Object.keys(map).forEach(id=>{ const e=document.getElementById(id); if(e)e.textContent=map[id]; }); }
-function fillDonutLegendDemo(){ setDonutLegend({lgInqA:DEMO.inqDonut.a,lgInqB:DEMO.inqDonut.b,lgInqC:DEMO.inqDonut.c,lgInqRate:DEMO.inqDonut.rate,lgChSeo:DEMO.chanDonut.seo+'%',lgChSem:DEMO.chanDonut.sem+'%',lgChDirect:DEMO.chanDonut.direct+'%',lgChOther:DEMO.chanDonut.other+'%'}); }
 function blankDonutLegend(){ setDonutLegend({lgInqA:'—',lgInqB:'—',lgInqC:'—',lgInqRate:'—',lgChSeo:'—',lgChSem:'—',lgChDirect:'—',lgChOther:'—'}); }
 /* BUG-6：KPI 页两个 donut 用真实询盘聚合，无数据→诚实空状态。
    2026-08-26：不再读询盘页的 _inqCache —— 时间范围分页面独立后，那会出现「KPI 页写着近30天、
@@ -58,7 +45,6 @@ export async function loadKpiInqDonuts(){
 }
 let _inqDonutChart=null,_chanDonutChart=null;
 export function renderInqDonuts(){
-  if(window.DEMO_MODE)return; // DEMO_MODE 仍走 charts() 示例
   const rows=window._inqKpiCache||[];
   const cv1=document.getElementById('inqDonut'), cv2=document.getElementById('chanDonut');
   if(_inqDonutChart){ try{_inqDonutChart.destroy();}catch(e){} _inqDonutChart=null; }
@@ -86,7 +72,7 @@ export function renderInqDonuts(){
 
 let seoChart=null, seoFull=null;
 function seoSeriesFromWeeks(){
-  // 优先用当前区间视图；真实模式下无数据返回 null(显示空状态),仅 DEMO_MODE 用示例
+  // 优先用当前区间视图；没有数据返回 null（显示空状态）
   let w=(window._seoWeeksView!==undefined)?window._seoWeeksView:window._seoWeeks;
   if(w&&w.length){
     if(window._gran==='month'){ // C-2a：按月汇总(对真实周行求和)。SEO 无日数据，故只支持 周/月，不提供「天」。
@@ -96,7 +82,7 @@ function seoSeriesFromWeeks(){
     }
     return {labels:w.map(x=>x.date), clicks:w.map(x=>x.clicks), impr:w.map(x=>Math.round(x.impr/20))};
   }
-  return window.DEMO_MODE ? DEMO.seoSeries : null;
+  return null;
 }
 function buildSeoData(s){return {labels:s.labels,datasets:[{label:'点击',data:s.clicks,borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},{label:'展现÷20',data:s.impr,borderColor:'#9aa1ae',borderDash:[4,3],tension:.4,pointRadius:0,borderWidth:1.5}]};}
 function updateSeoChart(range){
@@ -674,7 +660,6 @@ function _ovSpark(id, rows, valFn, color, emptyDetail){
 }
 let dashboardBoardsRequestSequence=0;
 export async function loadDashboardBoards(){
-  if(window.DEMO_MODE)return;
   const requestId=++dashboardBoardsRequestSequence, revision=getRangeRevision('dashboard'), r=getCurrentRange('dashboard');
   const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const [gscResult,adsResult]=await Promise.allSettled([
@@ -773,7 +758,7 @@ export async function loadDashboardInq(){
   return true;
 }
 function renderInqTrend(){
-  const cv=document.getElementById('inqTrend'); if(!cv||window.DEMO_MODE)return;
+  const cv=document.getElementById('inqTrend'); if(!cv)return;
   const rows=window._inqDashboardCache||[], gran=window._gran||'day', r=getCurrentRange('dashboard');
   const sub=document.getElementById('inqTrendSub'); if(sub){
     const granLabel={day:'按天',week:'按周',month:'按月'}[gran]||gran;
@@ -798,23 +783,11 @@ function renderInqTrend(){
 }
 export function charts(){
   Chart.defaults.color='#9aa1ae';Chart.defaults.borderColor='rgba(128,128,128,.12)';Chart.defaults.font.size=10;
-  const wk=['W1','W2','W3','W4','W5','W6','W7','W8'];
-  const sp={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
-  if(window.DEMO_MODE){
-    // 仅 DEMO_MODE：用集中 fixture 画示例图(便于演示/截图，绝不在真实模式触发)
-    new Chart(inqTrend,{type:'line',data:{labels:wk,datasets:[{data:DEMO.inqTrend.a,borderColor:'#15a85a',backgroundColor:'rgba(21,168,90,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},{data:DEMO.inqTrend.total,borderColor:'#9aa1ae',backgroundColor:'rgba(154,161,174,.06)',fill:true,tension:.4,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-    new Chart(seoMini,{type:'line',data:{labels:wk,datasets:[{data:DEMO.seoMini,borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:sp});
-    new Chart(semMini,{type:'line',data:{labels:wk,datasets:[{data:DEMO.semMini,borderColor:'#7b54e0',backgroundColor:'rgba(123,84,224,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:sp});
-    new Chart(inqDonut,{type:'doughnut',data:{labels:['A','B','C'],datasets:[{data:[DEMO.inqDonut.a,DEMO.inqDonut.b,DEMO.inqDonut.c],backgroundColor:['#15a85a','#2f72e8','#dfe2e8'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
-    new Chart(chanDonut,{type:'doughnut',data:{labels:['SEO','SEM','直接','其他'],datasets:[{data:[DEMO.chanDonut.seo,DEMO.chanDonut.sem,DEMO.chanDonut.direct,DEMO.chanDonut.other],backgroundColor:['#2f72e8','#7b54e0','#0b9d8f','#ef9514'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
-    fillDonutLegendDemo();
-  }else{
-    // 真实模式：询盘趋势由 loadDashboardInq 重绘，KPI 两个 donut 由 loadInquiries 重绘。
-    ['seoMini','semMini'].forEach(chartEmpty);
-    // 首屏先占位(诚实空状态)，待 hydrate→loadInquiries 末尾真实重绘，避免 _inqCache 未就绪闪烁
-    chartEmpty('inqTrend'); chartEmpty('inqDonut'); chartEmpty('chanDonut'); blankDonutLegend();
-  }
-  // SEO 看板：有真实周数据则画(DEMO_MODE 下用 fixture)，否则空状态
+  // 询盘趋势由 loadDashboardInq 重绘，KPI 两个 donut 由 loadInquiries 重绘。
+  ['seoMini','semMini'].forEach(chartEmpty);
+  // 首屏先占位(诚实空状态)，待 hydrate→loadInquiries 末尾真实重绘，避免 _inqCache 未就绪闪烁
+  chartEmpty('inqTrend'); chartEmpty('inqDonut'); chartEmpty('chanDonut'); blankDonutLegend();
+  // SEO 看板：有真实周数据则画，否则空状态
   seoFull=seoSeriesFromWeeks();
   const so={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:7}}}};
   if(document.getElementById('seoBoard')){

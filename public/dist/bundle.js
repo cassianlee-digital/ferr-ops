@@ -851,19 +851,6 @@
   }
 
   // public/src/charts.js
-  window.DEMO_MODE = window.DEMO_MODE || false;
-  var DEMO = {
-    inqTrend: { a: [2, 1, 2, 1, 2, 1, 2, 1], total: [6, 5, 7, 8, 6, 7, 8, 8] },
-    seoMini: [95, 98, 92, 100, 104, 99, 108, 112],
-    semMini: [2.8, 2.9, 3, 2.95, 3.1, 3, 3.15, 3.2],
-    inqDonut: { a: 7, b: 5, c: 43, rate: "22%" },
-    chanDonut: { seo: 42, sem: 33, direct: 17, other: 8 },
-    seoSeries: {
-      labels: Array.from({ length: 14 }, (_, i) => "5/" + (4 + i * 2)),
-      clicks: [95, 98, 92, 100, 104, 99, 108, 112, 109, 115, 118, 114, 120, 124],
-      impr: [120, 128, 124, 132, 140, 134, 145, 150, 148, 155, 160, 156, 165, 170]
-    }
-  };
   function loadFailureText(label, error) {
     const reason = error && error.message && error.message !== "unauthorized" ? error.message : "\u767B\u5F55\u72B6\u6001\u5DF2\u5931\u6548\u6216\u670D\u52A1\u4E0D\u53EF\u7528";
     return label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason;
@@ -896,9 +883,6 @@
       if (e) e.textContent = map[id];
     });
   }
-  function fillDonutLegendDemo() {
-    setDonutLegend({ lgInqA: DEMO.inqDonut.a, lgInqB: DEMO.inqDonut.b, lgInqC: DEMO.inqDonut.c, lgInqRate: DEMO.inqDonut.rate, lgChSeo: DEMO.chanDonut.seo + "%", lgChSem: DEMO.chanDonut.sem + "%", lgChDirect: DEMO.chanDonut.direct + "%", lgChOther: DEMO.chanDonut.other + "%" });
-  }
   function blankDonutLegend() {
     setDonutLegend({ lgInqA: "\u2014", lgInqB: "\u2014", lgInqC: "\u2014", lgInqRate: "\u2014", lgChSeo: "\u2014", lgChSem: "\u2014", lgChDirect: "\u2014", lgChOther: "\u2014" });
   }
@@ -920,7 +904,6 @@
   var _inqDonutChart = null;
   var _chanDonutChart = null;
   function renderInqDonuts() {
-    if (window.DEMO_MODE) return;
     const rows2 = window._inqKpiCache || [];
     const cv1 = document.getElementById("inqDonut"), cv2 = document.getElementById("chanDonut");
     if (_inqDonutChart) {
@@ -999,7 +982,7 @@
       }
       return { labels: w.map((x) => x.date), clicks: w.map((x) => x.clicks), impr: w.map((x) => Math.round(x.impr / 20)) };
     }
-    return window.DEMO_MODE ? DEMO.seoSeries : null;
+    return null;
   }
   function buildSeoData(s) {
     return { labels: s.labels, datasets: [{ label: "\u70B9\u51FB", data: s.clicks, borderColor: "#2f72e8", backgroundColor: "rgba(47,114,232,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }, { label: "\u5C55\u73B0\xF720", data: s.impr, borderColor: "#9aa1ae", borderDash: [4, 3], tension: 0.4, pointRadius: 0, borderWidth: 1.5 }] };
@@ -1929,7 +1912,6 @@
   }
   var dashboardBoardsRequestSequence = 0;
   async function loadDashboardBoards() {
-    if (window.DEMO_MODE) return;
     const requestId = ++dashboardBoardsRequestSequence, revision = getRangeRevision("dashboard"), r = getCurrentRange("dashboard");
     const _t = (id, v) => {
       const e = document.getElementById(id);
@@ -2052,7 +2034,7 @@
   }
   function renderInqTrend() {
     const cv = document.getElementById("inqTrend");
-    if (!cv || window.DEMO_MODE) return;
+    if (!cv) return;
     const rows2 = window._inqDashboardCache || [], gran = window._gran || "day", r = getCurrentRange("dashboard");
     const sub = document.getElementById("inqTrendSub");
     if (sub) {
@@ -2098,22 +2080,11 @@
     Chart.defaults.color = "#9aa1ae";
     Chart.defaults.borderColor = "rgba(128,128,128,.12)";
     Chart.defaults.font.size = 10;
-    const wk = ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"];
-    const sp = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } };
-    if (window.DEMO_MODE) {
-      new Chart(inqTrend, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.inqTrend.a, borderColor: "#15a85a", backgroundColor: "rgba(21,168,90,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }, { data: DEMO.inqTrend.total, borderColor: "#9aa1ae", backgroundColor: "rgba(154,161,174,.06)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 1.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
-      new Chart(seoMini, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.seoMini, borderColor: "#2f72e8", backgroundColor: "rgba(47,114,232,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] }, options: sp });
-      new Chart(semMini, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.semMini, borderColor: "#7b54e0", backgroundColor: "rgba(123,84,224,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] }, options: sp });
-      new Chart(inqDonut, { type: "doughnut", data: { labels: ["A", "B", "C"], datasets: [{ data: [DEMO.inqDonut.a, DEMO.inqDonut.b, DEMO.inqDonut.c], backgroundColor: ["#15a85a", "#2f72e8", "#dfe2e8"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
-      new Chart(chanDonut, { type: "doughnut", data: { labels: ["SEO", "SEM", "\u76F4\u63A5", "\u5176\u4ED6"], datasets: [{ data: [DEMO.chanDonut.seo, DEMO.chanDonut.sem, DEMO.chanDonut.direct, DEMO.chanDonut.other], backgroundColor: ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
-      fillDonutLegendDemo();
-    } else {
-      ["seoMini", "semMini"].forEach(chartEmpty);
-      chartEmpty("inqTrend");
-      chartEmpty("inqDonut");
-      chartEmpty("chanDonut");
-      blankDonutLegend();
-    }
+    ["seoMini", "semMini"].forEach(chartEmpty);
+    chartEmpty("inqTrend");
+    chartEmpty("inqDonut");
+    chartEmpty("chanDonut");
+    blankDonutLegend();
     seoFull = seoSeriesFromWeeks();
     const so = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 7 } } } };
     if (document.getElementById("seoBoard")) {
@@ -8287,12 +8258,10 @@
   async function loadDataSourcesStatus() {
     const box = document.getElementById("ds-status-rows");
     if (!box) return;
-    const tag = document.getElementById("ds-demo-tag");
-    if (tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber csp-s-9d5367afed">\u793A\u4F8B\u6A21\u5F0F</span>' : "";
     try {
       const r = await API.get("/api/data-sources/status");
       const src = r && r.sources || {};
-      box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("") + (window.DEMO_MODE ? '<div class="dim csp-s-5698104cf1">\u5F53\u524D\u4E3A\u6F14\u793A\u6807\u8BB0\uFF0C\u4E0B\u65B9\u4ECD\u4E3A\u63A5\u53E3\u771F\u5B9E\u72B6\u6001\u3002</div>' : "");
+      box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("");
     } catch (e) {
       box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc2(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
     }
@@ -11781,22 +11750,6 @@
     await loadAdCreatives();
     await loadRankSnapshots();
   }
-  var LOOP = [["\u2460 \u8BA1\u5212", "plan"], ["\u2461 \u6D4B\u8BD5", "test"], ["\u2462 \u6570\u636E", "data"], ["\u2463 \u6574\u6539", "fix"], ["\u2464 \u590D\u76D8", "review"]];
-  function renderLoopbars() {
-    document.querySelectorAll(".loopbar").forEach((bar) => {
-      const cur = +bar.dataset.step;
-      bar.innerHTML = LOOP.map((x, i) => {
-        const n = i + 1;
-        const cls = n === cur ? "active" : n < cur ? "done" : "";
-        return `<span class="loopstep ${cls}" data-loop-tab="${esc2(x[1])}">${x[0]}</span>` + (n < LOOP.length ? '<span class="loopsep"></span>' : "");
-      }).join("");
-      bar.onclick = (e) => {
-        const step = e.target.closest("[data-loop-tab]");
-        if (step && bar.contains(step)) go2(step.dataset.loopTab);
-      };
-    });
-  }
-  renderLoopbars();
   var taskChanged = (card2) => document.dispatchEvent(new CustomEvent("taskchanged", { detail: { card: card2 } }));
   function taskDoneApplied(el5, c) {
     el5.classList.add("on");

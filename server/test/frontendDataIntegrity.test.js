@@ -479,3 +479,13 @@ test('考核方案从设置页改，指标口径不写死在代码里', () => {
   assert.match(kpiReviewAdminSource, /function valueOrNull\(input\)/);
   assert.match(kpiReviewAdminSource, /if \(!raw\) return null;/);
 });
+
+test('前端没有示例数据开关：不存在「控制台敲一行就能画出假图表」的后门', async () => {
+  // 以前 charts.js 里有一套 DEMO 夹具和 window.DEMO_MODE 开关（2026-10-10 删除）。没有任何地方会打开它，
+  // 但在控制台设成 true，总览页就会画出假的询盘趋势和等级 / 渠道圆环 —— 这个后台的数是拿来考核的。
+  const { readdirSync } = await import('node:fs');
+  const dir = new URL('../../public/src/', import.meta.url);
+  const sources = readdirSync(dir).filter((f) => f.endsWith('.js')).map((f) => [f, readFileSync(new URL(f, dir), 'utf8')]);
+  sources.push(['index.html', html], ['dist/bundle.js', readFileSync(new URL('../../public/dist/bundle.js', import.meta.url), 'utf8')]);
+  for (const [name, text] of sources) assert.doesNotMatch(text, /DEMO_MODE|\bDEMO\b/, `${name} 里出现了示例数据开关`);
+});

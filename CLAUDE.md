@@ -25,7 +25,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **全局面已腰斩:实测 190 名字 / 154 函数**(2026-08-27 合并后活站 iframe 差集,含 vendor;2026-07-15 同口径是 338/302)。降幅主要来自 `app.js` 迁入 ES 模块 —— 它原有 **35 个顶层符号自动是全局**,现在只导出 **4 个**给兼容层(第三刀又从 10 收到 4)。
   - **别用 grep 数 `window.X =` 去估全局面**——经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量(建空 iframe 取 `Object.getOwnPropertyNames` 做差集)。
-- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **154 处 `data-ui-action=`**(2026-10-10 实测,口径 `grep -ro 'data-ui-action=' public --include=*.html --include=*.js | grep -v /dist/ | grep -v /vendor/`)(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo 已随 ui-kit 迁走,现为 `src/app.js` 的 loop-tab 委托 + `google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
+- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **154 处 `data-ui-action=`**(2026-10-10 实测,口径 `grep -ro 'data-ui-action=' public --include=*.html --include=*.js | grep -v /dist/ | grep -v /vendor/`)(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **1 处 `onclick=`(2026-10-10 实测:`google-projects.js` 的 `el.onclick=fn` DOM 属性赋值;`app.js` 那处已随死代码 `renderLoopbars` 删除)**,不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
 - **`public/src/ui-kit.js` 是全站 UI 基础工具的唯一实现**(2026-08-26 新增):`esc`/`renderText`/`mdToHtml`/`openModal`/`closeModal`/`toast`/`toastUndo`/`toastGo`/`showToast`/`hideToast` 从 app.js 搬来。**22 个 ES 模块已全部改为显式 `import { esc, toast } from './ui-kit.js'`,模块侧不再读 `window`**(校验脚本口径:模块里出现这些名字却没 import = 漏网)。收益是**编译期保护**:名字写错 esbuild 当场报错;此前它们是隐式全局,对打包器完全隐形。⚠ **本模块必须保持「无 DOM 也能被 import」**——`table-editor.js` 会被 `node --test` 真实 import,求值期碰 `document` 会让整个测试文件崩(已踩过);故遮罩绑定带 `typeof document` 守卫、toast 系列取不到 `#toast` 就安静退场。
 - **`public/src/app.js` 是应用组装层**(2026-08-26 由经典脚本迁入 ES 模块):`STATIC_UI_ACTIONS` 委托表 + 导航 `go()` + `window load` 启动序列 + `applyRoleUi()`。**依赖方向单向**:它 import 21 个业务模块,**没有任何模块 import 它** —— 依赖图顶点,无环。故 `main.js` 里它**必须是最后一个 import**(模块求值期要做 DOM 绑定并注册 window load,等价于原来「bundle.js 之后再加载 app.js」),`Object.assign(window, …, app)` 里也**必须最后合并**(还原它的全局后定义、同名覆盖的语义)。这两条已被 `frontendXss.test.js` 焊死。它调用的 ~90 个模块函数现在**全部编译期校验**,写错 esbuild 当场失败。
 - **`Object.assign(window, …)` 兼容层仍要留**,消费者两类:`public/hermes.js`(只读 `window.API`/`ME`/`_curTab`/`esc`/`toast`/`go`/`loadClosedLoop`,全部带 `window.` 前缀且有兜底),以及 `closed-loop.js` 裸调用的 `go`/`chk`/`setPlanningTab`/`setActionTab`。
@@ -34,7 +34,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **已知既有缺陷(非重构引入)**:每次切时间范围会发**两个完全相同的** `/api/inquiries` 请求 —— `charts.js` 的 timerange 监听器调 `loadDashboardInq()` 与 `inquiries.js` 的 `loadInquiries()` 各取一次(改造前是 charts 监听 + timerange 直接调,数量口径一样)。要修得让两者共用一次取数。
 - **app.js 里仍靠隐式全局解析的只剩 16 个**(已审计,零漏网):`api.js` 的 `API`/`ensureAuth`/`can`/`ME`,以及 `hermes.js` 自己挂 window 的 14 个面板函数(`openHermesPanel`/`sendHermesPrompt` 等)。这两个经典脚本在 `bundle.js` **之前**加载,故运行时一定就绪。
 - **隐形风险降级但没消失**:经典脚本裸引用同样对打包器/静态分析隐形,改名依旧**没有编译期报错**。但排查方式变了 —— **改前端函数名前该 grep 的是 3 个经典脚本**(`hermes.js`/`api.js`/`login.js`),**不再是 `onclick=`**;`data-ui-action` 的动作名由 `app.js` 的 `STATIC_UI_ACTIONS` 表集中分发,改名会在表里露出来(且有测试校验 HTML 里每个动作都已注册)。
-- **已知死代码**:`app.js` 的 `renderLoopbars()` + `LOOP` 常量是 no-op —— `.loopbar` 元素早在 commit `e138dfd`「drop loop numbering」从 HTML 删光,2026-08-26 活站实测命中 0 个。清理时可直接删。
+- ~~已知死代码 `renderLoopbars()` + `LOOP`~~ **已于 2026-10-10 删除**(`.loopbar` 元素早就不在 HTML 里)。`base.css` 里 `.loopbar` / `.loopstep` 几条样式因此成了死样式,没动。
 
 ## API / Sync Reality(真实状态,禁止把未实现描述成已完成)
 
@@ -299,7 +299,12 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **ECharts 一律用 canvas 渲染,别用 svg**(2026-10-10 踩过):svg 渲染器靠 `setAttribute('style', …)` 给 `<svg>` 和每个 `<text>` 写样式,
   而本站 CSP 是 `style-src-attr 'none'`,样式被整条丢掉 —— 询盘地图标签的字号 / 字重曾因此完全没生效,且每画一次报 2 条违规。
   已把 `inquiry-globe.js` 改成 canvas(实测违规 0)。`styles.css` 里 `.inq-echarts-map svg / text` 两条规则因此成了死规则(没动那个文件)。
-- **仍残留的 demo 假数据:** 整改清单 AI 框两条写死建议(`index.html` 约 348-349);GA4 看板与总览部分 mini 图仍空状态。
+- **前端已没有任何示例数据(2026-10-10 实测 + 测试焊死)**。两件事分开说:① 整改清单 AI 框那两条写死的建议**早在提交 `efdf64e` 就清掉了**,
+  本文件却一直写着「仍残留」—— 又是一条没抽验就沿用的旧记录;② 真正留着的是 `charts.js` 里的 **`DEMO` 夹具 + `window.DEMO_MODE` 开关**:
+  没有任何地方会打开它,但在控制台敲一行,总览页就会画出假的询盘趋势和等级 / 渠道圆环(注释写的是「便于演示 / 截图」)。这个后台的数是拿来考核的,
+  所以连开关带夹具一起删了(`charts.js` 6 处分支、数据源状态卡上的「示例模式」标记、`#ds-demo-tag`)。
+  `frontendDataIntegrity.test.js` 有一条测试扫 `public/src`、`index.html` 和打包产物,**出现 `DEMO_MODE` / `DEMO` 就失败 —— 别再加回来,要演示请用测试库**。
+  GA4 看板与总览部分 mini 图在没有数据时是空状态(不是假数据)。
 - **时间范围已改成「每个页面各存各的」**(2026-08-26,`public/src/timerange.js` 重写):以前全站共用一个 `window._timeRange`,在询盘页点「近一年」,数据看板也跟着变成近一年。
   现按 **scope** 隔离:`dashboard / kpi / inquiry / data / fix`,各自一份 label+range+revision,各自 `localStorage`(`ferr:timeRange:<scope>` / `ferr:customRange:<scope>`;老的全站单 key 只在首次加载时读一次做迁移)。
   - **scope 来自 HTML 上的 `[data-time][data-scope]`,不靠 DOM 推导** —— GA4 面板会被 `mountGa4IntoData()` 搬进数据看板,`closest('.panel')` 会推错;GA4 与数据看板**共用 `data`**(同一屏两个互不相干的时间条会误导人)。
@@ -375,7 +380,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 密钥只存**服务器环境变量**或**加密存储**(参考 `integrations.js` 的 AES 方案)。
 - **前端不能直接接触密钥。**
 - 所有**用户输入和 API 返回文本**渲染前必须 **escape**。
-- **谨慎使用 `innerHTML`**(2026-10-10 实测 **205 处 `.innerHTML=` 赋值 + 1 处 `insertAdjacentHTML`**;口径 `grep -roE '\.innerHTML\s*=' public --include=*.js --include=*.html | grep -v /dist/ | grep -v /vendor/ | wc -l`)。**这近 200 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
+- **谨慎使用 `innerHTML`**(2026-10-10 实测 **203 处 `.innerHTML=` 赋值 + 1 处 `insertAdjacentHTML`**;口径 `grep -roE '\.innerHTML\s*=' public --include=*.js --include=*.html | grep -v /dist/ | grep -v /vendor/ | wc -l`)。**这近 200 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
 
 ## 协作流程约定
 

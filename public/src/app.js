@@ -284,14 +284,6 @@ async function hydrate(){
   await loadRankSnapshots();
 }
 
-/* ⓪ 闭环步骤条渲染 */
-const LOOP=[['① 计划','plan'],['② 测试','test'],['③ 数据','data'],['④ 整改','fix'],['⑤ 复盘','review']];
-function renderLoopbars(){ document.querySelectorAll('.loopbar').forEach(bar=>{ const cur=+bar.dataset.step;
-  bar.innerHTML=LOOP.map((x,i)=>{const n=i+1;const cls=n===cur?'active':(n<cur?'done':'');return `<span class="loopstep ${cls}" data-loop-tab="${esc(x[1])}">${x[0]}</span>`+(n<LOOP.length?'<span class="loopsep"></span>':'');}).join('');
-  bar.onclick=e=>{ const step=e.target.closest('[data-loop-tab]'); if(step&&bar.contains(step))go(step.dataset.loopTab); };
-}); }
-renderLoopbars();
-
 /* ---------- task check ---------- */
 /* BUG-23 / SOP-B：动态任务卡(loop_items id) PATCH state；SOP 卡(sopId+freq) POST/DELETE sop completions */
 // 任务卡的数据变了（完成 / 撤销）→ 通知 closed-loop 重画那张卡。用事件而不是 import，原因见 closed-loop.js 的监听处。
