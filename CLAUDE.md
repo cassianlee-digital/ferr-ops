@@ -13,8 +13,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 ## Current Architecture
 
 - **后端不是单文件**:Fastify,模块化良好。
-  - `server/src/routes/`(**35 个路由文件**,2026-10-10 实测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1283 行 / 129KB**(2026-10-10 实测;ES 模块 **40 个**),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+  - `server/src/routes/`(**36 个路由文件**,2026-10-10 实测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1345 行 / 135KB**(2026-10-10 实测;ES 模块 **42 个**),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -25,7 +25,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **全局面已腰斩:实测 190 名字 / 154 函数**(2026-08-27 合并后活站 iframe 差集,含 vendor;2026-07-15 同口径是 338/302)。降幅主要来自 `app.js` 迁入 ES 模块 —— 它原有 **35 个顶层符号自动是全局**,现在只导出 **4 个**给兼容层(第三刀又从 10 收到 4)。
   - **别用 grep 数 `window.X =` 去估全局面**——经典脚本里顶层 `function foo(){}` **自动就是全局**,根本不写 `window.`。要量就在活站上用 **iframe 差集**量(建空 iframe 取 `Object.getOwnPropertyNames` 做差集)。
-- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **141 处 `data-ui-action=`**(2026-10-10 实测,口径 `grep -ro 'data-ui-action=' public --include=*.html --include=*.js | grep -v /dist/ | grep -v /vendor/`)(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo 已随 ui-kit 迁走,现为 `src/app.js` 的 loop-tab 委托 + `google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
+- **⚠ 内联 handler 已清零,原「82 个强制全局是模块化地板」的说法已作废**(2026-08-26 实测)。事件委托改造**已经做完**:HTML 属性型 `onclick=`/`onchange=` **0 处**,全站改用 **149 处 `data-ui-action=`**(2026-10-10 实测,口径 `grep -ro 'data-ui-action=' public --include=*.html --include=*.js | grep -v /dist/ | grep -v /vendor/`)(+ `data-loop-tab`/`data-google-action` 等专用委托)。`public` 下仅剩 **4 处 `onclick=`,且全是 JS 里的 `el.onclick=fn` DOM 属性赋值**(`app.js` toastUndo/toastGo 已随 ui-kit 迁走,现为 `src/app.js` 的 loop-tab 委托 + `google-projects.js` 委托),不是 HTML 字符串里的裸全局调用。**统计口径**:`grep -ro 'on\(click\|change\)=' public --include=*.html --include=*.js | grep -v dist | grep -v vendor`。
 - **`public/src/ui-kit.js` 是全站 UI 基础工具的唯一实现**(2026-08-26 新增):`esc`/`renderText`/`mdToHtml`/`openModal`/`closeModal`/`toast`/`toastUndo`/`toastGo`/`showToast`/`hideToast` 从 app.js 搬来。**22 个 ES 模块已全部改为显式 `import { esc, toast } from './ui-kit.js'`,模块侧不再读 `window`**(校验脚本口径:模块里出现这些名字却没 import = 漏网)。收益是**编译期保护**:名字写错 esbuild 当场报错;此前它们是隐式全局,对打包器完全隐形。⚠ **本模块必须保持「无 DOM 也能被 import」**——`table-editor.js` 会被 `node --test` 真实 import,求值期碰 `document` 会让整个测试文件崩(已踩过);故遮罩绑定带 `typeof document` 守卫、toast 系列取不到 `#toast` 就安静退场。
 - **`public/src/app.js` 是应用组装层**(2026-08-26 由经典脚本迁入 ES 模块):`STATIC_UI_ACTIONS` 委托表 + 导航 `go()` + `window load` 启动序列 + `applyRoleUi()`。**依赖方向单向**:它 import 21 个业务模块,**没有任何模块 import 它** —— 依赖图顶点,无环。故 `main.js` 里它**必须是最后一个 import**(模块求值期要做 DOM 绑定并注册 window load,等价于原来「bundle.js 之后再加载 app.js」),`Object.assign(window, …, app)` 里也**必须最后合并**(还原它的全局后定义、同名覆盖的语义)。这两条已被 `frontendXss.test.js` 焊死。它调用的 ~90 个模块函数现在**全部编译期校验**,写错 esbuild 当场失败。
 - **`Object.assign(window, …)` 兼容层仍要留**,消费者两类:`public/hermes.js`(只读 `window.API`/`ME`/`_curTab`/`esc`/`toast`/`go`/`loadClosedLoop`,全部带 `window.` 前缀且有兜底),以及 `closed-loop.js` 裸调用的 `go`/`chk`/`setPlanningTab`/`setActionTab`。
@@ -136,14 +136,40 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - **已堵的旁路(各有测试,别拆)**:POST 直接建成完成;完成后把 result/evidence 清空;完成后删最后一张证据图(`409 last_evidence`);
     请求里夹白名单外的 `parent_id`/`fix_id` 伪装成普通任务(门槛只拿 `repo.UPDATABLE` 内的字段合并预判)。
     **已知没堵的**:执行人把跨天任务的日期改成同一天,就不再算「跨天」—— 改动本身留在记录里,由周度审核去看。
-  - **门槛只保证「填了」,不保证「填得对」**。证据能不能支撑结论,是第三阶段周度 AI 审核的事。
+  - **门槛只保证「填了」,不保证「填得对」**。证据能不能支撑结论,由周度审核(规则疑点 + AI 意见)去看。
   - **勾完成改走完成弹框**(`#taskDoneMask`):`chk()` 不再直接 PATCH done,入库成功后才标勾;取消 = 什么都没发生。
     卡片重画走 `taskchanged` 事件(app.js 派发、closed-loop.js 订阅)—— 这就是上文说的「事件反转」的第一处落地,
     顺带没有加宽 closed-loop.js 的导出面。**公司大任务完成现在会先戳 `done_at` 再归档**(以前直接归档,完成时刻是空的)。
   - 证据截图复用 `attachments`(`owner_type='task'`)。归档页任务行带出结果/动作/证据/关联/工时。
-  - **未做**:日计划按日期回放(`plan-history.js`)还没显示完成结果;测试登记(`kind='test'`)没有门槛,它靠 `conclusion` 列。
+  - 日计划按日期回放(`plan-history.js`)的任务行也带审计信息;**完成结果 / 动作 / 证据只在「那天或之前已完成」时显示** ——
+    回放是那一天的视角,不把事后写的结论摆进更早的日子。
+  - **未做**:测试登记(`kind='test'`)没有门槛,它靠 `conclusion` 列。
+- **周度审核已上线(2026-10-10,第三阶段;导航「行动中心 → 周度审核」)** —— 经理要的四样东西(审核页、AI 按人审核、
+  CSV/XLSX/JSON 导出、把数据开放给 AI)**吃同一个包**:`services/auditPackage.js` 的 `buildAuditPackage({range, person, today})`。
+  **要加字段只改这一处**,页面(`public/src/audit.js`)、导出(`services/auditExport.js`)、AI(`services/auditAi.js`)都读它。
+  - **路由 `routes/audit.js`**:`GET /api/audit/weekly`(包本身)、`GET /api/audit/weekly/export?format=json|xlsx|csv[&section=]`、
+    `GET·POST /api/audit/weekly/ai`。区间最长 92 天;`person` 只收 `all / 李 / 陈`;`today` 由前端按本地日期传。
+  - **包里有什么**:任务(状态 / 结果 / 证据 / 关联 / 14 天前后对比摘要 / 疑点)、SOP、SEO 与 SEM 的本期对上一等长区间、GEO、
+    询盘(含来源对账)、表单线索(**不带联系人与留言**)、测试、整改、花费、KPI、周报原文。
+    任务按人切(负责人优先,没写按部门 SEO→李 / SEM→陈,公司任务不归个人);**询盘 / 线索 / 花费 / KPI 是部门口径不按人拆**。
+  - **任务状态(`auditRules.taskState`)**:`completed` 按**北京时间的完成日**落在区间内;`overdue` 包含上周拖下来的;
+    `in_progress` = 区间与任务起止有重叠;`abandoned` = 区间内归档且从未完成。**标了完成却没有 `done_at` 的老任务不计入任何一周**。
+  - **疑点(`taskFlags`)是确定性规则,只陈述事实不定性**:缺结果 / 重要任务没证据 / 没可量化关联 / 没填预估或实际工时 /
+    实际超预估 1.5 倍或不到一半 / 晚于截止日完成 / 逾期 / 跨天任务区间内零推进。**AI 不可用时这一页照样能用**。
+  - **KPI 取「本月至今」**(区间结束日所在月的 1 号到结束日),不是拿一周的实际去比月度目标。
+  - **导出零新依赖**:`services/exporters.js` 用 Node 自带 `zlib` 手写 ZIP + XLSX(内联字符串,数字写数值单元格),
+    测试用已有的 `read-excel-file` 读回校验。CSV 带 **UTF-8 BOM**(否则 Excel 中文乱码)且**防公式注入**(`= + - @` 开头的文字前加单引号;数字不加)。
+    XLSX 每张表一个工作表(概要 / 任务 / 数据变化 / 数据概览 / GEO / 询盘 / 表单线索 / 整改 / 测试 / SOP / 花费汇总 / 外链 / 其它支出 / KPI本月至今 / 周报 / 口径说明);
+    CSV 一次一张(`section`)。文件名只用 ASCII(`李→li`、`陈→chen`)。
+    **⚠ 手写的 XLSX 只做过「读回」校验,没有在真实的 Excel / WPS 里打开过**,上线后请先导一份试开。
+  - **AI 审核**:直接调 `callAnthropic`(没走 Hermes 那套证据核验流程),提示词要求只依据包内数据、每条结论带 `task_id` / `inquiry_id`、
+    只输出约定的 JSON 结构;`parseAuditAi` 解析不出来就**原文显示并标注「未按结构返回」**。交给 AI 的包**不带客户编码、业务员**。
+    结果按 `weekly_audit:<start>:<end>:<person>` 存进 `ai_analyses`,重跑时旧意见进历史。
+    **⚠ 本地没有 AI 密钥,真实的 AI 输出没跑过**(只验过「不可用时回原因」和「结构化渲染」两头);首次在生产跑要看它是否守结构、是否超出 `max_tokens`。
+  - **「开放给 AI」目前 = 导出 JSON 后上传**(用户 2026-10-10 采纳的方案)。只读签名链接没做。
+  - SOP 统计(`services/sopStats.js`)与 GEO 概览(`services/geoData.js`)因此从路由里抽成了 service,路由与审核包共用。
 - **任务完成前后的数据对比已上线(2026-10-10,第二阶段)** —— `GET /api/loop-items/:id/effect?days=7|14|28`,
-  纯函数 `services/taskEffect.js` + 组装 `services/taskEffectData.js`(**第三阶段周度审核直接复用 `buildTaskEffect`**)+ 查询 `repositories/taskEffect.js`。
+  纯函数 `services/taskEffect.js` + 组装 `services/taskEffectData.js`(**周度审核包直接复用 `buildTaskEffect`**)+ 查询 `repositories/taskEffect.js`。
   按 `task_links`:页面/关键词 → GSC(点击/曝光/曝光加权排名),系列 → Ads(花费/点击/转化/每转化成本),关键词在 Ads 有数据时多列一行。
   - **口径(有测试焊死,别改松)**:前后窗口**永远等长** —— 完成后数据没满 N 天时两边一起缩短并标 `PARTIAL`
     (拿 14 天前窗口比 5 天后窗口,任何任务看起来都在跌);**完成当天两边都不算**;完成时刻按 **Asia/Shanghai** 归日
@@ -151,7 +177,9 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - **同时给全站 / 全账户同期变化当参照**,并在响应里带一句 `note`:「只说明之后变了,不能证明因此变了」。界面原样显示。
   - **KPI 关联只记声明(`DECLARED`),不做单条任务的前后对比** —— A/B 询价数量是部门级的数,拆不到单条任务。
   - 只读现算不落库(同步数据会补齐,今天的「数据未满」过几天该变完整)。入口:已完成任务卡 / 归档行上的「数据变化」。
-  - **未做**:外链台账的「指向页面」还没接这套对比;GA4 落地页维度(会话/关键事件)没进对比。
+  - **外链也接上了**:`GET /api/backlinks/:id/effect`,原点 = 外链上线日,对象 = 它指向的页面。任务与外链共用 `taskEffectData.js` 里的
+    同一个 `buildEffect`,弹框也是同一个(`task-audit.js` 的 `openEffect(path)`);**没有原点时的原因由后端给**(`status` + `message`),前端不各写一份。
+  - **未做**:GA4 落地页维度(会话/关键事件)没进对比。
 - **询盘来源已上线(2026-10-10,第二阶段)** —— 来源分两种可信度,**分开存、分开显示**(`inquiries.src_evidence`):
   `form` = 独立站表单带回的机器证据(**任何角色都不能手改**,`409 source_locked`),`manual` = 人填的主张。
   **绝不用 `channel` 的取值暗示有没有证据。** 规则 `services/inquirySource.js`,前端 `public/src/inquiry-source.js`
@@ -176,7 +204,13 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - **卡上必须一直挂着的局限**:只有「从 AI 回答里点链接进站」的访问;AI 提到了但没人点的看不到,所以只会低估。
   - **⚠ 域名表没有用真实数据校验过**:本地库没有 GA4 同步数据,识别规则是按 GA4 `source / medium` 的通用格式写的。
     上线后要去卡片上逐个引擎悬停看「GA4 来源值」,确认生产里的实际写法都被归对了。
-  - **未做**:被 AI 引用情况的固定题库人工抽查(用户已同意要做:15~20 个固定问题、固定引擎、每两周一次、附截图)。
+  - **引用抽查已上线(数据看板 → GEO 抽查)**:`geo_questions`(题库)+ `geo_checks`(每轮记录),规则 `services/geoChecks.js`,前端 `public/src/geo-checks.js`。
+    一轮一张「问题 × 引擎」矩阵,每格记 提到 / 引用 / 被引用页面 / 备注,截图走 `attachments(owner_type='geo_check')`。
+    **可比性的三条规矩由后端强制**:问题文字**不能改**(`PATCH` 只收 `active`,改字 = 换题,之前各轮就对不上)、
+    引擎固定为 `CHECK_ENGINE_KEYS`(ChatGPT / Perplexity / Gemini / Copilot,**改这张表会让历史轮次失去可比性**)、
+    汇总分母用**已查的格子**,没查的单独报出来不算没提到;没截图的也单独数(不拦保存)。
+    总览 GEO 卡带出最近一轮与上一轮;没查过显示「还没做过」而不是 0。
+    已知近似:历史轮次的「应查题数」用的是**当前**启用题数,题库变动后旧轮次的分母会跟着变。
 - **投入台账已上线(2026-10-10,导航「数据中心 → 投入台账」)** —— 回答「每个月的钱花在哪」。
   `server/src/routes/spend.js` + 纯函数 `services/spend.js` + 前端 `public/src/spend.js`(全 createElement,**零 innerHTML**)。
   - 钱有三个去处,**各只记一处**:广告费(复用 `kpiLedger.resolveSemSpend`,Ads 同步优先、无则回退 `sem_weeks.cost`)、
@@ -187,7 +221,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
     广告费没有数据源时金额为空对象,**不是 0**;花了钱的外链必须有币种和日期,否则进不了任何一个月。
   - 两张台账都是**软删**(`deleted_at`),且 `task_id` 只能指向真实任务;挂了花费的任务自动成为「重要任务」。
   - 月份自带选择器,**没有接入 `timerange.js` 的 scope 体系**(钱按自然月看,不需要近 7 天这类区间)。
-  - **未做**:外链存活的自动核查(要服务端去抓任意网址,有 SSRF 面,先人工填核查日);外链 → 目标页 GSC 点击变化(第二阶段)。
+  - 外链行上的「数据变化」= 它指向的页面在外链上线前后的自然搜索表现(见上面「任务完成前后的数据对比」)。
+  - **未做**:外链存活的自动核查(要服务端去抓任意网址,有 SSRF 面,先人工填核查日)。
 - **图片附件已上线**(`attachments` 表 + `server/src/routes/attachments.js` + `public/src/attachments.js`):
   询盘「业务反馈」和关键词库「客户信息词库 → 业务反馈」共用。BLOB 存库(生产是 Docker Compose,
   落盘要额外挂卷且 `backup.js` 备的就是这个 .db,存库能跟着一起备份);列表接口只回元数据,
@@ -204,7 +239,9 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   至此闭环为:**数据 → 诊断 → 整改 → 谁的今日 → 打卡推进 → 完成回写**。
 - **AI 上下文已含真实同步数据**:`aiContext.js buildContext` 注入 GSC/Ads 近30天汇总 + Top系列 + 机会词/蚕食/衰退/高花费零有效。SEM 看板「问题分析/优化思路/关键词排查」及所有 AI 按钮据此产出基于真实数据的分析。
 - **AI 弹窗能力**:分析按 `scope_key` 持久化(`ai_analyses`);弹窗顶部**历史时间线**可点切换对比(`history_json` 快照,重跑旧结论不丢不归档),footer「重新分析」按本页最新数据重跑、「拆成整改动作」(`/api/ai/analyses/:id/actions`)把结论拆成动作逐条「采纳」入整改。`max_tokens` 默认 4000(.env 显式值会覆盖)。
-- **已知既有问题(2026-10-10 实测,非本轮引入)**:询盘页每次渲染飞线地图,`vendor/echarts.min.js` 会触发 2 条 `style-src-attr` CSP 违规(ECharts 往元素上写 style 属性被拦),可能影响地图提示框样式。总览 / 日计划 / 投入台账页无此问题。
+- **ECharts 一律用 canvas 渲染,别用 svg**(2026-10-10 踩过):svg 渲染器靠 `setAttribute('style', …)` 给 `<svg>` 和每个 `<text>` 写样式,
+  而本站 CSP 是 `style-src-attr 'none'`,样式被整条丢掉 —— 询盘地图标签的字号 / 字重曾因此完全没生效,且每画一次报 2 条违规。
+  已把 `inquiry-globe.js` 改成 canvas(实测违规 0)。`styles.css` 里 `.inq-echarts-map svg / text` 两条规则因此成了死规则(没动那个文件)。
 - **仍残留的 demo 假数据:** 整改清单 AI 框两条写死建议(`index.html` 约 348-349);GA4 看板与总览部分 mini 图仍空状态。
 - **时间范围已改成「每个页面各存各的」**(2026-08-26,`public/src/timerange.js` 重写):以前全站共用一个 `window._timeRange`,在询盘页点「近一年」,数据看板也跟着变成近一年。
   现按 **scope** 隔离:`dashboard / kpi / inquiry / data / fix`,各自一份 label+range+revision,各自 `localStorage`(`ferr:timeRange:<scope>` / `ferr:customRange:<scope>`;老的全站单 key 只在首次加载时读一次做迁移)。
@@ -277,7 +314,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - 密钥只存**服务器环境变量**或**加密存储**(参考 `integrations.js` 的 AES 方案)。
 - **前端不能直接接触密钥。**
 - 所有**用户输入和 API 返回文本**渲染前必须 **escape**。
-- **谨慎使用 `innerHTML`**(2026-10-10 实测 **204 处 `.innerHTML=` 赋值 + 1 处 `insertAdjacentHTML`**;口径 `grep -roE '\.innerHTML\s*=' public --include=*.js --include=*.html | grep -v /dist/ | grep -v /vendor/ | wc -l`)。**这近 200 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
+- **谨慎使用 `innerHTML`**(2026-10-10 实测 **205 处 `.innerHTML=` 赋值 + 1 处 `insertAdjacentHTML`**;口径 `grep -roE '\.innerHTML\s*=' public --include=*.js --include=*.html | grep -v /dist/ | grep -v /vendor/ | wc -l`)。**这近 200 处从未被完整审计过**——曾抽查过若干插值点(market-brain/google-projects/kpi-view/tagselect/keywords)均已 `esc()`,但**抽样不是结论,别当已排查**。真要下结论需专门做一轮全量审计。
 
 ## 协作流程约定
 
