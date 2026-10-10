@@ -208,3 +208,100 @@ test('彻底删除一条有改动流水的询盘：不被外键拦住，流水�
   assert.equal(db.prepare('SELECT COUNT(*) n FROM inquiry_field_changes WHERE inquiry_id = ?').get(item.id).n, 0);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM inquiries WHERE id = ?').get(item.id).n, 0);
 });
+
+/* ===== 闸门的旁路（2026-10-10 自查逐条复现过，修之前全部能走通）===== */
+const del = (url, role) => app.inject({ method: 'DELETE', url, headers: auth(role) });
+const dbRow = (id) => db.prepare('SELECT date, channel, grade, state, attribution_status FROM inquiries WHERE id = ?').get(id);
+const changes = (id) => db.prepare('SELECT field, old_value, new_value FROM inquiry_field_changes WHERE inquiry_id = ? ORDER BY id').all(id);
+
+test('旁路：把已确认的渠道 / 等级「清空」也是改 —— 传 null 不能绕过闸门', async () => {
+  const item = await newInquiry('manager', { grade: 'A', channel: 'SEM付费' });
+  const clearChannel = await patch(`/api/inquiries/${item.id}`, { channel: null }, 'seo');
+  assert.equal(clearChannel.statusCode, 403);
+  assert.equal(clearChannel.json().error, 'attribution_locked');
+  // 等级任何人任何时候都不能清空：没有等级的询盘不进 A / B 计数，等于从考核里拿掉
+  for (const role of ['seo', 'manager']) {
+    const clearGrade = await patch(`/api/inquiries/${item.id}`, { grade: null, reason: '试试' }, role);
+    assert.equal(clearGrade.statusCode, 400);
+    assert.equal(clearGrade.json().error, 'invalid_grade');
+  }
+  assert.deepEqual({ channel: dbRow(item.id).channel, grade: dbRow(item.id).grade }, { channel: 'SEM付费', grade: 'A' });
+  // 建议阶段可以清空渠道（录入时常常还不知道），但要留痕
+  const draft = await newInquiry('seo');
+  assert.equal((await patch(`/api/inquiries/${draft.id}`, { channel: null }, 'seo')).statusCode, 200);
+  assert.deepEqual(changes(draft.id), [{ field: 'channel', old_value: 'SEO自然', new_value: null }]);
+});
+
+test('旁路：已确认的询盘不能靠改日期挪到别的月份；日期只收真实的 YYYY-MM-DD', async () => {
+  const item = await newInquiry('manager', { grade: 'A' });
+  const move = await patch(`/api/inquiries/${item.id}`, { date: '2026-09-01' }, 'seo');
+  assert.equal(move.statusCode, 403);
+  assert.equal((await patch(`/api/inquiries/${item.id}`, { date: '2026-09-01' }, 'manager')).json().error, 'reason_required');
+  assert.equal((await patch(`/api/inquiries/${item.id}`, { date: '2026-09-01', reason: '录错月份' }, 'manager')).statusCode, 200);
+  assert.deepEqual(changes(item.id), [{ field: 'date', old_value: '2026-08-10', new_value: '2026-09-01' }]);
+  for (const bad of ['2026-13-01', '2026-02-30', '20260901', '', null, 20260901]) {
+    const r = await patch(`/api/inquiries/${item.id}`, { date: bad, reason: 'x' }, 'manager');
+    assert.equal(r.statusCode, 400, JSON.stringify(bad));
+    assert.equal(r.json().error, 'invalid_date');
+  }
+  assert.equal((await post('/api/inquiries', { date: '2026-02-30', grade: 'A' }, 'seo')).statusCode, 400);
+  assert.equal(dbRow(item.id).date, '2026-09-01');
+  // 日期没变就不算改：带着原日期一起提交的请求不该被拦，也不该留流水
+  assert.equal((await patch(`/api/inquiries/${item.id}`, { date: '2026-09-01', note: '补备注' }, 'seo')).statusCode, 200);
+  assert.equal(changes(item.id).length, 1);
+});
+
+test('旁路：请求被后面的校验拒掉时，不留下一条「没发生过」的改动流水', async () => {
+  const item = await newInquiry('seo');
+  db.prepare("UPDATE inquiries SET src_evidence = 'form' WHERE id = ?").run(item.id);
+  const r = await patch(`/api/inquiries/${item.id}`, { channel: 'SEM付费', source: '改来源词' }, 'seo');
+  assert.equal(r.json().error, 'source_locked');
+  assert.equal(dbRow(item.id).channel, 'SEO自然');
+  assert.deepEqual(changes(item.id), [], '改动没落库，流水也不能有');
+  // 类型不对被通用校验拒掉（400）同理
+  const bad = await patch(`/api/inquiries/${item.id}`, { grade: 'A', note: { x: 1 } }, 'seo');
+  assert.equal(bad.statusCode, 400);
+  assert.equal(dbRow(item.id).grade, 'B');
+  assert.deepEqual(changes(item.id), []);
+});
+
+test('旁路：已确认的询盘录入人不能归档（归档 = 从考核里消失）；归档与恢复都留痕', async () => {
+  const item = await newInquiry('manager', { grade: 'A' });
+  const byLi = await del(`/api/inquiries/${item.id}`, 'seo');
+  assert.equal(byLi.statusCode, 403);
+  assert.equal(byLi.json().error, 'attribution_locked');
+  assert.equal(dbRow(item.id).state, null);
+  assert.equal((await del(`/api/inquiries/${item.id}`, 'manager')).statusCode, 200);
+  assert.equal(dbRow(item.id).state, 'archived');
+  assert.equal((await post(`/api/inquiries/${item.id}/restore`, {}, 'seo')).statusCode, 200);
+  assert.deepEqual(changes(item.id), [
+    { field: 'state', old_value: 'active', new_value: 'archived' },
+    { field: 'state', old_value: 'archived', new_value: 'active' },
+  ]);
+  // 列表上的「改 N」要数得到这两次，否则流水记了也没有入口能看到
+  const row = (await get('/api/inquiries', 'seo')).json().items.find((i) => i.id === item.id);
+  assert.equal(row.attr_change_count, 2);
+  // 还没确认的，录入人自己可以归档（录错了 / 重复了），同样留痕
+  const draft = await newInquiry('seo');
+  assert.equal((await del(`/api/inquiries/${draft.id}`, 'seo')).statusCode, 200);
+  assert.equal(changes(draft.id).length, 1);
+  assert.equal((await del('/api/inquiries/999999', 'boss')).statusCode, 404);
+});
+
+test('旁路：彻底删除只有老板能做 —— 界面一直只给老板显示按钮，接口也得只认老板（询盘 / 任务 / 整改）', async () => {
+  const item = await newInquiry('manager', { grade: 'A' });
+  for (const role of ['seo', 'sem', 'manager']) {
+    const r = await del(`/api/inquiries/${item.id}?hard=1`, role);
+    assert.equal(r.statusCode, 403, role);
+    assert.equal(r.json().error, 'hard_delete_forbidden');
+  }
+  assert.ok(dbRow(item.id), '询盘还在');
+  const task = (await post('/api/loop-items', { kind: 'task', dept: 'SEO', content: '彻底删除权限测试', task_date: '2026-08-10' }, 'seo')).json().item;
+  assert.equal((await del(`/api/loop-items/${task.id}?hard=1`, 'seo')).statusCode, 403);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM loop_items WHERE id = ?').get(task.id).n, 1);
+  assert.equal((await del(`/api/loop-items/${task.id}?hard=1`, 'boss')).statusCode, 200);
+  const fix = (await post('/api/fixes', { title: '彻底删除权限测试', dept: 'SEO' }, 'seo')).json().item;
+  assert.equal((await del(`/api/fixes/${fix.id}?hard=1`, 'manager')).statusCode, 403);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM fixes WHERE id = ?').get(fix.id).n, 1);
+  assert.equal((await del(`/api/fixes/${fix.id}?hard=1`, 'boss')).statusCode, 200);
+});

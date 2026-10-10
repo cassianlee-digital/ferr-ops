@@ -205,15 +205,23 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **询盘的确认权与改动留痕已上线(2026-10-10)** —— 等级(A/B/C)决定月度考核里 60 分的 A / B 询价数量,渠道决定「这条询盘算谁带来的」,
   而录入人自己就能填、能改。没有表单证据的询盘拿不到独立于录入人的机器证据,能立的只有流程规矩。
   规则在 `routes/inquiries.js` + `repositories/inquiries.js`,前端 `public/src/inquiry-attribution.js`(与 inquiry-sales / inquiry-source 同模式,
-  反向走 `attributionchanged` 事件)。测试 `server/test/attributionGate.test.js` 19 例。
+  反向走 `attributionchanged` 事件)。测试 `server/test/attributionGate.test.js` 24 例。
   - **三条规矩**:① 录入 = 建议值(`inquiries.attribution_status='proposed'`);**manager / boss 录入即确认**,也只有他们能确认(单条 / 批量)和撤销确认;
-    ② 已确认后李 / 陈改不动渠道和等级(`403 attribution_locked`),manager / boss 改必须带 `reason`(`400 reason_required`);
+    ② 已确认后李 / 陈改不动**渠道、等级和日期**(`403 attribution_locked`;`repo.LOCKED_FIELDS`),manager / boss 改必须带 `reason`(`400 reason_required`);
     ③ 每次改动进 `inquiry_field_changes`(谁 / 何时 / 从什么改成什么 / 为什么),相同值不记。
     老行状态为 NULL = **历史未审**,既不算已确认也不算待确认,不补假值。
   - 顺带补了一直缺的校验:`channel` 只认 `SEO自然 / SEM付费 / 直接 / 其他`,`grade` 只认 A / B / C(以前 PATCH 不校验,任何字符串都能写进去)。
   - 界面:每行渠道格下标 待确认 / 已确认 / 历史未审 +「改 N」(可点看流水);已确认的渠道 / 等级换成带锁的静态徽章;
     表格上方亮出确认进度(未确认 ≥50% 标红),经理 / 老板有「全部确认」(要点两次;**确认的是当前时间范围内全部未确认的,不受表头筛选影响**)。
     周度审核包的 `inquiries.confirmation` 与每条询盘的 `confirmation_label` / `attr_change_count` 同源。
+  - **已堵的旁路(2026-10-10 自查逐条复现过,各有测试,别拆)**:
+    ① **清空也是改**:判断「改没改」用 `f in body`,不是 `!= null` —— 传 `null` 曾能把已确认的 A 级询盘变成无等级,且不留流水。等级任何人都不能清空(`400 invalid_grade`);
+    ② **日期也锁**:它决定询盘算进哪个月。顺带只收真实的 `YYYY-MM-DD`(`400 invalid_date`),乱写的日期会落在所有区间之外、悄悄从统计里消失;
+    ③ **流水与改动同一个事务**(`repo.updateWithLog`):以前流水先写,后面的校验把请求拒掉后会留下一条没发生过的改动;
+    ④ **已确认的询盘录入人不能归档**(归档 = 从考核里消失);归档 / 恢复都记流水(`field='state'`),「改 N」数的是确认状态以外的全部改动;
+    ⑤ **彻底删除只认老板**(`403 hard_delete_forbidden`,询盘 / 任务 / 整改三处):界面一直只给老板显示按钮,接口以前却是四个角色都能调,
+       而彻底删除会把改动流水、完成结果、证据截图一起抹掉。**界面上藏按钮不是权限,以后加「只给某角色」的操作先写后端判断。**
+    **已知没堵的**:还没确认的询盘录入人可以自己归档(录错 / 重复是正常需要),有流水但没有人把关;`deal_status`(是否成交)不在锁定范围内。
   - **只管「谁能改、改了留痕、未确认看得见」,不改任何考核口径** —— 月度考核照旧数全部询盘。
     旧分支里绑在旧版 KPI 上的「严格模式(只认已确认的询盘)」**没有移植**:现在的考核口径是老板亲定的,要不要只认已确认的询盘得他来定。
   - **来历**:设计与大部分后端代码移植自旧分支 `claude/inquiry-channel-attribution-aed2c6` 的提交 `a298574`。

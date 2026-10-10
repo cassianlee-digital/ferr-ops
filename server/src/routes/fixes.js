@@ -93,9 +93,13 @@ export async function fixesRoutes(app) {
   });
 
   // 新增：DELETE 默认软删；?hard=1 物理删
-  app.delete('/api/fixes/:id', editor, async (request) => {
+  app.delete('/api/fixes/:id', editor, async (request, reply) => {
     const id = Number(request.params.id);
     if (request.query?.hard === '1') {
+      // 与任务、询盘同一条规矩：界面只给老板显示彻底删除，接口也只认老板
+      if (request.user?.role !== 'boss') {
+        return reply.code(403).send({ error: 'hard_delete_forbidden', detail: '彻底删除只有老板可以做' });
+      }
       repo.hardDelete(id);
       return { ok: true, hard: true };
     }

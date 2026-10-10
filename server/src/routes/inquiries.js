@@ -18,6 +18,12 @@ const COMPANIES = ['贝孚特', '费尔瑞'];
 const CHANNELS = ['SEO自然', 'SEM付费', '直接', '其他'];
 // 确认权在经理 / 老板：他们录入即确认，也只有他们能确认、能改已确认的渠道和等级
 const isAuthority = (request) => request.user?.role === 'manager' || request.user?.role === 'boss';
+function validDate(v) {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(v + 'T00:00:00Z');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+}
+const BAD_DATE = { error: 'invalid_date', detail: '日期要写成 YYYY-MM-DD' };
 
 function clean(body) {
   const s = (v) => (v == null ? null : String(v).slice(0, 500));
@@ -62,6 +68,8 @@ export async function inquiriesRoutes(app) {
 
   app.post('/api/inquiries', editor, async (request, reply) => {
     const body = request.body || {};
+    // 日期决定这条询盘算进哪个月：乱写的日期会落在所有区间之外，悄悄从统计里消失
+    if (body.date != null && body.date !== '' && !validDate(body.date)) return reply.code(400).send(BAD_DATE);
     const rec = clean(body);
     if (rec.channel != null && !CHANNELS.includes(rec.channel)) {
       return reply.code(400).send({ error: 'invalid_channel', detail: '渠道只能是：' + CHANNELS.join(' / ') });
@@ -105,26 +113,26 @@ export async function inquiriesRoutes(app) {
     if (body.channel != null && !CHANNELS.includes(body.channel)) {
       return reply.code(400).send({ error: 'invalid_channel', detail: '渠道只能是：' + CHANNELS.join(' / ') });
     }
-    if (body.grade != null && !GRADES.includes(body.grade)) {
-      return reply.code(400).send({ error: 'invalid_grade', detail: '等级只能是 A / B / C' });
+    // 等级不能清空（'grade' in body 而不是 != null）：传 null 曾经能把一条已确认的 A 级询盘变成无等级
+    if ('grade' in body && !GRADES.includes(body.grade)) {
+      return reply.code(400).send({ error: 'invalid_grade', detail: '等级只能是 A / B / C，不能清空' });
     }
+    if ('date' in body && !validDate(body.date)) return reply.code(400).send(BAD_DATE);
     const cur = repo.get(id);
     if (!cur) return reply.code(404).send({ error: 'not_found' });
 
-    /* 确认闸门：渠道 / 等级一旦被经理或老板确认，录入人就不能再改 —— 等级决定考核里 A / B 询价的数量。
-       经理 / 老板仍可改，但必须给理由。建议阶段谁都能改，但每次改动都进流水。 */
-    const changed = repo.ATTR_FIELDS.filter((f) => body[f] != null && body[f] !== cur[f]);
-    if (changed.length) {
-      const confirmed = cur.attribution_status === 'confirmed';
-      if (confirmed && !isAuthority(request)) {
-        return reply.code(403).send({ error: 'attribution_locked', detail: '渠道和等级已经确认，如需更正请找经理或老板' });
+    /* 确认闸门：渠道 / 等级 / 日期一旦被经理或老板确认，录入人就不能再改 ——
+       等级和渠道决定考核里 A / B 询价的数量，日期决定算进哪个月。
+       经理 / 老板仍可改，但必须给理由。建议阶段谁都能改，但每次改动都进流水。
+       「改」包括清空：只认 != null 的话，传 null 就绕过去了（2026-10-10 自查复现）。 */
+    const changed = repo.LOCKED_FIELDS.filter((f) => f in body && (body[f] ?? null) !== (cur[f] ?? null));
+    const reason = String(body.reason ?? '').trim();
+    if (changed.length && cur.attribution_status === 'confirmed') {
+      if (!isAuthority(request)) {
+        return reply.code(403).send({ error: 'attribution_locked', detail: '渠道、等级和日期已经确认，如需更正请找经理或老板' });
       }
-      const reason = String(body.reason ?? '').trim();
-      if (confirmed && !reason) {
-        return reply.code(400).send({ error: 'reason_required', detail: '修改已确认的渠道 / 等级必须填写原因' });
-      }
-      for (const f of changed) {
-        repo.logFieldChange({ inquiryId: id, field: f, oldValue: cur[f], newValue: body[f], reason, userId: request.user.id });
+      if (!reason) {
+        return reply.code(400).send({ error: 'reason_required', detail: '修改已确认的渠道 / 等级 / 日期必须填写原因' });
       }
     }
 
@@ -138,24 +146,34 @@ export async function inquiriesRoutes(app) {
       manual = manualSource(body, taskLinksRepo.campaignNames());
       if (!manual.ok) return reply.code(400).send({ error: 'bad_source', detail: manual.detail });
     }
-    // 6.23 文档 9：若本次 PATCH 改 grade 且历史数据 original_grade=NULL，
-    // 先把「修改前的旧 grade」锁为 original_grade（必须在 update 之前调用，否则锁到的就是新 grade）
-    if (body.grade != null) repo.lockOriginalGradeIfNull(id);
-    let item = repo.update(id, body);
-    if (manual && Object.keys(manual.value).length) item = repo.setSource(id, { ...manual.value, src_evidence: 'manual' });
+    // 所有校验都过了才落库，流水与改动在同一个事务里（以前流水先写，后面的校验一拒，就留下一条没发生过的改动）
+    const item = repo.updateWithLog(id, body, {
+      changes: changed.map((f) => ({ field: f, oldValue: cur[f], newValue: body[f], reason, userId: request.user.id })),
+      source: manual && Object.keys(manual.value).length ? { ...manual.value, src_evidence: 'manual' } : null,
+    });
     recomputeActuals();
     return { item, stats: repo.stats() };
   });
 
   // P3：DELETE 默认软删→归档（进归档页「询盘」桶）；?hard=1 才物理删除（boss 在归档页彻底清）
-  app.delete('/api/inquiries/:id', editor, async (request) => {
+  app.delete('/api/inquiries/:id', editor, async (request, reply) => {
     const id = Number(request.params.id);
+    const cur = repo.get(id);
+    if (!cur) return reply.code(404).send({ error: 'not_found' });
     if (request.query?.hard === '1') {
+      // 彻底删除连改动流水一起抹掉。界面一直只给老板显示这个按钮，接口却谁都能调
+      if (request.user?.role !== 'boss') {
+        return reply.code(403).send({ error: 'hard_delete_forbidden', detail: '彻底删除只有老板可以做' });
+      }
       repo.remove(id);
       recomputeActuals();
       return { ok: true, hard: true, stats: repo.stats() };
     }
-    const item = repo.archive(id);
+    // 归档 = 从考核里拿掉。已确认的询盘录入人改不了等级，也就不该能直接让它消失
+    if (cur.attribution_status === 'confirmed' && cur.state !== 'archived' && !isAuthority(request)) {
+      return reply.code(403).send({ error: 'attribution_locked', detail: '这条询盘已经确认，要删除（归档）请找经理或老板' });
+    }
+    const item = repo.archive(id, request.user.id);
     recomputeActuals(); // 归档后从统计/KPI 剔除
     return { ok: true, item, stats: repo.stats() };
   });
@@ -222,7 +240,7 @@ export async function inquiriesRoutes(app) {
 
   // P3：从归档恢复询盘
   app.post('/api/inquiries/:id/restore', editor, async (request, reply) => {
-    const item = repo.restore(Number(request.params.id));
+    const item = repo.restore(Number(request.params.id), request.user.id);
     if (!item) return reply.code(404).send({ error: 'not_found' });
     recomputeActuals();
     return { item };

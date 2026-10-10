@@ -28,7 +28,7 @@ export function attrMarkHtml(r) {
   const st = statusOf(r);
   const n = Number(r.attr_change_count) || 0;
   const changes = n > 0
-    ? `<button type="button" class="attr-changes" data-attr-log title="渠道 / 等级被改过 ${n} 次，点击看是谁改的、为什么">改 ${n}</button>`
+    ? `<button type="button" class="attr-changes" data-attr-log title="渠道 / 等级 / 日期 / 归档状态被改过 ${n} 次，点击看是谁改的、为什么">改 ${n}</button>`
     : '';
   return `<span class="attr-mark attr-${st}">${STATUS_LABEL[st]}</span>${changes}`;
 }
@@ -85,8 +85,8 @@ export async function loadAttrCoverage() {
 }
 
 /* ===== 改动流水弹框 ===== */
-const FIELD_LABEL = { channel: '渠道', grade: '等级', attribution_status: '确认状态' };
-const VALUE_LABEL = { confirmed: '已确认', proposed: '待确认' };
+const FIELD_LABEL = { channel: '渠道', grade: '等级', date: '日期', state: '归档', attribution_status: '确认状态' };
+const VALUE_LABEL = { confirmed: '已确认', proposed: '待确认', active: '在册', archived: '已归档' };
 const valText = (v) => (v == null || v === '' ? '（空 / 历史未审）' : VALUE_LABEL[v] || v);
 function localTime(utc) {
   const d = new Date(String(utc || '').replace(' ', 'T') + 'Z');
@@ -103,7 +103,7 @@ async function openChangeLog(id) {
   try {
     const { items } = await API.get('/api/inquiries/' + id + '/changes');
     box.textContent = '';
-    if (!items.length) { line(box, 'attr-log-empty', '这条询盘的渠道、等级和确认状态从未被改过。'); return; }
+    if (!items.length) { line(box, 'attr-log-empty', '这条询盘的渠道、等级、日期和确认状态从未被改过。'); return; }
     for (const c of items) {
       const item = document.createElement('div'); item.className = 'attr-log-item';
       line(item, 'attr-log-head', (FIELD_LABEL[c.field] || c.field) + '：' + valText(c.old_value) + ' → ' + valText(c.new_value));

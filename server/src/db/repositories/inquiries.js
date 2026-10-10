@@ -26,20 +26,27 @@ export function listArchived() {
 }
 
 // P3：软删→归档（幂等）
-export function archive(id) {
+// 归档 = 这条询盘从所有统计和考核里消失，所以谁归档的要留痕（userId 传了才记）
+export function archive(id, userId) {
   const row = get(id);
   if (!row) return null;
   if (row.state === 'archived') return row;
-  db.prepare("UPDATE inquiries SET state='archived', archived_at=datetime('now') WHERE id=?").run(id);
+  db.transaction(() => {
+    db.prepare("UPDATE inquiries SET state='archived', archived_at=datetime('now') WHERE id=?").run(id);
+    if (userId != null) logFieldChange({ inquiryId: id, field: 'state', oldValue: 'active', newValue: 'archived', userId });
+  })();
   return get(id);
 }
 
 // P3：从归档恢复
-export function restore(id) {
+export function restore(id, userId) {
   const row = get(id);
   if (!row) return null;
   if (row.state !== 'archived') return row;
-  db.prepare("UPDATE inquiries SET state=NULL, archived_at=NULL WHERE id=?").run(id);
+  db.transaction(() => {
+    db.prepare("UPDATE inquiries SET state=NULL, archived_at=NULL WHERE id=?").run(id);
+    if (userId != null) logFieldChange({ inquiryId: id, field: 'state', oldValue: 'archived', newValue: 'active', userId });
+  })();
   return get(id);
 }
 
@@ -86,6 +93,18 @@ export function update(id, fields) {
     'customer_code', 'company', 'salesperson', 'deal_status'];
   updateById('inquiries', id, fields, allowed);
   return get(id);
+}
+
+/* 改动与它的流水同生共死：流水记了而改动没落库（后面的校验把请求拒了），或者反过来，都是假账。
+   changes = [{ field, oldValue, newValue, reason, userId }]；source = 要一并写的来源字段（已由路由校验过）。 */
+export function updateWithLog(id, fields, { changes = [], source = null } = {}) {
+  return db.transaction(() => {
+    for (const c of changes) logFieldChange({ inquiryId: id, ...c });
+    // 6.23 文档 9：历史行 original_grade=NULL 时，先把「修改前的旧等级」锁成最初等级，再改
+    if (changes.some((c) => c.field === 'grade')) lockOriginalGradeIfNull(id);
+    update(id, fields);
+    return source ? setSource(id, source) : get(id);
+  })();
 }
 
 /* 来源字段（系列 / 落地页 / 来路 / gclid / utm / 证据类型）。刻意不放进上面 update() 的通用白名单：
@@ -195,6 +214,8 @@ export function stats(range) {
    老行 attribution_status 为 NULL = 历史未审，既不算已确认也不算刚提交。 */
 
 export const ATTR_FIELDS = ['channel', 'grade'];
+// 一经确认就锁住的字段：渠道和等级决定这条询盘算不算 A / B，日期决定它算进哪个月 —— 三个都直接进月度考核的数
+export const LOCKED_FIELDS = [...ATTR_FIELDS, 'date'];
 
 const CHANGE_SELECT = `SELECT c.id, c.inquiry_id, c.field, c.old_value, c.new_value, c.reason,
                               c.changed_at, u.name AS changed_by_name
@@ -226,7 +247,7 @@ export function attachChangeCounts(rows) {
     const part = ids.slice(i, i + 500);
     const found = db.prepare(
       `SELECT inquiry_id, COUNT(*) n FROM inquiry_field_changes
-        WHERE inquiry_id IN (${part.map(() => '?').join(',')}) AND field IN ('channel','grade')
+        WHERE inquiry_id IN (${part.map(() => '?').join(',')}) AND field <> 'attribution_status'
         GROUP BY inquiry_id`
     ).all(...part);
     for (const r of found) map[r.inquiry_id] = r.n;

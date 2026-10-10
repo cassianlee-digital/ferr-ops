@@ -3580,7 +3580,7 @@
   function attrMarkHtml(r) {
     const st2 = statusOf(r);
     const n = Number(r.attr_change_count) || 0;
-    const changes = n > 0 ? `<button type="button" class="attr-changes" data-attr-log title="\u6E20\u9053 / \u7B49\u7EA7\u88AB\u6539\u8FC7 ${n} \u6B21\uFF0C\u70B9\u51FB\u770B\u662F\u8C01\u6539\u7684\u3001\u4E3A\u4EC0\u4E48">\u6539 ${n}</button>` : "";
+    const changes = n > 0 ? `<button type="button" class="attr-changes" data-attr-log title="\u6E20\u9053 / \u7B49\u7EA7 / \u65E5\u671F / \u5F52\u6863\u72B6\u6001\u88AB\u6539\u8FC7 ${n} \u6B21\uFF0C\u70B9\u51FB\u770B\u662F\u8C01\u6539\u7684\u3001\u4E3A\u4EC0\u4E48">\u6539 ${n}</button>` : "";
     return `<span class="attr-mark attr-${st2}">${STATUS_LABEL[st2]}</span>${changes}`;
   }
   function attrLockHtml(cls, text2) {
@@ -3626,8 +3626,8 @@
       box.appendChild(bar);
     }
   }
-  var FIELD_LABEL = { channel: "\u6E20\u9053", grade: "\u7B49\u7EA7", attribution_status: "\u786E\u8BA4\u72B6\u6001" };
-  var VALUE_LABEL = { confirmed: "\u5DF2\u786E\u8BA4", proposed: "\u5F85\u786E\u8BA4" };
+  var FIELD_LABEL = { channel: "\u6E20\u9053", grade: "\u7B49\u7EA7", date: "\u65E5\u671F", state: "\u5F52\u6863", attribution_status: "\u786E\u8BA4\u72B6\u6001" };
+  var VALUE_LABEL = { confirmed: "\u5DF2\u786E\u8BA4", proposed: "\u5F85\u786E\u8BA4", active: "\u5728\u518C", archived: "\u5DF2\u5F52\u6863" };
   var valText = (v) => v == null || v === "" ? "\uFF08\u7A7A / \u5386\u53F2\u672A\u5BA1\uFF09" : VALUE_LABEL[v] || v;
   function localTime(utc) {
     const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
@@ -3652,7 +3652,7 @@
       const { items } = await API.get("/api/inquiries/" + id + "/changes");
       box.textContent = "";
       if (!items.length) {
-        line(box, "attr-log-empty", "\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u3001\u7B49\u7EA7\u548C\u786E\u8BA4\u72B6\u6001\u4ECE\u672A\u88AB\u6539\u8FC7\u3002");
+        line(box, "attr-log-empty", "\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u3001\u7B49\u7EA7\u3001\u65E5\u671F\u548C\u786E\u8BA4\u72B6\u6001\u4ECE\u672A\u88AB\u6539\u8FC7\u3002");
         return;
       }
       for (const c of items) {
@@ -4103,7 +4103,7 @@
       }
       toast2("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5F52\u6863\u5230\u300C\u5F52\u6863\u300D\u9875");
     } catch (err) {
-      toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   });
   document.addEventListener("cellsaved", (e) => {

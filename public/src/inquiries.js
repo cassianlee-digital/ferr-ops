@@ -338,7 +338,7 @@ document.addEventListener('click',async e=>{
     loadDashboardInq();      // 总览当月趋势同步
     if(window._curTab==='archive'){try{loadArchive();}catch(_){}}
     toast('已删除 · 已归档到「归档」页');
-  }catch(err){ toast(err&&err.status===403?'无权操作':'删除失败：'+(err.message||'请求失败')); }
+  }catch(err){ toast('删除失败：'+((err&&err.message)||'请求失败')); }
 });
 /* ===== 可编辑单元格（客户编码 / 业务员）与行缓存的同步（2026-09-08）=====
    老板反馈「客户编码后期补录后，有的直接就不显示」，根因是缓存不同步而不是没存进库：

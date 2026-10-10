@@ -211,9 +211,13 @@ export async function loopItemsRoutes(app) {
   });
 
   // DELETE：默认软删；?hard=1 物理删（保留给归档页彻底清除）
-  app.delete('/api/loop-items/:id', editor, async (request) => {
+  app.delete('/api/loop-items/:id', editor, async (request, reply) => {
     const id = Number(request.params.id);
     if (request.query?.hard === '1') {
+      // 彻底删除会把完成结果、关联键、证据截图一起抹掉。界面一直只给老板显示这个按钮，接口却谁都能调
+      if (request.user?.role !== 'boss') {
+        return reply.code(403).send({ error: 'hard_delete_forbidden', detail: '彻底删除只有老板可以做' });
+      }
       repo.hardDelete(id);
       // 行都没了，它的关联键和证据截图留着只会成为取不到宿主的孤儿
       taskLinksRepo.removeByItem(id);
