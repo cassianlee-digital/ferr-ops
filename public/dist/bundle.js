@@ -5209,7 +5209,7 @@
     NO_DATA: "\u524D\u540E\u4E24\u6BB5\u65F6\u95F4\u90FD\u6CA1\u6709\u6570\u636E\uFF08\u6CA1\u6709\u66DD\u5149\u6216\u6CA1\u6709\u6295\u653E\uFF09",
     DECLARED: "\u90E8\u95E8\u7EA7\u6307\u6807\uFF0C\u4E0D\u505A\u5355\u6761\u4EFB\u52A1\u7684\u524D\u540E\u5BF9\u6BD4"
   };
-  var effectTaskId = null;
+  var effectPath = null;
   var effectDays = 14;
   var effectSeq = 0;
   var effectBound = false;
@@ -5282,8 +5282,8 @@
     const box = $2("task-effect-body");
     box.textContent = "";
     $2("task-effect-title").textContent = data.task.content || "";
-    if (data.status === "NOT_DONE") {
-      box.appendChild(el("div", "teffect-note", "\u8FD9\u6761\u4EFB\u52A1\u6CA1\u6709\u5B8C\u6210\u65F6\u523B\uFF08\u672A\u5B8C\u6210\uFF0C\u6216\u662F\u5B8C\u6210\u95E8\u69DB\u4E0A\u7EBF\u524D\u52FE\u7684\u8001\u4EFB\u52A1\uFF09\uFF0C\u6CA1\u6709\u5BF9\u6BD4\u7684\u539F\u70B9\u3002"));
+    if (data.status !== "OK") {
+      box.appendChild(el("div", "teffect-note", data.message || "\u6CA1\u6709\u53EF\u5BF9\u6BD4\u7684\u6570\u636E\u3002"));
       return;
     }
     box.appendChild(el("div", "teffect-note", data.note));
@@ -5316,7 +5316,7 @@
     box.textContent = "";
     box.appendChild(el("div", "dim", "\u52A0\u8F7D\u4E2D\u2026"));
     try {
-      const data = await API.get("/api/loop-items/" + effectTaskId + "/effect?days=" + effectDays);
+      const data = await API.get(effectPath + "?days=" + effectDays);
       if (seq4 === effectSeq) renderEffect(data);
     } catch (e) {
       if (seq4 !== effectSeq) return;
@@ -5328,8 +5328,8 @@
       box.appendChild(retry);
     }
   }
-  function openTaskEffect(id) {
-    if (!id) return;
+  function openEffect(path) {
+    if (!path) return;
     if (!effectBound) {
       effectBound = true;
       $2("taskEffectMask").addEventListener("click", (e) => {
@@ -5339,7 +5339,7 @@
         loadEffect();
       });
     }
-    effectTaskId = id;
+    effectPath = path;
     $2("task-effect-title").textContent = "";
     openModal("taskEffectMask");
     loadEffect();
@@ -5347,7 +5347,12 @@
   if (typeof document !== "undefined") {
     document.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-task-effect]");
-      if (btn) openTaskEffect(btn.dataset.taskEffect);
+      if (btn) {
+        openEffect("/api/loop-items/" + encodeURIComponent(btn.dataset.taskEffect) + "/effect");
+        return;
+      }
+      const link = e.target.closest("[data-backlink-effect]");
+      if (link) openEffect("/api/backlinks/" + encodeURIComponent(link.dataset.backlinkEffect) + "/effect");
     });
   }
 
@@ -8616,10 +8621,13 @@
     const src = t.fix_id ? '<span class="badge b-amber">\u6574\u6539</span>' : "";
     const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc2(t.owner)}</span>` : "";
     const memo = note ? `<span class="hnote">${esc2(note)}</span>` : "";
+    const doneDay = (t.done_at || "").slice(0, 10);
+    const view = doneDay && doneDay <= day ? t : { ...t, result: null, task_actions: null, evidence: null, evidence_images: [], actual_hours: null, state: null, status: null, done_at: null };
     return `<div class="hcard">
     <div class="hrow"><span class="htext">${esc2(t.content || "")}</span>
-      <span class="hright">${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st2.cls}">${st2.text}</span></span></div>
+      <span class="hright">${auditBadgesHtml(t)}${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st2.cls}">${st2.text}</span></span></div>
     ${memo ? `<div class="hmemo">${memo}</div>` : ""}
+    ${auditBlockHtml(view)}
   </div>`;
   }
   function render3(data) {
@@ -10036,6 +10044,12 @@
       const tgt = h("td", "spend-url");
       if (b.target_url) tgt.appendChild(linkEl(b.target_url, shortUrl2(b.target_url)));
       if (b.anchor) tgt.appendChild(h("div", "dim", "\u951A\u6587\u672C\uFF1A" + b.anchor));
+      if (b.target_url && b.acquired_date) {
+        const fx = h("button", "btn-mini spend-effect", "\u6570\u636E\u53D8\u5316");
+        fx.type = "button";
+        fx.dataset.backlinkEffect = b.id;
+        tgt.appendChild(fx);
+      }
       tr.appendChild(tgt);
       tr.appendChild(h("td", "ctr", b.method || ""));
       tr.appendChild(h("td", "ctr", b.rel || ""));

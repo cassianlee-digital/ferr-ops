@@ -155,6 +155,11 @@ function renderBacklinks() {
     const tgt = h('td', 'spend-url');
     if (b.target_url) tgt.appendChild(linkEl(b.target_url, shortUrl(b.target_url)));
     if (b.anchor) tgt.appendChild(h('div', 'dim', '锚文本：' + b.anchor));
+    // 这条外链值不值：看它指向的页面在上线前后的自然搜索表现（弹框与任务的「数据变化」是同一个，在 task-audit.js）
+    if (b.target_url && b.acquired_date) {
+      const fx = h('button', 'btn-mini spend-effect', '数据变化'); fx.type = 'button'; fx.dataset.backlinkEffect = b.id;
+      tgt.appendChild(fx);
+    }
     tr.appendChild(tgt);
     tr.appendChild(h('td', 'ctr', b.method || ''));
     tr.appendChild(h('td', 'ctr', b.rel || ''));

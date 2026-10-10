@@ -338,7 +338,7 @@ const EFFECT_STATUS_TEXT = {
   NO_DATA: '前后两段时间都没有数据（没有曝光或没有投放）',
   DECLARED: '部门级指标，不做单条任务的前后对比',
 };
-let effectTaskId = null;
+let effectPath = null; // 当前对比对象的接口地址（任务或外链），不含 days 参数
 let effectDays = 14;
 let effectSeq = 0;
 let effectBound = false;
@@ -403,8 +403,8 @@ function effectRows(tbody, title, sub, item, metrics, cls) {
 function renderEffect(data) {
   const box = $('task-effect-body'); box.textContent = '';
   $('task-effect-title').textContent = data.task.content || '';
-  if (data.status === 'NOT_DONE') {
-    box.appendChild(el('div', 'teffect-note', '这条任务没有完成时刻（未完成，或是完成门槛上线前勾的老任务），没有对比的原点。'));
+  if (data.status !== 'OK') { // 没有对比的原点：原因由后端说
+    box.appendChild(el('div', 'teffect-note', data.message || '没有可对比的数据。'));
     return;
   }
   box.appendChild(el('div', 'teffect-note', data.note));
@@ -436,7 +436,7 @@ async function loadEffect() {
   document.querySelectorAll('#taskEffectMask [data-effect-days]').forEach((b) => b.classList.toggle('active', Number(b.dataset.effectDays) === effectDays));
   box.textContent = ''; box.appendChild(el('div', 'dim', '加载中…'));
   try {
-    const data = await API.get('/api/loop-items/' + effectTaskId + '/effect?days=' + effectDays);
+    const data = await API.get(effectPath + '?days=' + effectDays);
     if (seq === effectSeq) renderEffect(data);
   } catch (e) {
     if (seq !== effectSeq) return;
@@ -447,8 +447,10 @@ async function loadEffect() {
   }
 }
 
-export function openTaskEffect(id) {
-  if (!id) return;
+/* 打开前后对比弹框。path = 返回对比数据的接口（任务：/api/loop-items/:id/effect；外链：/api/backlinks/:id/effect），
+   两者响应同形，弹框不关心对象是什么。 */
+export function openEffect(path) {
+  if (!path) return;
   if (!effectBound) {
     effectBound = true;
     $('taskEffectMask').addEventListener('click', (e) => {
@@ -456,7 +458,7 @@ export function openTaskEffect(id) {
       effectDays = Number(b.dataset.effectDays); loadEffect();
     });
   }
-  effectTaskId = id;
+  effectPath = path;
   $('task-effect-title').textContent = '';
   openModal('taskEffectMask');
   loadEffect();
@@ -466,6 +468,8 @@ export function openTaskEffect(id) {
 if (typeof document !== 'undefined') {
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-task-effect]');
-    if (btn) openTaskEffect(btn.dataset.taskEffect);
+    if (btn) { openEffect('/api/loop-items/' + encodeURIComponent(btn.dataset.taskEffect) + '/effect'); return; }
+    const link = e.target.closest('[data-backlink-effect]');
+    if (link) openEffect('/api/backlinks/' + encodeURIComponent(link.dataset.backlinkEffect) + '/effect');
   });
 }

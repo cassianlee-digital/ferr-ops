@@ -16,17 +16,14 @@ function measure(source, window, fetch) {
   return { source, status: itemStatus(window, before.n, after.n), ...compare(source, before, after) };
 }
 
-export function buildTaskEffect(task, links, days) {
-  const base = {
-    task: { id: task.id, content: task.content, done_at: task.done_at || null },
-    days,
-    metrics: METRICS,
-    // 写给人看的口径说明，界面原样显示：这句话比任何一个数字都重要
-    note: '对比的是任务完成日前后各等长的一段时间（完成当天不计）。它只说明「之后变了」，不能证明「因此变了」；请对照下方的全站 / 全账户同期变化一起看。',
-  };
-  const doneDate = businessDate(task.done_at);
-  // 没有完成时刻就没有对比的原点。老任务（done_at 上线前完成的）同样如此 —— 不拿创建日或截止日冒充。
-  if (!doneDate) return { ...base, status: 'NOT_DONE', items: [], baseline: {}, windows: {} };
+const CAVEAT = '它只说明「之后变了」，不能证明「因此变了」；请对照下方的全站 / 全账户同期变化一起看。';
+
+/* 通用组装：以 originDate 为原点，对 links 里的每个对象做前后对比。
+   任务（原点 = 完成日）和外链（原点 = 上线日）共用；没有原点就没有对比，由 missing 说明原因，不拿别的日期冒充。 */
+function buildEffect({ subject, originDate, links, days, note, missing }) {
+  const base = { task: subject, days, metrics: METRICS, note };
+  const doneDate = originDate;
+  if (!doneDate) return { ...base, status: missing.status, message: missing.message, items: [], baseline: {}, windows: {} };
 
   const scope = projectScope();
   const latest = repo.latestDates(scope);
@@ -58,4 +55,34 @@ export function buildTaskEffect(task, links, days) {
   if (items.some((i) => i.source === 'ads')) baseline.ads = measure('ads', windows.ads, (r) => repo.adsAccount(r, scope));
 
   return { ...base, status: 'OK', done_date: doneDate, windows, items, baseline };
+}
+
+export function buildTaskEffect(task, links, days) {
+  return buildEffect({
+    subject: { id: task.id, content: task.content, done_at: task.done_at || null },
+    // 完成时刻按北京时间归日。老任务（done_at 上线前完成的）没有它 —— 不拿创建日或截止日冒充。
+    originDate: businessDate(task.done_at),
+    links,
+    days,
+    // 写给人看的口径说明，界面原样显示：这句话比任何一个数字都重要
+    note: '对比的是任务完成日前后各等长的一段时间（完成当天不计）。' + CAVEAT,
+    missing: { status: 'NOT_DONE', message: '这条任务没有完成时刻（未完成，或是完成门槛上线前勾的老任务），没有对比的原点。' },
+  });
+}
+
+/* 外链的效果：它指向的那个页面，在外链上线日前后的自然搜索表现。
+   外链起效慢，这个对比比任务的更容易被别的因素盖过去 —— 参照行在这里尤其要看。 */
+export function buildBacklinkEffect(backlink, days) {
+  const hasTarget = !!backlink.target_url;
+  return buildEffect({
+    subject: { id: backlink.id, content: '外链 ' + (backlink.source_domain || backlink.source_url) + (hasTarget ? ' → ' + backlink.target_url : '') },
+    originDate: hasTarget ? backlink.acquired_date : null,
+    links: hasTarget ? [{ type: 'page', ref: backlink.target_url }] : [],
+    days,
+    note: '对比的是外链指向的页面在外链上线日前后各等长一段时间的自然搜索表现（上线当天不计）。外链起效通常要几周，短窗口里看不出变化是正常的。' + CAVEAT,
+    missing: {
+      status: 'NO_ORIGIN',
+      message: hasTarget ? '这条外链没有填上线日期，没有对比的原点。' : '这条外链没有填「指向我们的哪个页面」，不知道该看哪个页面的数据。',
+    },
+  });
 }

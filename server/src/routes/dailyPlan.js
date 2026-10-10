@@ -5,6 +5,7 @@ import * as loopRepo from '../db/repositories/loopItems.js';
 import * as sopRepo from '../db/repositories/sop.js';
 import * as checkinRepo from '../db/repositories/taskCheckins.js';
 import { requireAuth } from '../auth/middleware.js';
+import { decorateTasks } from '../services/taskAuditData.js';
 
 const s = (v, n = 20) => (v == null ? null : String(v).slice(0, n));
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -40,8 +41,9 @@ export async function dailyPlanRoutes(app) {
 
     return {
       day,
-      tasks,
-      subtasks,
+      // 带上关联键 / 证据截图 / 是否重要：回放要能答「那天做完的这条，结果和证据是什么」
+      tasks: decorateTasks(tasks),
+      subtasks: decorateTasks(subtasks),
       checkins,
       sops: sops.map((d) => ({ ...d, done: doneByFreq[d.freq]?.has(d.id) || false })),
     };

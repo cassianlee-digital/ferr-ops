@@ -6,6 +6,8 @@ import * as loopRepo from '../db/repositories/loopItems.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 import { parseDateRange } from '../lib/parseDateRange.js';
 import { resolveSemSpend } from '../services/kpiLedger.js';
+import { DEFAULT_EFFECT_DAYS, EFFECT_DAYS } from '../services/taskEffect.js';
+import { buildBacklinkEffect } from '../services/taskEffectData.js';
 import {
   BACKLINK_METHODS, BACKLINK_RELS, BACKLINK_STATUSES, CURRENCIES, EXPENSE_CATEGORIES,
   backlinkStats, summarizeSpend, validateBacklink, validateExpense,
@@ -64,6 +66,15 @@ function ledgerRoutes(app, base, repo, validate, extraList) {
 export async function spendRoutes(app) {
   ledgerRoutes(app, '/api/backlinks', backlinksRepo, validateBacklink, (items) => ({ stats: backlinkStats(items) }));
   ledgerRoutes(app, '/api/expenses', expensesRepo, validateExpense);
+
+  // 外链指向的页面在外链上线前后的自然搜索表现。口径与任务的前后对比完全一样（同一个组装函数）。
+  app.get('/api/backlinks/:id/effect', { preHandler: requireAuth }, async (request, reply) => {
+    const row = backlinksRepo.get(Number(request.params.id));
+    if (!row) return reply.code(404).send({ error: 'not_found' });
+    const days = request.query?.days == null ? DEFAULT_EFFECT_DAYS : Number(request.query.days);
+    if (!EFFECT_DAYS.includes(days)) return bad(reply, 'bad_days', `对比窗口只支持 ${EFFECT_DAYS.join(' / ')} 天`);
+    return buildBacklinkEffect(row, days);
+  });
 
   // 表单的可选值：只有后端这一份，前端下拉按它渲染，不各写一遍
   app.get('/api/spend/options', { preHandler: requireAuth }, async () => ({

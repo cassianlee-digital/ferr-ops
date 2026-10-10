@@ -6,6 +6,7 @@
    setPlanDay/planDayIsToday 暂保留兼容入口，供经典 app.js 与后续计划视图整合。 */
 import { esc, toast } from './ui-kit.js';
 import { formatLocalDate } from './timerange.js';
+import { auditBadgesHtml, auditBlockHtml } from './task-audit.js';
 
 const DEPTS = [
   { key: '公司', label: '公司任务', badge: 'b-red' },
@@ -50,10 +51,17 @@ function taskRowHtml(t, day, pushed, note) {
   const src = t.fix_id ? '<span class="badge b-amber">整改</span>' : '';
   const owner = t.owner ? `<span class="badge ${t.owner === '陈' ? 'b-purple' : 'b-blue'}">${esc(t.owner)}</span>` : '';
   const memo = note ? `<span class="hnote">${esc(note)}</span>` : '';
+  /* 完成结果 / 动作 / 证据：只在「那天或那天之前已经完成」时才显示。
+     回放是那一天的视角 —— 把之后才写下的结果摆在更早的日子里，等于让人以为当时就有这个结论。
+     关联对象与预估工时是建任务时定的，任何一天都可以显示。 */
+  const doneDay = (t.done_at || '').slice(0, 10);
+  const view = doneDay && doneDay <= day ? t
+    : { ...t, result: null, task_actions: null, evidence: null, evidence_images: [], actual_hours: null, state: null, status: null, done_at: null };
   return `<div class="hcard">
     <div class="hrow"><span class="htext">${esc(t.content || '')}</span>
-      <span class="hright">${src}${owner}${span ? `<span class="hdue">${span}</span>` : ''}<span class="hstat ${st.cls}">${st.text}</span></span></div>
+      <span class="hright">${auditBadgesHtml(t)}${src}${owner}${span ? `<span class="hdue">${span}</span>` : ''}<span class="hstat ${st.cls}">${st.text}</span></span></div>
     ${memo ? `<div class="hmemo">${memo}</div>` : ''}
+    ${auditBlockHtml(view)}
   </div>`;
 }
 

@@ -101,3 +101,4 @@
 #panel-spend .spend-noev { color: var(--danger); }
 #panel-spend .spend-ops { white-space: nowrap; }
 #panel-spend .spend-empty { padding: 28px 12px; text-align: center; }
+#panel-spend .spend-effect { margin-top: 4px; }

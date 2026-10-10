@@ -12,6 +12,8 @@ process.env.DB_FILE = join(tmpDir, 'test.sqlite'); // 必须在动态 import 之
 const { buildApp } = await import('../src/index.js');
 const { db } = await import('../src/db/connection.js');
 const app = await buildApp();
+// 外链台账的 created_by 外键指向 users(id)；测试令牌用 id=1，库里得真有这个人
+db.prepare("INSERT OR IGNORE INTO users (id, username, password_hash, name, role) VALUES (1, 'effect-test', 'x', '测试', 'boss')").run();
 
 test.after(async () => {
   await app.close();
@@ -158,4 +160,38 @@ test('路由：没数据的对象标「无数据」；没完成的任务没有�
   assert.equal((await call('GET', '/api/loop-items/999999/effect')).statusCode, 404);
   const plan = (await call('POST', '/api/loop-items', { kind: 'plan', content: '计划' })).json().item;
   assert.equal((await call('GET', `/api/loop-items/${plan.id}/effect`)).statusCode, 404, '只有任务才有前后对比');
+});
+
+test('外链的前后对比：原点是上线日，看它指向的页面；与任务同一套口径', async () => {
+  // 复用上面灌的 GSC 数据：PAGE 在 09-15 前后各 7 天的点击是 14 → 35
+  const made = await call('POST', '/api/backlinks', { source_url: 'https://blog.example.com/valve-guide', target_url: PAGE, acquired_date: '2026-09-15', method: '客座投稿' });
+  assert.equal(made.statusCode, 201);
+  const res = await call('GET', `/api/backlinks/${made.json().item.id}/effect?days=7`);
+  assert.equal(res.statusCode, 200);
+  const body = res.json();
+  assert.equal(body.status, 'OK');
+  assert.equal(body.done_date, '2026-09-15');
+  assert.equal(body.items.length, 1);
+  assert.deepEqual(body.items[0].delta.clicks, { abs: 21, pct: 1.5 });
+  assert.ok(body.baseline.gsc, '参照行在外链这里同样要有');
+  assert.match(body.note, /外链起效通常要几周/);
+
+  // 没填指向页面 / 没填上线日：没有对比的原点，原因要说清
+  const noTarget = (await call('POST', '/api/backlinks', { source_url: 'https://x.example.com/a', acquired_date: '2026-09-15' })).json().item;
+  const r1 = (await call('GET', `/api/backlinks/${noTarget.id}/effect`)).json();
+  assert.equal(r1.status, 'NO_ORIGIN');
+  assert.match(r1.message, /指向/);
+  const noDate = (await call('POST', '/api/backlinks', { source_url: 'https://y.example.com/a', target_url: PAGE })).json().item;
+  assert.match((await call('GET', `/api/backlinks/${noDate.id}/effect`)).json().message, /上线日期/);
+  assert.equal((await call('GET', '/api/backlinks/999999/effect')).statusCode, 404);
+  assert.equal((await call('GET', `/api/backlinks/${noDate.id}/effect?days=3`)).statusCode, 400);
+});
+
+test('没有原点时由后端给出原因（前端不再自己写一份文案）；日计划回放的任务带着关联键', async () => {
+  const t = (await call('POST', '/api/loop-items', { kind: 'task', dept: 'SEO', content: '回放里要看到关联', start_date: '2026-09-20', task_date: '2026-09-20', links: [{ type: 'keyword', ref: 'gate valve' }] })).json().item;
+  assert.match((await call('GET', `/api/loop-items/${t.id}/effect`)).json().message, /没有完成时刻/);
+  const replay = (await call('GET', '/api/daily-plan?day=2026-09-20')).json();
+  const row = replay.tasks.find((x) => x.id === t.id);
+  assert.deepEqual(row.links, [{ type: 'keyword', ref: 'gate valve', label: null }]);
+  assert.equal(typeof row.is_important, 'boolean');
 });
