@@ -25,7 +25,7 @@ export function auditAiPayload(pkg) {
     tasks_total: pkg.tasks.length,
     tasks: pkg.tasks.slice(0, MAX_TASKS).map((t) => ({
       id: t.id, person: t.person, dept: t.dept, project: t.project, content: clip(t.content, 160), state: t.audit_state,
-      start: t.start_date, due: t.task_date, done: t.done_date, est_hours: t.est_hours, actual_hours: t.actual_hours,
+      start: t.start_date, due: t.task_date, done: t.done_date, deleted: t.deleted_date, est_hours: t.est_hours, actual_hours: t.actual_hours,
       important: t.is_important ? t.important_reason_text : null,
       why: clip(t.why, 160), done_when: clip(t.done_when, 160), result: clip(t.result, 400), actions: clip(t.task_actions, 300),
       evidence_links: t.evidence.length, evidence_images: t.evidence_images.length,

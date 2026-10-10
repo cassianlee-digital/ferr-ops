@@ -47,7 +47,19 @@ test('任务在区间里的状态：完成日按北京时间；逾期包含上�
   assert.equal(st({ state: 'archived', archived_at: '2026-09-17 02:00:00' }), 'abandoned');
   assert.equal(st({ state: 'archived', archived_at: '2026-08-01 02:00:00' }), null);
   assert.equal(st({ state: 'done' }), null, '只有 done 没有完成时刻：不知道是哪天做完的');
-  assert.equal(st({ state: 'deleted', done_at: '2026-09-15 03:00:00' }), null);
+  // 被删除的任务：区间内删的要列出来（否则逾期任务删掉就等于没发生过）；区间外删的与这一周无关
+  assert.equal(st({ state: 'deleted', done_at: '2026-09-15 03:00:00' }), null, '没有删除时刻：不知道哪天删的');
+  assert.equal(st({ state: 'deleted', done_at: '2026-09-15 03:00:00', deleted_at: '2026-09-30 03:00:00' }), null);
+  const gone = { state: 'deleted', created_at: '2026-09-01 02:00:00', task_date: '2026-09-10', deleted_at: '2026-09-16 02:00:00' };
+  assert.equal(st(gone), 'deleted');
+  assert.deepEqual(taskFlags(gone, { state: 'deleted' }), ['DELETED_OVERDUE']);
+  assert.deepEqual(taskFlags({ ...gone, task_date: '2026-09-20' }, { state: 'deleted' }), ['DELETED']);
+  assert.deepEqual(taskFlags({ ...gone, done_at: '2026-09-09 02:00:00' }, { state: 'deleted' }), ['DELETED_DONE']);
+  // 建出来当天就删、没完成过：录错了改正，不进审核；完成过的即使当天删也要列
+  assert.equal(st({ ...gone, created_at: '2026-09-16 01:00:00' }), null);
+  assert.equal(st({ ...gone, created_at: '2026-09-16 01:00:00', done_at: '2026-09-16 01:30:00' }), 'deleted');
+  // 归日按北京时间：UTC 9-15 23:00 建、UTC 9-16 02:00 删，在北京是同一天
+  assert.equal(st({ ...gone, created_at: '2026-09-15 23:00:00' }), null);
   assert.equal(st({ state: 'todo', task_date: '2026-09-01' }), 'overdue', '半个月前就该做完的，这周仍是逾期');
   assert.equal(st({ state: 'todo', start_date: '2026-09-10', task_date: '2026-09-18' }), 'overdue');
   assert.equal(st({ state: 'todo', start_date: '2026-09-10', task_date: '2026-09-18' }, '2026-09-16'), 'in_progress', '今天才 16 号，18 号截止的还不算逾期');
@@ -81,8 +93,11 @@ test('汇总：工时合计只覆盖两项都填了的任务，并报出有几�
     { audit_state: 'completed', result: '', est_hours: 2, actual_hours: null, links: [], effect: [], flags: ['NO_RESULT'] },
     { audit_state: 'overdue', flags: ['OVERDUE'] },
     { audit_state: 'in_progress', flags: [] },
+    // 被删除的任务单独计数：不算完成（哪怕删之前完成过），但严重疑点照样计入
+    { audit_state: 'deleted', result: '删之前写过结果', est_hours: 9, actual_hours: 9, flags: ['DELETED_DONE'] },
+    { audit_state: 'deleted', flags: ['DELETED'] },
   ]);
-  assert.deepEqual(s, { completed: 2, in_progress: 1, overdue: 1, abandoned: 0, with_result: 1, with_evidence: 1, with_links: 1, with_effect_data: 1, est_hours: 2, actual_hours: 3, hours_known: 1, flagged: 2 });
+  assert.deepEqual(s, { completed: 2, in_progress: 1, overdue: 1, abandoned: 0, deleted: 2, with_result: 1, with_evidence: 1, with_links: 1, with_effect_data: 1, est_hours: 2, actual_hours: 3, hours_known: 1, flagged: 3 });
   assert.equal(summarizeTasks([]).est_hours, null, '一条都没填时合计是空，不是 0');
 });
 
@@ -193,6 +208,39 @@ test('审核包：任务按状态与人归位，带出结果、证据、前后�
   assert.equal(pkg.sem.status, 'NOT_SYNCED', '没有 Ads 数据就说没同步，不给一排 0');
   assert.equal(pkg.kpi.range.start_date, '2026-09-01', 'KPI 取本月至今，不是拿一周去比月目标');
   assert.ok(pkg.meta.notes.length >= 4);
+});
+
+test('审核包：区间内被删除的任务照样列出来 —— 逾期的任务删掉不能等于没发生过', async () => {
+  const mk = async (content, over) => {
+    const id = (await call('POST', '/api/loop-items', { kind: 'task', dept: 'SEO', owner: '李', content, ...over })).json().item.id;
+    db.prepare("UPDATE loop_items SET created_at = '2026-09-01 02:00:00' WHERE id = ?").run(id);
+    return id;
+  };
+  const overdue = await mk('逾期后被删掉的任务', { task_date: '2026-09-10' });
+  const typo = await mk('录错了当天就删的任务', { task_date: '2026-09-18' });
+  for (const id of [overdue, typo]) assert.equal((await call('DELETE', `/api/loop-items/${id}`)).statusCode, 200);
+  db.prepare("UPDATE loop_items SET deleted_at = '2026-09-16 02:00:00' WHERE id IN (?, ?)").run(overdue, typo);
+  db.prepare("UPDATE loop_items SET created_at = '2026-09-16 01:00:00' WHERE id = ?").run(typo);
+
+  const pkg = (await call('GET', `/api/audit/weekly?${Q}`)).json();
+  const row = pkg.tasks.find((t) => t.id === overdue);
+  assert.ok(row, '被删除的任务必须出现在审核里');
+  assert.equal(row.audit_state, 'deleted');
+  assert.equal(row.deleted_date, '2026-09-16');
+  assert.deepEqual(row.flags, ['DELETED_OVERDUE']);
+  assert.equal(pkg.meta.flags.DELETED_OVERDUE.tone, 'bad');
+  assert.equal(pkg.tasks.some((t) => t.id === typo), false, '建出来当天就删的是录错了改正，不进审核');
+  assert.ok(pkg.summary.all.deleted >= 1);
+  assert.ok(pkg.summary.people.find((x) => x.person === '李').deleted >= 1);
+  // 别的周看不到它：只在被删的那一周列一次
+  const other = (await call('GET', '/api/audit/weekly?start_date=2026-09-21&end_date=2026-09-27')).json();
+  assert.equal(other.tasks.some((t) => t.id === overdue), false);
+  // 导出里状态和删除日都要有
+  const csv = (await call('GET', `/api/audit/weekly/export?${Q}&format=csv&section=tasks`)).body;
+  const line = csv.split('\r\n').find((l) => l.includes('逾期后被删掉的任务'));
+  assert.ok(line && line.includes('已删除') && line.includes('2026-09-16') && line.includes('逾期未完成时被删除'), line);
+  // 收尾：这个文件后面的测试在数任务条数，别把这两条留在库里
+  for (const id of [overdue, typo]) assert.equal((await call('DELETE', `/api/loop-items/${id}?hard=1`)).statusCode, 200);
 });
 
 test('审核包：按人筛选 —— 任务只留他的，SEM 的数据不给 SEO 的人，询盘仍是部门口径', async () => {

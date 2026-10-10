@@ -2,7 +2,7 @@
 // 列的顺序和中文表头在这里定一次；页面上看到的、导出来的、经理拿去和别处对比的，是同一批字段。
 import { FLAGS } from './auditRules.js';
 
-const STATE_LABEL = { completed: '已完成', in_progress: '进行中', overdue: '逾期未完成', abandoned: '未完成即归档' };
+const STATE_LABEL = { completed: '已完成', in_progress: '进行中', overdue: '逾期未完成', abandoned: '未完成即归档', deleted: '已删除' };
 const LINK_LABEL = { page: '页面', campaign: '系列', keyword: '关键词', kpi: 'KPI' };
 const EFFECT_STATUS = { OK: '完整', PARTIAL: '数据未满', PENDING: '待数据', NOT_SYNCED: '未同步', NO_DATA: '无数据' };
 const EVIDENCE_LABEL = { form: '表单（机器证据）', manual: '人填' };
@@ -28,7 +28,7 @@ function effectText(effect) {
 
 function summaryRow(name, s) {
   return {
-    name, completed: s.completed, in_progress: s.in_progress, overdue: s.overdue, abandoned: s.abandoned,
+    name, completed: s.completed, in_progress: s.in_progress, overdue: s.overdue, abandoned: s.abandoned, deleted: s.deleted,
     with_result: s.with_result, with_evidence: s.with_evidence, with_links: s.with_links, with_effect_data: s.with_effect_data,
     est_hours: s.est_hours, actual_hours: s.actual_hours, hours_known: s.hours_known, flagged: s.flagged,
   };
@@ -49,14 +49,14 @@ export function auditSheets(pkg) {
   const add = (key, name, columns, rows) => sheets.push({ key, name, columns: cols(columns), rows });
 
   add('summary', '概要', [
-    ['name', '人员'], ['completed', '已完成'], ['in_progress', '进行中'], ['overdue', '逾期未完成'], ['abandoned', '未完成即归档'],
+    ['name', '人员'], ['completed', '已完成'], ['in_progress', '进行中'], ['overdue', '逾期未完成'], ['abandoned', '未完成即归档'], ['deleted', '区间内被删除'],
     ['with_result', '有完成结果'], ['with_evidence', '有证据'], ['with_links', '有可量化关联'], ['with_effect_data', '有完整前后数据'],
     ['est_hours', '预估工时合计'], ['actual_hours', '实际工时合计'], ['hours_known', '工时两项都填了的条数'], ['flagged', '有严重疑点的条数'],
   ], [summaryRow('全部', pkg.summary.all), ...pkg.summary.people.map((p) => summaryRow(p.person + '（' + p.dept + '）', p))]);
 
   add('tasks', '任务', [
     ['id', '编号'], ['person', '归属'], ['owner', '负责人'], ['dept', '部门'], ['project', '产品/项目'], ['content', '任务'], ['state', '状态'],
-    ['start_date', '开始日'], ['task_date', '截止日'], ['done_date', '完成日'], ['est_hours', '预估工时'], ['actual_hours', '实际工时'],
+    ['start_date', '开始日'], ['task_date', '截止日'], ['done_date', '完成日'], ['deleted_date', '删除日'], ['est_hours', '预估工时'], ['actual_hours', '实际工时'],
     ['important', '重要任务'], ['important_reason', '重要原因'], ['why', '目的'], ['done_when', '完成标准'], ['result', '完成结果'], ['task_actions', '具体动作'],
     ['evidence', '证据链接'], ['images', '证据截图数'], ['links', '关联对象'], ['checkin_days', '区间内推进天数'], ['effect', '数据变化'], ['flags', '疑点'],
   ], pkg.tasks.map((t) => ({

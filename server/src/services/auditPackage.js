@@ -69,6 +69,7 @@ function buildTasks(range, who, today) {
       start_date: t.start_date || null,
       task_date: t.task_date || null,
       done_date: dayOf(t.done_at),
+      deleted_date: state === 'deleted' ? dayOf(t.deleted_at) : null,
       audit_state: state,
       est_hours: t.est_hours,
       actual_hours: t.actual_hours,

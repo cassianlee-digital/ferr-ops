@@ -10024,7 +10024,7 @@
   var num2 = (v) => v == null ? "\u2014" : Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
   var md2 = (d) => String(d || "").slice(5);
   var TONE_BADGE2 = { bad: "b-red", warn: "b-amber", muted: "b-gray", good: "b-green" };
-  var STATE = [["completed", "\u5DF2\u5B8C\u6210"], ["overdue", "\u903E\u671F\u672A\u5B8C\u6210"], ["in_progress", "\u8FDB\u884C\u4E2D"], ["abandoned", "\u672A\u5B8C\u6210\u5373\u5F52\u6863"]];
+  var STATE = [["completed", "\u5DF2\u5B8C\u6210"], ["overdue", "\u903E\u671F\u672A\u5B8C\u6210"], ["in_progress", "\u8FDB\u884C\u4E2D"], ["abandoned", "\u672A\u5B8C\u6210\u5373\u5F52\u6863"], ["deleted", "\u533A\u95F4\u5185\u88AB\u5220\u9664"]];
   var LINK_LABEL2 = { page: "\u9875\u9762", campaign: "\u7CFB\u5217", keyword: "\u5173\u952E\u8BCD", kpi: "KPI" };
   var EFFECT_STATUS = { PARTIAL: "\u6570\u636E\u672A\u6EE1", PENDING: "\u5F85\u6570\u636E", NOT_SYNCED: "\u672A\u540C\u6B65", NO_DATA: "\u65E0\u6570\u636E" };
   var CURRENCY_LABEL = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
@@ -10112,7 +10112,7 @@
     big.appendChild(document.createTextNode(" \u6761\u5B8C\u6210"));
     b.appendChild(big);
     const line3 = (t, cls) => b.appendChild(el2("div", "audit-person-line " + (cls || ""), t));
-    line3("\u8FDB\u884C\u4E2D " + s.in_progress + " \xB7 \u903E\u671F " + s.overdue + " \xB7 \u672A\u5B8C\u6210\u5373\u5F52\u6863 " + s.abandoned, s.overdue ? "is-bad" : "");
+    line3("\u8FDB\u884C\u4E2D " + s.in_progress + " \xB7 \u903E\u671F " + s.overdue + " \xB7 \u672A\u5B8C\u6210\u5373\u5F52\u6863 " + s.abandoned + (s.deleted ? " \xB7 \u88AB\u5220\u9664 " + s.deleted : ""), s.overdue ? "is-bad" : "");
     if (s.completed) {
       line3("\u6709\u7ED3\u679C " + s.with_result + "/" + s.completed + " \xB7 \u6709\u8BC1\u636E " + s.with_evidence + "/" + s.completed);
       line3("\u6709\u53EF\u91CF\u5316\u5173\u8054 " + s.with_links + "/" + s.completed + " \xB7 \u6709\u5B8C\u6574\u524D\u540E\u6570\u636E " + s.with_effect_data + "/" + s.completed);
@@ -10147,13 +10147,14 @@
     const span = t.start_date && t.task_date && t.start_date !== t.task_date ? md2(t.start_date) + " ~ " + md2(t.task_date) : md2(t.task_date || t.start_date);
     if (span) meta.appendChild(el2("span", "", "\u8BA1\u5212 " + span));
     if (t.done_date) meta.appendChild(el2("span", "", "\u5B8C\u6210 " + md2(t.done_date)));
+    if (t.deleted_date) meta.appendChild(el2("span", "", "\u5220\u9664 " + md2(t.deleted_date)));
     box.appendChild(meta);
     if (t.links.length) box.appendChild(el2("div", "audit-task-links", t.links.map((l) => (LINK_LABEL2[l.type] || l.type) + " " + (l.type === "page" ? shortUrl2(l.ref) : l.label || l.ref)).join(" \xB7 ")));
     return box;
   }
   function resultCell(t) {
     const box = el2("div", "audit-result");
-    if (t.audit_state !== "completed") {
+    if (t.audit_state !== "completed" && !(t.audit_state === "deleted" && t.done_date)) {
       box.appendChild(el2("span", "dim", t.done_when ? "\u5B8C\u6210\u6807\u51C6\uFF1A" + t.done_when : "\u2014"));
       return box;
     }

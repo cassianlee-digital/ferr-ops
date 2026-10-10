@@ -38,6 +38,9 @@ export const FLAGS = {
   OVERDUE: { label: '已过截止日仍未完成', tone: 'bad' },
   STALLED: { label: '跨天任务在区间内没有任何推进记录', tone: 'bad' },
   ABANDONED: { label: '未完成即归档', tone: 'warn' },
+  DELETED_DONE: { label: '已完成的任务被删除（结果和证据不再出现在别处）', tone: 'bad' },
+  DELETED_OVERDUE: { label: '逾期未完成时被删除', tone: 'bad' },
+  DELETED: { label: '未完成即删除', tone: 'warn' },
 };
 
 const inRange = (d, range) => !!d && d >= range.start_date && d <= range.end_date;
@@ -45,11 +48,18 @@ const inRange = (d, range) => !!d && d >= range.start_date && d <= range.end_dat
 /* 任务在这个区间里的状态。返回 null = 与这个区间无关，不进审核。
      completed   区间内完成（按北京时间的完成日）
      abandoned   区间内归档且从未完成
+     deleted     区间内被删除 —— 任务卡上谁都能点删除，删了就从看板、归档页上一起消失；
+                 审核再不列它，逾期的任务删掉就等于没发生过（2026-10-10 自查发现）。
+                 唯一不列的：建出来当天就删、且没完成过的 —— 那是录错了改正，不是工作记录。
      overdue     截止日已过（不晚于区间结束）仍未完成 —— 包括上周拖下来的
      in_progress 区间内在做（区间与任务的起止有重叠），还没到截止
    today 用来判逾期：区间还没结束时，截止日在今天之后的不算逾期。 */
 export function taskState(item, range, today) {
-  if (item.state === 'deleted') return null;
+  if (item.state === 'deleted') {
+    const gone = businessDate(item.deleted_at);
+    if (!inRange(gone, range)) return null;
+    return !item.done_at && businessDate(item.created_at) === gone ? null : 'deleted';
+  }
   const doneDate = isDone(item) || item.done_at ? businessDate(item.done_at) : null;
   if (doneDate) return inRange(doneDate, range) ? 'completed' : null;
   if (item.state === 'archived') return inRange(businessDate(item.archived_at), range) ? 'abandoned' : null;
@@ -77,6 +87,11 @@ export function taskFlags(item, ctx) {
   const flags = [];
   const { state } = ctx;
   if (state === 'abandoned') return ['ABANDONED'];
+  if (state === 'deleted') {
+    if (item.done_at) return ['DELETED_DONE'];
+    const gone = businessDate(item.deleted_at);
+    return [item.task_date && gone && item.task_date < gone ? 'DELETED_OVERDUE' : 'DELETED'];
+  }
   if (state === 'overdue') flags.push('OVERDUE');
   if (state === 'overdue' || state === 'in_progress') {
     const multiDay = item.start_date && item.task_date && item.start_date < item.task_date;
@@ -128,6 +143,7 @@ export function summarizeTasks(tasks) {
     in_progress: by('in_progress').length,
     overdue: by('overdue').length,
     abandoned: by('abandoned').length,
+    deleted: by('deleted').length,
     with_result: completed.filter((t) => String(t.result || '').trim()).length,
     with_evidence: completed.filter((t) => parseEvidence(t.evidence).length || (t.evidence_images || []).length).length,
     with_links: completed.filter((t) => measurable(t.links)).length,

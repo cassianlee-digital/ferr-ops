@@ -25,7 +25,7 @@ function el(tag, cls, text) {
 const num = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 }));
 const md = (d) => String(d || '').slice(5);
 const TONE_BADGE = { bad: 'b-red', warn: 'b-amber', muted: 'b-gray', good: 'b-green' };
-const STATE = [['completed', '已完成'], ['overdue', '逾期未完成'], ['in_progress', '进行中'], ['abandoned', '未完成即归档']];
+const STATE = [['completed', '已完成'], ['overdue', '逾期未完成'], ['in_progress', '进行中'], ['abandoned', '未完成即归档'], ['deleted', '区间内被删除']];
 const LINK_LABEL = { page: '页面', campaign: '系列', keyword: '关键词', kpi: 'KPI' };
 const EFFECT_STATUS = { PARTIAL: '数据未满', PENDING: '待数据', NOT_SYNCED: '未同步', NO_DATA: '无数据' };
 const CURRENCY_LABEL = { ADS_ACCOUNT: 'Ads 账户币种' };
@@ -97,7 +97,7 @@ function summaryBlock(name, s) {
   big.appendChild(el('b', '', s.completed)); big.appendChild(document.createTextNode(' 条完成'));
   b.appendChild(big);
   const line = (t, cls) => b.appendChild(el('div', 'audit-person-line ' + (cls || ''), t));
-  line('进行中 ' + s.in_progress + ' · 逾期 ' + s.overdue + ' · 未完成即归档 ' + s.abandoned, s.overdue ? 'is-bad' : '');
+  line('进行中 ' + s.in_progress + ' · 逾期 ' + s.overdue + ' · 未完成即归档 ' + s.abandoned + (s.deleted ? ' · 被删除 ' + s.deleted : ''), s.overdue ? 'is-bad' : '');
   if (s.completed) {
     line('有结果 ' + s.with_result + '/' + s.completed + ' · 有证据 ' + s.with_evidence + '/' + s.completed);
     line('有可量化关联 ' + s.with_links + '/' + s.completed + ' · 有完整前后数据 ' + s.with_effect_data + '/' + s.completed);
@@ -132,13 +132,14 @@ function taskCell(t) {
   const span = t.start_date && t.task_date && t.start_date !== t.task_date ? md(t.start_date) + ' ~ ' + md(t.task_date) : md(t.task_date || t.start_date);
   if (span) meta.appendChild(el('span', '', '计划 ' + span));
   if (t.done_date) meta.appendChild(el('span', '', '完成 ' + md(t.done_date)));
+  if (t.deleted_date) meta.appendChild(el('span', '', '删除 ' + md(t.deleted_date)));
   box.appendChild(meta);
   if (t.links.length) box.appendChild(el('div', 'audit-task-links', t.links.map((l) => (LINK_LABEL[l.type] || l.type) + ' ' + (l.type === 'page' ? shortUrl(l.ref) : (l.label || l.ref))).join(' · ')));
   return box;
 }
 function resultCell(t) {
   const box = el('div', 'audit-result');
-  if (t.audit_state !== 'completed') { box.appendChild(el('span', 'dim', t.done_when ? '完成标准：' + t.done_when : '—')); return box; }
+  if (t.audit_state !== 'completed' && !(t.audit_state === 'deleted' && t.done_date)) { box.appendChild(el('span', 'dim', t.done_when ? '完成标准：' + t.done_when : '—')); return box; }
   box.appendChild(t.result ? el('div', 'audit-result-text', t.result) : el('div', 'audit-missing', '结果未记录'));
   if (t.task_actions) box.appendChild(el('div', 'audit-actions', t.task_actions));
   const ev = el('div', 'audit-evidence');
