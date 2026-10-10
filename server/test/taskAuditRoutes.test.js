@@ -200,3 +200,21 @@ test('整改排下来的任务：返回时就带着「重要 · 整改出身」�
   const again = await call('POST', `/api/fixes/${fix.id}/plan`, 'seo');
   assert.equal(again.json().item.is_important, true, '幂等返回的那条也要带');
 });
+
+test('测试登记：没写结论不能归档；写了才行；计划不受这条限制', async () => {
+  const mkRow = async (kind) => (await call('POST', '/api/loop-items', 'seo', { kind, dept: 'SEO', content: kind + ' 行' })).json().item;
+  const t = await mkRow('test');
+  const denied = await call('POST', `/api/loop-items/${t.id}/archive`, 'seo', { archive_kind: 'seo' });
+  assert.equal(denied.statusCode, 400);
+  assert.equal(denied.json().error, 'conclusion_required');
+  assert.match(denied.json().detail, /结论/);
+  await call('PATCH', `/api/loop-items/${t.id}`, 'seo', { conclusion: '   ' });
+  assert.equal((await call('POST', `/api/loop-items/${t.id}/archive`, 'seo', {})).statusCode, 400, '只有空格不算结论');
+  await call('PATCH', `/api/loop-items/${t.id}`, 'seo', { conclusion: 'B 版标题点击率高 18%，全量切换' });
+  const ok = await call('POST', `/api/loop-items/${t.id}/archive`, 'seo', { archive_kind: 'seo' });
+  assert.equal(ok.statusCode, 200);
+  assert.equal(ok.json().item.state, 'archived');
+  assert.equal((await call('POST', `/api/loop-items/${t.id}/archive`, 'seo', {})).statusCode, 200, '已归档的再归档仍是幂等的');
+  const plan = await mkRow('plan');
+  assert.equal((await call('POST', `/api/loop-items/${plan.id}/archive`, 'seo', {})).statusCode, 200);
+});

@@ -143,7 +143,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - 证据截图复用 `attachments`(`owner_type='task'`)。归档页任务行带出结果/动作/证据/关联/工时。
   - 日计划按日期回放(`plan-history.js`)的任务行也带审计信息;**完成结果 / 动作 / 证据只在「那天或之前已完成」时显示** ——
     回放是那一天的视角,不把事后写的结论摆进更早的日子。
-  - **未做**:测试登记(`kind='test'`)没有门槛,它靠 `conclusion` 列。
+  - **测试登记的门槛**:`POST /api/loop-items/:id/archive` 对 `kind='test'` 要求 `conclusion` 非空,否则 `400 conclusion_required`
+    (放弃的测试也要写明为什么放弃;已归档的不追溯;计划不受限)。
 - **周度审核已上线(2026-10-10,第三阶段;导航「行动中心 → 周度审核」)** —— 经理要的四样东西(审核页、AI 按人审核、
   CSV/XLSX/JSON 导出、把数据开放给 AI)**吃同一个包**:`services/auditPackage.js` 的 `buildAuditPackage({range, person, today})`。
   **要加字段只改这一处**,页面(`public/src/audit.js`)、导出(`services/auditExport.js`)、AI(`services/auditAi.js`)都读它。
@@ -161,7 +162,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
     测试用已有的 `read-excel-file` 读回校验。CSV 带 **UTF-8 BOM**(否则 Excel 中文乱码)且**防公式注入**(`= + - @` 开头的文字前加单引号;数字不加)。
     XLSX 每张表一个工作表(概要 / 任务 / 数据变化 / 数据概览 / GEO / 询盘 / 表单线索 / 整改 / 测试 / SOP / 花费汇总 / 外链 / 其它支出 / KPI本月至今 / 周报 / 口径说明);
     CSV 一次一张(`section`)。文件名只用 ASCII(`李→li`、`陈→chen`)。
-    **⚠ 手写的 XLSX 只做过「读回」校验,没有在真实的 Excel / WPS 里打开过**,上线后请先导一份试开。
+    **已在真机验证(2026-10-10)**:用 COM 在本机的 Microsoft Excel 和 WPS 表格里各打开过一份真实导出(16 个工作表)和一份压力样本
+    (特殊字符 / 多行 / 5000 字长文本 / emoji / 负数),均无修复提示;`=SUM(1,2)` 这类文字是字符串不是公式,数字列能求和;CSV 中文不乱码。
   - **AI 审核**:直接调 `callAnthropic`(没走 Hermes 那套证据核验流程),提示词要求只依据包内数据、每条结论带 `task_id` / `inquiry_id`、
     只输出约定的 JSON 结构;`parseAuditAi` 解析不出来就**原文显示并标注「未按结构返回」**。交给 AI 的包**不带客户编码、业务员**。
     结果按 `weekly_audit:<start>:<end>:<person>` 存进 `ai_analyses`,重跑时旧意见进历史。
@@ -305,6 +307,10 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **改前端函数名前先搜 `data-ui-action` 与经典脚本调用点**:内联 `onclick` 已清零(2026-08-27 实测),但 `data-ui-action` 的字符串键、以及 app.js/hermes.js 对 `window.<name>` 的裸调用改了**同样不会有编译期报错**。改完在活站上验 `typeof window.<name>==='function'`。
 - **写进本文件的数字必须是实测的**,并注日期。本文件自称「固定项目真实状态」,一旦数字漂移(2026-07-15 曾查出路由 19→实为 27、index.html 1836 行→实为 1504、innerHTML 47→实为 168;2026-08-13 又漂:1504→1539、内联 handler 157/77→177/82;2026-08-27 再漂:index.html 1539→1062、内联 handler 177→**0**(已全量改事件委托)、innerHTML 236→183 处赋值、路由 29→30),它就从「省 token 的地图」变成「误导人的旧地图」,危害大于没有。**引用前先抽验一个数,对不上就先修文件再干活。**
 - 修改后运行相关检查。
+- **本机 worktree 跑 `node --test` 固定红 6 条,原因已逐条核实(2026-10-10),全是环境问题、与代码无关**:
+  ① `live production check…`:本机不是生产模式;② `风险清单…不返回服务器密钥值`:本机缺 Google 配置,「缺少哪些变量」的清单里出现了变量名,撞上断言里的正则;
+  ③ `询盘录入落库新字段…`:精简 `.env` 没有种子口令 → 没有 id=1 的用户 → `created_by` 外键 500;④⑤⑥ 三条 Hermes / 仪表盘 AI:本机没有 AI 密钥 → 503。
+  **判断有没有改坏,看的是「除了这 6 条还有没有别的红」。**
 
 ## Security Rules
 

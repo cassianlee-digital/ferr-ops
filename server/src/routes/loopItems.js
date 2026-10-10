@@ -191,6 +191,13 @@ export async function loopItemsRoutes(app) {
     const id = Number(request.params.id);
     const ak = s(request.body?.archive_kind, 20);
     const kind = ARCHIVE_KINDS.includes(ak) ? ak : null;
+    /* 测试登记的门槛：没写结论不能归档。测试的全部价值就是那句结论 —— 归档时没有它，
+       这条记录以后只说明「试过」，说明不了「试出了什么」。放弃的测试同样要写（写明为什么放弃）。
+       已经归档的不受影响（归档是幂等的，老数据不追溯）。 */
+    const cur = repo.get(id);
+    if (cur && cur.kind === 'test' && cur.state !== 'archived' && !String(cur.conclusion || '').trim()) {
+      return bad(reply, 'conclusion_required', '测试要先写结论再归档；放弃的测试也请写明为什么放弃');
+    }
     const item = repo.archive(id, kind);
     if (!item) return reply.code(404).send({ error: 'not_found' });
     return { item };
