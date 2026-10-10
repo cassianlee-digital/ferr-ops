@@ -481,3 +481,45 @@ body.dark .track-count{background:#273142;color:#cbd5e1}
 
 body.dark .sales-list .sales-line{border-left-color:#273142}
 body.dark .sales-pending-item{background:#0f172a;border-color:#273142}
+
+/* ================= 询盘来源（2026-10-10）=================
+   来源格：来源词 + 系列 / 落地页 + 对账徽章，整格可点开来源详情。渲染在 src/inquiry-source.js。 */
+#panel-inquiry .inq-head-ops{display:inline-flex;align-items:center;gap:8px}
+#panel-inquiry .inq-leads-count{margin-left:2px;font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums}
+#panel-inquiry .inq-leads-count.has-new{color:var(--danger);font-weight:600}
+#panel-inquiry .inq-src{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  width:100%;max-width:100%;min-width:0;padding:0;border:0;background:none;
+  font:inherit;color:inherit;text-align:left;cursor:pointer;
+}
+#panel-inquiry .inq-src:hover .inq-src-term{color:var(--blue)}
+#panel-inquiry .inq-src-term,
+#panel-inquiry .inq-src-sub{max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+#panel-inquiry .inq-src-sub{font-size:11px;line-height:1.4;color:var(--text3)}
+#panel-inquiry .inq-src-verdict{margin-top:1px}
+
+/* —— 来源详情弹框 —— */
+#inq-src-evidence.is-form{border-left-color:var(--green);background:var(--green-soft);color:var(--text1)}
+.inq-src-check{
+  margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);
+  background:var(--bg3);font-size:12px;line-height:1.8;color:var(--text2);overflow-wrap:anywhere;
+}
+.inq-src-check a{color:var(--blue)}
+.inq-src-result{font-weight:600;color:var(--text1)}
+.inq-src-result.tone-good{color:var(--green)}
+.inq-src-result.tone-bad{color:var(--danger)}
+.inq-src-result.tone-warn{color:var(--amber)}
+
+/* —— 表单线索收件箱 —— */
+#leads-status.is-off{border-left-color:var(--amber);background:var(--amber-soft);color:var(--text1)}
+.leads-tabs{margin-bottom:10px}
+.leads-list{display:flex;flex-direction:column;gap:10px}
+.lead-card{padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);font-size:12px;line-height:1.7}
+.lead-who{font-weight:600;color:var(--text1);overflow-wrap:anywhere}
+.lead-msg{margin:6px 0;padding:6px 8px;background:var(--bg3);color:var(--text1);white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow-y:auto}
+.lead-src{color:var(--text2);overflow-wrap:anywhere}
+.lead-src a{color:var(--blue)}
+.lead-src-channel{font-weight:600;color:var(--text1)}
+.lead-ops{display:flex;align-items:center;gap:6px;margin-top:8px}
+.lead-reason{flex:1 1 auto;min-width:0;height:28px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text1);font-size:12px;font-family:var(--font)}
+.lead-empty{padding:20px 0;text-align:center}

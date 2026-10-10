@@ -12,7 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_VERSION = '13';
 
 const ALL_TABLES = [
-  'users', 'inquiries', 'inquiry_feedbacks', 'inquiry_sales_notes', 'attachments',
+  'users', 'inquiries', 'inquiry_feedbacks', 'inquiry_sales_notes', 'inquiry_leads', 'attachments',
   'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'kpi_period_snapshots', 'kpi_config', 'kpi_review_targets',
   'execution_loops', 'keywords', 'fixes', 'loop_items',
@@ -720,6 +720,43 @@ CREATE TABLE IF NOT EXISTS inquiry_sales_notes (
 );
 CREATE INDEX IF NOT EXISTS idx_inquiry_sales_notes_inq ON inquiry_sales_notes(inquiry_id);
 
+-- 表单线索（2026-10-10）：独立站询盘表单提交时带着来源参数进来的原始记录。
+-- 线索不是询盘：不进任何统计，要有人确认「这就是业务收到的那条」并评了等级才转成询盘（inquiry_id 回指）。
+-- 被忽略的也留着并记原因 —— 垃圾询价从哪个系列 / 关键词来，正是要靠这些行去查。
+CREATE TABLE IF NOT EXISTS inquiry_leads (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  received_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  submission_id     TEXT,             -- 站点给的提交编号（有则用它去重）
+  submitted_at      TEXT,             -- 站点记录的提交时间，原样保存
+  contact_name      TEXT,
+  contact_email     TEXT,
+  contact_company   TEXT,
+  country           TEXT,
+  product           TEXT,
+  message           TEXT,
+  page_url          TEXT,             -- 提交表单的那个页面
+  landing_page      TEXT,             -- 这次访问进站的第一个页面
+  referrer          TEXT,             -- 进站时的来路
+  gclid             TEXT,
+  utm_source        TEXT,
+  utm_medium        TEXT,
+  utm_campaign      TEXT,
+  utm_term          TEXT,
+  utm_content       TEXT,
+  campaign_id       TEXT,             -- Ads 跟踪模板带的 {campaignid}
+  adgroup_id        TEXT,
+  keyword           TEXT,             -- Ads 跟踪模板带的 {keyword}
+  match_type        TEXT,
+  suggested_channel TEXT,             -- 按机器证据建议的渠道（转询盘时人可改）
+  state             TEXT NOT NULL DEFAULT 'new' CHECK (state IN ('new','converted','ignored')),
+  ignore_reason     TEXT,
+  inquiry_id        INTEGER,          -- 转成了哪条询盘
+  handled_by        INTEGER REFERENCES users(id),
+  handled_at        TEXT,
+  dedupe_key        TEXT NOT NULL UNIQUE  -- 表单 webhook 会重试，同一次提交只留一条
+);
+CREATE INDEX IF NOT EXISTS idx_inquiry_leads_state ON inquiry_leads(state, id);
+
 -- 月度绩效考核目标（老板《2026 运营部绩效考核表》的「目标设置」页口径）。
 -- period_key = 'YYYY-MM'；'default' 行是兜底：某月没单独设就用它。两者都没有 → 该指标标「目标待定」，绝不猜。
 CREATE TABLE IF NOT EXISTS kpi_review_targets (
@@ -795,6 +832,12 @@ export function migrate() {
     ['state', 'TEXT'], ['archived_at', 'TEXT'], // P3：询盘软删→归档
     // 询盘录入改版：客户编码 / 公司 / 业务员 / 是否成交（老库补列，老行留 NULL，不补假值）
     ['customer_code', 'TEXT'], ['company', 'TEXT'], ['salesperson', 'TEXT'], ['deal_status', 'TEXT'],
+    // 询盘来源（2026-10-10）：系列 / 落地页 / 来路 / gclid / utm。来源词仍在老的 source 列。
+    // src_evidence 单独记「这些来源是怎么来的」：form = 表单带回的机器证据（人改不了），manual = 人填的主张。
+    // 绝不用 channel 的取值去暗示有没有证据 —— 那样被考核的人会挑着填。老行全部 NULL，不补。
+    ['src_campaign_id', 'TEXT'], ['src_campaign', 'TEXT'], ['src_landing_page', 'TEXT'],
+    ['src_referrer', 'TEXT'], ['src_gclid', 'TEXT'], ['src_utm', 'TEXT'],
+    ['src_evidence', 'TEXT'], ['lead_id', 'INTEGER'],
   ]);
   ensureColumns('google_sync_runs', [
     ['project_id', 'INTEGER'],

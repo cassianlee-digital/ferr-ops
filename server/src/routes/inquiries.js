@@ -4,6 +4,10 @@ import * as salesNotesRepo from '../db/repositories/inquirySalesNotes.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 import { recomputeActuals } from '../services/kpi.js';
 import { parseDateRange } from '../lib/parseDateRange.js';
+import * as leadsRepo from '../db/repositories/inquiryLeads.js';
+import * as taskLinksRepo from '../db/repositories/taskLinks.js';
+import { leadSource, manualSource } from '../services/inquirySource.js';
+import { buildSourceChecks } from '../services/inquirySourceData.js';
 
 const GRADES = ['A', 'B', 'C'];
 // 是否成交：只认这两个值，前端传别的一律落回「未成交」（避免脏值污染统计）
@@ -43,9 +47,37 @@ export async function inquiriesRoutes(app) {
     return { items: repo.list(range), stats: repo.stats(range) };
   });
 
+  /* 来源对账：拿区间内每条询盘手填的来源词，去已同步的 Ads / GSC 点击数据里找证据。
+     单独一个接口、由前端在表格画完之后再拉 —— 它要扫同步表，不该拖慢询盘列表本身。
+     结论只是「挑疑点给人复核」，不改任何数据，不参与计分。 */
+  app.get('/api/inquiries/source-check', { preHandler: requireAuth }, async (request, reply) => {
+    const { range, error } = parseDateRange(request.query || {});
+    if (error) return reply.code(400).send({ error });
+    return buildSourceChecks(repo.list(range));
+  });
+
   app.post('/api/inquiries', editor, async (request, reply) => {
-    const rec = clean(request.body || {});
-    const item = repo.create(rec, request.user.id);
+    const body = request.body || {};
+    const rec = clean(body);
+    // 从表单线索转来：来源字段一律取线索里的（服务端自己读，不信前端回传的），并把线索标为已转
+    let lead = null;
+    if (body.lead_id != null && body.lead_id !== '') {
+      lead = leadsRepo.get(Number(body.lead_id));
+      if (!lead || lead.state !== 'new') {
+        return reply.code(409).send({ error: 'lead_not_available', detail: '这条线索不存在，或已经被处理过了' });
+      }
+    }
+    const campaignNames = taskLinksRepo.campaignNames();
+    const manual = manualSource(lead ? {} : body, campaignNames);
+    if (!manual.ok) return reply.code(400).send({ error: 'bad_source', detail: manual.detail });
+
+    let item = repo.create(rec, request.user.id);
+    if (lead) {
+      item = repo.setSource(item.id, leadSource(lead, campaignNames));
+      leadsRepo.markConverted(lead.id, item.id, request.user.id);
+    } else if (Object.values(manual.value).some((v) => v != null)) {
+      item = repo.setSource(item.id, { ...manual.value, src_evidence: 'manual' });
+    }
     recomputeActuals(); // 询盘总量/A级数 回写 KPI 实际值
     reply.code(201);
     return { item, stats: repo.stats() };
@@ -63,8 +95,21 @@ export async function inquiriesRoutes(app) {
     }
     // 6.23 文档 9：若本次 PATCH 改 grade 且历史数据 original_grade=NULL，
     // 先把「修改前的旧 grade」锁为 original_grade（必须在 update 之前调用，否则锁到的就是新 grade）
+    // 来源字段：表单带回的是机器证据，谁都不能手改（改了它就不再是证据）；手填的可以改，改完标记为「人填」
+    const touchesSource = ['source', 'src_campaign_id', 'src_landing_page'].some((k) => k in body);
+    let manual = null;
+    if (touchesSource) {
+      const cur = repo.get(id);
+      if (!cur) return reply.code(404).send({ error: 'not_found' });
+      if (cur.src_evidence === 'form') {
+        return reply.code(409).send({ error: 'source_locked', detail: '这条询盘的来源是独立站表单带回的机器证据，不能手改' });
+      }
+      manual = manualSource(body, taskLinksRepo.campaignNames());
+      if (!manual.ok) return reply.code(400).send({ error: 'bad_source', detail: manual.detail });
+    }
     if (body.grade != null) repo.lockOriginalGradeIfNull(id);
-    const item = repo.update(id, body);
+    let item = repo.update(id, body);
+    if (manual && Object.keys(manual.value).length) item = repo.setSource(id, { ...manual.value, src_evidence: 'manual' });
     recomputeActuals();
     return { item, stats: repo.stats() };
   });

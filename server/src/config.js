@@ -68,6 +68,11 @@ export const config = {
   settingsSecret: process.env.SETTINGS_SECRET || jwtSecret || 'dev-settings-key',
   settingsSecretExplicit: !!process.env.SETTINGS_SECRET,
 
+  // 独立站询盘表单 → 后台的接收入口。不配（或短于 24 位）= 入口关闭。
+  inquiryIntake: {
+    secret: process.env.INQUIRY_INTAKE_SECRET || '',
+  },
+
   hermes: {
     sharedSecret: process.env.HERMES_SHARED_SECRET || '',
     dailyLearningAuto: process.env.HERMES_DAILY_LEARNING_AUTO !== 'false',

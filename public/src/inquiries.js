@@ -20,6 +20,7 @@ import { getRangeRevision, withRange } from './timerange.js';
 import { commitPendingCellEdit } from './table-editor.js';
 import { PRODUCT_BADGE, REGION_BADGE, PRODUCT_NAMES, REGION_NAMES, fillSelect } from './catalog.js';
 import { salesCellHtml } from './inquiry-sales.js';
+import { loadSourceChecks, sourceCellHtml } from './inquiry-source.js';
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
 // 产品 / 大区的可选值与配色统一来自 catalog.js —— 以前这里各写一份，加个产品要改四处，
@@ -38,6 +39,8 @@ export function openInquiry(){
   ['f-country','f-code','f-sales','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('f-deal').value='未成交'; // 每次打开都回默认，避免沿用上一条
   document.getElementById('f-company').value=''; // 公司不给默认值：没选就是没选，别替业务瞎归属
+  // 普通录入不带线索；从线索转来的由 leadconvert 监听在本函数之后再挂上
+  pendingLead=null; const banner=document.getElementById('inq-lead-banner'); if(banner)banner.classList.add('is-hidden');
   openModal('inqMask');
 }
 export async function submitInquiry(){
@@ -47,9 +50,10 @@ export async function submitInquiry(){
     company:g('f-company'),salesperson:g('f-sales'),deal_status:g('f-deal'), // 公司 / 业务员 / 是否成交
     country:g('f-country')||'🏳️ 未填',region:g('f-region'),channel:g('f-channel'),
     source:g('f-source')||'待补',product:g('f-product'),grade:g('f-grade'),note:g('f-note')};
+  if(pendingLead)rec.lead_id=pendingLead.id;
   try{
     const {item}=await API.post('/api/inquiries',rec);
-    closeModal('inqMask');
+    closeModal('inqMask'); pendingLead=null;
     await loadInquiries(); // BUG-15：按当前时间区间重拉，统计/趋势/列表全部一致；不再用 POST 返回的全量 stats 污染显示
     loadDashboardInq(); // 6.23 文档 2：总览趋势独立缓存，新增询盘后也同步重绘
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
@@ -170,7 +174,7 @@ export function inqRowHtml(r){
     +`<td class="editable" contenteditable data-field="country">${esc(r.country||'')}</td>`
     +`<td class="ctr"><span class="tagselect ${REGION_BADGE[r.region]||'b-gray'}" data-kind="region">${esc(r.region||'未填')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td>${esc(r.source)}</td>`
+    +`<td class="inq-source">${sourceCellHtml(r)}</td>`
     +`<td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
     +`<td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company]||'b-gray'}" data-kind="company">${esc(r.company||'未标注')}<i class="ti ti-chevron-down"></i></span></td>`
@@ -351,6 +355,25 @@ document.addEventListener('cellsaved',e=>{
 /* 业务反馈由 inquiry-sales.js 管（它自己重画那一格），但「有/无业务反馈」这个筛选条件
    与条数统计在本模块，所以要重画整表。用事件而不是互相 import —— 否则两个模块成环。 */
 document.addEventListener('salesnoteschanged',()=>renderInqTable());
+/* 来源格（来源词 / 系列 / 落地页 + 对账徽章）由 inquiry-source.js 管：对账结果回来、或来源被改了，
+   它广播 inqsourcechanged，这里重画整表（来源词同时是表头筛选的一列）。同样用事件，不互相 import。 */
+document.addEventListener('inqsourcechanged',()=>renderInqTable());
+/* 表单线索「转为询盘」：inquiry-source.js 把线索交过来，这里打开录入弹框并预填。
+   来源字段（系列 / 关键词 / 落地页 / gclid…）不在这里填 —— 提交时只带 lead_id，后端自己从线索里取，
+   免得「机器证据」在前端转一道手。等级不预填：评级是人的判断。 */
+let pendingLead=null;
+document.addEventListener('leadconvert',e=>{
+  const d=e.detail||{}; const lead=d.lead; if(!lead)return;
+  openInquiry();
+  pendingLead=lead;
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el&&v!=null&&v!=='')el.value=v; };
+  set('f-date',d.date); set('f-country',lead.country); set('f-channel',lead.suggested_channel);
+  set('f-source',lead.keyword||lead.utm_term);
+  if(PRODUCT_NAMES.includes(lead.product))set('f-product',lead.product);
+  set('f-note',[lead.contact_company,(lead.message||'').slice(0,300)].filter(Boolean).join(' · '));
+  const banner=document.getElementById('inq-lead-banner');
+  if(banner){ banner.textContent='来自表单线索 #'+lead.id+'：系列、关键词、落地页等来源会按线索自动带入并锁定，不用手填。请核对内容并评级。'; banner.classList.remove('is-hidden'); }
+});
 /* 重画前把「改了但还没确认存盘」的可编辑单元格收回缓存。
    只收 dirty 的（td._old 由 table-editor 在 focusin 时记、存盘成功后更新）——
    存盘成功的行已由 cellsaved 用服务端整行同步过，全量收会让过期 DOM 反过来盖掉刚拉回来的新数据。 */
@@ -457,6 +480,7 @@ export async function loadInquiries(){
     window._inqCache=items||[];
     renderInqList(); // 唯一一张表：表头筛选 + 日期倒序 + 月份分隔 + 分页
     refreshInqStats(stats);
+    loadSourceChecks(); // 来源对账 + 表单线索待处理数：表格先出来，这些随后补上（不 await，不拖慢列表）
     // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
     loadKpiInqDonuts(); // KPI 页两个 donut 按 KPI 页自己的区间取数（不受询盘页区间/筛选影响）
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}

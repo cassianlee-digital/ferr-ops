@@ -3244,6 +3244,328 @@
     }
   });
 
+  // public/src/inquiry-source.js
+  var $ = (id) => document.getElementById(id);
+  var isHttp = (u) => /^https?:\/\//i.test(String(u || ""));
+  var TONE_BADGE = { good: "b-green", warn: "b-amber", bad: "b-red", muted: "b-gray" };
+  var FORM_VERDICT = { label: "\u8868\u5355\u6765\u6E90", tone: "good", hint: "\u72EC\u7ACB\u7AD9\u8868\u5355\u63D0\u4EA4\u65F6\u5E26\u56DE\u7684\u6765\u6E90\uFF0C\u673A\u5668\u8BC1\u636E" };
+  var checks = /* @__PURE__ */ new Map();
+  var verdicts = {};
+  var lookbackDays = 30;
+  var checkSeq = 0;
+  var changed = () => document.dispatchEvent(new CustomEvent("inqsourcechanged"));
+  var rowById = (id) => (window._inqCache || []).find((r) => String(r.id) === String(id));
+  var failText = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  function verdictOf(r) {
+    if (r.src_evidence === "form") return FORM_VERDICT;
+    const c = checks.get(r.id);
+    return c && verdicts[c.verdict] || null;
+  }
+  function pathOf(u) {
+    try {
+      const x = new URL(u);
+      return x.pathname + x.search || "/";
+    } catch (e) {
+      return u || "";
+    }
+  }
+  function sourceCellHtml(r) {
+    const v = verdictOf(r);
+    const badge3 = v && v.label ? `<span class="badge ${TONE_BADGE[v.tone] || "b-gray"} inq-src-verdict">${esc2(v.label)}</span>` : "";
+    const subs = [];
+    if (r.src_campaign || r.src_campaign_id) subs.push(`<span class="inq-src-sub">\u7CFB\u5217 ${esc2(r.src_campaign || r.src_campaign_id)}</span>`);
+    if (r.src_landing_page) subs.push(`<span class="inq-src-sub">\u843D\u5730\u9875 ${esc2(pathOf(r.src_landing_page))}</span>`);
+    return `<button type="button" class="inq-src" data-inq-source="${esc2(r.id)}" title="${esc2(v && v.hint || "\u70B9\u51FB\u67E5\u770B / \u586B\u5199\u6765\u6E90")}"><span class="inq-src-term">${esc2(r.source || "")}</span>${subs.join("")}${badge3}</button>`;
+  }
+  async function loadSourceChecks() {
+    const seq3 = ++checkSeq;
+    refreshLeadBadge();
+    try {
+      const data = await API.get(withRange2("/api/inquiries/source-check", "inquiry"));
+      if (seq3 !== checkSeq) return;
+      checks = new Map((data.items || []).map((i) => [i.id, i]));
+      verdicts = data.verdicts || {};
+      lookbackDays = data.lookback_days || 30;
+      changed();
+    } catch (e) {
+      if (seq3 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+    }
+  }
+  var editing2 = null;
+  var campaigns = null;
+  function evidenceLine(name, ev) {
+    if (!ev) return name + "\uFF1A\u5C1A\u672A\u5BF9\u8D26";
+    if (ev.hit) return name + "\uFF1A\u8FD1 " + lookbackDays + " \u5929\u6709\u70B9\u51FB\uFF0C\u6700\u8FD1\u4E00\u6B21 " + String(ev.last_date || "").slice(5);
+    if (!ev.covered) return name + "\uFF1A\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u65E0\u6CD5\u5224\u65AD";
+    return name + "\uFF1A\u8FD1 " + lookbackDays + " \u5929\u6CA1\u6709\u8FD9\u4E2A\u8BCD\u7684\u70B9\u51FB";
+  }
+  function addLine(box, text2, cls) {
+    const d = document.createElement("div");
+    d.className = cls || "";
+    d.textContent = text2;
+    box.appendChild(d);
+  }
+  function addLink(box, label, url) {
+    const d = document.createElement("div");
+    d.appendChild(document.createTextNode(label));
+    if (isHttp(url)) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = url;
+      d.appendChild(a);
+    } else d.appendChild(document.createTextNode(url || ""));
+    box.appendChild(d);
+  }
+  async function fillCampaigns(row) {
+    const sel = $("inq-src-campaign");
+    if (!campaigns) {
+      try {
+        campaigns = (await API.get("/api/loop-items/link-options")).campaigns || [];
+      } catch (e) {
+        campaigns = null;
+        toast2("\u5E7F\u544A\u7CFB\u5217\u5019\u9009\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+      }
+    }
+    sel.textContent = "";
+    const list = campaigns || [];
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = list.length ? "\u672A\u5173\u8054\u7CFB\u5217" : "\u5C1A\u65E0\u5DF2\u540C\u6B65\u7684\u5E7F\u544A\u7CFB\u5217";
+    sel.appendChild(first);
+    for (const c of list) {
+      const o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name || c.id;
+      sel.appendChild(o);
+    }
+    if (row.src_campaign_id && !list.some((c) => c.id === row.src_campaign_id)) {
+      const o = document.createElement("option");
+      o.value = row.src_campaign_id;
+      o.textContent = row.src_campaign || row.src_campaign_id;
+      sel.appendChild(o);
+    }
+    sel.value = row.src_campaign_id || "";
+  }
+  async function openSource(id) {
+    const r = rowById(id);
+    if (!r) return;
+    editing2 = r;
+    const locked = r.src_evidence === "form";
+    $("inq-src-title").textContent = [r.date, r.country, r.channel].filter(Boolean).join(" \xB7 ");
+    const ev = $("inq-src-evidence");
+    ev.classList.toggle("is-form", locked);
+    ev.textContent = locked ? "\u6765\u6E90\u662F\u72EC\u7ACB\u7AD9\u8868\u5355\u63D0\u4EA4\u65F6\u5E26\u56DE\u7684\u673A\u5668\u8BC1\u636E\uFF0C\u4E0D\u80FD\u624B\u6539\u3002" : "\u6765\u6E90\u662F\u4EBA\u586B\u7684\uFF0C\u53EA\u662F\u4E3B\u5F20\uFF1B\u4E0B\u9762\u662F\u7CFB\u7EDF\u62FF\u6765\u6E90\u8BCD\u53BB Ads / GSC \u70B9\u51FB\u6570\u636E\u91CC\u5BF9\u8D26\u7684\u7ED3\u679C\u3002";
+    $("inq-src-term").value = r.source || "";
+    $("inq-src-page").value = r.src_landing_page || "";
+    for (const fid of ["inq-src-term", "inq-src-campaign", "inq-src-page"]) $(fid).disabled = locked;
+    $("inq-src-save").classList.toggle("is-hidden", locked);
+    $("inq-src-error").textContent = "";
+    const box = $("inq-src-check");
+    box.textContent = "";
+    if (locked) {
+      if (r.src_referrer) addLink(box, "\u6765\u8DEF\uFF1A", r.src_referrer);
+      if (r.src_gclid) addLine(box, "\u5E7F\u544A\u70B9\u51FB\u6807\u8BC6\uFF08gclid\uFF09\uFF1A" + r.src_gclid);
+      let utm = {};
+      try {
+        utm = JSON.parse(r.src_utm || "{}");
+      } catch (e) {
+        utm = {};
+      }
+      const parts = Object.entries(utm).map(([k, v]) => k + "=" + v);
+      if (parts.length) addLine(box, "UTM\uFF1A" + parts.join("\u3000"));
+      if (!box.children.length) addLine(box, "\u8868\u5355\u6CA1\u6709\u5E26\u56DE\u6765\u8DEF / gclid / UTM\u3002", "dim");
+    } else {
+      const c = checks.get(r.id);
+      const v = c && verdicts[c.verdict];
+      if (v && v.label) addLine(box, v.label + "\uFF1A" + v.hint, "inq-src-result tone-" + v.tone);
+      addLine(box, evidenceLine("\u5E7F\u544A\uFF08Ads\uFF09", c && c.ads));
+      addLine(box, evidenceLine("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", c && c.gsc));
+      addLine(box, "\u5BF9\u8D26\u53EA\u662F\u628A\u7591\u70B9\u6311\u51FA\u6765\u7ED9\u4EBA\u590D\u6838\uFF0C\u4E0D\u4F1A\u6539\u6E20\u9053\uFF0C\u4E5F\u4E0D\u53C2\u4E0E\u8BA1\u5206\u3002", "dim");
+    }
+    openModal("inqSourceMask");
+    await fillCampaigns(r);
+  }
+  async function submitInquirySource(btn) {
+    const r = editing2;
+    if (!r) return;
+    const body = { source: $("inq-src-term").value.trim() || "\u5F85\u8865", src_campaign_id: $("inq-src-campaign").value, src_landing_page: $("inq-src-page").value.trim() };
+    if (btn) btn.disabled = true;
+    try {
+      const { item } = await API.patch("/api/inquiries/" + r.id, body);
+      Object.assign(r, item);
+      closeModal("inqSourceMask");
+      editing2 = null;
+      toast2("\u6765\u6E90\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
+      changed();
+      loadSourceChecks();
+    } catch (e) {
+      $("inq-src-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText(e);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  var leadState = "new";
+  var leadRows = [];
+  var leadsBound = false;
+  function localDate(utc) {
+    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
+    if (isNaN(d)) return String(utc || "").slice(0, 10);
+    const p = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  async function refreshLeadBadge() {
+    const el2 = $("inq-leads-count");
+    if (!el2) return;
+    try {
+      const data = await API.get("/api/inquiry-leads?state=new");
+      el2.textContent = data.configured ? String(data.counts.new || 0) : "\u672A\u63A5\u5165";
+      el2.classList.toggle("has-new", data.configured && data.counts.new > 0);
+    } catch (e) {
+      el2.textContent = "\u2014";
+    }
+  }
+  function leadCard(l) {
+    const card = document.createElement("div");
+    card.className = "lead-card";
+    card.dataset.id = l.id;
+    const head = document.createElement("div");
+    head.className = "lead-head";
+    const who = [l.contact_name, l.contact_company, l.country].filter(Boolean).join(" \xB7 ") || "\u672A\u7559\u59D3\u540D";
+    addLine(head, localDate(l.received_at) + "\u3000" + who, "lead-who");
+    if (l.contact_email) addLine(head, l.contact_email, "dim");
+    card.appendChild(head);
+    if (l.message) addLine(card, l.message, "lead-msg");
+    const src = document.createElement("div");
+    src.className = "lead-src";
+    addLine(src, "\u5EFA\u8BAE\u6E20\u9053\uFF1A" + (l.suggested_channel || "\u2014"), "lead-src-channel");
+    const term = l.keyword || l.utm_term;
+    if (term) addLine(src, "\u5173\u952E\u8BCD\uFF1A" + term);
+    const camp = l.campaign_id || l.utm_campaign;
+    if (camp) addLine(src, "\u7CFB\u5217\uFF1A" + camp);
+    if (l.landing_page || l.page_url) addLink(src, "\u843D\u5730\u9875\uFF1A", l.landing_page || l.page_url);
+    if (l.referrer) addLink(src, "\u6765\u8DEF\uFF1A", l.referrer);
+    if (src.children.length === 1) addLine(src, "\u8868\u5355\u6CA1\u6709\u5E26\u56DE\u4EFB\u4F55\u6765\u6E90\u53C2\u6570", "dim");
+    card.appendChild(src);
+    const ops = document.createElement("div");
+    ops.className = "lead-ops";
+    if (l.state === "new") {
+      const conv = document.createElement("button");
+      conv.type = "button";
+      conv.className = "btn-primary btn-mini";
+      conv.dataset.leadConvert = l.id;
+      conv.textContent = "\u8F6C\u4E3A\u8BE2\u76D8";
+      const reason = document.createElement("input");
+      reason.type = "text";
+      reason.className = "lead-reason";
+      reason.maxLength = 200;
+      reason.placeholder = "\u5FFD\u7565\u539F\u56E0\uFF08\u5783\u573E / \u91CD\u590D / \u975E\u8BE2\u4EF7\u2026\uFF09";
+      const ign = document.createElement("button");
+      ign.type = "button";
+      ign.className = "btn-mini";
+      ign.dataset.leadIgnore = l.id;
+      ign.textContent = "\u5FFD\u7565";
+      ops.append(conv, reason, ign);
+    } else {
+      addLine(ops, "\u5FFD\u7565\u539F\u56E0\uFF1A" + (l.ignore_reason || "\u2014"), "dim");
+      const re = document.createElement("button");
+      re.type = "button";
+      re.className = "btn-mini";
+      re.dataset.leadReopen = l.id;
+      re.textContent = "\u6062\u590D\u4E3A\u5F85\u5904\u7406";
+      ops.appendChild(re);
+    }
+    card.appendChild(ops);
+    return card;
+  }
+  async function loadLeads() {
+    const box = $("leads-list");
+    const status = $("leads-status");
+    document.querySelectorAll("#leadsMask [data-lead-state]").forEach((b) => b.classList.toggle("active", b.dataset.leadState === leadState));
+    box.textContent = "";
+    addLine(box, "\u52A0\u8F7D\u4E2D\u2026", "dim");
+    try {
+      const data = await API.get("/api/inquiry-leads?state=" + leadState);
+      leadRows = data.items || [];
+      status.classList.toggle("is-off", !data.configured);
+      status.textContent = data.configured ? "\u5F85\u5904\u7406 " + (data.counts.new || 0) + " \xB7 \u5DF2\u8F6C\u8BE2\u76D8 " + (data.counts.converted || 0) + " \xB7 \u5DF2\u5FFD\u7565 " + (data.counts.ignored || 0) : "\u5C1A\u672A\u63A5\u5165\uFF1A\u670D\u52A1\u5668\u6CA1\u6709\u914D\u7F6E INQUIRY_INTAKE_SECRET\uFF0C\u72EC\u7ACB\u7AD9\u8868\u5355\u8FD8\u4E0D\u4F1A\u628A\u7EBF\u7D22\u53D1\u5230\u8FD9\u91CC\uFF08\u63A5\u6CD5\u89C1 docs/INQUIRY_INTAKE.md\uFF09\u3002";
+      box.textContent = "";
+      if (!leadRows.length) {
+        addLine(box, leadState === "new" ? "\u6CA1\u6709\u5F85\u5904\u7406\u7684\u7EBF\u7D22" : "\u6CA1\u6709\u88AB\u5FFD\u7565\u7684\u7EBF\u7D22", "dim lead-empty");
+        return;
+      }
+      leadRows.forEach((l) => box.appendChild(leadCard(l)));
+    } catch (e) {
+      box.textContent = "";
+      addLine(box, "\u7EBF\u7D22\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e), "task-done-error");
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "btn-mini";
+      retry.textContent = "\u91CD\u8BD5";
+      retry.addEventListener("click", loadLeads);
+      box.appendChild(retry);
+    }
+  }
+  function openLeads() {
+    if (!leadsBound) {
+      leadsBound = true;
+      $("leadsMask").addEventListener("click", async (e) => {
+        const tab = e.target.closest("[data-lead-state]");
+        if (tab) {
+          leadState = tab.dataset.leadState;
+          loadLeads();
+          return;
+        }
+        const conv = e.target.closest("[data-lead-convert]");
+        if (conv) {
+          const lead = leadRows.find((l) => String(l.id) === conv.dataset.leadConvert);
+          if (!lead) return;
+          closeModal("leadsMask");
+          document.dispatchEvent(new CustomEvent("leadconvert", { detail: { lead, date: localDate(lead.received_at) } }));
+          return;
+        }
+        const ign = e.target.closest("[data-lead-ignore]");
+        if (ign) {
+          const reason = ign.closest(".lead-ops").querySelector(".lead-reason").value.trim();
+          if (!reason) {
+            toast2("\u8BF7\u5148\u5199\u5FFD\u7565\u539F\u56E0");
+            return;
+          }
+          try {
+            await API.post("/api/inquiry-leads/" + ign.dataset.leadIgnore + "/ignore", { reason });
+            toast2("\u5DF2\u5FFD\u7565 \xB7 \u539F\u56E0\u5DF2\u8BB0\u5F55");
+            loadLeads();
+            refreshLeadBadge();
+          } catch (err) {
+            toast2("\u672A\u5165\u5E93\uFF1A" + failText(err));
+          }
+          return;
+        }
+        const re = e.target.closest("[data-lead-reopen]");
+        if (re) {
+          try {
+            await API.post("/api/inquiry-leads/" + re.dataset.leadReopen + "/reopen");
+            toast2("\u5DF2\u6062\u590D\u4E3A\u5F85\u5904\u7406");
+            loadLeads();
+            refreshLeadBadge();
+          } catch (err) {
+            toast2("\u672A\u5165\u5E93\uFF1A" + failText(err));
+          }
+        }
+      });
+    }
+    leadState = "new";
+    openModal("leadsMask");
+    loadLeads();
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-inq-source]");
+      if (btn) openSource(btn.dataset.inqSource);
+    });
+  }
+
   // public/src/inquiries.js
   var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
   var GRADE_BADGE = { A: "b-green", B: "b-blue", C: "b-gray" };
@@ -3257,6 +3579,9 @@
     ["f-country", "f-code", "f-sales", "f-source", "f-note"].forEach((i) => document.getElementById(i).value = "");
     document.getElementById("f-deal").value = "\u672A\u6210\u4EA4";
     document.getElementById("f-company").value = "";
+    pendingLead = null;
+    const banner = document.getElementById("inq-lead-banner");
+    if (banner) banner.classList.add("is-hidden");
     openModal("inqMask");
   }
   async function submitInquiry() {
@@ -3277,9 +3602,11 @@
       grade: g("f-grade"),
       note: g("f-note")
     };
+    if (pendingLead) rec.lead_id = pendingLead.id;
     try {
       const { item } = await API.post("/api/inquiries", rec);
       closeModal("inqMask");
+      pendingLead = null;
       await loadInquiries();
       loadDashboardInq();
       if (window._curTab === "inquiry") {
@@ -3394,7 +3721,7 @@
   function inqRowHtml(r) {
     const up = isUpgraded(r);
     const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc2(r.original_grade)} \u2192 \u73B0 ${esc2(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
-    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc2(r.country || "")}</td><td class="ctr"><span class="tagselect ${REGION_BADGE[r.region] || "b-gray"}" data-kind="region">${esc2(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc2(r.source)}</td><td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc2(r.country || "")}</td><td class="ctr"><span class="tagselect ${REGION_BADGE[r.region] || "b-gray"}" data-kind="region">${esc2(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td class="inq-source">${sourceCellHtml(r)}</td><td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
@@ -3583,6 +3910,30 @@
     else it[d.field] = d.value;
   });
   document.addEventListener("salesnoteschanged", () => renderInqTable());
+  document.addEventListener("inqsourcechanged", () => renderInqTable());
+  var pendingLead = null;
+  document.addEventListener("leadconvert", (e) => {
+    const d = e.detail || {};
+    const lead = d.lead;
+    if (!lead) return;
+    openInquiry();
+    pendingLead = lead;
+    const set = (id, v) => {
+      const el2 = document.getElementById(id);
+      if (el2 && v != null && v !== "") el2.value = v;
+    };
+    set("f-date", d.date);
+    set("f-country", lead.country);
+    set("f-channel", lead.suggested_channel);
+    set("f-source", lead.keyword || lead.utm_term);
+    if (PRODUCT_NAMES.includes(lead.product)) set("f-product", lead.product);
+    set("f-note", [lead.contact_company, (lead.message || "").slice(0, 300)].filter(Boolean).join(" \xB7 "));
+    const banner = document.getElementById("inq-lead-banner");
+    if (banner) {
+      banner.textContent = "\u6765\u81EA\u8868\u5355\u7EBF\u7D22 #" + lead.id + "\uFF1A\u7CFB\u5217\u3001\u5173\u952E\u8BCD\u3001\u843D\u5730\u9875\u7B49\u6765\u6E90\u4F1A\u6309\u7EBF\u7D22\u81EA\u52A8\u5E26\u5165\u5E76\u9501\u5B9A\uFF0C\u4E0D\u7528\u624B\u586B\u3002\u8BF7\u6838\u5BF9\u5185\u5BB9\u5E76\u8BC4\u7EA7\u3002";
+      banner.classList.remove("is-hidden");
+    }
+  });
   function absorbEditedCells(tb) {
     tb.querySelectorAll("tr[data-id] td[contenteditable][data-field]").forEach((td2) => {
       const now = td2.innerText.trim();
@@ -3707,6 +4058,7 @@
       window._inqCache = items || [];
       renderInqList();
       refreshInqStats(stats);
+      loadSourceChecks();
       loadKpiInqDonuts();
       if (window._curTab === "inquiry") {
         try {
@@ -4522,10 +4874,10 @@
   }
 
   // public/src/task-audit.js
-  var $ = (id) => document.getElementById(id);
+  var $2 = (id) => document.getElementById(id);
   var LINK_LABEL = { page: "\u9875\u9762", campaign: "\u7CFB\u5217", keyword: "\u5173\u952E\u8BCD", kpi: "KPI" };
   var KPI_GROUP_LABEL = { review: "\u8003\u6838\u6307\u6807", process: "\u8FC7\u7A0B\u6307\u6807\uFF08\u4E0D\u8BA1\u5165\u8003\u6838\uFF09" };
-  var isHttp = (u) => /^https?:\/\//i.test(String(u || ""));
+  var isHttp2 = (u) => /^https?:\/\//i.test(String(u || ""));
   var OPTIONS_TTL_MS = 10 * 60 * 1e3;
   var linkOptions = null;
   var linkOptionsAt = 0;
@@ -4549,8 +4901,8 @@
     return o;
   }
   function renderLinkInput() {
-    const box = $("task-link-value");
-    const typeEl = $("task-link-type");
+    const box = $2("task-link-value");
+    const typeEl = $2("task-link-type");
     if (!box || !typeEl) return;
     const type = typeEl.value;
     const opts = linkOptions || {};
@@ -4599,7 +4951,7 @@
     return l.label || l.ref;
   }
   function renderLinkChips() {
-    const box = $("task-link-chips");
+    const box = $2("task-link-chips");
     if (!box) return;
     box.textContent = "";
     draftLinks.forEach((l, i) => {
@@ -4619,14 +4971,14 @@
     });
   }
   function pendingLink() {
-    const typeEl = $("task-link-type");
-    const input = $("task-link-input");
+    const typeEl = $2("task-link-type");
+    const input = $2("task-link-input");
     if (!typeEl || !input) return null;
     const type = typeEl.value;
     let ref = String(input.value || "").trim();
     if (!ref) return null;
     let label = null;
-    if (type === "page" && !isHttp(ref)) return "\u9875\u9762\u8981\u586B\u5B8C\u6574\u7F51\u5740\uFF08http/https \u5F00\u5934\uFF09";
+    if (type === "page" && !isHttp2(ref)) return "\u9875\u9762\u8981\u586B\u5B8C\u6574\u7F51\u5740\uFF08http/https \u5F00\u5934\uFF09";
     if (type === "keyword") ref = ref.toLowerCase().replace(/\s+/g, " ");
     if (type === "campaign" || type === "kpi") label = input.options[input.selectedIndex].textContent;
     return { type, ref, label };
@@ -4642,15 +4994,15 @@
       return false;
     }
     if (!draftLinks.some((x) => x.type === l.type && x.ref === l.ref)) draftLinks.push(l);
-    const input = $("task-link-input");
+    const input = $2("task-link-input");
     if (input) input.value = "";
     renderLinkChips();
     return true;
   }
   function bindLinkEditor() {
     if (linkEditorBound) return;
-    const typeEl = $("task-link-type");
-    const chips = $("task-link-chips");
+    const typeEl = $2("task-link-type");
+    const chips = $2("task-link-chips");
     if (!typeEl || !chips) return;
     linkEditorBound = true;
     typeEl.addEventListener("change", renderLinkInput);
@@ -4660,7 +5012,7 @@
       draftLinks.splice(Number(del.dataset.linkIdx), 1);
       renderLinkChips();
     });
-    $("task-link-value").addEventListener("keydown", (e) => {
+    $2("task-link-value").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         addTaskLink();
@@ -4670,38 +5022,38 @@
   function fillTaskAuditFields(item) {
     const it = item || {};
     bindLinkEditor();
-    const plist = $("task-project-list");
+    const plist = $2("task-project-list");
     if (plist && !plist.children.length) PRODUCT_NAMES.forEach((n) => plist.appendChild(option(n, n)));
-    const p = $("task-project");
+    const p = $2("task-project");
     if (p) p.value = it.project || "";
-    const eh = $("task-est-hours");
+    const eh = $2("task-est-hours");
     if (eh) eh.value = it.est_hours == null ? "" : it.est_hours;
-    const imp = $("task-important");
+    const imp = $2("task-important");
     if (imp) {
       imp.checked = Number(it.important) === 1;
       const role = (window.ME || {}).role;
       imp.disabled = imp.checked && role !== "manager" && role !== "boss";
     }
     draftLinks = (it.links || []).map((l) => ({ type: l.type, ref: l.ref, label: l.label || null }));
-    const typeEl = $("task-link-type");
+    const typeEl = $2("task-link-type");
     if (typeEl) typeEl.value = "page";
     renderLinkChips();
     renderLinkInput();
     loadLinkOptions().then(() => {
-      const cur = $("task-link-input");
+      const cur = $2("task-link-input");
       if (!cur || !cur.value) renderLinkInput();
     });
   }
   function readTaskAuditFields() {
     const out = {};
-    out.project = (($("task-project") || {}).value || "").trim();
-    const eh = (($("task-est-hours") || {}).value || "").trim();
+    out.project = (($2("task-project") || {}).value || "").trim();
+    const eh = (($2("task-est-hours") || {}).value || "").trim();
     if (eh !== "" && !(Number(eh) >= 0)) {
       toast2("\u9884\u4F30\u5DE5\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
       return null;
     }
     out.est_hours = eh === "" ? null : Number(eh);
-    const imp = $("task-important");
+    const imp = $2("task-important");
     out.important = imp && imp.checked ? 1 : null;
     const pending = pendingLink();
     if (typeof pending === "string") {
@@ -4728,7 +5080,7 @@
     }
   }
   function evidenceHtml(it) {
-    const links = String(it.evidence || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((u) => isHttp(u) ? `<a class="taudit-ev" href="${esc2(u)}" target="_blank" rel="noopener noreferrer" title="${esc2(u)}">${esc2(shortUrl(u))}</a>` : `<span class="taudit-ev">${esc2(u)}</span>`);
+    const links = String(it.evidence || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((u) => isHttp2(u) ? `<a class="taudit-ev" href="${esc2(u)}" target="_blank" rel="noopener noreferrer" title="${esc2(u)}">${esc2(shortUrl(u))}</a>` : `<span class="taudit-ev">${esc2(u)}</span>`);
     return links.join("") + thumbsHtml(it.evidence_images);
   }
   function hoursText(it) {
@@ -4762,17 +5114,17 @@
   var doneCtx = null;
   var doneBound = false;
   function doneError(msg) {
-    const el2 = $("task-done-error");
+    const el2 = $2("task-done-error");
     if (el2) el2.textContent = msg || "";
   }
   function renderDoneThumbs() {
-    const box = $("task-done-thumbs");
+    const box = $2("task-done-thumbs");
     if (!box || !doneCtx) return;
     box.innerHTML = thumbsHtml(doneCtx.item.evidence_images, { deletable: true });
   }
   function bindDone() {
     if (doneBound) return;
-    const box = $("task-done-thumbs");
+    const box = $2("task-done-thumbs");
     if (!box) return;
     doneBound = true;
     box.addEventListener("click", async (e) => {
@@ -4794,21 +5146,21 @@
     if (!item || !item.id) return;
     bindDone();
     doneCtx = { item, edit, onDone, onImages };
-    $("task-done-verb").textContent = edit ? "\u5B8C\u6210\u8BB0\u5F55" : "\u5B8C\u6210\u4EFB\u52A1";
-    $("task-done-submit-label").textContent = edit ? "\u4FDD\u5B58" : "\u786E\u8BA4\u5B8C\u6210";
-    $("task-done-title").textContent = item.content || "";
-    const rule = $("task-done-rule");
+    $2("task-done-verb").textContent = edit ? "\u5B8C\u6210\u8BB0\u5F55" : "\u5B8C\u6210\u4EFB\u52A1";
+    $2("task-done-submit-label").textContent = edit ? "\u4FDD\u5B58" : "\u786E\u8BA4\u5B8C\u6210";
+    $2("task-done-title").textContent = item.content || "";
+    const rule = $2("task-done-rule");
     rule.classList.toggle("is-important", !!item.is_important);
     rule.textContent = item.is_important ? "\u91CD\u8981\u4EFB\u52A1\uFF08" + (item.important_reason_text || "") + "\uFF09\uFF1A\u9664\u4E86\u5B8C\u6210\u7ED3\u679C\uFF0C\u8FD8\u9700\u8981\u81F3\u5C11\u4E00\u6761\u8BC1\u636E\u94FE\u63A5\u6216\u4E00\u5F20\u8BC1\u636E\u622A\u56FE\u3002" : "\u5199\u6E05\u5B8C\u6210\u7ED3\u679C\u5373\u53EF\uFF1B\u6709\u8BC1\u636E\u94FE\u63A5\u6216\u622A\u56FE\u66F4\u597D\u2014\u2014\u5468\u5EA6\u5BA1\u6838\u770B\u7684\u5C31\u662F\u8FD9\u4E9B\u3002";
-    $("task-done-result").value = item.result || "";
-    $("task-done-actions").value = item.task_actions || "";
-    $("task-done-evidence").value = item.evidence || "";
-    $("task-done-hours").value = item.actual_hours == null ? "" : item.actual_hours;
-    $("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
+    $2("task-done-result").value = item.result || "";
+    $2("task-done-actions").value = item.task_actions || "";
+    $2("task-done-evidence").value = item.evidence || "";
+    $2("task-done-hours").value = item.actual_hours == null ? "" : item.actual_hours;
+    $2("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
     doneError("");
     renderDoneThumbs();
     openModal("taskDoneMask");
-    setTimeout(() => $("task-done-result").focus(), 50);
+    setTimeout(() => $2("task-done-result").focus(), 50);
   }
   async function pickTaskEvidence() {
     const ctx = doneCtx;
@@ -4825,15 +5177,15 @@
   async function submitTaskDone(btn) {
     const ctx = doneCtx;
     if (!ctx) return;
-    const hoursRaw = String($("task-done-hours").value || "").trim();
+    const hoursRaw = String($2("task-done-hours").value || "").trim();
     if (hoursRaw !== "" && !(Number(hoursRaw) >= 0)) {
       doneError("\u5B9E\u9645\u7528\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
       return;
     }
     const body = {
-      result: $("task-done-result").value,
-      task_actions: $("task-done-actions").value,
-      evidence: $("task-done-evidence").value,
+      result: $2("task-done-result").value,
+      task_actions: $2("task-done-actions").value,
+      evidence: $2("task-done-evidence").value,
       actual_hours: hoursRaw === "" ? null : Number(hoursRaw)
     };
     if (!ctx.edit) {
@@ -4927,9 +5279,9 @@
     }
   }
   function renderEffect(data) {
-    const box = $("task-effect-body");
+    const box = $2("task-effect-body");
     box.textContent = "";
-    $("task-effect-title").textContent = data.task.content || "";
+    $2("task-effect-title").textContent = data.task.content || "";
     if (data.status === "NOT_DONE") {
       box.appendChild(el("div", "teffect-note", "\u8FD9\u6761\u4EFB\u52A1\u6CA1\u6709\u5B8C\u6210\u65F6\u523B\uFF08\u672A\u5B8C\u6210\uFF0C\u6216\u662F\u5B8C\u6210\u95E8\u69DB\u4E0A\u7EBF\u524D\u52FE\u7684\u8001\u4EFB\u52A1\uFF09\uFF0C\u6CA1\u6709\u5BF9\u6BD4\u7684\u539F\u70B9\u3002"));
       return;
@@ -4958,7 +5310,7 @@
     box.appendChild(table);
   }
   async function loadEffect() {
-    const box = $("task-effect-body");
+    const box = $2("task-effect-body");
     const seq3 = ++effectSeq;
     document.querySelectorAll("#taskEffectMask [data-effect-days]").forEach((b) => b.classList.toggle("active", Number(b.dataset.effectDays) === effectDays));
     box.textContent = "";
@@ -4980,7 +5332,7 @@
     if (!id) return;
     if (!effectBound) {
       effectBound = true;
-      $("taskEffectMask").addEventListener("click", (e) => {
+      $2("taskEffectMask").addEventListener("click", (e) => {
         const b = e.target.closest("[data-effect-days]");
         if (!b) return;
         effectDays = Number(b.dataset.effectDays);
@@ -4988,7 +5340,7 @@
       });
     }
     effectTaskId = id;
-    $("task-effect-title").textContent = "";
+    $2("task-effect-title").textContent = "";
     openModal("taskEffectMask");
     loadEffect();
   }
@@ -9436,8 +9788,8 @@
   });
 
   // public/src/spend.js
-  var $2 = (id) => document.getElementById(id);
-  var isHttp2 = (u) => /^https?:\/\//i.test(String(u || ""));
+  var $3 = (id) => document.getElementById(id);
+  var isHttp3 = (u) => /^https?:\/\//i.test(String(u || ""));
   function h(tag, cls, text2) {
     const el2 = document.createElement(tag);
     if (cls) el2.className = cls;
@@ -9450,7 +9802,7 @@
     return Object.entries(amounts || {}).map(([cur, v]) => (CURRENCY_LABEL[cur] || cur) + " " + money3(v)).join(" \uFF5C ");
   }
   function linkEl(url, text2, cls) {
-    if (!isHttp2(url)) return h("span", cls, text2 || url || "");
+    if (!isHttp3(url)) return h("span", cls, text2 || url || "");
     const a = h("a", cls, text2 || url);
     a.href = url;
     a.target = "_blank";
@@ -9473,7 +9825,7 @@
   var loadSeq = 0;
   var backlinkRows = [];
   var expenseRows = [];
-  var editing2 = { backlink: null, expense: null };
+  var editing3 = { backlink: null, expense: null };
   function monthRange(ym) {
     const [y, m] = ym.split("-").map(Number);
     const last = new Date(y, m, 0).getDate();
@@ -9485,14 +9837,14 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
   }
   var qs = (range) => "?start_date=" + range.start_date + "&end_date=" + range.end_date;
-  var failText = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var failText2 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   function adsSourceText(g) {
     if (g.source === "google_ads") return "Ads \u540C\u6B65\u6570\u636E \xB7 \u8D26\u6237\u5E01\u79CD";
     if (g.source === "sem_weeks") return "\u4EBA\u5DE5\u5468\u62A5\uFF08Ads \u672C\u671F\u65E0\u540C\u6B65\u6570\u636E\uFF09\xB7 \u4EBA\u6C11\u5E01";
     return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
   }
   function renderSummary2(data) {
-    const box = $2("spend-summary");
+    const box = $3("spend-summary");
     if (!box) return;
     box.textContent = "";
     const row = h("div", "spend-groups");
@@ -9514,10 +9866,10 @@
     box.appendChild(line2);
   }
   function renderSummaryError(e) {
-    const box = $2("spend-summary");
+    const box = $3("spend-summary");
     if (!box) return;
     box.textContent = "";
-    const line2 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e) + " ");
+    const line2 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e) + " ");
     const btn = h("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
     btn.addEventListener("click", loadSpend);
@@ -9532,7 +9884,7 @@
     return parts.join(" \xB7 ");
   }
   function renderLinkStats(stats) {
-    const box = $2("spend-link-stats");
+    const box = $3("spend-link-stats");
     if (!box) return;
     box.textContent = "";
     if (!stats || !stats.total) return;
@@ -9567,7 +9919,7 @@
   function errorRow(tb, cols, label, e) {
     tb.textContent = "";
     const tr = h("tr");
-    const td2 = h("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e) + " ");
+    const td2 = h("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e) + " ");
     td2.colSpan = cols;
     const btn = h("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
@@ -9577,11 +9929,11 @@
     tb.appendChild(tr);
   }
   function renderBacklinks() {
-    const tb = $2("tb-backlinks");
+    const tb = $3("tb-backlinks");
     if (!tb) return;
     tb.textContent = "";
     if (!backlinkRows.length) {
-      emptyRow(tb, 11, $2("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      emptyRow(tb, 11, $3("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
       return;
     }
     for (const b of backlinkRows) {
@@ -9611,7 +9963,7 @@
     }
   }
   function renderExpenses() {
-    const tb = $2("tb-expenses");
+    const tb = $3("tb-expenses");
     if (!tb) return;
     tb.textContent = "";
     if (!expenseRows.length) {
@@ -9642,11 +9994,11 @@
   async function loadSpend() {
     bind();
     if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
-    const input = $2("spend-month");
+    const input = $3("spend-month");
     if (input) input.value = month;
     const range = monthRange(month);
     const seq3 = ++loadSeq;
-    const allLinks = $2("spend-links-all") && $2("spend-links-all").checked;
+    const allLinks = $3("spend-links-all") && $3("spend-links-all").checked;
     const [sum, links, exps] = await Promise.allSettled([
       API.get("/api/spend/summary" + qs(range)),
       API.get("/api/backlinks" + (allLinks ? "" : qs(range))),
@@ -9662,14 +10014,14 @@
     } else {
       backlinkRows = [];
       renderLinkStats(null);
-      errorRow($2("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+      errorRow($3("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
     }
     if (exps.status === "fulfilled") {
       expenseRows = exps.value.items || [];
       renderExpenses();
     } else {
       expenseRows = [];
-      errorRow($2("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+      errorRow($3("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
     }
   }
   var BACKLINK_FIELDS = [
@@ -9708,7 +10060,7 @@
     expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
   };
   function fillSelect2(id, values, placeholder, labelOf) {
-    const sel = $2(id);
+    const sel = $3(id);
     if (!sel) return;
     const keep = sel.value;
     sel.textContent = "";
@@ -9737,7 +10089,7 @@
     fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
   }
   function ensureTaskOption(selectId, row) {
-    const sel = $2(selectId);
+    const sel = $3(selectId);
     if (!sel || !row || row.task_id == null) return;
     if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
     const o = h("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
@@ -9749,14 +10101,14 @@
     try {
       await ensureOptions();
     } catch (e) {
-      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e));
       return;
     }
-    editing2[kind] = row || null;
-    $2(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    editing3[kind] = row || null;
+    $3(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
     ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el2 = $2(id);
+      const el2 = $3(id);
       if (!el2) continue;
       el2.value = row && row[key] != null ? row[key] : "";
     }
@@ -9764,15 +10116,15 @@
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
       const me = (window.ME || {}).name || "";
       if (kind === "backlink") {
-        $2("bl-date").value = today3;
-        $2("bl-owner").value = me;
+        $3("bl-date").value = today3;
+        $3("bl-owner").value = me;
       } else {
-        $2("ex-date").value = today3;
-        $2("ex-currency").value = "CNY";
-        $2("ex-owner").value = me;
+        $3("ex-date").value = today3;
+        $3("ex-currency").value = "CNY";
+        $3("ex-owner").value = me;
       }
     }
-    $2(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    $3(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
     openModal(form.mask);
   }
   var openBacklink = () => openForm("backlink", null);
@@ -9781,21 +10133,21 @@
     const form = FORMS[kind];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el2 = $2(id);
+      const el2 = $3(id);
       if (el2) body[key] = el2.value;
     }
-    const errEl = $2(kind === "backlink" ? "bl-error" : "ex-error");
-    const row = editing2[kind];
+    const errEl = $3(kind === "backlink" ? "bl-error" : "ex-error");
+    const row = editing3[kind];
     if (btn) btn.disabled = true;
     try {
       if (row) await API.patch(form.api + "/" + row.id, body);
       else await API.post(form.api, body);
       closeModal(form.mask);
-      editing2[kind] = null;
+      editing3[kind] = null;
       toast2((row ? "\u5DF2\u66F4\u65B0" : "\u5DF2\u767B\u8BB0") + form.name + " \xB7 \u5DF2\u5165\u5E93");
       loadSpend();
     } catch (e) {
-      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText(e);
+      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText2(e);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -9804,7 +10156,7 @@
   var submitExpense = (btn) => submitForm("expense", btn);
   function bind() {
     if (bound) return;
-    const panel = $2("panel-spend");
+    const panel = $3("panel-spend");
     if (!panel) return;
     bound = true;
     panel.addEventListener("click", async (e) => {
@@ -9835,17 +10187,17 @@
           toast2("\u5DF2\u5220\u9664" + form.name + "\u8BB0\u5F55");
           loadSpend();
         } catch (err) {
-          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText(err));
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText2(err));
         }
       }
     });
-    $2("spend-month").addEventListener("change", (e) => {
+    $3("spend-month").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}$/.test(e.target.value)) {
         month = e.target.value;
         loadSpend();
       }
     });
-    $2("spend-links-all").addEventListener("change", loadSpend);
+    $3("spend-links-all").addEventListener("change", loadSpend);
   }
 
   // public/src/app.js
@@ -9907,6 +10259,8 @@
     "task-link-add": () => addTaskLink(),
     "pick-task-evidence": () => pickTaskEvidence(),
     "submit-task-done": (el2) => submitTaskDone(el2),
+    "open-leads": () => openLeads(),
+    "submit-inq-source": (el2) => submitInquirySource(el2),
     "open-backlink": () => openBacklink(),
     "open-expense": () => openExpense(),
     "submit-backlink": (el2) => submitBacklink(el2),
@@ -10051,12 +10405,15 @@
       } catch (e) {
       }
     }
-    if (tab === "inquiry") setTimeout(() => {
-      try {
-        renderGlobe();
-      } catch (e) {
-      }
-    }, 80);
+    if (tab === "inquiry") {
+      setTimeout(() => {
+        try {
+          renderGlobe();
+        } catch (e) {
+        }
+      }, 80);
+      refreshLeadBadge();
+    }
     if (tab === "spend") {
       try {
         loadSpend();

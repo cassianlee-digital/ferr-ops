@@ -173,7 +173,7 @@
 
       <!-- ============ 询盘评级 ============ -->
       <div class="panel" id="panel-inquiry">
-        <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><button class="btn-primary" data-ui-action="open-inquiry"><i class="ti ti-plus"></i> 录入询盘</button></div>
+        <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><div class="inq-head-ops"><button class="btn-ghost" data-ui-action="open-leads" title="独立站表单带着来源参数提交进来的线索，确认并评级后转为询盘"><i class="ti ti-inbox"></i> 表单线索 <span class="inq-leads-count" id="inq-leads-count"></span></button><button class="btn-primary" data-ui-action="open-inquiry"><i class="ti ti-plus"></i> 录入询盘</button></div></div>
         <div class="timebar-inline" data-time data-scope="inquiry" data-gran="day,week,month"></div>
 <!-- 询盘明细表（全宽 · 唯一一张表：表头筛选行 + 月份分隔行 + 底部分页）-->
         <div>
@@ -924,6 +924,8 @@
   <div class="modal">
     <div class="modal-head"><i class="ti ti-mail-plus csp-s-b0e08465c2"></i> 录入询盘<span class="x" data-ui-action="close-modal" data-modal="inqMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
+      <!-- 从表单线索转来时显示（src/inquiries.js 的 leadconvert 监听）：告诉录入人来源会自动带入 -->
+      <div class="task-done-rule is-hidden" id="inq-lead-banner"></div>
       <div class="fld-row">
         <div class="fld"><label>日期</label><input type="date" id="f-date"></div>
         <div class="fld"><label>客户编码（可选）</label><input id="f-code" placeholder="DE-2026-018"></div>
@@ -1193,6 +1195,36 @@
       <div id="task-effect-body"></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskEffectMask">关闭</button></div>
+  </div>
+</div>
+
+<!-- 询盘来源详情：来源词 / 系列 / 落地页 + 对账结果。表单带回的来源整块只读。逻辑在 src/inquiry-source.js -->
+<div class="modal-mask" id="inqSourceMask">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-route csp-s-b0e08465c2"></i> 询盘来源<span class="x" data-ui-action="close-modal" data-modal="inqSourceMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="task-done-title" id="inq-src-title"></div>
+      <div class="task-done-rule" id="inq-src-evidence"></div>
+      <div class="fld"><label>来源词（客户搜的词 / 广告触发的词）</label><input type="text" id="inq-src-term" maxlength="200"></div>
+      <div class="fld"><label>广告系列（只能选已同步的）</label><select id="inq-src-campaign"></select></div>
+      <div class="fld"><label>落地页（完整网址）</label><input type="text" id="inq-src-page" placeholder="https://…"></div>
+      <div class="inq-src-check" id="inq-src-check"></div>
+      <div class="task-done-error" id="inq-src-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="inqSourceMask">关闭</button><button class="btn-primary" id="inq-src-save" data-ui-action="submit-inq-source"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- 表单线索收件箱：独立站询盘表单带着来源参数提交进来的原始记录。线索不是询盘，不进任何统计 -->
+<div class="modal-mask" id="leadsMask">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-inbox csp-s-b0e08465c2"></i> 表单线索<span class="x" data-ui-action="close-modal" data-modal="leadsMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="task-done-rule" id="leads-status"></div>
+      <div class="teffect-days leads-tabs"><button type="button" class="btn-mini" data-lead-state="new">待处理</button><button type="button" class="btn-mini" data-lead-state="ignored">已忽略</button></div>
+      <div class="leads-list" id="leads-list"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="leadsMask">关闭</button></div>
   </div>
 </div>
 

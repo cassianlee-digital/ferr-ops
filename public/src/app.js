@@ -17,6 +17,7 @@ import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, sav
 import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
 import { pickSalesImages, submitSalesNote } from './inquiry-sales.js';
+import { openLeads, refreshLeadBadge, submitInquirySource } from './inquiry-source.js';
 import { addKeyword, filterKwByCat, loadKeywords, renderSparklines } from './keywords.js';
 import { loadOverview, renderKPI } from './kpi-view.js';
 import { loadMetrics, loadWeeks, submitSemWeek, submitSeoWeek } from './kpi.js';
@@ -116,6 +117,8 @@ const STATIC_UI_ACTIONS={
   'task-link-add':()=>addTaskLink(),
   'pick-task-evidence':()=>pickTaskEvidence(),
   'submit-task-done':el=>submitTaskDone(el),
+  'open-leads':()=>openLeads(),
+  'submit-inq-source':el=>submitInquirySource(el),
   'open-backlink':()=>openBacklink(),
   'open-expense':()=>openExpense(),
   'submit-backlink':el=>submitBacklink(el),
@@ -169,7 +172,7 @@ function mountGa4IntoData(){
 }
 export function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n){n.classList.add('active');if(window.matchMedia('(max-width:760px)').matches)n.scrollIntoView({block:'nearest',inline:'center'});} document.querySelector('.main').scrollTo({top:0}); window.scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
   if(tab==='risks'){try{loadRisks();}catch(e){}}
-  if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
+  if(tab==='inquiry'){ setTimeout(()=>{try{renderGlobe();}catch(e){}},80); refreshLeadBadge(); } // 线索随时会进来，每次进页都重数一遍待处理数
   if(tab==='spend'){try{loadSpend();}catch(e){}} // 投入台账：每次进入重拉（任务完成、周报录入都会改变汇总）
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
   if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结

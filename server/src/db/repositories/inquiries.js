@@ -79,6 +79,16 @@ export function update(id, fields) {
   return get(id);
 }
 
+/* 来源字段（系列 / 落地页 / 来路 / gclid / utm / 证据类型）。刻意不放进上面 update() 的通用白名单：
+   通用 PATCH 把请求体原样传进来，白名单里有 src_evidence 的话，任何人都能把自己手填的来源改成「表单证据」。
+   这里只给路由在校验完之后调用。 */
+const SOURCE_COLS = ['source', 'src_campaign_id', 'src_campaign', 'src_landing_page',
+  'src_referrer', 'src_gclid', 'src_utm', 'src_evidence', 'lead_id'];
+export function setSource(id, fields) {
+  updateById('inquiries', id, fields, SOURCE_COLS);
+  return get(id);
+}
+
 /* ===== 跟踪反馈：一条询盘可以有多条带时间的记录（2026-08-27）=====
    created_at 为 NULL = 从老的单条 tracking_feedback 迁过来的、时间不详的历史记录，前端如实标注。 */
 const FEEDBACK_SELECT = `SELECT f.id, f.inquiry_id, f.text, f.created_at, u.name AS created_by_name
