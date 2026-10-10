@@ -40,6 +40,13 @@ export function list(state) {
   return db.prepare('SELECT * FROM inquiry_leads WHERE state = ? ORDER BY id DESC LIMIT 300').all(state);
 }
 
+// 一段日期里收到的线索（received_at 是 UTC，按北京时间归日，与任务完成日同口径）
+export function listBetween(from, to) {
+  return db.prepare(
+    "SELECT * FROM inquiry_leads WHERE date(received_at, '+8 hours') BETWEEN ? AND ? ORDER BY id DESC"
+  ).all(from, to);
+}
+
 export function counts() {
   const out = { new: 0, converted: 0, ignored: 0 };
   for (const r of db.prepare('SELECT state, COUNT(*) n FROM inquiry_leads GROUP BY state').all()) out[r.state] = r.n;

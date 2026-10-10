@@ -18,6 +18,13 @@ export function summary(dayKey) {
 }
 
 // 某一天的全部打卡（日计划回放：那天谁推进了哪条）
+// 一段日期里每条任务被推进了几天（周度审核用：跨天任务在这一周有没有人动过）
+export function daysInRange(from, to) {
+  return db.prepare(
+    'SELECT loop_item_id, COUNT(*) AS days FROM task_checkins WHERE day_key BETWEEN ? AND ? GROUP BY loop_item_id'
+  ).all(from, to);
+}
+
 export function listForDay(dayKey) {
   return db.prepare('SELECT * FROM task_checkins WHERE day_key = ?').all(dayKey);
 }

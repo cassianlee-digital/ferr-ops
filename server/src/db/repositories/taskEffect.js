@@ -2,9 +2,9 @@
 // 只读已同步的 GSC / Ads 表。n = 命中的行数，用来区分「真的没数据」和「数据就是 0」。
 import { db } from '../connection.js';
 
-const GSC_AGG = `COUNT(*) n, COALESCE(SUM(clicks),0) clicks, COALESCE(SUM(impressions),0) impressions,
+const GSC_AGG = `COUNT(*) n, COUNT(DISTINCT date) days, COALESCE(SUM(clicks),0) clicks, COALESCE(SUM(impressions),0) impressions,
   CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) END position`; // 曝光加权排名，与看板同口径
-const ADS_AGG = `COUNT(*) n, COALESCE(SUM(cost_micros),0) costMicros, COALESCE(SUM(clicks),0) clicks,
+const ADS_AGG = `COUNT(*) n, COUNT(DISTINCT date) days, COALESCE(SUM(cost_micros),0) costMicros, COALESCE(SUM(clicks),0) clicks,
   COALESCE(SUM(impressions),0) impressions, COALESCE(SUM(conversions),0) conversions`;
 
 const gscParams = (range, scope) => ({ start: range.start_date, end: range.end_date, siteUrl: scope?.gsc_site_url || null });

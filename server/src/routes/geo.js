@@ -1,23 +1,15 @@
 // GEO 概览 API：AI 引擎带来的流量与询盘。只读已同步的 GA4 数据和带表单证据的询盘。
-import * as repo from '../db/repositories/geo.js';
 import * as checksRepo from '../db/repositories/geoChecks.js';
 import * as attachmentsRepo from '../db/repositories/attachments.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 import {
   CHECK_ENGINES, MAX_ACTIVE_QUESTIONS, ROUND_INTERVAL_DAYS, summarizeRound, validateCheck, validateQuestion,
 } from '../services/geoChecks.js';
-import { parseDateRange, previousRange } from '../lib/parseDateRange.js';
-import { resolveProject } from '../sync/googleClient.js';
-import { summarizeGeo } from '../services/geo.js';
+import { parseDateRange } from '../lib/parseDateRange.js';
+import { buildGeoSummary, roundSummary } from '../services/geoData.js';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const bad = (reply, error, detail) => reply.code(400).send({ error, detail });
-
-// 一轮抽查的汇总（没有这一轮就是 null）。总览卡和抽查页共用。
-function roundSummary(roundDate) {
-  if (!roundDate) return null;
-  return { round_date: roundDate, ...summarizeRound(checksRepo.activeQuestionCount(), checksRepo.listRound(roundDate)) };
-}
 
 export async function geoRoutes(app) {
   /* ===== 引用抽查：固定题库 ===== */
@@ -86,22 +78,6 @@ export async function geoRoutes(app) {
     const { range, error } = parseDateRange(request.query || {});
     if (error) return reply.code(400).send({ error: 'bad_date_range', detail: error });
     if (!range) return reply.code(400).send({ error: 'bad_date_range', detail: 'start_date 和 end_date 必填' });
-    let propertyId = null;
-    try { propertyId = resolveProject(request.query || {}).ga4_property_id || null; } catch (e) { propertyId = null; }
-    const prev = previousRange(range);
-    // 引用抽查：取区间结束日（含）之前最近的一轮，及它的上一轮。没查过就是 null，不是 0。
-    const round = checksRepo.latestRoundOnOrBefore(range.end_date);
-    return {
-      range,
-      previous_range: prev,
-      citations: roundSummary(round),
-      citations_previous: roundSummary(round && checksRepo.previousRound(round)),
-      ...summarizeGeo({
-        current: repo.ga4Sources(range, propertyId),
-        previous: repo.ga4Sources(prev, propertyId),
-        inquiries: repo.formInquiries(range),
-        leads: repo.leads(range),
-      }),
-    };
+    return buildGeoSummary(range, request.query || {}); // 组装在 services/geoData.js，周度审核包也用同一份
   });
 }
