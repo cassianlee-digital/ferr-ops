@@ -7,7 +7,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import http from 'node:http';
-import { checkBacklink, checkTargetUrl, fetchPage, findBacklink, isPublicAddress, relKind } from '../src/services/linkCheck.js';
+import zlib from 'node:zlib';
+import { MAX_BYTES, checkBacklink, checkTargetUrl, fetchPage, findBacklink, isPublicAddress, relKind, requestPinned } from '../src/services/linkCheck.js';
 
 const tmpDir = mkdtempSync(join(tmpdir(), 'ferr-linkcheck-'));
 process.env.DB_FILE = join(tmpDir, 'test.sqlite'); // 必须在动态 import 之前：connection.js 在 import 期就开库
@@ -73,6 +74,63 @@ test('真去取一个本机地址：被拦在发请求之前（本机起一个�
   } finally { server.close(); }
 });
 
+/* ---------- 取页面：对着本机起的服务验证（requestPinned 自己不校验地址，所以能连本机） ---------- */
+
+async function withServer(handler, run) {
+  const server = http.createServer(handler);
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const url = new URL(`http://127.0.0.1:${server.address().port}/`);
+  try { return await run((ms) => requestPinned(url, { address: '127.0.0.1', family: 4 }, ms)); }
+  finally { server.closeAllConnections(); server.close(); }
+}
+
+test('取页面：对方一点一点吐内容拖着不结束，到总时限就掐断（无响应超时管不到这种）', async () => {
+  let timer;
+  await withServer((_req, res) => { res.writeHead(200); timer = setInterval(() => res.write('x'), 30); }, async (get) => {
+    const t0 = Date.now();
+    await assert.rejects(get(300), { code: 'ETIMEDOUT' });
+    assert.ok(Date.now() - t0 < 2000, `等了 ${Date.now() - t0}ms 才放手`);
+  });
+  clearInterval(timer);
+});
+
+test('取页面：对方不顾声明照样压缩了发回来，要解开再找；压缩炸弹按解压后的大小截断', async () => {
+  const html = '<a href="https://ferr.com/valves" rel="nofollow">阀门</a>';
+  await withServer((_req, res) => { res.writeHead(200, { 'Content-Encoding': 'gzip' }); res.end(zlib.gzipSync(html)); }, async (get) => {
+    const page = await get(3000);
+    assert.equal(findBacklink(page.body, 'https://b.example/', 'https://ferr.com/valves').anchor, '阀门');
+  });
+  // 20MB 的零压完只有 2 万字节上下：不设防的话一次核查就能吃掉 20MB 内存
+  const bomb = zlib.gzipSync(Buffer.alloc(20_000_000));
+  assert.ok(bomb.length < 100_000);
+  await withServer((_req, res) => { res.writeHead(200, { 'Content-Encoding': 'gzip' }); res.end(bomb); }, async (get) => {
+    const page = await get(5000);
+    assert.equal(page.truncated, true);
+    assert.ok(page.body.length <= MAX_BYTES);
+  });
+  await withServer((_req, res) => { res.writeHead(200, { 'Content-Encoding': 'gzip' }); res.end('不是压缩内容'); }, async (get) => {
+    await assert.rejects(get(3000), { code: 'Z_DATA_ERROR' });
+  });
+  await withServer((_req, res) => { res.writeHead(200, { 'Content-Encoding': 'zstd' }); res.end('x'); }, async (get) => {
+    await assert.rejects(get(3000), /读不了的压缩格式/);
+  });
+});
+
+test('取页面：GBK 页面的锚文本不读成乱码（编码名在响应头或 <meta> 里都认）', async () => {
+  // 「阀门」的 GBK 字节
+  const gbk = (head) => Buffer.concat([Buffer.from(head + '<a href="https://ferr.com/valves">'), Buffer.from([0xb7, 0xa7, 0xc3, 0xc5]), Buffer.from('</a>')]);
+  await withServer((_req, res) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=GBK' }); res.end(gbk('')); }, async (get) => {
+    assert.equal(findBacklink((await get(3000)).body, 'https://b.example/', 'https://ferr.com/valves').anchor, '阀门');
+  });
+  await withServer((_req, res) => { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end(gbk('<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')); }, async (get) => {
+    assert.equal(findBacklink((await get(3000)).body, 'https://b.example/', 'https://ferr.com/valves').anchor, '阀门');
+  });
+  // 编码名不认识：按 UTF-8 读，链接照样找得到
+  await withServer((_req, res) => { res.writeHead(200, { 'Content-Type': 'text/html; charset=no-such-charset' }); res.end('<a href="https://ferr.com/valves">v</a>'); }, async (get) => {
+    assert.equal(findBacklink((await get(3000)).body, 'https://b.example/', 'https://ferr.com/valves').found, true);
+  });
+});
+
 /* ---------- 在页面里找链接 ---------- */
 
 test('找链接：带不带 www、带不带尾斜杠都认；区分「正是登记的页面」和「只是指向了我们的站」', () => {
@@ -105,6 +163,27 @@ test('找链接：对方页面是不可信输入 —— 几万个没闭合的 <a
   const hit = findBacklink(hostile, 'https://b.example/', 'https://ferr.com/valves');
   assert.equal(hit.found, true);
   assert.ok(Date.now() - t0 < 2000, `扫描用了 ${Date.now() - t0}ms，疑似退化成平方复杂度`);
+});
+
+test('找链接：另外两种会拖垮扫描的页面形状（修之前分别要 6.5 秒和 1 秒，期间整个后台不响应）', () => {
+  const shapes = {
+    '几万个 <a 后面只跟一个 >': '<a '.repeat(40000) + 'x'.repeat(1_300_000) + '>',
+    '几万条指向本站其它页面、都不闭合的链接': '<a href="https://ferr.com/other">x '.repeat(20000),
+  };
+  for (const [name, html] of Object.entries(shapes)) {
+    const t0 = Date.now();
+    findBacklink(html, 'https://b.example/', 'https://ferr.com/valves');
+    assert.ok(Date.now() - t0 < 500, `${name}：扫描用了 ${Date.now() - t0}ms`);
+  }
+});
+
+test('找链接：data-rel / data-href 不是 rel / href（灯箱插件常写 data-rel="nofollow"）', () => {
+  const page = 'https://b.example/'; const target = 'https://ferr.com/valves';
+  const a = findBacklink('<a data-rel="nofollow" href="https://ferr.com/valves" rel="noopener">v</a>', page, target);
+  assert.equal(relKind(a.rel), 'dofollow', '读成 nofollow 就会误报「属性与台账不符」');
+  assert.equal(findBacklink('<a data-rel="lightbox" href="https://ferr.com/valves">v</a>', page, target).rel, '');
+  assert.equal(findBacklink('<a data-href="https://other.com/" href="https://ferr.com/valves">v</a>', page, target).match, 'exact', '读成 data-href 就把真链接漏掉了');
+  assert.equal(findBacklink('<a class="x"href="https://ferr.com/valves"rel="nofollow">v</a>', page, target).rel, 'nofollow', '属性之间没空格也要读得到');
 });
 
 test('rel → 台账的四种属性：没写就是 dofollow', () => {
