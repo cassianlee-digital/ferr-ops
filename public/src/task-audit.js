@@ -220,10 +220,13 @@ const line = (label, html, cls = '') => `<span class="taudit-line ${cls}"><span 
 export function auditBlockHtml(it, { editable = false, archived = false } = {}) {
   const lines = [];
   const links = it.links || [];
-  if (links.length) {
-    lines.push(line('关联', links.map((l) => `<span class="taudit-link" title="${esc(l.ref)}"><b>${LINK_LABEL[l.type] || esc(l.type)}</b>${esc(linkText(l))}</span>`).join('')));
-  }
   const done = wasCompleted(it);
+  if (links.length) {
+    // 「数据变化」：完成之后才有前后可比；只关联了 KPI 的任务没有可量化的对象，不给入口
+    const effect = done && it.id && links.some((l) => l.type !== 'kpi')
+      ? ` <button type="button" class="btn-mini taudit-effect" data-task-effect="${esc(it.id)}"><i class="ti ti-chart-line"></i> 数据变化</button>` : '';
+    lines.push(line('关联', links.map((l) => `<span class="taudit-link" title="${esc(l.ref)}"><b>${LINK_LABEL[l.type] || esc(l.type)}</b>${esc(linkText(l))}</span>`).join('') + effect));
+  }
   if (done || archived || it.result) {
     const edit = editable && done && it.id
       ? ` <button type="button" class="btn-mini taudit-edit" data-loop-action="task-result">${it.result ? '改' : '补结果'}</button>` : '';
@@ -325,4 +328,144 @@ export async function submitTaskDone(btn) {
   } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+/* ================= 完成前后的数据变化（弹框） =================
+   口径全在后端（services/taskEffect.js）：窗口等长、完成当天不算、给全站参照。这里只负责照着画，
+   并把「数据未满 / 待数据 / 未同步 / 无数据」这些状态原样说出来 —— 状态比数字重要，
+   一个没满的窗口画成正常的涨跌，就是在误导人。 */
+const EFFECT_STATUS_TEXT = {
+  NO_DATA: '前后两段时间都没有数据（没有曝光或没有投放）',
+  DECLARED: '部门级指标，不做单条任务的前后对比',
+};
+let effectTaskId = null;
+let effectDays = 14;
+let effectSeq = 0;
+let effectBound = false;
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = String(text);
+  return n;
+}
+const md = (ymd) => String(ymd || '').slice(5);
+const fmtNum = (v) => (v == null ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 2 }));
+
+function windowText(name, w) {
+  if (!w) return null;
+  if (w.status === 'NOT_SYNCED') return name + '：没有同步数据，无法对比';
+  if (w.status === 'PENDING') return name + '：完成后还没有同步到数据（最新数据到 ' + (w.latest_date || '—') + '），过几天再看';
+  const range = '前 ' + md(w.before.start_date) + '~' + md(w.before.end_date) + ' 对比 后 ' + md(w.after.start_date) + '~' + md(w.after.end_date);
+  if (w.status === 'PARTIAL') return name + '：' + range + '（数据未满：只有 ' + w.days + ' 天；要等 ' + md(w.full_date) + ' 的数据同步进来才满 ' + w.wanted_days + ' 天）';
+  return name + '：' + range + '（各 ' + w.days + ' 天）';
+}
+
+// 变化量单元格：好的方向绿、坏的方向红；花费这类没有好坏的不上色
+function deltaCell(d, better) {
+  const td = el('td', 'num');
+  if (!d) { td.textContent = '—'; return td; }
+  const sign = d.abs > 0 ? '+' : '';
+  let text = sign + fmtNum(d.abs);
+  if (d.pct != null) text += '（' + (d.pct > 0 ? '+' : '') + Math.round(d.pct * 100) + '%）';
+  td.textContent = text;
+  if (d.abs !== 0 && better !== 'neutral') {
+    const good = better === 'higher' ? d.abs > 0 : d.abs < 0;
+    td.classList.add(good ? 'teffect-good' : 'teffect-bad');
+  }
+  return td;
+}
+
+function effectRows(tbody, title, sub, item, metrics, cls) {
+  const head = el('tr', 'teffect-head ' + (cls || ''));
+  const th = el('td', '', title); th.colSpan = 4;
+  if (sub) th.appendChild(el('span', 'teffect-sub', sub));
+  head.appendChild(th); tbody.appendChild(head);
+  const list = metrics[item.source];
+  if (!item.before || !list) {
+    const tr = el('tr'); const td = el('td', 'dim', EFFECT_STATUS_TEXT[item.status] || '这个数据源暂时无法对比（见上方说明）'); td.colSpan = 4;
+    tr.appendChild(td); tbody.appendChild(tr); return;
+  }
+  if (item.status === 'NO_DATA') {
+    const tr = el('tr'); const td = el('td', 'dim', EFFECT_STATUS_TEXT.NO_DATA); td.colSpan = 4;
+    tr.appendChild(td); tbody.appendChild(tr); return;
+  }
+  for (const m of list) {
+    const tr = el('tr');
+    tr.appendChild(el('td', '', m.label));
+    tr.appendChild(el('td', 'num', fmtNum(item.before[m.key])));
+    tr.appendChild(el('td', 'num', fmtNum(item.after[m.key])));
+    tr.appendChild(deltaCell(item.delta[m.key], m.better));
+    tbody.appendChild(tr);
+  }
+}
+
+function renderEffect(data) {
+  const box = $('task-effect-body'); box.textContent = '';
+  $('task-effect-title').textContent = data.task.content || '';
+  if (data.status === 'NOT_DONE') {
+    box.appendChild(el('div', 'teffect-note', '这条任务没有完成时刻（未完成，或是完成门槛上线前勾的老任务），没有对比的原点。'));
+    return;
+  }
+  box.appendChild(el('div', 'teffect-note', data.note));
+  const used = new Set(data.items.map((i) => i.source).filter(Boolean));
+  const wins = el('div', 'teffect-windows');
+  if (used.has('gsc')) wins.appendChild(el('div', '', windowText('自然搜索（GSC）', data.windows.gsc)));
+  if (used.has('ads')) wins.appendChild(el('div', '', windowText('广告（Ads）', data.windows.ads)));
+  box.appendChild(wins);
+
+  const table = el('table', 'dt teffect-table');
+  const thead = el('thead'); const hr = el('tr');
+  ['指标', '之前', '之后', '变化'].forEach((t, i) => hr.appendChild(el('th', i ? 'num' : '', t)));
+  thead.appendChild(hr); table.appendChild(thead);
+  const tbody = el('tbody');
+  for (const item of data.items) {
+    const kind = LINK_LABEL[item.type] || item.type;
+    const where = item.source === 'ads' ? ' · 广告' : (item.source === 'gsc' ? ' · 自然搜索' : '');
+    effectRows(tbody, kind + where, item.type === 'page' ? linkText(item) : (item.label || item.ref), item, data.metrics);
+  }
+  // 参照行：全站都涨的时候，单个页面跟着涨不算这条任务的功劳
+  if (data.baseline.gsc) effectRows(tbody, '参照 · 全站自然搜索同期', '', data.baseline.gsc, data.metrics, 'is-baseline');
+  if (data.baseline.ads) effectRows(tbody, '参照 · 全账户广告同期', '金额为 Ads 账户币种', data.baseline.ads, data.metrics, 'is-baseline');
+  table.appendChild(tbody); box.appendChild(table);
+}
+
+async function loadEffect() {
+  const box = $('task-effect-body');
+  const seq = ++effectSeq;
+  document.querySelectorAll('#taskEffectMask [data-effect-days]').forEach((b) => b.classList.toggle('active', Number(b.dataset.effectDays) === effectDays));
+  box.textContent = ''; box.appendChild(el('div', 'dim', '加载中…'));
+  try {
+    const data = await API.get('/api/loop-items/' + effectTaskId + '/effect?days=' + effectDays);
+    if (seq === effectSeq) renderEffect(data);
+  } catch (e) {
+    if (seq !== effectSeq) return;
+    box.textContent = '';
+    box.appendChild(el('div', 'task-done-error', '加载失败：' + ((e && e.message) || '请求失败') + ' '));
+    const retry = el('button', 'btn-mini', '重试'); retry.type = 'button'; retry.addEventListener('click', loadEffect);
+    box.appendChild(retry);
+  }
+}
+
+export function openTaskEffect(id) {
+  if (!id) return;
+  if (!effectBound) {
+    effectBound = true;
+    $('taskEffectMask').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-effect-days]'); if (!b) return;
+      effectDays = Number(b.dataset.effectDays); loadEffect();
+    });
+  }
+  effectTaskId = id;
+  $('task-effect-title').textContent = '';
+  openModal('taskEffectMask');
+  loadEffect();
+}
+
+// 入口按钮出现在任务卡和归档行两处，统一在这里委托。typeof 守卫：保持本模块「无 DOM 也能被 import」。
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-task-effect]');
+    if (btn) openTaskEffect(btn.dataset.taskEffect);
+  });
 }

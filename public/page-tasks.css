@@ -1051,8 +1051,7 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
 }
 .tlink-del:hover { background: var(--danger-soft); color: var(--danger); }
 
-/* —— 完成弹框 —— */
-.task-done-modal { width: 480px; }
+/* —— 完成弹框（宽度随全站 .modal 统一的 560px，styles.css 里是 !important，这里不另设）—— */
 .task-done-title { margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--text1); overflow-wrap: anywhere; }
 .task-done-rule {
   margin-bottom: 12px;
@@ -1067,3 +1066,26 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
 .task-done-shots { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .task-done-shots .att-thumbs { margin-top: 0; }
 .task-done-error { min-height: 18px; font-size: 12px; line-height: 1.5; color: var(--danger); font-weight: 600; }
+
+/* —— 完成前后的数据变化（弹框） —— */
+.taudit-effect { margin-left: 4px; }
+.teffect-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.teffect-days { flex: none; display: inline-flex; gap: 4px; }
+.teffect-days .btn-mini.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+.teffect-note {
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--amber);
+  background: var(--amber-soft);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text1);
+}
+.teffect-windows { margin-bottom: 10px; font-size: 12px; line-height: 1.7; color: var(--text2); }
+.teffect-table td, .teffect-table th { font-size: 12px; }
+.teffect-table td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.teffect-head td { padding-top: 10px; font-weight: 600; color: var(--text1); background: var(--bg3); overflow-wrap: anywhere; }
+.teffect-head.is-baseline td { color: var(--text3); }
+.teffect-sub { margin-left: 8px; font-weight: 400; color: var(--text3); }
+.teffect-good { color: var(--green); font-weight: 600; }
+.teffect-bad { color: var(--danger); font-weight: 600; }

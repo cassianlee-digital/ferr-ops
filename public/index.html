@@ -1180,6 +1180,22 @@
   </div>
 </div>
 
+<!-- 任务完成前后的数据变化：按任务关联的页面 / 系列 / 关键词，对比完成日前后等长的两段同步数据。
+     口径与状态说明全由后端给，src/task-audit.js 只负责画。入口是卡片 / 归档行上的「数据变化」按钮 -->
+<div class="modal-mask" id="taskEffectMask">
+  <div class="modal task-effect-modal">
+    <div class="modal-head"><i class="ti ti-chart-line csp-s-b0e08465c2"></i> 完成前后的数据变化<span class="x" data-ui-action="close-modal" data-modal="taskEffectMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="teffect-top">
+        <div class="task-done-title" id="task-effect-title"></div>
+        <div class="teffect-days"><button type="button" class="btn-mini" data-effect-days="7">前后 7 天</button><button type="button" class="btn-mini" data-effect-days="14">14 天</button><button type="button" class="btn-mini" data-effect-days="28">28 天</button></div>
+      </div>
+      <div id="task-effect-body"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskEffectMask">关闭</button></div>
+  </div>
+</div>
+
 <!-- 公司大任务拆解：分发子任务（内容 + 负责人 陈/李）。子任务勾完不消失，随大任务完成一起归档 -->
 <div class="modal-mask" id="subtaskMask">
   <div class="modal csp-s-779f6e951b">

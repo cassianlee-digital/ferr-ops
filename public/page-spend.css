@@ -101,6 +101,3 @@
 #panel-spend .spend-noev { color: var(--danger); }
 #panel-spend .spend-ops { white-space: nowrap; }
 #panel-spend .spend-empty { padding: 28px 12px; text-align: center; }
-
-/* —— 登记弹框 —— */
-.spend-modal { width: 600px; }

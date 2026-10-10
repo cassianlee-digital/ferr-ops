@@ -10,6 +10,8 @@ import {
 import {
   TASK_ATTACHMENT_OWNER, decorateTask, decorateTasks, evidenceImageCount, spendTaskIds,
 } from '../services/taskAuditData.js';
+import { DEFAULT_EFFECT_DAYS, EFFECT_DAYS } from '../services/taskEffect.js';
+import { buildTaskEffect } from '../services/taskEffectData.js';
 
 const KINDS = ['plan', 'test', 'deposit', 'task'];
 const ARCHIVE_KINDS = ['sem', 'seo', 'company'];
@@ -80,6 +82,17 @@ export async function loopItemsRoutes(app) {
     ...taskLinksRepo.options(),
     kpis: TASK_KPIS,
   }));
+
+  // 任务完成前后的数据对比：按它关联的页面 / 系列 / 关键词，取完成日前后各 N 天的同步数据。
+  // 只读、现算，不落库 —— 同步数据会补齐（GSC 有延迟），今天算的「数据未满」过几天就该变成完整窗口。
+  app.get('/api/loop-items/:id/effect', { preHandler: requireAuth }, async (request, reply) => {
+    const id = Number(request.params.id);
+    const task = repo.get(id);
+    if (!task || task.kind !== 'task') return reply.code(404).send({ error: 'not_found' });
+    const days = request.query?.days == null ? DEFAULT_EFFECT_DAYS : Number(request.query.days);
+    if (!EFFECT_DAYS.includes(days)) return bad(reply, 'bad_days', `对比窗口只支持 ${EFFECT_DAYS.join(' / ')} 天`);
+    return buildTaskEffect(task, taskLinksRepo.byItems([id])[id] || [], days);
+  });
 
   app.post('/api/loop-items', editor, async (request, reply) => {
     const b = { ...(request.body || {}) };

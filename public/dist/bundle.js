@@ -32,8 +32,8 @@
   function esc2(s) {
     return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function renderText(el, s) {
-    if (el) el.textContent = s == null ? "" : String(s);
+  function renderText(el2, s) {
+    if (el2) el2.textContent = s == null ? "" : String(s);
   }
   function mdToHtml(t) {
     const src = esc2(t).split(/\n/);
@@ -332,8 +332,8 @@
     document.querySelectorAll("[data-time][data-scope]").forEach((bar) => {
       const s = st(bar.dataset.scope);
       bar.querySelectorAll(".trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === s.label));
-      bar.querySelectorAll("[data-tauto]").forEach((el) => {
-        el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      bar.querySelectorAll("[data-tauto]").forEach((el2) => {
+        el2.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
       });
     });
     const top = document.getElementById("topRange");
@@ -1083,19 +1083,19 @@
     return [...m.keys()].sort().map((k) => ({ label: gran === "month" ? k : k.slice(5), clicks: m.get(k).clicks, impr: m.get(k).impr }));
   }
   function _seoDelta(id, cur, prev, lowerBetter, fmt2) {
-    const el = document.getElementById(id);
-    if (!el) return;
+    const el2 = document.getElementById(id);
+    if (!el2) return;
     if (prev == null || !isFinite(prev) || prev === 0 || cur == null) {
-      el.textContent = "";
-      el.className = "metric-delta";
+      el2.textContent = "";
+      el2.className = "metric-delta";
       return;
     }
     const diff = cur - prev;
     const better = lowerBetter ? diff < 0 : diff > 0;
     const arrow = diff > 0 ? "\u25B2" : diff < 0 ? "\u25BC" : "\u2014";
     const txt = fmt2 === "pct" ? Math.abs(diff / prev * 100).toFixed(1) + "%" : Math.abs(diff).toFixed(1);
-    el.textContent = arrow + " " + txt;
-    el.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
+    el2.textContent = arrow + " " + txt;
+    el2.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
   }
   function _seoPath(u) {
     try {
@@ -1293,12 +1293,12 @@
     }).join("") + "</div>";
   }
   function renderSeoScatter(d) {
-    const el = document.getElementById("seoScatter"), empty = document.getElementById("seoScatterEmpty");
-    if (!el) return;
+    const el2 = document.getElementById("seoScatter"), empty = document.getElementById("seoScatterEmpty");
+    if (!el2) return;
     const _tb = document.getElementById("seoScatterTargets");
     if (_tb) _tb.innerHTML = "";
     if (d && d.error) {
-      el.style.display = "none";
+      el2.style.display = "none";
       if (empty) {
         empty.classList.remove("is-hidden");
         empty.textContent = loadFailureText("SEO \u6563\u70B9", d.error);
@@ -1307,7 +1307,7 @@
     }
     const ps = d && d.pageScatter || [];
     if (ps.length && typeof echarts !== "undefined") {
-      el.style.display = "";
+      el2.style.display = "";
       if (empty) empty.classList.add("is-hidden");
       _seoScatterTitles("\u627E\u51FA\u9700\u8981\u4F18\u5316\u7684\u9875\u9762 \xB7 \u4F1A\u8BDD \xD7 \u8DF3\u51FA\u7387", "\u53F3\u4E0A\u7EA2\u533A=\u9AD8\u6D41\u91CF+\u9AD8\u8DF3\u51FA=\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61\uFF1B\u4E2D\u4F4D\u7EBF\u5206\u56DB\u8C61\u9650\uFF1B\u70B9=\u843D\u5730\u9875");
       if (window._seoScatterChart) {
@@ -1316,7 +1316,7 @@
         } catch (e) {
         }
       }
-      window._seoScatterChart = echarts.init(el);
+      window._seoScatterChart = echarts.init(el2);
       const medS = _median(ps.map((p) => p.sessions)), medB = _median(ps.map((p) => (p.bounceRate || 0) * 100));
       const maxS = Math.max(...ps.map((p) => p.sessions), 1) * 1.6;
       const isTarget = (p) => p.sessions >= medS && (p.bounceRate || 0) * 100 >= medB;
@@ -1350,11 +1350,11 @@
     }
     const pts = d && d.scatter || [];
     if (typeof echarts === "undefined" || !pts.length) {
-      el.style.display = "none";
+      el2.style.display = "none";
       if (empty) empty.classList.remove("is-hidden");
       return;
     }
-    el.style.display = "";
+    el2.style.display = "";
     if (empty) empty.classList.add("is-hidden");
     _seoScatterTitles("\u673A\u4F1A\u8BCD\u8C61\u9650 \xB7 \u5C55\u73B0 \xD7 \u6392\u540D", "\uFF08GA4 \u8DF3\u51FA\u7387\u5F85\u91CD\u65B0\u540C\u6B65\u540E\u5207\u6362\u4E3A\u201C\u4F1A\u8BDD\xD7\u8DF3\u51FA\u7387\u201D\uFF09\u53F3\u4E0A=\u9AD8\u5C55\u73B0\u5DEE\u6392\u540D=\u91CD\u70B9\u653B\uFF1B\u70B9=\u5173\u952E\u8BCD");
     if (window._seoScatterChart) {
@@ -1363,7 +1363,7 @@
       } catch (e) {
       }
     }
-    window._seoScatterChart = echarts.init(el);
+    window._seoScatterChart = echarts.init(el2);
     const data = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
     const medImpr = _median(pts.map((p) => p.impressions)), medPos = _median(pts.map((p) => p.position));
     window._seoScatterChart.setOption({
@@ -1450,8 +1450,8 @@
     return p;
   }
   function _semScopeNote() {
-    const el = document.getElementById("semAttrScope");
-    if (el) el.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
+    const el2 = document.getElementById("semAttrScope");
+    if (el2) el2.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
   }
   function onSemCampaignChange(v) {
     window._semCampaign = v || "";
@@ -1663,12 +1663,12 @@
     }).join("") + "</div>";
   }
   function renderSemScatter(d) {
-    const el = document.getElementById("semScatter"), empty = document.getElementById("semScatterEmpty");
-    if (!el) return;
+    const el2 = document.getElementById("semScatter"), empty = document.getElementById("semScatterEmpty");
+    if (!el2) return;
     const _tb = document.getElementById("semScatterTargets");
     if (_tb) _tb.innerHTML = "";
     if (d && d.error) {
-      el.style.display = "none";
+      el2.style.display = "none";
       if (empty) {
         empty.classList.remove("is-hidden");
         empty.textContent = loadFailureText("SEM \u6563\u70B9", d.error);
@@ -1679,7 +1679,7 @@
     const conv = all.filter((p) => Number(p.conversions || 0) > 0).map((p) => ({ ...p, cost: p.costMicros / 1e6, cpa: p.costMicros / 1e6 / Number(p.conversions) }));
     _semScatterTitles("\u82B1\u8D39 \xD7 \u6BCF\u8F6C\u5316\u6210\u672C \xB7 \u627E\u53C8\u8D35\u53C8\u4E0D\u5212\u7B97\u7684\u8BCD", "\u70B9=\u6709\u8F6C\u5316\u7684\u6295\u653E\u5173\u952E\u8BCD\uFF1B\u4E0B\u65B9\u5019\u9009\u5426\u8BCD\u53EA\u4F7F\u7528\u771F\u5B9E\u641C\u7D22\u8BCD\u660E\u7EC6");
     if (typeof echarts !== "undefined" && conv.length) {
-      el.style.display = "";
+      el2.style.display = "";
       if (empty) empty.classList.add("is-hidden");
       if (window._semScatterChart) {
         try {
@@ -1687,7 +1687,7 @@
         } catch (e) {
         }
       }
-      window._semScatterChart = echarts.init(el);
+      window._semScatterChart = echarts.init(el2);
       const medCpa = _median(conv.map((p) => p.cpa));
       const short = (s) => {
         s = String(s || "");
@@ -1711,7 +1711,7 @@
         }]
       });
     } else {
-      el.style.display = "none";
+      el2.style.display = "none";
       if (window._semScatterChart) {
         try {
           window._semScatterChart.dispose();
@@ -1874,13 +1874,13 @@
     }
   }
   async function loadDataFreshness() {
-    const el = document.getElementById("dataFreshness");
-    if (!el) return;
+    const el2 = document.getElementById("dataFreshness");
+    if (!el2) return;
     let d = null;
     try {
       d = await API.get(withRange2("/api/data-freshness", "data"));
     } catch (e) {
-      el.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
+      el2.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
       return;
     }
     const fmt2 = (v) => {
@@ -1900,7 +1900,7 @@
       const tone = s.daysWithData === 0 ? "bad" : cov < 70 ? "warn" : "good";
       return '<span class="fresh-chip ' + tone + '"><b>' + name + "</b> \u6709\u6570\u636E " + s.daysWithData + "/" + s.days + ' \u5929<span class="dim"> \xB7 ' + fmt2(s.lastSync) + (s.status === "failed" ? ' <b class="csp-s-b0e08465c2">\u5931\u8D25</b>' : "") + "</span></span>";
     };
-    el.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
+    el2.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
   }
   window._ovSeoMini = null;
   window._ovSemMini = null;
@@ -2475,8 +2475,8 @@
     </div>
   `;
   }
-  function renderShell(el, groups, bodyHtml, unmappedList, unmappedTotal) {
-    el.innerHTML = `
+  function renderShell(el2, groups, bodyHtml, unmappedList, unmappedTotal) {
+    el2.innerHTML = `
     <div class="inq-flat-map inq-blue-map">
       <div class="inq-map-head">
         <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
@@ -2505,21 +2505,21 @@
     });
   }
   async function renderGlobe() {
-    const el = document.getElementById("inqGlobe");
-    if (!el) return;
+    const el2 = document.getElementById("inqGlobe");
+    if (!el2) return;
     const seq3 = ++renderSeq;
     const { groups, unmappedList, unmappedTotal } = collectMapData();
     const empty = document.getElementById("inqGlobe-empty");
     if (empty) empty.style.display = "none";
     disposeMap();
-    renderShell(el, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
+    renderShell(el2, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
     try {
       await ensureWorldMap();
       if (seq3 !== renderSeq) return;
     } catch (err) {
       if (seq3 !== renderSeq) return;
       const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
-      renderShell(el, groups, `
+      renderShell(el2, groups, `
       <div class="inq-map-error">
         <b>\u4E16\u754C\u5730\u56FE\u52A0\u8F7D\u5931\u8D25</b>
         <span>${msg}</span>
@@ -2528,8 +2528,8 @@
     `, unmappedList, unmappedTotal);
       return;
     }
-    renderShell(el, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
-    const chartEl = el.querySelector(".inq-echarts-map");
+    renderShell(el2, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
+    const chartEl = el2.querySelector(".inq-echarts-map");
     if (!chartEl || !window.echarts) return;
     inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "svg" });
     bindResize();
@@ -2675,29 +2675,29 @@
     if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
     return { ok: true, value };
   }
-  function setSavingState(el, state2) {
-    if (!el) return;
-    el.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
-    if (state2 === "saving") el.classList.add("kpi-saving");
+  function setSavingState(el2, state2) {
+    if (!el2) return;
+    el2.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
+    if (state2 === "saving") el2.classList.add("kpi-saving");
     else if (state2 === "ok") {
-      el.classList.add("kpi-ok");
-      setTimeout(() => el.classList.remove("kpi-ok"), 1200);
+      el2.classList.add("kpi-ok");
+      setTimeout(() => el2.classList.remove("kpi-ok"), 1200);
     } else if (state2 === "error") {
-      el.classList.add("kpi-error");
-      setTimeout(() => el.classList.remove("kpi-error"), 2e3);
+      el2.classList.add("kpi-error");
+      setTimeout(() => el2.classList.remove("kpi-error"), 2e3);
     }
   }
-  function rollbackEditable(el, oldValue) {
-    if (el) el.textContent = oldValue == null ? "" : String(oldValue);
+  function rollbackEditable(el2, oldValue) {
+    if (el2) el2.textContent = oldValue == null ? "" : String(oldValue);
   }
-  function showSaveError(el, msg) {
-    setSavingState(el, "error");
+  function showSaveError(el2, msg) {
+    setSavingState(el2, "error");
     toast2(msg);
   }
-  function placeCaretEnd(el) {
+  function placeCaretEnd(el2) {
     try {
       const range = document.createRange();
-      range.selectNodeContents(el);
+      range.selectNodeContents(el2);
       range.collapse(false);
       const selection = getSelection();
       selection.removeAllRanges();
@@ -2899,14 +2899,14 @@
   var REGION_BADGE = toMap(REGIONS, LEGACY_REGION_BADGE);
   var PRODUCT_NAMES = PRODUCTS.map((p) => p[0]);
   var REGION_NAMES = REGIONS.map((r) => r[0]);
-  function fillSelect(el, names, { placeholder = null } = {}) {
-    if (!el) return;
-    const keepValue = el.value;
+  function fillSelect(el2, names, { placeholder = null } = {}) {
+    if (!el2) return;
+    const keepValue = el2.value;
     const opts = [];
     if (placeholder != null) opts.push(`<option value="">${placeholder}</option>`);
     for (const n of names) opts.push(`<option>${n}</option>`);
-    el.innerHTML = opts.join("");
-    if (keepValue && names.indexOf(keepValue) >= 0) el.value = keepValue;
+    el2.innerHTML = opts.join("");
+    if (keepValue && names.indexOf(keepValue) >= 0) el2.value = keepValue;
   }
 
   // public/src/attachments.js
@@ -3086,8 +3086,8 @@
     const d = /* @__PURE__ */ new Date(String(iso).replace(" ", "T") + "Z");
     if (isNaN(d)) return String(iso);
     const p = (n) => String(n).padStart(2, "0");
-    const md = p(d.getMonth() + 1) + "-" + p(d.getDate());
-    return withTime ? d.getFullYear() + "-" + md + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md;
+    const md2 = p(d.getMonth() + 1) + "-" + p(d.getDate());
+    return withTime ? d.getFullYear() + "-" + md2 + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md2;
   }
   function salesCellHtml(r) {
     const list = noteList(r);
@@ -3306,8 +3306,8 @@
     const d = /* @__PURE__ */ new Date(String(iso).replace(" ", "T") + "Z");
     if (isNaN(d)) return String(iso);
     const p = (n) => String(n).padStart(2, "0");
-    const md = p(d.getMonth() + 1) + "-" + p(d.getDate());
-    return withTime ? d.getFullYear() + "-" + md + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md;
+    const md2 = p(d.getMonth() + 1) + "-" + p(d.getDate());
+    return withTime ? d.getFullYear() + "-" + md2 + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md2;
   }
   function fbDateLabel(f, withTime) {
     return f.created_at ? fbDate(f.created_at, withTime) : "\u65E5\u671F\u4E0D\u8BE6";
@@ -3499,8 +3499,8 @@
       const opts = col.type === "has" ? [{ value: "\u6709", label: "\u6709\u53CD\u9988" }, { value: "\u65E0", label: "\u65E0\u53CD\u9988" }] : optionsFor(col);
       return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${col.key}"><option value="">${esc2(col.ph)}</option>` + opts.map((o) => `<option value="${esc2(o.value)}"${o.value === cur ? " selected" : ""}>${esc2(o.label)}</option>`).join("") + "</select></td>";
     }).join("");
-    row.querySelectorAll("[data-inq-filter]").forEach((el) => {
-      el.value = FILTERS[el.dataset.inqFilter] || "";
+    row.querySelectorAll("[data-inq-filter]").forEach((el2) => {
+      el2.value = FILTERS[el2.dataset.inqFilter] || "";
     });
   }
   function syncClearBadge() {
@@ -3511,14 +3511,14 @@
     btn.innerHTML = '<i class="ti ti-filter-off"></i>' + (n ? " " + n : "");
   }
   function renderInqSummary(total, shown) {
-    const el = document.getElementById("inqSummary");
-    if (!el) return;
+    const el2 = document.getElementById("inqSummary");
+    if (!el2) return;
     const n = activeFilterCount();
     if (!n) {
-      el.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
+      el2.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
       return;
     }
-    el.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
+    el2.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
   }
   function pageNumbers(page, pages) {
     if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
@@ -3539,14 +3539,14 @@
     return out;
   }
   function renderInqPager(total, pages, from, to) {
-    const el = document.getElementById("inqPager");
-    if (!el) return;
+    const el2 = document.getElementById("inqPager");
+    if (!el2) return;
     if (!total) {
-      el.innerHTML = "";
+      el2.innerHTML = "";
       return;
     }
     const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${n}">${n}</button>`).join("");
-    el.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
+    el2.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
   }
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".inq-tb .inq-del");
@@ -3652,9 +3652,9 @@
     }
   }
   document.addEventListener("input", (e) => {
-    const el = e.target.closest("#inqFilterRow input[data-inq-filter]");
-    if (!el) return;
-    FILTERS[el.dataset.inqFilter] = el.value.trim();
+    const el2 = e.target.closest("#inqFilterRow input[data-inq-filter]");
+    if (!el2) return;
+    FILTERS[el2.dataset.inqFilter] = el2.value.trim();
     afterFilterChange(false);
   });
   document.addEventListener("change", (e) => {
@@ -3791,9 +3791,9 @@
     }
     menu.style.display = "none";
   });
-  async function persistTagChange(el, value) {
-    const kind = el.dataset.kind;
-    const tr = el.closest("tr");
+  async function persistTagChange(el2, value) {
+    const kind = el2.dataset.kind;
+    const tr = el2.closest("tr");
     const id = tr && tr.dataset.id;
     if (!id) return;
     if (tr.dataset.kwType) {
@@ -4348,12 +4348,12 @@
   }
   function updateSopCounts() {
     [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
-      const el = document.getElementById("kcount-" + key);
-      if (!el) return;
+      const el2 = document.getElementById("kcount-" + key);
+      if (!el2) return;
       const sopN = window._sops.filter((s) => s.dept === dept).length;
       const addCol = document.getElementById("newtask-" + key);
       const addN = addCol ? addCol.querySelectorAll(".tcard:not(.subtask)").length : 0;
-      el.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
+      el2.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
     });
   }
   function isSopWritable() {
@@ -4741,10 +4741,11 @@
   function auditBlockHtml(it, { editable = false, archived = false } = {}) {
     const lines = [];
     const links = it.links || [];
-    if (links.length) {
-      lines.push(line("\u5173\u8054", links.map((l) => `<span class="taudit-link" title="${esc2(l.ref)}"><b>${LINK_LABEL[l.type] || esc2(l.type)}</b>${esc2(linkText(l))}</span>`).join("")));
-    }
     const done = wasCompleted(it);
+    if (links.length) {
+      const effect = done && it.id && links.some((l) => l.type !== "kpi") ? ` <button type="button" class="btn-mini taudit-effect" data-task-effect="${esc2(it.id)}"><i class="ti ti-chart-line"></i> \u6570\u636E\u53D8\u5316</button>` : "";
+      lines.push(line("\u5173\u8054", links.map((l) => `<span class="taudit-link" title="${esc2(l.ref)}"><b>${LINK_LABEL[l.type] || esc2(l.type)}</b>${esc2(linkText(l))}</span>`).join("") + effect));
+    }
     if (done || archived || it.result) {
       const edit = editable && done && it.id ? ` <button type="button" class="btn-mini taudit-edit" data-loop-action="task-result">${it.result ? "\u6539" : "\u8865\u7ED3\u679C"}</button>` : "";
       const text2 = it.result ? esc2(it.result) : `<span class="taudit-missing">${done ? "\u7ED3\u679C\u672A\u8BB0\u5F55" : "\u65E0\u5B8C\u6210\u8BB0\u5F55"}</span>`;
@@ -4761,8 +4762,8 @@
   var doneCtx = null;
   var doneBound = false;
   function doneError(msg) {
-    const el = $("task-done-error");
-    if (el) el.textContent = msg || "";
+    const el2 = $("task-done-error");
+    if (el2) el2.textContent = msg || "";
   }
   function renderDoneThumbs() {
     const box = $("task-done-thumbs");
@@ -4851,6 +4852,151 @@
     } finally {
       if (btn) btn.disabled = false;
     }
+  }
+  var EFFECT_STATUS_TEXT = {
+    NO_DATA: "\u524D\u540E\u4E24\u6BB5\u65F6\u95F4\u90FD\u6CA1\u6709\u6570\u636E\uFF08\u6CA1\u6709\u66DD\u5149\u6216\u6CA1\u6709\u6295\u653E\uFF09",
+    DECLARED: "\u90E8\u95E8\u7EA7\u6307\u6807\uFF0C\u4E0D\u505A\u5355\u6761\u4EFB\u52A1\u7684\u524D\u540E\u5BF9\u6BD4"
+  };
+  var effectTaskId = null;
+  var effectDays = 14;
+  var effectSeq = 0;
+  var effectBound = false;
+  function el(tag, cls, text2) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text2 != null) n.textContent = String(text2);
+    return n;
+  }
+  var md = (ymd2) => String(ymd2 || "").slice(5);
+  var fmtNum = (v) => v == null ? "\u2014" : Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  function windowText(name, w) {
+    if (!w) return null;
+    if (w.status === "NOT_SYNCED") return name + "\uFF1A\u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u65E0\u6CD5\u5BF9\u6BD4";
+    if (w.status === "PENDING") return name + "\uFF1A\u5B8C\u6210\u540E\u8FD8\u6CA1\u6709\u540C\u6B65\u5230\u6570\u636E\uFF08\u6700\u65B0\u6570\u636E\u5230 " + (w.latest_date || "\u2014") + "\uFF09\uFF0C\u8FC7\u51E0\u5929\u518D\u770B";
+    const range = "\u524D " + md(w.before.start_date) + "~" + md(w.before.end_date) + " \u5BF9\u6BD4 \u540E " + md(w.after.start_date) + "~" + md(w.after.end_date);
+    if (w.status === "PARTIAL") return name + "\uFF1A" + range + "\uFF08\u6570\u636E\u672A\u6EE1\uFF1A\u53EA\u6709 " + w.days + " \u5929\uFF1B\u8981\u7B49 " + md(w.full_date) + " \u7684\u6570\u636E\u540C\u6B65\u8FDB\u6765\u624D\u6EE1 " + w.wanted_days + " \u5929\uFF09";
+    return name + "\uFF1A" + range + "\uFF08\u5404 " + w.days + " \u5929\uFF09";
+  }
+  function deltaCell(d, better) {
+    const td2 = el("td", "num");
+    if (!d) {
+      td2.textContent = "\u2014";
+      return td2;
+    }
+    const sign = d.abs > 0 ? "+" : "";
+    let text2 = sign + fmtNum(d.abs);
+    if (d.pct != null) text2 += "\uFF08" + (d.pct > 0 ? "+" : "") + Math.round(d.pct * 100) + "%\uFF09";
+    td2.textContent = text2;
+    if (d.abs !== 0 && better !== "neutral") {
+      const good = better === "higher" ? d.abs > 0 : d.abs < 0;
+      td2.classList.add(good ? "teffect-good" : "teffect-bad");
+    }
+    return td2;
+  }
+  function effectRows(tbody, title, sub, item, metrics, cls) {
+    const head = el("tr", "teffect-head " + (cls || ""));
+    const th = el("td", "", title);
+    th.colSpan = 4;
+    if (sub) th.appendChild(el("span", "teffect-sub", sub));
+    head.appendChild(th);
+    tbody.appendChild(head);
+    const list = metrics[item.source];
+    if (!item.before || !list) {
+      const tr = el("tr");
+      const td2 = el("td", "dim", EFFECT_STATUS_TEXT[item.status] || "\u8FD9\u4E2A\u6570\u636E\u6E90\u6682\u65F6\u65E0\u6CD5\u5BF9\u6BD4\uFF08\u89C1\u4E0A\u65B9\u8BF4\u660E\uFF09");
+      td2.colSpan = 4;
+      tr.appendChild(td2);
+      tbody.appendChild(tr);
+      return;
+    }
+    if (item.status === "NO_DATA") {
+      const tr = el("tr");
+      const td2 = el("td", "dim", EFFECT_STATUS_TEXT.NO_DATA);
+      td2.colSpan = 4;
+      tr.appendChild(td2);
+      tbody.appendChild(tr);
+      return;
+    }
+    for (const m of list) {
+      const tr = el("tr");
+      tr.appendChild(el("td", "", m.label));
+      tr.appendChild(el("td", "num", fmtNum(item.before[m.key])));
+      tr.appendChild(el("td", "num", fmtNum(item.after[m.key])));
+      tr.appendChild(deltaCell(item.delta[m.key], m.better));
+      tbody.appendChild(tr);
+    }
+  }
+  function renderEffect(data) {
+    const box = $("task-effect-body");
+    box.textContent = "";
+    $("task-effect-title").textContent = data.task.content || "";
+    if (data.status === "NOT_DONE") {
+      box.appendChild(el("div", "teffect-note", "\u8FD9\u6761\u4EFB\u52A1\u6CA1\u6709\u5B8C\u6210\u65F6\u523B\uFF08\u672A\u5B8C\u6210\uFF0C\u6216\u662F\u5B8C\u6210\u95E8\u69DB\u4E0A\u7EBF\u524D\u52FE\u7684\u8001\u4EFB\u52A1\uFF09\uFF0C\u6CA1\u6709\u5BF9\u6BD4\u7684\u539F\u70B9\u3002"));
+      return;
+    }
+    box.appendChild(el("div", "teffect-note", data.note));
+    const used = new Set(data.items.map((i) => i.source).filter(Boolean));
+    const wins = el("div", "teffect-windows");
+    if (used.has("gsc")) wins.appendChild(el("div", "", windowText("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", data.windows.gsc)));
+    if (used.has("ads")) wins.appendChild(el("div", "", windowText("\u5E7F\u544A\uFF08Ads\uFF09", data.windows.ads)));
+    box.appendChild(wins);
+    const table = el("table", "dt teffect-table");
+    const thead = el("thead");
+    const hr = el("tr");
+    ["\u6307\u6807", "\u4E4B\u524D", "\u4E4B\u540E", "\u53D8\u5316"].forEach((t, i) => hr.appendChild(el("th", i ? "num" : "", t)));
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    const tbody = el("tbody");
+    for (const item of data.items) {
+      const kind = LINK_LABEL[item.type] || item.type;
+      const where = item.source === "ads" ? " \xB7 \u5E7F\u544A" : item.source === "gsc" ? " \xB7 \u81EA\u7136\u641C\u7D22" : "";
+      effectRows(tbody, kind + where, item.type === "page" ? linkText(item) : item.label || item.ref, item, data.metrics);
+    }
+    if (data.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F", "", data.baseline.gsc, data.metrics, "is-baseline");
+    if (data.baseline.ads) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u8D26\u6237\u5E7F\u544A\u540C\u671F", "\u91D1\u989D\u4E3A Ads \u8D26\u6237\u5E01\u79CD", data.baseline.ads, data.metrics, "is-baseline");
+    table.appendChild(tbody);
+    box.appendChild(table);
+  }
+  async function loadEffect() {
+    const box = $("task-effect-body");
+    const seq3 = ++effectSeq;
+    document.querySelectorAll("#taskEffectMask [data-effect-days]").forEach((b) => b.classList.toggle("active", Number(b.dataset.effectDays) === effectDays));
+    box.textContent = "";
+    box.appendChild(el("div", "dim", "\u52A0\u8F7D\u4E2D\u2026"));
+    try {
+      const data = await API.get("/api/loop-items/" + effectTaskId + "/effect?days=" + effectDays);
+      if (seq3 === effectSeq) renderEffect(data);
+    } catch (e) {
+      if (seq3 !== effectSeq) return;
+      box.textContent = "";
+      box.appendChild(el("div", "task-done-error", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25") + " "));
+      const retry = el("button", "btn-mini", "\u91CD\u8BD5");
+      retry.type = "button";
+      retry.addEventListener("click", loadEffect);
+      box.appendChild(retry);
+    }
+  }
+  function openTaskEffect(id) {
+    if (!id) return;
+    if (!effectBound) {
+      effectBound = true;
+      $("taskEffectMask").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-effect-days]");
+        if (!b) return;
+        effectDays = Number(b.dataset.effectDays);
+        loadEffect();
+      });
+    }
+    effectTaskId = id;
+    $("task-effect-title").textContent = "";
+    openModal("taskEffectMask");
+    loadEffect();
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-task-effect]");
+      if (btn) openTaskEffect(btn.dataset.taskEffect);
+    });
   }
 
   // public/src/closed-loop.js
@@ -5032,18 +5178,18 @@
     return "today";
   }
   function taskGroupEl(col, g) {
-    let el = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
-    if (el) return el;
+    let el2 = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
+    if (el2) return el2;
     const label = (TASK_GROUPS.find((x) => x[0] === g) || [, g])[1];
-    el = document.createElement("div");
-    el.className = "tgroup";
-    el.dataset.g = g;
-    el.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
+    el2 = document.createElement("div");
+    el2.className = "tgroup";
+    el2.dataset.g = g;
+    el2.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
     const order = TASK_GROUPS.map((x) => x[0]);
     const after = [...col.querySelectorAll(":scope > .tgroup")].find((x) => order.indexOf(x.dataset.g) > order.indexOf(g)) || col.querySelector(".donefold") || col.querySelector(".add-task");
-    if (after) col.insertBefore(el, after);
-    else col.appendChild(el);
-    return el;
+    if (after) col.insertBefore(el2, after);
+    else col.appendChild(el2);
+    return el2;
   }
   function addTaskCard(s, content, it) {
     const col = taskColFor(s.dept);
@@ -5430,8 +5576,8 @@
     openModal("taskMask");
     if (tc) tc.focus();
   }
-  function openTaskEdit(el) {
-    const card = el.closest(".tcard");
+  function openTaskEdit(el2) {
+    const card = el2.closest(".tcard");
     const it = card && card._item;
     if (!it || !it.id) return;
     _taskScope = card._scope || coScope();
@@ -5688,7 +5834,7 @@
     ["company", "sem", "seo"].forEach((key) => {
       const col = document.getElementById("newtask-" + key);
       if (!col) return;
-      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el) => el.remove());
+      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el2) => el2.remove());
       col.classList.remove("folded");
     });
     const depEmpty = document.getElementById("dep-empty");
@@ -5729,7 +5875,7 @@
       btn.addEventListener("click", async () => {
         const retryError = await loadTaskCheckins();
         if (retryError) return;
-        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el) => el.remove());
+        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el2) => el2.remove());
         rerenderTaskCards();
       });
       const anchor = col.querySelector(".add-task");
@@ -6421,11 +6567,11 @@
     });
   }
   function syncKpiInputs() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
-      const p = el.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el2) => {
+      const p = el2.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
       if (arr && arr[idx] && arr[idx].t != null) {
-        el.textContent = String(arr[idx].t);
-        el.dataset.kpiOld = String(arr[idx].t);
+        el2.textContent = String(arr[idx].t);
+        el2.dataset.kpiOld = String(arr[idx].t);
       }
     });
   }
@@ -6482,9 +6628,9 @@
     });
   });
   var _fnum = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return null;
-    const v = parseFloat(el.value);
+    const el2 = document.getElementById(id);
+    if (!el2) return null;
+    const v = parseFloat(el2.value);
     return isNaN(v) ? null : v;
   };
   async function submitSeoWeek() {
@@ -6619,8 +6765,8 @@
     e.preventDefault();
     const channel = form.getAttribute("data-exec-form");
     const body = { channel };
-    for (const el of form.elements) {
-      if (el.name && el.value) body[el.name] = el.value;
+    for (const el2 of form.elements) {
+      if (el2.name && el2.value) body[el2.name] = el2.value;
     }
     if (!body.problem) {
       toast("\u95EE\u9898\u5FC5\u586B");
@@ -6739,15 +6885,15 @@
     SPEND_WITH_ZERO_DEAL: "\u6709\u82B1\u8D39\xB7\u96F6\u6210\u4EA4"
   };
   function make(tag, className, text2) {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (text2 != null) el.textContent = String(text2);
-    return el;
+    const el2 = document.createElement(tag);
+    if (className) el2.className = className;
+    if (text2 != null) el2.textContent = String(text2);
+    return el2;
   }
   function cell(tag, className, text2, title) {
-    const el = make(tag, className, text2);
-    if (title) el.title = title;
-    return el;
+    const el2 = make(tag, className, text2);
+    if (title) el2.title = title;
+    return el2;
   }
   var money = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
   var CURRENCY_HINT = "\u91D1\u989D\u4E3A\u5E7F\u544A\u8D26\u6237\u5E01\u79CD\uFF08Ads \u540C\u6B65\u672A\u5B58\u5E01\u79CD\uFF09\uFF0C\u6545\u4E0D\u52A0\u8D27\u5E01\u7B26\u53F7";
@@ -6951,15 +7097,15 @@
     NO_VALID_DATA: "\u672C\u533A\u95F4\u6682\u65E0\u53EF\u8BC4\u5206\u6570\u636E"
   };
   function make2(tag, className, text2) {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (text2 != null) el.textContent = String(text2);
-    return el;
+    const el2 = document.createElement(tag);
+    if (className) el2.className = className;
+    if (text2 != null) el2.textContent = String(text2);
+    return el2;
   }
   function cell2(tag, className, text2, title) {
-    const el = make2(tag, className, text2);
-    if (title) el.title = title;
-    return el;
+    const el2 = make2(tag, className, text2);
+    if (title) el2.title = title;
+    return el2;
   }
   var pct3 = (v, digits) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(digits == null ? 1 : digits) + "%";
   var money2 = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
@@ -7296,13 +7442,13 @@
     return r >= 0.9 ? "kpi-tone-green" : r >= 0.7 ? "kpi-tone-blue" : r >= 0.5 ? "kpi-tone-amber" : "kpi-tone-primary";
   }
   function rows(arr, box) {
-    const el = document.getElementById(box);
-    if (!el) return;
-    el.innerHTML = arr.map((k) => {
+    const el2 = document.getElementById(box);
+    if (!el2) return;
+    el2.innerHTML = arr.map((k) => {
       const available = k.actualAvailable !== false && k.a != null, r = available ? ratio(k) : 0, tone = available ? scoreTone(r) : "kpi-tone-muted", progress = Math.max(0, Math.min(100, Number.isFinite(r) ? r * 100 : 0));
       return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
     }).join("");
-    el.querySelectorAll("[data-progress]").forEach((fill) => {
+    el2.querySelectorAll("[data-progress]").forEach((fill) => {
       const progress = Number(fill.dataset.progress);
       fill.style.width = `${Number.isFinite(progress) ? progress : 0}%`;
     });
@@ -7317,9 +7463,9 @@
       ["A\u7EA7\u5360\u6BD4", c.aRatio != null ? c.aRatio + "%" : "\u2014", "", momTxt(d.aRatio)],
       ["\u6709\u6548\u8BE2\u76D8\u7387", c.validRate != null ? c.validRate + "%" : "\u2014", "", momTxt(d.validRate)]
     ];
-    const el = document.getElementById("miniScores");
-    if (!el) return;
-    el.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
+    const el2 = document.getElementById("miniScores");
+    if (!el2) return;
+    el2.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
   }
   var overviewRequestSequence = 0;
   async function loadOverview() {
@@ -7341,14 +7487,14 @@
         tg.textContent = c.grade || "";
         tg.className = "kpi-delta " + (c.company >= 75 ? "delta-pos" : "delta-neg");
       }
-      const mom = (el, v) => {
-        if (!el) return;
+      const mom = (el2, v) => {
+        if (!el2) return;
         if (v == null) {
-          el.textContent = "";
+          el2.textContent = "";
           return;
         }
-        el.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " " + comparison;
-        el.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
+        el2.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " " + comparison;
+        el2.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
       };
       mom(document.getElementById("topAratioMoM"), d.aRatio);
       mom(document.getElementById("topRateMoM"), d.validRate);
@@ -7445,8 +7591,8 @@
     return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc2(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
   }
   function renderBlock(grp, containerId, a) {
-    const el = document.getElementById(containerId);
-    if (!el) return;
+    const el2 = document.getElementById(containerId);
+    if (!el2) return;
     const block = a.blocks && a.blocks[grp] || { metrics: [] };
     const diags = (a.diagnostics || []).filter((d) => d.grp === grp);
     const summaries = (a.summaries || []).filter((d) => d.grp === grp);
@@ -7469,8 +7615,8 @@
     } else html += '<div class="kpi-empty">\u6682\u65E0\u53EF\u8BC4\u5206\u6307\u6807 \xB7 \u5F85\u63A5\u5165</div>';
     if (diags.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u8BCA\u65AD\u6307\u6807\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + diags.map(diagChip).join("") + "</div>";
     if (summaries.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u4E1A\u52A1\u6C47\u603B\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + summaries.map(diagChip).join("") + "</div>";
-    el.innerHTML = html;
-    el.querySelectorAll("[data-progress]").forEach((f) => {
+    el2.innerHTML = html;
+    el2.querySelectorAll("[data-progress]").forEach((f) => {
       const p = Number(f.dataset.progress);
       f.style.width = (Number.isFinite(p) ? p : 0) + "%";
     });
@@ -7869,12 +8015,12 @@
   function text(value) {
     return value == null ? "" : String(value);
   }
-  function setText2(el, value) {
-    if (el) el.textContent = text(value);
+  function setText2(el2, value) {
+    if (el2) el2.textContent = text(value);
   }
   function field(id) {
-    const el = byId(id);
-    return el ? el.value.trim() : "";
+    const el2 = byId(id);
+    return el2 ? el2.value.trim() : "";
   }
   var FEEDBACK_LABEL = {
     adopted: "\u91C7\u7EB3 \xB7 \u6709\u4EF7\u503C",
@@ -7966,8 +8112,8 @@
   }
   function resetHermesMemoryForm() {
     ["hm-id", "hm-title", "hm-content", "hm-evidence"].forEach((id) => {
-      const el = byId(id);
-      if (el) el.value = "";
+      const el2 = byId(id);
+      if (el2) el2.value = "";
     });
     const kind = byId("hm-kind");
     if (kind) kind.value = "market";
@@ -8033,8 +8179,8 @@
   }
   function resetHermesFeedbackForm() {
     ["hf-scope", "hf-suggestion", "hf-note"].forEach((id) => {
-      const el = byId(id);
-      if (el) el.value = "";
+      const el2 = byId(id);
+      if (el2) el2.value = "";
     });
     const result = byId("hf-result");
     if (result) result.value = "adopted";
@@ -8241,28 +8387,28 @@
     <div class="sr-misses">${missHtml}</div>
   </div>`;
   }
-  async function mountSopRate(el) {
-    if (!el || el.dataset.loaded === "1") return;
-    const from = el.dataset.from;
-    const to = el.dataset.to;
+  async function mountSopRate(el2) {
+    if (!el2 || el2.dataset.loaded === "1") return;
+    const from = el2.dataset.from;
+    const to = el2.dataset.to;
     if (!from || !to) return;
-    el.dataset.loaded = "1";
-    el.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
+    el2.dataset.loaded = "1";
+    el2.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
     try {
       const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date()))}`;
       const data = await API.get("/api/sop/stats" + q);
       const items = data.items || [];
       if (!items.length) {
-        el.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
+        el2.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
         return;
       }
       const hasMonthly = items.some((i) => i.expected === null);
-      el.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
+      el2.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
         <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc2(data.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
       <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
     } catch (e) {
-      el.dataset.loaded = "";
-      el.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
+      el2.dataset.loaded = "";
+      el2.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
     }
   }
   document.addEventListener("click", (e) => {
@@ -8270,8 +8416,8 @@
     if (!bar) return;
     const week = bar.parentElement;
     if (!week || week.classList.contains("collapsed")) return;
-    const el = week.querySelector(".sop-rate");
-    if (el) mountSopRate(el);
+    const el2 = week.querySelector(".sop-rate");
+    if (el2) mountSopRate(el2);
   });
 
   // public/src/weekly-review.js
@@ -8374,13 +8520,13 @@
   }
   function bindReviewActions(root) {
     root.onclick = (e) => {
-      const el = e.target.closest("[data-review-action]");
-      if (!el || !root.contains(el)) return;
-      const action = el.dataset.reviewAction;
-      if (action === "act") rvAct(el, el.dataset.kind);
-      else if (action === "delete") rvDel(el);
-      else if (action === "add") rvAdd(el);
-      else if (action === "toggle" && el.parentElement) el.parentElement.classList.toggle("collapsed");
+      const el2 = e.target.closest("[data-review-action]");
+      if (!el2 || !root.contains(el2)) return;
+      const action = el2.dataset.reviewAction;
+      if (action === "act") rvAct(el2, el2.dataset.kind);
+      else if (action === "delete") rvDel(el2);
+      else if (action === "add") rvAdd(el2);
+      else if (action === "toggle" && el2.parentElement) el2.parentElement.classList.toggle("collapsed");
     };
   }
   function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
@@ -8464,8 +8610,8 @@
     }).join("");
     acc.innerHTML = currentHtml + groupHtml;
     bindReviewActions(acc);
-    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el) => {
-      mountSopRate(el);
+    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el2) => {
+      mountSopRate(el2);
     });
   }
   async function renderMonthReview() {
@@ -8501,8 +8647,8 @@
     const items = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
     API.put("/api/weekly-reports", { week_key: week, dept, field: field2, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
   }
-  function rvAdd(el) {
-    const sec = el.closest(".rv-sec");
+  function rvAdd(el2) {
+    const sec = el2.closest(".rv-sec");
     const list = sec.querySelector(".rv-list");
     const isMonth = !!parseMonthKey(sec.dataset.week);
     const sections = isMonth ? RV_MONTH_SECTIONS : RV_SECTIONS;
@@ -8514,19 +8660,19 @@
     const t = node.querySelector(".txt");
     if (t) t.focus();
   }
-  function rvDel(el) {
-    const sec = el.closest(".rv-sec");
-    el.closest(".rv-item").remove();
+  function rvDel(el2) {
+    const sec = el2.closest(".rv-sec");
+    el2.closest(".rv-item").remove();
     rvSectionSave(sec);
   }
-  async function rvAct(el, kind) {
-    const item = el.closest(".rv-item");
+  async function rvAct(el2, kind) {
+    const item = el2.closest(".rv-item");
     const text2 = item.querySelector(".txt").innerText.trim();
     if (!text2) {
       toast2("\u8BF7\u5148\u586B\u5199\u5185\u5BB9");
       return;
     }
-    const sec = el.closest(".rv-sec");
+    const sec = el2.closest(".rv-sec");
     const s = sFromDept(sec.dataset.dept);
     try {
       if (kind === "\u6D4B\u8BD5") {
@@ -8550,53 +8696,53 @@
 
   // public/src/settings.js
   function bindSettings() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
-      if (el.dataset.settingsBound === "1") return;
-      el.dataset.settingsBound = "1";
-      el.addEventListener("focusin", () => {
-        el.dataset.kpiOld = el.textContent;
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el2) => {
+      if (el2.dataset.settingsBound === "1") return;
+      el2.dataset.settingsBound = "1";
+      el2.addEventListener("focusin", () => {
+        el2.dataset.kpiOld = el2.textContent;
       });
       const commit = async () => {
         if (!can("kpiTarget")) {
-          rollbackEditable(el, el.dataset.kpiOld != null ? el.dataset.kpiOld : el.textContent);
+          rollbackEditable(el2, el2.dataset.kpiOld != null ? el2.dataset.kpiOld : el2.textContent);
           toast2("\u4EC5\u8001\u677F/\u4E3B\u7BA1\u53EF\u6539 KPI \u76EE\u6807");
           return;
         }
-        const parts = el.dataset.kpi.split(":");
+        const parts = el2.dataset.kpi.split(":");
         const values = { TOTAL, SEO, SEM }[parts[0]];
         const item = values && values[Number(parts[1])];
         if (!item) return;
-        const oldValue = el.dataset.kpiOld != null ? el.dataset.kpiOld : String(item.t);
-        const result = validateEditableValue(el.textContent, "number", { min: 0 });
+        const oldValue = el2.dataset.kpiOld != null ? el2.dataset.kpiOld : String(item.t);
+        const result = validateEditableValue(el2.textContent, "number", { min: 0 });
         if (!result.ok) {
-          rollbackEditable(el, oldValue);
-          showSaveError(el, result.msg);
+          rollbackEditable(el2, oldValue);
+          showSaveError(el2, result.msg);
           return;
         }
         if (result.value === item.t) {
-          el.textContent = String(result.value);
-          setSavingState(el, null);
+          el2.textContent = String(result.value);
+          setSavingState(el2, null);
           return;
         }
-        setSavingState(el, "saving");
+        setSavingState(el2, "saving");
         try {
           const { rows: rows2 } = await API.put(withRange2("/api/kpi-targets", "kpi"), { updates: [{ id: item.id, target: result.value }] });
           applyKpiServer(rows2);
           renderKPI2();
-          el.textContent = String(item.t);
-          el.dataset.kpiOld = String(item.t);
-          setSavingState(el, "ok");
+          el2.textContent = String(item.t);
+          el2.dataset.kpiOld = String(item.t);
+          setSavingState(el2, "ok");
           toast2("\u5DF2\u66F4\u65B0\u300C" + item.n + "\u300D\u76EE\u6807 \u2192 " + item.t + " \xB7 \u5DF2\u5165\u5E93, \u8BC4\u5206\u5DF2\u91CD\u7B97");
         } catch (error) {
-          rollbackEditable(el, oldValue);
-          showSaveError(el, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+          rollbackEditable(el2, oldValue);
+          showSaveError(el2, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
         }
       };
-      el.addEventListener("blur", commit);
-      el.addEventListener("keydown", (event) => {
+      el2.addEventListener("blur", commit);
+      el2.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
-          el.blur();
+          el2.blur();
         }
       });
     });
@@ -8918,10 +9064,10 @@
   var loaded = null;
   var mounted = false;
   function make4(tag, className, text2) {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (text2 != null) el.textContent = String(text2);
-    return el;
+    const el2 = document.createElement(tag);
+    if (className) el2.className = className;
+    if (text2 != null) el2.textContent = String(text2);
+    return el2;
   }
   function numInput(name, value, step) {
     const input = document.createElement("input");
@@ -9130,8 +9276,8 @@
     foot.appendChild(make4("span", "kra-hint", "\u4FDD\u5B58\u540E KPI \u9875\u7684\u300C\u6708\u5EA6\u7EE9\u6548\u8003\u6838\u300D\u7ACB\u5373\u6309\u65B0\u65B9\u6848\u91CD\u7B97\u3002\u5386\u53F2\u5DF2\u7ED3\u7B97\u7684\u8003\u6838\u671F\u4E0D\u53D7\u5F71\u54CD\u3002"));
     wrap.appendChild(foot);
     host.appendChild(wrap);
-    if (!canEdit()) host.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el) => {
-      el.disabled = true;
+    if (!canEdit()) host.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el2) => {
+      el2.disabled = true;
     });
     syncWeightSum(host);
   }
@@ -9293,10 +9439,10 @@
   var $2 = (id) => document.getElementById(id);
   var isHttp2 = (u) => /^https?:\/\//i.test(String(u || ""));
   function h(tag, cls, text2) {
-    const el = document.createElement(tag);
-    if (cls) el.className = cls;
-    if (text2 != null) el.textContent = String(text2);
-    return el;
+    const el2 = document.createElement(tag);
+    if (cls) el2.className = cls;
+    if (text2 != null) el2.textContent = String(text2);
+    return el2;
   }
   var money3 = (n) => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   var CURRENCY_LABEL = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
@@ -9610,9 +9756,9 @@
     $2(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
     ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el = $2(id);
-      if (!el) continue;
-      el.value = row && row[key] != null ? row[key] : "";
+      const el2 = $2(id);
+      if (!el2) continue;
+      el2.value = row && row[key] != null ? row[key] : "";
     }
     if (!row) {
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
@@ -9635,8 +9781,8 @@
     const form = FORMS[kind];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el = $2(id);
-      if (el) body[key] = el.value;
+      const el2 = $2(id);
+      if (el2) body[key] = el2.value;
     }
     const errEl = $2(kind === "backlink" ? "bl-error" : "ex-error");
     const row = editing2[kind];
@@ -9705,21 +9851,21 @@
   // public/src/app.js
   var STATIC_UI_ACTIONS = {
     "toggle-theme": () => toggleTheme(),
-    go: (el) => go2(el.dataset.tab),
-    ai: (el) => runAiAnalysis(el, el.dataset.aiPrompt, el.dataset.aiTitle || "AI \u5206\u6790", false),
-    "ai-box": (el) => aiBox(el, el.dataset.aiPrompt),
-    "ai-ask": (el) => runAiAnalysis(el, el.dataset.aiPrompt, el.dataset.aiTitle, false),
+    go: (el2) => go2(el2.dataset.tab),
+    ai: (el2) => runAiAnalysis(el2, el2.dataset.aiPrompt, el2.dataset.aiTitle || "AI \u5206\u6790", false),
+    "ai-box": (el2) => aiBox(el2, el2.dataset.aiPrompt),
+    "ai-ask": (el2) => runAiAnalysis(el2, el2.dataset.aiPrompt, el2.dataset.aiTitle, false),
     "open-inquiry": () => openInquiry(),
-    "add-plan": (el) => addPlanRow(el.dataset.dept),
-    "add-test": (el) => addTestRow(el.dataset.dept),
+    "add-plan": (el2) => addPlanRow(el2.dataset.dept),
+    "add-test": (el2) => addTestRow(el2.dataset.dept),
     "snapshot-ranks": () => snapshotRanks(),
     "reload-ga4": () => loadGa42(),
     "add-fix": () => addFixRow(),
-    "add-keyword": (el) => addKeyword(el.dataset.keywordType),
+    "add-keyword": (el2) => addKeyword(el2.dataset.keywordType),
     "add-neg": () => addNeg(),
     "add-ad": () => addAd(),
     "add-content": () => addContent(),
-    "refresh-brain": (el) => refreshBrain(el),
+    "refresh-brain": (el2) => refreshBrain(el2),
     "create-hermes-daily-learning": () => createHermesDailyLearning(),
     "load-hermes-memories": () => loadHermesMemories(true),
     "reset-hermes-memory-form": () => resetHermesMemoryForm(),
@@ -9727,16 +9873,16 @@
     "reset-hermes-feedback-form": () => resetHermesFeedbackForm(),
     "save-hermes-feedback": () => saveHermesFeedback(),
     "add-deposit": () => addDepositRow(),
-    "open-task": (el) => openTaskModal(el.dataset.dept),
+    "open-task": (el2) => openTaskModal(el2.dataset.dept),
     "open-password": () => openPwd(),
     logout: () => API.logout(),
     "open-sop": () => openSopModal(),
     "open-hermes-panel": () => openHermesPanel(),
-    toast: (el) => toast2(el.dataset.message),
+    toast: (el2) => toast2(el2.dataset.message),
     "close-hermes-panel": () => closeHermesPanel(),
     "toggle-hermes-maximize": () => toggleHermesMaximize(),
     "load-hermes-morning-brief": () => loadHermesMorningBrief(),
-    "ask-hermes-starter": (el) => askHermesStarter(el.dataset.prompt),
+    "ask-hermes-starter": (el2) => askHermesStarter(el2.dataset.prompt),
     "sync-hermes-page-detail": () => syncHermesPageDetail(true),
     "toggle-hermes-deep-thinking": () => toggleHermesDeepThinking(),
     "send-hermes-prompt": () => sendHermesPrompt(),
@@ -9747,7 +9893,7 @@
     "archive-hermes-conversation": () => archiveHermesConversation(),
     "refresh-hermes-status": () => refreshHermesStatus(true),
     "reset-hermes-window": () => resetHermesWindow(),
-    "close-modal": (el) => closeModal(el.dataset.modal),
+    "close-modal": (el2) => closeModal(el2.dataset.modal),
     "submit-inquiry": () => submitInquiry(),
     "submit-custom-range": () => submitCustomRange(),
     "submit-track": () => submitTrack(),
@@ -9760,19 +9906,19 @@
     "submit-subtask": () => submitSubtask(),
     "task-link-add": () => addTaskLink(),
     "pick-task-evidence": () => pickTaskEvidence(),
-    "submit-task-done": (el) => submitTaskDone(el),
+    "submit-task-done": (el2) => submitTaskDone(el2),
     "open-backlink": () => openBacklink(),
     "open-expense": () => openExpense(),
-    "submit-backlink": (el) => submitBacklink(el),
-    "submit-expense": (el) => submitExpense(el),
+    "submit-backlink": (el2) => submitBacklink(el2),
+    "submit-expense": (el2) => submitExpense(el2),
     "submit-sop": () => submitSop(),
     "adopt-ai": () => adoptAi()
   };
   document.addEventListener("click", (e) => {
-    const el = e.target.closest && e.target.closest("[data-ui-action]");
-    if (!el) return;
-    const action = STATIC_UI_ACTIONS[el.dataset.uiAction];
-    if (action) action(el);
+    const el2 = e.target.closest && e.target.closest("[data-ui-action]");
+    if (!el2) return;
+    const action = STATIC_UI_ACTIONS[el2.dataset.uiAction];
+    if (action) action(el2);
   });
   var semCampFilter = document.getElementById("semCampFilter");
   if (semCampFilter) semCampFilter.addEventListener("change", (e) => onSemCampaignChange(e.target.value));
@@ -10085,9 +10231,9 @@
   }
   renderLoopbars();
   var taskChanged = (card) => document.dispatchEvent(new CustomEvent("taskchanged", { detail: { card } }));
-  function taskDoneApplied(el, c) {
-    el.classList.add("on");
-    el.innerHTML = '<i class="ti ti-check"></i>';
+  function taskDoneApplied(el2, c) {
+    el2.classList.add("on");
+    el2.innerHTML = '<i class="ti ti-check"></i>';
     c.classList.add("done", "nofold");
     taskChanged(c);
     refreshTaskCols();
@@ -10102,26 +10248,26 @@
       return;
     }
     const fx = c._item && c._item.fix_id;
-    toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el));
+    toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el2));
     loadUrgent();
   }
-  function chk2(el) {
-    const c = el.closest(".tcard");
-    if (c && c.dataset.id && !el.classList.contains("on")) {
+  function chk2(el2) {
+    const c = el2.closest(".tcard");
+    if (c && c.dataset.id && !el2.classList.contains("on")) {
       if (!c._item) {
         toast2("\u4EFB\u52A1\u6570\u636E\u672A\u5C31\u7EEA\uFF0C\u8BF7\u5237\u65B0\u540E\u518D\u8BD5");
         return;
       }
-      openTaskDone(c._item, { onDone: () => taskDoneApplied(el, c) });
+      openTaskDone(c._item, { onDone: () => taskDoneApplied(el2, c) });
       return;
     }
-    el.classList.toggle("on");
-    const on = el.classList.contains("on");
+    el2.classList.toggle("on");
+    const on = el2.classList.contains("on");
     if (on) {
-      el.innerHTML = '<i class="ti ti-check"></i>';
+      el2.innerHTML = '<i class="ti ti-check"></i>';
       c.classList.add("done");
     } else {
-      el.innerHTML = "";
+      el2.innerHTML = "";
       c.classList.remove("done");
     }
     if (c) {
@@ -10134,12 +10280,12 @@
       if (typeof refreshTaskCols === "function") refreshTaskCols();
     };
     const rollback = () => {
-      el.classList.toggle("on");
+      el2.classList.toggle("on");
       if (on) {
-        el.innerHTML = "";
+        el2.innerHTML = "";
         c.classList.remove("done");
       } else {
-        el.innerHTML = '<i class="ti ti-check"></i>';
+        el2.innerHTML = '<i class="ti ti-check"></i>';
         c.classList.add("done");
       }
       recount();
@@ -10224,9 +10370,9 @@
     const pu = document.getElementById("prof-user");
     if (pu) pu.textContent = me.username || "\u2014";
     if (!can("kpiTarget")) {
-      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
-        el.removeAttribute("contenteditable");
-        el.style.opacity = ".7";
+      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el2) => {
+        el2.removeAttribute("contenteditable");
+        el2.style.opacity = ".7";
       });
     }
     if (!can("inquiry")) {
