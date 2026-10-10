@@ -102,3 +102,8 @@
 #panel-spend .spend-ops { white-space: nowrap; }
 #panel-spend .spend-empty { padding: 28px 12px; text-align: center; }
 #panel-spend .spend-effect { margin-top: 4px; }
+#panel-spend .spend-auto { margin-top: 3px; font-size: 11px; line-height: 1.5; cursor: help; }
+#panel-spend .spend-auto.is-found { color: var(--green); }
+#panel-spend .spend-auto.is-not_found { color: var(--danger); }
+#panel-spend .spend-auto.is-unreachable { color: var(--text3); }
+#panel-spend .spend-check { margin-top: 4px; }

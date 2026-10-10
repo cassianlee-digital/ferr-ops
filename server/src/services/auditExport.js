@@ -133,9 +133,9 @@ export function auditSheets(pkg) {
   ]);
   add('backlinks', '外链', [
     ['id', '编号'], ['acquired_date', '日期'], ['source_url', '外链所在页面'], ['source_domain', '来源站'], ['target_url', '指向页面'], ['anchor', '锚文本'], ['method', '方式'],
-    ['rel', '属性'], ['cost', '费用'], ['currency', '币种'], ['vendor', '卖家'], ['dr', 'DR'], ['traffic', '月流量'], ['status', '状态'], ['checked_date', '最近核查'],
+    ['rel', '属性'], ['cost', '费用'], ['currency', '币种'], ['vendor', '卖家'], ['dr', 'DR'], ['traffic', '月流量'], ['status', '状态'], ['checked_date', '最近核查'], ['auto', '自动核查'], ['auto_detail', '自动核查说明'],
     ['quality_note', '质量判断'], ['owner', '负责人'], ['task_id', '任务编号'], ['task_content', '任务'],
-  ], pkg.spend.backlink_items);
+  ], pkg.spend.backlink_items.map((b) => ({ ...b, auto: { found: '找到链接', not_found: '没找到链接', unreachable: '页面没取到' }[b.auto_status] || '' })));
   add('expenses', '其它支出', [
     ['id', '编号'], ['spend_date', '日期'], ['category', '类别'], ['amount', '金额'], ['currency', '币种'], ['vendor', '付给谁'], ['purpose', '用途'], ['owner', '负责人'],
     ['task_id', '任务编号'], ['task_content', '任务'], ['evidence', '凭证'], ['note', '备注'],

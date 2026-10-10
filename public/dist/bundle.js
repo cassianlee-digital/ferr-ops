@@ -11027,6 +11027,7 @@
     box.appendChild(h("div", "spend-stat", sideText("\u514D\u8D39", stats.free)));
   }
   var STATUS_BADGE = { \u6709\u6548: "b-green", \u5931\u6548: "b-red", \u5F85\u4E0A\u7EBF: "b-amber" };
+  var AUTO_LABEL = { found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728", not_found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u6CA1\u627E\u5230", unreachable: "\u81EA\u52A8\u6838\u67E5\uFF1A\u9875\u9762\u6CA1\u53D6\u5230" };
   function rowActions(kind, id) {
     const td2 = h("td", "ctr spend-ops");
     const edit = h("button", "btn-mini", "\u7F16\u8F91");
@@ -11093,6 +11094,18 @@
       const st2 = h("td", "ctr");
       if (b.status) st2.appendChild(h("span", "badge " + (STATUS_BADGE[b.status] || "b-gray"), b.status));
       st2.appendChild(h("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
+      if (b.auto_status) {
+        const auto = h("div", "spend-auto is-" + b.auto_status, AUTO_LABEL[b.auto_status] || b.auto_status);
+        auto.title = (b.auto_detail || "") + (b.auto_anchor ? "\n\u9875\u9762\u4E0A\u7684\u951A\u6587\u672C\uFF1A" + b.auto_anchor : "");
+        st2.appendChild(auto);
+      }
+      if (b.target_url) {
+        const chk3 = h("button", "btn-mini spend-check", "\u81EA\u52A8\u6838\u67E5");
+        chk3.type = "button";
+        chk3.dataset.spendCheck = b.id;
+        chk3.title = "\u8BA9\u670D\u52A1\u5668\u53BB\u8FD9\u4E2A\u9875\u9762\u4E0A\u627E\u4E00\u6B21\u6307\u5411\u6211\u4EEC\u7684\u94FE\u63A5";
+        st2.appendChild(chk3);
+      }
       tr.appendChild(st2);
       tr.appendChild(h("td", "spend-task", b.task_content || ""));
       tr.appendChild(rowActions("backlink", b.id));
@@ -11306,6 +11319,21 @@
       if (e.target.closest("#spend-month-now")) {
         month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
         loadSpend();
+        return;
+      }
+      const chk3 = e.target.closest("[data-spend-check]");
+      if (chk3) {
+        chk3.disabled = true;
+        chk3.textContent = "\u6838\u67E5\u4E2D\u2026";
+        try {
+          const { item } = await API.post("/api/backlinks/" + chk3.dataset.spendCheck + "/check", {});
+          toast2((AUTO_LABEL[item.auto_status] || "\u5DF2\u6838\u67E5") + (item.auto_detail ? " \xB7 " + item.auto_detail : ""));
+          loadSpend();
+        } catch (err) {
+          chk3.disabled = false;
+          chk3.textContent = "\u81EA\u52A8\u6838\u67E5";
+          toast2("\u6838\u67E5\u5931\u8D25\uFF1A" + failText5(err));
+        }
         return;
       }
       const edit = e.target.closest("[data-spend-edit]");

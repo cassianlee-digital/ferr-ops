@@ -40,6 +40,18 @@ export function update(id, fields) {
   return get(id);
 }
 
+// 写回自动核查结果。找到了链接也算一次核查，顺手把「最近核查日」更新为今天（由调用方按业务日期传入）；
+// 没找到 / 没取到则不动 checked_date —— 那一天并没有确认它还在。status 永远不在这里改。
+export function saveAutoCheck(id, result, checkedDate) {
+  db.prepare(
+    `UPDATE backlinks SET auto_status=@auto_status, auto_checked_at=datetime('now'), auto_detail=@auto_detail,
+            auto_rel=@auto_rel, auto_anchor=@auto_anchor,
+            checked_date = CASE WHEN @auto_status = 'found' THEN @checked_date ELSE checked_date END
+      WHERE id=@id`
+  ).run({ id, checked_date: checkedDate, ...result });
+  return get(id);
+}
+
 export function softDelete(id) {
   return db.prepare("UPDATE backlinks SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL").run(id).changes;
 }

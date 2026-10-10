@@ -123,6 +123,7 @@ function renderLinkStats(stats) {
   box.appendChild(h('div', 'spend-stat', sideText('免费', stats.free)));
 }
 const STATUS_BADGE = { 有效: 'b-green', 失效: 'b-red', 待上线: 'b-amber' };
+const AUTO_LABEL = { found: '自动核查：链接在', not_found: '自动核查：没找到', unreachable: '自动核查：页面没取到' };
 function rowActions(kind, id) {
   const td = h('td', 'ctr spend-ops');
   const edit = h('button', 'btn-mini', '编辑'); edit.type = 'button'; edit.dataset.spendEdit = kind; edit.dataset.id = id;
@@ -169,6 +170,17 @@ function renderBacklinks() {
     const st = h('td', 'ctr');
     if (b.status) st.appendChild(h('span', 'badge ' + (STATUS_BADGE[b.status] || 'b-gray'), b.status));
     st.appendChild(h('div', 'dim', b.checked_date ? '核查 ' + b.checked_date.slice(5) : '未核查'));
+    // 自动核查：服务器去那个页面上找一次链接。结果单独显示，不改上面人工填的状态
+    if (b.auto_status) {
+      const auto = h('div', 'spend-auto is-' + b.auto_status, AUTO_LABEL[b.auto_status] || b.auto_status);
+      auto.title = (b.auto_detail || '') + (b.auto_anchor ? '\n页面上的锚文本：' + b.auto_anchor : '');
+      st.appendChild(auto);
+    }
+    if (b.target_url) {
+      const chk = h('button', 'btn-mini spend-check', '自动核查'); chk.type = 'button'; chk.dataset.spendCheck = b.id;
+      chk.title = '让服务器去这个页面上找一次指向我们的链接';
+      st.appendChild(chk);
+    }
     tr.appendChild(st);
     tr.appendChild(h('td', 'spend-task', b.task_content || ''));
     tr.appendChild(rowActions('backlink', b.id));
@@ -327,6 +339,17 @@ function bind() {
     const step = e.target.closest('[data-spend-month]');
     if (step) { month = shiftMonth(month, Number(step.dataset.spendMonth)); loadSpend(); return; }
     if (e.target.closest('#spend-month-now')) { month = formatLocalDate(new Date()).slice(0, 7); loadSpend(); return; }
+    const chk = e.target.closest('[data-spend-check]');
+    if (chk) {
+      chk.disabled = true; chk.textContent = '核查中…';
+      try {
+        const { item } = await API.post('/api/backlinks/' + chk.dataset.spendCheck + '/check', {});
+        // 把结论和原因直接说出来：没找到 / 没取到都不等于失效，这句话要让人看到
+        toast((AUTO_LABEL[item.auto_status] || '已核查') + (item.auto_detail ? ' · ' + item.auto_detail : ''));
+        loadSpend();
+      } catch (err) { chk.disabled = false; chk.textContent = '自动核查'; toast('核查失败：' + failText(err)); }
+      return;
+    }
     const edit = e.target.closest('[data-spend-edit]');
     if (edit) {
       const kind = edit.dataset.spendEdit;

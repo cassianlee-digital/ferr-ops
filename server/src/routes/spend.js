@@ -8,6 +8,8 @@ import { parseDateRange } from '../lib/parseDateRange.js';
 import { resolveSemSpend } from '../services/kpiLedger.js';
 import { DEFAULT_EFFECT_DAYS, EFFECT_DAYS } from '../services/taskEffect.js';
 import { buildBacklinkEffect } from '../services/taskEffectData.js';
+import { businessDate } from '../services/taskEffect.js';
+import * as linkCheck from '../services/linkCheck.js';
 import {
   BACKLINK_METHODS, BACKLINK_RELS, BACKLINK_STATUSES, CURRENCIES, EXPENSE_CATEGORIES,
   backlinkStats, summarizeSpend, validateBacklink, validateExpense,
@@ -63,6 +65,10 @@ function ledgerRoutes(app, base, repo, validate, extraList) {
   });
 }
 
+// 取页面的函数可替换：测试里换成假的，不走真实网络
+let pageFetcher = linkCheck.fetchPage;
+export function setPageFetcher(fn) { pageFetcher = fn || linkCheck.fetchPage; }
+
 export async function spendRoutes(app) {
   ledgerRoutes(app, '/api/backlinks', backlinksRepo, validateBacklink, (items) => ({ stats: backlinkStats(items) }));
   ledgerRoutes(app, '/api/expenses', expensesRepo, validateExpense);
@@ -74,6 +80,16 @@ export async function spendRoutes(app) {
     const days = request.query?.days == null ? DEFAULT_EFFECT_DAYS : Number(request.query.days);
     if (!EFFECT_DAYS.includes(days)) return bad(reply, 'bad_days', `对比窗口只支持 ${EFFECT_DAYS.join(' / ')} 天`);
     return buildBacklinkEffect(row, days);
+  });
+
+  /* 自动核查这条外链还在不在：服务器去外链所在页面取一次源码，找指向我们的链接。
+     SSRF 防线在 services/linkCheck.js；这里再加一道限流，免得被当成批量探测的工具。
+     结果只写进 auto_* 几列，**不改人工填的状态** —— 没取到 / 没找到都不等于失效。 */
+  app.post('/api/backlinks/:id/check', { ...editor, config: { rateLimit: { max: 20, timeWindow: 60_000 } } }, async (request, reply) => {
+    const row = backlinksRepo.get(Number(request.params.id));
+    if (!row) return reply.code(404).send({ error: 'not_found' });
+    const result = await linkCheck.checkBacklink(row, pageFetcher);
+    return { item: backlinksRepo.saveAutoCheck(row.id, result, businessDate(new Date().toISOString())) };
   });
 
   // 表单的可选值：只有后端这一份，前端下拉按它渲染，不各写一遍

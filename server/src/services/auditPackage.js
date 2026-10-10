@@ -164,7 +164,7 @@ function buildSpend(range) {
     backlink_items: backlinks.map((b) => ({
       id: b.id, acquired_date: b.acquired_date, source_url: b.source_url, source_domain: b.source_domain, target_url: b.target_url,
       anchor: b.anchor, method: b.method, rel: b.rel, cost: b.cost, currency: b.currency, vendor: b.vendor, dr: b.dr, traffic: b.traffic,
-      status: b.status, checked_date: b.checked_date, quality_note: b.quality_note, owner: b.owner, task_id: b.task_id, task_content: b.task_content,
+      status: b.status, checked_date: b.checked_date, auto_status: b.auto_status, auto_detail: b.auto_detail, quality_note: b.quality_note, owner: b.owner, task_id: b.task_id, task_content: b.task_content,
     })),
     expense_items: expenses.map((e) => ({
       id: e.id, spend_date: e.spend_date, category: e.category, amount: e.amount, currency: e.currency, vendor: e.vendor,
