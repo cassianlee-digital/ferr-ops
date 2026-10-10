@@ -59,7 +59,7 @@ function taskRowHtml(t, day, pushed, note) {
     : { ...t, result: null, task_actions: null, evidence: null, evidence_images: [], actual_hours: null, state: null, status: null, done_at: null };
   return `<div class="hcard">
     <div class="hrow"><span class="htext">${esc(t.content || '')}</span>
-      <span class="hright">${auditBadgesHtml(t)}${src}${owner}${span ? `<span class="hdue">${span}</span>` : ''}<span class="hstat ${st.cls}">${st.text}</span></span></div>
+      <span class="hright">${auditBadgesHtml(t)}${src}${owner}${span ? `<span class="hdue">${span}</span>` : ''}<span class="hstat ${esc(st.cls)}">${esc(st.text)}</span></span></div>
     ${memo ? `<div class="hmemo">${memo}</div>` : ''}
     ${auditBlockHtml(view)}
   </div>`;

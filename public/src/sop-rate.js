@@ -25,11 +25,11 @@ function deptBlockHtml(dept, label, badge, items) {
   const missHtml = missed.length
     ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc(i.title)}</span>`
       + `<span class="sr-mf">${FREQ_LABEL[i.freq] || ''}</span>`
-      + `<span class="sr-mn">缺 ${i.expected - i.done}${i.missed_days.length ? ' · ' + i.missed_days.map((d) => d.slice(5)).join(' ') : ''}</span></div>`).join('')
+      + `<span class="sr-mn">缺 ${i.expected - i.done}${i.missed_days.length ? ' · ' + i.missed_days.map((d) => esc(String(d).slice(5))).join(' ') : ''}</span></div>`).join('')
     : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> 这一周一条没漏</div>';
   return `<div class="sr-dept">
-    <div class="sr-head"><span class="badge ${badge}">${esc(label)}</span>
-      <span class="sr-num ${rateClass(p)}">${expected ? `${done}/${expected}` : '—'}${p === null ? '' : ` · ${p}%`}</span></div>
+    <div class="sr-head"><span class="badge ${esc(badge)}">${esc(label)}</span>
+      <span class="sr-num ${rateClass(p)}">${expected ? `${esc(done)}/${esc(expected)}` : '—'}${p === null ? '' : ` · ${p}%`}</span></div>
     <div class="sr-misses">${missHtml}</div>
   </div>`;
 }

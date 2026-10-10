@@ -139,13 +139,13 @@ export function renderKwPager(type,p,pages,total){
   const card=tb.closest('.card')||(tb.closest('table')||{}).parentNode; if(!card)return;
   let pg=card.querySelector('.kw-pager'); if(!pg){ pg=document.createElement('div'); pg.className='kw-pager'; card.appendChild(pg); }
   // 6.23 文档 27：每页条数下拉常驻显示（即便单页/空表也方便切换）
-  const sizeSel=`<select class="kw-pg-size" data-kwsize="${type}" title="每页条数">${KW_PAGE_OPTS.map(n=>`<option value="${n}"${n===_kwSize[type]?' selected':''}>${n}/页</option>`).join('')}</select>`;
+  const sizeSel=`<select class="kw-pg-size" data-kwsize="${esc(type)}" title="每页条数">${KW_PAGE_OPTS.map(n=>`<option value="${n}"${n===_kwSize[type]?' selected':''}>${n}/页</option>`).join('')}</select>`;
   if(pages<=1){
     pg.innerHTML=(total?`<span class="kw-pg-info">共 ${total} 条</span>`:'<span class="kw-pg-info">暂无数据</span>')+sizeSel;
     return;
   }
-  let btns=''; for(let i=0;i<pages;i++){ btns+=`<button class="kw-pg${i===p?' active':''}" data-kwpg="${type}" data-pg="${i}">${i+1}</button>`; }
-  pg.innerHTML=`<button class="kw-pg" data-kwpg="${type}" data-pg="${p-1}"${p===0?' disabled':''}>‹</button>${btns}<button class="kw-pg" data-kwpg="${type}" data-pg="${p+1}"${p===pages-1?' disabled':''}>›</button><span class="kw-pg-info">共 ${total} 条 · 第 ${p+1}/${pages} 页</span>${sizeSel}`;
+  let btns=''; for(let i=0;i<pages;i++){ btns+=`<button class="kw-pg${i===p?' active':''}" data-kwpg="${esc(type)}" data-pg="${i}">${i+1}</button>`; }
+  pg.innerHTML=`<button class="kw-pg" data-kwpg="${esc(type)}" data-pg="${p-1}"${p===0?' disabled':''}>‹</button>${btns}<button class="kw-pg" data-kwpg="${esc(type)}" data-pg="${p+1}"${p===pages-1?' disabled':''}>›</button><span class="kw-pg-info">共 ${total} 条 · 第 ${p+1}/${pages} 页</span>${sizeSel}`;
 }
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-kwpg]'); if(!b||b.disabled)return; const type=b.dataset.kwpg; const pg=parseInt(b.dataset.pg,10); if(isNaN(pg))return; _kwPage[type]=pg; applyKwPaging(type); });
 // 6.23 文档 27：每页条数下拉切换 → 改 size、回第1页、持久化

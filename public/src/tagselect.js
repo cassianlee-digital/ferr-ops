@@ -5,7 +5,7 @@
    注：const menu=getElementById('selMenu') 在模块求值时执行——bundle 以经典 <script> 加载且位于 body 之后，
        #selMenu 早已解析，安全（与旧脚本同一时机语义）。 */
 
-import { toast } from './ui-kit.js';
+import { esc, toast } from './ui-kit.js';
 import { inqRowHtml, isUpgraded } from './inquiries.js';
 import { PRODUCTS, REGIONS } from './catalog.js';
 
@@ -38,11 +38,11 @@ const menu=document.getElementById('selMenu'); let curSel=null;
 document.addEventListener('click',e=>{
   const ts=e.target.closest('.tagselect');
   if(ts){ curSel=ts; const kind=ts.dataset.kind; const opts=OPT[kind]||[]; const r=ts.getBoundingClientRect();
-    menu.innerHTML=opts.map(o=>`<div class="opt" data-v="${o[0]}" data-c="${o[1]}"><span class="badge ${o[1]}">${o[0]}</span></div>`).join('');
+    menu.innerHTML=opts.map(o=>`<div class="opt" data-v="${esc(o[0])}" data-c="${esc(o[1])}"><span class="badge ${esc(o[1])}">${esc(o[0])}</span></div>`).join('');
     menu.style.display='flex'; menu.style.left=Math.min(r.left,window.innerWidth-160)+'px'; menu.style.top=(r.bottom+4)+'px';
     return;
   }
-  if(e.target.closest('#selMenu')){ const o=e.target.closest('.opt'); if(o&&curSel){ curSel.className='tagselect '+o.dataset.c; curSel.innerHTML=o.dataset.v+'<i class="ti ti-chevron-down"></i>'; persistTagChange(curSel,o.dataset.v); } menu.style.display='none'; return; }
+  if(e.target.closest('#selMenu')){ const o=e.target.closest('.opt'); if(o&&curSel){ curSel.className='tagselect '+o.dataset.c; curSel.innerHTML=esc(o.dataset.v)+'<i class="ti ti-chevron-down"></i>'; persistTagChange(curSel,o.dataset.v); } menu.style.display='none'; return; }
   menu.style.display='none';
 });
 /* 否词/广告创意 的匹配方式/状态变更 → PATCH 入库（其余表的标签变更后续步骤再接）*/

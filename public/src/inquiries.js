@@ -87,10 +87,10 @@ function renderTrackLog(){
   const list=fbList(_trackEditing);
   if(!list.length){ box.innerHTML='<div class="track-log-empty">还没有跟踪记录，在下面写第一条。</div>'; return; }
   box.innerHTML='<div class="track-log-head">跟踪记录 · '+list.length+' 条（新的在上）</div>'
-    +list.map(f=>`<div class="track-item" data-fb="${f.id}">`
+    +list.map(f=>`<div class="track-item" data-fb="${esc(f.id)}">`
       +`<div class="track-item-meta"><span class="track-item-date${f.created_at?'':' track-item-nodate'}"><i class="ti ti-clock"></i>${esc(fbDateLabel(f,true))}</span>`
       +(f.created_by_name?`<span class="track-item-who">${esc(f.created_by_name)}</span>`:'')
-      +`<button type="button" class="track-item-del" data-fb-del="${f.id}" title="删除这条记录"><i class="ti ti-trash"></i></button></div>`
+      +`<button type="button" class="track-item-del" data-fb-del="${esc(f.id)}" title="删除这条记录"><i class="ti ti-trash"></i></button></div>`
       +`<div class="track-item-text">${esc(f.text)}</div></div>`).join('');
 }
 function openTrack(tr){
@@ -175,10 +175,10 @@ export function inqRowHtml(r){
   return `<td>${esc(r.date.slice(5))}</td>`
     +`<td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code||'')}</td>`
     +`<td class="editable" contenteditable data-field="country">${esc(r.country||'')}</td>`
-    +`<td class="ctr"><span class="tagselect ${REGION_BADGE[r.region]||'b-gray'}" data-kind="region">${esc(r.region||'未填')}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr"><span class="tagselect ${esc(REGION_BADGE[r.region]||'b-gray')}" data-kind="region">${esc(r.region||'未填')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr inq-attr-cell">${locked?attrLockHtml(CH_BADGE[r.channel]||'b-gray',r.channel):`<span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td>`
     +`<td class="inq-source">${sourceCellHtml(r)}</td>`
-    +`<td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr"><span class="tagselect ${esc(PRODUCT_BADGE[r.product]||'b-gray')}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr inq-attr-cell">${locked?attrLockHtml(GRADE_BADGE[r.grade]||'b-gray',r.grade):`<span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td>`
     +`<td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company]||'b-gray'}" data-kind="company">${esc(r.company||'未标注')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson||'')}</td>`
@@ -271,11 +271,11 @@ export function renderInqFilterRow(){
     }
     const cur=FILTERS[col.key]||'';
     if(col.type==='text')
-      return `<td><input type="search" class="inq-f-input" data-inq-filter="${col.key}" placeholder="${esc(col.ph)}" value="${esc(cur)}"></td>`;
+      return `<td><input type="search" class="inq-f-input" data-inq-filter="${esc(col.key)}" placeholder="${esc(col.ph)}" value="${esc(cur)}"></td>`;
     const opts=col.type==='has'
       ?[{value:'有',label:'有反馈'},{value:'无',label:'无反馈'}]
       :optionsFor(col);
-    return `<td class="ctr"><select class="inq-f-select${cur?' on':''}" data-inq-filter="${col.key}">`
+    return `<td class="ctr"><select class="inq-f-select${cur?' on':''}" data-inq-filter="${esc(col.key)}">`
       +`<option value="">${esc(col.ph)}</option>`
       +opts.map(o=>`<option value="${esc(o.value)}"${o.value===cur?' selected':''}>${esc(o.label)}</option>`).join('')
       +'</select></td>';
@@ -316,12 +316,12 @@ function renderInqPager(total,pages,from,to){
   if(!total){ el.innerHTML=''; return; }
   const nums=pageNumbers(_page,pages).map(n=>n==='…'
     ?'<span class="pg-gap">…</span>'
-    :`<button type="button" class="pg-num${n===_page?' on':''}" data-inq-page="${n}">${n}</button>`).join('');
+    :`<button type="button" class="pg-num${n===_page?' on':''}" data-inq-page="${esc(n)}">${esc(n)}</button>`).join('');
   el.innerHTML=`<span class="pg-info">第 ${from}-${to} 条 · 共 ${total} 条 · ${pages} 页</span>`
     +`<span class="pg-mid">`
     +`<button type="button" class="pg-num" data-inq-page="${_page-1}"${_page<=1?' disabled':''}><i class="ti ti-chevron-left"></i></button>`
     +nums
-    +`<button type="button" class="pg-num" data-inq-page="${_page+1}"${_page>=pages?' disabled':''}><i class="ti ti-chevron-right"></i></button>`
+    +`<button type="button" class="pg-num" data-inq-page="${Number(_page)+1}"${_page>=pages?' disabled':''}><i class="ti ti-chevron-right"></i></button>`
     +`</span>`
     +`<span class="pg-size">每页 <select data-inq-size>`
     +PAGE_SIZES.map(n=>`<option value="${n}"${n===_pageSize?' selected':''}>${n}</option>`).join('')

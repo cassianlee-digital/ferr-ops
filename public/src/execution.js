@@ -3,6 +3,7 @@
    运行时依赖：window.API、esc()、toast()；区间用 timerange.withRange。写操作经 /api/execution-loops。 */
 import { withRange, getRangeRevision } from './timerange.js';
 import { loadMetrics } from './kpi.js';
+import { esc } from './ui-kit.js';
 
 // 写操作后：重拉 KPI 指标并重渲染（renderKPI 末尾会 mountExecution 刷新明细）——单一路径，避免重复拉取。
 async function refreshAfterWrite() {
@@ -33,13 +34,13 @@ function rowHtml(r) {
   const res = r.verification_result ? '<span class="exec-res ' + (r.verification_result === 'NEGATIVE' ? 'kpi-tone-primary' : r.verification_result === 'POSITIVE' ? 'kpi-tone-green' : 'kpi-tone-muted') + '">' + RESULT_LABEL[r.verification_result] + '</span>' : '';
   const adv = NEXT_STATUS.indexOf(r.status);
   const advBtn = (adv >= 0 && adv < NEXT_STATUS.length - 1)
-    ? '<button class="exec-btn" data-exec-advance="' + r.id + '" data-next="' + NEXT_STATUS[adv + 1] + '">推进→' + ST_LABEL[NEXT_STATUS[adv + 1]] + '</button>' : '';
+    ? '<button class="exec-btn" data-exec-advance="' + esc(r.id) + '" data-next="' + NEXT_STATUS[adv + 1] + '">推进→' + ST_LABEL[NEXT_STATUS[adv + 1]] + '</button>' : '';
   const excluded = Number(r.exclude_from_assessment) === 1 ? '<span class="kpi-ds-badge">已排除</span>' : '';
   return '<tr>'
     + '<td class="exec-prob">' + esc(r.problem || '') + excluded + (r.analysis ? '<div class="exec-sub">分析：' + esc(r.analysis) + '</div>' : '') + (r.action ? '<div class="exec-sub">动作：' + esc(r.action) + '</div>' : '') + '</td>'
     + '<td>' + esc(r.owner || '') + '</td>'
-    + '<td><span class="exec-imp imp-' + (r.impact_level || 'MEDIUM') + '">' + (IMP_LABEL[r.impact_level] || '中') + '</span></td>'
-    + '<td><span class="exec-st ' + tone + '">' + st + '</span></td>'
+    + '<td><span class="exec-imp imp-' + esc(r.impact_level || 'MEDIUM') + '">' + (IMP_LABEL[r.impact_level] || '中') + '</span></td>'
+    + '<td><span class="exec-st ' + tone + '">' + esc(st) + '</span></td>'
     + '<td class="exec-verif">' + verifCell(r) + ' ' + res + '</td>'
     + '<td class="exec-act">' + advBtn + '</td>'
     + '</tr>';

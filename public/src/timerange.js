@@ -14,7 +14,7 @@
      - submitCustomRange —— data-ui-action 分发调用；
      - 其余函数保持原有全局暴露面。 */
 
-import { openModal, closeModal, toast } from './ui-kit.js';
+import { esc, openModal, closeModal, toast } from './ui-kit.js';
 
 /* ---------- per-page inline time filter ---------- */
 const RANGES = ['今天', '昨天', '近7天', '近30天', '近90天', '近一年', '自定义']; // C-2a 三框预设 + C组「可查看近一年」 + 6.23 文档 26「自定义」
@@ -99,12 +99,12 @@ export function syncRangeUi() {
   document.querySelectorAll('[data-time][data-scope]').forEach(bar => {
     const s = st(bar.dataset.scope);
     bar.querySelectorAll('.trange').forEach(x => x.classList.toggle('active', x.textContent.trim() === s.label));
-    bar.querySelectorAll('[data-tauto]').forEach(el => { el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range); });
+    bar.querySelectorAll('[data-tauto]').forEach(el => { el.innerHTML = '<i class="ti ti-calendar"></i> ' + esc(rangeText(s.range)); });
   });
   const top = document.getElementById('topRange');
   if (top) {
     const s = st(activeScope());
-    top.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+    top.innerHTML = '<i class="ti ti-calendar"></i> ' + esc(rangeText(s.range));
     top.title = '当前页面时间范围：' + rangeText(s.range) + '（各页面各自记忆，互不影响）';
   }
 }
@@ -137,12 +137,12 @@ export function renderTimebar(bar) {
   const onlyWeekly = grans.indexOf('week') >= 0 && grans.indexOf('day') < 0; // SEO/SEM：无日数据→标注「按周记录」
   const granHtml = grans.length
     ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> 粒度</span>'
-      + '<select class="tgran">' + grans.map(g => `<option value="${g}"${g === window._gran ? ' selected' : ''}>${GRAN_LABEL[g] || g}</option>`).join('') + '</select>'
+      + '<select class="tgran">' + grans.map(g => `<option value="${esc(g)}"${g === window._gran ? ' selected' : ''}>${esc(GRAN_LABEL[g] || g)}</option>`).join('') + '</select>'
       + (onlyWeekly ? '<span class="tgran-note">· 按周记录</span>' : '')
     : '';
   bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> 时间</span>'
     + RANGES.map(r => `<button type="button" class="trange${r === s.label ? ' active' : ''}">${r}</button>`).join('')
-    + `<button type="button" class="tauto tauto-btn" data-tauto title="选择具体日期范围"><i class="ti ti-calendar"></i> ${rangeText(s.range)}</button>`
+    + `<button type="button" class="tauto tauto-btn" data-tauto title="选择具体日期范围"><i class="ti ti-calendar"></i> ${esc(rangeText(s.range))}</button>`
     + granHtml
     + '<span class="tscope-note" title="每个页面各自记住自己的时间范围，互不影响">仅本页</span>';
 }

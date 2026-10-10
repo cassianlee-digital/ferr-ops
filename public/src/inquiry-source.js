@@ -40,11 +40,11 @@ function pathOf(u) {
 export function sourceCellHtml(r) {
   const v = verdictOf(r);
   const badge = v && v.label ? `<span class="badge ${TONE_BADGE[v.tone] || 'b-gray'} inq-src-verdict">${esc(v.label)}</span>` : '';
-  const subs = [];
-  if (r.src_campaign || r.src_campaign_id) subs.push(`<span class="inq-src-sub">系列 ${esc(r.src_campaign || r.src_campaign_id)}</span>`);
-  if (r.src_landing_page) subs.push(`<span class="inq-src-sub">落地页 ${esc(pathOf(r.src_landing_page))}</span>`);
+  let subs = '';
+  if (r.src_campaign || r.src_campaign_id) subs += `<span class="inq-src-sub">系列 ${esc(r.src_campaign || r.src_campaign_id)}</span>`;
+  if (r.src_landing_page) subs += `<span class="inq-src-sub">落地页 ${esc(pathOf(r.src_landing_page))}</span>`;
   return `<button type="button" class="inq-src" data-inq-source="${esc(r.id)}" title="${esc((v && v.hint) || '点击查看 / 填写来源')}">`
-    + `<span class="inq-src-term">${esc(r.source || '')}</span>${subs.join('')}${badge}</button>`;
+    + `<span class="inq-src-term">${esc(r.source || '')}</span>${subs}${badge}</button>`;
 }
 
 /* 表格画完之后再拉对账结果（它要扫同步表，不该拖慢列表）。拉到了通知 inquiries.js 重画徽章。

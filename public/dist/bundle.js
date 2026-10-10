@@ -18,7 +18,7 @@
   var ui_kit_exports = {};
   __export(ui_kit_exports, {
     closeModal: () => closeModal,
-    esc: () => esc2,
+    esc: () => esc,
     hideToast: () => hideToast,
     mdToHtml: () => mdToHtml,
     openModal: () => openModal,
@@ -29,14 +29,14 @@
     toastGo: () => toastGo,
     toastUndo: () => toastUndo
   });
-  function esc2(s) {
+  function esc(s) {
     return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
   function renderText(el5, s) {
     if (el5) el5.textContent = s == null ? "" : String(s);
   }
   function mdToHtml(t) {
-    const src = esc2(t).split(/\n/);
+    const src = esc(t).split(/\n/);
     let html = "", para = [], inList = false;
     const flushP = () => {
       if (para.length) {
@@ -87,7 +87,7 @@
     const tb = document.getElementById(id);
     if (!tb) return;
     const retry = typeof retryAction === "function" ? ' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> \u91CD\u8BD5</button>' : "";
-    tb.innerHTML = `<tr data-load-state="${state2}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc2(message)}${retry}</td></tr>`;
+    tb.innerHTML = `<tr data-load-state="${state2}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
     const retryBtn = tb.querySelector(".table-retry");
     if (retryBtn) retryBtn.addEventListener("click", retryAction);
   }
@@ -333,13 +333,13 @@
       const s = st(bar.dataset.scope);
       bar.querySelectorAll(".trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === s.label));
       bar.querySelectorAll("[data-tauto]").forEach((el5) => {
-        el5.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+        el5.innerHTML = '<i class="ti ti-calendar"></i> ' + esc(rangeText(s.range));
       });
     });
     const top = document.getElementById("topRange");
     if (top) {
       const s = st(activeScope());
-      top.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      top.innerHTML = '<i class="ti ti-calendar"></i> ' + esc(rangeText(s.range));
       top.title = "\u5F53\u524D\u9875\u9762\u65F6\u95F4\u8303\u56F4\uFF1A" + rangeText(s.range) + "\uFF08\u5404\u9875\u9762\u5404\u81EA\u8BB0\u5FC6\uFF0C\u4E92\u4E0D\u5F71\u54CD\uFF09";
     }
   }
@@ -373,8 +373,8 @@
     const s = st(bar.dataset.scope);
     const grans = (bar.dataset.gran || "").split(",").map((x) => x.trim()).filter(Boolean);
     const onlyWeekly = grans.indexOf("week") >= 0 && grans.indexOf("day") < 0;
-    const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${g}"${g === window._gran ? " selected" : ""}>${GRAN_LABEL[g] || g}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
-    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === s.label ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(s.range)}</button>` + granHtml + '<span class="tscope-note" title="\u6BCF\u4E2A\u9875\u9762\u5404\u81EA\u8BB0\u4F4F\u81EA\u5DF1\u7684\u65F6\u95F4\u8303\u56F4\uFF0C\u4E92\u4E0D\u5F71\u54CD">\u4EC5\u672C\u9875</span>';
+    const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${esc(g)}"${g === window._gran ? " selected" : ""}>${esc(GRAN_LABEL[g] || g)}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
+    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === s.label ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${esc(rangeText(s.range))}</button>` + granHtml + '<span class="tscope-note" title="\u6BCF\u4E2A\u9875\u9762\u5404\u81EA\u8BB0\u4F4F\u81EA\u5DF1\u7684\u65F6\u95F4\u8303\u56F4\uFF0C\u4E92\u4E0D\u5F71\u54CD">\u4EC5\u672C\u9875</span>';
   }
   try {
     const g = localStorage.getItem("ferr:gran");
@@ -581,7 +581,7 @@
     const files = document.getElementById("aiChatFiles");
     if (files) files.addEventListener("change", () => {
       const list = document.getElementById("aiFileList");
-      if (list) list.innerHTML = [...files.files].slice(0, 5).map((f) => '<span class="ai-file-chip">' + esc2(f.name) + "</span>").join("");
+      if (list) list.innerHTML = [...files.files].slice(0, 5).map((f) => '<span class="ai-file-chip">' + esc(f.name) + "</span>").join("");
     });
   }
   function aiMessages(item) {
@@ -594,8 +594,8 @@
     const dims = q.dimensions || {};
     const labels = { evidenceCoverage: "\u8BC1\u636E\u8986\u76D6", sourceQuality: "\u6765\u6E90\u8D28\u91CF", freshness: "\u6570\u636E\u65F6\u6548", inferenceDiscipline: "\u63A8\u7406\u7EA6\u675F", numericConsistency: "\u6570\u5B57\u4E00\u81F4", temporalConsistency: "\u65F6\u95F4\u4E00\u81F4" };
     const entries = Object.keys(labels).filter((k) => Number.isFinite(Number(dims[k]))).map((k) => "<span>" + labels[k] + " " + Number(dims[k]) + "</span>").join("");
-    const title = q.applicable ? "\u7F6E\u4FE1\u5EA6 " + Number(q.score || 0) + "/100 \xB7 " + esc2(q.label || "") : esc2(q.label || "\u975E\u6570\u636E\u578B\u56DE\u7B54");
-    return '<div class="hermes-confidence ' + esc2(q.level || "not_applicable") + '"><div class="hermes-confidence-head"><strong>' + title + "</strong><span>" + esc2(q.decision || "") + "</span></div>" + (entries ? '<div class="hermes-confidence-grid">' + entries + "</div>" : "") + "</div>";
+    const title = q.applicable ? "\u7F6E\u4FE1\u5EA6 " + Number(q.score || 0) + "/100 \xB7 " + esc(q.label || "") : esc(q.label || "\u975E\u6570\u636E\u578B\u56DE\u7B54");
+    return '<div class="hermes-confidence ' + esc(q.level || "not_applicable") + '"><div class="hermes-confidence-head"><strong>' + title + "</strong><span>" + esc(q.decision || "") + "</span></div>" + (entries ? '<div class="hermes-confidence-grid">' + entries + "</div>" : "") + "</div>";
   }
   function aiIsActionable(item) {
     const q = item && item.quality && item.quality.confidenceAssessment;
@@ -604,7 +604,7 @@
   function fmtAiTime(v) {
     if (!v) return "";
     const d = /* @__PURE__ */ new Date(String(v).replace(" ", "T") + (/[Z+]/.test(String(v)) ? "" : "Z"));
-    if (isNaN(d)) return String(v).slice(5, 16);
+    if (isNaN(d)) return esc(String(v).slice(5, 16));
     const p = (n) => String(n).padStart(2, "0");
     return d.getMonth() + 1 + "/" + d.getDate() + " " + p(d.getHours()) + ":" + p(d.getMinutes());
   }
@@ -725,10 +725,10 @@
         box.innerHTML = '<div class="dim csp-s-46909fa053">\u672A\u80FD\u4ECE\u7ED3\u8BBA\u4E2D\u63D0\u53D6\u5230\u660E\u786E\u53EF\u6267\u884C\u7684\u52A8\u4F5C\u3002</div>';
         return;
       }
-      box.innerHTML = '<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> \u53EF\u91C7\u7EB3\u7684\u6574\u6539\u52A8\u4F5C\uFF08\u9010\u6761\uFF09</div>' + splitActionItems.map((a, i) => '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge ' + (a.dept === "SEM" ? "b-purple" : "b-blue") + '">' + a.dept + "</span> " + esc2(a.title) + '</div><div class="ai-action-d">' + esc2(a.detail) + "</div>" + (a.evidence ? '<div class="ai-action-e dim">\u4F9D\u636E\uFF1A' + esc2(a.evidence) + "</div>" : "") + '</div><button type="button" class="btn-mini" data-ai-split-index="' + i + '"><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div>').join("") + "</div>";
+      box.innerHTML = '<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> \u53EF\u91C7\u7EB3\u7684\u6574\u6539\u52A8\u4F5C\uFF08\u9010\u6761\uFF09</div>' + splitActionItems.map((a, i) => '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge ' + (a.dept === "SEM" ? "b-purple" : "b-blue") + '">' + esc(a.dept) + "</span> " + esc(a.title) + '</div><div class="ai-action-d">' + esc(a.detail) + "</div>" + (a.evidence ? '<div class="ai-action-e dim">\u4F9D\u636E\uFF1A' + esc(a.evidence) + "</div>" : "") + '</div><button type="button" class="btn-mini" data-ai-split-index="' + i + '"><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div>').join("") + "</div>";
     } catch (e) {
       splitActionItems = [];
-      if (box) box.innerHTML = '<div class="dim csp-s-46909fa053">\u62C6\u89E3\u5931\u8D25\uFF1A' + esc2(e.message || "ai_failed") + "</div>";
+      if (box) box.innerHTML = '<div class="dim csp-s-46909fa053">\u62C6\u89E3\u5931\u8D25\uFF1A' + esc(e.message || "ai_failed") + "</div>";
     }
   }
   async function runAiAnalysis(btn, prompt2, title, force) {
@@ -751,7 +751,7 @@
       renderAiItem(item);
     } catch (e) {
       if (requestVersion !== modalRequestVersion) return;
-      document.getElementById("aiModalBody").innerHTML = apiUnavailableMsg + '<p class="dim">\u5931\u8D25\u539F\u56E0\uFF1A' + esc2(e.message || "ai_failed") + "</p>";
+      document.getElementById("aiModalBody").innerHTML = apiUnavailableMsg + '<p class="dim">\u5931\u8D25\u539F\u56E0\uFF1A' + esc(e.message || "ai_failed") + "</p>";
       setupAiFooter();
     } finally {
       if (requestVersion === modalRequestVersion && btn) btn.disabled = false;
@@ -773,7 +773,7 @@
     const files = [...(document.getElementById("aiChatFiles") || {}).files || []].slice(0, 5).map((f) => ({ name: f.name, type: f.type, size: f.size }));
     const requestVersion = ++modalRequestVersion;
     if (input) input.value = "";
-    document.getElementById("aiModalBody").insertAdjacentHTML("beforeend", '<div class="ai-chat-item user"><div class="bubble">' + esc2(msg) + '</div></div><div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7EE7\u7EED\u5206\u6790...</div>');
+    document.getElementById("aiModalBody").insertAdjacentHTML("beforeend", '<div class="ai-chat-item user"><div class="bubble">' + esc(msg) + '</div></div><div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7EE7\u7EED\u5206\u6790...</div>');
     try {
       const { item: next } = await API.post("/api/ai/analyses/" + item.id + "/chat", { message: msg, attachments: files });
       if (requestVersion !== modalRequestVersion) return;
@@ -856,7 +856,7 @@
     return label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason;
   }
   function loadFailureRow(cols, label, error) {
-    return '<tr><td colspan="' + cols + '" class="dim csp-s-45c174bbec">' + esc2(loadFailureText(label, error)) + "</td></tr>";
+    return '<tr><td colspan="' + cols + '" class="dim csp-s-45c174bbec">' + esc(loadFailureText(label, error)) + "</td></tr>";
   }
   function chartEmpty(id, detail, title) {
     const cv = document.getElementById(id);
@@ -1172,7 +1172,7 @@
           const pos = p.position != null ? Number(p.position).toFixed(1) : "\u2014";
           const q = "\u5206\u6790\u9875\u9762 " + path + " \u7684SEO\u8868\u73B0\uFF1A\u70B9\u51FB" + (p.clicks || 0) + "\u3001\u5C55\u73B0" + (p.impressions || 0) + "\u3001CTR" + ctr + "\u3001\u5747\u6392\u540D" + pos + "\u3002\u7ED9\u51FA\u6700\u8BE5\u5148\u6539\u76843\u4E2A\u52A8\u4F5C\u3002";
           const title = path + " \u8BCA\u65AD";
-          return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + pos + '</td><td class="num dim">\u2014</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, title) + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
+          return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + Number(p.clicks || 0).toLocaleString() + '</td><td class="num">' + Number(p.impressions || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + pos + '</td><td class="num dim">\u2014</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, title) + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
         }).join("");
       }
     }
@@ -1234,7 +1234,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h2) => '<span class="seo-hl-chip ' + (h2.tone === "good" ? "good" : "bad") + '">' + esc2(h2.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h2) => '<span class="seo-hl-chip ' + (h2.tone === "good" ? "good" : "bad") + '">' + esc(h2.text) + "</span>").join("");
   }
   function renderSeoDeltaTables(d) {
     const error = d && d.error;
@@ -1244,7 +1244,7 @@
       pt.innerHTML = error ? loadFailureRow(5, "SEO \u770B\u677F", error) : pages.length ? pages.map((p) => {
         const path = _seoPath(p.page);
         const q = "\u5206\u6790\u843D\u5730\u9875 " + path + " \u7684SEO\u8868\u73B0\uFF1A\u672C\u671F\u70B9\u51FB" + (p.clicks || 0) + "(\u4E0A\u671F" + (p.clicksPrev || 0) + ")\u3001\u5C55\u73B0" + (p.impressions || 0) + "\u3002\u7ED9\u51FA\u6700\u8BE5\u5148\u6539\u76843\u4E2A\u52A8\u4F5C\u3002";
-        return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(p.clicks, p.clicksPrev, false, "pct") + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u843D\u5730\u9875\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
+        return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + Number(p.clicks || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(p.clicks, p.clicksPrev, false, "pct") + '</td><td class="num">' + Number(p.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u843D\u5730\u9875\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
     }
     const qt = document.getElementById("seoQueriesDelta");
@@ -1252,7 +1252,7 @@
       const qs2 = d && d.queries || [];
       qt.innerHTML = error ? loadFailureRow(6, "SEO \u770B\u677F", error) : qs2.length ? qs2.map((q) => {
         const pos = q.position != null ? Number(q.position).toFixed(1) : "\u2014";
-        return "<tr><td>" + esc2(q.query) + '</td><td class="num">' + (q.impressions || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(q.impressions, q.imprPrev, false, "pct") + '</td><td class="num">' + (q.clicks || 0).toLocaleString() + '</td><td class="num">' + pos + '</td><td class="num">' + _deltaHtml(q.position, q.positionPrev, true, "abs1") + "</td></tr>";
+        return "<tr><td>" + esc(q.query) + '</td><td class="num">' + Number(q.impressions || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(q.impressions, q.imprPrev, false, "pct") + '</td><td class="num">' + Number(q.clicks || 0).toLocaleString() + '</td><td class="num">' + pos + '</td><td class="num">' + _deltaHtml(q.position, q.positionPrev, true, "abs1") + "</td></tr>";
       }).join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
     }
   }
@@ -1272,7 +1272,7 @@
       const path = _seoPath(p.page), b = Math.round((p.bounceRate || 0) * 100), dur = Math.round(p.avgDuration || 0);
       const q = "\u843D\u5730\u9875 " + path + " \u4F1A\u8BDD" + p.sessions + "\u3001\u8DF3\u51FA\u7387" + b + "%\u3001\u5747\u65F6\u957F" + dur + "s\uFF0C\u6D41\u91CF\u4E0D\u5C0F\u4F46\u8DF3\u51FA\u504F\u9AD8\u3002\u7ED9\u51FA\u964D\u4F4E\u8DF3\u51FA\u3001\u63D0\u5347\u7559\u5B58\u4E0E\u8F6C\u5316\u7684\u5177\u4F53\u4F18\u5316\u52A8\u4F5C\uFF08\u9996\u5C4F/\u5185\u5BB9\u5339\u914D/CTA/\u52A0\u8F7D\u901F\u5EA6\uFF09\u3002";
       const ti = "\u964D\u8DF3\u51FA\uFF1A" + path, de = "\u843D\u5730\u9875 " + path + " \u9AD8\u6D41\u91CF(" + p.sessions + "\u4F1A\u8BDD)\u9AD8\u8DF3\u51FA(" + b + "%)\uFF0C\u4F18\u5316\u9996\u5C4F/\u5185\u5BB9\u5339\u914D/CTA \u964D\u4F4E\u8DF3\u51FA\u3001\u63D0\u5347\u8F6C\u5316\u3002", ev = "GA4 \u4F1A\u8BDD" + p.sessions + " \u8DF3\u51FA" + b + "% \u65F6\u957F" + dur + "s";
-      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc2(path) + '</span><span class="st-meta dim">' + p.sessions.toLocaleString() + ' \u4F1A\u8BDD \xB7 \u8DF3\u51FA <b class="csp-s-371de31267">' + b + "%</b> \xB7 " + dur + 's</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u964D\u8DF3\u51FA\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(path) + '</span><span class="st-meta dim">' + Number(p.sessions).toLocaleString() + ' \u4F1A\u8BDD \xB7 \u8DF3\u51FA <b class="csp-s-371de31267">' + b + "%</b> \xB7 " + dur + 's</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u964D\u8DF3\u51FA\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
     }).join("") + "</div>";
   }
   function renderSeoScatter(d) {
@@ -1319,7 +1319,7 @@
         grid: { left: 52, right: 120, top: 16, bottom: 44 },
         xAxis: { type: "log", name: "\u4F1A\u8BDD", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
         yAxis: { type: "value", name: "\u8DF3\u51FA\u7387%", min: 0, max: 100, nameGap: 30, axisLabel: { fontSize: 10 } },
-        tooltip: { formatter: (o) => esc2(o.value[2]) + "<br/>\u4F1A\u8BDD " + o.value[0].toLocaleString() + " \xB7 \u8DF3\u51FA\u7387 " + o.value[1] + "% \xB7 \u5747\u65F6\u957F " + Math.round(o.value[3]) + "s" },
+        tooltip: { formatter: (o) => esc(o.value[2]) + "<br/>\u4F1A\u8BDD " + Number(o.value[0]).toLocaleString() + " \xB7 \u8DF3\u51FA\u7387 " + esc(o.value[1]) + "% \xB7 \u5747\u65F6\u957F " + Math.round(o.value[3]) + "s" },
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(32, 8 + Math.sqrt(v[0] || 0)),
@@ -1353,7 +1353,7 @@
       grid: { left: 52, right: 24, top: 16, bottom: 44 },
       xAxis: { type: "log", name: "\u5C55\u73B0", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
       yAxis: { type: "value", name: "\u6392\u540D(\u8D8A\u4F4E\u8D8A\u597D)", inverse: true, min: 1, nameGap: 30, axisLabel: { fontSize: 10 } },
-      tooltip: { formatter: (o) => esc2(o.data[3]) + "<br/>\u5C55\u73B0 " + o.data[0].toLocaleString() + " \xB7 \u6392\u540D " + o.data[1].toFixed(1) + " \xB7 \u70B9\u51FB " + o.data[2] },
+      tooltip: { formatter: (o) => esc(o.data[3]) + "<br/>\u5C55\u73B0 " + Number(o.data[0]).toLocaleString() + " \xB7 \u6392\u540D " + o.data[1].toFixed(1) + " \xB7 \u70B9\u51FB " + esc(o.data[2]) },
       series: [{
         type: "scatter",
         symbolSize: (v) => Math.min(30, 7 + Math.sqrt(v[2] || 0) * 2.2),
@@ -1383,10 +1383,10 @@
         const total = top.reduce((a, s) => a + (s.sessions || 0), 0) || 1;
         if (legend) legend.innerHTML = top.map((s, i) => {
           const b = s.bounceRate != null ? '<span class="dim csp-s-128d24435a"> \xB7 \u8DF3\u51FA' + Math.round(s.bounceRate * 100) + "%</span>" : "";
-          return '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc2(s.source) + b + "</span><b>" + Math.round((s.sessions || 0) / total * 100) + "%</b></div>";
+          return '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc(s.source) + b + "</span><b>" + Math.round((s.sessions || 0) / total * 100) + "%</b></div>";
         }).join("");
       } else if (legend) {
-        legend.innerHTML = '<span class="dim">' + (error ? esc2(loadFailureText("SEO \u6765\u6E90", error)) : "\u6682\u65E0 GA4 \u6765\u6E90\u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
+        legend.innerHTML = '<span class="dim">' + (error ? esc(loadFailureText("SEO \u6765\u6E90", error)) : "\u6682\u65E0 GA4 \u6765\u6E90\u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
       }
     }
     const areaCv = document.getElementById("seoSrcArea");
@@ -1464,14 +1464,14 @@
     }
     sel.disabled = false;
     const cur = sel.value;
-    sel.innerHTML = ['<option value="">\u5168\u90E8\u5E7F\u544A\u7EC4</option>'].concat((list || []).map((g) => '<option value="' + esc2(g.adGroupId) + '">' + esc2(g.adGroupName || "(\u672A\u547D\u540D\u5E7F\u544A\u7EC4)") + "</option>")).join("");
+    sel.innerHTML = ['<option value="">\u5168\u90E8\u5E7F\u544A\u7EC4</option>'].concat((list || []).map((g) => '<option value="' + esc(g.adGroupId) + '">' + esc(g.adGroupName || "(\u672A\u547D\u540D\u5E7F\u544A\u7EC4)") + "</option>")).join("");
     sel.value = cur;
   }
   function _fillSemCampaignFilter(list) {
     const sel = document.getElementById("semCampFilter");
     if (!sel || window._semCampaign) return;
     const cur = sel.value;
-    sel.innerHTML = ['<option value="">\u5168\u90E8\u7CFB\u5217</option>'].concat((list || []).map((c) => '<option value="' + esc2(c.campaignId) + '">' + esc2(c.campaignName || "(\u672A\u547D\u540D)") + "</option>")).join("");
+    sel.innerHTML = ['<option value="">\u5168\u90E8\u7CFB\u5217</option>'].concat((list || []).map((c) => '<option value="' + esc(c.campaignId) + '">' + esc(c.campaignName || "(\u672A\u547D\u540D)") + "</option>")).join("");
     sel.value = cur;
   }
   async function loadSemBoardAds() {
@@ -1532,10 +1532,10 @@
     const cpc = (cost, conv) => conv && conv > 0 ? _money(cost / conv) : "\u2014";
     let html = "";
     camps.forEach((c) => {
-      html += '<tr class="h-camp" data-chart-action="toggle-hier"><td><i class="ti ti-chevron-down hicon"></i> <b>' + esc2(c.campaignName || "(\u672A\u547D\u540D)") + '</b></td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
+      html += '<tr class="h-camp" data-chart-action="toggle-hier"><td><i class="ti ti-chevron-down hicon"></i> <b>' + esc(c.campaignName || "(\u672A\u547D\u540D)") + '</b></td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
       (byCamp.get(c.campaignName || "") || []).forEach((k) => {
-        const mt = k.matchType ? " \xB7 " + esc2(k.matchType) : "";
-        html += '<tr class="h-kw"><td>\u3000\u2022 ' + esc2(k.keyword || "") + '<span class="dim csp-s-33ee298127">' + mt + '</span></td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>";
+        const mt = k.matchType ? " \xB7 " + esc(k.matchType) : "";
+        html += '<tr class="h-kw"><td>\u3000\u2022 ' + esc(k.keyword || "") + '<span class="dim csp-s-33ee298127">' + mt + '</span></td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>";
       });
     });
     tb.innerHTML = html;
@@ -1554,7 +1554,7 @@
     if (!card2 || !body) return;
     if (d && d.error) {
       card2.classList.remove("is-hidden");
-      body.innerHTML = '<div class="dim">' + esc2(loadFailureText("\u8BE2\u76D8\u5F52\u56E0", d.error)) + "</div>";
+      body.innerHTML = '<div class="dim">' + esc(loadFailureText("\u8BE2\u76D8\u5F52\u56E0", d.error)) + "</div>";
       return;
     }
     const sem = d && d.sem;
@@ -1567,7 +1567,7 @@
     const real = sem.costPerEffective != null ? Math.round(sem.costPerEffective).toLocaleString() : "\u2014";
     const adsCpa = sem.adsConversions > 0 ? Math.round(cost / sem.adsConversions).toLocaleString() : "\u2014";
     const gap = sem.costPerEffective != null && sem.adsConversions > 0 ? sem.costPerEffective / (cost / sem.adsConversions) : null;
-    body.innerHTML = '<div class="attr-report-grid"><div class="attr-box"><div class="attr-num">' + (sem.inquiriesEffective || 0) + '<span class="dim csp-s-a49cca52be">/' + (sem.inquiriesTotal || 0) + '</span></div><div class="attr-lbl">\u771F\u5B9E\u6709\u6548\u8BE2\u76D8 (A/B)</div></div><div class="attr-box"><div class="attr-num">' + (sem.inquiriesA || 0) + '</div><div class="attr-lbl">A \u7EA7\u8BE2\u76D8\u6570\u91CF</div></div><div class="attr-box"><div class="attr-num">' + real + '</div><div class="attr-lbl">\u771F\u5B9E\u6BCF\u6709\u6548\u8BE2\u76D8\u6210\u672C \xB7 Ads \u81EA\u62A5 ' + adsCpa + "</div></div></div>" + (gap && gap >= 1.3 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u771F\u5B9E\u6BCF\u8BE2\u76D8\u6210\u672C\u7EA6\u4E3A Ads \u81EA\u62A5\u7684 ' + gap.toFixed(1) + " \u500D\u2014\u2014Ads \u8F6C\u5316\u7EDF\u8BA1\u53EF\u80FD\u865A\u9AD8\uFF0C\u522B\u53EA\u770B Ads \u540E\u53F0\u6570\u5B57\u3002</div>" : "") + (sem.inquiriesEffective === 0 && sem.costMicros > 0 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u672C\u533A\u95F4 SEM \u4ED8\u8D39\u82B1\u4E86 ' + _money(sem.costMicros) + " \u4F46\u771F\u5B9E\u6709\u6548\u8BE2\u76D8\u4E3A 0\u2014\u2014\u68C0\u67E5\u6E20\u9053\u6807\u6CE8\u6216\u6295\u653E\u6548\u679C\u3002</div>" : "");
+    body.innerHTML = '<div class="attr-report-grid"><div class="attr-box"><div class="attr-num">' + esc(sem.inquiriesEffective || 0) + '<span class="dim csp-s-a49cca52be">/' + esc(sem.inquiriesTotal || 0) + '</span></div><div class="attr-lbl">\u771F\u5B9E\u6709\u6548\u8BE2\u76D8 (A/B)</div></div><div class="attr-box"><div class="attr-num">' + esc(sem.inquiriesA || 0) + '</div><div class="attr-lbl">A \u7EA7\u8BE2\u76D8\u6570\u91CF</div></div><div class="attr-box"><div class="attr-num">' + real + '</div><div class="attr-lbl">\u771F\u5B9E\u6BCF\u6709\u6548\u8BE2\u76D8\u6210\u672C \xB7 Ads \u81EA\u62A5 ' + adsCpa + "</div></div></div>" + (gap && gap >= 1.3 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u771F\u5B9E\u6BCF\u8BE2\u76D8\u6210\u672C\u7EA6\u4E3A Ads \u81EA\u62A5\u7684 ' + gap.toFixed(1) + " \u500D\u2014\u2014Ads \u8F6C\u5316\u7EDF\u8BA1\u53EF\u80FD\u865A\u9AD8\uFF0C\u522B\u53EA\u770B Ads \u540E\u53F0\u6570\u5B57\u3002</div>" : "") + (sem.inquiriesEffective === 0 && sem.costMicros > 0 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u672C\u533A\u95F4 SEM \u4ED8\u8D39\u82B1\u4E86 ' + _money(sem.costMicros) + " \u4F46\u771F\u5B9E\u6709\u6548\u8BE2\u76D8\u4E3A 0\u2014\u2014\u68C0\u67E5\u6E20\u9053\u6807\u6CE8\u6216\u6295\u653E\u6548\u679C\u3002</div>" : "");
   }
   window._semCostDonut = null;
   window._semTrend = null;
@@ -1599,7 +1599,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h2) => '<span class="seo-hl-chip ' + (h2.tone === "good" ? "good" : "bad") + '">' + esc2(h2.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h2) => '<span class="seo-hl-chip ' + (h2.tone === "good" ? "good" : "bad") + '">' + esc(h2.text) + "</span>").join("");
   }
   function renderSemDeltaTables(d) {
     const error = d && d.error;
@@ -1611,13 +1611,13 @@
       ct.innerHTML = error ? loadFailureRow(10, "SEM \u770B\u677F", error) : cs.length ? cs.map((c) => {
         const ctr = rate(c.clicks, c.impressions), cvr = rate(Number(c.conversions || 0), c.clicks);
         const cpcCost = c.clicks && c.clicks > 0 ? _money(c.costMicros / c.clicks) : "\u2014";
-        return "<tr><td>" + esc2(c.name || "(\u672A\u547D\u540D)") + '</td><td class="num">' + (c.impressions || 0).toLocaleString() + '</td><td class="num">' + (c.clicks || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + cpcCost + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cvr + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
+        return "<tr><td>" + esc(c.name || "(\u672A\u547D\u540D)") + '</td><td class="num">' + Number(c.impressions || 0).toLocaleString() + '</td><td class="num">' + Number(c.clicks || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + cpcCost + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cvr + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
       }).join("") : '<tr><td colspan="10" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
     }
     const kt = document.getElementById("semKwRows");
     if (kt) {
       const ks = d && d.keywords || [];
-      kt.innerHTML = error ? loadFailureRow(6, "SEM \u770B\u677F", error) : ks.length ? ks.map((k) => "<tr><td>" + esc2(k.keyword || "") + '</td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + _deltaHtml(k.conversions, k.convPrev, false, "abs1") + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>").join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
+      kt.innerHTML = error ? loadFailureRow(6, "SEM \u770B\u677F", error) : ks.length ? ks.map((k) => "<tr><td>" + esc(k.keyword || "") + '</td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + _deltaHtml(k.conversions, k.convPrev, false, "abs1") + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>").join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
     }
   }
   function _semScatterTitles(t, s) {
@@ -1642,7 +1642,7 @@
       const scope = [p.campaignName, p.adGroupName, p.matchType].filter(Boolean).join(" \xB7 ");
       const q = "\u771F\u5B9E\u641C\u7D22\u8BCD\u300C" + p.searchTerm + "\u300D\u5728\u6240\u9009\u533A\u95F4\u82B1\u8D39" + cost.toFixed(0) + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\u3001Ads\u8F6C\u5316" + c + "\u3002\u7ED3\u5408\u6709\u6548\u8BE2\u76D8\u5F52\u56E0\u548C\u4E70\u5BB6\u610F\u56FE\uFF0C\u5224\u65AD\u5E94\u52A0\u5426\u8BCD\u8FD8\u662F\u7EE7\u7EED\u89C2\u5BDF\uFF1B\u4E0D\u8981\u4EC5\u51ED\u96F6Ads\u8F6C\u5316\u76F4\u63A5\u5426\u5B9A\u3002";
       const ti = "\u6838\u9A8C\u5019\u9009\u5426\u8BCD\uFF1A" + p.searchTerm, de = "\u771F\u5B9E\u641C\u7D22\u8BCD\u300C" + p.searchTerm + "\u300D(" + (scope || "\u8303\u56F4\u672A\u77E5") + ") \u82B1\u8D39" + cost.toFixed(0) + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\u3001Ads\u8F6C\u5316" + c + "\u3002\u6838\u5BF9\u8BE2\u76D8\u5F52\u56E0\u548C\u610F\u56FE\u540E\u51B3\u5B9A\u662F\u5426\u52A0\u5426\u8BCD\u3002", ev = "Ads\u771F\u5B9E\u641C\u7D22\u8BCD \u82B1\u8D39" + cost.toFixed(0) + " \u8F6C\u5316" + c + " \u70B9\u51FB" + (p.clicks || 0);
-      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc2(p.searchTerm) + '</span><span class="st-meta dim">' + esc2(scope || "\u8303\u56F4\u672A\u77E5") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u641C\u7D22\u8BCD\u6838\u9A8C") + '><i class="ti ti-bulb"></i> \u6838\u9A8C</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u8F6C\u4EFB\u52A1</button></div></div>';
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(p.searchTerm) + '</span><span class="st-meta dim">' + esc(scope || "\u8303\u56F4\u672A\u77E5") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u641C\u7D22\u8BCD\u6838\u9A8C") + '><i class="ti ti-bulb"></i> \u6838\u9A8C</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u8F6C\u4EFB\u52A1</button></div></div>';
     }).join("") + "</div>";
   }
   function renderSemScatter(d) {
@@ -1684,7 +1684,7 @@
         grid: { left: 56, right: 120, top: 16, bottom: 44 },
         xAxis: { type: "log", name: "\u82B1\u8D39", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
         yAxis: { type: "log", name: "\u6BCF\u8F6C\u5316\u6210\u672C", nameGap: 8, axisLabel: { fontSize: 10 } },
-        tooltip: { formatter: (o) => esc2(o.value[2]) + "<br/>\u82B1\u8D39 " + o.value[0] + " \xB7 \u6BCF\u8F6C\u5316\u6210\u672C " + o.value[1] + " \xB7 \u8F6C\u5316 " + o.value[3] },
+        tooltip: { formatter: (o) => esc(o.value[2]) + "<br/>\u82B1\u8D39 " + esc(o.value[0]) + " \xB7 \u6BCF\u8F6C\u5316\u6210\u672C " + esc(o.value[1]) + " \xB7 \u8F6C\u5316 " + esc(o.value[3]) },
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(30, 8 + Math.sqrt(v[0] || 0) / 3),
@@ -1754,9 +1754,9 @@
       if (top.length) {
         window._semCostDonut = new Chart(donutCv, { type: "doughnut", data: { labels: top.map((c) => c.name), datasets: [{ data: top.map((c) => c.costMicros / 1e6), backgroundColor: palette, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "62%" } });
         const total = top.reduce((a, c) => a + (c.costMicros || 0), 0) || 1;
-        if (legend) legend.innerHTML = top.map((c, i) => '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc2(c.name) + "</span><b>" + Math.round((c.costMicros || 0) / total * 100) + "%</b></div>").join("");
+        if (legend) legend.innerHTML = top.map((c, i) => '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc(c.name) + "</span><b>" + Math.round((c.costMicros || 0) / total * 100) + "%</b></div>").join("");
       } else if (legend) {
-        legend.innerHTML = '<span class="dim">' + (error ? esc2(loadFailureText("SEM \u82B1\u8D39", error)) : "\u6682\u65E0 Ads \u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
+        legend.innerHTML = '<span class="dim">' + (error ? esc(loadFailureText("SEM \u82B1\u8D39", error)) : "\u6682\u65E0 Ads \u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
       }
     }
     const trendCv = document.getElementById("semTrend");
@@ -1812,7 +1812,7 @@
     }
   }
   function _dataActionAttr(name, value) {
-    return " data-" + name + '="' + esc2(String(value == null ? "" : value)) + '"';
+    return " data-" + name + '="' + esc(String(value == null ? "" : value)) + '"';
   }
   function _aiActionAttrs(prompt2, title) {
     return _dataActionAttr("ferr-action", "ai") + _dataActionAttr("ai-prompt", prompt2) + _dataActionAttr("ai-title", title);
@@ -1863,14 +1863,14 @@
     try {
       d = await API.get(withRange2("/api/data-freshness", "data"));
     } catch (e) {
-      el5.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
+      el5.innerHTML = '<span class="dim">' + esc(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
       return;
     }
     const fmt2 = (v) => {
       if (!v) return "\u4ECE\u672A";
       const s = String(v).replace(" ", "T");
       const t = new Date(/Z|[+-]\d{2}/.test(s) ? s : s + "Z");
-      if (isNaN(t)) return String(v).slice(5, 16);
+      if (isNaN(t)) return esc(String(v).slice(5, 16));
       const p = (n) => String(n).padStart(2, "0");
       const dif = Math.floor((Date.now() - t.getTime()) / 6e4);
       if (dif < 60) return dif + " \u5206\u949F\u524D";
@@ -1881,7 +1881,7 @@
       if (!s.connected) return '<span class="fresh-chip gray"><b>' + name + "</b> \u672A\u63A5\u5165</span>";
       const cov = s.days > 0 ? Math.round(s.daysWithData / s.days * 100) : 0;
       const tone = s.daysWithData === 0 ? "bad" : cov < 70 ? "warn" : "good";
-      return '<span class="fresh-chip ' + tone + '"><b>' + name + "</b> \u6709\u6570\u636E " + s.daysWithData + "/" + s.days + ' \u5929<span class="dim"> \xB7 ' + fmt2(s.lastSync) + (s.status === "failed" ? ' <b class="csp-s-b0e08465c2">\u5931\u8D25</b>' : "") + "</span></span>";
+      return '<span class="fresh-chip ' + tone + '"><b>' + name + "</b> \u6709\u6570\u636E " + esc(s.daysWithData) + "/" + esc(s.days) + ' \u5929<span class="dim"> \xB7 ' + fmt2(s.lastSync) + (s.status === "failed" ? ' <b class="csp-s-b0e08465c2">\u5931\u8D25</b>' : "") + "</span></span>";
     };
     el5.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
   }
@@ -1961,7 +1961,7 @@
         const path = _seoPath(o.page), pos = o.position != null ? Number(o.position).toFixed(1) : "\u2014";
         const q = "\u5173\u952E\u8BCD\u300C" + o.query + "\u300D\u5F53\u524D\u6392\u540D" + pos + "\u3001\u9875\u9762" + path + "\u3001\u533A\u95F4\u66DD\u5149" + (o.impressions || 0) + "\uFF0C\u7ED9\u51FA\u51B2\u8FDBTop10\u7684\u5177\u4F53\u4F18\u5316\u6E05\u5355\uFF08\u6807\u9898/\u5185\u5BB9/\u5185\u94FE/\u5916\u94FE\uFF09\u3002";
         const ti = "\u673A\u4F1A\u8BCD\u51B2\u9996\u9875\uFF1A" + o.query, de = "\u5173\u952E\u8BCD\u300C" + o.query + "\u300D\u5F53\u524D\u6392\u540D" + pos + "\uFF08\u9875\u9762" + path + "\uFF09\uFF0C\u533A\u95F4\u66DD\u5149" + (o.impressions || 0) + "\u3002\u4F18\u5316\u6807\u9898/\u5185\u5BB9/\u5185\u94FE\u51B2\u8FDB Top10\u3002", ev = "GSC\u673A\u4F1A\u8BCD \u6392\u540D" + pos + " \u5C55\u73B0" + (o.impressions || 0) + " \u70B9\u51FB" + (o.clicks || 0);
-        return "<tr><td>" + esc2(o.query) + '</td><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num"><span class="badge b-amber">' + pos + '</span></td><td class="num">' + (o.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u673A\u4F1A\u8BCD\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u51B2\u9996\u9875</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return "<tr><td>" + esc(o.query) + '</td><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num"><span class="badge b-amber">' + pos + '</span></td><td class="num">' + Number(o.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u673A\u4F1A\u8BCD\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u51B2\u9996\u9875</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u673A\u4F1A\u8BCD \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
     }
     const t2 = document.getElementById("diagDecayRows");
@@ -1971,18 +1971,18 @@
         const posChg = p.positionPrev != null && p.positionCur != null ? Number(p.positionPrev).toFixed(1) + "\u2192" + Number(p.positionCur).toFixed(1) : "\u2014";
         const q = path + " \u70B9\u51FB\u8FD1\u4E00\u7A97\u8DCC" + p.dropPct + "%\uFF08" + p.clicksPrev + "\u2192" + p.clicksCur + "\uFF09\uFF0C\u6392\u540D" + posChg + "\u3002\u7ED9\u51FA\u6392\u67E5\u4E0E\u6B62\u635F\u6B65\u9AA4\u3002";
         const ti = "\u8870\u9000\u6B62\u635F\uFF1A" + path, de = "\u9875\u9762" + path + " \u70B9\u51FB\u73AF\u6BD4\u8DCC" + p.dropPct + "%\uFF08" + p.clicksPrev + "\u2192" + p.clicksCur + "\uFF09\uFF0C\u6392\u540D" + posChg + "\u3002\u6392\u67E5\u539F\u56E0\u5E76\u6B62\u635F\u3002", ev = "GSC\u73AF\u6BD4 \u70B9\u51FB\u2193" + p.dropPct + "% \u6392\u540D" + posChg;
-        return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num csp-s-b0e08465c2">\u25BC' + p.dropPct + '%</td><td class="num">' + esc2(posChg) + '</td><td class="ctr"><span class="badge b-gray">\u9700\u6392\u67E5</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8870\u9000\u6B62\u635F") + '><i class="ti ti-bulb"></i> \u6B62\u635F\u65B9\u6848</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num csp-s-b0e08465c2">\u25BC' + esc(p.dropPct) + '%</td><td class="num">' + esc(posChg) + '</td><td class="ctr"><span class="badge b-gray">\u9700\u6392\u67E5</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8870\u9000\u6B62\u635F") + '><i class="ti ti-bulb"></i> \u6B62\u635F\u65B9\u6848</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u660E\u663E\u8870\u9000\u9875 \xB7 \u9700\u22652 \u4E2A\u7B49\u957F\u7A97\u53E3\u6570\u636E\u624D\u80FD\u6BD4\u8F83</td></tr>';
     }
     const t3 = document.getElementById("diagCannRows");
     if (t3) {
       t3.innerHTML = error ? loadFailureRow(5, "SEO \u8695\u98DF\u8BCA\u65AD", error) : can2.length ? can2.map((g) => {
-        const urls = g.pages.map((p) => esc2(_seoPath(p.page))).join("<br>");
+        const urls = g.pages.map((p) => esc(_seoPath(p.page))).join("<br>");
         const ranks = g.pages.map((p) => p.position != null ? Number(p.position).toFixed(0) : "\u2014").join(" / ");
         const detail = g.pages.map((p) => _seoPath(p.page) + "(\u6392\u540D" + (p.position != null ? Number(p.position).toFixed(1) : "\u2014") + ")").join("\u3001");
         const q = "\u5173\u952E\u8BCD\u300C" + g.query + "\u300D\u88AB" + g.pages.length + "\u4E2AURL\u540C\u65F6\u7ADE\u4E89\uFF1A" + detail + "\u3002\u7ED9\u51FA\u5408\u5E76\u65B9\u6848\uFF1A\u4FDD\u7559\u54EA\u4E2A\u4E3A\u4E3B\u9875\u3001\u5176\u4F59\u5982\u4F55301\u6216\u6539\u5199\u5DEE\u5F02\u5316\u610F\u56FE\u3001\u5185\u94FE\u600E\u4E48\u8C03\u3002";
         const ti = "\u8695\u98DF\u5408\u5E76\uFF1A" + g.query, de = "\u5173\u952E\u8BCD\u300C" + g.query + "\u300D\u88AB" + g.pages.length + "\u4E2AURL\u7ADE\u4E89\uFF1A" + detail + "\u3002\u5408\u5E76/\u5DEE\u5F02\u5316\u610F\u56FE\u3001\u8C03\u6574\u5185\u94FE\u3002", ev = "GSC " + g.pages.length + "\u9875\u5206\u6563\u6392\u540D " + ranks;
-        return "<tr><td>" + esc2(g.query) + '</td><td class="dim csp-s-33ee298127">' + urls + '</td><td class="num"><span class="badge b-red">' + esc2(ranks) + '</span></td><td class="ctr"><span class="badge b-amber">' + g.pages.length + '\u9875\u62A21\u610F\u56FE</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8695\u98DF\u5408\u5E76\u5EFA\u8BAE") + '><i class="ti ti-git-merge"></i> AI \u5408\u5E76\u5EFA\u8BAE</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return "<tr><td>" + esc(g.query) + '</td><td class="dim csp-s-33ee298127">' + urls + '</td><td class="num"><span class="badge b-red">' + esc(ranks) + '</span></td><td class="ctr"><span class="badge b-amber">' + g.pages.length + '\u9875\u62A21\u610F\u56FE</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8695\u98DF\u5408\u5E76\u5EFA\u8BAE") + '><i class="ti ti-git-merge"></i> AI \u5408\u5E76\u5EFA\u8BAE</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u8695\u98DF\u7EC4 \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
     }
   }
@@ -2406,9 +2406,9 @@
   `).join("");
     const more = group.rows.length > 4 ? `<div class="inq-map-tip-more">\u8FD8\u6709 ${group.rows.length - 4} \u6761\u8BE2\u76D8</div>` : "";
     return `
-    <div class="inq-map-tip-title">${inqMapEsc(group.country)} \xB7 ${group.total} \u6761\u8BE2\u76D8</div>
+    <div class="inq-map-tip-title">${inqMapEsc(group.country)} \xB7 ${inqMapEsc(group.total)} \u6761\u8BE2\u76D8</div>
     <div class="inq-map-tip-stats">
-      <span>A\u7EA7 ${group.A || 0}</span><span>B\u7EA7 ${group.B || 0}</span><span>C\u7EA7 ${group.C || 0}</span><span>A\u7EA7\u5360\u6BD4 ${aRatio}%</span>
+      <span>A\u7EA7 ${inqMapEsc(group.A || 0)}</span><span>B\u7EA7 ${inqMapEsc(group.B || 0)}</span><span>C\u7EA7 ${inqMapEsc(group.C || 0)}</span><span>A\u7EA7\u5360\u6BD4 ${aRatio}%</span>
     </div>
     <div class="inq-map-tip-meta">\u4E3B\u8BE2\u4EA7\u54C1\uFF1A${inqMapEsc(modeOf(group.products))} \xB7 \u4E3B\u8981\u6E20\u9053\uFF1A${inqMapEsc(modeOf(group.channels))}</div>
     ${rows2}${more}
@@ -2439,10 +2439,10 @@
   }
   function unmappedNoteHtml(unmappedList, unmappedTotal) {
     if (!unmappedTotal) return "";
-    const names = unmappedList.map((u) => `${inqMapEsc(u.country)}${u.count > 1 ? ` \xD7${u.count}` : ""}`).join("\u3001");
+    const names = unmappedList.map((u) => `${inqMapEsc(u.country)}${u.count > 1 ? ` \xD7${inqMapEsc(u.count)}` : ""}`).join("\u3001");
     return `
     <div class="inq-map-note">
-      \u6709 ${unmappedTotal} \u6761\u8BE2\u76D8\u56E0\u56FD\u5BB6\u6682\u65E0\u5730\u56FE\u5750\u6807\u672A\u753B\u4E0A\u98DE\u7EBF:${names}\u3002\u6570\u636E\u6CA1\u4E22,\u53EA\u662F\u5730\u56FE\u7F3A\u8BE5\u56FD\u5750\u6807,\u8BF7\u8865\u5145\u5750\u6807\u8868\u3002
+      \u6709 ${inqMapEsc(unmappedTotal)} \u6761\u8BE2\u76D8\u56E0\u56FD\u5BB6\u6682\u65E0\u5730\u56FE\u5750\u6807\u672A\u753B\u4E0A\u98DE\u7EBF:${names}\u3002\u6570\u636E\u6CA1\u4E22,\u53EA\u662F\u5730\u56FE\u7F3A\u8BE5\u56FD\u5750\u6807,\u8BF7\u8865\u5145\u5750\u6807\u8868\u3002
     </div>
   `;
   }
@@ -2873,10 +2873,7 @@
   function fillSelect(el5, names, { placeholder = null } = {}) {
     if (!el5) return;
     const keepValue = el5.value;
-    const opts = [];
-    if (placeholder != null) opts.push(`<option value="">${placeholder}</option>`);
-    for (const n of names) opts.push(`<option>${n}</option>`);
-    el5.innerHTML = opts.join("");
+    el5.innerHTML = (placeholder != null ? `<option value="">${esc(placeholder)}</option>` : "") + names.map((n) => `<option>${esc(n)}</option>`).join("");
     if (keepValue && names.indexOf(keepValue) >= 0) el5.value = keepValue;
   }
 
@@ -2988,8 +2985,8 @@
     const list = Array.isArray(images) ? images : [];
     if (!list.length) return "";
     return '<span class="att-thumbs">' + list.map((im) => {
-      const label = esc2((im.name || "\u56FE\u7247") + (im.bytes ? " \xB7 " + humanBytes(im.bytes) : ""));
-      return `<span class="att-thumb-wrap"><img class="att-thumb" src="${esc2(rawUrl(im.id))}" alt="${label}" title="${label}" data-att-view="${esc2(im.id)}" data-att-name="${esc2(im.name || "\u56FE\u7247")}" data-att-bytes="${esc2(im.bytes || 0)}" loading="lazy">` + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc2(im.id)}" title="\u5220\u9664\u8FD9\u5F20\u56FE"><i class="ti ti-x"></i></button>` : "") + "</span>";
+      const label = esc((im.name || "\u56FE\u7247") + (im.bytes ? " \xB7 " + humanBytes(im.bytes) : ""));
+      return `<span class="att-thumb-wrap"><img class="att-thumb" src="${esc(rawUrl(im.id))}" alt="${label}" title="${label}" data-att-view="${esc(im.id)}" data-att-name="${esc(im.name || "\u56FE\u7247")}" data-att-bytes="${esc(im.bytes || 0)}" loading="lazy">` + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc(im.id)}" title="\u5220\u9664\u8FD9\u5F20\u56FE"><i class="ti ti-x"></i></button>` : "") + "</span>";
     }).join("") + "</span>";
   }
   var lightbox = null;
@@ -3066,7 +3063,7 @@
       return '<button type="button" class="track-add track-add-first" data-sales-open><i class="ti ti-plus"></i>\u4E1A\u52A1\u53CD\u9988</button>';
     }
     const title = list.map((n) => noteDate(n.created_at, true) + "\u3000" + (n.text || "(\u4EC5\u56FE\u7247)")).join("\n\n");
-    return `<div class="track-cell-wrap"><button type="button" class="track-list sales-list" data-sales-open title="${esc2(title)}">` + list.map((n) => `<span class="track-line sales-line"><span class="track-line-date sales-line-date">${esc2(noteDate(n.created_at, false))}</span><span class="track-line-text">` + (n.text ? esc2(n.text) : '<span class="sales-only-img">\u4EC5\u56FE\u7247</span>') + thumbsHtml(n.images) + "</span></span>").join("") + `</button><button type="button" class="track-add" data-sales-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
+    return `<div class="track-cell-wrap"><button type="button" class="track-list sales-list" data-sales-open title="${esc(title)}">` + list.map((n) => `<span class="track-line sales-line"><span class="track-line-date sales-line-date">${esc(noteDate(n.created_at, false))}</span><span class="track-line-text">` + (n.text ? esc(n.text) : '<span class="sales-only-img">\u4EC5\u56FE\u7247</span>') + thumbsHtml(n.images) + "</span></span>").join("") + `</button><button type="button" class="track-add" data-sales-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
   }
   var editing = null;
   var pendingFiles = [];
@@ -3084,7 +3081,7 @@
       box.innerHTML = "";
       return;
     }
-    box.innerHTML = '<div class="sales-pending-head">\u5F85\u4E0A\u4F20 ' + pendingFiles.length + " \u5F20\uFF1A</div>" + pendingFiles.map((f, i) => `<span class="sales-pending-item">${esc2(f.name)}<button type="button" class="sales-pending-del" data-sales-unpick="${i}" title="\u4E0D\u4F20\u8FD9\u5F20"><i class="ti ti-x"></i></button></span>`).join("");
+    box.innerHTML = '<div class="sales-pending-head">\u5F85\u4E0A\u4F20 ' + pendingFiles.length + " \u5F20\uFF1A</div>" + pendingFiles.map((f, i) => `<span class="sales-pending-item">${esc(f.name)}<button type="button" class="sales-pending-del" data-sales-unpick="${i}" title="\u4E0D\u4F20\u8FD9\u5F20"><i class="ti ti-x"></i></button></span>`).join("");
   }
   function renderLog() {
     const box = document.getElementById("sales-log");
@@ -3094,7 +3091,7 @@
       box.innerHTML = '<div class="track-log-empty">\u8FD8\u6CA1\u6709\u4E1A\u52A1\u53CD\u9988\uFF0C\u5728\u4E0B\u9762\u5199\u7B2C\u4E00\u6761\u6216\u76F4\u63A5\u4F20\u56FE\u3002</div>';
       return;
     }
-    box.innerHTML = '<div class="track-log-head">\u4E1A\u52A1\u53CD\u9988 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((n) => `<div class="track-item" data-note="${esc2(n.id)}"><div class="track-item-meta"><span class="track-item-date${n.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc2(noteDate(n.created_at, true))}</span>` + (n.created_by_name ? `<span class="track-item-who">${esc2(n.created_by_name)}</span>` : "") + `<button type="button" class="sales-item-add-img" data-sales-addimg="${esc2(n.id)}" title="\u7ED9\u8FD9\u6761\u8865\u56FE"><i class="ti ti-photo-plus"></i></button><button type="button" class="track-item-del" data-sales-del="${esc2(n.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div>` + (n.text ? `<div class="track-item-text">${esc2(n.text)}</div>` : '<div class="track-item-text dim">\uFF08\u4EC5\u56FE\u7247\uFF09</div>') + thumbsHtml(n.images, { deletable: true }) + "</div>").join("");
+    box.innerHTML = '<div class="track-log-head">\u4E1A\u52A1\u53CD\u9988 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((n) => `<div class="track-item" data-note="${esc(n.id)}"><div class="track-item-meta"><span class="track-item-date${n.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc(noteDate(n.created_at, true))}</span>` + (n.created_by_name ? `<span class="track-item-who">${esc(n.created_by_name)}</span>` : "") + `<button type="button" class="sales-item-add-img" data-sales-addimg="${esc(n.id)}" title="\u7ED9\u8FD9\u6761\u8865\u56FE"><i class="ti ti-photo-plus"></i></button><button type="button" class="track-item-del" data-sales-del="${esc(n.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div>` + (n.text ? `<div class="track-item-text">${esc(n.text)}</div>` : '<div class="track-item-text dim">\uFF08\u4EC5\u56FE\u7247\uFF09</div>') + thumbsHtml(n.images, { deletable: true }) + "</div>").join("");
   }
   function openSales(tr) {
     const id = tr && tr.dataset.id;
@@ -3242,11 +3239,11 @@
   }
   function sourceCellHtml(r) {
     const v = verdictOf(r);
-    const badge3 = v && v.label ? `<span class="badge ${TONE_BADGE[v.tone] || "b-gray"} inq-src-verdict">${esc2(v.label)}</span>` : "";
-    const subs = [];
-    if (r.src_campaign || r.src_campaign_id) subs.push(`<span class="inq-src-sub">\u7CFB\u5217 ${esc2(r.src_campaign || r.src_campaign_id)}</span>`);
-    if (r.src_landing_page) subs.push(`<span class="inq-src-sub">\u843D\u5730\u9875 ${esc2(pathOf(r.src_landing_page))}</span>`);
-    return `<button type="button" class="inq-src" data-inq-source="${esc2(r.id)}" title="${esc2(v && v.hint || "\u70B9\u51FB\u67E5\u770B / \u586B\u5199\u6765\u6E90")}"><span class="inq-src-term">${esc2(r.source || "")}</span>${subs.join("")}${badge3}</button>`;
+    const badge3 = v && v.label ? `<span class="badge ${TONE_BADGE[v.tone] || "b-gray"} inq-src-verdict">${esc(v.label)}</span>` : "";
+    let subs = "";
+    if (r.src_campaign || r.src_campaign_id) subs += `<span class="inq-src-sub">\u7CFB\u5217 ${esc(r.src_campaign || r.src_campaign_id)}</span>`;
+    if (r.src_landing_page) subs += `<span class="inq-src-sub">\u843D\u5730\u9875 ${esc(pathOf(r.src_landing_page))}</span>`;
+    return `<button type="button" class="inq-src" data-inq-source="${esc(r.id)}" title="${esc(v && v.hint || "\u70B9\u51FB\u67E5\u770B / \u586B\u5199\u6765\u6E90")}"><span class="inq-src-term">${esc(r.source || "")}</span>${subs}${badge3}</button>`;
   }
   async function loadSourceChecks() {
     const seq6 = ++checkSeq;
@@ -3557,7 +3554,7 @@
   function attrLockHtml(cls, text2) {
     const auth = isAuthority();
     const hint = auth ? "\u5DF2\u786E\u8BA4\uFF1B\u70B9\u51FB\u4FEE\u6539\uFF08\u9700\u586B\u539F\u56E0\uFF09" : "\u5DF2\u786E\u8BA4\uFF0C\u5982\u9700\u66F4\u6B63\u8BF7\u627E\u7ECF\u7406\u6216\u8001\u677F";
-    return `<span class="badge ${esc2(cls)} attr-locked"${auth ? " data-attr-edit" : ""} title="${esc2(hint)}">${esc2(text2)}<i class="ti ti-lock attr-lock-ico"></i></span>`;
+    return `<span class="badge ${esc(cls)} attr-locked"${auth ? " data-attr-edit" : ""} title="${esc(hint)}">${esc(text2)}<i class="ti ti-lock attr-lock-ico"></i></span>`;
   }
   function attrConfirmBtnHtml(r) {
     if (!isAuthority()) return "";
@@ -3826,7 +3823,7 @@
       box.innerHTML = '<div class="track-log-empty">\u8FD8\u6CA1\u6709\u8DDF\u8E2A\u8BB0\u5F55\uFF0C\u5728\u4E0B\u9762\u5199\u7B2C\u4E00\u6761\u3002</div>';
       return;
     }
-    box.innerHTML = '<div class="track-log-head">\u8DDF\u8E2A\u8BB0\u5F55 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((f) => `<div class="track-item" data-fb="${f.id}"><div class="track-item-meta"><span class="track-item-date${f.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc2(fbDateLabel(f, true))}</span>` + (f.created_by_name ? `<span class="track-item-who">${esc2(f.created_by_name)}</span>` : "") + `<button type="button" class="track-item-del" data-fb-del="${f.id}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div><div class="track-item-text">${esc2(f.text)}</div></div>`).join("");
+    box.innerHTML = '<div class="track-log-head">\u8DDF\u8E2A\u8BB0\u5F55 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((f) => `<div class="track-item" data-fb="${esc(f.id)}"><div class="track-item-meta"><span class="track-item-date${f.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc(fbDateLabel(f, true))}</span>` + (f.created_by_name ? `<span class="track-item-who">${esc(f.created_by_name)}</span>` : "") + `<button type="button" class="track-item-del" data-fb-del="${esc(f.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div><div class="track-item-text">${esc(f.text)}</div></div>`).join("");
   }
   function openTrack(tr) {
     const id = tr && tr.dataset.id;
@@ -3895,13 +3892,13 @@
       return `<button type="button" class="track-add track-add-first" data-track-open><i class="ti ti-plus"></i>\u53CD\u9988</button>`;
     }
     const title = list.map((f) => fbDateLabel(f, true) + "\u3000" + f.text).join("\n\n");
-    return `<div class="track-cell-wrap"><button type="button" class="track-list" data-track-open title="${esc2(title)}">` + list.map((f) => `<span class="track-line"><span class="track-line-date${f.created_at ? "" : " track-line-nodate"}">${esc2(fbDateLabel(f, false))}</span><span class="track-line-text">${esc2(f.text)}</span></span>`).join("") + `</button><button type="button" class="track-add" data-track-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
+    return `<div class="track-cell-wrap"><button type="button" class="track-list" data-track-open title="${esc(title)}">` + list.map((f) => `<span class="track-line"><span class="track-line-date${f.created_at ? "" : " track-line-nodate"}">${esc(fbDateLabel(f, false))}</span><span class="track-line-text">${esc(f.text)}</span></span>`).join("") + `</button><button type="button" class="track-add" data-track-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
   }
   function inqRowHtml(r) {
     const up = isUpgraded(r);
-    const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc2(r.original_grade)} \u2192 \u73B0 ${esc2(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
+    const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc(r.original_grade)} \u2192 \u73B0 ${esc(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
     const locked = isConfirmed(r);
-    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc2(r.country || "")}</td><td class="ctr"><span class="tagselect ${REGION_BADGE[r.region] || "b-gray"}" data-kind="region">${esc2(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(CH_BADGE[r.channel] || "b-gray", r.channel) : `<span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td><td class="inq-source">${sourceCellHtml(r)}</td><td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(GRADE_BADGE[r.grade] || "b-gray", r.grade) : `<span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr inq-ops">${attrConfirmBtnHtml(r)}<button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc(r.country || "")}</td><td class="ctr"><span class="tagselect ${esc(REGION_BADGE[r.region] || "b-gray")}" data-kind="region">${esc(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(CH_BADGE[r.channel] || "b-gray", r.channel) : `<span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td><td class="inq-source">${sourceCellHtml(r)}</td><td class="ctr"><span class="tagselect ${esc(PRODUCT_BADGE[r.product] || "b-gray")}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(GRADE_BADGE[r.grade] || "b-gray", r.grade) : `<span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr inq-ops">${attrConfirmBtnHtml(r)}<button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
@@ -4002,9 +3999,9 @@
       }
       const cur = FILTERS[col.key] || "";
       if (col.type === "text")
-        return `<td><input type="search" class="inq-f-input" data-inq-filter="${col.key}" placeholder="${esc2(col.ph)}" value="${esc2(cur)}"></td>`;
+        return `<td><input type="search" class="inq-f-input" data-inq-filter="${esc(col.key)}" placeholder="${esc(col.ph)}" value="${esc(cur)}"></td>`;
       const opts = col.type === "has" ? [{ value: "\u6709", label: "\u6709\u53CD\u9988" }, { value: "\u65E0", label: "\u65E0\u53CD\u9988" }] : optionsFor(col);
-      return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${col.key}"><option value="">${esc2(col.ph)}</option>` + opts.map((o) => `<option value="${esc2(o.value)}"${o.value === cur ? " selected" : ""}>${esc2(o.label)}</option>`).join("") + "</select></td>";
+      return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${esc(col.key)}"><option value="">${esc(col.ph)}</option>` + opts.map((o) => `<option value="${esc(o.value)}"${o.value === cur ? " selected" : ""}>${esc(o.label)}</option>`).join("") + "</select></td>";
     }).join("");
     row.querySelectorAll("[data-inq-filter]").forEach((el5) => {
       el5.value = FILTERS[el5.dataset.inqFilter] || "";
@@ -4052,8 +4049,8 @@
       el5.innerHTML = "";
       return;
     }
-    const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${n}">${n}</button>`).join("");
-    el5.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
+    const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${esc(n)}">${esc(n)}</button>`).join("");
+    el5.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${Number(_page) + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
   }
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".inq-tb .inq-del");
@@ -4157,7 +4154,7 @@
         const sep = document.createElement("tr");
         sep.className = "inq-msep";
         sep.dataset.month = ym;
-        sep.innerHTML = `<td colspan="${COLSPAN}"><i class="ti ti-calendar-month hicon"></i> ${esc2(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
+        sep.innerHTML = `<td colspan="${COLSPAN}"><i class="ti ti-calendar-month hicon"></i> ${esc(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
         tb.appendChild(sep);
       }
       const tr = document.createElement("tr");
@@ -4307,7 +4304,7 @@
       const kind = ts.dataset.kind;
       const opts = OPT[kind] || [];
       const r = ts.getBoundingClientRect();
-      menu.innerHTML = opts.map((o) => `<div class="opt" data-v="${o[0]}" data-c="${o[1]}"><span class="badge ${o[1]}">${o[0]}</span></div>`).join("");
+      menu.innerHTML = opts.map((o) => `<div class="opt" data-v="${esc(o[0])}" data-c="${esc(o[1])}"><span class="badge ${esc(o[1])}">${esc(o[0])}</span></div>`).join("");
       menu.style.display = "flex";
       menu.style.left = Math.min(r.left, window.innerWidth - 160) + "px";
       menu.style.top = r.bottom + 4 + "px";
@@ -4317,7 +4314,7 @@
       const o = e.target.closest(".opt");
       if (o && curSel) {
         curSel.className = "tagselect " + o.dataset.c;
-        curSel.innerHTML = o.dataset.v + '<i class="ti ti-chevron-down"></i>';
+        curSel.innerHTML = esc(o.dataset.v) + '<i class="ti ti-chevron-down"></i>';
         persistTagChange(curSel, o.dataset.v);
       }
       menu.style.display = "none";
@@ -4423,16 +4420,16 @@
     const aiBtn = '<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> \u5206\u6790\u610F\u56FE</button>';
     const del = '<button class="btn-mini kw-del csp-s-7ee38adc7c" title="\u5220\u9664"><i class="ti ti-trash"></i></button>';
     const ev = (v) => v == null ? "" : v;
-    const ed = (attr, val) => `<td class="editable" contenteditable data-attr="${attr}">${esc2(ev(val))}</td>`;
-    const ct = `<td class="dim csp-s-4a01f70563">${esc2((r.created_at || "").slice(0, 10))}</td>`;
+    const ed = (attr, val) => `<td class="editable" contenteditable data-attr="${attr}">${esc(ev(val))}</td>`;
+    const ct = `<td class="dim csp-s-4a01f70563">${esc((r.created_at || "").slice(0, 10))}</td>`;
     if (type === "seo") {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc2(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc2(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc2(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
     } else if (type === "sem") {
-      tr.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc2(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc2(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc2(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc2(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
     } else if (type === "high") {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
     } else {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr kw-sales">${kwSalesCellHtml(r)}</td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr kw-sales">${kwSalesCellHtml(r)}</td><td class="ctr">${aiBtn} ${del}</td>`;
       tr._kwImages = Array.isArray(r.images) ? r.images.slice() : [];
     }
     return tr;
@@ -4521,7 +4518,7 @@
     if (!box || !tb) return;
     const active = (box.querySelector(".cat-tab.active") || {}).textContent;
     const cats = [...new Set([...tb.querySelectorAll("tr")].map((tr) => tr.dataset.cat).filter(Boolean))];
-    box.innerHTML = '<span class="cat-tab cat-all">\u5168\u90E8</span>' + cats.map((c) => `<span class="cat-tab">${esc2(c)}</span>`).join("") + '<span class="cat-tab add"><i class="ti ti-plus"></i> \u65B0\u5EFA\u5206\u7C7B</span>';
+    box.innerHTML = '<span class="cat-tab cat-all">\u5168\u90E8</span>' + cats.map((c) => `<span class="cat-tab">${esc(c)}</span>`).join("") + '<span class="cat-tab add"><i class="ti ti-plus"></i> \u65B0\u5EFA\u5206\u7C7B</span>';
     const keep = [...box.querySelectorAll(".cat-tab")].find((x) => x.textContent.trim() === (active || "").trim()) || box.querySelector(".cat-all");
     keep.classList.add("active");
     filterKwByCat(type, keep.classList.contains("cat-all") ? null : keep.textContent.trim());
@@ -4556,16 +4553,16 @@
       pg.className = "kw-pager";
       card2.appendChild(pg);
     }
-    const sizeSel = `<select class="kw-pg-size" data-kwsize="${type}" title="\u6BCF\u9875\u6761\u6570">${KW_PAGE_OPTS.map((n) => `<option value="${n}"${n === _kwSize[type] ? " selected" : ""}>${n}/\u9875</option>`).join("")}</select>`;
+    const sizeSel = `<select class="kw-pg-size" data-kwsize="${esc(type)}" title="\u6BCF\u9875\u6761\u6570">${KW_PAGE_OPTS.map((n) => `<option value="${n}"${n === _kwSize[type] ? " selected" : ""}>${n}/\u9875</option>`).join("")}</select>`;
     if (pages <= 1) {
       pg.innerHTML = (total ? `<span class="kw-pg-info">\u5171 ${total} \u6761</span>` : '<span class="kw-pg-info">\u6682\u65E0\u6570\u636E</span>') + sizeSel;
       return;
     }
     let btns = "";
     for (let i = 0; i < pages; i++) {
-      btns += `<button class="kw-pg${i === p ? " active" : ""}" data-kwpg="${type}" data-pg="${i}">${i + 1}</button>`;
+      btns += `<button class="kw-pg${i === p ? " active" : ""}" data-kwpg="${esc(type)}" data-pg="${i}">${i + 1}</button>`;
     }
-    pg.innerHTML = `<button class="kw-pg" data-kwpg="${type}" data-pg="${p - 1}"${p === 0 ? " disabled" : ""}>\u2039</button>${btns}<button class="kw-pg" data-kwpg="${type}" data-pg="${p + 1}"${p === pages - 1 ? " disabled" : ""}>\u203A</button><span class="kw-pg-info">\u5171 ${total} \u6761 \xB7 \u7B2C ${p + 1}/${pages} \u9875</span>${sizeSel}`;
+    pg.innerHTML = `<button class="kw-pg" data-kwpg="${esc(type)}" data-pg="${p - 1}"${p === 0 ? " disabled" : ""}>\u2039</button>${btns}<button class="kw-pg" data-kwpg="${esc(type)}" data-pg="${p + 1}"${p === pages - 1 ? " disabled" : ""}>\u203A</button><span class="kw-pg-info">\u5171 ${total} \u6761 \xB7 \u7B2C ${p + 1}/${pages} \u9875</span>${sizeSel}`;
   }
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-kwpg]");
@@ -4877,8 +4874,8 @@
     row.className = "tcard" + (done ? " done" : "");
     row.dataset.sopId = s.id;
     row.dataset.sopFreq = s.freq;
-    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(s.time_hint)}</span>` : "";
-    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc2(s.title)}</span><span class="sop-right">${due}</span>`;
+    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
+    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc(s.title)}</span><span class="sop-right">${due}</span>`;
     row.querySelector(".tcheck").addEventListener("click", (e) => window.chk(e.currentTarget));
     return row;
   }
@@ -4915,7 +4912,7 @@
       const tr = document.createElement("tr");
       tr.dataset.sopId = s.id;
       const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>` : '<span class="dim csp-s-33ee298127">\u53EA\u8BFB</span>';
-      tr.innerHTML = `<td>${esc2(s.dept)}</td><td>${esc2(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc2(s.title)}</td><td class="dim csp-s-33ee298127">${esc2(s.content || "")}</td><td>${esc2(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
+      tr.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.title)}</td><td class="dim csp-s-33ee298127">${esc(s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
       tb.appendChild(tr);
     });
   }
@@ -5000,7 +4997,7 @@
         if (s.freq !== freq) return;
         const done = window._sopDone[freq] && window._sopDone[freq].has(s.id);
         if (done) return;
-        lines.push(esc2(s.dept) + "-" + today3 + "-" + esc2(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc2(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
+        lines.push(esc(s.dept) + "-" + today3 + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
       });
     });
     return lines;
@@ -5045,8 +5042,8 @@
     }
     box.style.display = "flex";
     list.innerHTML = arr.map((it) => {
-      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc2(it.task_date) + "\uFF09" : "";
-      return "<div>" + esc2(it.content || "") + due + "</div>";
+      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc(it.task_date) + "\uFF09" : "";
+      return "<div>" + esc(it.content || "") + due + "</div>";
     }).join("");
   }
   function refreshNavTaskDot() {
@@ -5250,8 +5247,8 @@
   }
   var wasCompleted = (it) => !!it && (it.state === "done" || it.status === "done" || !!it.done_at);
   function auditBadgesHtml(it) {
-    const imp = it.is_important ? `<span class="badge b-red taudit-imp" title="\u91CD\u8981\u4EFB\u52A1\uFF08${esc2(it.important_reason_text || "")}\uFF09\xB7 \u5B8C\u6210\u65F6\u9700\u8981\u8BC1\u636E">\u91CD\u8981</span>` : "";
-    const proj = it.project ? `<span class="badge b-gray taudit-proj" title="\u4EA7\u54C1 / \u9879\u76EE">${esc2(it.project)}</span>` : "";
+    const imp = it.is_important ? `<span class="badge b-red taudit-imp" title="\u91CD\u8981\u4EFB\u52A1\uFF08${esc(it.important_reason_text || "")}\uFF09\xB7 \u5B8C\u6210\u65F6\u9700\u8981\u8BC1\u636E">\u91CD\u8981</span>` : "";
+    const proj = it.project ? `<span class="badge b-gray taudit-proj" title="\u4EA7\u54C1 / \u9879\u76EE">${esc(it.project)}</span>` : "";
     return imp + proj;
   }
   function shortUrl(u) {
@@ -5264,7 +5261,7 @@
     }
   }
   function evidenceHtml(it) {
-    const links = String(it.evidence || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((u) => isHttp2(u) ? `<a class="taudit-ev" href="${esc2(u)}" target="_blank" rel="noopener noreferrer" title="${esc2(u)}">${esc2(shortUrl(u))}</a>` : `<span class="taudit-ev">${esc2(u)}</span>`);
+    const links = String(it.evidence || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((u) => isHttp2(u) ? `<a class="taudit-ev" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">${esc(shortUrl(u))}</a>` : `<span class="taudit-ev">${esc(u)}</span>`);
     return links.join("") + thumbsHtml(it.evidence_images);
   }
   function hoursText(it) {
@@ -5279,20 +5276,20 @@
     const links = it.links || [];
     const done = wasCompleted(it);
     if (links.length) {
-      const effect = done && it.id && links.some((l) => l.type !== "kpi") ? ` <button type="button" class="btn-mini taudit-effect" data-task-effect="${esc2(it.id)}"><i class="ti ti-chart-line"></i> \u6570\u636E\u53D8\u5316</button>` : "";
-      lines.push(line2("\u5173\u8054", links.map((l) => `<span class="taudit-link" title="${esc2(l.ref)}"><b>${LINK_LABEL[l.type] || esc2(l.type)}</b>${esc2(linkText(l))}</span>`).join("") + effect));
+      const effect = done && it.id && links.some((l) => l.type !== "kpi") ? ` <button type="button" class="btn-mini taudit-effect" data-task-effect="${esc(it.id)}"><i class="ti ti-chart-line"></i> \u6570\u636E\u53D8\u5316</button>` : "";
+      lines.push(line2("\u5173\u8054", links.map((l) => `<span class="taudit-link" title="${esc(l.ref)}"><b>${LINK_LABEL[l.type] || esc(l.type)}</b>${esc(linkText(l))}</span>`).join("") + effect));
     }
     if (done || archived || it.result) {
       const edit = editable && done && it.id ? ` <button type="button" class="btn-mini taudit-edit" data-loop-action="task-result">${it.result ? "\u6539" : "\u8865\u7ED3\u679C"}</button>` : "";
-      const text2 = it.result ? esc2(it.result) : `<span class="taudit-missing">${done ? "\u7ED3\u679C\u672A\u8BB0\u5F55" : "\u65E0\u5B8C\u6210\u8BB0\u5F55"}</span>`;
+      const text2 = it.result ? esc(it.result) : `<span class="taudit-missing">${done ? "\u7ED3\u679C\u672A\u8BB0\u5F55" : "\u65E0\u5B8C\u6210\u8BB0\u5F55"}</span>`;
       lines.push(line2("\u7ED3\u679C", text2 + edit, "taudit-result"));
     }
-    if (it.task_actions) lines.push(line2("\u52A8\u4F5C", esc2(it.task_actions)));
+    if (it.task_actions) lines.push(line2("\u52A8\u4F5C", esc(it.task_actions)));
     const ev = evidenceHtml(it);
     if (ev) lines.push(line2("\u8BC1\u636E", ev));
     else if (done && it.is_important) lines.push(line2("\u8BC1\u636E", '<span class="taudit-missing">\u65E0\u8BC1\u636E</span>'));
     const hours = hoursText(it);
-    if (hours) lines.push(line2("\u5DE5\u65F6", esc2(hours)));
+    if (hours) lines.push(line2("\u5DE5\u65F6", esc(hours)));
     return lines.length ? `<div class="taudit">${lines.join("")}</div>` : "";
   }
   var doneCtx = null;
@@ -5612,7 +5609,7 @@
   }
   function addDeposit(s, text2, act) {
     const ac = act === "\u91C7\u7EB3" ? "b-green" : "b-teal";
-    prepend("tb-dep", `<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc2(s.dept)}\u8BCA\u65AD</span></td><td>${esc2(text2)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc2(act)}</span></td>`);
+    prepend("tb-dep", `<td class="num">${today()}</td><td class="ctr"><span class="badge ${esc(s.c)}">${esc(s.dept)}\u8BCA\u65AD</span></td><td>${esc(text2)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);
   }
   function fixRowHtml(f) {
     const dept = f.dept === "SEM" ? "SEM" : "SEO";
@@ -5621,7 +5618,7 @@
     const oc = owner === "\u9648" ? "b-purple" : "b-blue";
     const RES = ["\u5DF2\u6539", "\u8FDB\u884C\u4E2D", "\u8BA1\u5212\u4E0B\u5468", "\u653E\u5F03"];
     const status = RES.includes(f.status) ? f.status : "\u8BA1\u5212\u4E0B\u5468";
-    return `<td class="fix-title editable" contenteditable data-field="title">${esc2(f.title || "")}</td><td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc2(dept)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc2(f.evidence || "")}</td><td class="fix-detail editable" contenteditable data-field="detail">${esc2(f.detail || "")}</td><td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc2(owner)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td><td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc2(status)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-actions ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i> \u5F52\u6863</button></td>`;
+    return `<td class="fix-title editable" contenteditable data-field="title">${esc(f.title || "")}</td><td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence || "")}</td><td class="fix-detail editable" contenteditable data-field="detail">${esc(f.detail || "")}</td><td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td><td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-actions ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i> \u5F52\u6863</button></td>`;
   }
   function fixPlanHtml(f) {
     if (f && f.planned_done) return `<span class="badge b-green row-plan-go csp-s-9463ff4798" title="\u65E5\u8BA1\u5212\u91CC\u5DF2\u5B8C\u6210\uFF0C\u70B9\u51FB\u67E5\u770B">\u5DF2\u505A\u5B8C</span>`;
@@ -5698,13 +5695,13 @@
   function addTest(s, content, it) {
     it = it || {};
     const id = s.dept === "SEM" ? "tb-test-sem" : "tb-test-seo";
-    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc2(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc2(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="variable">${esc2(it.variable || "")}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc2(it.conclusion || "")}</td><td class="ctr"><button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
+    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable || "")}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion || "")}</td><td class="ctr"><button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
   }
   function addPlan(s, content, it) {
     it = it || {};
     const id = s.dept === "SEM" ? "tb-plan-sem" : "tb-plan-seo";
     const status = it.status || "\u5F85\u5F00\u59CB";
-    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc2(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc2(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="metric">${esc2(it.metric || "")}</td><td class="editable" contenteditable data-field="due_or_budget">${esc2(it.due_or_budget || "")}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc2(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
+    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric || "")}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget || "")}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
   }
   function coScope() {
     return { dept: "\u516C\u53F8", owner: "", c: "b-red" };
@@ -5728,7 +5725,7 @@
     el5 = document.createElement("div");
     el5.className = "tgroup";
     el5.dataset.g = g;
-    el5.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
+    el5.innerHTML = `<div class="tgroup-cap">${esc(label)} <span class="n"></span></div>`;
     const order = TASK_GROUPS.map((x) => x[0]);
     const after = [...col.querySelectorAll(":scope > .tgroup")].find((x) => order.indexOf(x.dataset.g) > order.indexOf(g)) || col.querySelector(".donefold") || col.querySelector(".add-task");
     if (after) col.insertBefore(el5, after);
@@ -5747,7 +5744,7 @@
     if (item.id) card2.dataset.id = item.id;
     card2._item = item;
     card2._scope = s;
-    card2.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc2(item.content)}</div><div class="tmeta"></div>`;
+    card2.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc(item.content)}</div><div class="tmeta"></div>`;
     if (isCoParent) {
       const box = document.createElement("div");
       box.className = "subtasks";
@@ -5761,12 +5758,12 @@
     const it = card2._item || {}, s = card2._scope || {}, box = card2.querySelector(".tmeta");
     if (!box) return;
     const isCo = card2.classList.contains("cotask"), g = taskGroupOf(it);
-    const deptBadge = isCo ? `<span class="badge ${s.c || "b-gray"}">${esc2(s.dept || "")}</span>` : "";
+    const deptBadge = isCo ? `<span class="badge ${esc(s.c || "b-gray")}">${esc(s.dept || "")}</span>` : "";
     const srcBadge = it.fix_id ? `<span class="badge b-amber src-fix" title="\u6765\u81EA\u6574\u6539\u6E05\u5355 \xB7 \u70B9\u51FB\u67E5\u770B\u4F9D\u636E">\u6574\u6539</span>` : "";
-    const note = it.note ? `<span class="tnote">${esc2(it.note)}</span>` : "";
-    const whyLine = it.task_why ? `<span class="tloop-why"><span class="tloop-label">\u76EE\u7684</span>${esc2(it.task_why)}</span>` : "";
-    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u5B8C\u6210\u6807\u51C6</span>${esc2(it.task_done_when)}</span>` : "";
-    const verifyLine = it.task_verify_date || it.task_verify_how ? `<span class="tloop-verify"><span class="tloop-label">\u68C0\u9A8C\u65F6\u95F4\u53CA\u6807\u51C6</span>${it.task_verify_date ? esc2(it.task_verify_date.slice(5)) : ""}${it.task_verify_date && it.task_verify_how ? " \xB7 " : ""}${it.task_verify_how ? esc2(it.task_verify_how) : ""}</span>` : "";
+    const note = it.note ? `<span class="tnote">${esc(it.note)}</span>` : "";
+    const whyLine = it.task_why ? `<span class="tloop-why"><span class="tloop-label">\u76EE\u7684</span>${esc(it.task_why)}</span>` : "";
+    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u5B8C\u6210\u6807\u51C6</span>${esc(it.task_done_when)}</span>` : "";
+    const verifyLine = it.task_verify_date || it.task_verify_how ? `<span class="tloop-verify"><span class="tloop-label">\u68C0\u9A8C\u65F6\u95F4\u53CA\u6807\u51C6</span>${it.task_verify_date ? esc(it.task_verify_date.slice(5)) : ""}${it.task_verify_date && it.task_verify_how ? " \xB7 " : ""}${it.task_verify_how ? esc(it.task_verify_how) : ""}</span>` : "";
     const loopBlock = whyLine || doneWhenLine || verifyLine ? `<div class="tloop">${whyLine}${doneWhenLine}${verifyLine}</div>` : "";
     const ops = g === "overdue" && it.id ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="\u987A\u5EF6\u5230\u4ECA\u5929"><i class="ti ti-calendar-plus"></i></button><button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="\u653E\u5F03\u5E76\u5F52\u6863"><i class="ti ti-archive"></i></button>` : "";
     const push = taskPushHtml(it, g);
@@ -5812,8 +5809,8 @@
     const empty2 = !txt && !time;
     if (empty2 && !it.id) return "";
     const cls = "tdue" + (empty2 ? " tdue-none" : "") + (it.id ? " task-edit" : "");
-    const attrs = it.id ? ` data-loop-action="task-edit" title="${span ? esc2(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F"` : "";
-    return `<span class="${cls}"${attrs}><i class="ti ${empty2 ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty2 ? "\u8BBE\u65E5\u671F" : esc2(txt) + esc2(time)}</span>`;
+    const attrs = it.id ? ` data-loop-action="task-edit" title="${span ? esc(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F"` : "";
+    return `<span class="${cls}"${attrs}><i class="ti ${empty2 ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty2 ? "\u8BBE\u65E5\u671F" : esc(txt) + esc(time)}</span>`;
   }
   var dayDiff = (a, b) => Math.round((Date.parse(b + "T00:00:00") - Date.parse(a + "T00:00:00")) / 864e5);
   function taskAgeHtml(it, g) {
@@ -5825,7 +5822,7 @@
     if (g === "doing" && it.start_date && it.task_date) {
       const total = dayDiff(it.start_date, it.task_date) + 1, cur = dayDiff(it.start_date, t) + 1;
       const ck = taskCheckin(it.id);
-      const pushed = ck.days ? ` \xB7 \u5DF2\u63A8\u8FDB ${ck.days} \u5929` : "";
+      const pushed = ck.days ? ` \xB7 \u5DF2\u63A8\u8FDB ${esc(ck.days)} \u5929` : "";
       const idle = !ck.today && (ck.last ? dayDiff(ck.last, t) >= 2 : dayDiff(it.start_date, t) >= 2);
       return `<span class="tage${idle ? " tage-idle" : ""}">\u7B2C ${cur}/${total} \u5929${pushed}</span>`;
     }
@@ -6013,8 +6010,8 @@
     const oc = subOwnerBadge(owner);
     const del = it && it.id ? `<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
     const dt = it && it.task_date || "", hr = it && it.task_hour || "";
-    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(dt)}${hr ? (dt ? " " : "") + esc2(hr) + ":00" : ""}</span>` : "";
-    card2.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sub-text">${esc2(it && it.content || "")}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc2(owner)}</span>${del}</span></div>`;
+    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr ? (dt ? " " : "") + esc(hr) + ":00" : ""}</span>` : "";
+    card2.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sub-text">${esc(it && it.content || "")}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc(owner)}</span>${del}</span></div>`;
     box.appendChild(card2);
     return card2;
   }
@@ -6519,7 +6516,7 @@
   function depRowHtml(it) {
     const date = (it.created_at || "").slice(5, 10) || today();
     const badge3 = it.status === "\u91C7\u7EB3" ? '<span class="badge b-green">\u91C7\u7EB3</span>' : '<span class="badge b-teal">\u6C89\u6DC0</span>';
-    return `<td class="num">${esc2(date)}</td><td class="ctr">${badge3}</td><td class="editable" contenteditable data-field="content">${esc2(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc2(it.analysis || "")}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
+    return `<td class="num">${esc(date)}</td><td class="ctr">${badge3}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc(it.analysis || "")}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
   }
   async function addDepositRow() {
     try {
@@ -6585,7 +6582,7 @@
   var CA_OWNER = { "\u674E": "b-blue", "\u9648": "b-purple", "\u4E3B\u7BA1": "b-teal" };
   var CA_STATUS = { "\u5F85\u5F00\u59CB": "b-gray", "\u8FDB\u884C\u4E2D": "b-amber", "\u5DF2\u5B8C\u6210": "b-green" };
   function contentRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="name">${esc2(r.name)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="problem">${esc2(r.problem)}</td><td class="editable csp-s-33ee298127" contenteditable data-field="type">${esc2(r.type)}</td><td class="ctr"><span class="tagselect ${CA_PRIO[r.priority] || "b-blue"}" data-kind="priority">${esc2(r.priority || "\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_OWNER[r.owner] || "b-blue"}" data-kind="owner">${esc2(r.owner || "\u674E")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_STATUS[r.status] || "b-gray"}" data-kind="status">${esc2(r.status || "\u5F85\u5F00\u59CB")}<i class="ti ti-chevron-down"></i></span></td><td class="num">${esc2(r.add_date || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc2(r.note)}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
+    return `<td class="editable" contenteditable data-field="name">${esc(r.name)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="problem">${esc(r.problem)}</td><td class="editable csp-s-33ee298127" contenteditable data-field="type">${esc(r.type)}</td><td class="ctr"><span class="tagselect ${CA_PRIO[r.priority] || "b-blue"}" data-kind="priority">${esc(r.priority || "\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_OWNER[r.owner] || "b-blue"}" data-kind="owner">${esc(r.owner || "\u674E")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_STATUS[r.status] || "b-gray"}" data-kind="status">${esc(r.status || "\u5F85\u5F00\u59CB")}<i class="ti ti-chevron-down"></i></span></td><td class="num">${esc(r.add_date || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc(r.note)}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
   }
   async function loadContent() {
     const loadVersion = ++contentLoadVersion;
@@ -6713,10 +6710,10 @@
     if (row) row.remove();
   }
   function negRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="word">${esc2(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc2(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc2(r.added_date || "")}</td><td class="editable csp-s-33ee298127" contenteditable data-field="reason">${esc2(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc2(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc2(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
+    return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc(r.added_date || "")}</td><td class="editable csp-s-33ee298127" contenteditable data-field="reason">${esc(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
   }
   function adRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="title">${esc2(r.title)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="description">${esc2(r.description || "")}</td><td class="editable" contenteditable data-field="ctr">${esc2(r.ctr || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="ab_conclusion">${esc2(r.ab_conclusion || "")}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || "b-amber"}" data-kind="adstatus">${esc2(r.status || "\u6D4B\u8BD5\u4E2D")}<i class="ti ti-chevron-down"></i></span></td>`;
+    return `<td class="editable" contenteditable data-field="title">${esc(r.title)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="description">${esc(r.description || "")}</td><td class="editable" contenteditable data-field="ctr">${esc(r.ctr || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="ab_conclusion">${esc(r.ab_conclusion || "")}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || "b-amber"}" data-kind="adstatus">${esc(r.status || "\u6D4B\u8BD5\u4E2D")}<i class="ti ti-chevron-down"></i></span></td>`;
   }
   async function addNeg() {
     try {
@@ -6805,8 +6802,8 @@
     if (!body) return;
     const items = Array.isArray(rows2) ? rows2 : [];
     body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell3) => {
-      const value = cell3.html == null ? esc2(cell3.value ?? "") : cell3.html;
-      return `<td class="${cell3.cls || ""}">${value}</td>`;
+      const value = cell3.html == null ? esc(cell3.value ?? "") : cell3.html;
+      return `<td class="${esc(cell3.cls || "")}">${value}</td>`;
     }).join("")}</tr>`).join("");
     if (empty2) {
       empty2.textContent = emptyText || "\u6682\u65E0\u6570\u636E";
@@ -6914,7 +6911,7 @@
     ], metrics ? "\u6240\u9009\u533A\u95F4\u6CA1\u6709\u5E7F\u544A\u7CFB\u5217\u6570\u636E" : baseEmpty);
     const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data2.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
     fillTable("ga4-events", "ga4-events-empty", data2.conversionEvents, (row) => [
-      { html: `<div class="ga4-event-label">${esc2(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc2(row.eventName || "")}</div>` },
+      { html: `<div class="ga4-event-label">${esc(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc(row.eventName || "")}</div>` },
       { value: formatNumber(row.eventCount), cls: "num" },
       { value: formatNumber(row.keyEvents, 1), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
@@ -6959,7 +6956,7 @@
   });
   window._marketById = {};
   function mktEsc(s) {
-    return esc2(s);
+    return esc(s);
   }
   function renderMarket(items) {
     const tb = document.getElementById("tb-market");
@@ -7251,9 +7248,9 @@
     const tone = ST_TONE[r.status] || "kpi-tone-muted";
     const res = r.verification_result ? '<span class="exec-res ' + (r.verification_result === "NEGATIVE" ? "kpi-tone-primary" : r.verification_result === "POSITIVE" ? "kpi-tone-green" : "kpi-tone-muted") + '">' + RESULT_LABEL[r.verification_result] + "</span>" : "";
     const adv = NEXT_STATUS.indexOf(r.status);
-    const advBtn = adv >= 0 && adv < NEXT_STATUS.length - 1 ? '<button class="exec-btn" data-exec-advance="' + r.id + '" data-next="' + NEXT_STATUS[adv + 1] + '">\u63A8\u8FDB\u2192' + ST_LABEL[NEXT_STATUS[adv + 1]] + "</button>" : "";
+    const advBtn = adv >= 0 && adv < NEXT_STATUS.length - 1 ? '<button class="exec-btn" data-exec-advance="' + esc(r.id) + '" data-next="' + NEXT_STATUS[adv + 1] + '">\u63A8\u8FDB\u2192' + ST_LABEL[NEXT_STATUS[adv + 1]] + "</button>" : "";
     const excluded = Number(r.exclude_from_assessment) === 1 ? '<span class="kpi-ds-badge">\u5DF2\u6392\u9664</span>' : "";
-    return '<tr><td class="exec-prob">' + esc(r.problem || "") + excluded + (r.analysis ? '<div class="exec-sub">\u5206\u6790\uFF1A' + esc(r.analysis) + "</div>" : "") + (r.action ? '<div class="exec-sub">\u52A8\u4F5C\uFF1A' + esc(r.action) + "</div>" : "") + "</td><td>" + esc(r.owner || "") + '</td><td><span class="exec-imp imp-' + (r.impact_level || "MEDIUM") + '">' + (IMP_LABEL[r.impact_level] || "\u4E2D") + '</span></td><td><span class="exec-st ' + tone + '">' + st2 + '</span></td><td class="exec-verif">' + verifCell(r) + " " + res + '</td><td class="exec-act">' + advBtn + "</td></tr>";
+    return '<tr><td class="exec-prob">' + esc(r.problem || "") + excluded + (r.analysis ? '<div class="exec-sub">\u5206\u6790\uFF1A' + esc(r.analysis) + "</div>" : "") + (r.action ? '<div class="exec-sub">\u52A8\u4F5C\uFF1A' + esc(r.action) + "</div>" : "") + "</td><td>" + esc(r.owner || "") + '</td><td><span class="exec-imp imp-' + esc(r.impact_level || "MEDIUM") + '">' + (IMP_LABEL[r.impact_level] || "\u4E2D") + '</span></td><td><span class="exec-st ' + tone + '">' + esc(st2) + '</span></td><td class="exec-verif">' + verifCell(r) + " " + res + '</td><td class="exec-act">' + advBtn + "</td></tr>";
   }
   function panelHtml(channel, items) {
     const sorted = items.slice().sort((a, b) => {
@@ -7354,23 +7351,23 @@
   var pct = (c) => Math.round((Number(c) || 0) * 100);
   function scopeText(s) {
     if (!s) return "\u5F85\u8BC4\u4F30";
-    if (s.score != null) return '<b class="kpi-tone-green">' + s.score + "</b> \u5206";
-    if (s.provisionalScore != null) return "\u53C2\u8003 <b>" + s.provisionalScore + "</b>\uFF08\u8986\u76D6\u7387 " + pct(s.coverage) + "%\uFF0C\u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206\uFF09";
+    if (s.score != null) return '<b class="kpi-tone-green">' + esc(s.score) + "</b> \u5206";
+    if (s.provisionalScore != null) return "\u53C2\u8003 <b>" + esc(s.provisionalScore) + "</b>\uFF08\u8986\u76D6\u7387 " + pct(s.coverage) + "%\uFF0C\u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206\uFF09";
     return "\u5F85\u8BC4\u4F30";
   }
   function snapText(r) {
-    if (r.score != null) return '<b class="kpi-tone-green">' + r.score + "</b> \u5206";
-    if (r.provisional_score != null) return "\u53C2\u8003 " + r.provisional_score + "\uFF08\u8986\u76D6\u7387 " + pct(r.coverage) + "%\uFF09";
-    return "\u5F85\u8BC4\u4F30\uFF08" + (r.status || "") + "\uFF09";
+    if (r.score != null) return '<b class="kpi-tone-green">' + esc(r.score) + "</b> \u5206";
+    if (r.provisional_score != null) return "\u53C2\u8003 " + esc(r.provisional_score) + "\uFF08\u8986\u76D6\u7387 " + pct(r.coverage) + "%\uFF09";
+    return "\u5F85\u8BC4\u4F30\uFF08" + esc(r.status || "") + "\uFF09";
   }
   function currentRowHtml(o) {
     const key = curKey(o.type);
     const s = o._preview;
-    return '<div class="kpip-cur"><span class="kpip-owner">' + o.label + '</span><span class="kpip-period">' + PERIOD_LABEL[o.type] + " " + key + '\uFF08\u8FDB\u884C\u4E2D\uFF09</span><span class="kpip-score">' + (s ? scopeText(s) : "\u2026") + '</span><button class="exec-btn exec-btn-primary" data-settle-owner="' + o.owner + '" data-settle-type="' + o.type + '" data-settle-key="' + key + '">\u7ED3\u7B97\u672C\u671F\u5E76\u51BB\u7ED3</button></div>';
+    return '<div class="kpip-cur"><span class="kpip-owner">' + esc(o.label) + '</span><span class="kpip-period">' + PERIOD_LABEL[o.type] + " " + key + '\uFF08\u8FDB\u884C\u4E2D\uFF09</span><span class="kpip-score">' + (s ? scopeText(s) : "\u2026") + '</span><button class="exec-btn exec-btn-primary" data-settle-owner="' + esc(o.owner) + '" data-settle-type="' + esc(o.type) + '" data-settle-key="' + esc(key) + '">\u7ED3\u7B97\u672C\u671F\u5E76\u51BB\u7ED3</button></div>';
   }
   function historyHtml(items) {
     if (!items.length) return '<div class="kpi-empty">\u6682\u65E0\u5DF2\u7ED3\u7B97\u8003\u6838\u671F</div>';
-    return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u8003\u6838\u671F</th><th>\u5BF9\u8C61</th><th>\u6210\u7EE9</th><th>\u8986\u76D6\u7387</th><th>\u72B6\u6001</th><th>\u7ED3\u7B97\u65F6\u95F4</th></tr></thead><tbody>' + items.map((r) => "<tr><td>" + esc(r.period_key) + "</td><td>" + (OWNER_LABEL[r.owner] || r.owner) + "</td><td>" + snapText(r) + "</td><td>" + pct(r.coverage) + "%</td><td>" + esc(r.status || "") + "</td><td>" + esc((r.settled_at || "").slice(0, 16)) + "</td></tr>").join("") + "</tbody></table></div>";
+    return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u8003\u6838\u671F</th><th>\u5BF9\u8C61</th><th>\u6210\u7EE9</th><th>\u8986\u76D6\u7387</th><th>\u72B6\u6001</th><th>\u7ED3\u7B97\u65F6\u95F4</th></tr></thead><tbody>' + items.map((r) => "<tr><td>" + esc(r.period_key) + "</td><td>" + esc(OWNER_LABEL[r.owner] || r.owner) + "</td><td>" + snapText(r) + "</td><td>" + pct(r.coverage) + "%</td><td>" + esc(r.status || "") + "</td><td>" + esc((r.settled_at || "").slice(0, 16)) + "</td></tr>").join("") + "</tbody></table></div>";
   }
   function ensureMount() {
     const panel = document.getElementById("panel-kpi");
@@ -7976,11 +7973,11 @@
     const g = grade(score);
     b.style.background = g.bg;
     b.style.color = g.c;
-    b.innerHTML = '<i class="ti ' + g.i + '"></i> ' + g.t;
+    b.innerHTML = '<i class="ti ' + esc(g.i) + '"></i> ' + esc(g.t);
   }
   function fmt(k, v) {
     if (v == null || !Number.isFinite(Number(v))) return "\u2014";
-    return k.u === "\xA5" ? "\xA5" + Number(v).toLocaleString() : k.u === "%" ? v + "%" : k.u === "" ? v : v + k.u;
+    return k.u === "\xA5" ? "\xA5" + Number(v).toLocaleString() : k.u === "%" ? esc(v) + "%" : k.u === "" ? esc(v) : esc(v) + esc(k.u);
   }
   function scoreTone(r) {
     return r >= 0.9 ? "kpi-tone-green" : r >= 0.7 ? "kpi-tone-blue" : r >= 0.5 ? "kpi-tone-amber" : "kpi-tone-primary";
@@ -7990,7 +7987,7 @@
     if (!el5) return;
     el5.innerHTML = arr.map((k) => {
       const available = k.actualAvailable !== false && k.a != null, r = available ? ratio(k) : 0, tone = available ? scoreTone(r) : "kpi-tone-muted", progress = Math.max(0, Math.min(100, Number.isFinite(r) ? r * 100 : 0));
-      return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
+      return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
     }).join("");
     el5.querySelectorAll("[data-progress]").forEach((fill) => {
       const progress = Number(fill.dataset.progress);
@@ -8009,7 +8006,7 @@
     ];
     const el5 = document.getElementById("miniScores");
     if (!el5) return;
-    el5.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
+    el5.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${esc(x[0])}</div><div class="csp-s-73eb966c81">${esc(x[1])}<span class="csp-s-19439c522a">${esc(x[2])}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${esc(x[3] || "")}</span></div></div>`).join("");
   }
   var overviewRequestSequence = 0;
   async function loadOverview() {
@@ -8074,7 +8071,7 @@
   var DS_LABEL = { NOT_APPLICABLE: "\u4E0D\u9002\u7528", MISSING_DATA: "\u5F85\u63A5\u5165", INSUFFICIENT_DATA: "\u6837\u672C\u4E0D\u8DB3", PENDING: "\u89C2\u5BDF\u4E2D", TRACKING_ERROR: "\u8FFD\u8E2A\u5F02\u5E38" };
   function fmtU(unit, v) {
     if (v == null || !Number.isFinite(Number(v))) return "\u2014";
-    return unit === "\xA5" ? "\xA5" + Number(v).toLocaleString() : unit === "%" ? v + "%" : unit ? v + unit : v;
+    return unit === "\xA5" ? "\xA5" + Number(v).toLocaleString() : unit === "%" ? esc(v) + "%" : unit ? esc(v) + esc(unit) : esc(v);
   }
   var pctCov = (s) => Math.round((s && s.coverage || 0) * 100);
   function gaugeScope(arcId, scoreId, badgeId, s) {
@@ -8090,9 +8087,9 @@
         B.style.color = "var(--text3)";
         let txt;
         if (!s || s.status === "NO_METRICS") txt = '<i class="ti ti-hourglass"></i> \u5F85\u8BC4\u4F30 \xB7 \u6682\u672A\u914D\u7F6E\u7EE9\u6548\u6307\u6807';
-        else if (s.status === "CONFIG_INCOMPLETE") txt = '<i class="ti ti-settings-exclamation"></i> \u7EE9\u6548\u914D\u7F6E\u672A\u5B8C\u6210' + (s.provisionalScore != null ? " \xB7 \u53C2\u8003\u8868\u73B0 " + s.provisionalScore : "") + " \xB7 \u6B63\u5F0F\u7EE9\u6548\u5F85\u8BC4\u4F30";
+        else if (s.status === "CONFIG_INCOMPLETE") txt = '<i class="ti ti-settings-exclamation"></i> \u7EE9\u6548\u914D\u7F6E\u672A\u5B8C\u6210' + (s.provisionalScore != null ? " \xB7 \u53C2\u8003\u8868\u73B0 " + esc(s.provisionalScore) : "") + " \xB7 \u6B63\u5F0F\u7EE9\u6548\u5F85\u8BC4\u4F30";
         else if (s.status === "NO_VALID_DATA") txt = '<i class="ti ti-hourglass"></i> \u5F85\u8BC4\u4F30 \xB7 \u6682\u65E0\u6709\u6548\u6570\u636E';
-        else txt = '<i class="ti ti-alert-circle"></i> \u53C2\u8003\u8868\u73B0 ' + (s.provisionalScore ?? "\u2014") + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "% \xB7 \u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206";
+        else txt = '<i class="ti ti-alert-circle"></i> \u53C2\u8003\u8868\u73B0 ' + esc(s.provisionalScore ?? "\u2014") + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "% \xB7 \u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206";
         B.innerHTML = txt;
       }
       return;
@@ -8111,7 +8108,7 @@
     if (B) {
       B.style.background = g.bg;
       B.style.color = g.c;
-      B.innerHTML = '<i class="ti ' + g.i + '"></i> ' + g.t + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "%";
+      B.innerHTML = '<i class="ti ' + esc(g.i) + '"></i> ' + esc(g.t) + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "%";
     }
   }
   var PG_LABEL = { business: "\u4E1A\u52A1\u8D21\u732E", visibility: "\u641C\u7D22 & GEO \u53EF\u89C1\u5EA6", asset: "\u5185\u5BB9\u8D44\u4EA7", efficiency: "\u83B7\u5BA2\u6548\u7387", quality: "\u6D41\u91CF\u8D28\u91CF", execution: "\u6267\u884C\u4E0E\u4F18\u5316", experiment: "\u5B9E\u9A8C\u4E0E\u5B66\u4E60" };
@@ -8123,8 +8120,8 @@
     const included = m.included, r = included && Number.isFinite(m.ratio) ? m.ratio : 0;
     const tone = included ? scoreTone(r) : "kpi-tone-muted", prog = Math.max(0, Math.min(100, r * 100));
     const ds = included ? "" : '<span class="kpi-ds-badge">' + (DS_LABEL[m.data_status] || "\u5F85\u63A5\u5165") + "</span>";
-    const actualTxt = included ? m.display_value ? esc2(m.display_value) : fmtU(m.unit, m.actual) : "\u2014";
-    return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(m.name)}${ds}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmtU(m.unit, m.target)} \xB7 \u5B9E\u9645 ${actualTxt}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${prog}"></div></div></div><div class="kpi-score-value ${tone}">${included ? Math.round(r * 100) : "\u2014"}</div></div>`;
+    const actualTxt = included ? m.display_value ? esc(m.display_value) : fmtU(m.unit, m.actual) : "\u2014";
+    return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(m.name)}${ds}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmtU(m.unit, m.target)} \xB7 \u5B9E\u9645 ${actualTxt}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${prog}"></div></div></div><div class="kpi-score-value ${tone}">${included ? Math.round(r * 100) : "\u2014"}</div></div>`;
   }
   function diagChip(d) {
     let tone = "kpi-tone-muted";
@@ -8132,7 +8129,7 @@
       const ach = d.mode === "i" ? d.target / d.actual : d.actual / d.target;
       tone = ach >= 1 ? "kpi-tone-green" : ach >= 0.8 ? "kpi-tone-amber" : "kpi-tone-primary";
     }
-    return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc2(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
+    return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
   }
   function renderBlock(grp, containerId, a) {
     const el5 = document.getElementById(containerId);
@@ -8154,7 +8151,7 @@
       }
       html += groups.map(([g, ms]) => {
         const wt = ms.reduce((s, m) => s + (Number(m.weight) || 0), 0);
-        return '<div class="kpi-pg"><div class="kpi-pg-head">' + esc2(pgLabel(grp, g)) + '<span class="kpi-pg-wt">' + wt + "%</span></div>" + ms.map(metricRow).join("") + "</div>";
+        return '<div class="kpi-pg"><div class="kpi-pg-head">' + esc(pgLabel(grp, g)) + '<span class="kpi-pg-wt">' + esc(wt) + "%</span></div>" + ms.map(metricRow).join("") + "</div>";
       }).join("");
     } else html += '<div class="kpi-empty">\u6682\u65E0\u53EF\u8BC4\u5206\u6307\u6807 \xB7 \u5F85\u63A5\u5165</div>';
     if (diags.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u8BCA\u65AD\u6307\u6807\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + diags.map(diagChip).join("") + "</div>";
@@ -8248,12 +8245,12 @@
     const time = s.type === "manual" ? s.lastAt || "\u2014" : s.type === "sync" ? s.lastSyncAt || "\u2014" : "\u2014";
     const count = s.type === "manual" || s.type === "sync" ? s.count == null ? 0 : s.count : "\u2014";
     let extra = "";
-    if (s.error) extra = `<span class="csp-s-b0e08465c2"> \xB7 \u9519\u8BEF\uFF1A${esc2(s.error)}</span>`;
-    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc2(s.missing.join(", "))}</span>`;
+    if (s.error) extra = `<span class="csp-s-b0e08465c2"> \xB7 \u9519\u8BEF\uFF1A${esc(s.error)}</span>`;
+    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc(s.missing.join(", "))}</span>`;
     else if (s.note === "google_oauth_required") extra = `<span class="dim"> \xB7 \u9700\u8981 OAuth \u6388\u6743</span>`;
     else if (s.note === "google_sync_ready") extra = `<span class="dim"> \xB7 \u53EF\u624B\u52A8\u540C\u6B65</span>`;
-    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc2(s.provider || "")}${s.model ? " / " + esc2(s.model) : ""}</span>`;
-    return `<div class="csp-s-6d1156dd83"><div class="csp-s-22dccc46c7">${esc2(name)}</div><div class="csp-s-b57829faf1">${esc2(typeText)}</div><span class="badge ${cls}">${esc2(text2)}</span><div class="csp-s-83725d2c6e"></div><div class="csp-s-95144d7b86">\u65F6\u95F4 ${esc2(String(time))} \xB7 \u8BB0\u5F55 ${esc2(String(count))}</div><div class="csp-s-33ee298127">${extra}</div></div>`;
+    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc(s.provider || "")}${s.model ? " / " + esc(s.model) : ""}</span>`;
+    return `<div class="csp-s-6d1156dd83"><div class="csp-s-22dccc46c7">${esc(name)}</div><div class="csp-s-b57829faf1">${esc(typeText)}</div><span class="badge ${esc(cls)}">${esc(text2)}</span><div class="csp-s-83725d2c6e"></div><div class="csp-s-95144d7b86">\u65F6\u95F4 ${esc(String(time))} \xB7 \u8BB0\u5F55 ${esc(String(count))}</div><div class="csp-s-33ee298127">${extra}</div></div>`;
   }
   async function loadDataSourcesStatus() {
     const box = document.getElementById("ds-status-rows");
@@ -8263,7 +8260,7 @@
       const src = r && r.sources || {};
       box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("");
     } catch (e) {
-      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc2(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
     }
   }
   async function loadIntegrations() {
@@ -8273,11 +8270,11 @@
       const r = await API.get("/api/google/status");
       const providers = r && r.providers || {};
       const project = r && r.defaultProject;
-      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc2(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
+      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
       box.innerHTML = `<div class="sheet-tip csp-s-145afb7049"><i class="ti ti-info-circle"></i> ${projectText}</div>` + GOOGLE_PROVIDER_ORDER.map((p) => googleProviderRow(p, providers[p] || {}, project)).join("");
       bindGoogleProviderActions(box);
     } catch (e) {
-      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc2(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
     }
   }
   function googleProviderRow(provider, s, project) {
@@ -8285,22 +8282,22 @@
     const authorized = !!s.authorized;
     const ok = configured && authorized;
     const badge3 = ok ? '<span class="badge b-green">\u5DF2\u6388\u6743</span>' : configured ? '<span class="badge b-amber">\u5F85\u6388\u6743</span>' : '<span class="badge b-gray">\u540E\u7AEF\u672A\u914D\u7F6E</span>';
-    const missing = s.missing && s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">\u7F3A\u5C11\uFF1A${esc2(s.missing.join(", "))}</div>` : "";
+    const missing = s.missing && s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">\u7F3A\u5C11\uFF1A${esc(s.missing.join(", "))}</div>` : "";
     const lastSync = s.lastSyncAt || "\u2014";
     const lastStatus = s.lastSyncStatus || "\u672A\u540C\u6B65";
-    const lastError = s.lastError ? `<div class="csp-s-5ade8bf698">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc2(s.lastError)}</div>` : "";
+    const lastError = s.lastError ? `<div class="csp-s-5ade8bf698">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc(s.lastError)}</div>` : "";
     const providerConfigNote = provider === "gsc" ? s.siteUrlConfigured || project?.gsc_site_url ? "\u7AD9\u70B9\u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GSC_SITE_URL \u6216\u9879\u76EE\u7AD9\u70B9" : provider === "ga4" ? s.propertyConfigured || project?.ga4_property_id ? "Property \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GA4_PROPERTY_ID \u6216\u9879\u76EE Property" : s.customerConfigured || project?.ads_customer_id ? "Customer \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GOOGLE_ADS_CUSTOMER_ID \u6216\u9879\u76EE Customer";
     const authDisabled = configured ? "" : "disabled";
     const syncDisabled = ok ? "" : "disabled";
     return `<div class="csp-s-98c17c8e1c">
-    <div class="csp-s-fad0d7671e">${esc2(INTEG_LABEL[provider] || provider)} ${badge3}</div>
+    <div class="csp-s-fad0d7671e">${esc(INTEG_LABEL[provider] || provider)} ${badge3}</div>
     <div class="csp-s-fd03ebc21e">
-      <div>${esc2(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc2(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc2(String(lastStatus))}</div>
+      <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
       ${missing}${lastError}
     </div>
-    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc2(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
-    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc2(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
-    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc2(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
+    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
+    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
+    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
   </div>`;
   }
   function bindGoogleProviderActions(box) {
@@ -8427,21 +8424,21 @@
   function archRowHtml(it, from) {
     const date = (it.archived_at || "").slice(0, 10);
     const dept = it.dept || "\u2014";
-    const content = esc2(it.content || it.title || it.detail || "");
+    const content = esc(it.content || it.title || it.detail || "");
     const fromBadge = '<span class="badge ' + (from === "fix" ? "b-amber" : "b-blue") + '">' + (from === "fix" ? "\u6574\u6539" : it.kind === "task" ? "\u4EFB\u52A1" : it.kind === "plan" ? "\u8BA1\u5212" : it.kind === "test" ? "\u6D4B\u8BD5" : it.kind === "deposit" ? "\u6C89\u6DC0" : "\u95ED\u73AF") + "</span>";
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u539F\u9875"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
     const audit = from !== "fix" && it.kind === "task" ? auditBadgesHtml(it) + auditBlockHtml(it, { archived: true }) : "";
-    return `<td class="archive-date num">${esc2(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span>${audit}</td><td class="archive-dept ctr">${esc2(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span>${audit}</td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
   }
   function archInqRowHtml(it) {
     const date = (it.archived_at || "").slice(0, 10);
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u8BE2\u76D8\u5217\u8868"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
     const label = it.customer_code || it.customer_name;
-    const cust = (label ? esc2(label) + " \xB7 " : "") + esc2(it.country || "");
-    const source = esc2(it.source || "");
-    return `<td class="archive-date num">${esc2(date || "\u2014")}</td><td class="archive-short-date num">${esc2((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc2(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc2(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
+    const cust = (label ? esc(label) + " \xB7 " : "") + esc(it.country || "");
+    const source = esc(it.source || "");
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-short-date num">${esc((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
   }
   async function loadArchive2() {
     const bucket = { sem: [], seo: [], company: [] };
@@ -8802,15 +8799,15 @@
   }
   function taskRowHtml(t, day, pushed, note) {
     const st2 = taskStateFor(t, day, pushed);
-    const span = t.start_date && t.task_date && t.start_date < t.task_date ? `${esc2(t.start_date.slice(5))} ~ ${esc2(t.task_date.slice(5))}` : esc2(t.task_date || "");
+    const span = t.start_date && t.task_date && t.start_date < t.task_date ? `${esc(t.start_date.slice(5))} ~ ${esc(t.task_date.slice(5))}` : esc(t.task_date || "");
     const src = t.fix_id ? '<span class="badge b-amber">\u6574\u6539</span>' : "";
-    const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc2(t.owner)}</span>` : "";
-    const memo = note ? `<span class="hnote">${esc2(note)}</span>` : "";
+    const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc(t.owner)}</span>` : "";
+    const memo = note ? `<span class="hnote">${esc(note)}</span>` : "";
     const doneDay = (t.done_at || "").slice(0, 10);
     const view = doneDay && doneDay <= day ? t : { ...t, result: null, task_actions: null, evidence: null, evidence_images: [], actual_hours: null, state: null, status: null, done_at: null };
     return `<div class="hcard">
-    <div class="hrow"><span class="htext">${esc2(t.content || "")}</span>
-      <span class="hright">${auditBadgesHtml(t)}${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st2.cls}">${st2.text}</span></span></div>
+    <div class="hrow"><span class="htext">${esc(t.content || "")}</span>
+      <span class="hright">${auditBadgesHtml(t)}${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${esc(st2.cls)}">${esc(st2.text)}</span></span></div>
     ${memo ? `<div class="hmemo">${memo}</div>` : ""}
     ${auditBlockHtml(view)}
   </div>`;
@@ -8833,7 +8830,7 @@
       const spoken = tasks.filter((t) => (t.done_at || "").slice(0, 10) === day || pushed.has(t.id)).length;
       const sopHtml = sops.length ? '<div class="sop-list">' + sops.map((s) => `<div class="hcard hsop${s.done ? " on" : ""}">
           <div class="hrow"><span class="hcheck">${s.done ? '<i class="ti ti-check"></i>' : ""}</span>
-            <span class="htext">${esc2(s.title)}</span>
+            <span class="htext">${esc(s.title)}</span>
             <span class="hright">${s.active ? "" : '<span class="badge b-gray">\u5DF2\u505C\u7528</span>'}<span class="freq-tag">${FREQ_TAG[s.freq] || ""}</span></span></div>
         </div>`).join("") + "</div>" : '<div class="hempty">\u5F53\u65F6\u6CA1\u6709\u914D\u7F6E SOP</div>';
       const taskHtml = tasks.length ? tasks.map((t) => {
@@ -8841,7 +8838,7 @@
         return taskRowHtml(t, day, pushed, noteOf.get(t.id)) + (subs.length ? `<div class="hsubs">${subs.map((s2) => taskRowHtml(s2, day, pushed, noteOf.get(s2.id))).join("")}</div>` : "");
       }).join("") : '<div class="hempty">\u90A3\u5929\u8FD9\u4E00\u5217\u6CA1\u6709\u4EFB\u52A1</div>';
       return `<div class="pblock">
-      <div class="pblock-head"><span class="badge ${d.badge}">${esc2(d.key)}</span><span class="pn">${esc2(d.label)}</span>
+      <div class="pblock-head"><span class="badge ${d.badge}">${esc(d.key)}</span><span class="pn">${esc(d.label)}</span>
         <span class="kcount">SOP ${sopDone}/${sops.length} \xB7 \u4EFB\u52A1 ${tasks.length} \xB7 \u6709\u4EA4\u4EE3 ${spoken}</span></div>
       <div class="sopnew">
         <div><div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>${sopHtml}</div>
@@ -8854,12 +8851,12 @@
     const box = document.getElementById("plan-history");
     if (!box) return;
     const pk = periodKeysFor(day);
-    box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc2(day) + " \u7684\u8BB0\u5F55\u2026</div>";
+    box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc(day) + " \u7684\u8BB0\u5F55\u2026</div>";
     try {
       const data2 = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
       render3(data2);
     } catch (e) {
-      box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
+      box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
     }
   }
   function setPlanDay(day) {
@@ -8925,10 +8922,10 @@
     const expected = counted.reduce((a, i) => a + i.expected, 0);
     const p = pct4(done, expected);
     const missed = counted.filter((i) => i.expected > i.done).sort((a, b) => b.expected - b.done - (a.expected - a.done));
-    const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc2(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => d.slice(5)).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
+    const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => esc(String(d).slice(5))).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
     return `<div class="sr-dept">
-    <div class="sr-head"><span class="badge ${badge3}">${esc2(label)}</span>
-      <span class="sr-num ${rateClass(p)}">${expected ? `${done}/${expected}` : "\u2014"}${p === null ? "" : ` \xB7 ${p}%`}</span></div>
+    <div class="sr-head"><span class="badge ${esc(badge3)}">${esc(label)}</span>
+      <span class="sr-num ${rateClass(p)}">${expected ? `${esc(done)}/${esc(expected)}` : "\u2014"}${p === null ? "" : ` \xB7 ${p}%`}</span></div>
     <div class="sr-misses">${missHtml}</div>
   </div>`;
   }
@@ -8949,11 +8946,11 @@
       }
       const hasMonthly = items.some((i) => i.expected === null);
       el5.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
-        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc2(data2.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
+        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc(data2.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
       <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
     } catch (e) {
       el5.dataset.loaded = "";
-      el5.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
+      el5.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
     }
   }
   document.addEventListener("click", (e) => {
@@ -9060,8 +9057,8 @@
     });
   }
   function rvItemHtml(text2, acts) {
-    const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === "\u91C7\u7EB3" ? "adopt" : "test"}" data-review-action="act" data-kind="${esc2(a)}">${a}</button>`).join("");
-    return `<div class="rv-item"><span class="txt" contenteditable>${esc2(text2)}</span>${btns}<span class="rv-del" data-review-action="delete" title="\u5220\u9664"><i class="ti ti-x"></i></span></div>`;
+    const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === "\u91C7\u7EB3" ? "adopt" : "test"}" data-review-action="act" data-kind="${esc(a)}">${esc(a)}</button>`).join("");
+    return `<div class="rv-item"><span class="txt" contenteditable>${esc(text2)}</span>${btns}<span class="rv-del" data-review-action="delete" title="\u5220\u9664"><i class="ti ti-x"></i></span></div>`;
   }
   function bindReviewActions(root) {
     root.onclick = (e) => {
@@ -9079,9 +9076,9 @@
     let h2 = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
     sections.forEach(([field2, title, acts]) => {
       const items = rec && rec[field2] || [];
-      h2 += `<div class="rv-sec" data-field="${field2}" data-dept="${dept}" data-week="${key}"><h5>${title}</h5>`;
+      h2 += `<div class="rv-sec" data-field="${esc(field2)}" data-dept="${esc(dept)}" data-week="${esc(key)}"><h5>${esc(title)}</h5>`;
       if (field2 === "summary" && !items.length && prevPlan && prevPlan.length) {
-        h2 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc2(x)).join("\uFF1B")}</div>`;
+        h2 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
       }
       h2 += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
       h2 += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
@@ -9134,7 +9131,7 @@
       const isCurrent = week === cur;
       const collapsed = isCurrent ? !currentWeekShouldOpen() : true;
       return `<div class="acc-week${collapsed ? " collapsed" : ""}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u5468</span>' : ""}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(weekLabel(week))} ${isCurrent ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u5468</span>' : ""}</div>
       <div class="acc-body">${sopRateShell(week)}${rvColHtml("SEO", byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, "SEO"))}${rvColHtml("SEM", byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, "SEM"))}</div>
     </div>`;
     }).join("");
@@ -9145,11 +9142,11 @@
     }).map((monthKey) => {
       const inner = sortWeekKeys(oldGroups[monthKey]).map((week) => `
       <div class="acc-week collapsed">
-        <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)}</div>
+        <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(weekLabel(week))}</div>
         <div class="acc-body">${sopRateShell(week)}${rvColHtml("SEO", byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, "SEO"))}${rvColHtml("SEM", byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, "SEM"))}</div>
       </div>`).join("");
       return `<div class="acc-month collapsed">
-      <div class="acc-month-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthGroupLabel(monthKey)}</div>
+      <div class="acc-month-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthGroupLabel(monthKey))}</div>
       <div class="acc-month-body">${inner}</div>
     </div>`;
     }).join("");
@@ -9178,7 +9175,7 @@
     acc.innerHTML = keys.map((key) => {
       const collapsed = key !== cur;
       return `<div class="acc-week${collapsed ? " collapsed" : ""}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel2(key)} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span>' : ""}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel2(key))} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span>' : ""}</div>
       <div class="acc-body">${rvColHtml("SEO", byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml("SEM", byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
     </div>`;
     }).join("");

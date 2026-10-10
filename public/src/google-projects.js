@@ -45,7 +45,7 @@ function dsRow(key,s){
   return `<div class="csp-s-6d1156dd83">`
     +`<div class="csp-s-22dccc46c7">${esc(name)}</div>`
     +`<div class="csp-s-b57829faf1">${esc(typeText)}</div>`
-    +`<span class="badge ${cls}">${esc(text)}</span>`
+    +`<span class="badge ${esc(cls)}">${esc(text)}</span>`
     +`<div class="csp-s-83725d2c6e"></div>`
     +`<div class="csp-s-95144d7b86">时间 ${esc(String(time))} · 记录 ${esc(String(count))}</div>`
     +`<div class="csp-s-33ee298127">${extra}</div>`

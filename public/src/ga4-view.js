@@ -56,7 +56,7 @@ function fillTable(tableId, emptyId, rows, renderCells, emptyText) {
   const items = Array.isArray(rows) ? rows : [];
   body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell) => {
     const value = cell.html == null ? esc(cell.value ?? '') : cell.html;
-    return `<td class="${cell.cls || ''}">${value}</td>`;
+    return `<td class="${esc(cell.cls || '')}">${value}</td>`;
   }).join('')}</tr>`).join('');
   if (empty) {
     empty.textContent = emptyText || '暂无数据';

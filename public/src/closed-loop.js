@@ -37,7 +37,7 @@ function scopeDept(btn,txt){
 export function clip(s,n){ return s.length>n?s.slice(0,n)+'…':s; }
 
 export function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
-  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc(s.dept)}诊断</span></td><td>${esc(text)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);}
+  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${esc(s.c)}">${esc(s.dept)}诊断</span></td><td>${esc(text)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);}
 /* 整改行：问题/所属/依据/动作/负责人/截止/结果，全部可编辑或可选；绑定 id 后失焦即存 */
 function fixRowHtml(f){
   const dept=f.dept==='SEM'?'SEM':'SEO'; const c=dept==='SEM'?'b-purple':'b-blue';
@@ -156,7 +156,7 @@ function renderTaskMeta(card){
   if(!box)return;
   const isCo=card.classList.contains('cotask'), g=taskGroupOf(it);
   // 个人任务在各自列里，dept 徽章冗余 → 只公司大任务保留「公司」徽章
-  const deptBadge=isCo?`<span class="badge ${s.c||'b-gray'}">${esc(s.dept||'')}</span>`:'';
+  const deptBadge=isCo?`<span class="badge ${esc(s.c||'b-gray')}">${esc(s.dept||'')}</span>`:'';
   // 出身标：这条是从整改清单排下来的，点它回去看依据数据（任务能追溯到证据，才不是拍脑袋）
   const srcBadge=it.fix_id?`<span class="badge b-amber src-fix" title="来自整改清单 · 点击查看依据">整改</span>`:'';
   // 备注并入 meta 行（备注居左、日期/操作居右同一行），消掉单独的备注行与空白
@@ -224,7 +224,7 @@ function taskAgeHtml(it,g){
   if(g==='doing'&&it.start_date&&it.task_date){
     const total=dayDiff(it.start_date,it.task_date)+1, cur=dayDiff(it.start_date,t)+1;
     const ck=taskCheckin(it.id);
-    const pushed=ck.days?` · 已推进 ${ck.days} 天`:'';
+    const pushed=ck.days?` · 已推进 ${esc(ck.days)} 天`:'';
     // 停滞：既没打今天的卡，上次推进也在 2 天前（或压根没推进过）→ 标黄，别让它安静地烂在进行中
     const idle=!ck.today&&(ck.last?dayDiff(ck.last,t)>=2:dayDiff(it.start_date,t)>=2);
     return `<span class="tage${idle?' tage-idle':''}">第 ${cur}/${total} 天${pushed}</span>`;
