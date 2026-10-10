@@ -28,6 +28,7 @@ npm start                    # node src/index.js，默认 :3000
 - `DOMAIN`：有域名填域名（Caddy 自动 HTTPS）；纯 IP 填 `:80`。
 - `COOKIE_SECURE`：HTTPS 部署 `true`；纯 HTTP（`DOMAIN=:80`）**必须 `false`**，否则无法登录。
 - 可选：`PORT`(默认3000)、`NODE_ENV`、`SESSION_HOURS`(默认72)、`ANTHROPIC_MODEL`、`ANTHROPIC_MAX_TOKENS`、`ACME_EMAIL`(有域名签证书)、`SETTINGS_SECRET`(不填则从 JWT_SECRET 派生)。
+- 可选：`INQUIRY_INTAKE_SECRET`——独立站询盘表单把线索发进后台用的密钥（至少 24 位随机串）。**不填 = 接收入口关闭**，其它功能不受影响；要启用时同一个值还得配到独立站的服务端，接法见 `docs/INQUIRY_INTAKE.md`。
 
 ## 3. 首次部署步骤
 1. 把代码放到 `/opt/ferr-ops`（git clone 或已存在则 `git pull`）。
