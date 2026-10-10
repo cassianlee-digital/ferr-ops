@@ -371,3 +371,7 @@ body.dark .panel.active .card-head {
 }
 #panel-dashboard .geo-empty { padding: 14px 0; font-size: 13px; color: var(--text3); }
 @media (max-width: 900px) { #panel-dashboard .geo-grid { grid-template-columns: 1fr; } }
+#panel-dashboard .geo-cite { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; line-height: 1.6; color: var(--text2); }
+#panel-dashboard .geo-cite b { color: var(--text1); font-weight: 600; }
+#panel-dashboard .geo-cite-prev { color: var(--text3); }
+#panel-dashboard .geo-cite-warn { color: var(--danger); font-weight: 600; }

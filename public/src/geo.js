@@ -35,6 +35,7 @@ function render(data) {
 
   if (data.status === 'NOT_SYNCED') {
     body.appendChild(el('div', 'geo-empty', '这段时间 GA4 没有同步数据，看不到 AI 引擎带来的流量。请到「数据看板 → GA4 流量」确认同步状态。'));
+    body.appendChild(citationLine(data)); // 人工抽查不依赖 GA4，照常显示
     return;
   }
   const t = data.totals;
@@ -75,7 +76,25 @@ function render(data) {
   grid.appendChild(inq);
 
   body.appendChild(grid);
-  body.appendChild(el('div', 'geo-note', '这里只有「从 AI 回答里点链接进站」的访问。AI 提到了我们但用户没点链接的，流量数据里看不到，所以实际影响只会比这里多。被 AI 引用的情况要靠固定题库人工抽查，尚未建立。识别的引擎：' + data.known_engines.join('、') + '。'));
+  body.appendChild(citationLine(data));
+  body.appendChild(el('div', 'geo-note', '上面的访问数只有「从 AI 回答里点链接进站」的那部分。AI 提到了我们但用户没点链接的，流量数据里看不到，所以实际影响只会比这里多；那部分看下面的人工抽查。识别的引擎：' + data.known_engines.join('、') + '。'));
+}
+
+// 引用抽查（人工、固定题库）：最近一轮的结果。没查过就明说没查过，不显示成 0。
+function citationLine(data) {
+  const box = el('div', 'geo-cite');
+  const c = data.citations;
+  if (!c) {
+    box.appendChild(el('span', '', '引用抽查：这个时间范围之前还没有做过。到「数据看板 → GEO 抽查」建题库并查第一轮。'));
+    return box;
+  }
+  const t = c.totals;
+  box.appendChild(el('b', '', '引用抽查 ' + c.round_date));
+  box.appendChild(el('span', '', '已查 ' + t.checked + '/' + t.expected + ' 格 · 提到我们 ' + t.mentioned + ' · 引用我们的页面 ' + t.cited));
+  const p = data.citations_previous;
+  if (p && p.totals.checked) box.appendChild(el('span', 'geo-cite-prev', '上一轮 ' + p.round_date + '：提到 ' + p.totals.mentioned + '/' + p.totals.checked + ' · 引用 ' + p.totals.cited + '/' + p.totals.checked));
+  if (t.no_screenshot) box.appendChild(el('span', 'geo-cite-warn', t.no_screenshot + ' 条没有截图'));
+  return box;
 }
 
 export async function loadGeo() {

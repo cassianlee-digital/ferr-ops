@@ -18,7 +18,7 @@ const ALL_TABLES = [
   'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'hermes_action_runs',
+  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'geo_questions', 'geo_checks', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily', 'ga4_event_daily',
@@ -697,7 +697,7 @@ CREATE INDEX IF NOT EXISTS idx_inquiry_feedbacks_inq ON inquiry_feedbacks(inquir
 -- 列表接口只回元数据（不含 data），原图走 GET /api/attachments/:id/raw，避免列表把图片一起拖回来。
 CREATE TABLE IF NOT EXISTS attachments (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  owner_type  TEXT NOT NULL,          -- 'inquiry_sales_note' | 'keyword' | 'task'（任务完成证据截图）
+  owner_type  TEXT NOT NULL,          -- 'inquiry_sales_note' | 'keyword' | 'task'（任务完成证据截图）| 'geo_check'（GEO 抽查截图）
   owner_id    INTEGER NOT NULL,
   name        TEXT,
   mime        TEXT NOT NULL,
@@ -719,6 +719,32 @@ CREATE TABLE IF NOT EXISTS inquiry_sales_notes (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_inquiry_sales_notes_inq ON inquiry_sales_notes(inquiry_id);
+
+-- GEO 引用抽查（2026-10-10）：AI 回答里有没有提到 / 引用我们，没有接口能自动拿，只能人按固定题库去问。
+-- geo_questions 是题库：问题文字不可改（改了就不是同一个问题），只能停用后另加，所以没有「修改问题」这条路。
+-- geo_checks 是每一轮的结果：同一轮 + 同一题 + 同一引擎只有一条。截图走 attachments(owner_type='geo_check')。
+CREATE TABLE IF NOT EXISTS geo_questions (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  question    TEXT NOT NULL UNIQUE,
+  active      INTEGER NOT NULL DEFAULT 1,
+  created_by  INTEGER REFERENCES users(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS geo_checks (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  question_id INTEGER NOT NULL REFERENCES geo_questions(id),
+  engine      TEXT NOT NULL,            -- services/geoChecks.js 的 CHECK_ENGINE_KEYS
+  round_date  TEXT NOT NULL,            -- 这一轮是哪天查的（YYYY-MM-DD）
+  mentioned   INTEGER NOT NULL DEFAULT 0,  -- 回答里提到了我们
+  cited       INTEGER NOT NULL DEFAULT 0,  -- 回答引用 / 链接了我们的页面
+  cited_url   TEXT,
+  note        TEXT,
+  checked_by  INTEGER REFERENCES users(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT,
+  UNIQUE(question_id, engine, round_date)
+);
+CREATE INDEX IF NOT EXISTS idx_geo_checks_round ON geo_checks(round_date);
 
 -- 表单线索（2026-10-10）：独立站询盘表单提交时带着来源参数进来的原始记录。
 -- 线索不是询盘：不进任何统计，要有人确认「这就是业务收到的那条」并评了等级才转成询盘（inquiry_id 回指）。

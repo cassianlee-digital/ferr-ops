@@ -251,7 +251,7 @@
         <div class="timebar-inline" data-time data-scope="data" data-gran="week,month"></div>
         <!-- 阶段5：数据新鲜度条——三源实际有数据天数 + 最后同步时间，替代之前删掉的碎提示 -->
         <div id="dataFreshness" class="data-fresh"><span class="dim">数据新鲜度加载中…</span></div>
-        <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div><div class="subtab" data-sub="data-report">AI 周报</div></div>
+        <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div><div class="subtab" data-sub="data-geo">GEO 抽查</div><div class="subtab" data-sub="data-report">AI 周报</div></div>
 
         <!-- ===== SEO 看板 ===== -->
         <div class="subpanel active" id="sub-data-seo">
@@ -383,6 +383,20 @@
           </div>
         </div>
         <div class="subpanel" id="sub-data-ga4"></div>
+
+        <!-- ===== GEO 引用抽查（2026-10-10）：固定题库 × 固定引擎，一轮一张矩阵。渲染与事件在 src/geo-checks.js ===== -->
+        <div class="subpanel" id="sub-data-geo">
+          <div class="geochk-intro">AI 回答里有没有提到我们、有没有引用我们的页面，流量数据看不到，只能人去问。同一批问题、同一批引擎，每两周问一遍并截图，前后才能比。<b>问题加进题库后文字不能再改</b>，要换就停用后另加一条。</div>
+          <div class="geochk-bar">
+            <label>这一轮的日期 <input type="date" id="geochk-date" class="cell-date"></label>
+            <button class="btn-mini" type="button" id="geochk-today"><i class="ti ti-calendar-due"></i> 今天</button>
+            <select id="geochk-rounds"></select>
+            <label class="geochk-off"><input type="checkbox" id="geochk-show-off"> 显示已停用的问题</label>
+          </div>
+          <div class="geochk-summary" id="geochk-summary"></div>
+          <div class="geochk-add"><input type="text" id="geochk-new" maxlength="300" placeholder="加一个客户真会拿去问 AI 的问题，例如：best gate valve manufacturer in China"><button class="btn-primary" type="button" id="geochk-add"><i class="ti ti-plus"></i> 加入题库</button></div>
+          <div class="card geochk-card"><table class="dt geochk-table"><thead id="geochk-head"></thead><tbody id="geochk-body"></tbody></table></div>
+        </div>
 
         <!-- ===== AI 周报（SEO + SEM 合一，周级低频，独立 tab，不占概览黄金位） ===== -->
         <div class="subpanel" id="sub-data-report">
@@ -1221,6 +1235,26 @@
       <div class="leads-list" id="leads-list"></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="leadsMask">关闭</button></div>
+  </div>
+</div>
+
+<!-- GEO 引用抽查：录入某一轮里「某个问题 × 某个引擎」的结果。保存后不关窗，紧接着传截图。逻辑在 src/geo-checks.js -->
+<div class="modal-mask" id="geoCheckMask">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-sparkles csp-s-b0e08465c2"></i> GEO 抽查 · <span id="geochk-title"></span><span class="x" data-ui-action="close-modal" data-modal="geoCheckMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="task-done-title" id="geochk-question"></div>
+      <div class="task-done-rule">把上面这个问题原样拿去问这个引擎（新开对话、不登录个性化账号更接近客户看到的），按它的回答如实勾选。</div>
+      <div class="fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="geochk-mentioned"> 回答里提到了我们（品牌 / 公司名）</label></div>
+      <div class="fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="geochk-cited"> 回答引用 / 链接了我们的页面</label></div>
+      <div class="fld"><label>被引用的是哪个页面（勾了「引用」才需要）</label><input type="text" id="geochk-url" placeholder="https://…"></div>
+      <div class="fld"><label>备注（提到的位置、同时推荐了哪些对手…）</label><textarea id="geochk-note" rows="2" maxlength="1000"></textarea></div>
+      <div class="fld"><label>回答截图</label>
+        <div class="task-done-shots"><span id="geochk-thumbs"></span><button type="button" class="btn-mini" id="geochk-shot-btn" data-ui-action="pick-geo-shot"><i class="ti ti-photo-plus"></i> 上传截图</button><span class="dim" id="geochk-shot-tip"></span></div>
+      </div>
+      <div class="task-done-error" id="geochk-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-mini is-hidden" type="button" id="geochk-del">删除这一格</button><button class="btn-ghost" data-ui-action="close-modal" data-modal="geoCheckMask">关闭</button><button class="btn-primary" data-ui-action="submit-geo-check"><i class="ti ti-device-floppy"></i> 保存</button></div>
   </div>
 </div>
 

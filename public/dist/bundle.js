@@ -32,8 +32,8 @@
   function esc2(s) {
     return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function renderText(el3, s) {
-    if (el3) el3.textContent = s == null ? "" : String(s);
+  function renderText(el4, s) {
+    if (el4) el4.textContent = s == null ? "" : String(s);
   }
   function mdToHtml(t) {
     const src = esc2(t).split(/\n/);
@@ -332,8 +332,8 @@
     document.querySelectorAll("[data-time][data-scope]").forEach((bar) => {
       const s = st(bar.dataset.scope);
       bar.querySelectorAll(".trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === s.label));
-      bar.querySelectorAll("[data-tauto]").forEach((el3) => {
-        el3.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      bar.querySelectorAll("[data-tauto]").forEach((el4) => {
+        el4.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
       });
     });
     const top = document.getElementById("topRange");
@@ -1050,9 +1050,9 @@
   }
   async function loadSeoBoardGsc() {
     const cur = getCurrentRange("data");
-    let data = null, prev = null;
+    let data2 = null, prev = null;
     try {
-      data = await API.get(withRange2("/api/google/gsc/summary", "data"));
+      data2 = await API.get(withRange2("/api/google/gsc/summary", "data"));
     } catch (e) {
       window._gscBoard = { error: e };
       renderSeoBoard();
@@ -1065,7 +1065,7 @@
         prev = null;
       }
     }
-    window._gscBoard = { data, prev };
+    window._gscBoard = { data: data2, prev };
     renderSeoBoard();
   }
   function _aggByGran(byDate, gran) {
@@ -1083,19 +1083,19 @@
     return [...m.keys()].sort().map((k) => ({ label: gran === "month" ? k : k.slice(5), clicks: m.get(k).clicks, impr: m.get(k).impr }));
   }
   function _seoDelta(id, cur, prev, lowerBetter, fmt2) {
-    const el3 = document.getElementById(id);
-    if (!el3) return;
+    const el4 = document.getElementById(id);
+    if (!el4) return;
     if (prev == null || !isFinite(prev) || prev === 0 || cur == null) {
-      el3.textContent = "";
-      el3.className = "metric-delta";
+      el4.textContent = "";
+      el4.className = "metric-delta";
       return;
     }
     const diff = cur - prev;
     const better = lowerBetter ? diff < 0 : diff > 0;
     const arrow = diff > 0 ? "\u25B2" : diff < 0 ? "\u25BC" : "\u2014";
     const txt = fmt2 === "pct" ? Math.abs(diff / prev * 100).toFixed(1) + "%" : Math.abs(diff).toFixed(1);
-    el3.textContent = arrow + " " + txt;
-    el3.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
+    el4.textContent = arrow + " " + txt;
+    el4.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
   }
   function _seoPath(u) {
     try {
@@ -1106,9 +1106,9 @@
   }
   function renderSeoBoard() {
     const cv = document.getElementById("seoBoard");
-    const board = window._gscBoard, data = board && board.data, prev = board && board.prev;
+    const board = window._gscBoard, data2 = board && board.data, prev = board && board.prev;
     const error = board && board.error;
-    const t = data && data.totals || null;
+    const t = data2 && data2.totals || null;
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
@@ -1117,12 +1117,12 @@
       _t("sb-clicks", (t.clicks || 0).toLocaleString());
       _t("sb-impr", (t.impressions || 0).toLocaleString());
       _t("sb-pos", t.position != null ? Number(t.position).toFixed(1) : "\u2014");
-      _t("sb-cov", (data.queryCount || 0).toLocaleString());
+      _t("sb-cov", (data2.queryCount || 0).toLocaleString());
       const pt = prev && prev.totals;
       _seoDelta("sb-clicks-d", t.clicks, pt ? pt.clicks : null, false, "pct");
       _seoDelta("sb-impr-d", t.impressions, pt ? pt.impressions : null, false, "pct");
       _seoDelta("sb-pos-d", t.position, pt ? pt.position : null, true, "abs");
-      _seoDelta("sb-cov-d", data.queryCount, prev ? prev.queryCount : null, false, "abs");
+      _seoDelta("sb-cov-d", data2.queryCount, prev ? prev.queryCount : null, false, "abs");
     } else {
       ["sb-clicks", "sb-impr", "sb-pos", "sb-cov"].forEach((id) => _t(id, "\u2014"));
       ["sb-clicks-d", "sb-impr-d", "sb-pos-d", "sb-cov-d"].forEach((id) => {
@@ -1146,12 +1146,12 @@
       let labels, clicks, impr;
       if (!gran || gran === "day") {
         const rng = board && board.data && board.data.range || getCurrentRange("data");
-        const a = _alignDaily(data && data.byDate, rng, "date");
+        const a = _alignDaily(data2 && data2.byDate, rng, "date");
         labels = a.labels;
         clicks = a.rows.map((r) => r ? +r.clicks || 0 : null);
         impr = a.rows.map((r) => r ? +r.impressions || 0 : null);
       } else {
-        const s = _aggByGran(data && data.byDate, gran);
+        const s = _aggByGran(data2 && data2.byDate, gran);
         labels = s.map((x) => x.label);
         clicks = s.map((x) => x.clicks);
         impr = s.map((x) => x.impr);
@@ -1177,7 +1177,7 @@
     }
     const tb = document.getElementById("seoPageRows");
     if (tb) {
-      const pages = data && data.topPages || [];
+      const pages = data2 && data2.topPages || [];
       if (error) {
         tb.innerHTML = loadFailureRow(7, "GSC", error);
       } else if (!pages.length) {
@@ -1293,12 +1293,12 @@
     }).join("") + "</div>";
   }
   function renderSeoScatter(d) {
-    const el3 = document.getElementById("seoScatter"), empty = document.getElementById("seoScatterEmpty");
-    if (!el3) return;
+    const el4 = document.getElementById("seoScatter"), empty = document.getElementById("seoScatterEmpty");
+    if (!el4) return;
     const _tb = document.getElementById("seoScatterTargets");
     if (_tb) _tb.innerHTML = "";
     if (d && d.error) {
-      el3.style.display = "none";
+      el4.style.display = "none";
       if (empty) {
         empty.classList.remove("is-hidden");
         empty.textContent = loadFailureText("SEO \u6563\u70B9", d.error);
@@ -1307,7 +1307,7 @@
     }
     const ps = d && d.pageScatter || [];
     if (ps.length && typeof echarts !== "undefined") {
-      el3.style.display = "";
+      el4.style.display = "";
       if (empty) empty.classList.add("is-hidden");
       _seoScatterTitles("\u627E\u51FA\u9700\u8981\u4F18\u5316\u7684\u9875\u9762 \xB7 \u4F1A\u8BDD \xD7 \u8DF3\u51FA\u7387", "\u53F3\u4E0A\u7EA2\u533A=\u9AD8\u6D41\u91CF+\u9AD8\u8DF3\u51FA=\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61\uFF1B\u4E2D\u4F4D\u7EBF\u5206\u56DB\u8C61\u9650\uFF1B\u70B9=\u843D\u5730\u9875");
       if (window._seoScatterChart) {
@@ -1316,7 +1316,7 @@
         } catch (e) {
         }
       }
-      window._seoScatterChart = echarts.init(el3);
+      window._seoScatterChart = echarts.init(el4);
       const medS = _median(ps.map((p) => p.sessions)), medB = _median(ps.map((p) => (p.bounceRate || 0) * 100));
       const maxS = Math.max(...ps.map((p) => p.sessions), 1) * 1.6;
       const isTarget = (p) => p.sessions >= medS && (p.bounceRate || 0) * 100 >= medB;
@@ -1324,7 +1324,7 @@
         const s = _seoPath(u);
         return s.length > 22 ? "\u2026" + s.slice(-21) : s;
       };
-      const data2 = ps.map((p) => {
+      const data3 = ps.map((p) => {
         const t = isTarget(p);
         return {
           value: [p.sessions, +((p.bounceRate || 0) * 100).toFixed(1), _seoPath(p.page), p.avgDuration || 0],
@@ -1340,7 +1340,7 @@
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(32, 8 + Math.sqrt(v[0] || 0)),
-          data: data2,
+          data: data3,
           markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: true, fontSize: 9, color: "#9aa1ae", formatter: (o) => o.dataType === "max" ? "" : "\u4E2D\u4F4D" }, data: [{ xAxis: medS }, { yAxis: medB }] },
           markArea: { silent: true, itemStyle: { color: "rgba(229,72,77,.07)" }, label: { show: true, position: ["85%", "6%"], color: "#e5484d", fontSize: 11, fontWeight: "bold", formatter: "\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61" }, data: [[{ xAxis: medS, yAxis: medB }, { xAxis: maxS, yAxis: 100 }]] }
         }]
@@ -1350,11 +1350,11 @@
     }
     const pts = d && d.scatter || [];
     if (typeof echarts === "undefined" || !pts.length) {
-      el3.style.display = "none";
+      el4.style.display = "none";
       if (empty) empty.classList.remove("is-hidden");
       return;
     }
-    el3.style.display = "";
+    el4.style.display = "";
     if (empty) empty.classList.add("is-hidden");
     _seoScatterTitles("\u673A\u4F1A\u8BCD\u8C61\u9650 \xB7 \u5C55\u73B0 \xD7 \u6392\u540D", "\uFF08GA4 \u8DF3\u51FA\u7387\u5F85\u91CD\u65B0\u540C\u6B65\u540E\u5207\u6362\u4E3A\u201C\u4F1A\u8BDD\xD7\u8DF3\u51FA\u7387\u201D\uFF09\u53F3\u4E0A=\u9AD8\u5C55\u73B0\u5DEE\u6392\u540D=\u91CD\u70B9\u653B\uFF1B\u70B9=\u5173\u952E\u8BCD");
     if (window._seoScatterChart) {
@@ -1363,8 +1363,8 @@
       } catch (e) {
       }
     }
-    window._seoScatterChart = echarts.init(el3);
-    const data = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
+    window._seoScatterChart = echarts.init(el4);
+    const data2 = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
     const medImpr = _median(pts.map((p) => p.impressions)), medPos = _median(pts.map((p) => p.position));
     window._seoScatterChart.setOption({
       grid: { left: 52, right: 24, top: 16, bottom: 44 },
@@ -1374,7 +1374,7 @@
       series: [{
         type: "scatter",
         symbolSize: (v) => Math.min(30, 7 + Math.sqrt(v[2] || 0) * 2.2),
-        data,
+        data: data2,
         itemStyle: { color: "#2f72e8", opacity: 0.68 },
         markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: false }, data: [{ xAxis: medImpr }, { yAxis: medPos }] }
       }]
@@ -1450,8 +1450,8 @@
     return p;
   }
   function _semScopeNote() {
-    const el3 = document.getElementById("semAttrScope");
-    if (el3) el3.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
+    const el4 = document.getElementById("semAttrScope");
+    if (el4) el4.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
   }
   function onSemCampaignChange(v) {
     window._semCampaign = v || "";
@@ -1492,20 +1492,20 @@
     sel.value = cur;
   }
   async function loadSemBoardAds() {
-    let data = null;
+    let data2 = null;
     try {
-      data = await API.get(withSemCampaign(withRange2("/api/google/ads/summary", "data")));
+      data2 = await API.get(withSemCampaign(withRange2("/api/google/ads/summary", "data")));
     } catch (e) {
       window._adsBoard = { error: e };
       renderSemBoard();
       return;
     }
-    window._adsBoard = data;
+    window._adsBoard = data2;
     renderSemBoard();
   }
   function renderSemBoard() {
-    const data = window._adsBoard, t = data && data.totals;
-    const error = data && data.error;
+    const data2 = window._adsBoard, t = data2 && data2.totals;
+    const error = data2 && data2.error;
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
@@ -1525,13 +1525,13 @@
     } else {
       ids.forEach((id) => _t(id, "\u2014"));
     }
-    if (data) {
-      _fillSemCampaignFilter(data.campaigns);
-      _fillSemAdGroupFilter(data.adGroups);
+    if (data2) {
+      _fillSemCampaignFilter(data2.campaigns);
+      _fillSemAdGroupFilter(data2.adGroups);
     }
     const tb = document.getElementById("semHierRows");
     if (!tb) return;
-    const camps = data && data.campaigns || [], kws = data && data.keywords || [];
+    const camps = data2 && data2.campaigns || [], kws = data2 && data2.keywords || [];
     if (error) {
       tb.innerHTML = loadFailureRow(5, "Ads \u6982\u89C8", error);
       return;
@@ -1663,12 +1663,12 @@
     }).join("") + "</div>";
   }
   function renderSemScatter(d) {
-    const el3 = document.getElementById("semScatter"), empty = document.getElementById("semScatterEmpty");
-    if (!el3) return;
+    const el4 = document.getElementById("semScatter"), empty = document.getElementById("semScatterEmpty");
+    if (!el4) return;
     const _tb = document.getElementById("semScatterTargets");
     if (_tb) _tb.innerHTML = "";
     if (d && d.error) {
-      el3.style.display = "none";
+      el4.style.display = "none";
       if (empty) {
         empty.classList.remove("is-hidden");
         empty.textContent = loadFailureText("SEM \u6563\u70B9", d.error);
@@ -1679,7 +1679,7 @@
     const conv = all.filter((p) => Number(p.conversions || 0) > 0).map((p) => ({ ...p, cost: p.costMicros / 1e6, cpa: p.costMicros / 1e6 / Number(p.conversions) }));
     _semScatterTitles("\u82B1\u8D39 \xD7 \u6BCF\u8F6C\u5316\u6210\u672C \xB7 \u627E\u53C8\u8D35\u53C8\u4E0D\u5212\u7B97\u7684\u8BCD", "\u70B9=\u6709\u8F6C\u5316\u7684\u6295\u653E\u5173\u952E\u8BCD\uFF1B\u4E0B\u65B9\u5019\u9009\u5426\u8BCD\u53EA\u4F7F\u7528\u771F\u5B9E\u641C\u7D22\u8BCD\u660E\u7EC6");
     if (typeof echarts !== "undefined" && conv.length) {
-      el3.style.display = "";
+      el4.style.display = "";
       if (empty) empty.classList.add("is-hidden");
       if (window._semScatterChart) {
         try {
@@ -1687,13 +1687,13 @@
         } catch (e) {
         }
       }
-      window._semScatterChart = echarts.init(el3);
+      window._semScatterChart = echarts.init(el4);
       const medCpa = _median(conv.map((p) => p.cpa));
       const short = (s) => {
         s = String(s || "");
         return s.length > 20 ? s.slice(0, 19) + "\u2026" : s;
       };
-      const data = conv.map((p) => {
+      const data2 = conv.map((p) => {
         const t = p.cpa >= medCpa;
         return { value: [+p.cost.toFixed(0), +p.cpa.toFixed(0), p.keyword, p.conversions], itemStyle: { color: t ? "#e5484d" : "#7b54e0", opacity: t ? 0.85 : 0.62 }, label: { show: t, position: "right", fontSize: 9, color: "#c93338", formatter: (o) => short(o.value[2]) } };
       });
@@ -1705,13 +1705,13 @@
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(30, 8 + Math.sqrt(v[0] || 0) / 3),
-          data,
+          data: data2,
           markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: true, fontSize: 9, color: "#9aa1ae", formatter: "\u4E2D\u4F4D\u6BCF\u8F6C\u5316" }, data: [{ yAxis: medCpa }] },
           markArea: { silent: true, itemStyle: { color: "rgba(229,72,77,.07)" }, label: { show: true, position: ["50%", "8%"], color: "#e5484d", fontSize: 11, fontWeight: "bold", formatter: "\u6BCF\u8F6C\u5316\u504F\u8D35" }, data: [[{ yAxis: medCpa }, { yAxis: "max" }]] }
         }]
       });
     } else {
-      el3.style.display = "none";
+      el4.style.display = "none";
       if (window._semScatterChart) {
         try {
           window._semScatterChart.dispose();
@@ -1874,13 +1874,13 @@
     }
   }
   async function loadDataFreshness() {
-    const el3 = document.getElementById("dataFreshness");
-    if (!el3) return;
+    const el4 = document.getElementById("dataFreshness");
+    if (!el4) return;
     let d = null;
     try {
       d = await API.get(withRange2("/api/data-freshness", "data"));
     } catch (e) {
-      el3.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
+      el4.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
       return;
     }
     const fmt2 = (v) => {
@@ -1900,7 +1900,7 @@
       const tone = s.daysWithData === 0 ? "bad" : cov < 70 ? "warn" : "good";
       return '<span class="fresh-chip ' + tone + '"><b>' + name + "</b> \u6709\u6570\u636E " + s.daysWithData + "/" + s.days + ' \u5929<span class="dim"> \xB7 ' + fmt2(s.lastSync) + (s.status === "failed" ? ' <b class="csp-s-b0e08465c2">\u5931\u8D25</b>' : "") + "</span></span>";
     };
-    el3.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
+    el4.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
   }
   window._ovSeoMini = null;
   window._ovSemMini = null;
@@ -2475,8 +2475,8 @@
     </div>
   `;
   }
-  function renderShell(el3, groups, bodyHtml, unmappedList, unmappedTotal) {
-    el3.innerHTML = `
+  function renderShell(el4, groups, bodyHtml, unmappedList, unmappedTotal) {
+    el4.innerHTML = `
     <div class="inq-flat-map inq-blue-map">
       <div class="inq-map-head">
         <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
@@ -2505,21 +2505,21 @@
     });
   }
   async function renderGlobe() {
-    const el3 = document.getElementById("inqGlobe");
-    if (!el3) return;
-    const seq4 = ++renderSeq;
+    const el4 = document.getElementById("inqGlobe");
+    if (!el4) return;
+    const seq5 = ++renderSeq;
     const { groups, unmappedList, unmappedTotal } = collectMapData();
     const empty = document.getElementById("inqGlobe-empty");
     if (empty) empty.style.display = "none";
     disposeMap();
-    renderShell(el3, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
+    renderShell(el4, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
     try {
       await ensureWorldMap();
-      if (seq4 !== renderSeq) return;
+      if (seq5 !== renderSeq) return;
     } catch (err) {
-      if (seq4 !== renderSeq) return;
+      if (seq5 !== renderSeq) return;
       const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
-      renderShell(el3, groups, `
+      renderShell(el4, groups, `
       <div class="inq-map-error">
         <b>\u4E16\u754C\u5730\u56FE\u52A0\u8F7D\u5931\u8D25</b>
         <span>${msg}</span>
@@ -2528,8 +2528,8 @@
     `, unmappedList, unmappedTotal);
       return;
     }
-    renderShell(el3, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
-    const chartEl = el3.querySelector(".inq-echarts-map");
+    renderShell(el4, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
+    const chartEl = el4.querySelector(".inq-echarts-map");
     if (!chartEl || !window.echarts) return;
     inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "svg" });
     bindResize();
@@ -2675,29 +2675,29 @@
     if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
     return { ok: true, value };
   }
-  function setSavingState(el3, state2) {
-    if (!el3) return;
-    el3.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
-    if (state2 === "saving") el3.classList.add("kpi-saving");
+  function setSavingState(el4, state2) {
+    if (!el4) return;
+    el4.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
+    if (state2 === "saving") el4.classList.add("kpi-saving");
     else if (state2 === "ok") {
-      el3.classList.add("kpi-ok");
-      setTimeout(() => el3.classList.remove("kpi-ok"), 1200);
+      el4.classList.add("kpi-ok");
+      setTimeout(() => el4.classList.remove("kpi-ok"), 1200);
     } else if (state2 === "error") {
-      el3.classList.add("kpi-error");
-      setTimeout(() => el3.classList.remove("kpi-error"), 2e3);
+      el4.classList.add("kpi-error");
+      setTimeout(() => el4.classList.remove("kpi-error"), 2e3);
     }
   }
-  function rollbackEditable(el3, oldValue) {
-    if (el3) el3.textContent = oldValue == null ? "" : String(oldValue);
+  function rollbackEditable(el4, oldValue) {
+    if (el4) el4.textContent = oldValue == null ? "" : String(oldValue);
   }
-  function showSaveError(el3, msg) {
-    setSavingState(el3, "error");
+  function showSaveError(el4, msg) {
+    setSavingState(el4, "error");
     toast2(msg);
   }
-  function placeCaretEnd(el3) {
+  function placeCaretEnd(el4) {
     try {
       const range = document.createRange();
-      range.selectNodeContents(el3);
+      range.selectNodeContents(el4);
       range.collapse(false);
       const selection = getSelection();
       selection.removeAllRanges();
@@ -2899,14 +2899,14 @@
   var REGION_BADGE = toMap(REGIONS, LEGACY_REGION_BADGE);
   var PRODUCT_NAMES = PRODUCTS.map((p) => p[0]);
   var REGION_NAMES = REGIONS.map((r) => r[0]);
-  function fillSelect(el3, names, { placeholder = null } = {}) {
-    if (!el3) return;
-    const keepValue = el3.value;
+  function fillSelect(el4, names, { placeholder = null } = {}) {
+    if (!el4) return;
+    const keepValue = el4.value;
     const opts = [];
     if (placeholder != null) opts.push(`<option value="">${placeholder}</option>`);
     for (const n of names) opts.push(`<option>${n}</option>`);
-    el3.innerHTML = opts.join("");
-    if (keepValue && names.indexOf(keepValue) >= 0) el3.value = keepValue;
+    el4.innerHTML = opts.join("");
+    if (keepValue && names.indexOf(keepValue) >= 0) el4.value = keepValue;
   }
 
   // public/src/attachments.js
@@ -3042,7 +3042,7 @@
     const box = ensureLightbox();
     const img = box.querySelector(".att-lightbox-img");
     const url = rawUrl(id);
-    const seq4 = ++lightboxSeq;
+    const seq5 = ++lightboxSeq;
     img.src = url;
     box.querySelector(".att-lightbox-name").textContent = meta.name || "\u56FE\u7247";
     box.querySelector(".att-lightbox-open").href = url;
@@ -3050,7 +3050,7 @@
     const sizeText = meta.bytes ? humanBytes(meta.bytes) : "";
     dim.textContent = sizeText;
     const showDim = () => {
-      if (seq4 !== lightboxSeq || !img.naturalWidth) return;
+      if (seq5 !== lightboxSeq || !img.naturalWidth) return;
       const px = img.naturalWidth + " \xD7 " + img.naturalHeight;
       dim.textContent = sizeText ? px + " \xB7 " + sizeText : px;
     };
@@ -3278,17 +3278,17 @@
     return `<button type="button" class="inq-src" data-inq-source="${esc2(r.id)}" title="${esc2(v && v.hint || "\u70B9\u51FB\u67E5\u770B / \u586B\u5199\u6765\u6E90")}"><span class="inq-src-term">${esc2(r.source || "")}</span>${subs.join("")}${badge3}</button>`;
   }
   async function loadSourceChecks() {
-    const seq4 = ++checkSeq;
+    const seq5 = ++checkSeq;
     refreshLeadBadge();
     try {
-      const data = await API.get(withRange2("/api/inquiries/source-check", "inquiry"));
-      if (seq4 !== checkSeq) return;
-      checks = new Map((data.items || []).map((i) => [i.id, i]));
-      verdicts = data.verdicts || {};
-      lookbackDays = data.lookback_days || 30;
+      const data2 = await API.get(withRange2("/api/inquiries/source-check", "inquiry"));
+      if (seq5 !== checkSeq) return;
+      checks = new Map((data2.items || []).map((i) => [i.id, i]));
+      verdicts = data2.verdicts || {};
+      lookbackDays = data2.lookback_days || 30;
       changed();
     } catch (e) {
-      if (seq4 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+      if (seq5 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
     }
   }
   var editing2 = null;
@@ -3416,14 +3416,14 @@
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
   }
   async function refreshLeadBadge() {
-    const el3 = $("inq-leads-count");
-    if (!el3) return;
+    const el4 = $("inq-leads-count");
+    if (!el4) return;
     try {
-      const data = await API.get("/api/inquiry-leads?state=new");
-      el3.textContent = data.configured ? String(data.counts.new || 0) : "\u672A\u63A5\u5165";
-      el3.classList.toggle("has-new", data.configured && data.counts.new > 0);
+      const data2 = await API.get("/api/inquiry-leads?state=new");
+      el4.textContent = data2.configured ? String(data2.counts.new || 0) : "\u672A\u63A5\u5165";
+      el4.classList.toggle("has-new", data2.configured && data2.counts.new > 0);
     } catch (e) {
-      el3.textContent = "\u2014";
+      el4.textContent = "\u2014";
     }
   }
   function leadCard(l) {
@@ -3486,10 +3486,10 @@
     box.textContent = "";
     addLine(box, "\u52A0\u8F7D\u4E2D\u2026", "dim");
     try {
-      const data = await API.get("/api/inquiry-leads?state=" + leadState);
-      leadRows = data.items || [];
-      status.classList.toggle("is-off", !data.configured);
-      status.textContent = data.configured ? "\u5F85\u5904\u7406 " + (data.counts.new || 0) + " \xB7 \u5DF2\u8F6C\u8BE2\u76D8 " + (data.counts.converted || 0) + " \xB7 \u5DF2\u5FFD\u7565 " + (data.counts.ignored || 0) : "\u5C1A\u672A\u63A5\u5165\uFF1A\u670D\u52A1\u5668\u6CA1\u6709\u914D\u7F6E INQUIRY_INTAKE_SECRET\uFF0C\u72EC\u7ACB\u7AD9\u8868\u5355\u8FD8\u4E0D\u4F1A\u628A\u7EBF\u7D22\u53D1\u5230\u8FD9\u91CC\uFF08\u63A5\u6CD5\u89C1 docs/INQUIRY_INTAKE.md\uFF09\u3002";
+      const data2 = await API.get("/api/inquiry-leads?state=" + leadState);
+      leadRows = data2.items || [];
+      status.classList.toggle("is-off", !data2.configured);
+      status.textContent = data2.configured ? "\u5F85\u5904\u7406 " + (data2.counts.new || 0) + " \xB7 \u5DF2\u8F6C\u8BE2\u76D8 " + (data2.counts.converted || 0) + " \xB7 \u5DF2\u5FFD\u7565 " + (data2.counts.ignored || 0) : "\u5C1A\u672A\u63A5\u5165\uFF1A\u670D\u52A1\u5668\u6CA1\u6709\u914D\u7F6E INQUIRY_INTAKE_SECRET\uFF0C\u72EC\u7ACB\u7AD9\u8868\u5355\u8FD8\u4E0D\u4F1A\u628A\u7EBF\u7D22\u53D1\u5230\u8FD9\u91CC\uFF08\u63A5\u6CD5\u89C1 docs/INQUIRY_INTAKE.md\uFF09\u3002";
       box.textContent = "";
       if (!leadRows.length) {
         addLine(box, leadState === "new" ? "\u6CA1\u6709\u5F85\u5904\u7406\u7684\u7EBF\u7D22" : "\u6CA1\u6709\u88AB\u5FFD\u7565\u7684\u7EBF\u7D22", "dim lead-empty");
@@ -3826,8 +3826,8 @@
       const opts = col.type === "has" ? [{ value: "\u6709", label: "\u6709\u53CD\u9988" }, { value: "\u65E0", label: "\u65E0\u53CD\u9988" }] : optionsFor(col);
       return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${col.key}"><option value="">${esc2(col.ph)}</option>` + opts.map((o) => `<option value="${esc2(o.value)}"${o.value === cur ? " selected" : ""}>${esc2(o.label)}</option>`).join("") + "</select></td>";
     }).join("");
-    row.querySelectorAll("[data-inq-filter]").forEach((el3) => {
-      el3.value = FILTERS[el3.dataset.inqFilter] || "";
+    row.querySelectorAll("[data-inq-filter]").forEach((el4) => {
+      el4.value = FILTERS[el4.dataset.inqFilter] || "";
     });
   }
   function syncClearBadge() {
@@ -3838,14 +3838,14 @@
     btn.innerHTML = '<i class="ti ti-filter-off"></i>' + (n ? " " + n : "");
   }
   function renderInqSummary(total, shown) {
-    const el3 = document.getElementById("inqSummary");
-    if (!el3) return;
+    const el4 = document.getElementById("inqSummary");
+    if (!el4) return;
     const n = activeFilterCount();
     if (!n) {
-      el3.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
+      el4.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
       return;
     }
-    el3.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
+    el4.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
   }
   function pageNumbers(page, pages) {
     if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
@@ -3866,14 +3866,14 @@
     return out;
   }
   function renderInqPager(total, pages, from, to) {
-    const el3 = document.getElementById("inqPager");
-    if (!el3) return;
+    const el4 = document.getElementById("inqPager");
+    if (!el4) return;
     if (!total) {
-      el3.innerHTML = "";
+      el4.innerHTML = "";
       return;
     }
     const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${n}">${n}</button>`).join("");
-    el3.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
+    el4.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
   }
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".inq-tb .inq-del");
@@ -3919,8 +3919,8 @@
     openInquiry();
     pendingLead = lead;
     const set = (id, v) => {
-      const el3 = document.getElementById(id);
-      if (el3 && v != null && v !== "") el3.value = v;
+      const el4 = document.getElementById(id);
+      if (el4 && v != null && v !== "") el4.value = v;
     };
     set("f-date", d.date);
     set("f-country", lead.country);
@@ -4003,9 +4003,9 @@
     }
   }
   document.addEventListener("input", (e) => {
-    const el3 = e.target.closest("#inqFilterRow input[data-inq-filter]");
-    if (!el3) return;
-    FILTERS[el3.dataset.inqFilter] = el3.value.trim();
+    const el4 = e.target.closest("#inqFilterRow input[data-inq-filter]");
+    if (!el4) return;
+    FILTERS[el4.dataset.inqFilter] = el4.value.trim();
     afterFilterChange(false);
   });
   document.addEventListener("change", (e) => {
@@ -4143,9 +4143,9 @@
     }
     menu.style.display = "none";
   });
-  async function persistTagChange(el3, value) {
-    const kind = el3.dataset.kind;
-    const tr = el3.closest("tr");
+  async function persistTagChange(el4, value) {
+    const kind = el4.dataset.kind;
+    const tr = el4.closest("tr");
     const id = tr && tr.dataset.id;
     if (!id) return;
     if (tr.dataset.kwType) {
@@ -4700,12 +4700,12 @@
   }
   function updateSopCounts() {
     [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
-      const el3 = document.getElementById("kcount-" + key);
-      if (!el3) return;
+      const el4 = document.getElementById("kcount-" + key);
+      if (!el4) return;
       const sopN = window._sops.filter((s) => s.dept === dept).length;
       const addCol = document.getElementById("newtask-" + key);
       const addN = addCol ? addCol.querySelectorAll(".tcard:not(.subtask)").length : 0;
-      el3.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
+      el4.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
     });
   }
   function isSopWritable() {
@@ -5114,8 +5114,8 @@
   var doneCtx = null;
   var doneBound = false;
   function doneError(msg) {
-    const el3 = $2("task-done-error");
-    if (el3) el3.textContent = msg || "";
+    const el4 = $2("task-done-error");
+    if (el4) el4.textContent = msg || "";
   }
   function renderDoneThumbs() {
     const box = $2("task-done-thumbs");
@@ -5278,19 +5278,19 @@
       tbody.appendChild(tr);
     }
   }
-  function renderEffect(data) {
+  function renderEffect(data2) {
     const box = $2("task-effect-body");
     box.textContent = "";
-    $2("task-effect-title").textContent = data.task.content || "";
-    if (data.status !== "OK") {
-      box.appendChild(el("div", "teffect-note", data.message || "\u6CA1\u6709\u53EF\u5BF9\u6BD4\u7684\u6570\u636E\u3002"));
+    $2("task-effect-title").textContent = data2.task.content || "";
+    if (data2.status !== "OK") {
+      box.appendChild(el("div", "teffect-note", data2.message || "\u6CA1\u6709\u53EF\u5BF9\u6BD4\u7684\u6570\u636E\u3002"));
       return;
     }
-    box.appendChild(el("div", "teffect-note", data.note));
-    const used = new Set(data.items.map((i) => i.source).filter(Boolean));
+    box.appendChild(el("div", "teffect-note", data2.note));
+    const used = new Set(data2.items.map((i) => i.source).filter(Boolean));
     const wins = el("div", "teffect-windows");
-    if (used.has("gsc")) wins.appendChild(el("div", "", windowText("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", data.windows.gsc)));
-    if (used.has("ads")) wins.appendChild(el("div", "", windowText("\u5E7F\u544A\uFF08Ads\uFF09", data.windows.ads)));
+    if (used.has("gsc")) wins.appendChild(el("div", "", windowText("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", data2.windows.gsc)));
+    if (used.has("ads")) wins.appendChild(el("div", "", windowText("\u5E7F\u544A\uFF08Ads\uFF09", data2.windows.ads)));
     box.appendChild(wins);
     const table = el("table", "dt teffect-table");
     const thead = el("thead");
@@ -5299,27 +5299,27 @@
     thead.appendChild(hr);
     table.appendChild(thead);
     const tbody = el("tbody");
-    for (const item of data.items) {
+    for (const item of data2.items) {
       const kind = LINK_LABEL[item.type] || item.type;
       const where = item.source === "ads" ? " \xB7 \u5E7F\u544A" : item.source === "gsc" ? " \xB7 \u81EA\u7136\u641C\u7D22" : "";
-      effectRows(tbody, kind + where, item.type === "page" ? linkText(item) : item.label || item.ref, item, data.metrics);
+      effectRows(tbody, kind + where, item.type === "page" ? linkText(item) : item.label || item.ref, item, data2.metrics);
     }
-    if (data.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F", "", data.baseline.gsc, data.metrics, "is-baseline");
-    if (data.baseline.ads) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u8D26\u6237\u5E7F\u544A\u540C\u671F", "\u91D1\u989D\u4E3A Ads \u8D26\u6237\u5E01\u79CD", data.baseline.ads, data.metrics, "is-baseline");
+    if (data2.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F", "", data2.baseline.gsc, data2.metrics, "is-baseline");
+    if (data2.baseline.ads) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u8D26\u6237\u5E7F\u544A\u540C\u671F", "\u91D1\u989D\u4E3A Ads \u8D26\u6237\u5E01\u79CD", data2.baseline.ads, data2.metrics, "is-baseline");
     table.appendChild(tbody);
     box.appendChild(table);
   }
   async function loadEffect() {
     const box = $2("task-effect-body");
-    const seq4 = ++effectSeq;
+    const seq5 = ++effectSeq;
     document.querySelectorAll("#taskEffectMask [data-effect-days]").forEach((b) => b.classList.toggle("active", Number(b.dataset.effectDays) === effectDays));
     box.textContent = "";
     box.appendChild(el("div", "dim", "\u52A0\u8F7D\u4E2D\u2026"));
     try {
-      const data = await API.get(effectPath + "?days=" + effectDays);
-      if (seq4 === effectSeq) renderEffect(data);
+      const data2 = await API.get(effectPath + "?days=" + effectDays);
+      if (seq5 === effectSeq) renderEffect(data2);
     } catch (e) {
-      if (seq4 !== effectSeq) return;
+      if (seq5 !== effectSeq) return;
       box.textContent = "";
       box.appendChild(el("div", "task-done-error", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25") + " "));
       const retry = el("button", "btn-mini", "\u91CD\u8BD5");
@@ -5535,18 +5535,18 @@
     return "today";
   }
   function taskGroupEl(col, g) {
-    let el3 = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
-    if (el3) return el3;
+    let el4 = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
+    if (el4) return el4;
     const label = (TASK_GROUPS.find((x) => x[0] === g) || [, g])[1];
-    el3 = document.createElement("div");
-    el3.className = "tgroup";
-    el3.dataset.g = g;
-    el3.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
+    el4 = document.createElement("div");
+    el4.className = "tgroup";
+    el4.dataset.g = g;
+    el4.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
     const order = TASK_GROUPS.map((x) => x[0]);
     const after = [...col.querySelectorAll(":scope > .tgroup")].find((x) => order.indexOf(x.dataset.g) > order.indexOf(g)) || col.querySelector(".donefold") || col.querySelector(".add-task");
-    if (after) col.insertBefore(el3, after);
-    else col.appendChild(el3);
-    return el3;
+    if (after) col.insertBefore(el4, after);
+    else col.appendChild(el4);
+    return el4;
   }
   function addTaskCard(s, content, it) {
     const col = taskColFor(s.dept);
@@ -5933,8 +5933,8 @@
     openModal("taskMask");
     if (tc) tc.focus();
   }
-  function openTaskEdit(el3) {
-    const card = el3.closest(".tcard");
+  function openTaskEdit(el4) {
+    const card = el4.closest(".tcard");
     const it = card && card._item;
     if (!it || !it.id) return;
     _taskScope = card._scope || coScope();
@@ -6191,7 +6191,7 @@
     ["company", "sem", "seo"].forEach((key) => {
       const col = document.getElementById("newtask-" + key);
       if (!col) return;
-      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el3) => el3.remove());
+      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el4) => el4.remove());
       col.classList.remove("folded");
     });
     const depEmpty = document.getElementById("dep-empty");
@@ -6232,7 +6232,7 @@
       btn.addEventListener("click", async () => {
         const retryError = await loadTaskCheckins();
         if (retryError) return;
-        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el3) => el3.remove());
+        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el4) => el4.remove());
         rerenderTaskCards();
       });
       const anchor = col.querySelector(".add-task");
@@ -6674,9 +6674,9 @@
       }
     });
   }
-  function renderGa4(data) {
-    const connected = Boolean(data.connected);
-    const metrics = data.metrics;
+  function renderGa4(data2) {
+    const connected = Boolean(data2.connected);
+    const metrics = data2.metrics;
     setStatus(connected);
     if (!connected) {
       setHint({
@@ -6704,44 +6704,44 @@
       setText("ga4-dur", formatDuration(metrics.avgDuration));
     }
     const baseEmpty = connected ? "\u6240\u9009\u533A\u95F4\u6682\u65E0\u6570\u636E" : "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A";
-    fillTable("ga4-sources", "ga4-sources-empty", data.sources, (row) => [
+    fillTable("ga4-sources", "ga4-sources-empty", data2.sources, (row) => [
       { value: row.source || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-countries", "ga4-countries-empty", data.countries, (row) => [
+    fillTable("ga4-countries", "ga4-countries-empty", data2.countries, (row) => [
       { value: row.country || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-landing", "ga4-landing-empty", data.landingPages, (row) => [
+    fillTable("ga4-landing", "ga4-landing-empty", data2.landingPages, (row) => [
       { value: row.page || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.conversions, 1), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-campaigns", "ga4-campaigns-empty", data.campaigns, (row) => [
+    fillTable("ga4-campaigns", "ga4-campaigns-empty", data2.campaigns, (row) => [
       { value: row.campaign || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" },
       { value: formatNumber(row.conversions, 1), cls: "num" }
     ], metrics ? "\u6240\u9009\u533A\u95F4\u6CA1\u6709\u5E7F\u544A\u7CFB\u5217\u6570\u636E" : baseEmpty);
-    const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
-    fillTable("ga4-events", "ga4-events-empty", data.conversionEvents, (row) => [
+    const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data2.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
+    fillTable("ga4-events", "ga4-events-empty", data2.conversionEvents, (row) => [
       { html: `<div class="ga4-event-label">${esc2(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc2(row.eventName || "")}</div>` },
       { value: formatNumber(row.eventCount), cls: "num" },
       { value: formatNumber(row.keyEvents, 1), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], eventEmpty);
-    renderDevices(data.devices, baseEmpty);
+    renderDevices(data2.devices, baseEmpty);
   }
   async function loadGa42() {
     const requestId = ++requestSequence;
     const retry = document.getElementById("ga4-retry");
     if (retry) retry.disabled = true;
     try {
-      const data = await API.get(withRange("/api/ga4/overview", "data"));
+      const data2 = await API.get(withRange("/api/ga4/overview", "data"));
       if (requestId !== requestSequence) return;
-      renderGa4(data || { connected: false });
+      renderGa4(data2 || { connected: false });
     } catch (error) {
       if (requestId !== requestSequence) return;
       setStatus(false, true);
@@ -6924,11 +6924,11 @@
     });
   }
   function syncKpiInputs() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el3) => {
-      const p = el3.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el4) => {
+      const p = el4.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
       if (arr && arr[idx] && arr[idx].t != null) {
-        el3.textContent = String(arr[idx].t);
-        el3.dataset.kpiOld = String(arr[idx].t);
+        el4.textContent = String(arr[idx].t);
+        el4.dataset.kpiOld = String(arr[idx].t);
       }
     });
   }
@@ -6985,9 +6985,9 @@
     });
   });
   var _fnum = (id) => {
-    const el3 = document.getElementById(id);
-    if (!el3) return null;
-    const v = parseFloat(el3.value);
+    const el4 = document.getElementById(id);
+    if (!el4) return null;
+    const v = parseFloat(el4.value);
     return isNaN(v) ? null : v;
   };
   async function submitSeoWeek() {
@@ -7122,8 +7122,8 @@
     e.preventDefault();
     const channel = form.getAttribute("data-exec-form");
     const body = { channel };
-    for (const el3 of form.elements) {
-      if (el3.name && el3.value) body[el3.name] = el3.value;
+    for (const el4 of form.elements) {
+      if (el4.name && el4.value) body[el4.name] = el4.value;
     }
     if (!body.problem) {
       toast("\u95EE\u9898\u5FC5\u586B");
@@ -7242,15 +7242,15 @@
     SPEND_WITH_ZERO_DEAL: "\u6709\u82B1\u8D39\xB7\u96F6\u6210\u4EA4"
   };
   function make(tag, className, text2) {
-    const el3 = document.createElement(tag);
-    if (className) el3.className = className;
-    if (text2 != null) el3.textContent = String(text2);
-    return el3;
+    const el4 = document.createElement(tag);
+    if (className) el4.className = className;
+    if (text2 != null) el4.textContent = String(text2);
+    return el4;
   }
   function cell(tag, className, text2, title) {
-    const el3 = make(tag, className, text2);
-    if (title) el3.title = title;
-    return el3;
+    const el4 = make(tag, className, text2);
+    if (title) el4.title = title;
+    return el4;
   }
   var money = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
   var CURRENCY_HINT = "\u91D1\u989D\u4E3A\u5E7F\u544A\u8D26\u6237\u5E01\u79CD\uFF08Ads \u540C\u6B65\u672A\u5B58\u5E01\u79CD\uFF09\uFF0C\u6545\u4E0D\u52A0\u8D27\u5E01\u7B26\u53F7";
@@ -7287,7 +7287,7 @@
     tr.appendChild(metricCell(row.cac, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
     return tr;
   }
-  function buildTable(data) {
+  function buildTable(data2) {
     const table = make("table", "dt ledger-table");
     const thead = make("thead");
     const htr = make("tr");
@@ -7305,8 +7305,8 @@
     thead.appendChild(htr);
     table.appendChild(thead);
     const tbody = make("tbody");
-    (data.channels || []).forEach((row) => tbody.appendChild(channelRow(row, false)));
-    if (data.totals) tbody.appendChild(channelRow(data.totals, true));
+    (data2.channels || []).forEach((row) => tbody.appendChild(channelRow(row, false)));
+    if (data2.totals) tbody.appendChild(channelRow(data2.totals, true));
     table.appendChild(tbody);
     return table;
   }
@@ -7342,16 +7342,16 @@
     });
     return box;
   }
-  function buildNotes(data) {
+  function buildNotes(data2) {
     const box = make("div", "ledger-notes");
-    const notes = data.notes || {};
+    const notes = data2.notes || {};
     [notes.deal, notes.spend, notes.quality, notes.dealRate].forEach((text2) => {
       if (text2) box.appendChild(make("div", "ledger-note", "\xB7 " + text2));
     });
-    if (data.sources && data.sources.spend) {
-      box.appendChild(make("div", "ledger-note", "\xB7 \u82B1\u8D39\u53D6\u6570\uFF1A" + data.sources.spend));
+    if (data2.sources && data2.sources.spend) {
+      box.appendChild(make("div", "ledger-note", "\xB7 \u82B1\u8D39\u53D6\u6570\uFF1A" + data2.sources.spend));
     }
-    const missing = data.meta && data.meta.dealStatusMissing;
+    const missing = data2.meta && data2.meta.dealStatusMissing;
     if (missing) box.appendChild(make("div", "ledger-note ledger-warn", "\xB7 \u6709 " + missing + " \u5C01\u8BE2\u76D8\u672A\u6807\u6CE8\u662F\u5426\u6210\u4EA4\uFF0C\u672A\u8BA1\u5165\u6210\u4EA4\u6570\uFF08\u4E5F\u672A\u5F53\u4F5C\u672A\u6210\u4EA4\uFF09"));
     box.appendChild(make("div", "ledger-note", "\xB7 \u672C\u8868\u4E3A\u4E1A\u52A1\u603B\u8D26\uFF0C\u53EA\u8BFB\uFF1B\u4E0D\u53C2\u4E0E KPI \u7EE9\u6548\u8BC4\u5206"));
     return box;
@@ -7383,15 +7383,15 @@
     body.textContent = "";
     body.appendChild(node);
   }
-  function render(card, data) {
+  function render(card, data2) {
     const label = card.querySelector(".ledger-range");
-    if (label) label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data.range);
+    if (label) label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data2.range);
     const wrap = make("div");
     const scroller = make("div", "ledger-scroll");
-    scroller.appendChild(buildTable(data));
+    scroller.appendChild(buildTable(data2));
     wrap.appendChild(scroller);
-    wrap.appendChild(buildTargets(data.targets));
-    wrap.appendChild(buildNotes(data));
+    wrap.appendChild(buildTargets(data2.targets));
+    wrap.appendChild(buildNotes(data2));
     setBody(card, wrap);
   }
   function renderError(card, message) {
@@ -7413,9 +7413,9 @@
     if (!force && loadedRevision === revision) return true;
     const requestId = ++requestSequence2;
     try {
-      const data = await API.get(withRange2("/api/kpi/ledger"));
+      const data2 = await API.get(withRange2("/api/kpi/ledger"));
       if (requestId !== requestSequence2 || revision !== getRangeRevision()) return false;
-      render(card, data);
+      render(card, data2);
       loadedRevision = revision;
       return true;
     } catch (e) {
@@ -7454,15 +7454,15 @@
     NO_VALID_DATA: "\u672C\u533A\u95F4\u6682\u65E0\u53EF\u8BC4\u5206\u6570\u636E"
   };
   function make2(tag, className, text2) {
-    const el3 = document.createElement(tag);
-    if (className) el3.className = className;
-    if (text2 != null) el3.textContent = String(text2);
-    return el3;
+    const el4 = document.createElement(tag);
+    if (className) el4.className = className;
+    if (text2 != null) el4.textContent = String(text2);
+    return el4;
   }
   function cell2(tag, className, text2, title) {
-    const el3 = make2(tag, className, text2);
-    if (title) el3.title = title;
-    return el3;
+    const el4 = make2(tag, className, text2);
+    if (title) el4.title = title;
+    return el4;
   }
   var pct3 = (v, digits) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(digits == null ? 1 : digits) + "%";
   var money2 = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
@@ -7693,14 +7693,14 @@
     box.appendChild(basis);
     return box;
   }
-  function render2(card, data) {
-    latest = data;
+  function render2(card, data2) {
+    latest = data2;
     hoistAboveLedger(card);
     const label = card.querySelector(".kpi-review-range");
     if (label) {
-      label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data.range) + (data.department.targets.source === "default" ? " \xB7 \u76EE\u6807\u53D6\u901A\u7528\u515C\u5E95\u503C" : "");
+      label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data2.range) + (data2.department.targets.source === "default" ? " \xB7 \u76EE\u6807\u53D6\u901A\u7528\u515C\u5E95\u503C" : "");
     }
-    const s = data[activeScopeKey] || data.department;
+    const s = data2[activeScopeKey] || data2.department;
     const wrap = make2("div");
     wrap.appendChild(buildTabs());
     wrap.appendChild(buildHero(s));
@@ -7730,9 +7730,9 @@
     if (!force && loadedRevision2 === revision && latest) return true;
     const requestId = ++requestSequence3;
     try {
-      const data = await API.get(withRange2("/api/kpi/review", "kpi"));
+      const data2 = await API.get(withRange2("/api/kpi/review", "kpi"));
       if (requestId !== requestSequence3 || revision !== getRangeRevision("kpi")) return false;
-      render2(card, data);
+      render2(card, data2);
       loadedRevision2 = revision;
       return true;
     } catch (e) {
@@ -7799,13 +7799,13 @@
     return r >= 0.9 ? "kpi-tone-green" : r >= 0.7 ? "kpi-tone-blue" : r >= 0.5 ? "kpi-tone-amber" : "kpi-tone-primary";
   }
   function rows(arr, box) {
-    const el3 = document.getElementById(box);
-    if (!el3) return;
-    el3.innerHTML = arr.map((k) => {
+    const el4 = document.getElementById(box);
+    if (!el4) return;
+    el4.innerHTML = arr.map((k) => {
       const available = k.actualAvailable !== false && k.a != null, r = available ? ratio(k) : 0, tone = available ? scoreTone(r) : "kpi-tone-muted", progress = Math.max(0, Math.min(100, Number.isFinite(r) ? r * 100 : 0));
       return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
     }).join("");
-    el3.querySelectorAll("[data-progress]").forEach((fill) => {
+    el4.querySelectorAll("[data-progress]").forEach((fill) => {
       const progress = Number(fill.dataset.progress);
       fill.style.width = `${Number.isFinite(progress) ? progress : 0}%`;
     });
@@ -7820,9 +7820,9 @@
       ["A\u7EA7\u5360\u6BD4", c.aRatio != null ? c.aRatio + "%" : "\u2014", "", momTxt(d.aRatio)],
       ["\u6709\u6548\u8BE2\u76D8\u7387", c.validRate != null ? c.validRate + "%" : "\u2014", "", momTxt(d.validRate)]
     ];
-    const el3 = document.getElementById("miniScores");
-    if (!el3) return;
-    el3.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
+    const el4 = document.getElementById("miniScores");
+    if (!el4) return;
+    el4.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
   }
   var overviewRequestSequence = 0;
   async function loadOverview() {
@@ -7844,14 +7844,14 @@
         tg.textContent = c.grade || "";
         tg.className = "kpi-delta " + (c.company >= 75 ? "delta-pos" : "delta-neg");
       }
-      const mom = (el3, v) => {
-        if (!el3) return;
+      const mom = (el4, v) => {
+        if (!el4) return;
         if (v == null) {
-          el3.textContent = "";
+          el4.textContent = "";
           return;
         }
-        el3.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " " + comparison;
-        el3.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
+        el4.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " " + comparison;
+        el4.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
       };
       mom(document.getElementById("topAratioMoM"), d.aRatio);
       mom(document.getElementById("topRateMoM"), d.validRate);
@@ -7948,8 +7948,8 @@
     return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc2(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
   }
   function renderBlock(grp, containerId, a) {
-    const el3 = document.getElementById(containerId);
-    if (!el3) return;
+    const el4 = document.getElementById(containerId);
+    if (!el4) return;
     const block = a.blocks && a.blocks[grp] || { metrics: [] };
     const diags = (a.diagnostics || []).filter((d) => d.grp === grp);
     const summaries = (a.summaries || []).filter((d) => d.grp === grp);
@@ -7972,8 +7972,8 @@
     } else html += '<div class="kpi-empty">\u6682\u65E0\u53EF\u8BC4\u5206\u6307\u6807 \xB7 \u5F85\u63A5\u5165</div>';
     if (diags.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u8BCA\u65AD\u6307\u6807\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + diags.map(diagChip).join("") + "</div>";
     if (summaries.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u4E1A\u52A1\u6C47\u603B\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + summaries.map(diagChip).join("") + "</div>";
-    el3.innerHTML = html;
-    el3.querySelectorAll("[data-progress]").forEach((f) => {
+    el4.innerHTML = html;
+    el4.querySelectorAll("[data-progress]").forEach((f) => {
       const p = Number(f.dataset.progress);
       f.style.width = (Number.isFinite(p) ? p : 0) + "%";
     });
@@ -8372,12 +8372,12 @@
   function text(value) {
     return value == null ? "" : String(value);
   }
-  function setText2(el3, value) {
-    if (el3) el3.textContent = text(value);
+  function setText2(el4, value) {
+    if (el4) el4.textContent = text(value);
   }
   function field(id) {
-    const el3 = byId(id);
-    return el3 ? el3.value.trim() : "";
+    const el4 = byId(id);
+    return el4 ? el4.value.trim() : "";
   }
   var FEEDBACK_LABEL = {
     adopted: "\u91C7\u7EB3 \xB7 \u6709\u4EF7\u503C",
@@ -8455,8 +8455,8 @@
     tbody.textContent = "";
     setText2(count, "\u52A0\u8F7D\u4E2D...");
     try {
-      const data = await window.API.get("/api/hermes/memories");
-      const items = data.items || [];
+      const data2 = await window.API.get("/api/hermes/memories");
+      const items = data2.items || [];
       items.forEach((item) => tbody.appendChild(renderMemory(item)));
       if (empty) empty.style.display = items.length ? "none" : "block";
       setText2(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
@@ -8469,8 +8469,8 @@
   }
   function resetHermesMemoryForm() {
     ["hm-id", "hm-title", "hm-content", "hm-evidence"].forEach((id) => {
-      const el3 = byId(id);
-      if (el3) el3.value = "";
+      const el4 = byId(id);
+      if (el4) el4.value = "";
     });
     const kind = byId("hm-kind");
     if (kind) kind.value = "market";
@@ -8536,8 +8536,8 @@
   }
   function resetHermesFeedbackForm() {
     ["hf-scope", "hf-suggestion", "hf-note"].forEach((id) => {
-      const el3 = byId(id);
-      if (el3) el3.value = "";
+      const el4 = byId(id);
+      if (el4) el4.value = "";
     });
     const result = byId("hf-result");
     if (result) result.value = "adopted";
@@ -8630,20 +8630,20 @@
     ${auditBlockHtml(view)}
   </div>`;
   }
-  function render3(data) {
+  function render3(data2) {
     const box = document.getElementById("plan-history");
     if (!box) return;
-    const day = data.day;
-    const pushed = new Set((data.checkins || []).map((c) => c.loop_item_id));
-    const noteOf = new Map((data.checkins || []).filter((c) => c.note).map((c) => [c.loop_item_id, c.note]));
+    const day = data2.day;
+    const pushed = new Set((data2.checkins || []).map((c) => c.loop_item_id));
+    const noteOf = new Map((data2.checkins || []).filter((c) => c.note).map((c) => [c.loop_item_id, c.note]));
     const subsByParent = /* @__PURE__ */ new Map();
-    (data.subtasks || []).forEach((s) => {
+    (data2.subtasks || []).forEach((s) => {
       if (!subsByParent.has(s.parent_id)) subsByParent.set(s.parent_id, []);
       subsByParent.get(s.parent_id).push(s);
     });
     box.innerHTML = '<div class="tboard">' + DEPTS.map((d) => {
-      const sops = (data.sops || []).filter((s) => s.dept === d.key);
-      const tasks = (data.tasks || []).filter((t) => (t.dept || "SEO") === d.key);
+      const sops = (data2.sops || []).filter((s) => s.dept === d.key);
+      const tasks = (data2.tasks || []).filter((t) => (t.dept || "SEO") === d.key);
       const sopDone = sops.filter((s) => s.done).length;
       const spoken = tasks.filter((t) => (t.done_at || "").slice(0, 10) === day || pushed.has(t.id)).length;
       const sopHtml = sops.length ? '<div class="sop-list">' + sops.map((s) => `<div class="hcard hsop${s.done ? " on" : ""}">
@@ -8671,8 +8671,8 @@
     const pk = periodKeysFor(day);
     box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc2(day) + " \u7684\u8BB0\u5F55\u2026</div>";
     try {
-      const data = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
-      render3(data);
+      const data2 = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
+      render3(data2);
     } catch (e) {
       box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
     }
@@ -8747,28 +8747,28 @@
     <div class="sr-misses">${missHtml}</div>
   </div>`;
   }
-  async function mountSopRate(el3) {
-    if (!el3 || el3.dataset.loaded === "1") return;
-    const from = el3.dataset.from;
-    const to = el3.dataset.to;
+  async function mountSopRate(el4) {
+    if (!el4 || el4.dataset.loaded === "1") return;
+    const from = el4.dataset.from;
+    const to = el4.dataset.to;
     if (!from || !to) return;
-    el3.dataset.loaded = "1";
-    el3.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
+    el4.dataset.loaded = "1";
+    el4.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
     try {
       const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date()))}`;
-      const data = await API.get("/api/sop/stats" + q);
-      const items = data.items || [];
+      const data2 = await API.get("/api/sop/stats" + q);
+      const items = data2.items || [];
       if (!items.length) {
-        el3.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
+        el4.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
         return;
       }
       const hasMonthly = items.some((i) => i.expected === null);
-      el3.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
-        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc2(data.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
+      el4.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
+        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc2(data2.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
       <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
     } catch (e) {
-      el3.dataset.loaded = "";
-      el3.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
+      el4.dataset.loaded = "";
+      el4.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
     }
   }
   document.addEventListener("click", (e) => {
@@ -8776,8 +8776,8 @@
     if (!bar) return;
     const week = bar.parentElement;
     if (!week || week.classList.contains("collapsed")) return;
-    const el3 = week.querySelector(".sop-rate");
-    if (el3) mountSopRate(el3);
+    const el4 = week.querySelector(".sop-rate");
+    if (el4) mountSopRate(el4);
   });
 
   // public/src/weekly-review.js
@@ -8880,13 +8880,13 @@
   }
   function bindReviewActions(root) {
     root.onclick = (e) => {
-      const el3 = e.target.closest("[data-review-action]");
-      if (!el3 || !root.contains(el3)) return;
-      const action = el3.dataset.reviewAction;
-      if (action === "act") rvAct(el3, el3.dataset.kind);
-      else if (action === "delete") rvDel(el3);
-      else if (action === "add") rvAdd(el3);
-      else if (action === "toggle" && el3.parentElement) el3.parentElement.classList.toggle("collapsed");
+      const el4 = e.target.closest("[data-review-action]");
+      if (!el4 || !root.contains(el4)) return;
+      const action = el4.dataset.reviewAction;
+      if (action === "act") rvAct(el4, el4.dataset.kind);
+      else if (action === "delete") rvDel(el4);
+      else if (action === "add") rvAdd(el4);
+      else if (action === "toggle" && el4.parentElement) el4.parentElement.classList.toggle("collapsed");
     };
   }
   function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
@@ -8970,8 +8970,8 @@
     }).join("");
     acc.innerHTML = currentHtml + groupHtml;
     bindReviewActions(acc);
-    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el3) => {
-      mountSopRate(el3);
+    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el4) => {
+      mountSopRate(el4);
     });
   }
   async function renderMonthReview() {
@@ -9007,8 +9007,8 @@
     const items = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
     API.put("/api/weekly-reports", { week_key: week, dept, field: field2, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
   }
-  function rvAdd(el3) {
-    const sec = el3.closest(".rv-sec");
+  function rvAdd(el4) {
+    const sec = el4.closest(".rv-sec");
     const list = sec.querySelector(".rv-list");
     const isMonth = !!parseMonthKey(sec.dataset.week);
     const sections = isMonth ? RV_MONTH_SECTIONS : RV_SECTIONS;
@@ -9020,19 +9020,19 @@
     const t = node.querySelector(".txt");
     if (t) t.focus();
   }
-  function rvDel(el3) {
-    const sec = el3.closest(".rv-sec");
-    el3.closest(".rv-item").remove();
+  function rvDel(el4) {
+    const sec = el4.closest(".rv-sec");
+    el4.closest(".rv-item").remove();
     rvSectionSave(sec);
   }
-  async function rvAct(el3, kind) {
-    const item = el3.closest(".rv-item");
+  async function rvAct(el4, kind) {
+    const item = el4.closest(".rv-item");
     const text2 = item.querySelector(".txt").innerText.trim();
     if (!text2) {
       toast2("\u8BF7\u5148\u586B\u5199\u5185\u5BB9");
       return;
     }
-    const sec = el3.closest(".rv-sec");
+    const sec = el4.closest(".rv-sec");
     const s = sFromDept(sec.dataset.dept);
     try {
       if (kind === "\u6D4B\u8BD5") {
@@ -9056,53 +9056,53 @@
 
   // public/src/settings.js
   function bindSettings() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el3) => {
-      if (el3.dataset.settingsBound === "1") return;
-      el3.dataset.settingsBound = "1";
-      el3.addEventListener("focusin", () => {
-        el3.dataset.kpiOld = el3.textContent;
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el4) => {
+      if (el4.dataset.settingsBound === "1") return;
+      el4.dataset.settingsBound = "1";
+      el4.addEventListener("focusin", () => {
+        el4.dataset.kpiOld = el4.textContent;
       });
       const commit = async () => {
         if (!can("kpiTarget")) {
-          rollbackEditable(el3, el3.dataset.kpiOld != null ? el3.dataset.kpiOld : el3.textContent);
+          rollbackEditable(el4, el4.dataset.kpiOld != null ? el4.dataset.kpiOld : el4.textContent);
           toast2("\u4EC5\u8001\u677F/\u4E3B\u7BA1\u53EF\u6539 KPI \u76EE\u6807");
           return;
         }
-        const parts = el3.dataset.kpi.split(":");
+        const parts = el4.dataset.kpi.split(":");
         const values = { TOTAL, SEO, SEM }[parts[0]];
         const item = values && values[Number(parts[1])];
         if (!item) return;
-        const oldValue = el3.dataset.kpiOld != null ? el3.dataset.kpiOld : String(item.t);
-        const result = validateEditableValue(el3.textContent, "number", { min: 0 });
+        const oldValue = el4.dataset.kpiOld != null ? el4.dataset.kpiOld : String(item.t);
+        const result = validateEditableValue(el4.textContent, "number", { min: 0 });
         if (!result.ok) {
-          rollbackEditable(el3, oldValue);
-          showSaveError(el3, result.msg);
+          rollbackEditable(el4, oldValue);
+          showSaveError(el4, result.msg);
           return;
         }
         if (result.value === item.t) {
-          el3.textContent = String(result.value);
-          setSavingState(el3, null);
+          el4.textContent = String(result.value);
+          setSavingState(el4, null);
           return;
         }
-        setSavingState(el3, "saving");
+        setSavingState(el4, "saving");
         try {
           const { rows: rows2 } = await API.put(withRange2("/api/kpi-targets", "kpi"), { updates: [{ id: item.id, target: result.value }] });
           applyKpiServer(rows2);
           renderKPI2();
-          el3.textContent = String(item.t);
-          el3.dataset.kpiOld = String(item.t);
-          setSavingState(el3, "ok");
+          el4.textContent = String(item.t);
+          el4.dataset.kpiOld = String(item.t);
+          setSavingState(el4, "ok");
           toast2("\u5DF2\u66F4\u65B0\u300C" + item.n + "\u300D\u76EE\u6807 \u2192 " + item.t + " \xB7 \u5DF2\u5165\u5E93, \u8BC4\u5206\u5DF2\u91CD\u7B97");
         } catch (error) {
-          rollbackEditable(el3, oldValue);
-          showSaveError(el3, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+          rollbackEditable(el4, oldValue);
+          showSaveError(el4, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
         }
       };
-      el3.addEventListener("blur", commit);
-      el3.addEventListener("keydown", (event) => {
+      el4.addEventListener("blur", commit);
+      el4.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
-          el3.blur();
+          el4.blur();
         }
       });
     });
@@ -9424,10 +9424,10 @@
   var loaded = null;
   var mounted = false;
   function make4(tag, className, text2) {
-    const el3 = document.createElement(tag);
-    if (className) el3.className = className;
-    if (text2 != null) el3.textContent = String(text2);
-    return el3;
+    const el4 = document.createElement(tag);
+    if (className) el4.className = className;
+    if (text2 != null) el4.textContent = String(text2);
+    return el4;
   }
   function numInput(name, value, step) {
     const input = document.createElement("input");
@@ -9636,8 +9636,8 @@
     foot.appendChild(make4("span", "kra-hint", "\u4FDD\u5B58\u540E KPI \u9875\u7684\u300C\u6708\u5EA6\u7EE9\u6548\u8003\u6838\u300D\u7ACB\u5373\u6309\u65B0\u65B9\u6848\u91CD\u7B97\u3002\u5386\u53F2\u5DF2\u7ED3\u7B97\u7684\u8003\u6838\u671F\u4E0D\u53D7\u5F71\u54CD\u3002"));
     wrap.appendChild(foot);
     host.appendChild(wrap);
-    if (!canEdit()) host.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el3) => {
-      el3.disabled = true;
+    if (!canEdit()) host.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el4) => {
+      el4.disabled = true;
     });
     syncWeightSum(host);
   }
@@ -9811,31 +9811,32 @@
     if (!prev) return d ? "\u4E0A\u671F\u4E3A 0\uFF0C\u672C\u671F " + num2(cur) : "\u4E0E\u4E0A\u671F\u6301\u5E73";
     return "\u8F83\u4E0A\u671F " + (d > 0 ? "+" : "") + num2(d) + "\uFF08" + (d > 0 ? "+" : "") + Math.round(d / prev * 100) + "%\uFF09";
   }
-  function render5(data) {
+  function render5(data2) {
     const body = $3("geo-body");
     body.textContent = "";
     const sub = $3("geo-range");
-    if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data.range);
-    if (data.status === "NOT_SYNCED") {
+    if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data2.range);
+    if (data2.status === "NOT_SYNCED") {
       body.appendChild(el2("div", "geo-empty", "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u6D41\u91CF\u3002\u8BF7\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GA4 \u6D41\u91CF\u300D\u786E\u8BA4\u540C\u6B65\u72B6\u6001\u3002"));
+      body.appendChild(citationLine(data2));
       return;
     }
-    const t = data.totals;
+    const t = data2.totals;
     const grid = el2("div", "geo-grid");
     const head = el2("div", "geo-block");
     head.appendChild(el2("div", "geo-label", "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE"));
     head.appendChild(el2("div", "geo-big", num2(t.sessions)));
     head.appendChild(el2("div", "geo-sub", "\u5360\u5168\u7AD9 " + (t.share == null ? "\u2014" : (t.share * 100).toFixed(1) + "%") + "\uFF08\u5168\u7AD9 " + num2(t.site_sessions) + " \u6B21\uFF09"));
     head.appendChild(el2("div", "geo-sub", deltaText(t.sessions, t.prev_sessions)));
-    if (data.data_days) head.appendChild(el2("div", "geo-sub", "\u533A\u95F4\u5185 GA4 \u6709 " + data.data_days + " \u5929\u6570\u636E \xB7 \u5173\u952E\u4E8B\u4EF6 " + num2(t.key_events)));
+    if (data2.data_days) head.appendChild(el2("div", "geo-sub", "\u533A\u95F4\u5185 GA4 \u6709 " + data2.data_days + " \u5929\u6570\u636E \xB7 \u5173\u952E\u4E8B\u4EF6 " + num2(t.key_events)));
     grid.appendChild(head);
     const list = el2("div", "geo-block");
     list.appendChild(el2("div", "geo-label", "\u6309\u5F15\u64CE"));
-    if (!data.engines.length) {
+    if (!data2.engines.length) {
       list.appendChild(el2("div", "geo-sub", "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u4EFB\u4F55\u6765\u81EA AI \u5F15\u64CE\u7684\u8BBF\u95EE\u3002"));
     } else {
-      const max = Math.max(...data.engines.map((e) => e.sessions), 1);
-      for (const e of data.engines) {
+      const max = Math.max(...data2.engines.map((e) => e.sessions), 1);
+      for (const e of data2.engines) {
         const row = el2("div", "geo-row");
         row.title = e.sources.length ? "GA4 \u6765\u6E90\u503C\uFF1A" + e.sources.join("\u3001") : "\u672C\u671F\u6CA1\u6709\u8BBF\u95EE";
         row.appendChild(el2("span", "geo-name", e.label));
@@ -9851,13 +9852,29 @@
     grid.appendChild(list);
     const inq = el2("div", "geo-block");
     inq.appendChild(el2("div", "geo-label", "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BE2\u76D8"));
-    inq.appendChild(el2("div", "geo-big", data.inquiries.total));
-    inq.appendChild(el2("div", "geo-sub", "A " + data.inquiries.a + " \xB7 B " + data.inquiries.b + " \xB7 C " + data.inquiries.c));
-    inq.appendChild(el2("div", "geo-sub", "\u8868\u5355\u7EBF\u7D22 " + data.leads.total + " \u6761" + (data.leads.ignored ? "\uFF08\u5176\u4E2D " + data.leads.ignored + " \u6761\u88AB\u5FFD\u7565\uFF09" : "")));
+    inq.appendChild(el2("div", "geo-big", data2.inquiries.total));
+    inq.appendChild(el2("div", "geo-sub", "A " + data2.inquiries.a + " \xB7 B " + data2.inquiries.b + " \xB7 C " + data2.inquiries.c));
+    inq.appendChild(el2("div", "geo-sub", "\u8868\u5355\u7EBF\u7D22 " + data2.leads.total + " \u6761" + (data2.leads.ignored ? "\uFF08\u5176\u4E2D " + data2.leads.ignored + " \u6761\u88AB\u5FFD\u7565\uFF09" : "")));
     inq.appendChild(el2("div", "geo-sub", "\u53EA\u6570\u72EC\u7ACB\u7AD9\u8868\u5355\u5E26\u56DE\u6765\u8DEF\u7684\u8BE2\u76D8\uFF1B\u4EBA\u5DE5\u5F55\u5165\u7684\u8BE2\u76D8\u6CA1\u6709\u53EF\u4FE1\u7684\u6765\u8DEF\uFF0C\u4E0D\u8BA1\u3002"));
     grid.appendChild(inq);
     body.appendChild(grid);
-    body.appendChild(el2("div", "geo-note", "\u8FD9\u91CC\u53EA\u6709\u300C\u4ECE AI \u56DE\u7B54\u91CC\u70B9\u94FE\u63A5\u8FDB\u7AD9\u300D\u7684\u8BBF\u95EE\u3002AI \u63D0\u5230\u4E86\u6211\u4EEC\u4F46\u7528\u6237\u6CA1\u70B9\u94FE\u63A5\u7684\uFF0C\u6D41\u91CF\u6570\u636E\u91CC\u770B\u4E0D\u5230\uFF0C\u6240\u4EE5\u5B9E\u9645\u5F71\u54CD\u53EA\u4F1A\u6BD4\u8FD9\u91CC\u591A\u3002\u88AB AI \u5F15\u7528\u7684\u60C5\u51B5\u8981\u9760\u56FA\u5B9A\u9898\u5E93\u4EBA\u5DE5\u62BD\u67E5\uFF0C\u5C1A\u672A\u5EFA\u7ACB\u3002\u8BC6\u522B\u7684\u5F15\u64CE\uFF1A" + data.known_engines.join("\u3001") + "\u3002"));
+    body.appendChild(citationLine(data2));
+    body.appendChild(el2("div", "geo-note", "\u4E0A\u9762\u7684\u8BBF\u95EE\u6570\u53EA\u6709\u300C\u4ECE AI \u56DE\u7B54\u91CC\u70B9\u94FE\u63A5\u8FDB\u7AD9\u300D\u7684\u90A3\u90E8\u5206\u3002AI \u63D0\u5230\u4E86\u6211\u4EEC\u4F46\u7528\u6237\u6CA1\u70B9\u94FE\u63A5\u7684\uFF0C\u6D41\u91CF\u6570\u636E\u91CC\u770B\u4E0D\u5230\uFF0C\u6240\u4EE5\u5B9E\u9645\u5F71\u54CD\u53EA\u4F1A\u6BD4\u8FD9\u91CC\u591A\uFF1B\u90A3\u90E8\u5206\u770B\u4E0B\u9762\u7684\u4EBA\u5DE5\u62BD\u67E5\u3002\u8BC6\u522B\u7684\u5F15\u64CE\uFF1A" + data2.known_engines.join("\u3001") + "\u3002"));
+  }
+  function citationLine(data2) {
+    const box = el2("div", "geo-cite");
+    const c = data2.citations;
+    if (!c) {
+      box.appendChild(el2("span", "", "\u5F15\u7528\u62BD\u67E5\uFF1A\u8FD9\u4E2A\u65F6\u95F4\u8303\u56F4\u4E4B\u524D\u8FD8\u6CA1\u6709\u505A\u8FC7\u3002\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GEO \u62BD\u67E5\u300D\u5EFA\u9898\u5E93\u5E76\u67E5\u7B2C\u4E00\u8F6E\u3002"));
+      return box;
+    }
+    const t = c.totals;
+    box.appendChild(el2("b", "", "\u5F15\u7528\u62BD\u67E5 " + c.round_date));
+    box.appendChild(el2("span", "", "\u5DF2\u67E5 " + t.checked + "/" + t.expected + " \u683C \xB7 \u63D0\u5230\u6211\u4EEC " + t.mentioned + " \xB7 \u5F15\u7528\u6211\u4EEC\u7684\u9875\u9762 " + t.cited));
+    const p = data2.citations_previous;
+    if (p && p.totals.checked) box.appendChild(el2("span", "geo-cite-prev", "\u4E0A\u4E00\u8F6E " + p.round_date + "\uFF1A\u63D0\u5230 " + p.totals.mentioned + "/" + p.totals.checked + " \xB7 \u5F15\u7528 " + p.totals.cited + "/" + p.totals.checked));
+    if (t.no_screenshot) box.appendChild(el2("span", "geo-cite-warn", t.no_screenshot + " \u6761\u6CA1\u6709\u622A\u56FE"));
+    return box;
   }
   async function loadGeo() {
     const body = $3("geo-body");
@@ -9866,8 +9883,8 @@
     if (!range || !range.start_date) return;
     const my = ++seq3;
     try {
-      const data = await API.get(withRange2("/api/geo/summary", range));
-      if (my === seq3) render5(data);
+      const data2 = await API.get(withRange2("/api/geo/summary", range));
+      if (my === seq3) render5(data2);
     } catch (e) {
       if (my !== seq3 || e && e.message === "unauthorized") return;
       body.textContent = "";
@@ -9884,14 +9901,303 @@
     });
   }
 
-  // public/src/spend.js
+  // public/src/geo-checks.js
   var $4 = (id) => document.getElementById(id);
+  var failText2 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  function el3(tag, cls, text2) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text2 != null) n.textContent = String(text2);
+    return n;
+  }
+  var bound = false;
+  var round = "";
+  var questions = [];
+  var data = null;
+  var seq4 = 0;
+  var editing3 = null;
+  var checkOf = (qid, engine) => data ? data.items.find((c) => c.question_id === qid && c.engine === engine) : null;
+  function engineLine(e, prev) {
+    if (!e.checked) return e.label + "\uFF1A\u8FD8\u6CA1\u67E5\uFF08\u5E94\u67E5 " + e.expected + " \u9898\uFF09";
+    let s = e.label + "\uFF1A\u5DF2\u67E5 " + e.checked + "/" + e.expected + " \xB7 \u63D0\u5230 " + e.mentioned + " \xB7 \u5F15\u7528 " + e.cited;
+    if (prev && prev.checked) s += "\uFF08\u4E0A\u4E00\u8F6E \u63D0\u5230 " + prev.mentioned + "/" + prev.checked + " \xB7 \u5F15\u7528 " + prev.cited + "/" + prev.checked + "\uFF09";
+    if (e.no_screenshot) s += " \xB7 " + e.no_screenshot + " \u6761\u6CA1\u622A\u56FE";
+    return s;
+  }
+  function renderSummary2() {
+    const box = $4("geochk-summary");
+    box.textContent = "";
+    const t = data.summary.totals;
+    const head = el3("div", "geochk-total");
+    head.appendChild(el3("b", "", round + " \u8FD9\u4E00\u8F6E"));
+    head.appendChild(el3("span", "", t.checked ? "\u5DF2\u67E5 " + t.checked + "/" + t.expected + " \u683C \xB7 \u63D0\u5230 " + t.mentioned + " \xB7 \u5F15\u7528 " + t.cited : "\u8FD8\u6CA1\u6709\u8BB0\u5F55"));
+    if (t.checked < t.expected && t.checked) head.appendChild(el3("span", "geochk-warn", "\u8FD8\u6709 " + (t.expected - t.checked) + " \u683C\u6CA1\u67E5\uFF08\u6CA1\u67E5\u7684\u4E0D\u7B97\u6CA1\u63D0\u5230\uFF09"));
+    if (t.no_screenshot) head.appendChild(el3("span", "geochk-warn", t.no_screenshot + " \u6761\u6CA1\u6709\u622A\u56FE\uFF08\u6CA1\u622A\u56FE\u7684\u53EA\u662F\u4E00\u53E5\u8BDD\uFF09"));
+    box.appendChild(head);
+    for (const e of data.summary.engines) {
+      const prev = data.previous && data.previous.engines.find((x) => x.key === e.key);
+      box.appendChild(el3("div", "geochk-line", engineLine(e, prev)));
+    }
+    box.appendChild(el3("div", "geochk-line dim", data.previous ? "\u4E0A\u4E00\u8F6E\uFF1A" + data.previous.round_date + "\u3002\u5EFA\u8BAE\u6BCF " + data.interval_days + " \u5929\u67E5\u4E00\u8F6E\uFF0C\u9898\u76EE\u548C\u5F15\u64CE\u90FD\u4E0D\u53D8\uFF0C\u524D\u540E\u624D\u80FD\u6BD4\u3002" : "\u8FD9\u662F\u7B2C\u4E00\u8F6E\uFF0C\u8FD8\u6CA1\u6709\u53EF\u6BD4\u7684\u4E0A\u4E00\u8F6E\u3002\u5EFA\u8BAE\u6BCF " + data.interval_days + " \u5929\u67E5\u4E00\u8F6E\uFF0C\u9898\u76EE\u548C\u5F15\u64CE\u90FD\u4E0D\u53D8\u3002"));
+  }
+  function cellButton(q, engine) {
+    const c = checkOf(q.id, engine.key);
+    const btn = el3("button", "geochk-cell");
+    btn.type = "button";
+    btn.dataset.geoQuestion = q.id;
+    btn.dataset.geoEngine = engine.key;
+    if (!c) {
+      btn.classList.add("is-empty");
+      btn.textContent = "\u672A\u67E5";
+      return btn;
+    }
+    btn.classList.add(c.cited ? "is-cited" : c.mentioned ? "is-mentioned" : "is-none");
+    btn.textContent = c.cited ? c.mentioned ? "\u63D0\u5230 + \u5F15\u7528" : "\u5F15\u7528" : c.mentioned ? "\u63D0\u5230" : "\u6CA1\u63D0\u5230";
+    if (!c.evidence_images.length) btn.appendChild(el3("span", "geochk-noshot", "\u65E0\u622A\u56FE"));
+    return btn;
+  }
+  function renderMatrix() {
+    const head = $4("geochk-head");
+    const body = $4("geochk-body");
+    head.textContent = "";
+    body.textContent = "";
+    const hr = el3("tr");
+    hr.appendChild(el3("th", "", "\u56FA\u5B9A\u95EE\u9898"));
+    data.engines.forEach((e) => hr.appendChild(el3("th", "ctr", e.label)));
+    hr.appendChild(el3("th", "ctr", ""));
+    head.appendChild(hr);
+    const showOff = $4("geochk-show-off").checked;
+    const rows2 = questions.filter((q) => q.active || showOff || data.items.some((c) => c.question_id === q.id));
+    if (!rows2.length) {
+      const tr = el3("tr");
+      const td2 = el3("td", "dim geochk-empty", "\u9898\u5E93\u8FD8\u662F\u7A7A\u7684\u3002\u5148\u5728\u4E0A\u9762\u52A0\u51E0\u4E2A\u5BA2\u6237\u771F\u4F1A\u62FF\u53BB\u95EE AI \u7684\u95EE\u9898\uFF08\u4F8B\u5982\u300Cbest gate valve manufacturer in China\u300D\uFF09\u3002");
+      td2.colSpan = data.engines.length + 2;
+      tr.appendChild(td2);
+      body.appendChild(tr);
+      return;
+    }
+    for (const q of rows2) {
+      const tr = el3("tr", q.active ? "" : "is-off");
+      const qt = el3("td", "geochk-q", q.question);
+      if (!q.active) qt.appendChild(el3("span", "badge b-gray", "\u5DF2\u505C\u7528"));
+      tr.appendChild(qt);
+      data.engines.forEach((e) => {
+        const td2 = el3("td", "ctr");
+        td2.appendChild(cellButton(q, e));
+        tr.appendChild(td2);
+      });
+      const ops = el3("td", "ctr");
+      const toggle = el3("button", "btn-mini", q.active ? "\u505C\u7528" : "\u542F\u7528");
+      toggle.type = "button";
+      toggle.dataset.geoToggle = q.id;
+      toggle.dataset.active = q.active ? "0" : "1";
+      ops.appendChild(toggle);
+      tr.appendChild(ops);
+      body.appendChild(tr);
+    }
+  }
+  async function loadGeoChecks() {
+    bind();
+    if (!round) round = formatLocalDate(/* @__PURE__ */ new Date());
+    $4("geochk-date").value = round;
+    const my = ++seq4;
+    try {
+      const [qs2, checks2] = await Promise.all([API.get("/api/geo/questions"), API.get("/api/geo/checks?round_date=" + round)]);
+      if (my !== seq4) return;
+      questions = qs2.items || [];
+      data = checks2;
+      const sel = $4("geochk-rounds");
+      sel.textContent = "";
+      const first = el3("option", "", data.rounds.length ? "\u5386\u53F2\u8F6E\u6B21\u2026" : "\u8FD8\u6CA1\u6709\u5386\u53F2\u8F6E\u6B21");
+      first.value = "";
+      sel.appendChild(first);
+      data.rounds.forEach((r) => {
+        const o = el3("option", "", r.round_date + "\uFF08" + r.n + " \u683C\uFF09");
+        o.value = r.round_date;
+        sel.appendChild(o);
+      });
+      renderSummary2();
+      renderMatrix();
+    } catch (e) {
+      if (my !== seq4 || e && e.message === "unauthorized") return;
+      const box = $4("geochk-summary");
+      box.textContent = "";
+      box.appendChild(el3("div", "task-done-error", "GEO \u62BD\u67E5\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e) + " "));
+      const retry = el3("button", "btn-mini", "\u91CD\u8BD5");
+      retry.type = "button";
+      retry.addEventListener("click", loadGeoChecks);
+      box.appendChild(retry);
+    }
+  }
+  function renderShots() {
+    const box = $4("geochk-thumbs");
+    const c = editing3 && editing3.check;
+    box.innerHTML = c ? thumbsHtml(c.evidence_images, { deletable: true }) : "";
+    $4("geochk-shot-btn").disabled = !c;
+    $4("geochk-shot-tip").textContent = c ? "" : "\u5148\u4FDD\u5B58\u8FD9\u4E00\u683C\uFF0C\u518D\u4E0A\u4F20\u622A\u56FE";
+  }
+  function openCell(qid, engineKey) {
+    const question = questions.find((q) => q.id === qid);
+    const engine = data.engines.find((e) => e.key === engineKey);
+    if (!question || !engine) return;
+    const check = checkOf(qid, engineKey) || null;
+    editing3 = { question, engine, check };
+    $4("geochk-title").textContent = engine.label + " \xB7 " + round;
+    $4("geochk-question").textContent = question.question;
+    $4("geochk-mentioned").checked = !!(check && check.mentioned);
+    $4("geochk-cited").checked = !!(check && check.cited);
+    $4("geochk-url").value = check && check.cited_url || "";
+    $4("geochk-note").value = check && check.note || "";
+    $4("geochk-error").textContent = "";
+    $4("geochk-del").classList.toggle("is-hidden", !check);
+    renderShots();
+    openModal("geoCheckMask");
+  }
+  async function submitGeoCheck(btn) {
+    const e = editing3;
+    if (!e) return;
+    const body = {
+      question_id: e.question.id,
+      engine: e.engine.key,
+      round_date: round,
+      mentioned: $4("geochk-mentioned").checked,
+      cited: $4("geochk-cited").checked,
+      cited_url: $4("geochk-url").value.trim(),
+      note: $4("geochk-note").value
+    };
+    if (btn) btn.disabled = true;
+    try {
+      const { item } = await API.put("/api/geo/checks", body);
+      e.check = item;
+      $4("geochk-error").textContent = "";
+      $4("geochk-del").classList.remove("is-hidden");
+      renderShots();
+      toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93" + (item.evidence_images.length ? "" : "\uFF0C\u8BF7\u8865\u4E0A\u622A\u56FE"));
+      loadGeoChecks();
+    } catch (err) {
+      $4("geochk-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText2(err);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  async function pickGeoShot() {
+    const e = editing3;
+    if (!e || !e.check) return;
+    const added = await pickAndUpload("geo_check", e.check.id);
+    if (!added.length) return;
+    e.check.evidence_images = (e.check.evidence_images || []).concat(added);
+    if (editing3 === e) renderShots();
+    loadGeoChecks();
+  }
+  function bind() {
+    if (bound) return;
+    const panel = $4("sub-data-geo");
+    if (!panel) return;
+    bound = true;
+    panel.addEventListener("click", async (e) => {
+      const cell3 = e.target.closest("[data-geo-question]");
+      if (cell3) {
+        openCell(Number(cell3.dataset.geoQuestion), cell3.dataset.geoEngine);
+        return;
+      }
+      const toggle = e.target.closest("[data-geo-toggle]");
+      if (toggle) {
+        try {
+          await API.patch("/api/geo/questions/" + toggle.dataset.geoToggle, { active: toggle.dataset.active === "1" });
+          loadGeoChecks();
+        } catch (err) {
+          toast2("\u672A\u5165\u5E93\uFF1A" + failText2(err));
+        }
+        return;
+      }
+      if (e.target.closest("#geochk-add")) {
+        const input = $4("geochk-new");
+        const question = input.value.trim();
+        if (!question) {
+          toast2("\u5148\u5199\u4E0B\u8981\u95EE AI \u7684\u95EE\u9898");
+          return;
+        }
+        try {
+          await API.post("/api/geo/questions", { question });
+          input.value = "";
+          toast2("\u5DF2\u52A0\u5165\u9898\u5E93");
+          loadGeoChecks();
+        } catch (err) {
+          toast2("\u672A\u5165\u5E93\uFF1A" + failText2(err));
+        }
+        return;
+      }
+      if (e.target.closest("#geochk-today")) {
+        round = formatLocalDate(/* @__PURE__ */ new Date());
+        loadGeoChecks();
+      }
+    });
+    $4("geochk-date").addEventListener("change", (e) => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) {
+        round = e.target.value;
+        loadGeoChecks();
+      }
+    });
+    $4("geochk-show-off").addEventListener("change", () => {
+      if (data) renderMatrix();
+    });
+    $4("geochk-rounds").addEventListener("change", (e) => {
+      if (e.target.value) {
+        round = e.target.value;
+        loadGeoChecks();
+      }
+    });
+    $4("geochk-new").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        $4("geochk-add").click();
+      }
+    });
+    const mask = $4("geoCheckMask");
+    mask.addEventListener("click", async (e) => {
+      const delShot = e.target.closest("[data-att-del]");
+      if (delShot && editing3 && editing3.check) {
+        if (!inlineConfirm(delShot, "\u5220\u9664")) return;
+        const cur = editing3;
+        try {
+          await deleteImage(delShot.dataset.attDel);
+          cur.check.evidence_images = cur.check.evidence_images.filter((im) => String(im.id) !== String(delShot.dataset.attDel));
+          if (editing3 === cur) renderShots();
+          loadGeoChecks();
+        } catch (err) {
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText2(err));
+        }
+        return;
+      }
+      const del = e.target.closest("#geochk-del");
+      if (del && editing3 && editing3.check) {
+        if (!inlineConfirm(del, "\u786E\u8BA4\u5220\u9664\u8FD9\u4E00\u683C")) return;
+        try {
+          await API.del("/api/geo/checks/" + editing3.check.id);
+          closeModal("geoCheckMask");
+          editing3 = null;
+          toast2("\u5DF2\u5220\u9664\u8FD9\u4E00\u683C\u7684\u8BB0\u5F55");
+          loadGeoChecks();
+        } catch (err) {
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText2(err));
+        }
+      }
+    });
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", (e) => {
+      if (e.target.closest('.subtab[data-sub="data-geo"]')) loadGeoChecks();
+    });
+  }
+
+  // public/src/spend.js
+  var $5 = (id) => document.getElementById(id);
   var isHttp3 = (u) => /^https?:\/\//i.test(String(u || ""));
   function h(tag, cls, text2) {
-    const el3 = document.createElement(tag);
-    if (cls) el3.className = cls;
-    if (text2 != null) el3.textContent = String(text2);
-    return el3;
+    const el4 = document.createElement(tag);
+    if (cls) el4.className = cls;
+    if (text2 != null) el4.textContent = String(text2);
+    return el4;
   }
   var money3 = (n) => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   var CURRENCY_LABEL = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
@@ -9916,13 +10222,13 @@
       return u || "";
     }
   }
-  var bound = false;
+  var bound2 = false;
   var month = "";
   var options = null;
   var loadSeq = 0;
   var backlinkRows = [];
   var expenseRows = [];
-  var editing3 = { backlink: null, expense: null };
+  var editing4 = { backlink: null, expense: null };
   function monthRange(ym) {
     const [y, m] = ym.split("-").map(Number);
     const last = new Date(y, m, 0).getDate();
@@ -9934,18 +10240,18 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
   }
   var qs = (range) => "?start_date=" + range.start_date + "&end_date=" + range.end_date;
-  var failText2 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var failText3 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   function adsSourceText(g) {
     if (g.source === "google_ads") return "Ads \u540C\u6B65\u6570\u636E \xB7 \u8D26\u6237\u5E01\u79CD";
     if (g.source === "sem_weeks") return "\u4EBA\u5DE5\u5468\u62A5\uFF08Ads \u672C\u671F\u65E0\u540C\u6B65\u6570\u636E\uFF09\xB7 \u4EBA\u6C11\u5E01";
     return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
   }
-  function renderSummary2(data) {
-    const box = $4("spend-summary");
+  function renderSummary3(data2) {
+    const box = $5("spend-summary");
     if (!box) return;
     box.textContent = "";
     const row = h("div", "spend-groups");
-    for (const g of data.groups) {
+    for (const g of data2.groups) {
       const card = h("div", "spend-group" + (g.key === "ads" ? " is-ads" : ""));
       card.appendChild(h("div", "spend-group-label", g.label));
       const text2 = amountsText(g.amounts);
@@ -9955,18 +10261,18 @@
       row.appendChild(card);
     }
     box.appendChild(row);
-    const total = amountsText(data.totals);
+    const total = amountsText(data2.totals);
     const line2 = h("div", "spend-total");
     line2.appendChild(h("b", "", "\u672C\u6708\u5408\u8BA1"));
     line2.appendChild(h("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
-    if (Object.keys(data.totals || {}).length > 1) line2.appendChild(h("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
+    if (Object.keys(data2.totals || {}).length > 1) line2.appendChild(h("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
     box.appendChild(line2);
   }
   function renderSummaryError(e) {
-    const box = $4("spend-summary");
+    const box = $5("spend-summary");
     if (!box) return;
     box.textContent = "";
-    const line2 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e) + " ");
+    const line2 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText3(e) + " ");
     const btn = h("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
     btn.addEventListener("click", loadSpend);
@@ -9981,7 +10287,7 @@
     return parts.join(" \xB7 ");
   }
   function renderLinkStats(stats) {
-    const box = $4("spend-link-stats");
+    const box = $5("spend-link-stats");
     if (!box) return;
     box.textContent = "";
     if (!stats || !stats.total) return;
@@ -10016,7 +10322,7 @@
   function errorRow(tb, cols, label, e) {
     tb.textContent = "";
     const tr = h("tr");
-    const td2 = h("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e) + " ");
+    const td2 = h("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText3(e) + " ");
     td2.colSpan = cols;
     const btn = h("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
@@ -10026,11 +10332,11 @@
     tb.appendChild(tr);
   }
   function renderBacklinks() {
-    const tb = $4("tb-backlinks");
+    const tb = $5("tb-backlinks");
     if (!tb) return;
     tb.textContent = "";
     if (!backlinkRows.length) {
-      emptyRow(tb, 11, $4("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      emptyRow(tb, 11, $5("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
       return;
     }
     for (const b of backlinkRows) {
@@ -10066,7 +10372,7 @@
     }
   }
   function renderExpenses() {
-    const tb = $4("tb-expenses");
+    const tb = $5("tb-expenses");
     if (!tb) return;
     tb.textContent = "";
     if (!expenseRows.length) {
@@ -10095,20 +10401,20 @@
     }
   }
   async function loadSpend() {
-    bind();
+    bind2();
     if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
-    const input = $4("spend-month");
+    const input = $5("spend-month");
     if (input) input.value = month;
     const range = monthRange(month);
-    const seq4 = ++loadSeq;
-    const allLinks = $4("spend-links-all") && $4("spend-links-all").checked;
+    const seq5 = ++loadSeq;
+    const allLinks = $5("spend-links-all") && $5("spend-links-all").checked;
     const [sum, links, exps] = await Promise.allSettled([
       API.get("/api/spend/summary" + qs(range)),
       API.get("/api/backlinks" + (allLinks ? "" : qs(range))),
       API.get("/api/expenses" + qs(range))
     ]);
-    if (seq4 !== loadSeq) return;
-    if (sum.status === "fulfilled") renderSummary2(sum.value);
+    if (seq5 !== loadSeq) return;
+    if (sum.status === "fulfilled") renderSummary3(sum.value);
     else renderSummaryError(sum.reason);
     if (links.status === "fulfilled") {
       backlinkRows = links.value.items || [];
@@ -10117,14 +10423,14 @@
     } else {
       backlinkRows = [];
       renderLinkStats(null);
-      errorRow($4("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+      errorRow($5("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
     }
     if (exps.status === "fulfilled") {
       expenseRows = exps.value.items || [];
       renderExpenses();
     } else {
       expenseRows = [];
-      errorRow($4("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+      errorRow($5("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
     }
   }
   var BACKLINK_FIELDS = [
@@ -10163,7 +10469,7 @@
     expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
   };
   function fillSelect2(id, values, placeholder, labelOf) {
-    const sel = $4(id);
+    const sel = $5(id);
     if (!sel) return;
     const keep = sel.value;
     sel.textContent = "";
@@ -10192,7 +10498,7 @@
     fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
   }
   function ensureTaskOption(selectId, row) {
-    const sel = $4(selectId);
+    const sel = $5(selectId);
     if (!sel || !row || row.task_id == null) return;
     if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
     const o = h("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
@@ -10204,30 +10510,30 @@
     try {
       await ensureOptions();
     } catch (e) {
-      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e));
+      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText3(e));
       return;
     }
-    editing3[kind] = row || null;
-    $4(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    editing4[kind] = row || null;
+    $5(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
     ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el3 = $4(id);
-      if (!el3) continue;
-      el3.value = row && row[key] != null ? row[key] : "";
+      const el4 = $5(id);
+      if (!el4) continue;
+      el4.value = row && row[key] != null ? row[key] : "";
     }
     if (!row) {
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
       const me = (window.ME || {}).name || "";
       if (kind === "backlink") {
-        $4("bl-date").value = today3;
-        $4("bl-owner").value = me;
+        $5("bl-date").value = today3;
+        $5("bl-owner").value = me;
       } else {
-        $4("ex-date").value = today3;
-        $4("ex-currency").value = "CNY";
-        $4("ex-owner").value = me;
+        $5("ex-date").value = today3;
+        $5("ex-currency").value = "CNY";
+        $5("ex-owner").value = me;
       }
     }
-    $4(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    $5(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
     openModal(form.mask);
   }
   var openBacklink = () => openForm("backlink", null);
@@ -10236,32 +10542,32 @@
     const form = FORMS[kind];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el3 = $4(id);
-      if (el3) body[key] = el3.value;
+      const el4 = $5(id);
+      if (el4) body[key] = el4.value;
     }
-    const errEl = $4(kind === "backlink" ? "bl-error" : "ex-error");
-    const row = editing3[kind];
+    const errEl = $5(kind === "backlink" ? "bl-error" : "ex-error");
+    const row = editing4[kind];
     if (btn) btn.disabled = true;
     try {
       if (row) await API.patch(form.api + "/" + row.id, body);
       else await API.post(form.api, body);
       closeModal(form.mask);
-      editing3[kind] = null;
+      editing4[kind] = null;
       toast2((row ? "\u5DF2\u66F4\u65B0" : "\u5DF2\u767B\u8BB0") + form.name + " \xB7 \u5DF2\u5165\u5E93");
       loadSpend();
     } catch (e) {
-      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText2(e);
+      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText3(e);
     } finally {
       if (btn) btn.disabled = false;
     }
   }
   var submitBacklink = (btn) => submitForm("backlink", btn);
   var submitExpense = (btn) => submitForm("expense", btn);
-  function bind() {
-    if (bound) return;
-    const panel = $4("panel-spend");
+  function bind2() {
+    if (bound2) return;
+    const panel = $5("panel-spend");
     if (!panel) return;
-    bound = true;
+    bound2 = true;
     panel.addEventListener("click", async (e) => {
       const step = e.target.closest("[data-spend-month]");
       if (step) {
@@ -10290,37 +10596,37 @@
           toast2("\u5DF2\u5220\u9664" + form.name + "\u8BB0\u5F55");
           loadSpend();
         } catch (err) {
-          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText2(err));
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText3(err));
         }
       }
     });
-    $4("spend-month").addEventListener("change", (e) => {
+    $5("spend-month").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}$/.test(e.target.value)) {
         month = e.target.value;
         loadSpend();
       }
     });
-    $4("spend-links-all").addEventListener("change", loadSpend);
+    $5("spend-links-all").addEventListener("change", loadSpend);
   }
 
   // public/src/app.js
   var STATIC_UI_ACTIONS = {
     "toggle-theme": () => toggleTheme(),
-    go: (el3) => go2(el3.dataset.tab),
-    ai: (el3) => runAiAnalysis(el3, el3.dataset.aiPrompt, el3.dataset.aiTitle || "AI \u5206\u6790", false),
-    "ai-box": (el3) => aiBox(el3, el3.dataset.aiPrompt),
-    "ai-ask": (el3) => runAiAnalysis(el3, el3.dataset.aiPrompt, el3.dataset.aiTitle, false),
+    go: (el4) => go2(el4.dataset.tab),
+    ai: (el4) => runAiAnalysis(el4, el4.dataset.aiPrompt, el4.dataset.aiTitle || "AI \u5206\u6790", false),
+    "ai-box": (el4) => aiBox(el4, el4.dataset.aiPrompt),
+    "ai-ask": (el4) => runAiAnalysis(el4, el4.dataset.aiPrompt, el4.dataset.aiTitle, false),
     "open-inquiry": () => openInquiry(),
-    "add-plan": (el3) => addPlanRow(el3.dataset.dept),
-    "add-test": (el3) => addTestRow(el3.dataset.dept),
+    "add-plan": (el4) => addPlanRow(el4.dataset.dept),
+    "add-test": (el4) => addTestRow(el4.dataset.dept),
     "snapshot-ranks": () => snapshotRanks(),
     "reload-ga4": () => loadGa42(),
     "add-fix": () => addFixRow(),
-    "add-keyword": (el3) => addKeyword(el3.dataset.keywordType),
+    "add-keyword": (el4) => addKeyword(el4.dataset.keywordType),
     "add-neg": () => addNeg(),
     "add-ad": () => addAd(),
     "add-content": () => addContent(),
-    "refresh-brain": (el3) => refreshBrain(el3),
+    "refresh-brain": (el4) => refreshBrain(el4),
     "create-hermes-daily-learning": () => createHermesDailyLearning(),
     "load-hermes-memories": () => loadHermesMemories(true),
     "reset-hermes-memory-form": () => resetHermesMemoryForm(),
@@ -10328,16 +10634,16 @@
     "reset-hermes-feedback-form": () => resetHermesFeedbackForm(),
     "save-hermes-feedback": () => saveHermesFeedback(),
     "add-deposit": () => addDepositRow(),
-    "open-task": (el3) => openTaskModal(el3.dataset.dept),
+    "open-task": (el4) => openTaskModal(el4.dataset.dept),
     "open-password": () => openPwd(),
     logout: () => API.logout(),
     "open-sop": () => openSopModal(),
     "open-hermes-panel": () => openHermesPanel(),
-    toast: (el3) => toast2(el3.dataset.message),
+    toast: (el4) => toast2(el4.dataset.message),
     "close-hermes-panel": () => closeHermesPanel(),
     "toggle-hermes-maximize": () => toggleHermesMaximize(),
     "load-hermes-morning-brief": () => loadHermesMorningBrief(),
-    "ask-hermes-starter": (el3) => askHermesStarter(el3.dataset.prompt),
+    "ask-hermes-starter": (el4) => askHermesStarter(el4.dataset.prompt),
     "sync-hermes-page-detail": () => syncHermesPageDetail(true),
     "toggle-hermes-deep-thinking": () => toggleHermesDeepThinking(),
     "send-hermes-prompt": () => sendHermesPrompt(),
@@ -10348,7 +10654,7 @@
     "archive-hermes-conversation": () => archiveHermesConversation(),
     "refresh-hermes-status": () => refreshHermesStatus(true),
     "reset-hermes-window": () => resetHermesWindow(),
-    "close-modal": (el3) => closeModal(el3.dataset.modal),
+    "close-modal": (el4) => closeModal(el4.dataset.modal),
     "submit-inquiry": () => submitInquiry(),
     "submit-custom-range": () => submitCustomRange(),
     "submit-track": () => submitTrack(),
@@ -10361,21 +10667,23 @@
     "submit-subtask": () => submitSubtask(),
     "task-link-add": () => addTaskLink(),
     "pick-task-evidence": () => pickTaskEvidence(),
-    "submit-task-done": (el3) => submitTaskDone(el3),
+    "submit-task-done": (el4) => submitTaskDone(el4),
     "open-leads": () => openLeads(),
-    "submit-inq-source": (el3) => submitInquirySource(el3),
+    "submit-geo-check": (el4) => submitGeoCheck(el4),
+    "pick-geo-shot": () => pickGeoShot(),
+    "submit-inq-source": (el4) => submitInquirySource(el4),
     "open-backlink": () => openBacklink(),
     "open-expense": () => openExpense(),
-    "submit-backlink": (el3) => submitBacklink(el3),
-    "submit-expense": (el3) => submitExpense(el3),
+    "submit-backlink": (el4) => submitBacklink(el4),
+    "submit-expense": (el4) => submitExpense(el4),
     "submit-sop": () => submitSop(),
     "adopt-ai": () => adoptAi()
   };
   document.addEventListener("click", (e) => {
-    const el3 = e.target.closest && e.target.closest("[data-ui-action]");
-    if (!el3) return;
-    const action = STATIC_UI_ACTIONS[el3.dataset.uiAction];
-    if (action) action(el3);
+    const el4 = e.target.closest && e.target.closest("[data-ui-action]");
+    if (!el4) return;
+    const action = STATIC_UI_ACTIONS[el4.dataset.uiAction];
+    if (action) action(el4);
   });
   var semCampFilter = document.getElementById("semCampFilter");
   if (semCampFilter) semCampFilter.addEventListener("change", (e) => onSemCampaignChange(e.target.value));
@@ -10505,6 +10813,12 @@
     if (tab === "risks") {
       try {
         loadRisks();
+      } catch (e) {
+      }
+    }
+    if (tab === "dashboard") {
+      try {
+        loadGeo();
       } catch (e) {
       }
     }
@@ -10691,9 +11005,9 @@
   }
   renderLoopbars();
   var taskChanged = (card) => document.dispatchEvent(new CustomEvent("taskchanged", { detail: { card } }));
-  function taskDoneApplied(el3, c) {
-    el3.classList.add("on");
-    el3.innerHTML = '<i class="ti ti-check"></i>';
+  function taskDoneApplied(el4, c) {
+    el4.classList.add("on");
+    el4.innerHTML = '<i class="ti ti-check"></i>';
     c.classList.add("done", "nofold");
     taskChanged(c);
     refreshTaskCols();
@@ -10708,26 +11022,26 @@
       return;
     }
     const fx = c._item && c._item.fix_id;
-    toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el3));
+    toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el4));
     loadUrgent();
   }
-  function chk2(el3) {
-    const c = el3.closest(".tcard");
-    if (c && c.dataset.id && !el3.classList.contains("on")) {
+  function chk2(el4) {
+    const c = el4.closest(".tcard");
+    if (c && c.dataset.id && !el4.classList.contains("on")) {
       if (!c._item) {
         toast2("\u4EFB\u52A1\u6570\u636E\u672A\u5C31\u7EEA\uFF0C\u8BF7\u5237\u65B0\u540E\u518D\u8BD5");
         return;
       }
-      openTaskDone(c._item, { onDone: () => taskDoneApplied(el3, c) });
+      openTaskDone(c._item, { onDone: () => taskDoneApplied(el4, c) });
       return;
     }
-    el3.classList.toggle("on");
-    const on = el3.classList.contains("on");
+    el4.classList.toggle("on");
+    const on = el4.classList.contains("on");
     if (on) {
-      el3.innerHTML = '<i class="ti ti-check"></i>';
+      el4.innerHTML = '<i class="ti ti-check"></i>';
       c.classList.add("done");
     } else {
-      el3.innerHTML = "";
+      el4.innerHTML = "";
       c.classList.remove("done");
     }
     if (c) {
@@ -10740,12 +11054,12 @@
       if (typeof refreshTaskCols === "function") refreshTaskCols();
     };
     const rollback = () => {
-      el3.classList.toggle("on");
+      el4.classList.toggle("on");
       if (on) {
-        el3.innerHTML = "";
+        el4.innerHTML = "";
         c.classList.remove("done");
       } else {
-        el3.innerHTML = '<i class="ti ti-check"></i>';
+        el4.innerHTML = '<i class="ti ti-check"></i>';
         c.classList.add("done");
       }
       recount();
@@ -10831,9 +11145,9 @@
     const pu = document.getElementById("prof-user");
     if (pu) pu.textContent = me.username || "\u2014";
     if (!can("kpiTarget")) {
-      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el3) => {
-        el3.removeAttribute("contenteditable");
-        el3.style.opacity = ".7";
+      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el4) => {
+        el4.removeAttribute("contenteditable");
+        el4.style.opacity = ".7";
       });
     }
     if (!can("inquiry")) {

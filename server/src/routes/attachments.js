@@ -12,6 +12,7 @@ import * as repo from '../db/repositories/attachments.js';
 import * as salesNoteRepo from '../db/repositories/inquirySalesNotes.js';
 import * as keywordRepo from '../db/repositories/keywords.js';
 import * as loopRepo from '../db/repositories/loopItems.js';
+import * as geoChecksRepo from '../db/repositories/geoChecks.js';
 import { completionMissing, importance, isDone } from '../services/taskAudit.js';
 import { spendTaskIds } from '../services/taskAuditData.js';
 import { requireAuth, editor } from '../auth/middleware.js';
@@ -31,6 +32,8 @@ const OWNERS = {
   },
   // 任务完成证据截图（排名截图、后台改动前后对比等）。只有任务卡能挂，计划/测试/沉淀不行。
   task: (id) => loopRepo.get(id)?.kind === 'task',
+  // GEO 引用抽查的截图：AI 当时到底怎么回答的。没有它，「提到了 / 引用了」只是一句话。
+  geo_check: (id) => !!geoChecksRepo.getCheck(id),
 };
 
 /* 已完成的重要任务，最后一份证据不能删。
