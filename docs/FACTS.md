@@ -275,7 +275,7 @@
 | `users` | （没有写说明） |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（48）
+## 测试（49）
 
 `server/test/`
 
@@ -291,6 +291,7 @@
 | `ctrAnomaly.test.js` | 诊断规则「点击率偏低」：排在首页、曝光够多，但点击率不到本站同位次中位数一半的词。 |
 | `dateRange.test.js` | 时间范围解析 + 上一等长窗口。 |
 | `derive.test.js` | 派生指标纯计算：round / deriveSem / seoWow。 |
+| `docsLayout.test.js` | 文档不许悄悄烂掉。 |
 | `documentParser.test.js` | （没有写说明） |
 | `execution.test.js` | Phase 5A Execution：渠道隔离 + 到期区间过滤（DB 级）。 |
 | `frontendApi.test.js` | （没有写说明） |

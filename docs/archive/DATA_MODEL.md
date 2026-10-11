@@ -1,3 +1,11 @@
+# DATA_MODEL（已归档）
+
+> 状态：superseded
+> 实现之前写的数据表设计稿。里面的表名（gsc_daily、ads_search_terms、findings、tasks…）和实际建出来的库对不上；真实的表清单看 docs/FACTS.md，定义看 server/src/db/migrate.js。
+> **只为查历史保留，不要把这里的任何说法当成现状引用。** 现状从 `AGENTS.md` 看起。
+
+---
+
 # DATA_MODEL.md — ferr-ops 数据底座设计
 
 > **设计文档,非现状。** 以下表/字段是后续阶段的目标数据模型,**当前数据库尚未实现**。

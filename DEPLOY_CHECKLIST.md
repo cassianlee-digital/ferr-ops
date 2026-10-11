@@ -1,5 +1,7 @@
 # DEPLOY_CHECKLIST — ferr-ops 上线前验收清单
 
+> 状态：active
+
 > MVP 上线稳定版。部署由用户在服务器执行；本文件只做核对，不含密钥。
 > 服务器项目目录(已知)：`/opt/ferr-ops`（`docker-compose.yml` 在此）。
 

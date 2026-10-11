@@ -188,7 +188,7 @@ function renderTaskMeta(card){
 }
 /* 完成 / 撤销之后把那张卡按最新数据重画（结果、证据、「改」入口都跟着变）。
    由 app.js 的 chk() 派发 taskchanged 事件触发，而不是让它 import 一个新函数：
-   chk 与本模块之间本来就有环（见 CLAUDE.md），事件是既定的拆环方向，也不必再加宽本模块的导出面。
+   chk 与本模块之间本来就有环（见 docs/modules/frontend-architecture.md），事件是既定的拆环方向，也不必再加宽本模块的导出面。
    子任务卡是另一套单行排版，没有 meta 行，不参与。 */
 document.addEventListener('taskchanged',e=>{
   const card=e.detail&&e.detail.card;
@@ -608,7 +608,7 @@ export async function createEvidenceFix(dept,title,detail,evidence,source='诊�
 }
 // 全站最常用的失败文案（11 处复用：ai/charts/closed-loop/weekly-review）。403 有专属文案；
 // 其余必须带上后端给的原因（api.js 已把 400 的 detail 放进 e.message，如「字段 due_date 需要字符串」），
-// 否则用户只看到「保存失败」，违背 CLAUDE.md「API 失败必须显示失败原因」。
+// 否则用户只看到「保存失败」，违背 AGENTS.md 的硬规矩「API 失败必须把失败原因显示给用户」。
 export function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库：'+((e&&e.message)||'请求失败');}
 let aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
 let closedLoopLoadVersion=0;

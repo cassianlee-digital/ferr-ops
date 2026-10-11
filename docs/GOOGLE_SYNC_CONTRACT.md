@@ -1,5 +1,7 @@
 # Google Sync API Contract
 
+> 状态：completed
+
 Backend owner: Codex. Frontend owner: Claude.
 
 The frontend should call these app APIs only. It should not handle Google tokens, developer tokens, client secrets, or direct Google API calls.
