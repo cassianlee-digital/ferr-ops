@@ -37,6 +37,9 @@ export const FLAGS = {
   EFFECT_NO_DATA: { label: '关联对象前后都没有数据', tone: 'warn' },
   OVERDUE: { label: '已过截止日仍未完成', tone: 'bad' },
   STALLED: { label: '跨天任务在区间内没有任何推进记录', tone: 'bad' },
+  DUE_MOVED: { label: '截止日被往后改过', tone: 'warn' },
+  SHORTENED: { label: '跨天任务被执行人改成了单日', tone: 'warn' },
+  EDITED_AFTER_DONE: { label: '完成之后又改了内容、结果或日期', tone: 'warn' },
   ABANDONED: { label: '未完成即归档', tone: 'warn' },
   DELETED_DONE: { label: '已完成的任务被删除（结果和证据不再出现在别处）', tone: 'bad' },
   DELETED_OVERDUE: { label: '逾期未完成时被删除', tone: 'bad' },
@@ -82,9 +85,18 @@ const measurable = (links) => (links || []).some((l) => l.type !== 'kpi');
      images     证据截图数
      links      关联键
      checkins   区间内的推进打卡天数
-     effect     buildTaskEffect 的结果（仅已完成且有可量化关联的任务才算） */
+     effect     buildTaskEffect 的结果（仅已完成且有可量化关联的任务才算）
+     changes    这条任务的全部改动流水（loop_item_changes 的行，时间正序） */
+const REWRITES = new Set(['content', 'result', 'task_actions', 'evidence', 'est_hours', 'actual_hours', 'start_date', 'task_date']);
+function changeFlags(item, changes) {
+  const out = [];
+  if (changes.some((c) => c.field === 'task_date' && c.old_value && c.new_value && c.new_value > c.old_value)) out.push('DUE_MOVED');
+  if (changes.some((c) => c.field === 'multi_day')) out.push('SHORTENED');
+  // 完成那一下自己填的不算；时间戳都是库里的 UTC 文本，可以直接比
+  if (item.done_at && changes.some((c) => REWRITES.has(c.field) && c.changed_at > item.done_at)) out.push('EDITED_AFTER_DONE');
+  return out;
+}
 export function taskFlags(item, ctx) {
-  const flags = [];
   const { state } = ctx;
   if (state === 'abandoned') return ['ABANDONED'];
   if (state === 'deleted') {
@@ -92,6 +104,7 @@ export function taskFlags(item, ctx) {
     const gone = businessDate(item.deleted_at);
     return [item.task_date && gone && item.task_date < gone ? 'DELETED_OVERDUE' : 'DELETED'];
   }
+  const flags = changeFlags(item, ctx.changes || []);
   if (state === 'overdue') flags.push('OVERDUE');
   if (state === 'overdue' || state === 'in_progress') {
     const multiDay = item.start_date && item.task_date && item.start_date < item.task_date;

@@ -109,6 +109,7 @@ function sideText(label, s) {
   // DR 均值要带上「几条里有几条有读数」：3 条只录了 1 条时，这个均值不能当真
   parts.push(s.avg_dr == null ? 'DR 均未录入' : '平均 DR ' + s.avg_dr + '（' + s.count + ' 条里 ' + s.dr_known + ' 条有读数）');
   if (s.never_checked) parts.push(s.never_checked + ' 条从未核查');
+  if (s.auto_lost) parts.push(s.auto_lost + ' 条上次还在、这次没找到');
   return parts.join(' · ');
 }
 function renderLinkStats(stats) {
@@ -175,9 +176,12 @@ function renderBacklinks() {
       // 链接在、但页面上的属性和台账登记的不一样（比如买的是 dofollow，实际挂的是 nofollow）：
       // 这是自动核查最值钱的发现，不能只藏在悬停提示里，直接写在行上并换成警示色
       const relDiffers = b.auto_status === 'found' && b.rel && b.auto_rel && b.rel !== b.auto_rel;
-      const auto = h('div', 'spend-auto is-' + (relDiffers ? 'mismatch' : b.auto_status),
-        relDiffers ? '自动核查：链接在，但页面上是 ' + b.auto_rel : (AUTO_LABEL[b.auto_status] || b.auto_status));
-      auto.title = (b.auto_detail || '') + (b.auto_anchor ? '\n页面上的锚文本：' + b.auto_anchor : '');
+      // 上次还找得到、这次没了：比一直没找到过更值得马上去看（对方可能撤了链接），单独说明并加粗
+      const lost = b.auto_status === 'not_found' && b.auto_lost_at;
+      const auto = h('div', 'spend-auto is-' + (relDiffers ? 'mismatch' : b.auto_status) + (lost ? ' is-lost' : ''),
+        relDiffers ? '自动核查：链接在，但页面上是 ' + b.auto_rel : lost ? '自动核查：上次还在，这次没找到' : (AUTO_LABEL[b.auto_status] || b.auto_status));
+      auto.title = (b.auto_detail || '') + (b.auto_anchor ? '\n页面上的锚文本：' + b.auto_anchor : '')
+        + (b.auto_checked_at ? '\n核查于 ' + String(b.auto_checked_at).slice(0, 16) + '（UTC）' : '');
       st.appendChild(auto);
     }
     if (b.target_url) {

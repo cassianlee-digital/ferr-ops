@@ -15,6 +15,7 @@ import { esc, openModal, closeModal, toast } from './ui-kit.js';
 import { deleteImage, pickAndUpload, thumbsHtml } from './attachments.js';
 import { inlineConfirm } from './keywords.js';
 import { PRODUCT_NAMES } from './catalog.js';
+import { openChangeLog } from './change-log.js';
 
 const $ = (id) => document.getElementById(id);
 const LINK_LABEL = { page: '页面', campaign: '系列', keyword: '关键词', kpi: 'KPI' };
@@ -192,7 +193,12 @@ export function auditBadgesHtml(it) {
     ? `<span class="badge b-red taudit-imp" title="重要任务（${esc(it.important_reason_text || '')}）· 完成时需要证据">重要</span>`
     : '';
   const proj = it.project ? `<span class="badge b-gray taudit-proj" title="产品 / 项目">${esc(it.project)}</span>` : '';
-  return imp + proj;
+  // 被改过几次（内容 / 负责人 / 日期 / 工时 / 结果…）。点开看是谁、什么时候、从什么改成什么
+  const n = Number(it.change_count) || 0;
+  const changes = n && it.id
+    ? `<button type="button" class="taudit-changes" data-task-changes="${esc(it.id)}" title="这条任务建好之后被改过 ${n} 次，点击看是谁改的、改了什么">改 ${n}</button>`
+    : '';
+  return imp + proj + changes;
 }
 
 function shortUrl(u) {
@@ -467,12 +473,27 @@ export function openEffect(path) {
   loadEffect();
 }
 
+// 流水里的值怎么念：完成状态和重要标记存的是 0 / 1，翻成话；其余是人填的原文
+const DONE_TEXT = { 0: '未完成', 1: '已完成' };
+const changeValue = (c, v) => (v == null || v === '' ? '（空）' : c.field === 'done' ? DONE_TEXT[v] || v : c.field === 'important' ? '已标重要' : c.field === 'multi_day' ? (v === '1' ? '跨天' : '单日') : v);
+
 // 入口按钮出现在任务卡和归档行两处，统一在这里委托。typeof 守卫：保持本模块「无 DOM 也能被 import」。
 if (typeof document !== 'undefined') {
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-task-effect]');
     if (btn) { openEffect('/api/loop-items/' + encodeURIComponent(btn.dataset.taskEffect) + '/effect'); return; }
     const link = e.target.closest('[data-backlink-effect]');
-    if (link) openEffect('/api/backlinks/' + encodeURIComponent(link.dataset.backlinkEffect) + '/effect');
+    if (link) { openEffect('/api/backlinks/' + encodeURIComponent(link.dataset.backlinkEffect) + '/effect'); return; }
+    const log = e.target.closest('[data-task-changes]');
+    if (log) {
+      e.stopPropagation();
+      openChangeLog({
+        path: '/api/loop-items/' + encodeURIComponent(log.dataset.taskChanges) + '/changes',
+        title: '这条任务的改动记录',
+        rule: '任务建好之后，内容、负责人、起止日、工时、完成结果每改一次都留档；完成时第一次填写结果不算改动。',
+        empty: '这条任务建好之后没有被改过。',
+        describe: (c) => c.label + '：' + changeValue(c, c.old_value) + ' → ' + changeValue(c, c.new_value),
+      });
+    }
   });
 }

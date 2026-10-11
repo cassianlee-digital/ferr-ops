@@ -1,6 +1,7 @@
 // 闭环条目数据访问层（plan/test/deposit/task）+ 归档地基（state/archived/deleted）。
 import { db } from '../connection.js';
 import { updateById } from '../updateHelper.js';
+import * as changesRepo from './loopItemChanges.js';
 
 /**
  * 列表查询。opts:
@@ -61,6 +62,15 @@ export const UPDATABLE = ['dept', 'content', 'owner', 'status',
 export function update(id, fields) {
   updateById('loop_items', id, fields, UPDATABLE);
   return get(id);
+}
+
+// 改动与它的流水同生共死：流水记了而改动没落库（类型不对被拒），或者反过来，都是假账
+export function updateWithLog(id, fields, changes, userId) {
+  return db.transaction(() => {
+    updateById('loop_items', id, fields, UPDATABLE);
+    changesRepo.log(id, changes, userId);
+    return get(id);
+  })();
 }
 
 export function get(id) {

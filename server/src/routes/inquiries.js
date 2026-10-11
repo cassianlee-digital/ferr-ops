@@ -3,7 +3,7 @@ import * as repo from '../db/repositories/inquiries.js';
 import * as salesNotesRepo from '../db/repositories/inquirySalesNotes.js';
 import { requireAuth, editor, onlyManagerBoss } from '../auth/middleware.js';
 import { recomputeActuals } from '../services/kpi.js';
-import { parseDateRange } from '../lib/parseDateRange.js';
+import { isIsoDate, parseDateRange } from '../lib/parseDateRange.js';
 import * as leadsRepo from '../db/repositories/inquiryLeads.js';
 import * as taskLinksRepo from '../db/repositories/taskLinks.js';
 import { leadSource, manualSource } from '../services/inquirySource.js';
@@ -18,11 +18,7 @@ const COMPANIES = ['贝孚特', '费尔瑞'];
 const CHANNELS = ['SEO自然', 'SEM付费', '直接', '其他'];
 // 确认权在经理 / 老板：他们录入即确认，也只有他们能确认、能改已确认的渠道和等级
 const isAuthority = (request) => request.user?.role === 'manager' || request.user?.role === 'boss';
-function validDate(v) {
-  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
-  const d = new Date(v + 'T00:00:00Z');
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
-}
+const validDate = isIsoDate;
 const BAD_DATE = { error: 'invalid_date', detail: '日期要写成 YYYY-MM-DD' };
 
 function clean(body) {

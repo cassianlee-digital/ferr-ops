@@ -1239,10 +1239,10 @@
 <!-- 渠道 / 等级 / 确认状态的改动流水：谁、什么时候、从什么改成什么、为什么。逻辑在 src/inquiry-attribution.js -->
 <div class="modal-mask" id="attrLogModal">
   <div class="modal">
-    <div class="modal-head"><i class="ti ti-history csp-s-b0e08465c2"></i> 渠道与等级的改动流水<span class="x" data-ui-action="close-modal" data-modal="attrLogModal"><i class="ti ti-x"></i></span></div>
+    <div class="modal-head"><i class="ti ti-history csp-s-b0e08465c2"></i> <span id="attrLogTitle">改动流水</span><span class="x" data-ui-action="close-modal" data-modal="attrLogModal"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
       <div class="attr-log" id="attrLogBody"></div>
-      <div class="task-done-rule">等级决定考核里 A / B 询价的数量，所以每次改动都留档；改已确认的值必须填原因。</div>
+      <div class="task-done-rule" id="attrLogRule"></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="attrLogModal">关闭</button></div>
   </div>

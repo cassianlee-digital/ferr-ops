@@ -15,6 +15,10 @@ const yes = (v) => (v ? '是' : '否');
 const pct = (d) => (d && d.pct != null ? Math.round(d.pct * 1000) / 10 : null);
 const lines = (arr) => (arr || []).join('\n');
 const amounts = (a) => Object.entries(a || {}).map(([c, v]) => (CURRENCY_LABEL[c] || c) + ' ' + v).join(' ｜ ');
+// 「完成状态：0 → 1」对人没有意义，翻成话
+const DONE_TEXT = { 0: '未完成', 1: '已完成' };
+const changeValue = (c, v) => (v == null ? '（空）' : c.field === 'done' ? DONE_TEXT[v] || v : c.field === 'important' ? '已标重要' : v);
+export const changeText = (c) => `${c.label}：${changeValue(c, c.old)} → ${changeValue(c, c.new)}（${c.by || '未记录'} ${c.date}）`;
 const flagText = (flags) => (flags || []).map((f) => FLAGS[f]?.label || f).join('；');
 
 // 一条任务的数据变化压成一格文字（详细的逐指标行在「数据变化」那张表）
@@ -58,12 +62,12 @@ export function auditSheets(pkg) {
     ['id', '编号'], ['person', '归属'], ['owner', '负责人'], ['dept', '部门'], ['project', '产品/项目'], ['content', '任务'], ['state', '状态'],
     ['start_date', '开始日'], ['task_date', '截止日'], ['done_date', '完成日'], ['deleted_date', '删除日'], ['deleted_by', '删除人'], ['est_hours', '预估工时'], ['actual_hours', '实际工时'],
     ['important', '重要任务'], ['important_reason', '重要原因'], ['why', '目的'], ['done_when', '完成标准'], ['result', '完成结果'], ['task_actions', '具体动作'],
-    ['evidence', '证据链接'], ['images', '证据截图数'], ['links', '关联对象'], ['checkin_days', '区间内推进天数'], ['effect', '数据变化'], ['flags', '疑点'],
+    ['evidence', '证据链接'], ['images', '证据截图数'], ['links', '关联对象'], ['checkin_days', '区间内推进天数'], ['effect', '数据变化'], ['changes', '区间内的改动'], ['flags', '疑点'],
   ], pkg.tasks.map((t) => ({
     ...t, state: STATE_LABEL[t.audit_state] || t.audit_state, important: yes(t.is_important), important_reason: t.important_reason_text,
     evidence: lines(t.evidence), images: t.evidence_images.length,
     links: t.links.map((l) => (LINK_LABEL[l.type] || l.type) + ':' + (l.label || l.ref)).join('\n'),
-    effect: effectText(t.effect), flags: flagText(t.flags),
+    effect: effectText(t.effect), flags: flagText(t.flags), changes: t.changes.map(changeText).join('\n'),
   })));
 
   const effectRows = [];

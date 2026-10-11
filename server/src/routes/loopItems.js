@@ -3,9 +3,11 @@ import * as repo from '../db/repositories/loopItems.js';
 import * as fixesRepo from '../db/repositories/fixes.js';
 import * as taskLinksRepo from '../db/repositories/taskLinks.js';
 import * as attachmentsRepo from '../db/repositories/attachments.js';
+import * as changesRepo from '../db/repositories/loopItemChanges.js';
+import { isIsoDate } from '../lib/parseDateRange.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 import {
-  TASK_KPIS, completionMissing, gateDetail, importance, isDone, normalizeEvidence, normalizeLinks,
+  CHANGE_LABEL, TASK_KPIS, completionMissing, gateDetail, importance, isDone, normalizeEvidence, normalizeLinks, taskChanges,
 } from '../services/taskAudit.js';
 import {
   TASK_ATTACHMENT_OWNER, decorateTask, decorateTasks, evidenceImageCount, spendTaskIds,
@@ -61,6 +63,24 @@ function normalizeAuditFields(body, reply) {
   return true;
 }
 
+/* 任务的三个日期：空 = 没填（null），否则必须是真实存在的 YYYY-MM-DD（就地归一 body）。
+   以前什么字符串都收 —— 一个写成 10/12 的截止日比不过任何区间，这条任务就既不逾期也不在做，从周度审核里凭空消失。
+   merged = 更新后的样子（新建时就是 body 自己）：请求动了起止日，才检查「开始日不晚于截止日」，老数据不追溯。 */
+const TASK_DATE_FIELDS = { task_date: '截止日', start_date: '开始日', task_verify_date: '验证日' };
+function normalizeTaskDates(body, reply, merged = body) {
+  for (const [k, label] of Object.entries(TASK_DATE_FIELDS)) {
+    if (!(k in body)) continue;
+    if (body[k] == null || body[k] === '') { body[k] = null; continue; }
+    if (!isIsoDate(body[k])) { bad(reply, 'invalid_date', `${label}要写成 YYYY-MM-DD`); return false; }
+  }
+  if ('task_date' in body || 'start_date' in body) {
+    const start = 'start_date' in body ? body.start_date : merged.start_date;
+    const due = 'task_date' in body ? body.task_date : merged.task_date;
+    if (start && due && start > due) { bad(reply, 'bad_date_range', '开始日不能晚于截止日'); return false; }
+  }
+  return true;
+}
+
 // links 不是 loop_items 的列，单独校验后整组替换。没传 = 不动；返回 false = 已回 400。
 function readLinks(body, reply) {
   if (!('links' in body)) return null;
@@ -105,6 +125,7 @@ export async function loopItemsRoutes(app) {
     let links = null;
     if (isTask) {
       if (!normalizeAuditFields(b, reply)) return reply;
+      if (!normalizeTaskDates(b, reply)) return reply;
       links = readLinks(b, reply);
       if (links === false) return reply;
     }
@@ -142,8 +163,10 @@ export async function loopItemsRoutes(app) {
     if (!cur) return reply.code(404).send({ error: 'not_found' });
 
     let links = null;
+    let changes = [];
     if (cur.kind === 'task') {
       if (!normalizeAuditFields(body, reply)) return reply;
+      if (!normalizeTaskDates(body, reply, cur)) return reply;
       if ('important' in body) {
         const want = truthy(body.important) ? 1 : null;
         // 「重要」可以谁都加，但只有经理/老板能摘：否则被要求交证据的人自己把标记去掉就行了
@@ -161,8 +184,13 @@ export async function loopItemsRoutes(app) {
          老的已完成任务（门槛上线前勾的，没有结果）改别的字段不受影响 —— 不追溯。 */
       const next = { ...cur };
       for (const k of repo.UPDATABLE) if (k in body) next[k] = body[k];
+      /* 改动留痕（规则见 taskAudit.taskChanges）。其中一项特别：执行人把跨天任务改成单日 → 记一个「曾经跨天」的记号，
+         这条任务照旧按重要任务要证据（以前改一下日期就躲过去了）。经理 / 老板改的不记，那是重新定范围。 */
+      changes = taskChanges(cur, next);
+      if (isManager(request)) changes = changes.filter((c) => c.field !== 'multi_day');
+      const wasMultiDay = changes.some((c) => c.field === 'multi_day') || changesRepo.shortenedIds([id]).has(id);
       if (isDone(next) && (!isDone(cur) || 'result' in body || 'evidence' in body)) {
-        const imp = importance(next, { spend: spendTaskIds().has(id) });
+        const imp = importance(next, { spend: spendTaskIds().has(id), wasMultiDay });
         const missing = completionMissing(next, { important: imp.important, attachments: evidenceImageCount(id) });
         if (missing.length) {
           return bad(reply, 'completion_incomplete', gateDetail(missing), { missing, important_reasons: imp.reasons });
@@ -170,7 +198,7 @@ export async function loopItemsRoutes(app) {
       }
     }
 
-    let item = repo.update(id, body);
+    let item = repo.updateWithLog(id, body, changes, request.user?.id);
     if (links) taskLinksRepo.replace(id, links);
     if (item && ('state' in body || 'status' in body)) {
       item = repo.stampDone(id, isDone(item)); // 记完成时刻，日计划回放要用
@@ -184,6 +212,13 @@ export async function loopItemsRoutes(app) {
       }
     }
     return { item: decorateTask(item) };
+  });
+
+  // 这条任务被改过什么：谁、什么时候、从什么改成什么
+  app.get('/api/loop-items/:id/changes', { preHandler: requireAuth }, async (request, reply) => {
+    const id = Number(request.params.id);
+    if (!repo.get(id)) return reply.code(404).send({ error: 'not_found' });
+    return { items: changesRepo.byItem(id).map((c) => ({ ...c, label: CHANGE_LABEL[c.field] || c.field })) };
   });
 
   // 归档：服务端打时间戳、推导 archive_kind；幂等。前端调这个最稳。
@@ -221,6 +256,7 @@ export async function loopItemsRoutes(app) {
       repo.hardDelete(id);
       // 行都没了，它的关联键和证据截图留着只会成为取不到宿主的孤儿
       taskLinksRepo.removeByItem(id);
+      changesRepo.removeByItem(id);
       attachmentsRepo.removeByOwner(TASK_ATTACHMENT_OWNER, id);
       return { ok: true, hard: true };
     }

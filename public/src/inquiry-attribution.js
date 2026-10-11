@@ -12,6 +12,7 @@
  */
 import { esc, toast, openModal, closeModal } from './ui-kit.js';
 import { withRange } from './timerange.js';
+import { openChangeLog as showChangeLog } from './change-log.js';
 
 const $ = (id) => document.getElementById(id);
 const isAuthority = () => { const r = window.ME && window.ME.role; return r === 'manager' || r === 'boss'; };
@@ -88,33 +89,13 @@ export async function loadAttrCoverage() {
 const FIELD_LABEL = { channel: '渠道', grade: '等级', date: '日期', state: '归档', deal_status: '是否成交', attribution_status: '确认状态' };
 const VALUE_LABEL = { confirmed: '已确认', proposed: '待确认', active: '在册', archived: '已归档' };
 const valText = (v) => (v == null || v === '' ? '（空 / 历史未审）' : VALUE_LABEL[v] || v);
-function localTime(utc) {
-  const d = new Date(String(utc || '').replace(' ', 'T') + 'Z');
-  if (isNaN(d)) return utc || '时间不详';
-  const p = (n) => String(n).padStart(2, '0');
-  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
-}
-function line(parent, cls, text) { const d = document.createElement('div'); d.className = cls; d.textContent = text; parent.appendChild(d); return d; }
-
-async function openChangeLog(id) {
-  const box = $('attrLogBody'); if (!box) return;
-  box.textContent = ''; line(box, 'attr-log-empty', '加载中…');
-  openModal('attrLogModal');
-  try {
-    const { items } = await API.get('/api/inquiries/' + id + '/changes');
-    box.textContent = '';
-    if (!items.length) { line(box, 'attr-log-empty', '这条询盘的渠道、等级、日期和确认状态从未被改过。'); return; }
-    for (const c of items) {
-      const item = document.createElement('div'); item.className = 'attr-log-item';
-      line(item, 'attr-log-head', (FIELD_LABEL[c.field] || c.field) + '：' + valText(c.old_value) + ' → ' + valText(c.new_value));
-      line(item, 'attr-log-meta', (c.changed_by_name || '未知') + ' · ' + localTime(c.changed_at));
-      if (c.reason) line(item, 'attr-log-reason', '原因：' + c.reason);
-      box.appendChild(item);
-    }
-  } catch (e) {
-    box.textContent = ''; line(box, 'attr-log-empty', '加载失败：' + failText(e));
-  }
-}
+const openChangeLog = (id) => showChangeLog({
+  path: '/api/inquiries/' + encodeURIComponent(id) + '/changes',
+  title: '渠道与等级的改动流水',
+  rule: '等级决定考核里 A / B 询价的数量，所以每次改动都留档；改已确认的值必须填原因。',
+  empty: '这条询盘的渠道、等级、日期和确认状态从未被改过。',
+  describe: (c) => (FIELD_LABEL[c.field] || c.field) + '：' + valText(c.old_value) + ' → ' + valText(c.new_value),
+});
 
 /* ===== 改已确认的渠道 / 等级，或撤销确认：都强制填原因 ===== */
 let editing = null; // { row, mode: 'edit' | 'unconfirm' }

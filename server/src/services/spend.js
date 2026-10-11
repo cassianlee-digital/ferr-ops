@@ -209,6 +209,8 @@ export function backlinkStats(rows) {
       avg_dr: avg(drs),
       dr_known: drs.length,
       never_checked: list.filter((b) => !b.checked_date).length,
+      // 上次自动核查还在、这次没找到的：最该有人去看一眼的那几条
+      auto_lost: list.filter((b) => b.auto_lost_at).length,
     };
   };
   const paid = rows.filter((b) => Number(b.cost) > 0);

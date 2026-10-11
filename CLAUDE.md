@@ -14,7 +14,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **后端不是单文件**:Fastify,模块化良好。
   - `server/src/routes/`(**36 个路由文件**,2026-10-10 实测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1374 行 / 138KB**(2026-10-10 实测;ES 模块 **43 个**),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1374 行 / 138KB**(2026-10-10 实测;ES 模块 **44 个**(2026-10-11 实测 `ls public/src/*.js | wc -l`)),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -135,7 +135,20 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
     「重要」谁都能加、只有 manager/boss 能摘。失败回 `400 completion_incomplete` + `missing` + 给人看的 `detail`。
   - **已堵的旁路(各有测试,别拆)**:POST 直接建成完成;完成后把 result/evidence 清空;完成后删最后一张证据图(`409 last_evidence`);
     请求里夹白名单外的 `parent_id`/`fix_id` 伪装成普通任务(门槛只拿 `repo.UPDATABLE` 内的字段合并预判)。
-    **已知没堵的**:执行人把跨天任务的日期改成同一天,就不再算「跨天」—— 改动本身留在记录里,由周度审核去看。
+    **跨天改单日也堵上了(2026-10-11)**:执行人把跨天任务改成单日,流水里多记一个 `multi_day` 记号,这条任务继续按重要任务要证据
+    (原因显示「原本是跨天任务」;同一个请求里又改日期又勾完成一样拦)。**经理 / 老板改的不记** —— 那是重新定范围。
+  - **任务改动留痕(2026-10-11)**:表 `loop_item_changes`,规则在 `taskAudit.taskChanges(cur, next)`(纯函数),仓库 `repositories/loopItemChanges.js`。
+    询盘改渠道 / 等级早就留痕,任务以前没有:完成之后还能改标题、把截止日往后挪,一点痕迹都不剩。
+    - **记什么**:内容 / 负责人 / 部门 / 项目 / 起止日 / 预估工时 / 重要标记;完成结果 / 动作 / 证据 / 实际用时**从空到有不记**(那是「完成」本身),之后再改才记;
+      外加两个合成项 `done`(完成 ↔ 撤销,撤销会清掉 `done_at`)和 `multi_day`(见上)。备注、时段、思考框架不记 —— 记得太多,要看的就被淹了。
+    - 改动与流水**同一个事务**(`repo.updateWithLog`),被拒的请求不留痕(有测试)。**没有外键**,彻底删除时由路由显式清。
+    - 入口:任务卡 / 归档行上的「改 N」(不数 `done` / `multi_day`)→ `GET /api/loop-items/:id/changes`。
+      弹框与询盘的改动流水共用一个(`public/src/change-log.js`,调用方给标题、接口和「每条怎么念」)。
+    - 周度审核包每条任务带 `changes`(**落在区间内的**改动),并多三条疑点:`DUE_MOVED` 截止日被往后改过 / `SHORTENED` 跨天被执行人改成单日 /
+      `EDITED_AFTER_DONE` 完成之后又改了内容、结果或日期。**疑点按全部流水判**(它是这条任务的事实,不是某一周的事)。
+  - **任务的三个日期只收真实的 `YYYY-MM-DD`**(`task_date` / `start_date` / `task_verify_date`;`400 invalid_date`),空串存成 NULL;
+    请求动了起止日时还要求开始日不晚于截止日(`400 bad_date_range`)。**老数据不追溯,计划 / 测试 / 沉淀不走这套**(它们的日期字段另有用法)。
+    以前什么字符串都收:截止日写成 `10/12` 的任务比不过任何区间,既不逾期也不在做,从周度审核里凭空消失。校验函数 `lib/parseDateRange.js` 的 `isIsoDate`,询盘也用它。
   - **门槛只保证「填了」,不保证「填得对」**。证据能不能支撑结论,由周度审核(规则疑点 + AI 意见)去看。
   - **勾完成改走完成弹框**(`#taskDoneMask`):`chk()` 不再直接 PATCH done,入库成功后才标勾;取消 = 什么都没发生。
     卡片重画走 `taskchanged` 事件(app.js 派发、closed-loop.js 订阅)—— 这就是上文说的「事件反转」的第一处落地,
@@ -279,7 +292,12 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
       前者曾误报「属性与台账不符」,后者曾把真链接漏成「没找到」。
     - 对方无视 `Accept-Encoding: identity` 照样压缩时会解开再找(gzip / deflate / br);GBK 等页面按响应头或 `<meta>` 里的编码读,锚文本不乱码。
     - 取页函数可注入(`routes/spend.js` 的 `setPageFetcher`),测试不走真实网络。**已用真实外部站点实测过**(2026-10-10:找到链接 / 404 / 域名不存在 / 57 万字节的大页面)。
-    - 没有做定时批量核查,只有逐条手动点。
+    - **定时批量核查(2026-10-11,`services/linkCheckBatch.js`)**:每天 UTC 19 点(北京凌晨 3 点)查一批 —— 填了指向页面、人工没标「失效」、
+      超过 7 天没查过的,一次最多 40 条,一条一条来、每条之间停 1.5 秒。没查过的排最前,其余从旧到新,谁也不会一直排不上。
+      自己一个调度器,**没有并进谷歌同步的那个**(两件事互不相干)。`BACKLINK_AUTO_CHECK=false` 可关;其余参数见 `config.backlinks`。
+    - **`auto_lost_at` = 上次还找得到、这次页面取到了却没有**:行上显示「上次还在,这次没找到」并加粗,统计里数 `auto_lost`。
+      再次找到就清空;「页面没取到」不算丢(多半是对方临时拦了);从没找到过的也谈不上丢。**它同样不改人工状态**。
+      批量核查的意义就在这一列:每天自己跑一遍没人会去翻,得把该看的那几条挑出来。
 - **图片附件已上线**(`attachments` 表 + `server/src/routes/attachments.js` + `public/src/attachments.js`):
   询盘「业务反馈」和关键词库「客户信息词库 → 业务反馈」共用。BLOB 存库(生产是 Docker Compose,
   落盘要额外挂卷且 `backup.js` 备的就是这个 .db,存库能跟着一起备份);列表接口只回元数据,

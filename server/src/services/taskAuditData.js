@@ -6,6 +6,7 @@ import * as taskLinksRepo from '../db/repositories/taskLinks.js';
 import * as attachmentsRepo from '../db/repositories/attachments.js';
 import * as backlinksRepo from '../db/repositories/backlinks.js';
 import * as expensesRepo from '../db/repositories/expenses.js';
+import * as changesRepo from '../db/repositories/loopItemChanges.js';
 import { IMPORTANT_REASON_LABEL, importance } from './taskAudit.js';
 
 export const TASK_ATTACHMENT_OWNER = 'task';
@@ -35,13 +36,16 @@ export function decorateTasks(items) {
   const links = taskLinksRepo.byItems(ids);
   const images = evidenceImages(ids);
   const spend = spendTaskIds();
+  const shortened = changesRepo.shortenedIds(ids);
+  const changeCounts = changesRepo.counts(ids);
   return items.map((it) => {
     if (!it || it.kind !== 'task') return it;
-    const imp = importance(it, { spend: spend.has(it.id) });
+    const imp = importance(it, { spend: spend.has(it.id), wasMultiDay: shortened.has(it.id) });
     return {
       ...it,
       links: links[it.id] || [],
       evidence_images: images[it.id] || [],
+      change_count: changeCounts[it.id] || 0, // 被改过几次（内容 / 日期 / 工时 / 结果…），卡片上的「改 N」
       is_important: imp.important,
       important_reasons: imp.reasons,
       important_reason_text: imp.reasons.map((r) => IMPORTANT_REASON_LABEL[r]).join(' · '), // 界面直接显示，前端不再抄一份文案

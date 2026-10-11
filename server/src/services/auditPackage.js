@@ -11,6 +11,7 @@
 //   GEO          → services/geoData.js
 //   KPI          → services/kpiReview.js（月度考核口径，这里取「本月至今」）
 import * as loopRepo from '../db/repositories/loopItems.js';
+import * as changesRepo from '../db/repositories/loopItemChanges.js';
 import * as fixesRepo from '../db/repositories/fixes.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
 import * as leadsRepo from '../db/repositories/inquiryLeads.js';
@@ -29,7 +30,7 @@ import { resolveSemSpend } from './kpiLedger.js';
 import { buildReview } from './kpiReview.js';
 import { sopStats } from './sopStats.js';
 import { backlinkStats, summarizeSpend } from './spend.js';
-import { parseEvidence } from './taskAudit.js';
+import { CHANGE_LABEL, parseEvidence } from './taskAudit.js';
 import { decorateTasks } from './taskAuditData.js';
 import { addDays, businessDate, compare } from './taskEffect.js';
 import { buildTaskEffect } from './taskEffectData.js';
@@ -53,6 +54,7 @@ function buildTasks(range, who, today) {
   const stateOf = new Map(candidates.map((x) => [x.row.id, x.state]));
   const checkins = new Map(checkinRepo.daysInRange(range.start_date, range.end_date).map((r) => [r.loop_item_id, r.days]));
   const deleters = loopRepo.deleterNames(candidates.filter((x) => x.state === 'deleted').map((x) => x.row.id));
+  const changeLog = changesRepo.byItems(candidates.map((x) => x.row.id));
 
   return decorateTasks(candidates.map((x) => x.row)).map((t) => {
     const state = stateOf.get(t.id);
@@ -72,6 +74,10 @@ function buildTasks(range, who, today) {
       done_date: dayOf(t.done_at),
       deleted_date: state === 'deleted' ? dayOf(t.deleted_at) : null,
       deleted_by: deleters[t.id] || null, // 这一列上线前删的没有人名
+      // 改动流水里落在这个区间的那几条（疑点按全部流水判，见 taskFlags）；合成项 multi_day 不单列，它体现在疑点里
+      changes: (changeLog[t.id] || []).filter((c) => c.field !== 'multi_day' && inRange(dayOf(c.changed_at), range)).map((c) => ({
+        field: c.field, label: CHANGE_LABEL[c.field] || c.field, old: c.old_value, new: c.new_value, by: c.changed_by_name || null, date: dayOf(c.changed_at),
+      })),
       audit_state: state,
       est_hours: t.est_hours,
       actual_hours: t.actual_hours,
@@ -87,7 +93,7 @@ function buildTasks(range, who, today) {
       links: t.links,
       checkin_days: checkinDays,
       effect: effectDigest(effect),
-      flags: taskFlags(t, { state, important: t.is_important, images: t.evidence_images.length, links: t.links, checkins: checkinDays, effect }),
+      flags: taskFlags(t, { state, important: t.is_important, images: t.evidence_images.length, links: t.links, checkins: checkinDays, effect, changes: changeLog[t.id] || [] }),
     };
   });
 }

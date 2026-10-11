@@ -31,6 +31,7 @@ export function auditAiPayload(pkg) {
       evidence_links: t.evidence.length, evidence_images: t.evidence_images.length,
       links: t.links.map((l) => l.type + ':' + (l.label || l.ref)),
       checkin_days: t.checkin_days,
+      changes_in_range: t.changes.map((c) => ({ what: c.label, from: clip(c.old, 80), to: clip(c.new, 80), by: c.by, on: c.date })),
       effect: t.effect.map((e) => ({
         object: e.type + ':' + (e.label || e.ref), source: e.source, status: e.status, days: e.days,
         metrics: e.metrics.map((m) => ({ metric: m.label, before: m.before, after: m.after, change_pct: m.delta && m.delta.pct != null ? Math.round(m.delta.pct * 100) : null })),

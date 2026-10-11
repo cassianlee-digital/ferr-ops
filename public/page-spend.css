@@ -108,3 +108,4 @@
 #panel-spend .spend-auto.is-unreachable { color: var(--text3); }
 #panel-spend .spend-check { margin-top: 4px; }
 #panel-spend .spend-auto.is-mismatch { color: var(--amber); font-weight: 600; }
+#panel-spend .spend-auto.is-lost { font-weight: 600; }

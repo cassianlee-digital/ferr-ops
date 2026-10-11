@@ -624,6 +624,23 @@ CREATE TABLE IF NOT EXISTS task_links (
 CREATE INDEX IF NOT EXISTS idx_task_links_item ON task_links(loop_item_id);
 CREATE INDEX IF NOT EXISTS idx_task_links_ref ON task_links(link_type, ref);
 
+-- 任务改动流水（2026-10-11）。询盘改渠道 / 等级早就留痕，任务却没有：完成之后还能改标题、把截止日往后挪、
+-- 把跨天任务改成单日来躲「重要任务要证据」，系统里一点痕迹都不剩。规则在 services/taskAudit.js 的 taskChanges()。
+--   field = loop_items 的列名，或两个合成项：
+--     done      完成 / 撤销完成（'0' ↔ '1'）—— 撤销会清掉 done_at，不记的话「完成过又撤销」就查不到了
+--     multi_day 跨天任务被执行人改成了单日（'1' → '0'）—— 它让这条任务继续按「重要任务」要证据
+-- 不设外键：彻底删除任务时由路由显式清（与 task_links 同一做法）。
+CREATE TABLE IF NOT EXISTS loop_item_changes (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  loop_item_id  INTEGER NOT NULL,
+  field         TEXT NOT NULL,
+  old_value     TEXT,
+  new_value     TEXT,
+  changed_by    INTEGER,
+  changed_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_loop_item_changes_item ON loop_item_changes(loop_item_id, id);
+
 -- 外链台账（2026-10-10）。经理的原话：花钱买的外链要能直接查到是哪一条、值不值；
 -- 不花钱的外链做了哪些、质量怎么样，也要看得到。所以付费与免费记在同一张表里，才能并排比。
 -- dr / traffic 是第三方工具（Ahrefs 等）读数，人工录入：没接这些工具的 API，不录就留空，绝不估。
@@ -867,6 +884,7 @@ export function migrate() {
     ['auto_detail', 'TEXT'],      // 给人看的一句话：看到了什么、为什么拿不到
     ['auto_rel', 'TEXT'],         // 页面上实际的链接属性
     ['auto_anchor', 'TEXT'],      // 页面上实际的锚文本
+    ['auto_lost_at', 'TEXT'],     // 上次自动核查还在、这次没找到的时刻；再次找到就清空。它只是提醒，不改人工状态
     ['deleted_by', 'INTEGER'],
   ]);
   ensureColumns('fixes', [

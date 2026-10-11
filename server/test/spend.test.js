@@ -118,8 +118,8 @@ test('外链质量对比：付费与免费并排；没录 DR 的不进均值，�
   ]);
   assert.equal(st.total, 4);
   assert.equal(st.domains, 3);
-  assert.deepEqual(st.paid, { count: 2, live: 1, dead: 1, pending: 0, dofollow: 1, avg_dr: 60, dr_known: 1, never_checked: 1, cost: { USD: 800 } });
-  assert.deepEqual(st.free, { count: 2, live: 1, dead: 0, pending: 1, dofollow: 2, avg_dr: 30, dr_known: 2, never_checked: 2 });
+  assert.deepEqual(st.paid, { count: 2, live: 1, dead: 1, pending: 0, dofollow: 1, avg_dr: 60, dr_known: 1, never_checked: 1, auto_lost: 0, cost: { USD: 800 } });
+  assert.deepEqual(st.free, { count: 2, live: 1, dead: 0, pending: 1, dofollow: 2, avg_dr: 30, dr_known: 2, never_checked: 2, auto_lost: 0 });
   assert.equal(backlinkStats([]).paid.avg_dr, null, '一条都没有时均值是空，不是 0');
 });
 

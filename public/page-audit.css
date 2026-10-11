@@ -75,3 +75,4 @@
   #panel-audit .audit-cols { grid-template-columns: 1fr; }
   #panel-audit .audit-tasks { table-layout: auto; }
 }
+#panel-audit .audit-task-changes { margin-top: 2px; color: var(--amber); overflow-wrap: anywhere; }

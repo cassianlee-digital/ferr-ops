@@ -1089,3 +1089,6 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
 .teffect-sub { margin-left: 8px; font-weight: 400; color: var(--text3); }
 .teffect-good { color: var(--green); font-weight: 600; }
 .teffect-bad { color: var(--danger); font-weight: 600; }
+/* 任务被改过几次：点开看改动记录（弹框与询盘的改动流水共用） */
+.taudit-changes { padding: 0 5px; border: 0; border-radius: var(--radius); background: var(--amber-soft); color: var(--amber); font-size: 10px; font-weight: 600; line-height: 16px; cursor: pointer; }
+.taudit-changes:hover { background: var(--amber); color: #fff; }

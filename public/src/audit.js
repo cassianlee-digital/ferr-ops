@@ -122,6 +122,9 @@ function renderSummary(root) {
 }
 
 /* ---------- 任务 ---------- */
+const DONE_TEXT = { 0: '未完成', 1: '已完成' };
+const changeValue = (c, v) => (v == null ? '（空）' : c.field === 'done' ? DONE_TEXT[v] || v : c.field === 'important' ? '已标重要' : (String(v).length > 40 ? String(v).slice(0, 39) + '…' : v));
+const changeText = (c) => c.label + ' ' + changeValue(c, c.old) + ' → ' + changeValue(c, c.new) + '（' + (c.by || '未记录') + ' ' + md(c.date) + '）';
 function taskCell(t) {
   const box = el('div', 'audit-task');
   box.appendChild(el('div', 'audit-task-title', '#' + t.id + ' ' + (t.content || '')));
@@ -134,6 +137,8 @@ function taskCell(t) {
   if (t.done_date) meta.appendChild(el('span', '', '完成 ' + md(t.done_date)));
   if (t.deleted_date) meta.appendChild(el('span', '', '删除 ' + md(t.deleted_date) + ' · ' + (t.deleted_by || '删除人未记录')));
   box.appendChild(meta);
+  // 这段时间里它被改过什么（截止日往后挪、完成后改结果…）：原样列出，判断留给看的人
+  if (t.changes.length) box.appendChild(el('div', 'audit-task-changes', '改动：' + t.changes.map(changeText).join('；')));
   if (t.links.length) box.appendChild(el('div', 'audit-task-links', t.links.map((l) => (LINK_LABEL[l.type] || l.type) + ' ' + (l.type === 'page' ? shortUrl(l.ref) : (l.label || l.ref))).join(' · ')));
   return box;
 }

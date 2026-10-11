@@ -91,6 +91,14 @@ export const config = {
   },
 
   // 谷歌数据定时自动同步（进程内调度，无需外部 cron）。
+  // 外链定时批量核查（services/linkCheckBatch.js）。服务器会去别人的站上取页面，所以一次的量和节奏都收着
+  backlinks: {
+    autoCheck: process.env.BACKLINK_AUTO_CHECK !== 'false',                 // 默认开启；BACKLINK_AUTO_CHECK=false 关闭
+    hourUtc: Number(process.env.BACKLINK_CHECK_HOUR_UTC ?? 19),             // 每天 UTC 几点跑（默认 19 点 = 北京凌晨 3 点）
+    staleDays: Number(process.env.BACKLINK_CHECK_STALE_DAYS ?? 7),          // 多少天没查过才再查
+    batch: Number(process.env.BACKLINK_CHECK_BATCH ?? 40),                  // 一次最多查几条
+    pauseMs: Number(process.env.BACKLINK_CHECK_PAUSE_MS ?? 1500),           // 每条之间停多久
+  },
   sync: {
     enabled: process.env.SYNC_AUTO !== 'false',                              // 默认开启；SYNC_AUTO=false 关闭
     dailyHourUtc: Number(process.env.SYNC_DAILY_HOUR_UTC ?? 5),              // 每天 UTC 几点跑（默认 5 点≈北京 13 点）

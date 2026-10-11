@@ -1,6 +1,14 @@
 // Parse optional date range query params. Missing both keeps legacy full-range behavior.
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// 真实存在的 YYYY-MM-DD（2026-02-30 不算）。日期决定一条记录落进哪个统计区间：
+// 乱写的日期会落在所有区间之外，悄悄从统计和审核里消失。
+export function isIsoDate(v) {
+  if (typeof v !== 'string' || !DATE_RE.test(v)) return false;
+  const d = new Date(v + 'T00:00:00Z');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+}
+
 export function parseDateRange(query) {
   const start = query?.start_date;
   const end = query?.end_date;

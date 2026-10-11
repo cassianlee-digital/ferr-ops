@@ -3534,8 +3534,52 @@
     });
   }
 
-  // public/src/inquiry-attribution.js
+  // public/src/change-log.js
   var $2 = (id) => document.getElementById(id);
+  function localTime(utc) {
+    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
+    if (isNaN(d)) return utc || "\u65F6\u95F4\u4E0D\u8BE6";
+    const p = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  function line(parent, cls, text2) {
+    const d = document.createElement("div");
+    d.className = cls;
+    d.textContent = text2;
+    parent.appendChild(d);
+    return d;
+  }
+  async function openChangeLog({ path, title, rule, empty: empty2, describe }) {
+    const box = $2("attrLogBody");
+    if (!box) return;
+    $2("attrLogTitle").textContent = title;
+    $2("attrLogRule").textContent = rule;
+    box.textContent = "";
+    line(box, "attr-log-empty", "\u52A0\u8F7D\u4E2D\u2026");
+    openModal("attrLogModal");
+    try {
+      const { items } = await API.get(path);
+      box.textContent = "";
+      if (!items.length) {
+        line(box, "attr-log-empty", empty2);
+        return;
+      }
+      for (const c of items) {
+        const item = document.createElement("div");
+        item.className = "attr-log-item";
+        line(item, "attr-log-head", describe(c));
+        line(item, "attr-log-meta", (c.changed_by_name || "\u672A\u8BB0\u5F55\u662F\u8C01") + " \xB7 " + localTime(c.changed_at));
+        if (c.reason) line(item, "attr-log-reason", "\u539F\u56E0\uFF1A" + c.reason);
+        box.appendChild(item);
+      }
+    } catch (e) {
+      box.textContent = "";
+      line(box, "attr-log-empty", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  }
+
+  // public/src/inquiry-attribution.js
+  var $3 = (id) => document.getElementById(id);
   var isAuthority = () => {
     const r = window.ME && window.ME.role;
     return r === "manager" || r === "boss";
@@ -3561,7 +3605,7 @@
     return isConfirmed(r) ? '<button type="button" class="btn-mini attr-unconfirm" data-attr-unconfirm title="\u64A4\u9500\u786E\u8BA4\uFF08\u9700\u586B\u539F\u56E0\uFF09"><i class="ti ti-arrow-back-up"></i></button>' : '<button type="button" class="btn-mini attr-confirm" data-attr-confirm title="\u786E\u8BA4\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u4E0E\u7B49\u7EA7"><i class="ti ti-check"></i></button>';
   }
   function renderBar(cov) {
-    const box = $2("inqAttrBar");
+    const box = $3("inqAttrBar");
     if (!box) return;
     box.textContent = "";
     if (!cov || !cov.total) return;
@@ -3585,7 +3629,7 @@
     try {
       renderBar(await API.get(withRange2("/api/inquiries/attribution-coverage", "inquiry")));
     } catch (e) {
-      const box = $2("inqAttrBar");
+      const box = $3("inqAttrBar");
       if (!box || e && e.message === "unauthorized") return;
       box.textContent = "";
       const bar = document.createElement("span");
@@ -3597,76 +3641,44 @@
   var FIELD_LABEL = { channel: "\u6E20\u9053", grade: "\u7B49\u7EA7", date: "\u65E5\u671F", state: "\u5F52\u6863", deal_status: "\u662F\u5426\u6210\u4EA4", attribution_status: "\u786E\u8BA4\u72B6\u6001" };
   var VALUE_LABEL = { confirmed: "\u5DF2\u786E\u8BA4", proposed: "\u5F85\u786E\u8BA4", active: "\u5728\u518C", archived: "\u5DF2\u5F52\u6863" };
   var valText = (v) => v == null || v === "" ? "\uFF08\u7A7A / \u5386\u53F2\u672A\u5BA1\uFF09" : VALUE_LABEL[v] || v;
-  function localTime(utc) {
-    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
-    if (isNaN(d)) return utc || "\u65F6\u95F4\u4E0D\u8BE6";
-    const p = (n) => String(n).padStart(2, "0");
-    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
-  }
-  function line(parent, cls, text2) {
-    const d = document.createElement("div");
-    d.className = cls;
-    d.textContent = text2;
-    parent.appendChild(d);
-    return d;
-  }
-  async function openChangeLog(id) {
-    const box = $2("attrLogBody");
-    if (!box) return;
-    box.textContent = "";
-    line(box, "attr-log-empty", "\u52A0\u8F7D\u4E2D\u2026");
-    openModal("attrLogModal");
-    try {
-      const { items } = await API.get("/api/inquiries/" + id + "/changes");
-      box.textContent = "";
-      if (!items.length) {
-        line(box, "attr-log-empty", "\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u3001\u7B49\u7EA7\u3001\u65E5\u671F\u548C\u786E\u8BA4\u72B6\u6001\u4ECE\u672A\u88AB\u6539\u8FC7\u3002");
-        return;
-      }
-      for (const c of items) {
-        const item = document.createElement("div");
-        item.className = "attr-log-item";
-        line(item, "attr-log-head", (FIELD_LABEL[c.field] || c.field) + "\uFF1A" + valText(c.old_value) + " \u2192 " + valText(c.new_value));
-        line(item, "attr-log-meta", (c.changed_by_name || "\u672A\u77E5") + " \xB7 " + localTime(c.changed_at));
-        if (c.reason) line(item, "attr-log-reason", "\u539F\u56E0\uFF1A" + c.reason);
-        box.appendChild(item);
-      }
-    } catch (e) {
-      box.textContent = "";
-      line(box, "attr-log-empty", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e));
-    }
-  }
+  var openChangeLog2 = (id) => openChangeLog({
+    path: "/api/inquiries/" + encodeURIComponent(id) + "/changes",
+    title: "\u6E20\u9053\u4E0E\u7B49\u7EA7\u7684\u6539\u52A8\u6D41\u6C34",
+    rule: "\u7B49\u7EA7\u51B3\u5B9A\u8003\u6838\u91CC A / B \u8BE2\u4EF7\u7684\u6570\u91CF\uFF0C\u6240\u4EE5\u6BCF\u6B21\u6539\u52A8\u90FD\u7559\u6863\uFF1B\u6539\u5DF2\u786E\u8BA4\u7684\u503C\u5FC5\u987B\u586B\u539F\u56E0\u3002",
+    empty: "\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u3001\u7B49\u7EA7\u3001\u65E5\u671F\u548C\u786E\u8BA4\u72B6\u6001\u4ECE\u672A\u88AB\u6539\u8FC7\u3002",
+    describe: (c) => (FIELD_LABEL[c.field] || c.field) + "\uFF1A" + valText(c.old_value) + " \u2192 " + valText(c.new_value)
+  });
   var editing3 = null;
   function openAttrEdit(row, mode) {
     editing3 = { row, mode };
     const unconfirm = mode === "unconfirm";
-    $2("attrEditTitle").textContent = (unconfirm ? "\u64A4\u9500\u786E\u8BA4 \xB7 " : "\u4FEE\u6539\u5DF2\u786E\u8BA4\u7684\u6E20\u9053 / \u7B49\u7EA7 \xB7 ") + (row.customer_code || row.country || "#" + row.id);
-    $2("attrEditChannel").value = row.channel || "";
-    $2("attrEditGrade").value = row.grade || "";
-    $2("attrEditFields").classList.toggle("is-hidden", unconfirm);
-    $2("attrEditReason").value = "";
-    $2("attrEditError").textContent = "";
+    $3("attrEditTitle").textContent = (unconfirm ? "\u64A4\u9500\u786E\u8BA4 \xB7 " : "\u4FEE\u6539\u5DF2\u786E\u8BA4\u7684\u6E20\u9053 / \u7B49\u7EA7 \xB7 ") + (row.customer_code || row.country || "#" + row.id);
+    $3("attrEditChannel").value = row.channel || "";
+    $3("attrEditGrade").value = row.grade || "";
+    $3("attrEditFields").classList.toggle("is-hidden", unconfirm);
+    $3("attrEditReason").value = "";
+    $3("attrEditError").textContent = "";
     openModal("attrEditModal");
-    setTimeout(() => $2("attrEditReason").focus(), 50);
+    setTimeout(() => $3("attrEditReason").focus(), 50);
   }
   async function submitAttrEdit(btn) {
     const e = editing3;
     if (!e) return;
-    const reason = $2("attrEditReason").value.trim();
+    const reason = $3("attrEditReason").value.trim();
     if (!reason) {
-      $2("attrEditError").textContent = "\u5FC5\u987B\u5199\u6E05\u695A\u539F\u56E0\uFF1A\u5B83\u4F1A\u8FDE\u540C\u4F60\u7684\u540D\u5B57\u548C\u65F6\u95F4\u4E00\u8D77\u8BB0\u8FDB\u6D41\u6C34";
+      $3("attrEditError").textContent = "\u5FC5\u987B\u5199\u6E05\u695A\u539F\u56E0\uFF1A\u5B83\u4F1A\u8FDE\u540C\u4F60\u7684\u540D\u5B57\u548C\u65F6\u95F4\u4E00\u8D77\u8BB0\u8FDB\u6D41\u6C34";
       return;
     }
     if (btn) btn.disabled = true;
     try {
       if (e.mode === "unconfirm") await API.post("/api/inquiries/" + e.row.id + "/unconfirm", { reason });
-      else await API.patch("/api/inquiries/" + e.row.id, { channel: $2("attrEditChannel").value, grade: $2("attrEditGrade").value, reason });
+      else await API.patch("/api/inquiries/" + e.row.id, { channel: $3("attrEditChannel").value, grade: $3("attrEditGrade").value, reason });
       closeModal("attrEditModal");
       editing3 = null;
       toast2(e.mode === "unconfirm" ? "\u5DF2\u64A4\u9500\u786E\u8BA4 \xB7 \u5DF2\u8BB0\u5165\u6D41\u6C34" : "\u5DF2\u4FEE\u6539 \xB7 \u5DF2\u8BB0\u5165\u6D41\u6C34");
       changed2();
     } catch (err) {
-      $2("attrEditError").textContent = "\u672A\u5165\u5E93\uFF1A" + failText2(err);
+      $3("attrEditError").textContent = "\u672A\u5165\u5E93\uFF1A" + failText2(err);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -3681,7 +3693,7 @@
       const logBtn = inTable("[data-attr-log]");
       if (logBtn) {
         const row = rowOf(logBtn);
-        if (row) openChangeLog(row.id);
+        if (row) openChangeLog2(row.id);
         return;
       }
       const editBtn = inTable("[data-attr-edit]");
@@ -5055,7 +5067,7 @@
   }
 
   // public/src/task-audit.js
-  var $3 = (id) => document.getElementById(id);
+  var $4 = (id) => document.getElementById(id);
   var LINK_LABEL = { page: "\u9875\u9762", campaign: "\u7CFB\u5217", keyword: "\u5173\u952E\u8BCD", kpi: "KPI" };
   var KPI_GROUP_LABEL = { review: "\u8003\u6838\u6307\u6807", process: "\u8FC7\u7A0B\u6307\u6807\uFF08\u4E0D\u8BA1\u5165\u8003\u6838\uFF09" };
   var isHttp2 = (u) => /^https?:\/\//i.test(String(u || ""));
@@ -5082,8 +5094,8 @@
     return o;
   }
   function renderLinkInput() {
-    const box = $3("task-link-value");
-    const typeEl = $3("task-link-type");
+    const box = $4("task-link-value");
+    const typeEl = $4("task-link-type");
     if (!box || !typeEl) return;
     const type = typeEl.value;
     const opts = linkOptions || {};
@@ -5132,7 +5144,7 @@
     return l.label || l.ref;
   }
   function renderLinkChips() {
-    const box = $3("task-link-chips");
+    const box = $4("task-link-chips");
     if (!box) return;
     box.textContent = "";
     draftLinks.forEach((l, i) => {
@@ -5152,8 +5164,8 @@
     });
   }
   function pendingLink() {
-    const typeEl = $3("task-link-type");
-    const input = $3("task-link-input");
+    const typeEl = $4("task-link-type");
+    const input = $4("task-link-input");
     if (!typeEl || !input) return null;
     const type = typeEl.value;
     let ref2 = String(input.value || "").trim();
@@ -5175,15 +5187,15 @@
       return false;
     }
     if (!draftLinks.some((x) => x.type === l.type && x.ref === l.ref)) draftLinks.push(l);
-    const input = $3("task-link-input");
+    const input = $4("task-link-input");
     if (input) input.value = "";
     renderLinkChips();
     return true;
   }
   function bindLinkEditor() {
     if (linkEditorBound) return;
-    const typeEl = $3("task-link-type");
-    const chips = $3("task-link-chips");
+    const typeEl = $4("task-link-type");
+    const chips = $4("task-link-chips");
     if (!typeEl || !chips) return;
     linkEditorBound = true;
     typeEl.addEventListener("change", renderLinkInput);
@@ -5193,7 +5205,7 @@
       draftLinks.splice(Number(del.dataset.linkIdx), 1);
       renderLinkChips();
     });
-    $3("task-link-value").addEventListener("keydown", (e) => {
+    $4("task-link-value").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         addTaskLink();
@@ -5203,38 +5215,38 @@
   function fillTaskAuditFields(item) {
     const it = item || {};
     bindLinkEditor();
-    const plist = $3("task-project-list");
+    const plist = $4("task-project-list");
     if (plist && !plist.children.length) PRODUCT_NAMES.forEach((n) => plist.appendChild(option(n, n)));
-    const p = $3("task-project");
+    const p = $4("task-project");
     if (p) p.value = it.project || "";
-    const eh = $3("task-est-hours");
+    const eh = $4("task-est-hours");
     if (eh) eh.value = it.est_hours == null ? "" : it.est_hours;
-    const imp = $3("task-important");
+    const imp = $4("task-important");
     if (imp) {
       imp.checked = Number(it.important) === 1;
       const role = (window.ME || {}).role;
       imp.disabled = imp.checked && role !== "manager" && role !== "boss";
     }
     draftLinks = (it.links || []).map((l) => ({ type: l.type, ref: l.ref, label: l.label || null }));
-    const typeEl = $3("task-link-type");
+    const typeEl = $4("task-link-type");
     if (typeEl) typeEl.value = "page";
     renderLinkChips();
     renderLinkInput();
     loadLinkOptions().then(() => {
-      const cur = $3("task-link-input");
+      const cur = $4("task-link-input");
       if (!cur || !cur.value) renderLinkInput();
     });
   }
   function readTaskAuditFields() {
     const out = {};
-    out.project = (($3("task-project") || {}).value || "").trim();
-    const eh = (($3("task-est-hours") || {}).value || "").trim();
+    out.project = (($4("task-project") || {}).value || "").trim();
+    const eh = (($4("task-est-hours") || {}).value || "").trim();
     if (eh !== "" && !(Number(eh) >= 0)) {
       toast2("\u9884\u4F30\u5DE5\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
       return null;
     }
     out.est_hours = eh === "" ? null : Number(eh);
-    const imp = $3("task-important");
+    const imp = $4("task-important");
     out.important = imp && imp.checked ? 1 : null;
     const pending = pendingLink();
     if (typeof pending === "string") {
@@ -5249,7 +5261,9 @@
   function auditBadgesHtml(it) {
     const imp = it.is_important ? `<span class="badge b-red taudit-imp" title="\u91CD\u8981\u4EFB\u52A1\uFF08${esc(it.important_reason_text || "")}\uFF09\xB7 \u5B8C\u6210\u65F6\u9700\u8981\u8BC1\u636E">\u91CD\u8981</span>` : "";
     const proj = it.project ? `<span class="badge b-gray taudit-proj" title="\u4EA7\u54C1 / \u9879\u76EE">${esc(it.project)}</span>` : "";
-    return imp + proj;
+    const n = Number(it.change_count) || 0;
+    const changes = n && it.id ? `<button type="button" class="taudit-changes" data-task-changes="${esc(it.id)}" title="\u8FD9\u6761\u4EFB\u52A1\u5EFA\u597D\u4E4B\u540E\u88AB\u6539\u8FC7 ${n} \u6B21\uFF0C\u70B9\u51FB\u770B\u662F\u8C01\u6539\u7684\u3001\u6539\u4E86\u4EC0\u4E48">\u6539 ${n}</button>` : "";
+    return imp + proj + changes;
   }
   function shortUrl(u) {
     try {
@@ -5295,17 +5309,17 @@
   var doneCtx = null;
   var doneBound = false;
   function doneError(msg) {
-    const el5 = $3("task-done-error");
+    const el5 = $4("task-done-error");
     if (el5) el5.textContent = msg || "";
   }
   function renderDoneThumbs() {
-    const box = $3("task-done-thumbs");
+    const box = $4("task-done-thumbs");
     if (!box || !doneCtx) return;
     box.innerHTML = thumbsHtml(doneCtx.item.evidence_images, { deletable: true });
   }
   function bindDone() {
     if (doneBound) return;
-    const box = $3("task-done-thumbs");
+    const box = $4("task-done-thumbs");
     if (!box) return;
     doneBound = true;
     box.addEventListener("click", async (e) => {
@@ -5327,21 +5341,21 @@
     if (!item || !item.id) return;
     bindDone();
     doneCtx = { item, edit, onDone, onImages };
-    $3("task-done-verb").textContent = edit ? "\u5B8C\u6210\u8BB0\u5F55" : "\u5B8C\u6210\u4EFB\u52A1";
-    $3("task-done-submit-label").textContent = edit ? "\u4FDD\u5B58" : "\u786E\u8BA4\u5B8C\u6210";
-    $3("task-done-title").textContent = item.content || "";
-    const rule = $3("task-done-rule");
+    $4("task-done-verb").textContent = edit ? "\u5B8C\u6210\u8BB0\u5F55" : "\u5B8C\u6210\u4EFB\u52A1";
+    $4("task-done-submit-label").textContent = edit ? "\u4FDD\u5B58" : "\u786E\u8BA4\u5B8C\u6210";
+    $4("task-done-title").textContent = item.content || "";
+    const rule = $4("task-done-rule");
     rule.classList.toggle("is-important", !!item.is_important);
     rule.textContent = item.is_important ? "\u91CD\u8981\u4EFB\u52A1\uFF08" + (item.important_reason_text || "") + "\uFF09\uFF1A\u9664\u4E86\u5B8C\u6210\u7ED3\u679C\uFF0C\u8FD8\u9700\u8981\u81F3\u5C11\u4E00\u6761\u8BC1\u636E\u94FE\u63A5\u6216\u4E00\u5F20\u8BC1\u636E\u622A\u56FE\u3002" : "\u5199\u6E05\u5B8C\u6210\u7ED3\u679C\u5373\u53EF\uFF1B\u6709\u8BC1\u636E\u94FE\u63A5\u6216\u622A\u56FE\u66F4\u597D\u2014\u2014\u5468\u5EA6\u5BA1\u6838\u770B\u7684\u5C31\u662F\u8FD9\u4E9B\u3002";
-    $3("task-done-result").value = item.result || "";
-    $3("task-done-actions").value = item.task_actions || "";
-    $3("task-done-evidence").value = item.evidence || "";
-    $3("task-done-hours").value = item.actual_hours == null ? "" : item.actual_hours;
-    $3("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
+    $4("task-done-result").value = item.result || "";
+    $4("task-done-actions").value = item.task_actions || "";
+    $4("task-done-evidence").value = item.evidence || "";
+    $4("task-done-hours").value = item.actual_hours == null ? "" : item.actual_hours;
+    $4("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
     doneError("");
     renderDoneThumbs();
     openModal("taskDoneMask");
-    setTimeout(() => $3("task-done-result").focus(), 50);
+    setTimeout(() => $4("task-done-result").focus(), 50);
   }
   async function pickTaskEvidence() {
     const ctx = doneCtx;
@@ -5358,15 +5372,15 @@
   async function submitTaskDone(btn) {
     const ctx = doneCtx;
     if (!ctx) return;
-    const hoursRaw = String($3("task-done-hours").value || "").trim();
+    const hoursRaw = String($4("task-done-hours").value || "").trim();
     if (hoursRaw !== "" && !(Number(hoursRaw) >= 0)) {
       doneError("\u5B9E\u9645\u7528\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
       return;
     }
     const body = {
-      result: $3("task-done-result").value,
-      task_actions: $3("task-done-actions").value,
-      evidence: $3("task-done-evidence").value,
+      result: $4("task-done-result").value,
+      task_actions: $4("task-done-actions").value,
+      evidence: $4("task-done-evidence").value,
       actual_hours: hoursRaw === "" ? null : Number(hoursRaw)
     };
     if (!ctx.edit) {
@@ -5461,9 +5475,9 @@
     }
   }
   function renderEffect(data2) {
-    const box = $3("task-effect-body");
+    const box = $4("task-effect-body");
     box.textContent = "";
-    $3("task-effect-title").textContent = data2.task.content || "";
+    $4("task-effect-title").textContent = data2.task.content || "";
     if (data2.status !== "OK") {
       box.appendChild(el("div", "teffect-note", data2.message || "\u6CA1\u6709\u53EF\u5BF9\u6BD4\u7684\u6570\u636E\u3002"));
       return;
@@ -5494,7 +5508,7 @@
     box.appendChild(table2);
   }
   async function loadEffect() {
-    const box = $3("task-effect-body");
+    const box = $4("task-effect-body");
     const seq6 = ++effectSeq;
     document.querySelectorAll("#taskEffectMask [data-effect-days]").forEach((b) => b.classList.toggle("active", Number(b.dataset.effectDays) === effectDays));
     box.textContent = "";
@@ -5516,7 +5530,7 @@
     if (!path) return;
     if (!effectBound) {
       effectBound = true;
-      $3("taskEffectMask").addEventListener("click", (e) => {
+      $4("taskEffectMask").addEventListener("click", (e) => {
         const b = e.target.closest("[data-effect-days]");
         if (!b) return;
         effectDays = Number(b.dataset.effectDays);
@@ -5524,10 +5538,12 @@
       });
     }
     effectPath = path;
-    $3("task-effect-title").textContent = "";
+    $4("task-effect-title").textContent = "";
     openModal("taskEffectMask");
     loadEffect();
   }
+  var DONE_TEXT = { 0: "\u672A\u5B8C\u6210", 1: "\u5DF2\u5B8C\u6210" };
+  var changeValue = (c, v) => v == null || v === "" ? "\uFF08\u7A7A\uFF09" : c.field === "done" ? DONE_TEXT[v] || v : c.field === "important" ? "\u5DF2\u6807\u91CD\u8981" : c.field === "multi_day" ? v === "1" ? "\u8DE8\u5929" : "\u5355\u65E5" : v;
   if (typeof document !== "undefined") {
     document.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-task-effect]");
@@ -5536,7 +5552,21 @@
         return;
       }
       const link = e.target.closest("[data-backlink-effect]");
-      if (link) openEffect("/api/backlinks/" + encodeURIComponent(link.dataset.backlinkEffect) + "/effect");
+      if (link) {
+        openEffect("/api/backlinks/" + encodeURIComponent(link.dataset.backlinkEffect) + "/effect");
+        return;
+      }
+      const log = e.target.closest("[data-task-changes]");
+      if (log) {
+        e.stopPropagation();
+        openChangeLog({
+          path: "/api/loop-items/" + encodeURIComponent(log.dataset.taskChanges) + "/changes",
+          title: "\u8FD9\u6761\u4EFB\u52A1\u7684\u6539\u52A8\u8BB0\u5F55",
+          rule: "\u4EFB\u52A1\u5EFA\u597D\u4E4B\u540E\uFF0C\u5185\u5BB9\u3001\u8D1F\u8D23\u4EBA\u3001\u8D77\u6B62\u65E5\u3001\u5DE5\u65F6\u3001\u5B8C\u6210\u7ED3\u679C\u6BCF\u6539\u4E00\u6B21\u90FD\u7559\u6863\uFF1B\u5B8C\u6210\u65F6\u7B2C\u4E00\u6B21\u586B\u5199\u7ED3\u679C\u4E0D\u7B97\u6539\u52A8\u3002",
+          empty: "\u8FD9\u6761\u4EFB\u52A1\u5EFA\u597D\u4E4B\u540E\u6CA1\u6709\u88AB\u6539\u8FC7\u3002",
+          describe: (c) => c.label + "\uFF1A" + changeValue(c, c.old_value) + " \u2192 " + changeValue(c, c.new_value)
+        });
+      }
     });
   }
 
@@ -9978,7 +10008,7 @@
   });
 
   // public/src/audit.js
-  var $4 = (id) => document.getElementById(id);
+  var $5 = (id) => document.getElementById(id);
   var failText3 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   var isHttp3 = (u) => /^https?:\/\//i.test(String(u || ""));
   function el2(tag, cls, text2) {
@@ -10099,6 +10129,9 @@
     c.appendChild(notes);
     root.appendChild(c);
   }
+  var DONE_TEXT2 = { 0: "\u672A\u5B8C\u6210", 1: "\u5DF2\u5B8C\u6210" };
+  var changeValue2 = (c, v) => v == null ? "\uFF08\u7A7A\uFF09" : c.field === "done" ? DONE_TEXT2[v] || v : c.field === "important" ? "\u5DF2\u6807\u91CD\u8981" : String(v).length > 40 ? String(v).slice(0, 39) + "\u2026" : v;
+  var changeText = (c) => c.label + " " + changeValue2(c, c.old) + " \u2192 " + changeValue2(c, c.new) + "\uFF08" + (c.by || "\u672A\u8BB0\u5F55") + " " + md2(c.date) + "\uFF09";
   function taskCell(t) {
     const box = el2("div", "audit-task");
     box.appendChild(el2("div", "audit-task-title", "#" + t.id + " " + (t.content || "")));
@@ -10115,6 +10148,7 @@
     if (t.done_date) meta.appendChild(el2("span", "", "\u5B8C\u6210 " + md2(t.done_date)));
     if (t.deleted_date) meta.appendChild(el2("span", "", "\u5220\u9664 " + md2(t.deleted_date) + " \xB7 " + (t.deleted_by || "\u5220\u9664\u4EBA\u672A\u8BB0\u5F55")));
     box.appendChild(meta);
+    if (t.changes.length) box.appendChild(el2("div", "audit-task-changes", "\u6539\u52A8\uFF1A" + t.changes.map(changeText).join("\uFF1B")));
     if (t.links.length) box.appendChild(el2("div", "audit-task-links", t.links.map((l) => (LINK_LABEL2[l.type] || l.type) + " " + (l.type === "page" ? shortUrl2(l.ref) : l.label || l.ref)).join(" \xB7 ")));
     return box;
   }
@@ -10356,7 +10390,7 @@
     box.appendChild(ul);
   }
   function renderAi(item) {
-    const box = $4("audit-ai");
+    const box = $5("audit-ai");
     box.textContent = "";
     if (!item) return;
     const c = card("AI \u5BA1\u6838\u610F\u89C1", "\u751F\u6210\u4E8E " + String(item.updated_at || "").replace("T", " ").slice(0, 16) + " UTC" + (item.history ? " \xB7 \u4E4B\u524D\u8FD8\u8DD1\u8FC7 " + item.history + " \u6B21" : ""));
@@ -10405,7 +10439,7 @@
     box.appendChild(c);
   }
   function render5() {
-    const root = $4("audit-body");
+    const root = $5("audit-body");
     root.textContent = "";
     renderSummary2(root);
     renderTasks(root);
@@ -10419,14 +10453,14 @@
   async function loadAudit() {
     bind();
     if (!range) range = weekOf(formatLocalDate(/* @__PURE__ */ new Date()));
-    $4("audit-start").value = range.start_date;
-    $4("audit-end").value = range.end_date;
-    $4("audit-person").value = person;
+    $5("audit-start").value = range.start_date;
+    $5("audit-end").value = range.end_date;
+    $5("audit-person").value = person;
     const my = ++seq3;
-    const root = $4("audit-body");
+    const root = $5("audit-body");
     root.textContent = "";
     root.appendChild(empty("\u6B63\u5728\u53D6\u8FD9\u6BB5\u65F6\u95F4\u7684\u8BB0\u5F55\u2026"));
-    $4("audit-ai").textContent = "";
+    $5("audit-ai").textContent = "";
     try {
       const [data2, ai] = await Promise.all([API.get("/api/audit/weekly?" + query()), API.get("/api/audit/weekly/ai?" + query()).catch(() => ({ item: null }))]);
       if (my !== seq3) return;
@@ -10446,14 +10480,14 @@
   async function runAuditAi(btn) {
     if (!range) return;
     const body = { start_date: range.start_date, end_date: range.end_date, person, today: formatLocalDate(/* @__PURE__ */ new Date()) };
-    const labelEl = $4("audit-ai-label");
+    const labelEl = $5("audit-ai-label");
     const label = labelEl.textContent;
     if (btn) btn.disabled = true;
     labelEl.textContent = "AI \u5BA1\u6838\u4E2D\uFF0C\u7EA6\u9700\u4E00\u5206\u949F\u2026";
     try {
       const { item } = await API.post("/api/audit/weekly/ai", body);
       renderAi(item);
-      $4("audit-ai").scrollIntoView({ behavior: "smooth", block: "start" });
+      $5("audit-ai").scrollIntoView({ behavior: "smooth", block: "start" });
       toast2("AI \u5BA1\u6838\u610F\u89C1\u5DF2\u751F\u6210");
     } catch (e) {
       toast2("AI \u5BA1\u6838\u6CA1\u6709\u8DD1\u6210\uFF1A" + failText3(e));
@@ -10466,7 +10500,7 @@
     if (!range) return;
     let url = "/api/audit/weekly/export?" + query() + "&format=" + format;
     if (format === "csv") {
-      const section = $4("audit-csv-section").value;
+      const section = $5("audit-csv-section").value;
       if (!section) {
         toast2("\u5148\u9009\u8981\u5BFC\u51FA\u54EA\u4E00\u5F20\u8868");
         return;
@@ -10482,7 +10516,7 @@
   }
   function bind() {
     if (bound) return;
-    const panel = $4("panel-audit");
+    const panel = $5("panel-audit");
     if (!panel) return;
     bound = true;
     panel.addEventListener("click", (e) => {
@@ -10494,8 +10528,8 @@
       }
     });
     const onDate = () => {
-      const s = $4("audit-start").value;
-      const en = $4("audit-end").value;
+      const s = $5("audit-start").value;
+      const en = $5("audit-end").value;
       if (!s || !en) return;
       if (s > en) {
         toast2("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
@@ -10504,16 +10538,16 @@
       range = { start_date: s, end_date: en };
       loadAudit();
     };
-    $4("audit-start").addEventListener("change", onDate);
-    $4("audit-end").addEventListener("change", onDate);
-    $4("audit-person").addEventListener("change", (e) => {
+    $5("audit-start").addEventListener("change", onDate);
+    $5("audit-end").addEventListener("change", onDate);
+    $5("audit-person").addEventListener("change", (e) => {
       person = e.target.value;
       loadAudit();
     });
   }
 
   // public/src/geo.js
-  var $5 = (id) => document.getElementById(id);
+  var $6 = (id) => document.getElementById(id);
   var seq4 = 0;
   function el3(tag, cls, text2) {
     const n = document.createElement(tag);
@@ -10529,9 +10563,9 @@
     return "\u8F83\u4E0A\u671F " + (d > 0 ? "+" : "") + num3(d) + "\uFF08" + (d > 0 ? "+" : "") + Math.round(d / prev * 100) + "%\uFF09";
   }
   function render6(data2) {
-    const body = $5("geo-body");
+    const body = $6("geo-body");
     body.textContent = "";
-    const sub = $5("geo-range");
+    const sub = $6("geo-range");
     if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data2.range);
     if (data2.status === "NOT_SYNCED") {
       body.appendChild(el3("div", "geo-empty", "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u6D41\u91CF\u3002\u8BF7\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GA4 \u6D41\u91CF\u300D\u786E\u8BA4\u540C\u6B65\u72B6\u6001\u3002"));
@@ -10594,7 +10628,7 @@
     return box;
   }
   async function loadGeo() {
-    const body = $5("geo-body");
+    const body = $6("geo-body");
     if (!body) return;
     const range2 = getCurrentRange("dashboard");
     if (!range2 || !range2.start_date) return;
@@ -10619,7 +10653,7 @@
   }
 
   // public/src/geo-checks.js
-  var $6 = (id) => document.getElementById(id);
+  var $7 = (id) => document.getElementById(id);
   var failText4 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   function el4(tag, cls, text2) {
     const n = document.createElement(tag);
@@ -10642,7 +10676,7 @@
     return s;
   }
   function renderSummary3() {
-    const box = $6("geochk-summary");
+    const box = $7("geochk-summary");
     box.textContent = "";
     const t = data.summary.totals;
     const head = el4("div", "geochk-total");
@@ -10674,8 +10708,8 @@
     return btn;
   }
   function renderMatrix() {
-    const head = $6("geochk-head");
-    const body = $6("geochk-body");
+    const head = $7("geochk-head");
+    const body = $7("geochk-body");
     head.textContent = "";
     body.textContent = "";
     const hr = el4("tr");
@@ -10683,7 +10717,7 @@
     data.engines.forEach((e) => hr.appendChild(el4("th", "ctr", e.label)));
     hr.appendChild(el4("th", "ctr", ""));
     head.appendChild(hr);
-    const showOff = $6("geochk-show-off").checked;
+    const showOff = $7("geochk-show-off").checked;
     const rows2 = questions.filter((q) => q.active || showOff || data.items.some((c) => c.question_id === q.id));
     if (!rows2.length) {
       const tr = el4("tr");
@@ -10716,14 +10750,14 @@
   async function loadGeoChecks() {
     bind2();
     if (!round) round = formatLocalDate(/* @__PURE__ */ new Date());
-    $6("geochk-date").value = round;
+    $7("geochk-date").value = round;
     const my = ++seq5;
     try {
       const [qs2, checks2] = await Promise.all([API.get("/api/geo/questions"), API.get("/api/geo/checks?round_date=" + round)]);
       if (my !== seq5) return;
       questions = qs2.items || [];
       data = checks2;
-      const sel = $6("geochk-rounds");
+      const sel = $7("geochk-rounds");
       sel.textContent = "";
       const first = el4("option", "", data.rounds.length ? "\u5386\u53F2\u8F6E\u6B21\u2026" : "\u8FD8\u6CA1\u6709\u5386\u53F2\u8F6E\u6B21");
       first.value = "";
@@ -10737,7 +10771,7 @@
       renderMatrix();
     } catch (e) {
       if (my !== seq5 || e && e.message === "unauthorized") return;
-      const box = $6("geochk-summary");
+      const box = $7("geochk-summary");
       box.textContent = "";
       box.appendChild(el4("div", "task-done-error", "GEO \u62BD\u67E5\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText4(e) + " "));
       const retry = el4("button", "btn-mini", "\u91CD\u8BD5");
@@ -10747,11 +10781,11 @@
     }
   }
   function renderShots() {
-    const box = $6("geochk-thumbs");
+    const box = $7("geochk-thumbs");
     const c = editing4 && editing4.check;
     box.innerHTML = c ? thumbsHtml(c.evidence_images, { deletable: true }) : "";
-    $6("geochk-shot-btn").disabled = !c;
-    $6("geochk-shot-tip").textContent = c ? "" : "\u5148\u4FDD\u5B58\u8FD9\u4E00\u683C\uFF0C\u518D\u4E0A\u4F20\u622A\u56FE";
+    $7("geochk-shot-btn").disabled = !c;
+    $7("geochk-shot-tip").textContent = c ? "" : "\u5148\u4FDD\u5B58\u8FD9\u4E00\u683C\uFF0C\u518D\u4E0A\u4F20\u622A\u56FE";
   }
   function openCell(qid, engineKey) {
     const question = questions.find((q) => q.id === qid);
@@ -10759,14 +10793,14 @@
     if (!question || !engine) return;
     const check = checkOf(qid, engineKey) || null;
     editing4 = { question, engine, check };
-    $6("geochk-title").textContent = engine.label + " \xB7 " + round;
-    $6("geochk-question").textContent = question.question;
-    $6("geochk-mentioned").checked = !!(check && check.mentioned);
-    $6("geochk-cited").checked = !!(check && check.cited);
-    $6("geochk-url").value = check && check.cited_url || "";
-    $6("geochk-note").value = check && check.note || "";
-    $6("geochk-error").textContent = "";
-    $6("geochk-del").classList.toggle("is-hidden", !check);
+    $7("geochk-title").textContent = engine.label + " \xB7 " + round;
+    $7("geochk-question").textContent = question.question;
+    $7("geochk-mentioned").checked = !!(check && check.mentioned);
+    $7("geochk-cited").checked = !!(check && check.cited);
+    $7("geochk-url").value = check && check.cited_url || "";
+    $7("geochk-note").value = check && check.note || "";
+    $7("geochk-error").textContent = "";
+    $7("geochk-del").classList.toggle("is-hidden", !check);
     renderShots();
     openModal("geoCheckMask");
   }
@@ -10777,22 +10811,22 @@
       question_id: e.question.id,
       engine: e.engine.key,
       round_date: round,
-      mentioned: $6("geochk-mentioned").checked,
-      cited: $6("geochk-cited").checked,
-      cited_url: $6("geochk-url").value.trim(),
-      note: $6("geochk-note").value
+      mentioned: $7("geochk-mentioned").checked,
+      cited: $7("geochk-cited").checked,
+      cited_url: $7("geochk-url").value.trim(),
+      note: $7("geochk-note").value
     };
     if (btn) btn.disabled = true;
     try {
       const { item } = await API.put("/api/geo/checks", body);
       e.check = item;
-      $6("geochk-error").textContent = "";
-      $6("geochk-del").classList.remove("is-hidden");
+      $7("geochk-error").textContent = "";
+      $7("geochk-del").classList.remove("is-hidden");
       renderShots();
       toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93" + (item.evidence_images.length ? "" : "\uFF0C\u8BF7\u8865\u4E0A\u622A\u56FE"));
       loadGeoChecks();
     } catch (err) {
-      $6("geochk-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText4(err);
+      $7("geochk-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText4(err);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -10808,7 +10842,7 @@
   }
   function bind2() {
     if (bound2) return;
-    const panel = $6("sub-data-geo");
+    const panel = $7("sub-data-geo");
     if (!panel) return;
     bound2 = true;
     panel.addEventListener("click", async (e) => {
@@ -10828,7 +10862,7 @@
         return;
       }
       if (e.target.closest("#geochk-add")) {
-        const input = $6("geochk-new");
+        const input = $7("geochk-new");
         const question = input.value.trim();
         if (!question) {
           toast2("\u5148\u5199\u4E0B\u8981\u95EE AI \u7684\u95EE\u9898");
@@ -10849,28 +10883,28 @@
         loadGeoChecks();
       }
     });
-    $6("geochk-date").addEventListener("change", (e) => {
+    $7("geochk-date").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) {
         round = e.target.value;
         loadGeoChecks();
       }
     });
-    $6("geochk-show-off").addEventListener("change", () => {
+    $7("geochk-show-off").addEventListener("change", () => {
       if (data) renderMatrix();
     });
-    $6("geochk-rounds").addEventListener("change", (e) => {
+    $7("geochk-rounds").addEventListener("change", (e) => {
       if (e.target.value) {
         round = e.target.value;
         loadGeoChecks();
       }
     });
-    $6("geochk-new").addEventListener("keydown", (e) => {
+    $7("geochk-new").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        $6("geochk-add").click();
+        $7("geochk-add").click();
       }
     });
-    const mask = $6("geoCheckMask");
+    const mask = $7("geoCheckMask");
     mask.addEventListener("click", async (e) => {
       const delShot = e.target.closest("[data-att-del]");
       if (delShot && editing4 && editing4.check) {
@@ -10908,7 +10942,7 @@
   }
 
   // public/src/spend.js
-  var $7 = (id) => document.getElementById(id);
+  var $8 = (id) => document.getElementById(id);
   var isHttp4 = (u) => /^https?:\/\//i.test(String(u || ""));
   function h(tag, cls, text2) {
     const el5 = document.createElement(tag);
@@ -10964,7 +10998,7 @@
     return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
   }
   function renderSummary4(data2) {
-    const box = $7("spend-summary");
+    const box = $8("spend-summary");
     if (!box) return;
     box.textContent = "";
     const row = h("div", "spend-groups");
@@ -10986,7 +11020,7 @@
     box.appendChild(line3);
   }
   function renderSummaryError(e) {
-    const box = $7("spend-summary");
+    const box = $8("spend-summary");
     if (!box) return;
     box.textContent = "";
     const line3 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText5(e) + " ");
@@ -11001,10 +11035,11 @@
     const parts = [label + " " + s.count + " \u6761", "\u6709\u6548 " + s.live + " / \u5931\u6548 " + s.dead + (s.pending ? " / \u5F85\u4E0A\u7EBF " + s.pending : ""), "dofollow " + s.dofollow];
     parts.push(s.avg_dr == null ? "DR \u5747\u672A\u5F55\u5165" : "\u5E73\u5747 DR " + s.avg_dr + "\uFF08" + s.count + " \u6761\u91CC " + s.dr_known + " \u6761\u6709\u8BFB\u6570\uFF09");
     if (s.never_checked) parts.push(s.never_checked + " \u6761\u4ECE\u672A\u6838\u67E5");
+    if (s.auto_lost) parts.push(s.auto_lost + " \u6761\u4E0A\u6B21\u8FD8\u5728\u3001\u8FD9\u6B21\u6CA1\u627E\u5230");
     return parts.join(" \xB7 ");
   }
   function renderLinkStats(stats) {
-    const box = $7("spend-link-stats");
+    const box = $8("spend-link-stats");
     if (!box) return;
     box.textContent = "";
     if (!stats || !stats.total) return;
@@ -11050,11 +11085,11 @@
     tb.appendChild(tr);
   }
   function renderBacklinks() {
-    const tb = $7("tb-backlinks");
+    const tb = $8("tb-backlinks");
     if (!tb) return;
     tb.textContent = "";
     if (!backlinkRows.length) {
-      emptyRow(tb, 11, $7("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      emptyRow(tb, 11, $8("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
       return;
     }
     for (const b of backlinkRows) {
@@ -11085,12 +11120,13 @@
       st2.appendChild(h("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
       if (b.auto_status) {
         const relDiffers = b.auto_status === "found" && b.rel && b.auto_rel && b.rel !== b.auto_rel;
+        const lost = b.auto_status === "not_found" && b.auto_lost_at;
         const auto = h(
           "div",
-          "spend-auto is-" + (relDiffers ? "mismatch" : b.auto_status),
-          relDiffers ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728\uFF0C\u4F46\u9875\u9762\u4E0A\u662F " + b.auto_rel : AUTO_LABEL[b.auto_status] || b.auto_status
+          "spend-auto is-" + (relDiffers ? "mismatch" : b.auto_status) + (lost ? " is-lost" : ""),
+          relDiffers ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728\uFF0C\u4F46\u9875\u9762\u4E0A\u662F " + b.auto_rel : lost ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u4E0A\u6B21\u8FD8\u5728\uFF0C\u8FD9\u6B21\u6CA1\u627E\u5230" : AUTO_LABEL[b.auto_status] || b.auto_status
         );
-        auto.title = (b.auto_detail || "") + (b.auto_anchor ? "\n\u9875\u9762\u4E0A\u7684\u951A\u6587\u672C\uFF1A" + b.auto_anchor : "");
+        auto.title = (b.auto_detail || "") + (b.auto_anchor ? "\n\u9875\u9762\u4E0A\u7684\u951A\u6587\u672C\uFF1A" + b.auto_anchor : "") + (b.auto_checked_at ? "\n\u6838\u67E5\u4E8E " + String(b.auto_checked_at).slice(0, 16) + "\uFF08UTC\uFF09" : "");
         st2.appendChild(auto);
       }
       if (b.target_url) {
@@ -11107,7 +11143,7 @@
     }
   }
   function renderExpenses() {
-    const tb = $7("tb-expenses");
+    const tb = $8("tb-expenses");
     if (!tb) return;
     tb.textContent = "";
     if (!expenseRows.length) {
@@ -11138,11 +11174,11 @@
   async function loadSpend() {
     bind3();
     if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
-    const input = $7("spend-month");
+    const input = $8("spend-month");
     if (input) input.value = month;
     const range2 = monthRange(month);
     const seq6 = ++loadSeq;
-    const allLinks = $7("spend-links-all") && $7("spend-links-all").checked;
+    const allLinks = $8("spend-links-all") && $8("spend-links-all").checked;
     const [sum, links, exps] = await Promise.allSettled([
       API.get("/api/spend/summary" + qs(range2)),
       API.get("/api/backlinks" + (allLinks ? "" : qs(range2))),
@@ -11158,14 +11194,14 @@
     } else {
       backlinkRows = [];
       renderLinkStats(null);
-      errorRow($7("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+      errorRow($8("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
     }
     if (exps.status === "fulfilled") {
       expenseRows = exps.value.items || [];
       renderExpenses();
     } else {
       expenseRows = [];
-      errorRow($7("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+      errorRow($8("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
     }
   }
   var BACKLINK_FIELDS = [
@@ -11204,7 +11240,7 @@
     expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
   };
   function fillSelect2(id, values, placeholder, labelOf) {
-    const sel = $7(id);
+    const sel = $8(id);
     if (!sel) return;
     const keep = sel.value;
     sel.textContent = "";
@@ -11233,7 +11269,7 @@
     fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
   }
   function ensureTaskOption(selectId, row) {
-    const sel = $7(selectId);
+    const sel = $8(selectId);
     if (!sel || !row || row.task_id == null) return;
     if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
     const o = h("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
@@ -11249,10 +11285,10 @@
       return;
     }
     editing5[kind] = row || null;
-    $7(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    $8(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
     ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el5 = $7(id);
+      const el5 = $8(id);
       if (!el5) continue;
       el5.value = row && row[key] != null ? row[key] : "";
     }
@@ -11260,15 +11296,15 @@
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
       const me = (window.ME || {}).name || "";
       if (kind === "backlink") {
-        $7("bl-date").value = today3;
-        $7("bl-owner").value = me;
+        $8("bl-date").value = today3;
+        $8("bl-owner").value = me;
       } else {
-        $7("ex-date").value = today3;
-        $7("ex-currency").value = "CNY";
-        $7("ex-owner").value = me;
+        $8("ex-date").value = today3;
+        $8("ex-currency").value = "CNY";
+        $8("ex-owner").value = me;
       }
     }
-    $7(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    $8(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
     openModal(form.mask);
   }
   var openBacklink = () => openForm("backlink", null);
@@ -11277,10 +11313,10 @@
     const form = FORMS[kind];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el5 = $7(id);
+      const el5 = $8(id);
       if (el5) body[key] = el5.value;
     }
-    const errEl = $7(kind === "backlink" ? "bl-error" : "ex-error");
+    const errEl = $8(kind === "backlink" ? "bl-error" : "ex-error");
     const row = editing5[kind];
     if (btn) btn.disabled = true;
     try {
@@ -11300,7 +11336,7 @@
   var submitExpense = (btn) => submitForm("expense", btn);
   function bind3() {
     if (bound3) return;
-    const panel = $7("panel-spend");
+    const panel = $8("panel-spend");
     if (!panel) return;
     bound3 = true;
     panel.addEventListener("click", async (e) => {
@@ -11350,13 +11386,13 @@
         }
       }
     });
-    $7("spend-month").addEventListener("change", (e) => {
+    $8("spend-month").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}$/.test(e.target.value)) {
         month = e.target.value;
         loadSpend();
       }
     });
-    $7("spend-links-all").addEventListener("change", loadSpend);
+    $8("spend-links-all").addEventListener("change", loadSpend);
   }
 
   // public/src/app.js

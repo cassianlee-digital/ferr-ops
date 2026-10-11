@@ -42,10 +42,15 @@ export function update(id, fields) {
 
 // 写回自动核查结果。找到了链接也算一次核查，顺手把「最近核查日」更新为今天（由调用方按业务日期传入）；
 // 没找到 / 没取到则不动 checked_date —— 那一天并没有确认它还在。status 永远不在这里改。
+// auto_lost_at：上次还找得到、这次页面取到了却没有 → 记下时刻（右边的 auto_status 是更新前的旧值）；
+// 「页面没取到」不算丢（多半是对方临时拦了），再次找到就清空。
 export function saveAutoCheck(id, result, checkedDate) {
   db.prepare(
     `UPDATE backlinks SET auto_status=@auto_status, auto_checked_at=datetime('now'), auto_detail=@auto_detail,
             auto_rel=@auto_rel, auto_anchor=@auto_anchor,
+            auto_lost_at = CASE WHEN @auto_status = 'found' THEN NULL
+                                WHEN @auto_status = 'not_found' AND auto_status = 'found' THEN datetime('now')
+                                ELSE auto_lost_at END,
             checked_date = CASE WHEN @auto_status = 'found' THEN @checked_date ELSE checked_date END
       WHERE id=@id`
   ).run({ id, checked_date: checkedDate, ...result });
@@ -67,6 +72,18 @@ export function listDeletedPaid(range) {
         AND date(b.created_at, '+8 hours') <> date(b.deleted_at, '+8 hours')
       ORDER BY b.deleted_at DESC, b.id DESC`
   ).all(range);
+}
+
+/* 轮到自动核查的外链：填了指向页面、人工没标「失效」、从没查过或已经超过 staleDays 天没查。
+   从没查过的排最前，其余按上次核查时间从旧到新 —— 每次只查一批，这样谁也不会一直排不上。 */
+export function dueForAutoCheck(staleDays, limit) {
+  return db.prepare(
+    `SELECT * FROM backlinks
+      WHERE deleted_at IS NULL AND target_url IS NOT NULL AND target_url <> '' AND COALESCE(status, '') <> '失效'
+        AND (auto_checked_at IS NULL OR auto_checked_at < datetime('now', '-' || CAST(@days AS INTEGER) || ' days'))
+      ORDER BY auto_checked_at IS NOT NULL, auto_checked_at ASC, id ASC
+      LIMIT @limit`
+  ).all({ days: Math.max(0, Number(staleDays) || 0), limit: Math.max(1, Number(limit) || 1) });
 }
 
 // 名下挂着付费外链的任务（判「涉及花费」用）

@@ -37,10 +37,38 @@ export const IMPORTANT_REASON_LABEL = {
   spend: '涉及花费',
   fix: '整改出身',
   multi_day: '跨天任务',
+  was_multi_day: '原本是跨天任务（日期被改成了单日）',
   company: '公司派发',
 };
 
 export const isDone = (item) => !!item && (item.state === 'done' || item.status === 'done');
+export const isMultiDay = (item) => !!(item && item.start_date && item.task_date && item.start_date < item.task_date);
+
+/* ---------- 改动留痕 ---------- */
+// 改了要留痕的字段 → 给人看的名字。别的列（备注、时段、思考框架…）改了不记：记得太多，真正要看的就被淹了。
+export const TRACKED_FIELDS = {
+  content: '任务内容', owner: '负责人', dept: '部门', project: '产品 / 项目',
+  start_date: '开始日', task_date: '截止日', est_hours: '预估工时', important: '重要标记',
+  result: '完成结果', task_actions: '具体动作', evidence: '证据链接', actual_hours: '实际用时',
+};
+export const CHANGE_LABEL = { ...TRACKED_FIELDS, done: '完成状态', multi_day: '跨天任务' };
+// 这几项是「完成」这个动作本身填的：从空到有不算改动，有了之后再改才算
+const FILLED_ON_COMPLETION = new Set(['result', 'task_actions', 'evidence', 'actual_hours']);
+const asText = (v) => (v == null || v === '' ? null : String(v));
+
+/* 一次更新（cur → next）里要记下的改动：[{ field, old_value, new_value }]。纯比较，不看是谁改的。 */
+export function taskChanges(cur, next) {
+  const out = [];
+  for (const field of Object.keys(TRACKED_FIELDS)) {
+    const o = asText(cur[field]); const n = asText(next[field]);
+    if (o === n) continue;
+    if (o === null && FILLED_ON_COMPLETION.has(field)) continue;
+    out.push({ field, old_value: o, new_value: n });
+  }
+  if (isDone(cur) !== isDone(next)) out.push({ field: 'done', old_value: isDone(cur) ? '1' : '0', new_value: isDone(next) ? '1' : '0' });
+  if (isMultiDay(cur) && !isMultiDay(next)) out.push({ field: 'multi_day', old_value: '1', new_value: '0' });
+  return out;
+}
 
 /* 重要任务判定。满足任一条即是：
      manual    人工标了「重要」
@@ -49,13 +77,15 @@ export const isDone = (item) => !!item && (item.state === 'done' || item.status 
      multi_day 跨天任务 —— 占了好几天的活不能只留一个勾
      company   公司派发 / 紧急任务（仅顶层：子任务的证据由它所属的大任务承载，逐条要证据只会逼人糊弄）
    返回 reasons 而不只是布尔值：界面要告诉执行人「为什么这条要交证据」。 */
-export function importance(item, { spend = false } = {}) {
+export function importance(item, { spend = false, wasMultiDay = false } = {}) {
   const reasons = [];
   if (!item) return { important: false, reasons };
   if (Number(item.important) === 1) reasons.push('manual');
   if (spend) reasons.push('spend');
   if (item.fix_id) reasons.push('fix');
-  if (item.start_date && item.task_date && item.start_date < item.task_date) reasons.push('multi_day');
+  if (isMultiDay(item)) reasons.push('multi_day');
+  // 执行人把跨天任务改成单日，不能因此就不用交证据了（经理 / 老板改的不算，那是重新定范围）
+  else if (wasMultiDay) reasons.push('was_multi_day');
   if (!item.parent_id && (item.dept === '公司' || Number(item.urgent) === 1)) reasons.push('company');
   return { important: reasons.length > 0, reasons };
 }
