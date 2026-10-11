@@ -47,8 +47,25 @@ export function previousRound(roundDate) {
   return row.d || null;
 }
 
+export function hasLaterRound(roundDate) {
+  return Boolean(db.prepare('SELECT 1 FROM geo_checks WHERE round_date > ? LIMIT 1').get(roundDate));
+}
+// 这一轮定格的题数；没记过是 null
+export function roundSnapshot(roundDate) {
+  const row = db.prepare('SELECT question_count FROM geo_rounds WHERE round_date = ?').get(roundDate);
+  return row ? row.question_count : null;
+}
+
 // 同一轮、同一题、同一引擎只有一条：再存就是更新（查错了要能改）
-export function upsertCheck(rec, userId) {
+export const upsertCheck = db.transaction((rec, userId) => {
+  // 顺手记下「这一轮当时有几道题」。只在它还是最新一轮时记：
+  // 后面已经有新轮次了还来改旧记录，那是事后更正，不能把旧轮次的分母改成现在的题库
+  if (!hasLaterRound(rec.round_date)) {
+    db.prepare(
+      `INSERT INTO geo_rounds (round_date, question_count) VALUES (?, ?)
+       ON CONFLICT(round_date) DO UPDATE SET question_count = excluded.question_count, updated_at = datetime('now')`
+    ).run(rec.round_date, activeQuestionCount());
+  }
   db.prepare(
     `INSERT INTO geo_checks (question_id, engine, round_date, mentioned, cited, cited_url, note, checked_by)
      VALUES (@question_id, @engine, @round_date, @mentioned, @cited, @cited_url, @note, @checked_by)
@@ -59,7 +76,7 @@ export function upsertCheck(rec, userId) {
   const row = db.prepare('SELECT id FROM geo_checks WHERE question_id = ? AND engine = ? AND round_date = ?')
     .get(rec.question_id, rec.engine, rec.round_date);
   return getCheck(row.id);
-}
+});
 
 export function removeCheck(id) {
   db.prepare('DELETE FROM geo_checks WHERE id = ?').run(id);

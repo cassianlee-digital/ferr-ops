@@ -5,12 +5,22 @@ import * as checksRepo from '../db/repositories/geoChecks.js';
 import { previousRange } from '../lib/parseDateRange.js';
 import { resolveProject } from '../sync/googleClient.js';
 import { summarizeGeo } from './geo.js';
-import { summarizeRound } from './geoChecks.js';
+import { roundExpected, summarizeRound } from './geoChecks.js';
 
 // 一轮抽查的汇总（没有这一轮就是 null）
 export function roundSummary(roundDate) {
   if (!roundDate) return null;
-  return { round_date: roundDate, ...summarizeRound(checksRepo.activeQuestionCount(), checksRepo.listRound(roundDate)) };
+  return { round_date: roundDate, ...summarizeChecks(roundDate, checksRepo.listRound(roundDate)) };
+}
+
+// 已经取到这一轮的记录时用这个（抽查页自己要带截图，不必再查一遍）。「应查几题」的规矩见 geoChecks.roundExpected
+export function summarizeChecks(roundDate, checks) {
+  const activeNow = checksRepo.activeQuestionCount();
+  // 一条记录都没有的日期不是「一轮」，没有定不定格可言：题库现在有几道就是几道
+  const exp = checks.length
+    ? roundExpected({ snapshot: checksRepo.roundSnapshot(roundDate), hasLaterRound: checksRepo.hasLaterRound(roundDate), activeNow })
+    : { count: activeNow, note: null };
+  return summarizeRound(exp.count, checks, exp.note);
 }
 
 export function buildGeoSummary(range, query = {}) {

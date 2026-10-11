@@ -43,6 +43,7 @@ function renderSummary() {
   head.appendChild(el('b', '', round + ' 这一轮'));
   head.appendChild(el('span', '', t.checked ? '已查 ' + t.checked + '/' + t.expected + ' 格 · 提到 ' + t.mentioned + ' · 引用 ' + t.cited : '还没有记录'));
   if (t.checked < t.expected && t.checked) head.appendChild(el('span', 'geochk-warn', '还有 ' + (t.expected - t.checked) + ' 格没查（没查的不算没提到）'));
+  if (data.summary.expected_note) head.appendChild(el('span', 'geochk-warn', data.summary.expected_note));
   if (t.no_screenshot) head.appendChild(el('span', 'geochk-warn', t.no_screenshot + ' 条没有截图（没截图的只是一句话）'));
   box.appendChild(head);
   for (const e of data.summary.engines) {

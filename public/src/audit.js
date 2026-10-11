@@ -222,7 +222,8 @@ function renderData(root) {
     const cite = g.citations;
     c.appendChild(el('div', 'audit-line', cite
       ? '引用抽查（' + cite.round_date + '）：已查 ' + cite.totals.checked + '/' + cite.totals.expected + ' 格 · 提到我们 ' + cite.totals.mentioned + ' · 引用我们的页面 ' + cite.totals.cited
-      : '引用抽查：这段时间结束之前还没有做过。'));
+        + (cite.expected_note ? '（' + cite.expected_note + '）' : '')
+      :'引用抽查：这段时间结束之前还没有做过。'));
   }
   root.appendChild(c);
 }

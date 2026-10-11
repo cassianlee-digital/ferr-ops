@@ -31,7 +31,11 @@ test('打包产物 public/dist/bundle.js 是用当前的 public/src 打出来的
   try {
     const fresh = join(dir, 'bundle.js');
     args[outIndex] = '--outfile=' + fresh;
-    execFileSync(process.execPath, [esbuild, ...args, '--log-level=error'], { cwd: root, stdio: 'pipe' });
+    // esbuild 装好之后，bin/esbuild 在 Windows 上是一段 Node 脚本，在 Linux / macOS 上会被它自己换成原生程序（省掉启动 Node 的时间）。
+    // 两种都要能跑：是脚本就交给 Node，否则直接执行（云端检查跑在 Linux 上，第一次就是栽在这里）
+    const isScript = readFileSync(esbuild).subarray(0, 2).toString() === '#!';
+    const [cmd, pre] = isScript ? [process.execPath, [esbuild]] : [esbuild, []];
+    execFileSync(cmd, [...pre, ...args, '--log-level=error'], { cwd: root, stdio: 'pipe' });
     const norm = (file) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
     assert.ok(norm(fresh) === norm(committed),
       'public/dist/bundle.js 已经过期：它不是用当前的 public/src 打出来的。\n'

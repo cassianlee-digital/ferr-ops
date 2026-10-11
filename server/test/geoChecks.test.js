@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CHECK_ENGINES, summarizeRound, validateCheck, validateQuestion } from '../src/services/geoChecks.js';
+import { CHECK_ENGINES, roundExpected, summarizeRound, validateCheck, validateQuestion } from '../src/services/geoChecks.js';
 
 const tmpDir = mkdtempSync(join(tmpdir(), 'ferr-geochk-'));
 process.env.DB_FILE = join(tmpDir, 'test.sqlite'); // 必须在动态 import 之前：connection.js 在 import 期就开库
@@ -109,4 +109,39 @@ test('一轮抽查：同格再存是更新；带出上一轮对比；截图挂�
   assert.equal((await call('DELETE', `/api/geo/checks/${checkId}`)).statusCode, 200);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM attachments WHERE owner_type='geo_check' AND owner_id=?").get(checkId).n, 0);
   assert.equal((await call('DELETE', `/api/geo/checks/${checkId}`)).statusCode, 404);
+});
+
+test('「应查几题」每轮定格：题库变了，旧轮次的分母不跟着变；没记下题数的旧轮次明说是估的', async () => {
+  // 规矩本身
+  assert.deepEqual(roundExpected({ snapshot: 5, hasLaterRound: false, activeNow: 7 }), { count: 7, note: null }, '最新一轮还在进行：题库现在有几道就查几道');
+  assert.deepEqual(roundExpected({ snapshot: 5, hasLaterRound: true, activeNow: 7 }), { count: 5, note: null }, '之前的轮次用定格的题数');
+  const guess = roundExpected({ snapshot: null, hasLaterRound: true, activeNow: 7 });
+  assert.equal(guess.count, 7);
+  assert.match(guess.note, /估算/, '没记下题数只能估，但要明说');
+
+  // 走一遍接口：上面那条测试留下了两轮（09-26、10-10），当时题库里是 2 道题
+  const expectedOf = async (round) => (await call('GET', '/api/geo/checks?round_date=' + round)).json().summary;
+  const E = CHECK_ENGINES.length;
+  assert.equal((await expectedOf('2026-09-26')).totals.expected, 2 * E);
+  const q3 = (await call('POST', '/api/geo/questions', { question: 'which Chinese foundry exports valve castings to Europe' })).json().item;
+  assert.equal((await expectedOf('2026-10-10')).totals.expected, 3 * E, '最新一轮：加了题就该多查');
+  const old = await expectedOf('2026-09-26');
+  assert.equal(old.totals.expected, 2 * E, '旧轮次：加题不该让它的完成情况凭空变差');
+  assert.equal(old.expected_note, null);
+  // 新轮次开始之后回头更正旧记录：不能把旧轮次的分母改成现在的题库
+  const q = (await call('GET', '/api/geo/questions')).json().items[0];
+  await call('PUT', '/api/geo/checks', { question_id: q.id, engine: 'chatgpt', round_date: '2026-09-26', mentioned: true, note: '更正' });
+  assert.equal((await expectedOf('2026-09-26')).totals.expected, 2 * E);
+  // 总览卡和周度审核用的是同一个算法
+  const sum = (await call('GET', '/api/geo/summary?start_date=2026-10-01&end_date=2026-10-31')).json();
+  assert.equal(sum.citations.totals.expected, 3 * E);
+  assert.equal(sum.citations_previous.totals.expected, 2 * E);
+  // 这条规矩之前查的轮次没有记下题数：按现在的估，并带一句说明
+  db.prepare("DELETE FROM geo_rounds WHERE round_date = '2026-09-26'").run();
+  const legacy = await expectedOf('2026-09-26');
+  assert.equal(legacy.totals.expected, 3 * E);
+  assert.match(legacy.expected_note, /估算/);
+  // 一条记录都没有的日期不是「一轮」，不该冒出「估算」的说明
+  assert.equal((await expectedOf('2026-08-01')).expected_note, null);
+  await call('PATCH', '/api/geo/questions/' + q3.id, { active: false });
 });

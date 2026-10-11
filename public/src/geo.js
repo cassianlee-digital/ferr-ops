@@ -99,6 +99,7 @@ function citationLine(data) {
   box.appendChild(el('span', '', '已查 ' + t.checked + '/' + t.expected + ' 格 · 提到我们 ' + t.mentioned + ' · 引用我们的页面 ' + t.cited));
   const p = data.citations_previous;
   if (p && p.totals.checked) box.appendChild(el('span', 'geo-cite-prev', '上一轮 ' + p.round_date + '：提到 ' + p.totals.mentioned + '/' + p.totals.checked + ' · 引用 ' + p.totals.cited + '/' + p.totals.checked));
+  if (c.expected_note) box.appendChild(el('span', 'geo-cite-warn', c.expected_note));
   if (t.no_screenshot) box.appendChild(el('span', 'geo-cite-warn', t.no_screenshot + ' 条没有截图'));
   return box;
 }

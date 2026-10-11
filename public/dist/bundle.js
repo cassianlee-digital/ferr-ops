@@ -10284,7 +10284,7 @@
       line3.textContent = g.status === "OK" ? "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE " + num2(g.totals.sessions) + "\uFF08\u4E0A\u671F " + (g.totals.prev_sessions == null ? "\u65E0\u6570\u636E" : num2(g.totals.prev_sessions)) + "\uFF09" + (g.engines.length ? "\uFF1A" + g.engines.map((e) => e.label + " " + num2(e.sessions)).join("\u3001") : "") + " \xB7 \u5E26\u6765\u8BE2\u76D8 " + g.inquiries.total + " \u6761" : "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE\u3002";
       c.appendChild(line3);
       const cite = g.citations;
-      c.appendChild(el2("div", "audit-line", cite ? "\u5F15\u7528\u62BD\u67E5\uFF08" + cite.round_date + "\uFF09\uFF1A\u5DF2\u67E5 " + cite.totals.checked + "/" + cite.totals.expected + " \u683C \xB7 \u63D0\u5230\u6211\u4EEC " + cite.totals.mentioned + " \xB7 \u5F15\u7528\u6211\u4EEC\u7684\u9875\u9762 " + cite.totals.cited : "\u5F15\u7528\u62BD\u67E5\uFF1A\u8FD9\u6BB5\u65F6\u95F4\u7ED3\u675F\u4E4B\u524D\u8FD8\u6CA1\u6709\u505A\u8FC7\u3002"));
+      c.appendChild(el2("div", "audit-line", cite ? "\u5F15\u7528\u62BD\u67E5\uFF08" + cite.round_date + "\uFF09\uFF1A\u5DF2\u67E5 " + cite.totals.checked + "/" + cite.totals.expected + " \u683C \xB7 \u63D0\u5230\u6211\u4EEC " + cite.totals.mentioned + " \xB7 \u5F15\u7528\u6211\u4EEC\u7684\u9875\u9762 " + cite.totals.cited + (cite.expected_note ? "\uFF08" + cite.expected_note + "\uFF09" : "") : "\u5F15\u7528\u62BD\u67E5\uFF1A\u8FD9\u6BB5\u65F6\u95F4\u7ED3\u675F\u4E4B\u524D\u8FD8\u6CA1\u6709\u505A\u8FC7\u3002"));
     }
     root.appendChild(c);
   }
@@ -10652,6 +10652,7 @@
     box.appendChild(el3("span", "", "\u5DF2\u67E5 " + t.checked + "/" + t.expected + " \u683C \xB7 \u63D0\u5230\u6211\u4EEC " + t.mentioned + " \xB7 \u5F15\u7528\u6211\u4EEC\u7684\u9875\u9762 " + t.cited));
     const p = data2.citations_previous;
     if (p && p.totals.checked) box.appendChild(el3("span", "geo-cite-prev", "\u4E0A\u4E00\u8F6E " + p.round_date + "\uFF1A\u63D0\u5230 " + p.totals.mentioned + "/" + p.totals.checked + " \xB7 \u5F15\u7528 " + p.totals.cited + "/" + p.totals.checked));
+    if (c.expected_note) box.appendChild(el3("span", "geo-cite-warn", c.expected_note));
     if (t.no_screenshot) box.appendChild(el3("span", "geo-cite-warn", t.no_screenshot + " \u6761\u6CA1\u6709\u622A\u56FE"));
     return box;
   }
@@ -10711,6 +10712,7 @@
     head.appendChild(el4("b", "", round + " \u8FD9\u4E00\u8F6E"));
     head.appendChild(el4("span", "", t.checked ? "\u5DF2\u67E5 " + t.checked + "/" + t.expected + " \u683C \xB7 \u63D0\u5230 " + t.mentioned + " \xB7 \u5F15\u7528 " + t.cited : "\u8FD8\u6CA1\u6709\u8BB0\u5F55"));
     if (t.checked < t.expected && t.checked) head.appendChild(el4("span", "geochk-warn", "\u8FD8\u6709 " + (t.expected - t.checked) + " \u683C\u6CA1\u67E5\uFF08\u6CA1\u67E5\u7684\u4E0D\u7B97\u6CA1\u63D0\u5230\uFF09"));
+    if (data.summary.expected_note) head.appendChild(el4("span", "geochk-warn", data.summary.expected_note));
     if (t.no_screenshot) head.appendChild(el4("span", "geochk-warn", t.no_screenshot + " \u6761\u6CA1\u6709\u622A\u56FE\uFF08\u6CA1\u622A\u56FE\u7684\u53EA\u662F\u4E00\u53E5\u8BDD\uFF09"));
     box.appendChild(head);
     for (const e of data.summary.engines) {

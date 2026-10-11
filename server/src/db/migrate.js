@@ -18,7 +18,7 @@ const ALL_TABLES = [
   'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'geo_questions', 'geo_checks', 'hermes_action_runs',
+  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'geo_questions', 'geo_checks', 'geo_rounds', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily', 'ga4_event_daily',
@@ -789,6 +789,12 @@ CREATE TABLE IF NOT EXISTS geo_checks (
   UNIQUE(question_id, engine, round_date)
 );
 CREATE INDEX IF NOT EXISTS idx_geo_checks_round ON geo_checks(round_date);
+-- GEO 引用抽查每一轮定格的题数：题库会变，旧轮次的「应查几题」不能跟着现在的题库变（规矩见 services/geoChecks.js 的 roundExpected）。
+CREATE TABLE IF NOT EXISTS geo_rounds (
+  round_date     TEXT PRIMARY KEY,
+  question_count INTEGER NOT NULL,       -- 这一轮最后一次保存记录时，题库里启用的题数
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
 
 -- 询盘确认权与改动留痕（2026-10-10 移植自旧分支的设计）。
 -- 等级（A/B/C）决定月度考核里 60 分的 A / B 询价数量，渠道决定「这条询盘算谁带来的」，

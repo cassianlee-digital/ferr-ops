@@ -90,3 +90,30 @@ test('诊断接口：把同步表里的词按规则跑一遍，带出基准；�
   const other = (await app.inject({ method: 'GET', url: '/api/diagnostics?start_date=2026-08-01&end_date=2026-08-31', headers: auth })).json();
   assert.deepEqual(other.seo.ctr.items, []);
 });
+
+test('给 AI 的那一行：带着口径一起给；没有基准时说「比不了」，比过了没发现就不占上下文', async () => {
+  const { ctrContextLine } = await import('../src/services/ctrAnomaly.js');
+  const found = ctrContextLine(findCtrAnomalies([...peers, { query: 'low one', page: 'https://ferr.com/low', impressions: 2000, clicks: 20, position: 3.2 }]));
+  assert.match(found, /^【点击率偏低·与本站同位次的词的中位数相比，不是行业基准】/, '不写明和谁比，AI 会当成行业基准');
+  assert.match(found, /low one\(排3\.2\/展2000\/点击率1\.0%·同位次中位10\.0%\/约少180次点击\/https:\/\/ferr\.com\/low\)/);
+  // 可比的词太少：没有基准 —— 这是证据缺口，不是「没问题」
+  assert.match(ctrContextLine(findCtrAnomalies(peers.slice(0, 2))), /^【点击率证据缺口】/);
+  // 有基准、比过了、没有偏低的：不说话
+  assert.equal(ctrContextLine(findCtrAnomalies(peers)), null);
+  // 条数有上限，免得一类发现挤占整个上下文
+  const many = Array.from({ length: 20 }, (_, i) => ({ query: 'low' + i, page: '/l' + i, impressions: 1000 + i, clicks: 5, position: 3 }));
+  assert.equal(ctrContextLine(findCtrAnomalies([...peers, ...peers, ...peers, ...peers, ...many])).split('；').length, 8);
+});
+
+test('AI 上下文里有「点击率偏低」这一类（和诊断面板同一条规则、同一份数据）', async () => {
+  const { buildContext } = await import('../src/services/aiContext.js');
+  const before = buildContext();
+  assert.doesNotMatch(before, /ctx-low/);
+  // 上下文取最近 30 天，所以这里的日期跟着今天走
+  const d = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+  const put = db.prepare('INSERT INTO gsc_query_daily (date, site_url, query, page, clicks, impressions, ctr, position) VALUES (?,?,?,?,?,?,?,?)');
+  [8, 9, 10, 10, 11, 12].forEach((pct, i) => put.run(d, 'sc-domain:ferr.com', 'ctx-peer' + i, 'https://ferr.com/ctx-peer' + i, pct * 10, 1000, pct / 100, 7));
+  put.run(d, 'sc-domain:ferr.com', 'ctx-low', 'https://ferr.com/ctx-low', 4, 1500, 4 / 1500, 7);
+  const after = buildContext();
+  assert.match(after, /【点击率偏低·[^】]*不是行业基准】[^\n]*ctx-low\(排7\.0\/展1500\//);
+});

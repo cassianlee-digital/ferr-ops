@@ -217,7 +217,7 @@
 
 `base.css` · `components.css` · `csp-utilities.css` · `login.css` · `page-archive.css` · `page-audit.css` · `page-content.css` · `page-dashboard.css` · `page-data.css` · `page-deposit.css` · `page-fixes.css` · `page-ga4.css` · `page-inquiry.css` · `page-keywords.css` · `page-kpi.css` · `page-market.css` · `page-review.css` · `page-risks.css` · `page-settings.css` · `page-spend.css` · `page-tasks.css` · `page-test.css` · `styles.css`
 
-## 数据表（51）
+## 数据表（52）
 
 `server/src/db/migrate.js`
 
@@ -236,6 +236,7 @@
 | `ga4_event_daily` | GA4 每日事件：事件名、次数、用户数、关键事件数。 |
 | `geo_checks` | GEO 引用抽查的每一格结果：某一轮 × 某个问题 × 某个引擎，提没提到、引没引用。 |
 | `geo_questions` | GEO 引用抽查（2026-10-10）：AI 回答里有没有提到 / 引用我们，没有接口能自动拿，只能人按固定题库去问。 |
+| `geo_rounds` | GEO 引用抽查每一轮定格的题数：题库会变，旧轮次的「应查几题」不能跟着现在的题库变（规矩见 services/geoChecks.js 的 roundExpected）。 |
 | `google_ads_campaign_daily` | Google Ads 广告系列每日数据：花费、展示、点击、转化。 |
 | `google_ads_keyword_daily` | Google Ads 关键词每日数据。 |
 | `google_ads_search_term_daily` | Google Ads 真实搜索词每日数据（用户实际搜的词，不是投放的关键词）。 |

@@ -24,6 +24,20 @@ function median(sorted) {
   return n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
 }
 
+/* 把结论写成给 AI 看的一行（aiContext 用）。口径必须跟着数一起给：不写明「和谁比」，AI 会把它当成行业基准去发挥。
+   没有基准时返回的是「证据缺口」而不是空 —— 否则 AI 看不到这一类，会默认点击率没问题。
+   比过了、一条都没发现：返回 null（和其它诊断规则一样，没有发现就不占上下文）。 */
+export function ctrContextLine(result, { limit = 8 } = {}) {
+  const pct = (v) => (v * 100).toFixed(1) + '%';
+  const items = result?.items || [];
+  if (items.length) {
+    return '【点击率偏低·与本站同位次的词的中位数相比，不是行业基准】' + items.slice(0, limit)
+      .map((i) => `${i.query}(排${i.position.toFixed(1)}/展${i.impressions}/点击率${pct(i.ctr)}·同位次中位${pct(i.expectedCtr)}/约少${i.missedClicks}次点击/${i.page})`).join('；');
+  }
+  if (!(result?.baselines || []).length) return '【点击率证据缺口】首页的词里，同一排位上可比的词太少，没有基准，不能判断点击率是否偏低。';
+  return null;
+}
+
 /* rows = 区间内按「查询词 × 页面」汇总的行：{ query, page, clicks, impressions, position }。
    返回 { items, baselines }：
      items     点击率偏低的词，按「少拿的点击」从多到少

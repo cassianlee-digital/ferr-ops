@@ -53,10 +53,21 @@ export function validateCheck(body) {
   };
 }
 
-/* 一轮的汇总。questionCount = 这一轮应该查的题数（当前启用的题）；checks = 这一轮已有的记录（带 images 数）。
+/* 一轮「应该查几道题」。题库会变（停用旧题、加新题），所以不能永远拿现在的题数去当每一轮的分母 ——
+   那样加两道题，之前每一轮的完成情况都会凭空变差。规矩：
+     · 最新的一轮（后面还没有别的轮次）= 还在进行，题库现在有几道就该查几道；
+     · 之前的轮次 = 已经定格，用它最后一次保存记录时记下的题数（snapshot）；
+     · 定格了却没有记下题数的（这条规矩之前查的轮次）：只能按现在的题库估，并且明说是估的。 */
+export function roundExpected({ snapshot, hasLaterRound, activeNow }) {
+  if (!hasLaterRound) return { count: activeNow, note: null };
+  if (snapshot != null) return { count: snapshot, note: null };
+  return { count: activeNow, note: '这一轮当时有几道题没有记录，「应查」按现在的题库估算' };
+}
+
+/* 一轮的汇总。questionCount = 这一轮应该查的题数（见上面的 roundExpected）；checks = 这一轮已有的记录（带 images 数）。
    分母用「已查的」而不是「应查的」来算提及率，同时把「还有几格没查」报出来 ——
    没查的格子既不能算没提到，也不能悄悄不提。 */
-export function summarizeRound(questionCount, checks) {
+export function summarizeRound(questionCount, checks, expectedNote = null) {
   const engines = CHECK_ENGINES.map((e) => {
     const rows = checks.filter((c) => c.engine === e.key);
     return {
@@ -72,5 +83,7 @@ export function summarizeRound(questionCount, checks) {
   return {
     engines,
     totals: { checked: sum('checked'), expected: questionCount * CHECK_ENGINES.length, mentioned: sum('mentioned'), cited: sum('cited'), no_screenshot: sum('no_screenshot') },
+    // 「应查」是估出来的时候给一句说明，界面原样显示；不是估的就是 null
+    expected_note: expectedNote,
   };
 }

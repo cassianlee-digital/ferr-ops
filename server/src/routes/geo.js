@@ -3,10 +3,10 @@ import * as checksRepo from '../db/repositories/geoChecks.js';
 import * as attachmentsRepo from '../db/repositories/attachments.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 import {
-  CHECK_ENGINES, MAX_ACTIVE_QUESTIONS, ROUND_INTERVAL_DAYS, summarizeRound, validateCheck, validateQuestion,
+  CHECK_ENGINES, MAX_ACTIVE_QUESTIONS, ROUND_INTERVAL_DAYS, validateCheck, validateQuestion,
 } from '../services/geoChecks.js';
 import { parseDateRange } from '../lib/parseDateRange.js';
-import { buildGeoSummary, roundSummary } from '../services/geoData.js';
+import { buildGeoSummary, roundSummary, summarizeChecks } from '../services/geoData.js';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const bad = (reply, error, detail) => reply.code(400).send({ error, detail });
@@ -53,7 +53,7 @@ export async function geoRoutes(app) {
       interval_days: ROUND_INTERVAL_DAYS,
       rounds: checksRepo.rounds(),
       items: checks.map((c) => ({ ...c, evidence_images: images[c.id] || [] })),
-      summary: summarizeRound(checksRepo.activeQuestionCount(), checks),
+      summary: summarizeChecks(round, checks),
       previous: roundSummary(prev),
     };
   });
