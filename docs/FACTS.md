@@ -275,7 +275,7 @@
 | `users` | （没有写说明） |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（49）
+## 测试（50）
 
 `server/test/`
 
@@ -316,6 +316,7 @@
 | `linkCheck.test.js` | 外链存活核查。 |
 | `linkCheckBatch.test.js` | 外链的定时批量核查：轮到谁、查完怎么记、「上次还在这次没了」怎么标。 |
 | `middleware.test.js` | 权限矩阵回归测试。 |
+| `migrateUpgrade.test.js` | 升级不丢数据。 |
 | `productionReadiness.test.js` | （没有写说明） |
 | `projectFacts.test.js` | 文档里的「事实」不许过期。 |
 | `riskRegister.test.js` | （没有写说明） |

@@ -46,6 +46,28 @@ test('按引擎归类：同一引擎的多个来源值合并，原始来源值�
   assert.equal(s.totals.prev_sessions, 25);
 });
 
+test('认不出的来源自己报出来：看起来像 AI 引擎但不在识别表里的，单独列出、不计入会话数', async () => {
+  const { looksLikeAi } = await import('../src/services/aiEngines.js');
+  // 表里有的、搜索引擎、普通站：都不算「漏归类」
+  for (const s of ['chatgpt.com / referral', 'gemini.google.com / referral', 'google / organic', 'bing.com / referral', 'linkedin.com / referral', '(direct) / (none)', 'mail.example.com / referral']) {
+    assert.equal(looksLikeAi(s), false, s);
+  }
+  // 最可能在生产里出现的漏网写法：只写了名字没带域名；以及表里还没有的引擎
+  for (const s of ['chatgpt / (not set)', 'perplexity / referral', 'copilot / referral', 'chat.mistral.ai / referral', 'phind.com / referral', 'tongyi.aliyun.com / referral', 'some-tool.ai / referral']) {
+    assert.equal(looksLikeAi(s), true, s);
+  }
+  const r = summarizeGeo({ current: { dataDays: 7, sessions: 1000, sources: [
+    { source: 'chatgpt.com / referral', sessions: 30 },
+    { source: 'chatgpt / (not set)', sessions: 12 },
+    { source: 'phind.com / referral', sessions: 3 },
+    { source: 'chatgpt / (not set)', sessions: 5 },
+    { source: 'google / organic', sessions: 600 },
+  ] } });
+  assert.deepEqual(r.unclassified, [{ source: 'chatgpt / (not set)', sessions: 17 }, { source: 'phind.com / referral', sessions: 3 }]);
+  assert.equal(r.totals.sessions, 30, '漏归类的只是提示，不计入 AI 引擎的会话数');
+  assert.deepEqual(summarizeGeo({ current: { dataDays: 0, sessions: 0, sources: [{ source: 'chatgpt / (not set)', sessions: 9 }] } }).unclassified, [], '没同步时不报');
+});
+
 test('没同步的区间：所有数留空，不显示成 0；上期没同步时不给对比', () => {
   const none = summarizeGeo({ current: { dataDays: 0, sessions: 0, sources: [] } });
   assert.equal(none.status, 'NOT_SYNCED');

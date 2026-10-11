@@ -7,7 +7,7 @@
 // 必须写在界面上的局限：这只是「点了链接」的那部分。AI 回答里提到了我们、甚至推荐了我们，
 // 但用户没点链接，流量数据里一条都不会有 —— 所以这里的数只会低估，不会高估 GEO 的实际影响。
 // 被引用的情况要靠固定题库人工抽查，那是另一块（尚未建）。
-import { AI_ENGINES, aiEngineOf } from './aiEngines.js';
+import { AI_ENGINES, aiEngineOf, looksLikeAi } from './aiEngines.js';
 import { leadAiEngine } from './inquirySource.js';
 
 const round = (n, d = 4) => Math.round(n * 10 ** d) / 10 ** d;
@@ -26,6 +26,15 @@ function byEngine(sources) {
     e.sources.push(s.source); // 原始来源值留着：归类归错了能一眼看出来
   }
   return map;
+}
+
+function unclassified(sources) {
+  const map = new Map();
+  for (const s of sources || []) {
+    if (!looksLikeAi(s.source)) continue;
+    map.set(s.source, (map.get(s.source) || 0) + (s.sessions || 0));
+  }
+  return [...map.entries()].map(([source, sessions]) => ({ source, sessions })).sort((a, b) => b.sessions - a.sessions).slice(0, 10);
 }
 
 /* 输入：
@@ -69,6 +78,8 @@ export function summarizeGeo({ current, previous = null, inquiries = [], leads =
       key_events: synced ? round(engines.reduce((s, e) => s + e.keyEvents, 0), 2) : null,
     },
     engines: synced ? engines : [],
+    // 看起来像 AI 引擎、但域名表没认出来的来源（按会话数取前 10）。不计入上面的任何数，只为让人核对识别规则有没有漏
+    unclassified: synced ? unclassified(current?.sources) : [],
     // 询盘只数有表单证据的：人填的来源里没有可信的来路，数进来就是在编
     inquiries: { total: fromAi.length, a: grade('A'), b: grade('B'), c: grade('C') },
     leads: { total: aiLeads.length, ignored: aiLeads.filter((x) => x.row.state === 'ignored').length },

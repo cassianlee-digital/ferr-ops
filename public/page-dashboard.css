@@ -375,3 +375,4 @@ body.dark .panel.active .card-head {
 #panel-dashboard .geo-cite b { color: var(--text1); font-weight: 600; }
 #panel-dashboard .geo-cite-prev { color: var(--text3); }
 #panel-dashboard .geo-cite-warn { color: var(--danger); font-weight: 600; }
+#panel-dashboard .geo-warn { margin-top: 10px; padding: 6px 10px; border-left: 2px solid var(--amber); background: var(--amber-soft); font-size: 12px; line-height: 1.7; color: var(--text2); overflow-wrap: anywhere; }

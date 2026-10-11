@@ -42,6 +42,18 @@ export function aiEngineOf(raw) {
   return null;
 }
 
+/* 看起来像 AI 引擎、但没被上面那张表认出来的来源。
+   域名表是照着 GA4「来源 / 媒介」的通用写法写的，没法保证覆盖了生产里的每一种写法（比如只写了 chatgpt 没带 .com），
+   也没法保证不漏新的引擎。以前靠「上线后人工逐个悬停核对」；现在让它自己报出来 —— 认不出的东西不该安静地被算成「不是 AI」。
+   这是提示不是结论：命中的可能只是名字里带 ai 的普通站，所以只列出来请人看，不计入 AI 引擎的会话数。 */
+const AI_HINTS = ['gpt', 'openai', 'perplex', 'gemini', 'bard', 'copilot', 'claude', 'anthropic', 'deepseek', 'doubao', 'kimi', 'moonshot',
+  'grok', 'mistral', 'phind', 'qwen', 'tongyi', 'yuanbao', 'wenxin', 'yiyan', 'ernie', 'llm', 'chatbot'];
+export function looksLikeAi(raw) {
+  const host = hostOf(raw);
+  if (!host || aiEngineOf(host) || isSearchEngine(host)) return false;
+  return AI_HINTS.some((h) => host.includes(h)) || host.endsWith('.ai') || /(^|[.-])ai([.-]|$)/.test(host);
+}
+
 const SEARCH_ENGINES = ['google.', 'bing.com', 'baidu.com', 'yandex.', 'duckduckgo.com', 'yahoo.', 'sogou.com', 'so.com', 'naver.com', 'ecosia.org'];
 // 传统搜索引擎（判自然搜索用）。Gemini 在 gemini.google.com，要先排除 AI 引擎再看这里。
 export function isSearchEngine(raw) {

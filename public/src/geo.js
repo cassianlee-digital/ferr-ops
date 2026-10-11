@@ -76,6 +76,12 @@ function render(data) {
   grid.appendChild(inq);
 
   body.appendChild(grid);
+  // 看起来像 AI 引擎、但识别表没认出来的来源：自己报出来，不用人逐个去核对
+  if ((data.unclassified || []).length) {
+    body.appendChild(el('div', 'geo-warn', '可能漏归类的来源（看起来像 AI 引擎，但没被认出来，没有计入上面的数）：'
+      + data.unclassified.map((u) => u.source + '（' + num(u.sessions) + ' 次会话）').join('、')
+      + '。如果其中确实有 AI 引擎，请把这一行发给开发，补进识别表。'));
+  }
   body.appendChild(citationLine(data));
   body.appendChild(el('div', 'geo-note', '上面的访问数只有「从 AI 回答里点链接进站」的那部分。AI 提到了我们但用户没点链接的，流量数据里看不到，所以实际影响只会比这里多；那部分看下面的人工抽查。识别的引擎：' + data.known_engines.join('、') + '。'));
 }
