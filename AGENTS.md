@@ -26,7 +26,8 @@
 ## 门禁
 
 `.githooks/pre-commit` 在每次提交前跑全量测试（`cd server && node --test`，约 4 秒，需要 Node 20）。
-红了就修，**不要用 `--no-verify`** —— 这个项目没有云端 CI，这是唯一的自动检查。
+红了就修，**不要用 `--no-verify`**。推送之后 GitHub 上会把同一套再跑一遍（`.github/workflows/check.yml`），
+给没启用钩子的克隆兜底；推完用 `gh run list --limit 3` 看结果，红了同样要修。
 失败信息里大多直接写了原因和改法，照着做即可。它除了业务规则，还盯着这些容易忘的事：
 
 | 测试 | 盯什么 |

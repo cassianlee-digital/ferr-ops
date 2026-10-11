@@ -23,6 +23,9 @@ test('提交前门禁已启用（git 会在每次提交前跑 .githooks/pre-comm
 }, () => {
   assert.ok(existsSync(join(root, '.githooks/pre-commit')), '仓库里的 .githooks/pre-commit 不见了');
   assert.match(readFileSync(join(root, '.githooks/pre-commit'), 'utf8'), /--test/, '.githooks/pre-commit 里已经不跑测试了');
+  // 云端检查（.github/workflows/check.yml）用的是一次性的全新克隆，那里没有人提交，也就无所谓启没启用；
+  // 它本身正是「某个克隆没启用钩子」时的兜底。钩子脚本在不在、还跑不跑测试，上面两条照查
+  if (process.env.CI) return;
   assert.equal(git('config', '--get', 'core.hooksPath'), '.githooks',
     '提交前门禁没有启用：这个克隆的 git 还没被告知去用仓库里的钩子。\n'
     + '原因：钩子脚本随仓库走，但启用它是每个克隆自己的本地配置，克隆下来默认不开。\n'
