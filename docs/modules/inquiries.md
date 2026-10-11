@@ -56,7 +56,12 @@
     线索**不进任何统计**;「转为询盘」时 `POST /api/inquiries` 只带 `lead_id`,来源由后端自己从线索里取(不信前端回传)。
     「忽略」必须写原因,连同来源一起保留 —— 垃圾询盘从哪个系列 / 词来,靠的就是这些行。
   - **⚠ 站点侧还没接**:生产 `INQUIRY_INTAKE_SECRET` 未配置,独立站表单也没改,所以线上线索收件箱会显示「尚未接入」。
-    给站点负责人的接入说明在 `docs/INQUIRY_INTAKE.md`(含 Ads 跟踪模板)。**独立站表单由老板来改(用户 2026-10-10 答复)**;站点用什么搭的、表单是插件还是自写的还不知道,这决定第三步「服务端调用」具体怎么落。
+    给站点负责人的接入说明在 `docs/INQUIRY_INTAKE.md`(含 Ads 跟踪模板)。**独立站表单由老板来改(用户 2026-10-10 答复)**。
+    独立站是 **WordPress + Fluent Forms**(用户 2026-10-11 答复),站点侧已写成现成插件 `integrations/wordpress/ferr-intake/`:
+    `ferr-source.js` 在访客浏览器里记「最近一次从站外进来」的来源并填进名叫 `ferr_source` 的隐藏字段(JSON 的 base64url —— 表单插件会清洗文字,直接放网址会被改坏);
+    `ferr-intake.php` 挂 Fluent Forms 的 `fluentform/submission_inserted`,由 WordPress 服务器带密钥发给后台,失败重试三次。免费版 Fluent Forms 即可(它的 Webhook 是 Pro 功能,没用)。
+    **两边的约定由 `server/test/sitePlugin.test.js` 盯着**:脚本在假浏览器里跑、PHP 在假 WordPress 里跑(`server/test-support/wpStub.php`),发出的请求体交给 `normalizeLead`。
+    **⚠ 没在真实的 WordPress 上装过**:Fluent Forms 的钩子名和参数是照它的官方文档写的;表单里各字段的 Name Attribute 要老板对着表单核一遍(接入说明第 4 步)。
   - **AI 引擎暂归渠道「其他」**:渠道目录只有四个值,加第五个会牵动考核口径,是老板要定的事。引擎本身记在来路里。
   - 邮件 / WhatsApp 直接来的询盘带不了参数,仍是人填 + 对账。历史询盘不回填。
 - **询盘的确认权与改动留痕已上线(2026-10-10)** —— 等级(A/B/C)决定月度考核里 60 分的 A / B 询价数量,渠道决定「这条询盘算谁带来的」,

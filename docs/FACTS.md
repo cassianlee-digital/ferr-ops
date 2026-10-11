@@ -276,7 +276,7 @@
 | `users` | 账号与角色（seo / sem / manager / boss）。 |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（50）
+## 测试（51）
 
 `server/test/`
 
@@ -323,6 +323,7 @@
 | `riskRegister.test.js` | 风险清单：生产实测结果脱敏后原子保存； |
 | `routes.test.js` | 路由层冒烟测试。 |
 | `settle.test.js` | Phase 5C 考核期冻结：结算快照后，改目标不改历史（§29）。 |
+| `sitePlugin.test.js` | 独立站那一侧的 WordPress 插件（integrations/wordpress/ferr-intake）：浏览器里记来源的脚本 + 服务器上往后台发的 PHP。 |
 | `spend.test.js` | 投入台账：外链 / 其它支出 / 「钱花在哪」汇总。 |
 | `taskAudit.test.js` | 可审计任务的规则：重要性判定、完成门槛、证据与关联键的合法性。 |
 | `taskAuditRoutes.test.js` | 可审计任务 · 路由层：完成门槛、关联键、重要标记、证据截图。 |

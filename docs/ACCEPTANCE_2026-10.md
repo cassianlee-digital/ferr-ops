@@ -76,7 +76,7 @@ cd /opt/ferr-ops && git pull origin main && sudo docker compose up -d --build
 
 ## 8. 这几项现在是空的，属于正常
 
-- 询盘评级里的「表单线索」显示**尚未接入** —— 独立站表单还没改，见 `docs/INQUIRY_INTAKE.md`。
+- 询盘评级里的「表单线索」显示**尚未接入** —— 独立站表单还没改。站点是 WordPress + Fluent Forms，照 `docs/INQUIRY_INTAKE.md` 的五步装上插件后，按其中「验证」一节发一条测试询盘。
 - 数据看板里的「GEO 抽查」题库是空的 —— 题目还没定。
 - 已完成任务上的「数据变化」大多显示没有可比数据 —— 老任务没有关联对象；新任务要等完成后过几天才有前后对比。
 

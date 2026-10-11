@@ -57,7 +57,7 @@
 | `docs/modules/security.md` | 密钥、HTML 拼接审计、对外请求 |
 | `README.md` | 给人看的简介：技术栈、角色、从哪看起 |
 | `DEPLOY_CHECKLIST.md` · `PRODUCTION_ACCEPTANCE.md` | 部署步骤、环境变量、生产验收工具 |
-| `docs/INQUIRY_INTAKE.md` | 独立站表单怎么把线索发进后台（给改站的人看） |
+| `docs/INQUIRY_INTAKE.md` | 独立站表单怎么把线索发进后台（给改站的人看）；装在独立站上的 WordPress 插件在 `integrations/wordpress/ferr-intake/` |
 | `docs/ACCEPTANCE_2026-10.md` · `docs/TEAM_CHANGES_2026-10.md` | 2026-10 这批更新的验收清单、给团队的操作变化说明 |
 | `docs/GOOGLE_SYNC_CONTRACT.md` · `docs/SEO_SEM_AUTO_AGGREGATION.md` | 同步接口的历史契约（已完成）、周报自动汇总方案（未实施） |
 | `docs/archive/` | 已经不成立的旧文档，只为查历史，**不要当事实引用** |

@@ -40,6 +40,10 @@ jobs:
         run: npm ci
         working-directory: server
 
+      # 装在独立站上的 WordPress 插件有一半是 PHP，它的测试要真跑 PHP。这台机器自带；哪天不带了，在这里就说清楚，而不是让测试被跳过
+      - name: 确认有 PHP
+        run: php -v
+
       - name: 跑全量测试
         working-directory: server
         run: node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=tap --test-reporter-destination=result.tap
