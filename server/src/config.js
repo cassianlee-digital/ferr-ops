@@ -4,10 +4,17 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// 项目根目录在 server/ 的上一级；优先读根目录的 .env，方便 docker 与本地共用
-dotenv.config({ path: resolve(__dirname, '../../.env') });
-// 兜底：也尝试 server/.env（本地单独跑后端时）
-dotenv.config({ path: resolve(__dirname, '../.env') });
+/* 测试不读本机的 .env —— 测试要什么配置，由测试文件自己在 import 之前声明。
+   以前会读：于是同一套测试在每台机器上红的条数都不一样（这台 .env 里关了自动同步、缺种子口令、缺 AI 密钥，
+   就固定红 6 条，而且被当成「环境问题」写进了文档）。永远红的检查等于没有检查。
+   NODE_TEST_CONTEXT 是 `node --test` 给每个测试文件的进程设上的。 */
+export const UNDER_TEST = Boolean(process.env.NODE_TEST_CONTEXT);
+if (!UNDER_TEST) {
+  // 项目根目录在 server/ 的上一级；优先读根目录的 .env，方便 docker 与本地共用
+  dotenv.config({ path: resolve(__dirname, '../../.env') });
+  // 兜底：也尝试 server/.env（本地单独跑后端时）
+  dotenv.config({ path: resolve(__dirname, '../.env') });
+}
 
 const DEV_JWT_SECRET = 'dev-insecure-secret-change-me';
 const WEAK_JWT_SECRETS = new Set([

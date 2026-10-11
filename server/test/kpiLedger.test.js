@@ -2,6 +2,7 @@
 // 算错会直接影响对运营部的评价，故重点守：渠道归集、优质/成交口径、零成交的 CAC 不能写 Infinity。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import '../test-support/tempDb.js'; // 必须在所有 ../src/ 的 import 之前：给本文件配一个临时库，不碰真实的开发库
 import { computeLedger, buildTargetProgress } from '../src/services/kpiLedger.js';
 
 const rows = [

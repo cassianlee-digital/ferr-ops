@@ -1,6 +1,7 @@
 // KPI 评分：整个后台「公司分/李分/陈分」的权威算法。达成率、反向指标、权重、封顶都要守住。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import '../test-support/tempDb.js'; // 必须在所有 ../src/ 的 import 之前：给本文件配一个临时库，不碰真实的开发库
 import { ratio, blockRate, grade, computeScores, computeAssessment, leadQualityIndex, cpviPatch, leadMixByChannel, computeExecutionRate } from '../src/services/kpi.js';
 
 test('ratio(正向 r)：达成率 = actual/target，封顶 1', () => {

@@ -13,12 +13,26 @@ import { join } from 'node:path';
 
 const tmpDir = mkdtempSync(join(tmpdir(), 'ferr-routes-'));
 process.env.DB_FILE = join(tmpDir, 'test.sqlite');
+// 这个文件里的 Hermes / 仪表盘 AI 测试把 fetch 换成了假的（OpenRouter 的返回格式），但路由会先看「AI 配没配」，
+// 没配直接回 503。以前靠本机 .env 里恰好有密钥才能过；现在测试不读 .env（见 config.js），在这里明说。
+// 这个值同时是下面「风险清单不泄露密钥」那条测试的探针：它绝不能出现在任何响应里。
+const FAKE_AI_KEY = 'test-only-openrouter-key-9f3c1e7a';
+process.env.AI_PROVIDER = 'openrouter';
+process.env.OPENROUTER_API_KEY = FAKE_AI_KEY;
+process.env.OPENROUTER_MODEL = 'vendor/test-model';
 
 const { buildApp } = await import('../src/index.js');
 
 // onRoute 只对其后注册的路由生效，故由 buildApp 在内部转交（测试无法从外部补挂）。
 const registered = [];
 const app = await buildApp({ onRoute: (r) => registered.push({ method: r.method, url: r.url }) });
+
+// created_by 之类的外键指向 users(id)；测试令牌用 id=1，库里得真有这个人。
+// 以前靠本机 .env 里配了种子口令、启动时自动建出账号；没配的机器上录询盘就是外键 500。
+{
+  const { db } = await import('../src/db/connection.js');
+  db.prepare("INSERT OR IGNORE INTO users (id, username, password_hash, name, role) VALUES (1, 'routes-test', 'x', '测试', 'boss')").run();
+}
 
 test.after(async () => {
   await app.close();
@@ -87,7 +101,10 @@ test('风险清单对所有登录角色只读可见，且不返回服务器密�
     const body = res.json();
     assert.ok(Array.isArray(body.items));
     assert.ok(body.items.every((item) => item.severity && item.owner && item.updatedAt && item.nextAction));
-    assert.doesNotMatch(res.body, /OPENROUTER_API_KEY|ANTHROPIC_API_KEY|GOOGLE_OAUTH_CLIENT_SECRET/);
+    // 查的是密钥的**值**。以前这里匹配的是变量名 —— 可清单在提示「缺哪些配置」时本来就要写出变量名，
+    // 于是这条测试只在配置齐全的机器上才过。变量名不是秘密，值才是。
+    assert.ok(!res.body.includes(FAKE_AI_KEY), '风险清单的响应里出现了 AI 密钥的值');
+    assert.ok(!res.body.includes(app.jwt.options?.secret ?? '\u0000'), '风险清单的响应里出现了 JWT 密钥');
   }
 });
 

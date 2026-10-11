@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import '../test-support/tempDb.js'; // 必须在所有 ../src/ 的 import 之前：给本文件配一个临时库，不碰真实的开发库
 import { buildAdsHighlights, buildSeoHighlights } from '../src/routes/google.js';
 
 test('empty Google aggregates do not generate fake SEO or Ads highlights', () => {
