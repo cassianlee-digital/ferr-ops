@@ -1,0 +1,347 @@
+# 仓库现状清单
+
+> **自动生成，不要手改。** 生成命令：`node server/scripts/projectFacts.mjs --write`（在仓库根目录）。
+> 这份清单和代码对不上时，提交前的测试会失败并提示这条命令。
+> 每行的说明取自那个文件开头的第一句注释：想改说明，去改文件的第一行注释。
+
+## 后端路由（36）
+
+`server/src/routes/`
+
+| 文件 | 说明 |
+|---|---|
+| `adCreatives.js` | 广告创意库 API（FR-7）。 |
+| `ai.js` | （没有写说明） |
+| `attachments.js` | 通用图片附件 API。 |
+| `attribution.js` | 询盘归因：把真实询盘(按渠道)与 Ads 花费打通，算「真实每有效询盘成本」+ 对比 Ads 自报转化。 |
+| `audit.js` | 周度审核 API：审核包（页面读它）、导出（JSON / XLSX / CSV）、AI 审核意见。 |
+| `contentAssets.js` | 内容资产 API。 |
+| `dailyPlan.js` | 日计划回放：某一天（不一定是今天）三列上到底有什么、谁有交代。 |
+| `dataFreshness.js` | 数据新鲜度：一次返回 GSC/GA4/Ads 三源在所选区间内的 实际有数据天数 + 区间总天数 + 最后同步时间 + 连接态。 |
+| `dataSources.js` | （没有写说明） |
+| `diagnostics.js` | 诊断引擎路由：基于已同步真实数据跑规则，返回结构化 findings（机会词/蚕食/衰退/点击率偏低/高花费零有效）。 |
+| `executionLoops.js` | Execution 闭环 CRUD（Phase 5A）。 |
+| `fixes.js` | 整改清单 API（FR-6/10）+ 归档地基（state/archived/deleted）。 |
+| `ga4.js` | （没有写说明） |
+| `geo.js` | GEO 概览 API：AI 引擎带来的流量与询盘。 |
+| `google.js` | （没有写说明） |
+| `hermes.js` | （没有写说明） |
+| `hermesActions.js` | （没有写说明） |
+| `index.js` | 业务路由聚合器。 |
+| `inquiries.js` | 询盘 API（FR-1）。 |
+| `inquiryLeads.js` | 表单线索 API：独立站询盘表单 → 后台。 |
+| `keywords.js` | 关键词库 API（FR-9 / V7）。 |
+| `kpi.js` | KPI 目标/评分 API（FR-4）。 |
+| `loopItems.js` | 闭环条目 API（FR-10）：月度计划/测试登记/沉淀表/任务看板 + 归档地基（state/archived/deleted）。 |
+| `market.js` | 市场分析 / AI 记忆体路由。 |
+| `negKeywords.js` | 否词库 API（FR-7）。 |
+| `overview.js` | 总览数据：公司评分 + 询盘汇总 + 与上月环比。 |
+| `rankSnapshots.js` | 排名快照 API（FR-8）。 |
+| `risks.js` | （没有写说明） |
+| `semWeeks.js` | SEM weekly report API. SEM role can write; signed-in users can read. |
+| `seoWeeks.js` | SEO weekly report API. SEO role can write; signed-in users can read. |
+| `settings.js` | 设置页 · 第三方 API 密钥（GSC / GA4 / Ads）。 |
+| `sop.js` | SOP 引擎 API（Step A）：定义增删改查 + 完成记录读写。 |
+| `spend.js` | 投入台账 API：外链台账、其它支出台账、「钱花在哪」汇总。 |
+| `sync.js` | （没有写说明） |
+| `taskCheckins.js` | 跨天任务每日推进打卡 API。 |
+| `weeklyReports.js` | 复盘周报 API。 |
+
+## 后端服务（规则与业务逻辑）（41）
+
+`server/src/services/`
+
+| 文件 | 说明 |
+|---|---|
+| `aiAttachments.js` | （没有写说明） |
+| `aiContext.js` | 基于数据库实时数据组装 AI 上下文，保证建议「基于本周真实数据」。 |
+| `aiEngines.js` | AI 引擎来源识别（纯函数）。 |
+| `aiProvider.js` | （没有写说明） |
+| `anthropic.js` | AI 文本生成客户端。 |
+| `attribution.js` | 询盘归因的纯计算：channel 分类 + 按渠道聚合 + SEM「真实每有效询盘成本」。 |
+| `auditAi.js` | 周度 AI 审核：把审核包交给 AI，让它按人写审核意见（纯函数：组装提示词、解析回答； |
+| `auditExport.js` | 周度审核包 → 一组二维表（纯函数）。 |
+| `auditPackage.js` | 周度审核包：一段日期（通常是一周）里，某个人或整个部门「做了什么、证据在哪、数据变没变、钱花在哪、询盘怎么样」。 |
+| `auditRules.js` | 周度审核的规则（纯函数，不碰数据库）：一条任务在这个区间里算什么状态、有哪些该被问到的疑点。 |
+| `crypto.js` | AES-256-GCM 对称加密，用于把设置页填入的第三方 API 密钥 / Google OAuth token 加密后存库。 |
+| `ctrAnomaly.js` | 诊断规则：点击率偏低（纯函数，不碰数据库）。 |
+| `derive.js` | 派生指标计算（后端权威）。 |
+| `documentParser.js` | （没有写说明） |
+| `exporters.js` | 表格导出：CSV 与 XLSX（纯函数，零依赖）。 |
+| `geo.js` | GEO（生成式引擎优化）的流量口径（纯函数，不碰数据库）。 |
+| `geoChecks.js` | GEO 引用抽查的规则（纯函数，不碰数据库）。 |
+| `geoData.js` | GEO 概览的数据组装：AI 引擎流量（GA4）+ AI 引擎带来的询盘 / 线索 + 最近一轮人工引用抽查。 |
+| `hermesActions.js` | （没有写说明） |
+| `hermesBrain.js` | Hermes 运营大脑（业务逻辑层）：诊断卡引擎 + 企业长期记忆 + 每日运营学习沉淀。 |
+| `hermesEvidence.js` | （没有写说明） |
+| `hermesMemoryPolicy.js` | （没有写说明） |
+| `hermesPrompt.js` | （没有写说明） |
+| `hermesStatus.js` | （没有写说明） |
+| `inquirySource.js` | 询盘来源的规则（纯函数，不碰数据库）。 |
+| `inquirySourceData.js` | 询盘来源对账的数据组装：拿一批询盘的来源词，去已同步的 Ads / GSC 点击数据里找证据。 |
+| `kpi.js` | KPI 评分（后端权威）+ 由运营数据回写实际值。 |
+| `kpiLedger.js` | 运营总账（业务结果漏斗）：花了多少钱 → 带来多少询盘 → 多少优质(A/B) → 多少成交 → 效率如何。 |
+| `kpiReview.js` | 月度绩效考核（老板《2026 运营部绩效考核表》口径）—— 评分引擎。 |
+| `linkCheck.js` | 外链存活核查：去外链所在的页面上看一眼，指向我们的那条链接还在不在、是什么属性。 |
+| `linkCheckBatch.js` | 外链的定时批量核查。 |
+| `marketBrain.js` | 市场 AI 记忆体：MD5 状态检测 + 缓存摘要 + 注入。 |
+| `productionReadiness.js` | （没有写说明） |
+| `riskRegister.js` | （没有写说明） |
+| `sopStats.js` | SOP 执行率的统计。 |
+| `spend.js` | 投入台账的规则（纯函数，不碰数据库）：外链与其它支出的字段校验，以及「钱花在哪」的汇总。 |
+| `taskAudit.js` | 可审计任务的规则（纯函数，不碰数据库 —— 可被 node --test 直接 import）。 |
+| `taskAuditData.js` | 可审计任务的数据组装：给任务行补上关联键、证据截图、是否重要。 |
+| `taskEffect.js` | 任务完成前后的数据对比（纯函数，不碰数据库）。 |
+| `taskEffectData.js` | 任务前后对比的数据组装：按任务的关联键去同步表里取两个窗口的数，交给 taskEffect.js 的规则算。 |
+| `verifiedAiAnswer.js` | （没有写说明） |
+
+## 数据访问层（37）
+
+`server/src/db/repositories/`
+
+| 文件 | 说明 |
+|---|---|
+| `adCreatives.js` | 广告创意库数据访问层。 |
+| `aiAnalyses.js` | （没有写说明） |
+| `attachments.js` | 通用附件（图片）数据访问层。 |
+| `backlinks.js` | 外链台账数据访问层。 |
+| `contentAssets.js` | 内容资产数据访问层。 |
+| `executionLoops.js` | SEO/SEM 运营问题闭环（Execution KPI 真实数据源）。 |
+| `expenses.js` | 其它支出台账数据访问层（广告费在 Ads 同步表、外链费在 backlinks，这里只记其余的钱）。 |
+| `fixes.js` | 整改清单数据访问层 + 归档地基（state/archived/deleted）。 |
+| `geo.js` | GEO 取数：GA4 会话来源、带表单证据的询盘、表单线索。 |
+| `geoChecks.js` | GEO 引用抽查数据访问层：固定题库 + 每轮抽查记录。 |
+| `googleSync.js` | （没有写说明） |
+| `hermesActions.js` | （没有写说明） |
+| `hermesConversations.js` | （没有写说明） |
+| `hermesMemories.js` | （没有写说明） |
+| `inquiries.js` | 询盘数据访问层。 |
+| `inquiryLeads.js` | 表单线索数据访问层：独立站询盘表单提交后带着来源参数进来的原始记录。 |
+| `inquirySalesNotes.js` | 业务反馈（业务员针对某条询盘发回来的一段话 + 若干张图）数据访问层。 |
+| `inquirySource.js` | 询盘来源对账用的批量查询：一批来源词在一段日期里的点击命中、数据源的同步覆盖。 |
+| `integrations.js` | 第三方集成密钥数据访问层（密钥 AES 加密存储，永不明文返回前端）。 |
+| `keywords.js` | 关键词库数据访问层。 |
+| `kpi.js` | KPI 目标/实际 数据访问层。 |
+| `kpiReviewTargets.js` | 月度绩效考核目标（老板《2026 运营部绩效考核表》「目标设置」页口径）数据访问层。 |
+| `kpiSnapshots.js` | KPI 考核期冻结快照（Phase 5C）。 |
+| `loopItemChanges.js` | 任务改动流水的数据访问层。 |
+| `loopItems.js` | 闭环条目数据访问层（plan/test/deposit/task）+ 归档地基（state/archived/deleted）。 |
+| `marketBrain.js` | 市场 AI 记忆体（单行 id=1）数据访问层。 |
+| `marketResearch.js` | 市场分析问卷数据访问层（P2 表格化填充； |
+| `negKeywords.js` | 否词库数据访问层。 |
+| `rankSnapshots.js` | 排名快照数据访问层。 |
+| `semWeeks.js` | SEM weekly reports repository. |
+| `seoWeeks.js` | SEO weekly reports repository. |
+| `snapshots.js` | 月度快照数据访问层（总览环比用）。 |
+| `sop.js` | SOP 引擎数据访问层（定义 + 完成记录）。 |
+| `taskCheckins.js` | 跨天任务的每日推进打卡（task_checkins）。 |
+| `taskEffect.js` | 任务前后对比用的窗口聚合查询：某个页面 / 关键词 / 广告系列在一段日期里的同步数据。 |
+| `taskLinks.js` | 任务关联键数据访问层：任务 ↔ 页面 / 广告系列 / 关键词 / KPI。 |
+| `weeklyReports.js` | 复盘周报数据访问层。 |
+
+## 第三方同步（5）
+
+`server/src/sync/`
+
+| 文件 | 说明 |
+|---|---|
+| `ads.js` | （没有写说明） |
+| `ga4.js` | （没有写说明） |
+| `googleClient.js` | （没有写说明） |
+| `gsc.js` | （没有写说明） |
+| `scheduler.js` | 谷歌数据定时自动同步（进程内调度）。 |
+
+## 前端 ES 模块（打包进 dist/bundle.js）（45）
+
+`public/src/`
+
+| 文件 | 说明 |
+|---|---|
+| `ai.js` | AI 协同（ES 模块 · 服务端分析记录 + 对话框）。 |
+| `app.js` | 应用组装层（ES 模块 · esbuild 打包为 IIFE，由 main.js **最后** import）。 |
+| `archive.js` | 归档②：行级归档/沉淀委托 + 归档页加载（ES 模块 · esbuild 打包为 IIFE）。 |
+| `attachments.js` | 图片附件：选图 → 前端压缩 → 上传 → 缩略图 / 大图预览 / 删除。 |
+| `audit.js` | 周度审核页（行动中心 → 周度审核，2026-10-10）。 |
+| `catalog.js` | 询盘的「可选值目录」——产品 / 大区 的唯一真相（2026-09-20 新增）。 |
+| `change-log.js` | 改动流水弹框：询盘（渠道 / 等级 / 日期…）和任务（内容 / 日期 / 工时 / 结果…）共用这一个。 |
+| `charts.js` | 图表与数据看板层（ES 模块 · esbuild 打包为 IIFE）。 |
+| `closed-loop.js` | 运营闭环引擎（ES 模块 · esbuild 打包为 IIFE）。 |
+| `editable.js` | Shared helpers for contenteditable fields. |
+| `execution.js` | Execution 验证闭环明细（Phase 5A · 新写 ES 模块，零内联 handler，事件委托）。 |
+| `ga4-view.js` | GA4 流量看板（ES 模块 · esbuild 打包为 IIFE）。 |
+| `geo-checks.js` | GEO 引用抽查（数据看板 → GEO 抽查，2026-10-10）。 |
+| `geo.js` | 总览页的 GEO 卡（2026-10-10）：AI 引擎带来的流量与询盘。 |
+| `google-projects.js` | Google 接入 / 数据源状态（ES 模块 · esbuild 打包为 IIFE）。 |
+| `hermes-memory.js` | Hermes 长期记忆管理页（ES 模块 · esbuild 打包为 IIFE）。 |
+| `inquiries.js` | 询盘录入（真实弹框 + 持久化）+ 询盘列表加载（ES 模块 · esbuild 打包为 IIFE）。 |
+| `inquiry-attribution.js` | 询盘的确认权与改动留痕（前端这一半； |
+| `inquiry-data.js` | 询盘列表的取数。 |
+| `inquiry-globe.js` | Inquiry distribution world map（ES 模块 · esbuild 打包为 IIFE）。 |
+| `inquiry-sales.js` | 询盘表的「业务反馈」列（2026-09-20 新增）。 |
+| `inquiry-source.js` | 询盘来源（2026-10-10）：来源格里的对账徽章、来源详情弹框、表单线索收件箱。 |
+| `keywords.js` | 关键词库（4 类 · 增删改入库 · FR-9）（ES 模块 · esbuild 打包为 IIFE）。 |
+| `kpi-periods.js` | 考核期结算与历史（Phase 5C · 新写 ES 模块，零内联 handler，事件委托）。 |
+| `kpi-review-admin.js` | 设置 → 月度绩效考核：权重 / 达成率上限 / 出分地板 / 预算容忍带 / 绩效系数分档 / 月度目标。 |
+| `kpi-review.js` | 月度绩效考核看板（老板《2026 运营部绩效考核表》口径）。 |
+| `kpi-view.js` | KPI 看板渲染（ES 模块 · esbuild 打包为 IIFE）。 |
+| `kpi.js` | KPI 引擎 + 周数据（ES 模块 · esbuild 打包为 IIFE）。 |
+| `ledger.js` | 运营总账（ES 模块 · esbuild 打包为 IIFE）。 |
+| `main.js` | 前端 ES 模块入口（渐进迁移）。 |
+| `market-brain.js` | 市场分析（表格化）+ AI 记忆体联动（ES 模块 · esbuild 打包为 IIFE）。 |
+| `neg-ads.js` | 否词库 / 广告创意库 录入（ES 模块 · esbuild 打包为 IIFE）。 |
+| `plan-history.js` | 日计划回放（ES 模块 · esbuild 打包为 IIFE）。 |
+| `rank-snapshots.js` | SEO opportunity keyword rank snapshots and first-to-latest trend display. |
+| `risks.js` | （没有写说明） |
+| `settings.js` | Settings page: persisted KPI targets and account password changes. |
+| `sop-rate.js` | SOP 执行率（ES 模块 · esbuild 打包为 IIFE）。 |
+| `sop.js` | SOP 引擎（ES 模块 · esbuild 打包为 IIFE）。 |
+| `spend.js` | 投入台账（2026-10-10）：钱花在哪 —— 广告 / 外链 / 其它支出。 |
+| `table-editor.js` | Shared persistence and keyboard behavior for data-field table cells. |
+| `tagselect.js` | 彩色标签下拉 tag-select（ES 模块 · esbuild 打包为 IIFE）。 |
+| `task-audit.js` | 可审计任务（前端）。 |
+| `timerange.js` | 时间范围筛选（ES 模块 · esbuild 打包为 IIFE）。 |
+| `ui-kit.js` | 全站 UI 基础工具（ES 模块 · esbuild 打包为 IIFE）—— 转义 / 弹窗 / toast 的**唯一实现**。 |
+| `weekly-review.js` | Weekly/monthly review workspace. |
+
+## 前端经典脚本（不经打包，直接加载）（3）
+
+`public/`
+
+| 文件 | 说明 |
+|---|---|
+| `api.js` | 统一 REST 调用封装（替代原型里的 window.storage/localStorage）。 |
+| `hermes.js` | Hermes / Ferr Ops assistant entry. All operator workflows stay inside ferr-ops. |
+| `login.js` | （没有写说明） |
+
+## 样式表（23）
+
+`base.css` · `components.css` · `csp-utilities.css` · `login.css` · `page-archive.css` · `page-audit.css` · `page-content.css` · `page-dashboard.css` · `page-data.css` · `page-deposit.css` · `page-fixes.css` · `page-ga4.css` · `page-inquiry.css` · `page-keywords.css` · `page-kpi.css` · `page-market.css` · `page-review.css` · `page-risks.css` · `page-settings.css` · `page-spend.css` · `page-tasks.css` · `page-test.css` · `styles.css`
+
+## 数据表（51）
+
+`server/src/db/migrate.js`
+
+| 表 | 说明 |
+|---|---|
+| `ad_creatives` | （没有写说明） |
+| `ai_analyses` | （没有写说明） |
+| `attachments` | 通用附件（目前只收图片）。业务发回来的关键词截图 / 聊天记录截图等原始材料。 |
+| `backlinks` | 外链台账（2026-10-10）。经理的原话：花钱买的外链要能直接查到是哪一条、值不值； |
+| `content_assets` | V7：内容资产 |
+| `execution_loops` | Phase 5A：SEO/SEM 运营问题闭环（Problem→Analysis→Action→Verification）。Execution KPI 的真实数据源。 |
+| `expenses` | 其它支出台账：广告费从 Ads 同步、外链费在 backlinks，除此之外的钱（工具订阅、内容外包、建站技术…）记这里。 |
+| `fixes` | （没有写说明） |
+| `ga4_daily` | （没有写说明） |
+| `ga4_dimension_daily` | （没有写说明） |
+| `ga4_event_daily` | （没有写说明） |
+| `geo_checks` | （没有写说明） |
+| `geo_questions` | GEO 引用抽查（2026-10-10）：AI 回答里有没有提到 / 引用我们，没有接口能自动拿，只能人按固定题库去问。 |
+| `google_ads_campaign_daily` | （没有写说明） |
+| `google_ads_keyword_daily` | （没有写说明） |
+| `google_ads_search_term_daily` | （没有写说明） |
+| `google_oauth_states` | （没有写说明） |
+| `google_oauth_tokens` | （没有写说明） |
+| `google_projects` | （没有写说明） |
+| `google_sync_runs` | （没有写说明） |
+| `gsc_daily` | （没有写说明） |
+| `gsc_query_daily` | （没有写说明） |
+| `hermes_action_runs` | （没有写说明） |
+| `hermes_conversations` | （没有写说明） |
+| `hermes_memories` | SOP 引擎（Step A）：定义 + 完成记录 |
+| `inquiries` | （没有写说明） |
+| `inquiry_feedbacks` | 跟踪反馈改成「多条带时间的记录」（2026-08-27）。 |
+| `inquiry_field_changes` | 询盘确认权与改动留痕（2026-10-10 移植自旧分支的设计）。 |
+| `inquiry_leads` | 表单线索（2026-10-10）：独立站询盘表单提交时带着来源参数进来的原始记录。 |
+| `inquiry_sales_notes` | 业务反馈：业务员针对这条询盘发回来的东西（一段话 + 若干张图）。 |
+| `integrations` | V7：第三方集成密钥（AES 加密存储） |
+| `keywords` | （没有写说明） |
+| `kpi_config` | KPI 全局参数（出分地板、评分上限、Lead 权重、考核周期等），KV 存储、可在设置页改。 |
+| `kpi_period_snapshots` | KPI 绩效重构：正式考核期的冻结快照。改目标/权重不影响已结算的历史期（§29）。 |
+| `kpi_review_targets` | 月度绩效考核目标（老板《2026 运营部绩效考核表》的「目标设置」页口径）。 |
+| `kpi_targets` | （没有写说明） |
+| `loop_item_changes` | 任务改动流水（2026-10-11）。询盘改渠道 / 等级早就留痕，任务却没有：完成之后还能改标题、把截止日往后挪、 |
+| `loop_items` | （没有写说明） |
+| `market_brain` | V7：市场 AI 记忆体（单行，id=1） |
+| `market_research` | V7：市场分析问卷数据（按 xlsx 表格化；P2 填充） |
+| `monthly_snapshots` | V7：月度快照（用于总览环比对比） |
+| `neg_keywords` | （没有写说明） |
+| `rank_snapshots` | （没有写说明） |
+| `sem_weeks` | （没有写说明） |
+| `seo_weeks` | （没有写说明） |
+| `sop_completions` | （没有写说明） |
+| `sop_definitions` | （没有写说明） |
+| `task_checkins` | 跨天任务的每日推进打卡。跨天任务（start_date~task_date）在日计划上会连续挂好几天， |
+| `task_links` | 任务关联键（2026-10-10）：一条任务指向它动过的页面 / 广告系列 / 关键词，以及它想推动的 KPI。 |
+| `users` | （没有写说明） |
+| `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
+
+## 测试（48）
+
+`server/test/`
+
+| 文件 | 说明 |
+|---|---|
+| `aiAnalyses.test.js` | （没有写说明） |
+| `aiProvider.test.js` | （没有写说明） |
+| `attribution.test.js` | 询盘归因：SEM「真实每有效询盘成本」——回答「广告花的钱值不值」，算错会误导预算决策。 |
+| `attributionGate.test.js` | 询盘确认权与改动留痕。 |
+| `audit.test.js` | 周度审核：任务状态与疑点的规则、审核包、导出（CSV / XLSX / JSON）、AI 审核意见的解析。 |
+| `bundleFresh.test.js` | 线上跑的是 public/dist/bundle.js —— 它是手动打包之后提交进仓库的，构建镜像时原样拷贝，不会重新打。 |
+| `config.test.js` | （没有写说明） |
+| `ctrAnomaly.test.js` | 诊断规则「点击率偏低」：排在首页、曝光够多，但点击率不到本站同位次中位数一半的词。 |
+| `dateRange.test.js` | 时间范围解析 + 上一等长窗口。 |
+| `derive.test.js` | 派生指标纯计算：round / deriveSem / seoWow。 |
+| `documentParser.test.js` | （没有写说明） |
+| `execution.test.js` | Phase 5A Execution：渠道隔离 + 到期区间过滤（DB 级）。 |
+| `frontendApi.test.js` | （没有写说明） |
+| `frontendDataIntegrity.test.js` | （没有写说明） |
+| `frontendHtmlSinks.test.js` | 前端每一个「进入 HTML 的表达式」都必须可证明安全（规则见 server/scripts/auditHtmlSinks.mjs 文件头）。 |
+| `frontendXss.test.js` | （没有写说明） |
+| `ga4Sync.test.js` | （没有写说明） |
+| `gateInstalled.test.js` | 提交前门禁（.githooks/pre-commit）装上了没有。 |
+| `geo.test.js` | GEO：AI 引擎带来的流量与询盘。 |
+| `geoChecks.test.js` | GEO 引用抽查：固定题库 + 每轮记录。 |
+| `googleAdsSearchTerms.test.js` | （没有写说明） |
+| `googleHighlights.test.js` | （没有写说明） |
+| `hermesEvidence.test.js` | （没有写说明） |
+| `hermesMemoryPolicy.test.js` | （没有写说明） |
+| `hermesPrompt.test.js` | （没有写说明） |
+| `hermesStatus.test.js` | （没有写说明） |
+| `inquiryFeedback.test.js` | 跟踪反馈：一条询盘多条带时间的记录（2026-08-27 改版）。 |
+| `inquirySource.test.js` | 询盘来源：表单线索接收、线索转询盘、手填来源的对账。 |
+| `kpi.test.js` | KPI 评分：整个后台「公司分/李分/陈分」的权威算法。 |
+| `kpiLedger.test.js` | 运营总账：老板年终看的那张「花钱→询盘→优质→成交→效率」表。 |
+| `kpiReview.test.js` | 月度绩效考核（老板《2026 运营部绩效考核表》口径）评分引擎单测。 |
+| `linkCheck.test.js` | 外链存活核查。 |
+| `linkCheckBatch.test.js` | 外链的定时批量核查：轮到谁、查完怎么记、「上次还在这次没了」怎么标。 |
+| `middleware.test.js` | 权限矩阵回归测试。 |
+| `productionReadiness.test.js` | （没有写说明） |
+| `projectFacts.test.js` | 文档里的「事实」不许过期。 |
+| `riskRegister.test.js` | （没有写说明） |
+| `routes.test.js` | 路由层冒烟测试。 |
+| `settle.test.js` | Phase 5C 考核期冻结：结算快照后，改目标不改历史（§29）。 |
+| `spend.test.js` | 投入台账：外链 / 其它支出 / 「钱花在哪」汇总。 |
+| `taskAudit.test.js` | 可审计任务的规则：重要性判定、完成门槛、证据与关联键的合法性。 |
+| `taskAuditRoutes.test.js` | 可审计任务 · 路由层：完成门槛、关联键、重要标记、证据截图。 |
+| `taskChanges.test.js` | 任务的改动留痕与日期校验。 |
+| `taskEffect.test.js` | 任务完成前后的数据对比。 |
+| `timeRangeIntegration.test.js` | 时间范围端到端契约：KPI、总览、询盘必须消费同一日期口径，且只读查询不能污染共享快照。 |
+| `updateHelper.test.js` | updateById：7 个仓库共用的「按白名单部分更新」helper。 |
+| `verifiedAiAnswer.test.js` | （没有写说明） |
+| `weeklyReportKey.test.js` | 周报的周 / 月标识会原样出现在所有人的周报页上，所以只收固定的几种写法。 |
+
+## 工具脚本（3）
+
+`server/scripts/`
+
+| 文件 | 说明 |
+|---|---|
+| `auditHtmlSinks.mjs` | 前端 HTML 注入面审计。 |
+| `projectFacts.mjs` | 生成 docs/FACTS.md：仓库里「现在有什么」的清单 —— 路由、服务、数据访问、前端模块、数据表、测试、环境变量。 |
+| `verify-google-e2e.mjs` | （没有写说明） |
+
+## 代码会读的环境变量（52）
+
+`AI_HEALTH_TIMEOUT_MS` · `AI_PROVIDER` · `AI_REQUEST_TIMEOUT_MS` · `ANTHROPIC_API_KEY` · `ANTHROPIC_BASE_URL` · `ANTHROPIC_MAX_TOKENS` · `ANTHROPIC_MODEL` · `BACKLINK_AUTO_CHECK` · `BACKLINK_CHECK_BATCH` · `BACKLINK_CHECK_HOUR_UTC` · `BACKLINK_CHECK_PAUSE_MS` · `BACKLINK_CHECK_STALE_DAYS` · `CONFIRM_RESET` · `COOKIE_SECURE` · `DB_FILE` · `GA4_PROPERTY_ID` · `GOOGLE_ADS_API_VERSION` · `GOOGLE_ADS_CUSTOMER_ID` · `GOOGLE_ADS_DEVELOPER_TOKEN` · `GOOGLE_ADS_LOGIN_CUSTOMER_ID` · `GOOGLE_OAUTH_CLIENT_ID` · `GOOGLE_OAUTH_CLIENT_SECRET` · `GOOGLE_OAUTH_REDIRECT_URI` · `GSC_SITE_URL` · `HERMES_DAILY_LEARNING_AUTO` · `HERMES_HEALTH_CACHE_MS` · `HERMES_HEALTH_CHECK_INTERVAL_MS` · `HERMES_SHARED_SECRET` · `INQUIRY_INTAKE_SECRET` · `JWT_SECRET` · `LOGIN_RATE_LIMIT_MAX` · `LOGIN_RATE_LIMIT_WINDOW_MS` · `NODE_ENV` · `NODE_TEST_CONTEXT` · `OPENROUTER_API_KEY` · `OPENROUTER_BASE_URL` · `OPENROUTER_MAX_TOKENS` · `OPENROUTER_MODEL` · `OPENROUTER_VISION_MODEL` · `PORT` · `SEED_BOSS_PASSWORD` · `SEED_CHEN_PASSWORD` · `SEED_LI_PASSWORD` · `SEED_MANAGER_PASSWORD` · `SESSION_HOURS` · `SETTINGS_SECRET` · `SYNC_AUTO` · `SYNC_CATCHUP_ON_START` · `SYNC_CHECK_INTERVAL_HOURS` · `SYNC_DAILY_HOUR_UTC` · `SYNC_STALE_HOURS` · `SYNC_START_DELAY_MS`
+
+每一个的含义见 `.env.example`（测试会检查两边对得上）。

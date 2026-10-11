@@ -18,8 +18,13 @@ const allow = JSON.parse(readFileSync(ALLOW_FILE, 'utf8'));
 
 test('前端源码里没有证明不了的 HTML 拼接；登记清单里没有过期条目，每条都写了理由', () => {
   const { stats, findings, stale } = auditHtmlSinks(frontendSources(root), allow);
-  assert.deepEqual(findings.map((f) => `${f.file}:${f.line}  ${f.expr}`), [], '有表达式原样进了 HTML 却证明不了安全');
-  assert.deepEqual(stale, [], '登记清单里有已经不对应任何代码的条目');
+  assert.deepEqual(findings.map((f) => `${f.file}:${f.line}  ${f.expr}`), [],
+    '上面这些表达式被拼进了 HTML，但证明不了它是安全的。\n'
+    + '原因：页面上的字大多来自人填的内容和接口返回，没转义就拼进 HTML，别人就能往页面里塞标记。\n'
+    + '改法：是文字 / 接口字段 → 用 esc() 包上；是数字 → Number() 或 esc() 都行；\n'
+    + '      确实安全但工具证明不了 → 登记到 server/scripts/htmlSinksAllow.json 并写明理由（先想清楚为什么安全，别为了变绿顺手登记）。');
+  assert.deepEqual(stale, [],
+    '登记清单里有已经不对应任何代码的条目。改法：从 server/scripts/htmlSinksAllow.json 里删掉上面这几条。');
   // 防「工具瞎了所以什么都没报」：它得确实看到了这个量级的东西
   assert.ok(stats.sinks > 150 && stats.exprs > 800, `只扫到 ${stats.sinks} 个写入点 / ${stats.exprs} 个表达式，像是没扫全`);
   for (const [k, why] of [...Object.entries(allow['@reviewed']), ...Object.entries(allow).filter(([key]) => key !== '@reviewed')]) {
