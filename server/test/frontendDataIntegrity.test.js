@@ -110,7 +110,15 @@ test('GA4 view exposes real campaign and event evidence with understandable labe
    这条守卫因此改为要求：每个取数方都显式声明自己属于哪一页，并且只认自己那一页的 revision，
    否则改 A 页的时间会把 B 页的数据也换掉（正是这次要修的毛病）。 */
 test('every dated consumer names its own page scope and rejects stale responses', () => {
-  assert.match(inquiriesSource, /API\.get\(withRange\('\/api\/inquiries','inquiry'\)\)/);
+  // 询盘列表三处取数（询盘页 / 总览趋势 / KPI 圆环）走同一个 fetchInquiries(scope)：各报各的 scope，范围相同时共用一次请求
+  assert.match(inquiriesSource, /await fetchInquiries\('inquiry'\)/);
+  const inquiryDataSource = readFileSync(new URL('../../public/src/inquiry-data.js', import.meta.url), 'utf8');
+  assert.match(inquiryDataSource, /withRange\('\/api\/inquiries', scope\)/);
+  // 只合并正在路上的请求、不缓存结果（录入之后的重拉必须拿到新数据）；每个调用方拿自己的拷贝
+  assert.match(inquiryDataSource, /\.finally\(\(\) => pending\.delete\(url\)\)/);
+  assert.match(inquiryDataSource, /structuredClone\(res\)/);
+  // KPI 圆环与列表同时发出（放在 await 之前），否则永远赶不上「正在路上」的那一次
+  assert.match(inquiriesSource, /loadKpiInqDonuts\(\);\s*try\{\s*const \{items,stats\}=await fetchInquiries/);
   assert.match(inquiriesSource, /const requestId=\+\+inquiryRequestSequence/);
   assert.match(inquiriesSource, /revision!==getRangeRevision\('inquiry'\)/);
   assert.match(kpiSource, /API\.get\(withRange\('\/api\/kpi-targets','kpi'\)\)/);
@@ -122,8 +130,8 @@ test('every dated consumer names its own page scope and rejects stale responses'
   assert.match(chartsSource, /r=getCurrentRange\('dashboard'\)/);
   assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/gsc\/summary',r\)\)/);
   assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/ads\/board',r\)\)/);
-  assert.match(chartsSource, /API\.get\(withRange\('\/api\/inquiries','dashboard'\)\)/);
-  assert.match(chartsSource, /API\.get\(withRange\('\/api\/inquiries','kpi'\)\)/); // KPI 圆环自带取数，不蹭询盘页缓存
+  assert.match(chartsSource, /await fetchInquiries\('dashboard'\)/);
+  assert.match(chartsSource, /await fetchInquiries\('kpi'\)/); // KPI 圆环自带取数，不蹭询盘页缓存
   assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/seo\/board','data'\)\)/);
   assert.match(chartsSource, /API\.get\(withRange\('\/api\/diagnostics','data'\)\)/);
   assert.match(ga4Source, /API\.get\(withRange\('\/api\/ga4\/overview','data'\)\)/);

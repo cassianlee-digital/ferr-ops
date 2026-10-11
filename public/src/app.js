@@ -399,8 +399,8 @@ window.addEventListener('load',async()=>{
   charts();
   bindSettings();              // 设置页目标值回写
   renderSparklines();
+  loadDashboardInq();          // 总览询盘趋势按当前时间范围重算。排在 hydrate 前面发出：与询盘列表同范围时共用一次请求
   await hydrate();             // 询盘/否词/广告/排名快照
-  loadDashboardInq();          // 总览询盘趋势按当前时间范围重算
   loadDashboardBoards();       // 总览 SEO/SEM 两卡按当前时间范围重算
   loadGeo();                   // 总览 GEO 卡：AI 引擎带来的访问与询盘（之后随时间范围自己重拉）
   await loadKeywords();        // 关键词库 4 类

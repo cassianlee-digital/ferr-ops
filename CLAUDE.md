@@ -14,7 +14,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **后端不是单文件**:Fastify,模块化良好。
   - `server/src/routes/`(**36 个路由文件**,2026-10-10 实测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1374 行 / 138KB**(2026-10-10 实测;ES 模块 **44 个**(2026-10-11 实测 `ls public/src/*.js | wc -l`)),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1374 行 / 138KB**(2026-10-10 实测;ES 模块 **45 个**(2026-10-11 实测 `ls public/src/*.js | wc -l`)),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -31,7 +31,12 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 - **`Object.assign(window, …)` 兼容层仍要留**,消费者两类:`public/hermes.js`(只读 `window.API`/`ME`/`_curTab`/`esc`/`toast`/`go`/`loadClosedLoop`,全部带 `window.` 前缀且有兜底),以及 `closed-loop.js` 裸调用的 `go`/`chk`/`setPlanningTab`/`setActionTab`。
 - **app.js 的导出已从 10 个收到 4 个**(2026-08-26 第三刀):`loadInquiries`→`inquiries.js`(它渲染的三个函数本就在那)、`tableLoadState`→`ui-kit.js`、`renderSparklines`→`keywords.js`、`toggleHier`→`charts.js`(各自唯一调用者所在处);`hydrate`/`applyRoleUi`/`restoreRoute` **无任何外部调用者**,已降为模块私有。**顺带修掉一处设计违背**:`timerange.js` 原本反向调用 `loadInquiries()`,与其文件头写明的「消费者订阅事件」相悖且会成环,现改为 inquiries.js 自己监听 `timerange`(与 kpi-view/ledger 同一模式)。
 - **剩下 4 个导出为什么收不掉:真的有环**。`chk` 被 `closed-loop.js` 裸调用、又被 `sop.js` 以 `window.chk` 调用,而它自身要调 `closed-loop` 的 `refreshTaskCols` 和 `sop` 的 5 个函数 —— 放进任一方都成环。`go` 同理:拆 `nav.js` 需 import charts/archive/sop/weekly-review,而这四个都可达 `closed-loop.js`(唯一裸调用 `go` 的模块)。**正解是事件反转**(chk 做完 API 后派发 `taskchanged`,closed-loop/sop 各自订阅刷新;`go` 派发 `tabchange`),就是本项目 `timerange` 已在用的那套 —— 但它改的是任务打卡这类关键路径,要单独排一刀。
-- **已知既有缺陷(非重构引入)**:每次切时间范围会发**两个完全相同的** `/api/inquiries` 请求 —— `charts.js` 的 timerange 监听器调 `loadDashboardInq()` 与 `inquiries.js` 的 `loadInquiries()` 各取一次(改造前是 charts 监听 + timerange 直接调,数量口径一样)。要修得让两者共用一次取数。
+- ~~已知缺陷:询盘列表被重复请求~~ **已于 2026-10-11 修掉**。实际情况比原来记的更糟也更简单:询盘页的表格、总览的询盘趋势、KPI 页的两个圆环
+  各按自己的时间范围取 `/api/inquiries`,范围相同时(默认都是近 30 天)发出去的是一模一样的请求 —— **打开后台一次取三遍**。
+  现在三处都走 `public/src/inquiry-data.js` 的 `fetchInquiries(scope)`:**只合并正在路上的同地址请求,不缓存结果**
+  (缓存哪怕一两秒,都可能出现「刚录的询盘没显示」),每个调用方拿自己的一份拷贝(询盘页会就地改行对象)。
+  为了赶上「正在路上」那一次,`loadInquiries` 里取 KPI 圆环的调用挪到了 `await` 之前,启动序列里 `loadDashboardInq()` 挪到了 `hydrate()` 之前(有测试焊住)。
+  实测首屏 3 次 → 1 次。**仍然多余的一次**:切询盘页时间范围时会顺带重取 KPI 圆环(它的范围其实没变)。
 - **app.js 里仍靠隐式全局解析的只剩 16 个**(已审计,零漏网):`api.js` 的 `API`/`ensureAuth`/`can`/`ME`,以及 `hermes.js` 自己挂 window 的 14 个面板函数(`openHermesPanel`/`sendHermesPrompt` 等)。这两个经典脚本在 `bundle.js` **之前**加载,故运行时一定就绪。
 - **隐形风险降级但没消失**:经典脚本裸引用同样对打包器/静态分析隐形,改名依旧**没有编译期报错**。但排查方式变了 —— **改前端函数名前该 grep 的是 3 个经典脚本**(`hermes.js`/`api.js`/`login.js`),**不再是 `onclick=`**;`data-ui-action` 的动作名由 `app.js` 的 `STATIC_UI_ACTIONS` 表集中分发,改名会在表里露出来(且有测试校验 HTML 里每个动作都已注册)。
 - ~~已知死代码 `renderLoopbars()` + `LOOP`~~ **已于 2026-10-10 删除**(`.loopbar` 元素早就不在 HTML 里)。`base.css` 里 `.loopbar` / `.loopstep` 几条样式因此成了死样式,没动。
@@ -45,7 +50,8 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - `GOOGLE_ADS_API_VERSION=v24.1` 在生产账号**实际可用**(Ads 同步已成功),非问题。
   - `server/src/routes/ga4.js` 是只读概览端点(从库读已同步数据),非同步逻辑。
   - **定时自动同步已上线**:`server/src/sync/scheduler.js` 进程内调度,每日 UTC `SYNC_DAILY_HOUR_UTC`(默认 5)点同步三源 + 启动补跑(最近成功同步过期才补);`SYNC_AUTO=false` 可关。仍保留手动「立即同步」/`POST /api/sync/<provider>`。
-  - 已知小缺口:① GA4 落地页维度未取 conversions 指标,`landingPages[].conversions` 恒为 null;② GSC 有 ~2 天数据延迟,默认 7 天区间通常只回 6 天。
+  - 已知小缺口:GSC 有 ~2 天数据延迟,默认 7 天区间通常只回 6 天。(原来这里还记着「GA4 落地页维度未取 conversions、恒为 null」—— **2026-10-11 核对代码,这条早就不成立**:
+    `sync/ga4.js` 的 `dimensionReport` 每个维度都带 `keyEvents`,`landingPages[].conversions` 取的就是它。又一条没抽验就沿用的旧记录。)
 - `seo_weeks` / `sem_weeks` 当前**主要依赖人工录入**,无自动同步。
 - **SEO 看板「概览」已升级为富看板(Looker 风格)**:顶部卡/趋势读 `/api/google/gsc/summary`(`loadSeoBoardGsc`);其余读 `/api/google/seo/board`(`loadSeoBoardFull`,后端 `routes/google.js` + `googleSync.js` 的 `gscBoardTables/gscScatter/ga4SourcesRange/ga4SourceSeries`)——**本周要点条**(后端 `buildSeoHighlights` 自动挑最大涨跌,绿涨红跌)、落地页表+关键词表带彩色Δ环比、**机会词散点象限**(ECharts 展现×排名+中位线)、GA4 来源甜甜圈+按天堆叠面积。均随时间范围重拉。第二期(需扩 GA4 同步)才能做:跳出率散点、来源级跳出/时长、date×source×page 明细。
 - **SEM 看板「概览」已升级为富看板**:顶部卡读 `/api/google/ads/summary`(`loadSemBoardAds`);其余读 `/api/google/ads/board`(`loadSemBoardFull` + 后端 `adsBoardTables/adsScatter/adsSeries` + `buildAdsHighlights`)——本周要点条(转化涨绿/每转化成本涨红/高花费零转化合计/最烧钱零转化词/最佳系列)、系列表+关键词表带转化Δ+评估徽章、**花费×转化散点**(右下红区=高花费低转化=该砍,红点标关键词+下方「该砍」清单带诊断/采纳)、系列花费甜甜圈+每日花费/转化趋势。评估徽章按 有转化/零有效/无花费;金额按账户币种、不臆造符号。旧层级表已被 Δ 表替代。
@@ -304,7 +310,13 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   原图走 `GET /api/attachments/:id/raw`(immutable 缓存,id 不复用)。前端 canvas 压到长边 1600px 再传(GIF 原样传,重绘会只剩第一帧);
   服务端**不信前端报的 MIME,用文件头魔数复验** + `nosniff`,防的是「把 .html 改名 .png 传上来当同源页面打开」。
 - 时间范围现影响:询盘、SEO 看板(GSC)、SEM 看板(Ads)、GA4、诊断、询盘归因、总览、KPI。
-- **诊断引擎已上线**:`/api/diagnostics`(`server/src/routes/diagnostics.js` + `googleSync.js` 规则查询)产出 4 类真实 findings——机会词(排名11-20有曝光)、关键词蚕食(同词多页)、流量衰退(当前vs上一等长窗口点击跌幅)、高花费零有效(Ads cost>0 conv=0)。前端 SEO「站点机会/流量衰退/关键词蚕食」三子面板 + minitab 角标已读真实结果,随时间范围重算。**尚未做 CTR 异常规则。**
+- **诊断引擎已上线**:`/api/diagnostics`(`server/src/routes/diagnostics.js` + `googleSync.js` 规则查询)产出 5 类真实 findings——机会词(排名11-20有曝光)、关键词蚕食(同词多页)、流量衰退(当前vs上一等长窗口点击跌幅)、点击率偏低(见下)、高花费零有效(Ads cost>0 conv=0)。前端 SEO「站点机会/流量衰退/关键词蚕食」三子面板 + minitab 角标已读真实结果,随时间范围重算。
+  - **点击率偏低(2026-10-11,`services/ctrAnomaly.js` 纯函数 + `gscFirstPageRows`)**:排在首页(排名 < 10.5)、区间曝光 ≥ 50,
+    但点击率不到**本站同位次的词的中位数**一半、且按中位数算少拿 ≥ 3 次点击的「查询词 × 页面」。SEO「点击率偏低」子面板,可 AI 诊断 / 采纳入整改。
+    **不用行业点击率曲线**(那是别人的站,拿来判自己等于编基准);**用中位数不用加权平均**(品牌词点击率极高且曝光大,加权会把正常词全判成偏低,有测试)。
+    所以它说的是「在你自己的站里偏低」—— 整站标题都写得差时一条也报不出来,面板提示里写明了。
+    **诚实口径**:一档里可比的词不到 5 个、或中位数是 0 → 那一档没有基准、不判;接口同时返回 `baselines`,
+    面板据此区分「比过了没发现」和「可比的词太少、比不了」。**还没接进 AI 上下文**(`aiContext.js` 仍是原来四类)。
 - **诊断→整改闭环已通**:三类 SEO finding 每行「采纳」按钮 → POST `/api/fixes`(source=诊断引擎,evidence 记 GSC 依据)直接入整改清单(`public/charts.js` `adoptFinding`)。
 - **整改→日计划→回写也已通**(2026-08-13):整改清单每行「排入」→ `POST /api/fixes/:id/plan`,
   按整改的 dept/owner/title/due_date 建任务卡并写 `loop_items.fix_id`(**幂等**:已排过返回原任务 `existed:true`;整改已归档回 409),

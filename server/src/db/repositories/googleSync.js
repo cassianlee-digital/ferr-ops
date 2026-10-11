@@ -548,6 +548,21 @@ export function gscOpportunities(range, { minImpr = 10, limit = 50 } = {}) {
     .all(params);
 }
 
+// 首页上（排名 < 10.5）曝光够多的「查询词 × 页面」。点击率偏低规则（services/ctrAnomaly.js）拿它既算基准也找异常。
+export function gscFirstPageRows(range, { minImpr = 50, maxPosition = 10 } = {}) {
+  return db
+    .prepare(
+      `SELECT * FROM (
+         SELECT query, page, SUM(clicks) clicks, SUM(impressions) impressions,
+                CASE WHEN SUM(impressions) > 0 THEN SUM(position*impressions)/SUM(impressions) ELSE NULL END position
+         FROM gsc_query_daily
+         WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)
+         GROUP BY query, page
+       ) WHERE impressions >= @minImpr AND position < @maxPos`
+    )
+    .all({ start: range.start_date, end: range.end_date, siteUrl: range.gsc_site_url || null, minImpr, maxPos: maxPosition + 0.5 });
+}
+
 // 蚕食：同一 query 在区间内被 >=2 个有意义曝光的页面分散排名。返回每组的页面清单。
 export function gscCannibalization(range, { minImpr = 10, limit = 50 } = {}) {
   const params = { start: range.start_date, end: range.end_date, siteUrl: range.gsc_site_url || null, minImpr };

@@ -257,7 +257,7 @@
 
         <!-- ===== SEO 看板 ===== -->
         <div class="subpanel active" id="sub-data-seo">
-          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber is-hidden" id="diag-opp-n"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red is-hidden" id="diag-decay-n"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple is-hidden" id="diag-cann-n"></span></div></div>
+          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber is-hidden" id="diag-opp-n"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red is-hidden" id="diag-decay-n"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple is-hidden" id="diag-cann-n"></span></div><div class="minitab" data-mini="seo-ctr">点击率偏低 <span class="badge b-blue is-hidden" id="diag-ctr-n"></span></div></div>
 
           <div class="minipanel active" id="mp-seo-overview">
             <!-- AI 周报已移至「AI 周报」子tab；数据由 GSC 同步驱动，手动录入入口已移除 -->
@@ -310,6 +310,13 @@
             <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-git-merge"></i> 意图重复、互相抢排名的 URL 组——合并后排名通常立竿见影。每组点「AI 合并建议」让 AI 给方案</div>
             <div class="card"><table class="dt"><thead><tr><th>蚕食词</th><th>互相竞争的 URL</th><th class="num">分散排名</th><th class="ctr">建议</th><th class="ctr">动作</th></tr></thead><tbody id="diagCannRows">
               <tr><td colspan="5" class="dim csp-s-45c174bbec">加载中…</td></tr>
+            </tbody></table></div>
+          </div>
+
+          <div class="minipanel" id="mp-seo-ctr">
+            <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-click"></i> 已经排在首页、曝光也不少，但点进来的人明显比同样排位的词少——排名不用再冲，改标题和描述就可能多拿点击。对比的是<b>本站自己同位次的词</b>，不是行业水平</div>
+            <div class="card"><table class="dt"><thead><tr><th>关键词</th><th>页面</th><th class="num">排名</th><th class="num">曝光</th><th class="num">点击率</th><th class="num">少拿的点击</th><th class="ctr">动作</th></tr></thead><tbody id="diagCtrRows">
+              <tr><td colspan="7" class="dim csp-s-45c174bbec">加载中…</td></tr>
             </tbody></table></div>
           </div>
         </div>

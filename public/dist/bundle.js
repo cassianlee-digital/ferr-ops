@@ -850,6 +850,18 @@
     }
   }
 
+  // public/src/inquiry-data.js
+  var pending = /* @__PURE__ */ new Map();
+  function fetchInquiries(scope) {
+    const url = withRange2("/api/inquiries", scope);
+    let p = pending.get(url);
+    if (!p) {
+      p = API.get(url).finally(() => pending.delete(url));
+      pending.set(url, p);
+    }
+    return p.then((res) => structuredClone(res));
+  }
+
   // public/src/charts.js
   function loadFailureText(label, error) {
     const reason = error && error.message && error.message !== "unauthorized" ? error.message : "\u767B\u5F55\u72B6\u6001\u5DF2\u5931\u6548\u6216\u670D\u52A1\u4E0D\u53EF\u7528";
@@ -891,7 +903,7 @@
   async function loadKpiInqDonuts() {
     const requestId = ++kpiInqRequestSequence, revision = getRangeRevision("kpi");
     try {
-      const { items } = await API.get(withRange2("/api/inquiries", "kpi"));
+      const { items } = await fetchInquiries("kpi");
       if (requestId !== kpiInqRequestSequence || revision !== getRangeRevision("kpi")) return false;
       window._inqKpiCache = items || [];
     } catch (e) {
@@ -1985,6 +1997,19 @@
         return "<tr><td>" + esc(g.query) + '</td><td class="dim csp-s-33ee298127">' + urls + '</td><td class="num"><span class="badge b-red">' + esc(ranks) + '</span></td><td class="ctr"><span class="badge b-amber">' + g.pages.length + '\u9875\u62A21\u610F\u56FE</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8695\u98DF\u5408\u5E76\u5EFA\u8BAE") + '><i class="ti ti-git-merge"></i> AI \u5408\u5E76\u5EFA\u8BAE</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u8695\u98DF\u7EC4 \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
     }
+    const ctr = seo.ctr || {}, low = ctr.items || [];
+    _badgeCount("diag-ctr-n", low.length);
+    const t4 = document.getElementById("diagCtrRows");
+    if (t4) {
+      const pct5 = (v) => (Number(v) * 100).toFixed(1) + "%";
+      const none = (ctr.baselines || []).length ? "\u6682\u65E0\u70B9\u51FB\u7387\u660E\u663E\u504F\u4F4E\u7684\u8BCD\uFF08\u4E0E\u672C\u7AD9\u540C\u4F4D\u6B21\u7684\u8BCD\u76F8\u6BD4\uFF09" : "\u9996\u9875\u4E0A\u66DD\u5149\u591F\u591A\u7684\u8BCD\u592A\u5C11\uFF0C\u5EFA\u7ACB\u4E0D\u4E86\u5BF9\u6BD4\u57FA\u51C6 \xB7 \u8FD9\u4E0D\u4EE3\u8868\u70B9\u51FB\u7387\u6CA1\u95EE\u9898";
+      t4.innerHTML = error ? loadFailureRow(7, "SEO \u70B9\u51FB\u7387\u8BCA\u65AD", error) : low.length ? low.map((c) => {
+        const path = _seoPath(c.page), pos = Number(c.position).toFixed(1), mine = pct5(c.ctr), peers = pct5(c.expectedCtr);
+        const q = "\u5173\u952E\u8BCD\u300C" + c.query + "\u300D\u6392\u540D" + pos + "\u3001\u533A\u95F4\u66DD\u5149" + c.impressions + "\u3001\u70B9\u51FB\u7387" + mine + "\uFF0C\u800C\u672C\u7AD9\u540C\u4F4D\u6B21\u7684\u8BCD\u70B9\u51FB\u7387\u4E2D\u4F4D\u6570\u662F" + peers + "\u3002\u9875\u9762\u662F" + path + "\u3002\u5206\u6790\u5B83\u7684\u6807\u9898\u548C\u63CF\u8FF0\u4E3A\u4EC0\u4E48\u4E0D\u5438\u5F15\u4EBA\u70B9\uFF0C\u7ED9\u51FA 3 \u7EC4\u6539\u5199\u65B9\u6848\uFF08\u6807\u9898 + \u63CF\u8FF0\uFF09\u3002";
+        const ti = "\u70B9\u51FB\u7387\u504F\u4F4E\uFF1A" + c.query, de = "\u5173\u952E\u8BCD\u300C" + c.query + "\u300D\u6392\u540D" + pos + "\uFF08\u9875\u9762" + path + "\uFF09\uFF0C\u66DD\u5149" + c.impressions + "\uFF0C\u70B9\u51FB\u7387\u53EA\u6709" + mine + "\uFF0C\u672C\u7AD9\u540C\u4F4D\u6B21\u4E2D\u4F4D\u6570" + peers + "\u3002\u6539\u5199\u6807\u9898\u548C\u63CF\u8FF0\u3002", ev = "GSC \u6392\u540D" + pos + " \u66DD\u5149" + c.impressions + " \u70B9\u51FB\u7387" + mine + "\uFF08\u672C\u7AD9\u540C\u4F4D\u6B21\u4E2D\u4F4D " + peers + "\uFF09";
+        return "<tr><td>" + esc(c.query) + '</td><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + esc(pos) + '</td><td class="num">' + Number(c.impressions || 0).toLocaleString() + '</td><td class="num"><span class="badge b-red">' + esc(mine) + '</span> <span class="dim">\u540C\u4F4D\u6B21 ' + esc(peers) + '</span></td><td class="num">' + esc(c.missedClicks) + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u70B9\u51FB\u7387\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u6539\u6807\u9898</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+      }).join("") : '<tr><td colspan="7" class="dim csp-s-45c174bbec">' + none + "</td></tr>";
+    }
   }
   var inqChart = null;
   function _weekStart(dateStr) {
@@ -2020,7 +2045,7 @@
   async function loadDashboardInq() {
     const requestId = ++dashboardInqRequestSequence, revision = getRangeRevision("dashboard");
     try {
-      const { items } = await API.get(withRange2("/api/inquiries", "dashboard"));
+      const { items } = await fetchInquiries("dashboard");
       if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision("dashboard")) return false;
       window._inqDashboardCache = items || [];
       _inqDashboardError = null;
@@ -3609,18 +3634,18 @@
     if (!box) return;
     box.textContent = "";
     if (!cov || !cov.total) return;
-    const pending = cov.proposed + cov.legacy;
+    const pending2 = cov.proposed + cov.legacy;
     const bar = document.createElement("span");
     bar.className = "attr-bar " + (cov.unconfirmedRate >= 50 ? "attr-bar-warn" : cov.unconfirmedRate > 0 ? "attr-bar-mid" : "attr-bar-ok");
-    bar.textContent = "\u6E20\u9053\u4E0E\u7B49\u7EA7\u5DF2\u786E\u8BA4 " + cov.confirmed + "/" + cov.total + (cov.confirmedRate != null ? "\uFF08" + cov.confirmedRate + "%\uFF09" : "") + (pending ? " \xB7 \u5F85\u786E\u8BA4 " + cov.proposed + " \xB7 \u5386\u53F2\u672A\u5BA1 " + cov.legacy : "");
+    bar.textContent = "\u6E20\u9053\u4E0E\u7B49\u7EA7\u5DF2\u786E\u8BA4 " + cov.confirmed + "/" + cov.total + (cov.confirmedRate != null ? "\uFF08" + cov.confirmedRate + "%\uFF09" : "") + (pending2 ? " \xB7 \u5F85\u786E\u8BA4 " + cov.proposed + " \xB7 \u5386\u53F2\u672A\u5BA1 " + cov.legacy : "");
     bar.title = "\u7B49\u7EA7\u7531\u5F55\u5165\u4EBA\u81EA\u5DF1\u586B\uFF1B\u7ECF\u7406\u6216\u8001\u677F\u786E\u8BA4\u8FC7\u7684\u624D\u7B97\u5B9A\u7A3F";
     box.appendChild(bar);
-    if (isAuthority() && pending > 0) {
+    if (isAuthority() && pending2 > 0) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn-mini attr-bar-btn";
       btn.dataset.attrConfirmAll = "1";
-      btn.textContent = "\u5168\u90E8\u786E\u8BA4\uFF08" + pending + "\uFF09";
+      btn.textContent = "\u5168\u90E8\u786E\u8BA4\uFF08" + pending2 + "\uFF09";
       btn.title = "\u786E\u8BA4\u5F53\u524D\u65F6\u95F4\u8303\u56F4\u5185\u6240\u6709\u672A\u786E\u8BA4\u7684\u8BE2\u76D8\uFF08\u4E0D\u53D7\u8868\u5934\u7B5B\u9009\u5F71\u54CD\uFF09\uFF1B\u60F3\u9010\u6761\u770B\u518D\u786E\u8BA4\uFF0C\u5C31\u7528\u6BCF\u884C\u7684 \u2713";
       box.appendChild(btn);
     }
@@ -3725,25 +3750,25 @@
       }
       const allBtn = e.target.closest("[data-attr-confirm-all]");
       if (allBtn) {
-        const pending = (window._inqCache || []).filter((r) => !isConfirmed(r)).map((r) => r.id);
-        if (!pending.length) {
+        const pending2 = (window._inqCache || []).filter((r) => !isConfirmed(r)).map((r) => r.id);
+        if (!pending2.length) {
           toast2("\u5F53\u524D\u65F6\u95F4\u8303\u56F4\u5185\u6CA1\u6709\u5F85\u786E\u8BA4\u7684\u8BE2\u76D8");
           return;
         }
         if (allBtn.dataset.armed !== "1") {
           allBtn.dataset.armed = "1";
-          allBtn.textContent = "\u518D\u70B9\u4E00\u6B21\uFF1A\u786E\u8BA4 " + pending.length + " \u6761";
+          allBtn.textContent = "\u518D\u70B9\u4E00\u6B21\uFF1A\u786E\u8BA4 " + pending2.length + " \u6761";
           setTimeout(() => {
             if (allBtn.isConnected) {
               allBtn.dataset.armed = "";
-              allBtn.textContent = "\u5168\u90E8\u786E\u8BA4\uFF08" + pending.length + "\uFF09";
+              allBtn.textContent = "\u5168\u90E8\u786E\u8BA4\uFF08" + pending2.length + "\uFF09";
             }
           }, 4e3);
           return;
         }
         allBtn.disabled = true;
         try {
-          const r = await API.post("/api/inquiries/confirm", { ids: pending });
+          const r = await API.post("/api/inquiries/confirm", { ids: pending2 });
           toast2("\u5DF2\u786E\u8BA4 " + r.confirmed + " \u6761");
           changed2();
         } catch (err) {
@@ -4242,15 +4267,15 @@
   async function loadInquiries() {
     const requestId = ++inquiryRequestSequence;
     const revision = getRangeRevision("inquiry");
+    loadKpiInqDonuts();
     try {
-      const { items, stats } = await API.get(withRange2("/api/inquiries", "inquiry"));
+      const { items, stats } = await fetchInquiries("inquiry");
       if (requestId !== inquiryRequestSequence || revision !== getRangeRevision("inquiry")) return;
       window._inqCache = items || [];
       renderInqList();
       refreshInqStats(stats);
       loadAttrCoverage();
       loadSourceChecks();
-      loadKpiInqDonuts();
       if (window._curTab === "inquiry") {
         try {
           renderGlobe();
@@ -5248,12 +5273,12 @@
     out.est_hours = eh === "" ? null : Number(eh);
     const imp = $4("task-important");
     out.important = imp && imp.checked ? 1 : null;
-    const pending = pendingLink();
-    if (typeof pending === "string") {
-      toast2(pending);
+    const pending2 = pendingLink();
+    if (typeof pending2 === "string") {
+      toast2(pending2);
       return null;
     }
-    if (pending && !draftLinks.some((x) => x.type === pending.type && x.ref === pending.ref)) draftLinks.push(pending);
+    if (pending2 && !draftLinks.some((x) => x.type === pending2.type && x.ref === pending2.ref)) draftLinks.push(pending2);
     out.links = draftLinks.map((l) => ({ type: l.type, ref: l.ref }));
     return out;
   }
@@ -11887,8 +11912,8 @@
     charts();
     bindSettings();
     renderSparklines();
-    await hydrate();
     loadDashboardInq();
+    await hydrate();
     loadDashboardBoards();
     loadGeo();
     await loadKeywords();

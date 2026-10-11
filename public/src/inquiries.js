@@ -14,9 +14,10 @@
 
 import { esc, openModal, closeModal, toast, tableLoadState } from './ui-kit.js';
 import { loadDashboardInq, loadKpiInqDonuts } from './charts.js';
+import { fetchInquiries } from './inquiry-data.js';
 import { inlineConfirm } from './keywords.js';
 import { renderGlobe } from './inquiry-globe.js';
-import { getRangeRevision, withRange } from './timerange.js';
+import { getRangeRevision } from './timerange.js';
 import { commitPendingCellEdit } from './table-editor.js';
 import { PRODUCT_BADGE, REGION_BADGE, PRODUCT_NAMES, REGION_NAMES, fillSelect } from './catalog.js';
 import { salesCellHtml } from './inquiry-sales.js';
@@ -480,8 +481,11 @@ let inquiryRequestSequence=0;
 export async function loadInquiries(){
   const requestId=++inquiryRequestSequence;
   const revision=getRangeRevision('inquiry');
+  // KPI 页两个 donut 按 KPI 页自己的区间取数（不受询盘页区间/筛选影响）。与列表**同时**发出：
+  // 两边时间范围相同时共用一次请求（见 inquiry-data.js），以前是等列表回来再取一遍一模一样的
+  loadKpiInqDonuts();
   try{
-    const {items,stats}=await API.get(withRange('/api/inquiries','inquiry'));
+    const {items,stats}=await fetchInquiries('inquiry');
     if(requestId!==inquiryRequestSequence||revision!==getRangeRevision('inquiry'))return;
     window._inqCache=items||[];
     renderInqList(); // 唯一一张表：表头筛选 + 日期倒序 + 月份分隔 + 分页
@@ -489,7 +493,6 @@ export async function loadInquiries(){
     loadAttrCoverage(); // 渠道 / 等级的确认进度：未确认占比跟着列表一起刷
     loadSourceChecks(); // 来源对账 + 表单线索待处理数：表格先出来，这些随后补上（不 await，不拖慢列表）
     // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
-    loadKpiInqDonuts(); // KPI 页两个 donut 按 KPI 页自己的区间取数（不受询盘页区间/筛选影响）
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
   }catch(e){ if(requestId===inquiryRequestSequence&&e&&e.message!=='unauthorized'){
     window._inqCache=[];

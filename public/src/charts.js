@@ -6,6 +6,7 @@ import { esc, toast, toastGo } from './ui-kit.js';
 import { formatLocalDate, getCurrentRange, getRangeRevision, rangeText, withRange } from './timerange.js';
 import { createEvidenceFix, persistFailMsg } from './closed-loop.js';
 import { runAiAnalysis } from './ai.js';
+import { fetchInquiries } from './inquiry-data.js';
 
 function loadFailureText(label,error){
   const reason=error&&error.message&&error.message!=='unauthorized'?error.message:'登录状态已失效或服务不可用';
@@ -33,7 +34,7 @@ let kpiInqRequestSequence=0;
 export async function loadKpiInqDonuts(){
   const requestId=++kpiInqRequestSequence, revision=getRangeRevision('kpi');
   try{
-    const {items}=await API.get(withRange('/api/inquiries','kpi'));
+    const {items}=await fetchInquiries('kpi');
     if(requestId!==kpiInqRequestSequence||revision!==getRangeRevision('kpi'))return false;
     window._inqKpiCache=items||[];
   }catch(e){
@@ -727,6 +728,21 @@ function renderDiagnostics(d){
       return '<tr><td>'+esc(g.query)+'</td><td class="dim csp-s-33ee298127">'+urls+'</td><td class="num"><span class="badge b-red">'+esc(ranks)+'</span></td><td class="ctr"><span class="badge b-amber">'+g.pages.length+'页抢1意图</span></td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'蚕食合并建议')+'><i class="ti ti-git-merge"></i> AI 合并建议</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="dim csp-s-45c174bbec">暂无蚕食组 · 完成 GSC 同步后按规则自动识别</td></tr>';
   }
+  // 点击率偏低：首页词里，点击率不到本站同位次中位数一半的
+  const ctr=seo.ctr||{}, low=ctr.items||[];
+  _badgeCount('diag-ctr-n',low.length);
+  const t4=document.getElementById('diagCtrRows');
+  if(t4){
+    const pct=v=>(Number(v)*100).toFixed(1)+'%';
+    // 一条都没报有两种意思，要分开说：比过了没发现 / 可比的词太少根本比不了
+    const none=(ctr.baselines||[]).length?'暂无点击率明显偏低的词（与本站同位次的词相比）':'首页上曝光够多的词太少，建立不了对比基准 · 这不代表点击率没问题';
+    t4.innerHTML = error ? loadFailureRow(7,'SEO 点击率诊断',error) : low.length ? low.map(c=>{
+      const path=_seoPath(c.page), pos=Number(c.position).toFixed(1), mine=pct(c.ctr), peers=pct(c.expectedCtr);
+      const q='关键词「'+c.query+'」排名'+pos+'、区间曝光'+c.impressions+'、点击率'+mine+'，而本站同位次的词点击率中位数是'+peers+'。页面是'+path+'。分析它的标题和描述为什么不吸引人点，给出 3 组改写方案（标题 + 描述）。';
+      const ti='点击率偏低：'+c.query, de='关键词「'+c.query+'」排名'+pos+'（页面'+path+'），曝光'+c.impressions+'，点击率只有'+mine+'，本站同位次中位数'+peers+'。改写标题和描述。', ev='GSC 排名'+pos+' 曝光'+c.impressions+' 点击率'+mine+'（本站同位次中位 '+peers+'）';
+      return '<tr><td>'+esc(c.query)+'</td><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num">'+esc(pos)+'</td><td class="num">'+Number(c.impressions||0).toLocaleString()+'</td><td class="num"><span class="badge b-red">'+esc(mine)+'</span> <span class="dim">同位次 '+esc(peers)+'</span></td><td class="num">'+esc(c.missedClicks)+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'点击率诊断')+'><i class="ti ti-bulb"></i> 怎么改标题</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
+    }).join('') : '<tr><td colspan="7" class="dim csp-s-45c174bbec">'+none+'</td></tr>';
+  }
 }
 
 /* C-2b：有效询盘趋势——真实数据按粒度(天/周/月)聚合。询盘按天入库，三种粒度都诚实可做 */
@@ -747,7 +763,7 @@ let dashboardInqRequestSequence=0;
 export async function loadDashboardInq(){
   const requestId=++dashboardInqRequestSequence, revision=getRangeRevision('dashboard');
   try{
-    const {items}=await API.get(withRange('/api/inquiries','dashboard'));
+    const {items}=await fetchInquiries('dashboard');
     if(requestId!==dashboardInqRequestSequence||revision!==getRangeRevision('dashboard'))return false;
     window._inqDashboardCache=items||[]; _inqDashboardError=null;
   }catch(e){
