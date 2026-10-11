@@ -1,3 +1,4 @@
+// 前端结构与注入面：模块边界和加载顺序、没有内联事件与内联样式、动作按钮经事件委托。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';

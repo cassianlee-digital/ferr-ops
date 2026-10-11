@@ -1,3 +1,4 @@
+// Google Ads 同步：广告系列、关键词、搜索词三类日数据落库。
 import { config } from '../config.js';
 import * as repo from '../db/repositories/googleSync.js';
 import { getAccessToken, normalizeRange, projectProviderConfig, resolveProject } from './googleClient.js';

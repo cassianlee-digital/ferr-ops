@@ -1,3 +1,4 @@
+// GA4 同步：每日汇总、按来源 / 国家 / 设备 / 落地页的维度数据、事件数据落库。
 import * as repo from '../db/repositories/googleSync.js';
 import { googleJson, normalizeRange, projectProviderConfig, resolveProject } from './googleClient.js';
 

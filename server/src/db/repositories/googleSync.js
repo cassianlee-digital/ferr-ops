@@ -1,3 +1,4 @@
+// Google 同步的数据访问层：项目与授权令牌、GSC / GA4 / Ads 事实表的写入，以及看板和诊断用的查询。
 import crypto from 'node:crypto';
 import { db } from '../connection.js';
 import { encrypt, decryptSafe } from '../../services/crypto.js';

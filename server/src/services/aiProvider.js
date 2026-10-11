@@ -1,3 +1,4 @@
+// AI 提供方的统一入口：读取配置（OpenRouter / Anthropic 二选一）、超时控制、把错误翻成可以给用户看的原因。
 function boundedNumber(value, fallback, min, max) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;

@@ -1,3 +1,4 @@
+// 生产验收工具：静态检查不冒充实测、不泄露密钥；实测覆盖 AI、三源同步和备份恢复。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';

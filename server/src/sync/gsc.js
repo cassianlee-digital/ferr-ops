@@ -1,3 +1,4 @@
+// Search Console 同步：每日汇总与「查询词 × 页面」明细落库。
 import * as repo from '../db/repositories/googleSync.js';
 import { googleJson, normalizeRange, projectProviderConfig, resolveProject } from './googleClient.js';
 

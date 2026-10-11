@@ -1,3 +1,4 @@
+// AI 对话的附件：清洗上传的文件、把解析出的文字拼成提示词片段，带数量与长度上限。
 import { MAX_TOTAL_DOCUMENT_BYTES, parseDocumentAttachment } from './documentParser.js';
 
 const MAX_ATTACHMENTS = 5;

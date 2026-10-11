@@ -1,3 +1,4 @@
+// 看板「本周要点」：只陈述汇总事实，不把相关性写成原因。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 

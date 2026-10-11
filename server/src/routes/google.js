@@ -1,3 +1,4 @@
+// Google 项目与授权、以及 SEO / SEM 看板的数据 API（都读已同步落库的数据）。
 import { requireAuth, onlyManagerBoss } from '../auth/middleware.js';
 import { config } from '../config.js';
 import * as googleRepo from '../db/repositories/googleSync.js';

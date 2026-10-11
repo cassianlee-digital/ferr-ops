@@ -1,3 +1,4 @@
+// 生产验收：静态检查配置与数据证据；显式 --live 时才真的探测 AI、跑三源同步、验证备份可恢复。
 import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';

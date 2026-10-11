@@ -1,3 +1,4 @@
+// 前端数据完整性：各页面取数带自己的时间范围、过期响应被丢弃、表格改动不被重画冲掉等（多为对源码结构的断言）。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

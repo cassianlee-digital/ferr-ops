@@ -1,3 +1,4 @@
+// 文档解析：xlsx 解析成有上限的文字；拒绝有漏洞的旧版 xls 解析路径。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';

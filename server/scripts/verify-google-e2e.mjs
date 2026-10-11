@@ -1,3 +1,4 @@
+// 对着一个已部署的环境走一遍 Google 相关接口的端到端检查（用环境变量给地址和账号，不含任何密钥）。
 const baseUrl = String(process.env.E2E_BASE_URL || '').replace(/\/+$/, '');
 const username = String(process.env.E2E_USERNAME || 'boss');
 const password = String(process.env.E2E_PASSWORD || '');

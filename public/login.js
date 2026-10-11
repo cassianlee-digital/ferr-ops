@@ -1,3 +1,4 @@
+// 登录页的表单提交（经典脚本，只在 login.html 加载）。
 const form = document.getElementById('loginForm');
 const err = document.getElementById('err');
 const btn = document.getElementById('btn');

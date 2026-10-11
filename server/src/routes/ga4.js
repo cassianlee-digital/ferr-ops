@@ -1,3 +1,4 @@
+// GA4 概览 API（只读）：从库里读已同步的 GA4 数据，不触发同步。
 import { requireAuth } from '../auth/middleware.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
 import { ga4Overview } from '../db/repositories/googleSync.js';

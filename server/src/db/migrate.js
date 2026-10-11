@@ -26,6 +26,7 @@ const ALL_TABLES = [
 ];
 
 const SCHEMA = `
+-- 账号与角色（seo / sem / manager / boss）。
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT NOT NULL UNIQUE,
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 询盘：日期、国家、渠道、产品、等级、来源、是否成交，以及渠道 / 等级的确认状态。
 CREATE TABLE IF NOT EXISTS inquiries (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   date        TEXT NOT NULL,
@@ -62,6 +64,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
 );
 CREATE INDEX IF NOT EXISTS idx_inquiries_date ON inquiries(date);
 
+-- SEO 周数据（人工录入的周报口径，与 GSC 同步的事实表不是一个来源）。
 CREATE TABLE IF NOT EXISTS seo_weeks (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   week_date     TEXT NOT NULL,
@@ -77,6 +80,7 @@ CREATE TABLE IF NOT EXISTS seo_weeks (
 );
 CREATE INDEX IF NOT EXISTS idx_seo_weeks_date ON seo_weeks(week_date);
 
+-- SEM 周数据（人工录入的周报口径，与 Ads 同步的事实表不是一个来源）。
 CREATE TABLE IF NOT EXISTS sem_weeks (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   week_date     TEXT NOT NULL,
@@ -93,6 +97,7 @@ CREATE TABLE IF NOT EXISTS sem_weeks (
 );
 CREATE INDEX IF NOT EXISTS idx_sem_weeks_date ON sem_weeks(week_date);
 
+-- 否定关键词库。
 CREATE TABLE IF NOT EXISTS neg_keywords (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   word           TEXT NOT NULL,
@@ -104,6 +109,7 @@ CREATE TABLE IF NOT EXISTS neg_keywords (
   created_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 广告创意库：标题、描述、点击率、A/B 结论。
 CREATE TABLE IF NOT EXISTS ad_creatives (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   title        TEXT NOT NULL,
@@ -114,6 +120,7 @@ CREATE TABLE IF NOT EXISTS ad_creatives (
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 关键词排名快照：哪天、哪个词、排第几、落在哪个页面。
 CREATE TABLE IF NOT EXISTS rank_snapshots (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   snapshot_date TEXT NOT NULL,
@@ -124,6 +131,7 @@ CREATE TABLE IF NOT EXISTS rank_snapshots (
 );
 CREATE INDEX IF NOT EXISTS idx_rank_snapshots_date ON rank_snapshots(snapshot_date);
 
+-- KPI 指标的权重、目标值与实际值（旧版考核表盘与运营总账用；月度绩效考核的目标在 kpi_review_targets）。
 CREATE TABLE IF NOT EXISTS kpi_targets (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   grp        TEXT NOT NULL CHECK (grp IN ('total','seo','sem')),
@@ -193,6 +201,7 @@ CREATE TABLE IF NOT EXISTS execution_loops (
 CREATE INDEX IF NOT EXISTS idx_execution_loops_channel ON execution_loops(channel);
 CREATE INDEX IF NOT EXISTS idx_execution_loops_due ON execution_loops(verification_due_at);
 
+-- 关键词库：SEO / SEM / 客户信息等几类共用一张表（type 区分），各类特有的属性存在 attrs 里。
 CREATE TABLE IF NOT EXISTS keywords (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   type      TEXT NOT NULL CHECK (type IN ('seo','sem','high','customer')),
@@ -203,6 +212,7 @@ CREATE TABLE IF NOT EXISTS keywords (
 );
 CREATE INDEX IF NOT EXISTS idx_keywords_type ON keywords(type);
 
+-- 整改清单：问题、依据、动作、负责人、截止日、状态。
 CREATE TABLE IF NOT EXISTS fixes (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   title      TEXT NOT NULL,
@@ -222,6 +232,7 @@ CREATE TABLE IF NOT EXISTS fixes (
 );
 -- 注意：fixes(state) 索引在下方 ensureColumns 之后用 db.exec 创建（旧库 state 列由 ensureColumns 补，不能在此 IF NOT EXISTS 阶段建索引）
 
+-- 闭环条目：任务、月度计划、测试登记、沉淀四种共用一张表（kind 区分）。
 CREATE TABLE IF NOT EXISTS loop_items (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   kind       TEXT NOT NULL CHECK (kind IN ('plan','test','deposit','task')),
@@ -258,6 +269,7 @@ CREATE TABLE IF NOT EXISTS integrations (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- AI 分析结果：每个 scope 一份当前结论，重跑时旧结论进 history_json。
 CREATE TABLE IF NOT EXISTS ai_analyses (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   scope_key     TEXT NOT NULL UNIQUE,
@@ -278,6 +290,7 @@ CREATE TABLE IF NOT EXISTS ai_analyses (
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_state ON ai_analyses(state);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_scope_type ON ai_analyses(scope_type);
 
+-- Google 授权令牌（加密存储，绝不返回前端）。
 CREATE TABLE IF NOT EXISTS google_oauth_tokens (
   provider         TEXT PRIMARY KEY CHECK (provider IN ('gsc','ga4','ads')),
   access_token_enc TEXT,
@@ -288,12 +301,14 @@ CREATE TABLE IF NOT EXISTS google_oauth_tokens (
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Google 授权流程里的一次性 state，用来确认回调确实是自己发起的。
 CREATE TABLE IF NOT EXISTS google_oauth_states (
   state      TEXT PRIMARY KEY,
   provider   TEXT NOT NULL CHECK (provider IN ('gsc','ga4','ads')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 每一次同步的运行记录：哪个源、哪段区间、成没成功、写了多少行。
 CREATE TABLE IF NOT EXISTS google_sync_runs (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   provider     TEXT NOT NULL CHECK (provider IN ('gsc','ga4','ads')),
@@ -308,6 +323,7 @@ CREATE TABLE IF NOT EXISTS google_sync_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_google_sync_runs_provider_started ON google_sync_runs(provider, started_at);
 
+-- Google 项目：一组 GSC 站点 / GA4 媒体资源 / Ads 账户的对应关系。
 CREATE TABLE IF NOT EXISTS google_projects (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   name            TEXT NOT NULL,
@@ -321,6 +337,7 @@ CREATE TABLE IF NOT EXISTS google_projects (
 );
 CREATE INDEX IF NOT EXISTS idx_google_projects_default ON google_projects(is_default, active);
 
+-- Search Console 每日汇总：点击、曝光、点击率、平均排名。
 CREATE TABLE IF NOT EXISTS gsc_daily (
   date         TEXT NOT NULL,
   site_url     TEXT NOT NULL,
@@ -333,6 +350,7 @@ CREATE TABLE IF NOT EXISTS gsc_daily (
   PRIMARY KEY (date, site_url)
 );
 
+-- Search Console「查询词 × 页面」每日明细。
 CREATE TABLE IF NOT EXISTS gsc_query_daily (
   date         TEXT NOT NULL,
   site_url     TEXT NOT NULL,
@@ -348,6 +366,7 @@ CREATE TABLE IF NOT EXISTS gsc_query_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_gsc_query_daily_query ON gsc_query_daily(query, date);
 
+-- GA4 每日汇总：用户、会话、浏览、关键事件、跳出率、平均时长。
 CREATE TABLE IF NOT EXISTS ga4_daily (
   date                 TEXT NOT NULL,
   property_id          TEXT NOT NULL,
@@ -362,6 +381,7 @@ CREATE TABLE IF NOT EXISTS ga4_daily (
   PRIMARY KEY (date, property_id)
 );
 
+-- GA4 按维度的每日数据：来源 / 国家 / 设备 / 落地页 / 广告系列（dimension_type 区分）。
 CREATE TABLE IF NOT EXISTS ga4_dimension_daily (
   date            TEXT NOT NULL,
   property_id     TEXT NOT NULL,
@@ -379,6 +399,7 @@ CREATE TABLE IF NOT EXISTS ga4_dimension_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_ga4_dimension_daily_type ON ga4_dimension_daily(dimension_type, date);
 
+-- GA4 每日事件：事件名、次数、用户数、关键事件数。
 CREATE TABLE IF NOT EXISTS ga4_event_daily (
   date          TEXT NOT NULL,
   property_id   TEXT NOT NULL,
@@ -392,6 +413,7 @@ CREATE TABLE IF NOT EXISTS ga4_event_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_ga4_event_daily_name ON ga4_event_daily(event_name, date);
 
+-- Google Ads 广告系列每日数据：花费、展示、点击、转化。
 CREATE TABLE IF NOT EXISTS google_ads_campaign_daily (
   date                       TEXT NOT NULL,
   customer_id                TEXT NOT NULL,
@@ -409,6 +431,7 @@ CREATE TABLE IF NOT EXISTS google_ads_campaign_daily (
   PRIMARY KEY (date, customer_id, campaign_id)
 );
 
+-- Google Ads 关键词每日数据。
 CREATE TABLE IF NOT EXISTS google_ads_keyword_daily (
   date                       TEXT NOT NULL,
   customer_id                TEXT NOT NULL,
@@ -432,6 +455,7 @@ CREATE TABLE IF NOT EXISTS google_ads_keyword_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_google_ads_keyword_daily_text ON google_ads_keyword_daily(keyword_text, date);
 
+-- Google Ads 真实搜索词每日数据（用户实际搜的词，不是投放的关键词）。
 CREATE TABLE IF NOT EXISTS google_ads_search_term_daily (
   date                       TEXT NOT NULL,
   customer_id                TEXT NOT NULL,
@@ -569,6 +593,7 @@ CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_user_created
   ON hermes_action_runs(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_loop_item
   ON hermes_action_runs(loop_item_id);
+-- SOP 固定任务的定义：部门、频率（日 / 周 / 月）、标题。
 CREATE TABLE IF NOT EXISTS sop_definitions (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   dept       TEXT NOT NULL,                                -- SEM / SEO / 公司
@@ -581,6 +606,7 @@ CREATE TABLE IF NOT EXISTS sop_definitions (
 );
 CREATE INDEX IF NOT EXISTS idx_sop_def_dept_freq_active ON sop_definitions(dept, freq, active);
 
+-- SOP 的完成打卡：某条固定任务在某个周期做了没有。
 CREATE TABLE IF NOT EXISTS sop_completions (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   sop_id        INTEGER NOT NULL,
@@ -747,6 +773,7 @@ CREATE TABLE IF NOT EXISTS geo_questions (
   created_by  INTEGER REFERENCES users(id),
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
+-- GEO 引用抽查的每一格结果：某一轮 × 某个问题 × 某个引擎，提没提到、引没引用。
 CREATE TABLE IF NOT EXISTS geo_checks (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   question_id INTEGER NOT NULL REFERENCES geo_questions(id),

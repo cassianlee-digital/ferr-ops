@@ -1,3 +1,4 @@
+// AI 分析的持久化：当前结论、历史快照、追问各自的评分都要存得住。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';

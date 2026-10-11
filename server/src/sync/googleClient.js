@@ -1,3 +1,4 @@
+// Google 接口的公共部分：OAuth 授权与令牌刷新、项目配置解析、带鉴权的请求、日期区间归一。
 import { config } from '../config.js';
 import * as repo from '../db/repositories/googleSync.js';
 

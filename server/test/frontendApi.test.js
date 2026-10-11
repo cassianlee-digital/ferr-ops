@@ -1,3 +1,4 @@
+// 前端 api.js：调用签名不变、请求卡住时会中断并给出稳定的超时错误。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
