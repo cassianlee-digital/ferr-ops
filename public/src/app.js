@@ -18,6 +18,7 @@ import { pickGeoShot, submitGeoCheck } from './geo-checks.js';
 import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
 import { loadSites } from './sites.js';
 import { loadSiteScope } from './site-scope.js';
+import { loadSiteReturns } from './site-returns.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
 import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
@@ -419,6 +420,7 @@ window.addEventListener('load',async()=>{
   loadSemBoardAds();           // SEM 看板：真实 Google Ads 同步数据（顶部卡片）
   loadSemBoardFull();          // SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势
   loadAttribution();           // 询盘归因：Ads 花费 ÷ 真实 SEM 有效询盘
+  loadSiteReturns();           // 多站点：每个站的广告花费与询盘（之后随数据看板的时间范围自己重拉）
   loadDiagnostics();           // 诊断引擎：机会词/衰退/蚕食 真实识别 + 角标计数
   loadDataFreshness();         // 阶段5：数据新鲜度条（三源实际有数据天数 + 最后同步）
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)

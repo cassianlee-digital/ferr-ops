@@ -25,6 +25,7 @@ import { dailyPlanRoutes } from './dailyPlan.js';
 import { googleRoutes } from './google.js';
 import { diagnosticsRoutes } from './diagnostics.js';
 import { attributionRoutes } from './attribution.js';
+import { siteReturnsRoutes } from './siteReturns.js';
 import { hermesRoutes } from './hermes.js';
 import { dataFreshnessRoutes } from './dataFreshness.js';
 import { hermesActionsRoutes } from './hermesActions.js';
@@ -62,6 +63,7 @@ export async function registerRoutes(app) {
   await app.register(googleRoutes);
   await app.register(diagnosticsRoutes);
   await app.register(attributionRoutes);
+  await app.register(siteReturnsRoutes);
   await app.register(hermesRoutes);
   await app.register(dataFreshnessRoutes);
   await app.register(hermesActionsRoutes);

@@ -18,7 +18,7 @@ const ALL_TABLES = [
   'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'geo_questions', 'geo_checks', 'geo_rounds', 'hermes_action_runs',
+  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'geo_questions', 'geo_checks', 'geo_rounds', 'ads_campaign_sites', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily', 'ga4_event_daily',
@@ -789,6 +789,13 @@ CREATE TABLE IF NOT EXISTS geo_checks (
   UNIQUE(question_id, engine, round_date)
 );
 CREATE INDEX IF NOT EXISTS idx_geo_checks_round ON geo_checks(round_date);
+-- 广告系列归到哪个站点：Ads 是一个账户几个站共用、按系列区分，这张表记「这个系列投的是哪个站」（由人指定，不自动推断）。
+CREATE TABLE IF NOT EXISTS ads_campaign_sites (
+  campaign_id TEXT PRIMARY KEY,
+  site_id     INTEGER NOT NULL REFERENCES google_projects(id),
+  set_by      INTEGER REFERENCES users(id),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
 -- GEO 引用抽查每一轮定格的题数：题库会变，旧轮次的「应查几题」不能跟着现在的题库变（规矩见 services/geoChecks.js 的 roundExpected）。
 CREATE TABLE IF NOT EXISTS geo_rounds (
   round_date     TEXT PRIMARY KEY,

@@ -372,3 +372,16 @@ body.dark #panel-data .minitabs .minitab {
 #sub-data-geo .geochk-noshot { font-size: 10px; font-weight: 600; color: var(--danger); }
 #geoCheckMask .modal-foot #geochk-del { margin-right: auto; }
 #sub-data-geo .geochk-off { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* ===== 按站点：广告花费与询盘（多站点，public/src/site-returns.js）===== */
+#siteReturnsCard{margin-bottom:16px}
+.sret-table td.num,.sret-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+.sret-table tr.sret-rest td{color:var(--text3);border-top:1px dashed var(--border)}
+.sret-note{margin:8px 0;font-size:12px;line-height:1.6;color:var(--text3)}
+.sret-campaigns{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.sret-sub{font-size:13px;font-weight:600;margin-bottom:6px}
+.sret-campaign{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:5px 0;font-size:13px}
+.sret-cname{min-width:160px;max-width:320px;overflow-wrap:anywhere}
+.sret-ccost{min-width:90px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text2)}
+.sret-select{min-width:160px;padding:3px 6px;border:1px solid var(--border);border-radius:2px;background:var(--bg);color:var(--text);font:inherit}
+.sret-hint{font-size:12px;color:var(--amber)}

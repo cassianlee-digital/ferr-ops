@@ -570,20 +570,20 @@
   var splitActionItems = [];
   var modalRequestVersion = 0;
   function hashText(s) {
-    let h3 = 5381;
+    let h4 = 5381;
     s = String(s || "");
-    for (let i = 0; i < s.length; i++) h3 = (h3 << 5) + h3 + s.charCodeAt(i);
-    return (h3 >>> 0).toString(36);
+    for (let i = 0; i < s.length; i++) h4 = (h4 << 5) + h4 + s.charCodeAt(i);
+    return (h4 >>> 0).toString(36);
   }
   function currentAiPage() {
     const p = document.querySelector(".panel.active");
     return { tab: (p && p.id || "").replace("panel-", ""), title: (p && p.querySelector(".page-title") || {}).textContent || "", sub: (p && p.querySelector(".page-sub") || {}).textContent || "" };
   }
   function rowContext(btn) {
-    const tr = btn && btn.closest && btn.closest("tr");
-    if (!tr) return null;
-    const th = [...(tr.closest("table") || document).querySelectorAll("thead th")].map((x) => x.innerText.trim());
-    const td2 = [...tr.children].map((x) => x.innerText.trim());
+    const tr2 = btn && btn.closest && btn.closest("tr");
+    if (!tr2) return null;
+    const th = [...(tr2.closest("table") || document).querySelectorAll("thead th")].map((x) => x.innerText.trim());
+    const td2 = [...tr2.children].map((x) => x.innerText.trim());
     const cells = {};
     td2.forEach((v, i) => cells[th[i] || "col" + (i + 1)] = v);
     return { text: td2.join(" | "), cells };
@@ -609,8 +609,8 @@
     if (!btn || !item || !btn.classList) return;
     btn.classList.add("analyzed");
     btn.innerHTML = '<i class="ti ti-check"></i> \u5DF2\u5206\u6790';
-    const tr = btn.closest("tr");
-    if (tr) tr.classList.add("ai-analyzed-row");
+    const tr2 = btn.closest("tr");
+    if (tr2) tr2.classList.add("ai-analyzed-row");
   }
   function applyAiAnalysisStates(root) {
     const base = root || document;
@@ -622,10 +622,10 @@
       if (item) markAiTrigger(btn, item);
     });
     base.querySelectorAll(".kw-ai").forEach((btn) => {
-      const tr = btn.closest("tr");
-      if (!tr) return;
-      const n = tr.querySelector(".kw-name");
-      const kw = (n ? n.textContent : tr.cells[0].textContent).trim();
+      const tr2 = btn.closest("tr");
+      if (!tr2) return;
+      const n = tr2.querySelector(".kw-name");
+      const kw = (n ? n.textContent : tr2.cells[0].textContent).trim();
       const prompt2 = "\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE";
       const title = "\u300C" + kw + "\u300D\u610F\u56FE";
       const item = aiAnalyses.get(aiMeta(btn, prompt2, title).scope_key);
@@ -707,8 +707,8 @@
     if (!hist.length) return "";
     const idx = aiViewIdx;
     let chips = '<button type="button" class="ai-tl-chip' + (idx < 0 ? " active" : "") + '" data-ai-snapshot="-1">\u672C\u6B21 \xB7 ' + fmtAiTime(item.updated_at) + "</button>";
-    hist.forEach((h3, i) => {
-      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h3.at) + "</button>";
+    hist.forEach((h4, i) => {
+      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h4.at) + "</button>";
     });
     return '<div class="ai-timeline"><span class="ai-tl-label"><i class="ti ti-history"></i> \u5386\u53F2\u5BF9\u6BD4</span>' + chips + "</div>";
   }
@@ -1340,7 +1340,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h3) => '<span class="seo-hl-chip ' + (h3.tone === "good" ? "good" : "bad") + '">' + esc(h3.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h4) => '<span class="seo-hl-chip ' + (h4.tone === "good" ? "good" : "bad") + '">' + esc(h4.text) + "</span>").join("");
   }
   function renderSeoDeltaTables(d) {
     const error = d && d.error;
@@ -1705,7 +1705,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h3) => '<span class="seo-hl-chip ' + (h3.tone === "good" ? "good" : "bad") + '">' + esc(h3.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h4) => '<span class="seo-hl-chip ' + (h4.tone === "good" ? "good" : "bad") + '">' + esc(h4.text) + "</span>").join("");
   }
   function renderSemDeltaTables(d) {
     const error = d && d.error;
@@ -2597,7 +2597,7 @@
   async function renderGlobe() {
     const el5 = document.getElementById("inqGlobe");
     if (!el5) return;
-    const seq6 = ++renderSeq;
+    const seq7 = ++renderSeq;
     const { groups, unmappedList, unmappedTotal } = collectMapData();
     const empty2 = document.getElementById("inqGlobe-empty");
     if (empty2) empty2.style.display = "none";
@@ -2605,9 +2605,9 @@
     renderShell(el5, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
     try {
       await ensureWorldMap();
-      if (seq6 !== renderSeq) return;
+      if (seq7 !== renderSeq) return;
     } catch (err) {
-      if (seq6 !== renderSeq) return;
+      if (seq7 !== renderSeq) return;
       const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
       renderShell(el5, groups, `
       <div class="inq-map-error">
@@ -3129,7 +3129,7 @@
     const box = ensureLightbox();
     const img = box.querySelector(".att-lightbox-img");
     const url = rawUrl(id);
-    const seq6 = ++lightboxSeq;
+    const seq7 = ++lightboxSeq;
     img.src = url;
     box.querySelector(".att-lightbox-name").textContent = meta.name || "\u56FE\u7247";
     box.querySelector(".att-lightbox-open").href = url;
@@ -3137,7 +3137,7 @@
     const sizeText = meta.bytes ? humanBytes(meta.bytes) : "";
     dim.textContent = sizeText;
     const showDim = () => {
-      if (seq6 !== lightboxSeq || !img.naturalWidth) return;
+      if (seq7 !== lightboxSeq || !img.naturalWidth) return;
       const px = img.naturalWidth + " \xD7 " + img.naturalHeight;
       dim.textContent = sizeText ? px + " \xB7 " + sizeText : px;
     };
@@ -3188,8 +3188,8 @@
   var pendingFiles = [];
   function repaintCell() {
     if (!editing) return;
-    const tr = document.querySelector('.inq-tb tr[data-id="' + editing.id + '"]');
-    const cell3 = tr && tr.querySelector(".inq-sales-feedback");
+    const tr2 = document.querySelector('.inq-tb tr[data-id="' + editing.id + '"]');
+    const cell3 = tr2 && tr2.querySelector(".inq-sales-feedback");
     if (cell3) cell3.innerHTML = salesCellHtml(editing);
     document.dispatchEvent(new CustomEvent("salesnoteschanged", { detail: { id: editing.id } }));
   }
@@ -3212,8 +3212,8 @@
     }
     box.innerHTML = '<div class="track-log-head">\u4E1A\u52A1\u53CD\u9988 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((n) => `<div class="track-item" data-note="${esc(n.id)}"><div class="track-item-meta"><span class="track-item-date${n.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc(noteDate(n.created_at, true))}</span>` + (n.created_by_name ? `<span class="track-item-who">${esc(n.created_by_name)}</span>` : "") + `<button type="button" class="sales-item-add-img" data-sales-addimg="${esc(n.id)}" title="\u7ED9\u8FD9\u6761\u8865\u56FE"><i class="ti ti-photo-plus"></i></button><button type="button" class="track-item-del" data-sales-del="${esc(n.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div>` + (n.text ? `<div class="track-item-text">${esc(n.text)}</div>` : '<div class="track-item-text dim">\uFF08\u4EC5\u56FE\u7247\uFF09</div>') + thumbsHtml(n.images, { deletable: true }) + "</div>").join("");
   }
-  function openSales(tr) {
-    const id = tr && tr.dataset.id;
+  function openSales(tr2) {
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
     if (!it) return;
@@ -3276,8 +3276,8 @@
   document.addEventListener("click", (e) => {
     const t = e.target.closest(".inq-tb [data-sales-open]");
     if (!t) return;
-    const tr = t.closest("tr");
-    if (tr) openSales(tr);
+    const tr2 = t.closest("tr");
+    if (tr2) openSales(tr2);
   });
   document.addEventListener("click", async (e) => {
     const unpick = e.target.closest("[data-sales-unpick]");
@@ -3392,17 +3392,17 @@
     sel.value = row.site_id != null ? String(row.site_id) : "";
   }
   async function loadSourceChecks() {
-    const seq6 = ++checkSeq;
+    const seq7 = ++checkSeq;
     refreshLeadBadge();
     try {
       const data3 = await API.get(withRange2("/api/inquiries/source-check", "inquiry"));
-      if (seq6 !== checkSeq) return;
+      if (seq7 !== checkSeq) return;
       checks = new Map((data3.items || []).map((i) => [i.id, i]));
       verdicts = data3.verdicts || {};
       lookbackDays = data3.lookback_days || 30;
       changed();
     } catch (e) {
-      if (seq6 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+      if (seq7 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
     }
   }
   var editing2 = null;
@@ -3838,8 +3838,8 @@
     document.addEventListener("click", async (e) => {
       const inTable = (sel) => e.target.closest("#tb-inq " + sel);
       const rowOf = (el5) => {
-        const tr = el5.closest("tr");
-        return (window._inqCache || []).find((x) => String(x.id) === String(tr && tr.dataset.id));
+        const tr2 = el5.closest("tr");
+        return (window._inqCache || []).find((x) => String(x.id) === String(tr2 && tr2.dataset.id));
       };
       const logBtn = inTable("[data-attr-log]");
       if (logBtn) {
@@ -4006,8 +4006,8 @@
     }
     box.innerHTML = '<div class="track-log-head">\u8DDF\u8E2A\u8BB0\u5F55 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((f) => `<div class="track-item" data-fb="${esc(f.id)}"><div class="track-item-meta"><span class="track-item-date${f.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc(fbDateLabel(f, true))}</span>` + (f.created_by_name ? `<span class="track-item-who">${esc(f.created_by_name)}</span>` : "") + `<button type="button" class="track-item-del" data-fb-del="${esc(f.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div><div class="track-item-text">${esc(f.text)}</div></div>`).join("");
   }
-  function openTrack(tr) {
-    const id = tr && tr.dataset.id;
+  function openTrack(tr2) {
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
     if (!it) return;
@@ -4019,8 +4019,8 @@
     setTimeout(() => document.getElementById("track-text").focus(), 50);
   }
   function repaintTrackCell(it) {
-    const tr = document.querySelector('.inq-tb tr[data-id="' + it.id + '"]');
-    const cell3 = tr && tr.querySelector(".inq-track-feedback");
+    const tr2 = document.querySelector('.inq-tb tr[data-id="' + it.id + '"]');
+    const cell3 = tr2 && tr2.querySelector(".inq-track-feedback");
     if (cell3) cell3.innerHTML = trackCellHtml(it);
   }
   async function submitTrack() {
@@ -4048,8 +4048,8 @@
   document.addEventListener("click", (e) => {
     const t = e.target.closest(".inq-tb [data-track-open]");
     if (!t) return;
-    const tr = t.closest("tr");
-    if (tr) openTrack(tr);
+    const tr2 = t.closest("tr");
+    if (tr2) openTrack(tr2);
   });
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("#track-log [data-fb-del]");
@@ -4238,8 +4238,8 @@
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".inq-tb .inq-del");
     if (!btn) return;
-    const tr = btn.closest("tr");
-    const id = tr && tr.dataset.id;
+    const tr2 = btn.closest("tr");
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
     try {
@@ -4303,8 +4303,8 @@
     tb.querySelectorAll("tr[data-id] td[contenteditable][data-field]").forEach((td2) => {
       const now = td2.innerText.trim();
       if (td2._old == null || String(td2._old).trim() === now) return;
-      const tr = td2.closest("tr");
-      const it = (window._inqCache || []).find((x) => String(x.id) === String(tr.dataset.id));
+      const tr2 = td2.closest("tr");
+      const it = (window._inqCache || []).find((x) => String(x.id) === String(tr2.dataset.id));
       if (it) it[td2.dataset.field] = now;
     });
   }
@@ -4344,15 +4344,15 @@
         sep.innerHTML = `<td colspan="${COLSPAN}"><i class="ti ti-calendar-month hicon"></i> ${esc(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
         tb.appendChild(sep);
       }
-      const tr = document.createElement("tr");
-      tr.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
-      tr.dataset.month = ym;
+      const tr2 = document.createElement("tr");
+      tr2.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
+      tr2.dataset.month = ym;
       if (r.id) {
-        tr.dataset.id = r.id;
-        tr.dataset.ep = "/api/inquiries";
+        tr2.dataset.id = r.id;
+        tr2.dataset.ep = "/api/inquiries";
       }
-      tr.innerHTML = inqRowHtml(r);
-      tb.appendChild(tr);
+      tr2.innerHTML = inqRowHtml(r);
+      tb.appendChild(tr2);
     });
     renderInqPager(rows2.length, pages, start + 1, start + slice.length);
   }
@@ -4511,10 +4511,10 @@
   });
   async function persistTagChange(el5, value) {
     const kind = el5.dataset.kind;
-    const tr = el5.closest("tr");
-    const id = tr && tr.dataset.id;
+    const tr2 = el5.closest("tr");
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
-    if (tr.dataset.kwType) {
+    if (tr2.dataset.kwType) {
       const attrKey = { comp: "comp", optstatus: "optstatus", match: "match", priority: "priority", intent: "searchIntent" }[kind];
       if (!attrKey) return;
       try {
@@ -4524,7 +4524,7 @@
       }
       return;
     }
-    const ep = tr.dataset.ep;
+    const ep = tr2.dataset.ep;
     if (!ep) return;
     const fieldMap = {
       negmatch: "match_type",
@@ -4556,21 +4556,21 @@
         if (it) {
           it[field3] = value;
           if (field3 === "channel" || field3 === "grade") it.attr_change_count = (Number(it.attr_change_count) || 0) + 1;
-          if ((field3 === "grade" || field3 === "channel") && tr) {
-            tr.querySelectorAll("td[contenteditable][data-field]").forEach((td2) => {
+          if ((field3 === "grade" || field3 === "channel") && tr2) {
+            tr2.querySelectorAll("td[contenteditable][data-field]").forEach((td2) => {
               it[td2.dataset.field] = td2.innerText.trim();
             });
-            tr.innerHTML = inqRowHtml(it);
-            tr.classList.toggle("inq-upgraded", isUpgraded(it));
+            tr2.innerHTML = inqRowHtml(it);
+            tr2.classList.toggle("inq-upgraded", isUpgraded(it));
           }
         }
       }
-      if (ep === "/api/loop-items" && kind === "status" && value === "\u5DF2\u5B8C\u6210" && (tr.querySelector('[data-field="content"]') || {}).innerText) {
-        const dept = tr.querySelector('[data-kind="dept"]');
-        const isSem = tr.closest("#tb-plan-sem") != null;
+      if (ep === "/api/loop-items" && kind === "status" && value === "\u5DF2\u5B8C\u6210" && (tr2.querySelector('[data-field="content"]') || {}).innerText) {
+        const dept = tr2.querySelector('[data-kind="dept"]');
+        const isSem = tr2.closest("#tb-plan-sem") != null;
         const ak = isSem ? "sem" : "seo";
         await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
-        tr.remove();
+        tr2.remove();
         toast2("\u5DF2\u5B8C\u6210 \xB7 \u5DF2\u81EA\u52A8\u5F52\u6863");
       }
     } catch (err) {
@@ -4600,62 +4600,62 @@
   }
   function kwRow(type, r) {
     const a = r.attrs || {};
-    const tr = document.createElement("tr");
-    tr.dataset.id = r.id;
-    tr.dataset.kwType = type;
-    tr.dataset.cat = r.category || "";
+    const tr2 = document.createElement("tr");
+    tr2.dataset.id = r.id;
+    tr2.dataset.kwType = type;
+    tr2.dataset.cat = r.category || "";
     const aiBtn = '<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> \u5206\u6790\u610F\u56FE</button>';
     const del = '<button class="btn-mini kw-del csp-s-7ee38adc7c" title="\u5220\u9664"><i class="ti ti-trash"></i></button>';
     const ev = (v) => v == null ? "" : v;
     const ed = (attr, val) => `<td class="editable" contenteditable data-attr="${attr}">${esc(ev(val))}</td>`;
     const ct = `<td class="dim csp-s-4a01f70563">${esc((r.created_at || "").slice(0, 10))}</td>`;
     if (type === "seo") {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr2.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
     } else if (type === "sem") {
-      tr.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr2.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
     } else if (type === "high") {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
+      tr2.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
     } else {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr kw-sales">${kwSalesCellHtml(r)}</td><td class="ctr">${aiBtn} ${del}</td>`;
-      tr._kwImages = Array.isArray(r.images) ? r.images.slice() : [];
+      tr2.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr kw-sales">${kwSalesCellHtml(r)}</td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr2._kwImages = Array.isArray(r.images) ? r.images.slice() : [];
     }
-    return tr;
+    return tr2;
   }
   function kwSalesCellHtml(r) {
     const imgs = Array.isArray(r.images) ? r.images : [];
     return thumbsHtml(imgs, { deletable: true }) + `<button type="button" class="btn-mini kw-img-add" title="\u4E0A\u4F20\u4E1A\u52A1\u53D1\u6765\u7684\u56FE\u7247"><i class="ti ti-photo-plus"></i> ${imgs.length ? "\u52A0\u56FE" : "\u4F20\u56FE"}</button>`;
   }
-  function kwRowRecord(tr) {
-    if (!tr._kwImages) tr._kwImages = [];
-    return tr._kwImages;
+  function kwRowRecord(tr2) {
+    if (!tr2._kwImages) tr2._kwImages = [];
+    return tr2._kwImages;
   }
-  function repaintKwSales(tr) {
-    const cell3 = tr.querySelector(".kw-sales");
+  function repaintKwSales(tr2) {
+    const cell3 = tr2.querySelector(".kw-sales");
     if (!cell3) return;
-    cell3.innerHTML = kwSalesCellHtml({ images: kwRowRecord(tr) });
+    cell3.innerHTML = kwSalesCellHtml({ images: kwRowRecord(tr2) });
   }
   document.addEventListener("click", async (e) => {
     const add = e.target.closest("#tb-kw-cust .kw-img-add");
     if (add) {
-      const tr = add.closest("tr");
-      if (!tr || !tr.dataset.id) return;
-      const done = await pickAndUpload(KEYWORD_OWNER, tr.dataset.id, { multiple: true });
+      const tr2 = add.closest("tr");
+      if (!tr2 || !tr2.dataset.id) return;
+      const done = await pickAndUpload(KEYWORD_OWNER, tr2.dataset.id, { multiple: true });
       if (done.length) {
-        tr._kwImages = kwRowRecord(tr).concat(done);
-        repaintKwSales(tr);
+        tr2._kwImages = kwRowRecord(tr2).concat(done);
+        repaintKwSales(tr2);
       }
       return;
     }
     const del = e.target.closest("#tb-kw-cust [data-att-del]");
     if (del) {
-      const tr = del.closest("tr");
-      if (!tr) return;
+      const tr2 = del.closest("tr");
+      if (!tr2) return;
       if (!inlineConfirm(del, "\u786E\u8BA4")) return;
       const id = del.dataset.attDel;
       try {
         await deleteImage(id);
-        tr._kwImages = kwRowRecord(tr).filter((im) => String(im.id) !== String(id));
-        repaintKwSales(tr);
+        tr2._kwImages = kwRowRecord(tr2).filter((im) => String(im.id) !== String(id));
+        repaintKwSales(tr2);
         toast2("\u5DF2\u5220\u9664\u8FD9\u5F20\u56FE");
       } catch (err) {
         toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
@@ -4678,19 +4678,19 @@
   document.addEventListener("focusout", async (e) => {
     const c = e.target.closest && e.target.closest("#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]");
     if (!c) return;
-    const tr = c.closest("tr");
-    if (!tr || !tr.dataset.id) return;
+    const tr2 = c.closest("tr");
+    if (!tr2 || !tr2.dataset.id) return;
     const val = c.innerText.trim();
     const oldVal = c._old != null ? c._old : c.innerText;
     if (val === String(oldVal).trim()) return;
     const isCat = c.dataset.cat != null;
     const body = isCat ? { category: val } : { attrs: { [c.dataset.attr]: val } };
     try {
-      await API.patch("/api/keywords/" + tr.dataset.id, body);
+      await API.patch("/api/keywords/" + tr2.dataset.id, body);
       c._old = val;
       if (isCat) {
-        tr.dataset.cat = val;
-        renderCatTabs(tr.dataset.kwType);
+        tr2.dataset.cat = val;
+        renderCatTabs(tr2.dataset.kwType);
       }
     } catch (err) {
       rollbackEditable(c, oldVal);
@@ -4704,7 +4704,7 @@
     const tb = document.getElementById(KW_TB[type]);
     if (!box || !tb) return;
     const active = (box.querySelector(".cat-tab.active") || {}).textContent;
-    const cats = [...new Set([...tb.querySelectorAll("tr")].map((tr) => tr.dataset.cat).filter(Boolean))];
+    const cats = [...new Set([...tb.querySelectorAll("tr")].map((tr2) => tr2.dataset.cat).filter(Boolean))];
     box.innerHTML = '<span class="cat-tab cat-all">\u5168\u90E8</span>' + cats.map((c) => `<span class="cat-tab">${esc(c)}</span>`).join("") + '<span class="cat-tab add"><i class="ti ti-plus"></i> \u65B0\u5EFA\u5206\u7C7B</span>';
     const keep = [...box.querySelectorAll(".cat-tab")].find((x) => x.textContent.trim() === (active || "").trim()) || box.querySelector(".cat-all");
     keep.classList.add("active");
@@ -4719,14 +4719,14 @@
     if (!tb) return;
     const cat = type === "seo" || type === "sem" ? activeCat(type) : null;
     const all = [...tb.querySelectorAll("tr")];
-    const rows2 = all.filter((tr) => !cat || tr.dataset.cat === cat);
+    const rows2 = all.filter((tr2) => !cat || tr2.dataset.cat === cat);
     const size = _kwSize[type] || 20, total = rows2.length, pages = Math.max(1, Math.ceil(total / size));
     let p = _kwPage[type] || 0;
     if (p > pages - 1) p = pages - 1;
     if (p < 0) p = 0;
     _kwPage[type] = p;
-    all.forEach((tr) => tr.style.display = "none");
-    rows2.slice(p * size, (p + 1) * size).forEach((tr) => tr.style.display = "");
+    all.forEach((tr2) => tr2.style.display = "none");
+    rows2.slice(p * size, (p + 1) * size).forEach((tr2) => tr2.style.display = "");
     renderKwPager(type, p, pages, total);
   }
   function renderKwPager(type, p, pages, total) {
@@ -4814,13 +4814,13 @@
       const { item } = await API.post("/api/keywords", { type, keyword: "\u65B0\u5173\u952E\u8BCD", attrs: {}, category });
       const tb = document.getElementById(KW_TB[type]);
       if (tb) {
-        const tr = kwRow(type, item);
-        tb.appendChild(tr);
+        const tr2 = kwRow(type, item);
+        tb.appendChild(tr2);
         renderSparklines();
         if (type === "seo" || type === "sem") renderCatTabs(type);
         _kwPage[type] = 1e9;
         applyKwPaging(type);
-        const c = tr.querySelector(".kw-name");
+        const c = tr2.querySelector(".kw-name");
         if (c) {
           c.focus();
           placeCaretEnd(c);
@@ -4852,8 +4852,8 @@
     }, 3e3);
     return false;
   }
-  async function kwDelete(tr, btn) {
-    if (!tr || !tr.dataset.id) return;
+  async function kwDelete(tr2, btn) {
+    if (!tr2 || !tr2.dataset.id) return;
     if (btn && btn.dataset.confirm !== "1") {
       btn.dataset.confirm = "1";
       if (!btn.dataset.old) btn.dataset.old = btn.innerHTML;
@@ -4869,9 +4869,9 @@
     }
     if (btn) clearTimeout(btn._t);
     try {
-      const type = tr.dataset.kwType;
-      await API.del("/api/keywords/" + tr.dataset.id);
-      tr.remove();
+      const type = tr2.dataset.kwType;
+      await API.del("/api/keywords/" + tr2.dataset.id);
+      tr2.remove();
       if (type === "seo" || type === "sem") renderCatTabs(type);
       else applyKwPaging(type);
       toast2("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5165\u5E93");
@@ -4887,9 +4887,9 @@
   document.addEventListener("click", (e) => {
     const ai = e.target.closest(".kw-ai");
     if (ai) {
-      const tr = ai.closest("tr");
-      const n = tr.querySelector(".kw-name");
-      const kw = (n ? n.textContent : tr.cells[0].textContent).trim();
+      const tr2 = ai.closest("tr");
+      const n = tr2.querySelector(".kw-name");
+      const kw = (n ? n.textContent : tr2.cells[0].textContent).trim();
       runAiAnalysis(ai, "\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE", "\u300C" + kw + "\u300D\u610F\u56FE", false);
       return;
     }
@@ -4915,8 +4915,8 @@
   document.addEventListener("focusout", async (e) => {
     const cell3 = e.target.closest && e.target.closest(".kw-name");
     if (!cell3) return;
-    const tr = cell3.closest("tr");
-    if (!tr || !tr.dataset.id) return;
+    const tr2 = cell3.closest("tr");
+    if (!tr2 || !tr2.dataset.id) return;
     const oldVal = cell3.dataset.kwOld != null ? cell3.dataset.kwOld : cell3.textContent;
     const vr = validateEditableValue(cell3.textContent, "text", { nonempty: true, emptyMsg: "\u5173\u952E\u8BCD\u4E0D\u80FD\u4E3A\u7A7A" });
     if (!vr.ok) {
@@ -4932,7 +4932,7 @@
     }
     setSavingState(cell3, "saving");
     try {
-      await API.patch("/api/keywords/" + tr.dataset.id, { keyword: v });
+      await API.patch("/api/keywords/" + tr2.dataset.id, { keyword: v });
       cell3.textContent = v;
       cell3.dataset.kwOld = v;
       setSavingState(cell3, "ok");
@@ -4945,16 +4945,16 @@
   function renderSparklines() {
     document.querySelectorAll("[data-spark]").forEach((td2) => {
       const v = td2.dataset.spark.split(",").map(Number);
-      const w = 58, h3 = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
+      const w = 58, h4 = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
       const pts = v.map((d, i) => {
         const x = i / (v.length - 1) * (w - 4) + 2;
-        const y = (d - min) / rng * (h3 - 6) + 3;
+        const y = (d - min) / rng * (h4 - 6) + 3;
         return x.toFixed(1) + "," + y.toFixed(1);
       }).join(" ");
       const up = v[v.length - 1] < v[0];
       const col = up ? "var(--green)" : v[v.length - 1] > v[0] ? "var(--primary)" : "var(--text3)";
-      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h3 - 6) + 3;
-      td2.innerHTML = `<svg class="spark" width="${w}" height="${h3}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
+      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h4 - 6) + 3;
+      td2.innerHTML = `<svg class="spark" width="${w}" height="${h4}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
     });
   }
 
@@ -5096,11 +5096,11 @@
     const e = document.getElementById("sop-empty");
     if (e) e.style.display = "none";
     list.forEach((s) => {
-      const tr = document.createElement("tr");
-      tr.dataset.sopId = s.id;
+      const tr2 = document.createElement("tr");
+      tr2.dataset.sopId = s.id;
       const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>` : '<span class="dim csp-s-33ee298127">\u53EA\u8BFB</span>';
-      tr.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.title)}</td><td class="dim csp-s-33ee298127">${esc(s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
-      tb.appendChild(tr);
+      tr2.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.title)}</td><td class="dim csp-s-33ee298127">${esc(s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
+      tb.appendChild(tr2);
     });
   }
   var _sopEditing = null;
@@ -5147,8 +5147,8 @@
     const edit = e.target.closest(".sop-edit");
     const del = e.target.closest(".sop-del");
     if (!edit && !del) return;
-    const tr = (edit || del).closest("tr");
-    const id = tr && tr.dataset.sopId;
+    const tr2 = (edit || del).closest("tr");
+    const id = tr2 && tr2.dataset.sopId;
     if (!id) return;
     if (edit) {
       const s = window._sops.find((x) => String(x.id) === String(id));
@@ -5168,8 +5168,8 @@
   });
   function isOverduePeriodFirstDay(freq) {
     const now = /* @__PURE__ */ new Date();
-    const h3 = now.getHours();
-    if (h3 < 8) return false;
+    const h4 = now.getHours();
+    if (h4 < 8) return false;
     if (freq === "daily") return true;
     if (freq === "weekly") return now.getDay() === 1;
     if (freq === "monthly") return now.getDate() === 1;
@@ -5625,28 +5625,28 @@
     tbody.appendChild(head);
     const list = metrics[item.source];
     if (!item.before || !list) {
-      const tr = el("tr");
+      const tr2 = el("tr");
       const td2 = el("td", "dim", EFFECT_STATUS_TEXT[item.status] || "\u8FD9\u4E2A\u6570\u636E\u6E90\u6682\u65F6\u65E0\u6CD5\u5BF9\u6BD4\uFF08\u89C1\u4E0A\u65B9\u8BF4\u660E\uFF09");
       td2.colSpan = 4;
-      tr.appendChild(td2);
-      tbody.appendChild(tr);
+      tr2.appendChild(td2);
+      tbody.appendChild(tr2);
       return;
     }
     if (item.status === "NO_DATA") {
-      const tr = el("tr");
+      const tr2 = el("tr");
       const td2 = el("td", "dim", EFFECT_STATUS_TEXT.NO_DATA);
       td2.colSpan = 4;
-      tr.appendChild(td2);
-      tbody.appendChild(tr);
+      tr2.appendChild(td2);
+      tbody.appendChild(tr2);
       return;
     }
     for (const m of list) {
-      const tr = el("tr");
-      tr.appendChild(el("td", "", m.label));
-      tr.appendChild(el("td", "num", fmtNum(item.before[m.key])));
-      tr.appendChild(el("td", "num", fmtNum(item.after[m.key])));
-      tr.appendChild(deltaCell(item.delta[m.key], m.better));
-      tbody.appendChild(tr);
+      const tr2 = el("tr");
+      tr2.appendChild(el("td", "", m.label));
+      tr2.appendChild(el("td", "num", fmtNum(item.before[m.key])));
+      tr2.appendChild(el("td", "num", fmtNum(item.after[m.key])));
+      tr2.appendChild(deltaCell(item.delta[m.key], m.better));
+      tbody.appendChild(tr2);
     }
   }
   function renderEffect(data3) {
@@ -5685,15 +5685,15 @@
   }
   async function loadEffect() {
     const box = $4("task-effect-body");
-    const seq6 = ++effectSeq;
+    const seq7 = ++effectSeq;
     document.querySelectorAll("#taskEffectMask [data-effect-days]").forEach((b) => b.classList.toggle("active", Number(b.dataset.effectDays) === effectDays));
     box.textContent = "";
     box.appendChild(el("div", "dim", "\u52A0\u8F7D\u4E2D\u2026"));
     try {
       const data3 = await API.get(effectPath + "?days=" + effectDays);
-      if (seq6 === effectSeq) renderEffect(data3);
+      if (seq7 === effectSeq) renderEffect(data3);
     } catch (e) {
-      if (seq6 !== effectSeq) return;
+      if (seq7 !== effectSeq) return;
       box.textContent = "";
       box.appendChild(el("div", "task-done-error", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25") + " "));
       const retry = el("button", "btn-mini", "\u91CD\u8BD5");
@@ -5755,21 +5755,21 @@
   function futureDate(days) {
     return formatLocalDate(new Date(Date.now() + days * 864e5));
   }
-  function flashRow(tr) {
-    tr.style.transition = "background .25s";
-    tr.style.background = "var(--green-soft)";
-    setTimeout(() => tr.style.background = "", 1700);
+  function flashRow(tr2) {
+    tr2.style.transition = "background .25s";
+    tr2.style.background = "var(--green-soft)";
+    setTimeout(() => tr2.style.background = "", 1700);
   }
   function prepend(tbId, html) {
     const tb = document.getElementById(tbId);
     if (!tb) return null;
     const state2 = tb.querySelector("tr[data-load-state]");
     if (state2) state2.remove();
-    const tr = document.createElement("tr");
-    tr.innerHTML = html;
-    tb.insertBefore(tr, tb.firstChild);
-    flashRow(tr);
-    return tr;
+    const tr2 = document.createElement("tr");
+    tr2.innerHTML = html;
+    tb.insertBefore(tr2, tb.firstChild);
+    flashRow(tr2);
+    return tr2;
   }
   function grabText(btn) {
     const it = btn.closest(".ai-item");
@@ -5856,13 +5856,13 @@
     }
     const btn = e.target.closest(".row-plan");
     if (!btn) return;
-    const tr = btn.closest("tr");
-    const id = tr && tr.dataset.id;
+    const tr2 = btn.closest("tr");
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     btn.disabled = true;
     try {
       const { item, existed } = await API.post("/api/fixes/" + id + "/plan", { start_date: formatLocalDate(/* @__PURE__ */ new Date()) });
-      const tag = tr.querySelector('[data-kind="result"]');
+      const tag = tr2.querySelector('[data-kind="result"]');
       if (tag && tag.firstChild && !/已改|放弃/.test(tag.textContent)) tag.firstChild.nodeValue = "\u8FDB\u884C\u4E2D";
       btn.outerHTML = fixPlanHtml({ planned_task_id: item.id });
       if (!existed && document.getElementById("newtask-sem")) {
@@ -5881,22 +5881,22 @@
     go("action");
     if (typeof setActionTab === "function") setActionTab("fix");
   });
-  function bindFixRow(tr, f) {
-    if (tr && f && f.id) {
-      tr.dataset.id = f.id;
-      tr.dataset.ep = "/api/fixes";
+  function bindFixRow(tr2, f) {
+    if (tr2 && f && f.id) {
+      tr2.dataset.id = f.id;
+      tr2.dataset.ep = "/api/fixes";
     }
-    return tr;
+    return tr2;
   }
   function addFixFromObj(f) {
     return bindFixRow(prepend("tb-fix", fixRowHtml(f)), f);
   }
-  function bindLoopRow(tr, it) {
-    if (tr && it && it.id) {
-      tr.dataset.id = it.id;
-      tr.dataset.ep = "/api/loop-items";
+  function bindLoopRow(tr2, it) {
+    if (tr2 && it && it.id) {
+      tr2.dataset.id = it.id;
+      tr2.dataset.ep = "/api/loop-items";
     }
-    return tr;
+    return tr2;
   }
   function addTest(s, content, it) {
     it = it || {};
@@ -6158,8 +6158,8 @@
   var LUNCH_START_MIN = 12 * 60;
   var LUNCH_END_MIN = 13 * 60 + 30;
   function minToHhmm(m) {
-    const h3 = Math.floor(m / 60), mm = m % 60;
-    return String(h3).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    const h4 = Math.floor(m / 60), mm = m % 60;
+    return String(h4).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
   }
   function annotateTaskTimes(todayGroup) {
     const cards = [...todayGroup.querySelectorAll(":scope > .tcard:not(.done)")];
@@ -6236,9 +6236,9 @@
     if (o) o.value = "\u674E";
     const hs = document.getElementById("subtask-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h3 = 0; h3 < 24; h3++) {
+      for (let h4 = 0; h4 < 24; h4++) {
         const op = document.createElement("option");
-        const hh = String(h3).padStart(2, "0");
+        const hh = String(h4).padStart(2, "0");
         op.value = hh;
         op.textContent = hh + ":00";
         hs.appendChild(op);
@@ -6287,9 +6287,9 @@
     if (lbl) lbl.textContent = dept;
     const hs = document.getElementById("task-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h3 = 0; h3 < 24; h3++) {
+      for (let h4 = 0; h4 < 24; h4++) {
         const o = document.createElement("option");
-        const hh = String(h3).padStart(2, "0");
+        const hh = String(h4).padStart(2, "0");
         o.value = hh;
         o.textContent = hh + ":00";
         hs.appendChild(o);
@@ -6335,9 +6335,9 @@
     if (lbl) lbl.textContent = _taskScope.dept || "";
     const hs = document.getElementById("task-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h3 = 0; h3 < 24; h3++) {
+      for (let h4 = 0; h4 < 24; h4++) {
         const o = document.createElement("option");
-        const hh = String(h3).padStart(2, "0");
+        const hh = String(h4).padStart(2, "0");
         o.value = hh;
         o.textContent = hh + ":00";
         hs.appendChild(o);
@@ -6519,8 +6519,8 @@
     const s = sFromDept("SEO");
     try {
       const { item } = await API.post("/api/fixes", { title: "\u65B0\u6574\u6539\u9879", dept: s.dept, detail: "", evidence: "", owner: s.owner, due_date: futureDate(7), status: "\u8BA1\u5212\u4E0B\u5468", source: "\u624B\u52A8" });
-      const tr = addFixFromObj(item);
-      const c = tr && tr.querySelector('[data-field="title"]');
+      const tr2 = addFixFromObj(item);
+      const c = tr2 && tr2.querySelector('[data-field="title"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6558,8 +6558,8 @@
     const tb = document.getElementById(id);
     if (!tb) return;
     tb.innerHTML = "";
-    const tr = document.createElement("tr");
-    tr.dataset.loadState = "error";
+    const tr2 = document.createElement("tr");
+    tr2.dataset.loadState = "error";
     const td2 = document.createElement("td");
     td2.colSpan = colspan;
     td2.className = "dim csp-s-d48bfa87bb";
@@ -6570,8 +6570,8 @@
     btn.innerHTML = '<i class="ti ti-refresh"></i> \u91CD\u8BD5';
     btn.addEventListener("click", retry);
     td2.appendChild(btn);
-    tr.appendChild(td2);
-    tb.appendChild(tr);
+    tr2.appendChild(td2);
+    tb.appendChild(tr2);
   }
   function resetClosedLoopView() {
     ["tb-fix", "tb-dep", "tb-test-sem", "tb-test-seo", "tb-plan-sem", "tb-plan-seo"].forEach((id) => {
@@ -6661,11 +6661,11 @@
       (items || []).slice().reverse().forEach((it) => {
         const s = sFromDept(it.dept);
         if (it.kind === "deposit") {
-          const tr = document.createElement("tr");
-          tr.dataset.id = it.id;
-          tr.dataset.ep = "/api/loop-items";
-          tr.innerHTML = depRowHtml(it);
-          depTb && depTb.appendChild(tr);
+          const tr2 = document.createElement("tr");
+          tr2.dataset.id = it.id;
+          tr2.dataset.ep = "/api/loop-items";
+          tr2.innerHTML = depRowHtml(it);
+          depTb && depTb.appendChild(tr2);
           aiDone[it.status === "\u91C7\u7EB3" ? "\u91C7\u7EB3" : "\u6C89\u6DC0"].add(aiFp(it.dept, it.content));
         } else if (it.kind === "test") {
           addTest(s, it.content, it);
@@ -6730,13 +6730,13 @@
       const tb = document.getElementById("tb-dep");
       const state2 = tb.querySelector("tr[data-load-state]");
       if (state2) state2.remove();
-      const tr = document.createElement("tr");
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/loop-items";
-      tr.innerHTML = depRowHtml(item);
-      tb.insertBefore(tr, tb.firstChild);
+      const tr2 = document.createElement("tr");
+      tr2.dataset.id = item.id;
+      tr2.dataset.ep = "/api/loop-items";
+      tr2.innerHTML = depRowHtml(item);
+      tb.insertBefore(tr2, tb.firstChild);
       document.getElementById("dep-empty").style.display = "none";
-      const c = tr.querySelector('[data-field="content"]');
+      const c = tr2.querySelector('[data-field="content"]');
       if (c) {
         c.focus();
       }
@@ -6745,11 +6745,11 @@
     }
   }
   function depDel(btn) {
-    const tr = btn.closest("tr");
-    if (!tr.dataset.id) return;
+    const tr2 = btn.closest("tr");
+    if (!tr2.dataset.id) return;
     if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
-    API.del("/api/loop-items/" + tr.dataset.id).then(() => {
-      tr.remove();
+    API.del("/api/loop-items/" + tr2.dataset.id).then(() => {
+      tr2.remove();
       const tb = document.getElementById("tb-dep");
       if (tb && !tb.children.length) document.getElementById("dep-empty").style.display = "block";
     }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
@@ -6758,8 +6758,8 @@
     const s = sFromDept(dept);
     try {
       const { item } = await persistLoop("plan", s, "\u65B0\u6708\u5EA6\u8BA1\u5212", "\u5F85\u5F00\u59CB");
-      const tr = addPlan(s, item.content, item);
-      const c = tr && tr.querySelector('[data-field="content"]');
+      const tr2 = addPlan(s, item.content, item);
+      const c = tr2 && tr2.querySelector('[data-field="content"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6773,8 +6773,8 @@
     const s = sFromDept(dept);
     try {
       const { item } = await persistLoop("test", s, "\u65B0\u6D4B\u8BD5\u767B\u8BB0", "\u89C2\u5BDF\u4E2D");
-      const tr = addTest(s, item.content, item);
-      const c = tr && tr.querySelector('[data-field="content"]');
+      const tr2 = addTest(s, item.content, item);
+      const c = tr2 && tr2.querySelector('[data-field="content"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6799,11 +6799,11 @@
       if (!tb) return;
       tb.innerHTML = "";
       (items || []).forEach((r) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = r.id;
-        tr.dataset.ep = "/api/content-assets";
-        tr.innerHTML = contentRowHtml(r);
-        tb.appendChild(tr);
+        const tr2 = document.createElement("tr");
+        tr2.dataset.id = r.id;
+        tr2.dataset.ep = "/api/content-assets";
+        tr2.innerHTML = contentRowHtml(r);
+        tb.appendChild(tr2);
       });
       const e = document.getElementById("content-empty");
       if (e) e.style.display = items && items.length ? "none" : "block";
@@ -6823,13 +6823,13 @@
       const tb = document.getElementById("tb-content");
       const state2 = tb.querySelector("tr[data-load-state]");
       if (state2) state2.remove();
-      const tr = document.createElement("tr");
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/content-assets";
-      tr.innerHTML = contentRowHtml(item);
-      tb.appendChild(tr);
+      const tr2 = document.createElement("tr");
+      tr2.dataset.id = item.id;
+      tr2.dataset.ep = "/api/content-assets";
+      tr2.innerHTML = contentRowHtml(item);
+      tb.appendChild(tr2);
       document.getElementById("content-empty").style.display = "none";
-      const c = tr.querySelector('[data-field="name"]');
+      const c = tr2.querySelector('[data-field="name"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6839,11 +6839,11 @@
     }
   }
   function contentDel(btn) {
-    const tr = btn.closest("tr");
-    if (!tr.dataset.id) return;
+    const tr2 = btn.closest("tr");
+    if (!tr2.dataset.id) return;
     if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
-    API.del("/api/content-assets/" + tr.dataset.id).then(() => {
-      tr.remove();
+    API.del("/api/content-assets/" + tr2.dataset.id).then(() => {
+      tr2.remove();
       const tb = document.getElementById("tb-content");
       if (tb && !tb.children.length) document.getElementById("content-empty").style.display = "block";
     }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
@@ -6926,10 +6926,10 @@
       const { item } = await API.post("/api/neg-keywords", { word: "\u65B0\u5426\u8BCD", reason: "" });
       clearLoadState("tb-neg");
       prepend("tb-neg", negRowHtml(item));
-      const tr = document.getElementById("tb-neg").firstChild;
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/neg-keywords";
-      const c = tr.querySelector('[data-field="word"]');
+      const tr2 = document.getElementById("tb-neg").firstChild;
+      tr2.dataset.id = item.id;
+      tr2.dataset.ep = "/api/neg-keywords";
+      const c = tr2.querySelector('[data-field="word"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6944,10 +6944,10 @@
       const { item } = await API.post("/api/ad-creatives", { title: "\u65B0\u521B\u610F", description: "" });
       clearLoadState("tb-ad");
       prepend("tb-ad", adRowHtml(item));
-      const tr = document.getElementById("tb-ad").firstChild;
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/ad-creatives";
-      const c = tr.querySelector('[data-field="title"]');
+      const tr2 = document.getElementById("tb-ad").firstChild;
+      tr2.dataset.id = item.id;
+      tr2.dataset.ep = "/api/ad-creatives";
+      const c = tr2.querySelector('[data-field="title"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -7184,10 +7184,10 @@
         hr.innerHTML = `<td class="csp-s-24cc594aae" colspan="5">${mktEsc(it.section)}</td>`;
         tb.appendChild(hr);
       }
-      const tr = document.createElement("tr");
-      tr.dataset.id = it.id;
-      tr.innerHTML = `<td class="dim csp-s-33ee298127">${mktEsc(it.section)}</td><td class="mkt-q editable csp-s-bd299c8ad6" contenteditable>${mktEsc(it.question)}</td>` + ["\u5B5F\u96EA", "\u738B\u7490\u5E73", "\u71D5\u654F"].map((r) => `<td class="mkt-ans editable csp-s-23e1d32409" contenteditable data-resp="${r}">${mktEsc(ans[r] || "")}</td>`).join("");
-      tb.appendChild(tr);
+      const tr2 = document.createElement("tr");
+      tr2.dataset.id = it.id;
+      tr2.innerHTML = `<td class="dim csp-s-33ee298127">${mktEsc(it.section)}</td><td class="mkt-q editable csp-s-bd299c8ad6" contenteditable>${mktEsc(it.question)}</td>` + ["\u5B5F\u96EA", "\u738B\u7490\u5E73", "\u71D5\u654F"].map((r) => `<td class="mkt-ans editable csp-s-23e1d32409" contenteditable data-resp="${r}">${mktEsc(ans[r] || "")}</td>`).join("");
+      tb.appendChild(tr2);
     });
     const empty2 = document.getElementById("market-empty");
     if (empty2) empty2.style.display = items.length ? "none" : "block";
@@ -7202,8 +7202,8 @@
   document.addEventListener("focusout", (e) => {
     const cell3 = e.target.closest && e.target.closest("#tb-market [contenteditable]");
     if (!cell3) return;
-    const tr = cell3.closest("tr");
-    const id = tr && tr.dataset.id;
+    const tr2 = cell3.closest("tr");
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     const it = window._marketById[id];
     if (!it) return;
@@ -7367,11 +7367,11 @@
   document.addEventListener("change", (e) => {
     if (!e.target || e.target.id !== "sem-hlevel") return;
     const v = e.target.value;
-    document.querySelectorAll("#sub-data-sem table.hierarchy tbody tr").forEach((tr) => {
+    document.querySelectorAll("#sub-data-sem table.hierarchy tbody tr").forEach((tr2) => {
       let show = true;
-      if (v === "camp") show = tr.classList.contains("h-camp");
-      else if (v === "grp") show = tr.classList.contains("h-camp") || tr.classList.contains("h-grp");
-      tr.style.display = show ? "" : "none";
+      if (v === "camp") show = tr2.classList.contains("h-camp");
+      else if (v === "grp") show = tr2.classList.contains("h-camp") || tr2.classList.contains("h-grp");
+      tr2.style.display = show ? "" : "none";
     });
   });
   var _fnum = (id) => {
@@ -7665,17 +7665,17 @@
     return cell("td", "num", Number(value || 0).toLocaleString("zh-CN"), "");
   }
   function channelRow(row, isTotal) {
-    const tr = make("tr", isTotal ? "ledger-total" : "");
-    tr.appendChild(cell("td", "ledger-ch", row.label, ""));
-    tr.appendChild(metricCell(row.spend));
-    tr.appendChild(numCell(row.inquiries));
-    tr.appendChild(numCell(row.quality));
-    tr.appendChild(numCell(row.deals));
-    tr.appendChild(rateCell(row.qualityRate, "\u4F18\u8D28(A/B) \xF7 \u8BE2\u76D8"));
-    tr.appendChild(rateCell(row.dealRate, "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8" + (row.dealRateOverall != null ? "\uFF1B\u603B\u53E3\u5F84 " + pct2(row.dealRateOverall) : "")));
-    tr.appendChild(metricCell(row.costPerQuality, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09" : ""));
-    tr.appendChild(metricCell(row.cac, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
-    return tr;
+    const tr2 = make("tr", isTotal ? "ledger-total" : "");
+    tr2.appendChild(cell("td", "ledger-ch", row.label, ""));
+    tr2.appendChild(metricCell(row.spend));
+    tr2.appendChild(numCell(row.inquiries));
+    tr2.appendChild(numCell(row.quality));
+    tr2.appendChild(numCell(row.deals));
+    tr2.appendChild(rateCell(row.qualityRate, "\u4F18\u8D28(A/B) \xF7 \u8BE2\u76D8"));
+    tr2.appendChild(rateCell(row.dealRate, "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8" + (row.dealRateOverall != null ? "\uFF1B\u603B\u53E3\u5F84 " + pct2(row.dealRateOverall) : "")));
+    tr2.appendChild(metricCell(row.costPerQuality, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09" : ""));
+    tr2.appendChild(metricCell(row.cac, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
+    return tr2;
   }
   function buildTable(data3) {
     const table2 = make("table", "dt ledger-table");
@@ -7980,33 +7980,33 @@
     const table2 = make2("table", "dt kpi-review-table");
     const thead = make2("thead");
     const hr = make2("tr");
-    for (const h3 of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
-      hr.appendChild(make2("th", h3 === "\u8003\u6838\u9879\u76EE" || h3 === "\u8BF4\u660E" ? "" : "ctr", h3));
+    for (const h4 of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
+      hr.appendChild(make2("th", h4 === "\u8003\u6838\u9879\u76EE" || h4 === "\u8BF4\u660E" ? "" : "ctr", h4));
     }
     thead.appendChild(hr);
     table2.appendChild(thead);
     const tbody = make2("tbody");
     for (const m of s.metrics) {
-      const tr = make2("tr", m.status === "VALID" ? "" : "kpi-review-row-off");
-      tr.appendChild(cell2("td", "kpi-review-name", m.label, m.note || ""));
-      tr.appendChild(make2("td", "ctr num", m.weight));
-      tr.appendChild(make2("td", "ctr num", metricValueText(m, "target") || "\u2014"));
-      tr.appendChild(cell2(
+      const tr2 = make2("tr", m.status === "VALID" ? "" : "kpi-review-row-off");
+      tr2.appendChild(cell2("td", "kpi-review-name", m.label, m.note || ""));
+      tr2.appendChild(make2("td", "ctr num", m.weight));
+      tr2.appendChild(make2("td", "ctr num", metricValueText(m, "target") || "\u2014"));
+      tr2.appendChild(cell2(
         "td",
         "ctr num" + (m.status === "VALID" ? "" : " dim"),
         actualText(m),
         m.status === "VALID" ? "" : m.note || ""
       ));
       const tone = m.status === "VALID" ? toneFor(m.ratio) : "kpi-tone-muted";
-      tr.appendChild(cell2(
+      tr2.appendChild(cell2(
         "td",
         "ctr num " + tone,
         m.ratio == null ? "\u2014" : pct3(m.ratio, 0),
         m.raw_ratio != null && m.ratio != null && m.raw_ratio > m.ratio ? "\u5B9E\u9645\u8FBE\u6210 " + pct3(m.raw_ratio, 0) + "\uFF0C\u6309\u4E0A\u9650 " + pct3(m.ratio, 0) + " \u8BA1\u5206" : ""
       ));
-      tr.appendChild(make2("td", "ctr num kpi-review-score-cell " + tone, m.score == null ? "\u2014" : m.score));
-      tr.appendChild(cell2("td", "kpi-review-note dim", statusNote(m), m.note || ""));
-      tbody.appendChild(tr);
+      tr2.appendChild(make2("td", "ctr num kpi-review-score-cell " + tone, m.score == null ? "\u2014" : m.score));
+      tr2.appendChild(cell2("td", "kpi-review-note dim", statusNote(m), m.note || ""));
+      tbody.appendChild(tr2);
     }
     tbody.appendChild(buildAdRow(s.adSpend));
     table2.appendChild(tbody);
@@ -8023,22 +8023,22 @@
     return (STATUS_TEXT[m.status] || "") + (m.note ? " \xB7 " + m.note : "");
   }
   function buildAdRow(ad) {
-    const tr = make2("tr", "kpi-review-row-info");
-    tr.appendChild(cell2("td", "kpi-review-name", "\u5E7F\u544A\u6295\u5165\uFF08\u4E0D\u8BA1\u5206\uFF09", ad.note));
-    tr.appendChild(make2("td", "ctr dim", "\u2014"));
-    tr.appendChild(make2("td", "ctr num", ad.budget == null ? "\u9884\u7B97\u5F85\u5B9A" : money2(ad.budget, "CNY")));
-    tr.appendChild(make2("td", "ctr num", ad.status === "VALID" ? money2(ad.value, ad.currency) : "\u7F3A\u6570\u636E"));
+    const tr2 = make2("tr", "kpi-review-row-info");
+    tr2.appendChild(cell2("td", "kpi-review-name", "\u5E7F\u544A\u6295\u5165\uFF08\u4E0D\u8BA1\u5206\uFF09", ad.note));
+    tr2.appendChild(make2("td", "ctr dim", "\u2014"));
+    tr2.appendChild(make2("td", "ctr num", ad.budget == null ? "\u9884\u7B97\u5F85\u5B9A" : money2(ad.budget, "CNY")));
+    tr2.appendChild(make2("td", "ctr num", ad.status === "VALID" ? money2(ad.value, ad.currency) : "\u7F3A\u6570\u636E"));
     const dev = ad.deviation;
     const devText = dev == null ? "\u2014" : (dev > 0 ? "+" : "") + (dev * 100).toFixed(1) + "%";
-    tr.appendChild(cell2(
+    tr2.appendChild(cell2(
       "td",
       "ctr num " + (ad.within_tolerance === false ? "kpi-tone-amber" : "kpi-tone-muted"),
       devText,
       "\u76F8\u5BF9\u9884\u7B97\u7684\u504F\u5DEE\uFF0C\u5BB9\u5FCD\u5E26 \xB1" + Math.round(ad.tolerance * 100) + "%"
     ));
-    tr.appendChild(make2("td", "ctr dim", "\u2014"));
-    tr.appendChild(make2("td", "kpi-review-note dim", ad.note));
-    return tr;
+    tr2.appendChild(make2("td", "ctr dim", "\u2014"));
+    tr2.appendChild(make2("td", "kpi-review-note dim", ad.note));
+    return tr2;
   }
   function buildBands(s) {
     const box = make2("div", "kpi-review-bands");
@@ -8581,22 +8581,22 @@
     const arc = e.target.closest(".row-archive");
     const dep = e.target.closest(".row-dep");
     if (!arc && !dep) return;
-    const tr = (arc || dep).closest("tr");
-    if (!tr) return;
-    const id = tr.dataset.id, ep = tr.dataset.ep;
+    const tr2 = (arc || dep).closest("tr");
+    if (!tr2) return;
+    const id = tr2.dataset.id, ep = tr2.dataset.ep;
     if (!id || !ep) return;
-    const dEl = tr.querySelector('[data-kind="dept"]');
+    const dEl = tr2.querySelector('[data-kind="dept"]');
     const deptTxt = dEl ? dEl.textContent.trim() : "";
-    const isSem = deptTxt === "SEM" || /sem/i.test(tr.parentElement && tr.parentElement.id || "");
+    const isSem = deptTxt === "SEM" || /sem/i.test(tr2.parentElement && tr2.parentElement.id || "");
     const isCompany = deptTxt === "\u516C\u53F8";
     const ak = isCompany ? "company" : isSem ? "sem" : "seo";
-    const content = (tr.querySelector('[data-field="content"]') || tr.querySelector('[data-field="title"]') || tr.cells[0]).innerText.trim();
+    const content = (tr2.querySelector('[data-field="content"]') || tr2.querySelector('[data-field="title"]') || tr2.cells[0]).innerText.trim();
     if (arc) {
       if (!inlineConfirm(arc, "\u786E\u8BA4\u5F52\u6863")) return;
       arc.disabled = true;
       try {
         await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
-        tr.remove();
+        tr2.remove();
         toast2("\u5DF2\u5F52\u6863");
       } catch (err) {
         arc.disabled = false;
@@ -8670,11 +8670,11 @@
       tb.innerHTML = "";
       const rows2 = bucket[k].slice().sort((a, b) => String(b.archived_at || "").localeCompare(String(a.archived_at || "")));
       rows2.forEach((it) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = it.id;
-        tr.dataset.ep = it._from === "fix" ? "/api/fixes" : "/api/loop-items";
-        tr.innerHTML = archRowHtml(it, it._from);
-        tb.appendChild(tr);
+        const tr2 = document.createElement("tr");
+        tr2.dataset.id = it.id;
+        tr2.dataset.ep = it._from === "fix" ? "/api/fixes" : "/api/loop-items";
+        tr2.innerHTML = archRowHtml(it, it._from);
+        tb.appendChild(tr2);
       });
       const e = document.getElementById("arc-" + k + "-empty");
       if (e) e.style.display = rows2.length ? "none" : "block";
@@ -8689,11 +8689,11 @@
       } catch (e2) {
       }
       inqs.forEach((it) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = it.id;
-        tr.dataset.ep = "/api/inquiries";
-        tr.innerHTML = archInqRowHtml(it);
-        itb.appendChild(tr);
+        const tr2 = document.createElement("tr");
+        tr2.dataset.id = it.id;
+        tr2.dataset.ep = "/api/inquiries";
+        tr2.innerHTML = archInqRowHtml(it);
+        itb.appendChild(tr2);
       });
       const e = document.getElementById("arc-inquiry-empty");
       if (e) e.style.display = inqs.length ? "none" : "block";
@@ -8704,17 +8704,17 @@
   }
   document.addEventListener("click", async (e) => {
     const r = e.target.closest(".arch-restore");
-    const h3 = e.target.closest(".arch-hard");
-    if (!r && !h3) return;
-    const tr = (r || h3).closest("tr");
-    if (!tr) return;
-    const id = tr.dataset.id, ep = tr.dataset.ep;
+    const h4 = e.target.closest(".arch-hard");
+    if (!r && !h4) return;
+    const tr2 = (r || h4).closest("tr");
+    if (!tr2) return;
+    const id = tr2.dataset.id, ep = tr2.dataset.ep;
     if (!id || !ep) return;
     if (r) {
       if (!inlineConfirm(r, "\u786E\u8BA4\u6062\u590D")) return;
       try {
         await API.post(ep + "/" + id + "/restore");
-        tr.remove();
+        tr2.remove();
         if (ep === "/api/inquiries") {
           loadInquiries();
           loadDashboardInq();
@@ -8724,10 +8724,10 @@
         toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     } else {
-      if (!inlineConfirm(h3, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
+      if (!inlineConfirm(h4, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
       try {
         await API.del(ep + "/" + id + "?hard=1");
-        tr.remove();
+        tr2.remove();
         toast2("\u5DF2\u5F7B\u5E95\u5220\u9664");
       } catch (err) {
         toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
@@ -8787,13 +8787,13 @@
     return span;
   }
   function renderMemory(row) {
-    const tr = document.createElement("tr");
+    const tr2 = document.createElement("tr");
     const kind = td("", "");
     kind.appendChild(badge2(KIND_LABEL[row.kind] || row.kind || "\u8BB0\u5FC6", row.kind === "risk" ? "b-red" : row.kind === "decision" ? "b-amber" : "b-blue"));
-    tr.appendChild(kind);
+    tr2.appendChild(kind);
     const importance = td("", "ctr");
     importance.appendChild(badge2(String(row.importance || 3), Number(row.importance) >= 4 ? "b-green" : "b-gray"));
-    tr.appendChild(importance);
+    tr2.appendChild(importance);
     const main = document.createElement("td");
     const title = document.createElement("div");
     title.style.fontWeight = "800";
@@ -8813,12 +8813,12 @@
     trust.style.marginTop = "6px";
     trust.appendChild(row.trust?.trusted ? badge2("\u53EF\u4F5C\u4E3A\u56DE\u7B54\u8BC1\u636E", "b-green") : badge2("\u5F85\u4EBA\u5DE5\u786E\u8BA4 \xB7 \u4E0D\u8FDB\u5165\u56DE\u7B54\u8BC1\u636E", "b-amber"));
     main.append(title, content, source, trust);
-    tr.appendChild(main);
+    tr2.appendChild(main);
     const evidence = td(row.evidence || "\u2014", "");
     evidence.style.whiteSpace = "pre-wrap";
     evidence.style.fontSize = "11.5px";
-    tr.appendChild(evidence);
-    tr.appendChild(td(row.updated_at || row.created_at || "\u2014", "dim"));
+    tr2.appendChild(evidence);
+    tr2.appendChild(td(row.updated_at || row.created_at || "\u2014", "dim"));
     const action = td("", "ctr");
     const editBtn = document.createElement("button");
     editBtn.type = "button";
@@ -8832,8 +8832,8 @@
     stopBtn.style.marginLeft = "6px";
     stopBtn.addEventListener("click", () => deactivateHermesMemory(row.id));
     action.append(editBtn, stopBtn);
-    tr.appendChild(action);
-    return tr;
+    tr2.appendChild(action);
+    return tr2;
   }
   async function loadHermesMemories(manual) {
     const tbody = byId("tb-hermes-memory");
@@ -9279,17 +9279,17 @@
   }
   function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
     const name = dept === "SEM" ? "SEM \xB7 \u9648" : "SEO \xB7 \u674E";
-    let h3 = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
+    let h4 = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
     sections.forEach(([field3, title, acts]) => {
       const items = rec && rec[field3] || [];
-      h3 += `<div class="rv-sec" data-field="${esc(field3)}" data-dept="${esc(dept)}" data-week="${esc(key)}"><h5>${esc(title)}</h5>`;
+      h4 += `<div class="rv-sec" data-field="${esc(field3)}" data-dept="${esc(dept)}" data-week="${esc(key)}"><h5>${esc(title)}</h5>`;
       if (field3 === "summary" && !items.length && prevPlan && prevPlan.length) {
-        h3 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
+        h4 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
       }
-      h3 += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
-      h3 += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
+      h4 += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
+      h4 += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
     });
-    return h3 + "</div>";
+    return h4 + "</div>";
   }
   function prevPlanOf(keys, byKey, key, dept) {
     const idx = keys.indexOf(key);
@@ -9844,13 +9844,13 @@
     table2.appendChild(thead);
     const tbody = make4("tbody");
     for (const [key, label, note] of WEIGHT_FIELDS) {
-      const tr = make4("tr");
-      tr.appendChild(make4("td", "", label));
+      const tr2 = make4("tr");
+      tr2.appendChild(make4("td", "", label));
       const td2 = make4("td", "ctr");
       td2.appendChild(numInput(key, cfg.raw[key]));
-      tr.appendChild(td2);
-      tr.appendChild(make4("td", "dim", note));
-      tbody.appendChild(tr);
+      tr2.appendChild(td2);
+      tr2.appendChild(make4("td", "dim", note));
+      tbody.appendChild(tr2);
     }
     const sumRow = make4("tr", "kra-sum-row");
     sumRow.appendChild(make4("td", "", "\u5408\u8BA1"));
@@ -9882,7 +9882,7 @@
     const table2 = make4("table", "dt kra-table");
     const thead = make4("thead");
     const hr = make4("tr");
-    for (const h3 of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h3 === "\u8BF4\u660E" ? "" : "ctr", h3));
+    for (const h4 of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h4 === "\u8BF4\u660E" ? "" : "ctr", h4));
     thead.appendChild(hr);
     table2.appendChild(thead);
     const tbody = make4("tbody", "kra-bands");
@@ -9896,7 +9896,7 @@
     return box;
   }
   function bandRow(b) {
-    const tr = make4("tr", "kra-band-row");
+    const tr2 = make4("tr", "kra-band-row");
     const mk = (cls, value, type, step) => {
       const td2 = make4("td", "ctr");
       const input = document.createElement("input");
@@ -9907,10 +9907,10 @@
       td2.appendChild(input);
       return td2;
     };
-    tr.appendChild(mk("kra-band-min", b.min, "number", "0.1"));
-    tr.appendChild(mk("kra-band-label", b.label));
-    tr.appendChild(mk("kra-band-coef", b.coef, "number", "0.01"));
-    tr.appendChild(mk("kra-band-note", b.note || ""));
+    tr2.appendChild(mk("kra-band-min", b.min, "number", "0.1"));
+    tr2.appendChild(mk("kra-band-label", b.label));
+    tr2.appendChild(mk("kra-band-coef", b.coef, "number", "0.01"));
+    tr2.appendChild(mk("kra-band-note", b.note || ""));
     const del = make4("td", "ctr");
     const btn = make4("button", "btn-mini kra-band-del", "");
     btn.type = "button";
@@ -9918,8 +9918,8 @@
     btn.setAttribute("data-kra-del-band", "1");
     btn.appendChild(make4("i", "ti ti-trash"));
     del.appendChild(btn);
-    tr.appendChild(del);
-    return tr;
+    tr2.appendChild(del);
+    return tr2;
   }
   function buildTargets2(cfg) {
     const box = make4("div", "kra-block");
@@ -9964,15 +9964,15 @@
   }
   function targetRow(row) {
     const isDefault = row.period_key === "default";
-    const tr = make4("tr", "kra-target-row" + (isDefault ? " kra-target-default" : ""));
-    tr.setAttribute("data-kra-period", row.period_key);
-    tr.appendChild(make4("td", "", isDefault ? "\u901A\u7528\u515C\u5E95" : row.period_key));
+    const tr2 = make4("tr", "kra-target-row" + (isDefault ? " kra-target-default" : ""));
+    tr2.setAttribute("data-kra-period", row.period_key);
+    tr2.appendChild(make4("td", "", isDefault ? "\u901A\u7528\u515C\u5E95" : row.period_key));
     for (const [key] of TARGET_FIELDS) {
       const td2 = make4("td", "ctr");
       const input = numInput(key, row[key], key === "a_ratio_target" ? "0.01" : "1");
       input.classList.add("kra-target-input");
       td2.appendChild(input);
-      tr.appendChild(td2);
+      tr2.appendChild(td2);
     }
     const ops = make4("td", "ctr");
     if (!isDefault) {
@@ -9985,8 +9985,8 @@
     } else {
       ops.appendChild(make4("span", "dim", "\u2014"));
     }
-    tr.appendChild(ops);
-    return tr;
+    tr2.appendChild(ops);
+    return tr2;
   }
   function syncWeightSum(host) {
     const cellEl = host.querySelector(".kra-weight-sum");
@@ -10070,11 +10070,11 @@
       }
       config[key] = n;
     }
-    const bands = [...host.querySelectorAll(".kra-band-row")].map((tr) => ({
-      min: Number(tr.querySelector(".kra-band-min").value),
-      label: tr.querySelector(".kra-band-label").value.trim(),
-      coef: Number(tr.querySelector(".kra-band-coef").value),
-      note: tr.querySelector(".kra-band-note").value.trim() || null
+    const bands = [...host.querySelectorAll(".kra-band-row")].map((tr2) => ({
+      min: Number(tr2.querySelector(".kra-band-min").value),
+      label: tr2.querySelector(".kra-band-label").value.trim(),
+      coef: Number(tr2.querySelector(".kra-band-coef").value),
+      note: tr2.querySelector(".kra-band-note").value.trim() || null
     }));
     if (!bands.length) {
       toast2("\u81F3\u5C11\u8981\u7559\u4E00\u6863\u7EE9\u6548\u7CFB\u6570");
@@ -10085,9 +10085,9 @@
       toast2("\u5206\u6863\u91CC\u300C\u603B\u5206\u4E0B\u9650 / \u7B49\u7EA7\u540D\u79F0 / \u7EE9\u6548\u7CFB\u6570\u300D\u90FD\u8981\u586B \u2014\u2014 \u8FD9\u51B3\u5B9A\u53D1\u591A\u5C11\u94B1\uFF0C\u4E0D\u80FD\u7559\u7A7A");
       return;
     }
-    const targets = [...host.querySelectorAll(".kra-target-row")].map((tr) => {
-      const out = { period_key: tr.dataset.kraPeriod };
-      tr.querySelectorAll(".kra-target-input").forEach((input) => {
+    const targets = [...host.querySelectorAll(".kra-target-row")].map((tr2) => {
+      const out = { period_key: tr2.dataset.kraPeriod };
+      tr2.querySelectorAll(".kra-target-input").forEach((input) => {
         out[input.dataset.kraField] = valueOrNull(input);
       });
       return out;
@@ -10229,19 +10229,19 @@
     const t = el2("table", "dt audit-table " + (cls || ""));
     const thead = el2("thead");
     const hr = el2("tr");
-    headers.forEach((h3) => hr.appendChild(el2("th", h3.cls || "", h3.label || h3)));
+    headers.forEach((h4) => hr.appendChild(el2("th", h4.cls || "", h4.label || h4)));
     thead.appendChild(hr);
     t.appendChild(thead);
     const tb = el2("tbody");
     rows2.forEach((cells) => {
-      const tr = el2("tr");
+      const tr2 = el2("tr");
       cells.forEach((c, i) => {
         const td2 = el2("td", headers[i] && headers[i].cls || "");
         if (c instanceof Node) td2.appendChild(c);
         else td2.textContent = c == null ? "" : String(c);
-        tr.appendChild(td2);
+        tr2.appendChild(td2);
       });
-      tb.appendChild(tr);
+      tb.appendChild(tr2);
     });
     t.appendChild(tb);
     return t;
@@ -10904,22 +10904,22 @@
     const showOff = $7("geochk-show-off").checked;
     const rows2 = questions.filter((q) => q.active || showOff || data.items.some((c) => c.question_id === q.id));
     if (!rows2.length) {
-      const tr = el4("tr");
+      const tr2 = el4("tr");
       const td2 = el4("td", "dim geochk-empty", "\u9898\u5E93\u8FD8\u662F\u7A7A\u7684\u3002\u5148\u5728\u4E0A\u9762\u52A0\u51E0\u4E2A\u5BA2\u6237\u771F\u4F1A\u62FF\u53BB\u95EE AI \u7684\u95EE\u9898\uFF08\u4F8B\u5982\u300Cbest gate valve manufacturer in China\u300D\uFF09\u3002");
       td2.colSpan = data.engines.length + 2;
-      tr.appendChild(td2);
-      body.appendChild(tr);
+      tr2.appendChild(td2);
+      body.appendChild(tr2);
       return;
     }
     for (const q of rows2) {
-      const tr = el4("tr", q.active ? "" : "is-off");
+      const tr2 = el4("tr", q.active ? "" : "is-off");
       const qt = el4("td", "geochk-q", q.question);
       if (!q.active) qt.appendChild(el4("span", "badge b-gray", "\u5DF2\u505C\u7528"));
-      tr.appendChild(qt);
+      tr2.appendChild(qt);
       data.engines.forEach((e) => {
         const td2 = el4("td", "ctr");
         td2.appendChild(cellButton(q, e));
-        tr.appendChild(td2);
+        tr2.appendChild(td2);
       });
       const ops = el4("td", "ctr");
       const toggle = el4("button", "btn-mini", q.active ? "\u505C\u7528" : "\u542F\u7528");
@@ -10927,8 +10927,8 @@
       toggle.dataset.geoToggle = q.id;
       toggle.dataset.active = q.active ? "0" : "1";
       ops.appendChild(toggle);
-      tr.appendChild(ops);
-      body.appendChild(tr);
+      tr2.appendChild(ops);
+      body.appendChild(tr2);
     }
   }
   async function loadGeoChecks() {
@@ -11407,23 +11407,177 @@
     }
   }
 
-  // public/src/spend.js
+  // public/src/site-returns.js
   var $9 = (id) => document.getElementById(id);
-  var isHttp4 = (u) => /^https?:\/\//i.test(String(u || ""));
   function h2(tag, cls, text2) {
     const el5 = document.createElement(tag);
     if (cls) el5.className = cls;
     if (text2 != null) el5.textContent = String(text2);
     return el5;
   }
-  var money3 = (n) => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var money3 = (micros) => (Number(micros) / 1e6).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var failText6 = (e) => e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var canManage2 = () => ["manager", "boss"].includes(window.ME && window.ME.role);
+  var COST_REASON = {
+    no_campaigns: "\u6CA1\u6709\u5F52\u5230\u8FD9\u4E2A\u7AD9\u7684\u7CFB\u5217",
+    spent_no_effective: "\u82B1\u4E86\u94B1\uFF0C\u4F46\u6CA1\u6709\u6807\u5230\u8FD9\u4E2A\u7AD9\u7684 SEM \u6709\u6548\u8BE2\u76D8",
+    no_spend: "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u82B1\u8D39"
+  };
+  var seq6 = 0;
+  var bound5 = false;
+  function tr(cells, cls) {
+    const row = h2("tr", cls);
+    for (const c of cells) {
+      const td2 = h2("td", c && c.cls ? c.cls : "");
+      if (c && c.node) td2.appendChild(c.node);
+      else td2.textContent = c && c.text != null ? c.text : c == null ? "" : String(c);
+      if (c && c.title) td2.title = c.title;
+      row.appendChild(td2);
+    }
+    return row;
+  }
+  function render9(data3) {
+    const card2 = $9("siteReturnsCard");
+    const body = $9("siteReturnsBody");
+    const anyMapped = data3.campaigns.some((c) => c.site_id != null);
+    card2.classList.toggle("is-hidden", data3.sites.length < 2 && !anyMapped);
+    body.textContent = "";
+    if (!data3.synced) body.appendChild(h2("div", "sret-note", "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u540C\u6B65\u5230\u5E7F\u544A\u6570\u636E\uFF0C\u4E0B\u9762\u7684\u82B1\u8D39\u662F\u300C\u6CA1\u6709\u6570\u636E\u300D\uFF0C\u4E0D\u662F 0\u3002"));
+    const table2 = h2("table", "dt sret-table");
+    const head = h2("tr");
+    for (const [t, cls] of [["\u7AD9\u70B9", ""], ["\u5F52\u5230\u5B83\u7684\u7CFB\u5217", "num"], ["\u5E7F\u544A\u82B1\u8D39\uFF08\u8D26\u6237\u5E01\u79CD\uFF09", "num"], ["\u8BE2\u76D8", "num"], ["\u5176\u4E2D A/B", "num"], ["SEM \u6E20\u9053\u7684 A/B", "num"], ["\u6BCF\u6761 SEM \u6709\u6548\u8BE2\u76D8\u7684\u82B1\u8D39", "num"]]) head.appendChild(h2("th", cls, t));
+    const thead = h2("thead");
+    thead.appendChild(head);
+    table2.appendChild(thead);
+    const tbody = h2("tbody");
+    for (const s of data3.sites) {
+      tbody.appendChild(tr([
+        { text: s.name },
+        { text: s.campaigns || "\u2014", cls: "num" },
+        { text: s.costMicros == null ? "\u2014" : money3(s.costMicros), cls: "num", title: s.costMicros == null ? "\u6CA1\u6709\u5F52\u5230\u8FD9\u4E2A\u7AD9\u7684\u7CFB\u5217\uFF0C\u6240\u4EE5\u6CA1\u6709\u82B1\u8D39\u53E3\u5F84\uFF08\u4E0D\u662F 0 \u5143\uFF09" : "" },
+        { text: s.inquiries, cls: "num" },
+        { text: s.effective, cls: "num" },
+        { text: s.sem_effective, cls: "num" },
+        s.cost_per_sem_effective != null ? { text: money3(s.cost_per_sem_effective), cls: "num" } : { text: "\u7B97\u4E0D\u51FA", cls: "num dim", title: COST_REASON[s.cost_reason] || "" }
+      ]));
+    }
+    if (data3.unassigned.campaigns) {
+      tbody.appendChild(tr([
+        { text: "\u672A\u5F52\u5C5E\u7684\u7CFB\u5217", title: "\u8FD9\u4E9B\u7CFB\u5217\u8FD8\u6CA1\u6709\u6307\u5B9A\u7AD9\u70B9\uFF0C\u82B1\u8D39\u4E0D\u644A\u7ED9\u4EFB\u4F55\u4E00\u4E2A\u7AD9" },
+        { text: data3.unassigned.campaigns, cls: "num" },
+        { text: money3(data3.unassigned.costMicros), cls: "num" },
+        { text: "", cls: "num" },
+        { text: "", cls: "num" },
+        { text: "", cls: "num" },
+        { text: "", cls: "num" }
+      ], "sret-rest"));
+    }
+    if (data3.unlabeled.inquiries) {
+      tbody.appendChild(tr([
+        { text: "\u6CA1\u6807\u7AD9\u70B9\u7684\u8BE2\u76D8", title: "\u624B\u5DE5\u5F55\u5165\u65F6\u6CA1\u9009\u7AD9\u70B9\u7684\u8BE2\u76D8\uFF08\u8001\u8BE2\u76D8\u90FD\u6CA1\u6807\uFF09\u3002\u4E0D\u6309\u516C\u53F8\u53BB\u731C\u5B83\u4EEC\u662F\u54EA\u4E2A\u7AD9\u7684" },
+        { text: "", cls: "num" },
+        { text: "", cls: "num" },
+        { text: data3.unlabeled.inquiries, cls: "num" },
+        { text: data3.unlabeled.effective, cls: "num" },
+        { text: data3.unlabeled.sem_effective, cls: "num" },
+        { text: "", cls: "num" }
+      ], "sret-rest"));
+    }
+    table2.appendChild(tbody);
+    body.appendChild(table2);
+    body.appendChild(h2("div", "sret-note", "\u82B1\u8D39\u6309\u300C\u7CFB\u5217\u5F52\u5C5E\u300D\u843D\u5230\u7AD9\u70B9\uFF1B\u8BE2\u76D8\u53EA\u6570\u6807\u4E86\u7AD9\u70B9\u7684\uFF08\u8868\u5355\u5E26\u56DE\u7684\u81EA\u52A8\u6807\uFF0C\u624B\u5DE5\u5F55\u5165\u7684\u8981\u81EA\u5DF1\u9009\uFF09\u3002\u6E20\u9053\u548C\u7B49\u7EA7\u591A\u6570\u662F\u4EBA\u586B\u7684\uFF0C\u8FD9\u5F20\u8868\u662F\u53C2\u8003\uFF0C\u4E0D\u8FDB\u8003\u6838\u3002"));
+    const box = h2("div", "sret-campaigns");
+    box.appendChild(h2("div", "sret-sub", "\u7CFB\u5217\u5F52\u5C5E\uFF08\u6BCF\u4E2A\u5E7F\u544A\u7CFB\u5217\u6295\u7684\u662F\u54EA\u4E2A\u7AD9\uFF09"));
+    if (!data3.campaigns.length) box.appendChild(h2("div", "dim", "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u540C\u6B65\u5230\u5E7F\u544A\u7CFB\u5217\u3002"));
+    const sites2 = allSites();
+    for (const c of data3.campaigns) {
+      const row = h2("div", "sret-campaign");
+      row.appendChild(h2("span", "sret-cname", c.name));
+      row.appendChild(h2("span", "sret-ccost", money3(c.costMicros)));
+      if (canManage2()) {
+        const sel = h2("select", "sret-select");
+        sel.dataset.campaign = c.id;
+        const none = h2("option", "", "\u672A\u5F52\u5C5E");
+        none.value = "";
+        sel.appendChild(none);
+        for (const s of sites2) {
+          const o = h2("option", "", s.name);
+          o.value = String(s.id);
+          sel.appendChild(o);
+        }
+        if (c.site_id != null && !sites2.some((s) => s.id === c.site_id)) {
+          const o = h2("option", "", c.site_name);
+          o.value = String(c.site_id);
+          sel.appendChild(o);
+        }
+        sel.value = c.site_id != null ? String(c.site_id) : "";
+        row.appendChild(sel);
+      } else {
+        row.appendChild(h2("span", c.site_name ? "badge b-gray" : "dim", c.site_name || "\u672A\u5F52\u5C5E"));
+      }
+      if (c.suggestion) row.appendChild(h2("span", "sret-hint", "\u8868\u5355\u7EBF\u7D22\u663E\u793A\u5B83\u843D\u5728\u300C" + c.suggestion.site_name + "\u300D\uFF08" + c.suggestion.leads + " \u6761\uFF09"));
+      else if (c.conflicting_evidence) row.appendChild(h2("span", "sret-hint", "\u8868\u5355\u7EBF\u7D22\u91CC\u5B83\u843D\u5728\u4E0D\u6B62\u4E00\u4E2A\u7AD9\uFF0C\u8BF7\u4EBA\u5DE5\u5224\u65AD"));
+      box.appendChild(row);
+    }
+    if (data3.campaigns.length && !canManage2()) box.appendChild(h2("div", "sret-note", "\u6307\u5B9A\u5F52\u5C5E\u9700\u8981\u7ECF\u7406\u6216\u8001\u677F\u8D26\u53F7\u3002"));
+    body.appendChild(box);
+  }
+  async function loadSiteReturns() {
+    const card2 = $9("siteReturnsCard");
+    if (!card2) return;
+    if (!bound5) {
+      $9("siteReturnsBody").addEventListener("change", async (e) => {
+        const sel = e.target.closest(".sret-select");
+        if (!sel) return;
+        sel.disabled = true;
+        try {
+          await window.API.put("/api/sites/campaigns/" + encodeURIComponent(sel.dataset.campaign), { site_id: sel.value ? Number(sel.value) : null });
+          toast2("\u5DF2\u4FDD\u5B58\u5F52\u5C5E");
+        } catch (err) {
+          toast2("\u6CA1\u6709\u4FDD\u5B58\uFF1A" + failText6(err));
+        }
+        loadSiteReturns();
+      });
+      bound5 = true;
+    }
+    const mine = ++seq6;
+    const revision = getRangeRevision("data");
+    let data3;
+    try {
+      data3 = await window.API.get(withRange2("/api/sites/returns", "data"));
+    } catch (e) {
+      if (mine !== seq6) return;
+      card2.classList.remove("is-hidden");
+      $9("siteReturnsBody").textContent = "\u6309\u7AD9\u70B9\u7684\u82B1\u8D39\u4E0E\u8BE2\u76D8\u8BFB\u53D6\u5931\u8D25\uFF1A" + failText6(e);
+      return;
+    }
+    if (mine !== seq6 || revision !== getRangeRevision("data")) return;
+    render9(data3);
+  }
+  document.addEventListener("timerange", (e) => {
+    if (e.detail && e.detail.scope === "data") loadSiteReturns();
+  });
+  document.addEventListener("siteschanged", () => {
+    loadSiteReturns();
+  });
+
+  // public/src/spend.js
+  var $10 = (id) => document.getElementById(id);
+  var isHttp4 = (u) => /^https?:\/\//i.test(String(u || ""));
+  function h3(tag, cls, text2) {
+    const el5 = document.createElement(tag);
+    if (cls) el5.className = cls;
+    if (text2 != null) el5.textContent = String(text2);
+    return el5;
+  }
+  var money4 = (n) => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   var CURRENCY_LABEL2 = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
   function amountsText(amounts2) {
-    return Object.entries(amounts2 || {}).map(([cur, v]) => (CURRENCY_LABEL2[cur] || cur) + " " + money3(v)).join(" \uFF5C ");
+    return Object.entries(amounts2 || {}).map(([cur, v]) => (CURRENCY_LABEL2[cur] || cur) + " " + money4(v)).join(" \uFF5C ");
   }
   function linkEl2(url, text2, cls) {
-    if (!isHttp4(url)) return h2("span", cls, text2 || url || "");
-    const a = h2("a", cls, text2 || url);
+    if (!isHttp4(url)) return h3("span", cls, text2 || url || "");
+    const a = h3("a", cls, text2 || url);
     a.href = url;
     a.target = "_blank";
     a.rel = "noopener noreferrer";
@@ -11439,7 +11593,7 @@
       return u || "";
     }
   }
-  var bound5 = false;
+  var bound6 = false;
   var month = "";
   var options = null;
   var loadSeq = 0;
@@ -11457,40 +11611,40 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
   }
   var qs = (range2) => "?start_date=" + range2.start_date + "&end_date=" + range2.end_date;
-  var failText6 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var failText7 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   function adsSourceText(g) {
     if (g.source === "google_ads") return "Ads \u540C\u6B65\u6570\u636E \xB7 \u8D26\u6237\u5E01\u79CD";
     if (g.source === "sem_weeks") return "\u4EBA\u5DE5\u5468\u62A5\uFF08Ads \u672C\u671F\u65E0\u540C\u6B65\u6570\u636E\uFF09\xB7 \u4EBA\u6C11\u5E01";
     return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
   }
   function renderSummary4(data3) {
-    const box = $9("spend-summary");
+    const box = $10("spend-summary");
     if (!box) return;
     box.textContent = "";
-    const row = h2("div", "spend-groups");
+    const row = h3("div", "spend-groups");
     for (const g of data3.groups) {
-      const card2 = h2("div", "spend-group" + (g.key === "ads" ? " is-ads" : ""));
-      card2.appendChild(h2("div", "spend-group-label", g.label));
+      const card2 = h3("div", "spend-group" + (g.key === "ads" ? " is-ads" : ""));
+      card2.appendChild(h3("div", "spend-group-label", g.label));
       const text2 = amountsText(g.amounts);
-      card2.appendChild(h2("div", "spend-group-amount" + (text2 ? "" : " is-empty"), text2 || (g.key === "ads" ? "\u6CA1\u6709\u6570\u636E" : "\u672C\u6708\u6CA1\u6709")));
+      card2.appendChild(h3("div", "spend-group-amount" + (text2 ? "" : " is-empty"), text2 || (g.key === "ads" ? "\u6CA1\u6709\u6570\u636E" : "\u672C\u6708\u6CA1\u6709")));
       const sub = g.key === "ads" ? adsSourceText(g) : g.count ? g.count + " \u7B14" : "";
-      if (sub) card2.appendChild(h2("div", "spend-group-sub", sub));
+      if (sub) card2.appendChild(h3("div", "spend-group-sub", sub));
       row.appendChild(card2);
     }
     box.appendChild(row);
     const total = amountsText(data3.totals);
-    const line3 = h2("div", "spend-total");
-    line3.appendChild(h2("b", "", "\u672C\u6708\u5408\u8BA1"));
-    line3.appendChild(h2("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
-    if (Object.keys(data3.totals || {}).length > 1) line3.appendChild(h2("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
+    const line3 = h3("div", "spend-total");
+    line3.appendChild(h3("b", "", "\u672C\u6708\u5408\u8BA1"));
+    line3.appendChild(h3("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
+    if (Object.keys(data3.totals || {}).length > 1) line3.appendChild(h3("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
     box.appendChild(line3);
   }
   function renderSummaryError(e) {
-    const box = $9("spend-summary");
+    const box = $10("spend-summary");
     if (!box) return;
     box.textContent = "";
-    const line3 = h2("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText6(e) + " ");
-    const btn = h2("button", "btn-mini", "\u91CD\u8BD5");
+    const line3 = h3("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText7(e) + " ");
+    const btn = h3("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
     btn.addEventListener("click", loadSpend);
     line3.appendChild(btn);
@@ -11505,26 +11659,26 @@
     return parts.join(" \xB7 ");
   }
   function renderLinkStats(stats) {
-    const box = $9("spend-link-stats");
+    const box = $10("spend-link-stats");
     if (!box) return;
     box.textContent = "";
     if (!stats || !stats.total) return;
-    box.appendChild(h2("div", "spend-stat", "\u5171 " + stats.total + " \u6761 \xB7 \u6765\u81EA " + stats.domains + " \u4E2A\u7AD9"));
-    const paid = h2("div", "spend-stat is-paid", sideText("\u4ED8\u8D39", stats.paid));
+    box.appendChild(h3("div", "spend-stat", "\u5171 " + stats.total + " \u6761 \xB7 \u6765\u81EA " + stats.domains + " \u4E2A\u7AD9"));
+    const paid = h3("div", "spend-stat is-paid", sideText("\u4ED8\u8D39", stats.paid));
     const cost = amountsText(stats.paid.cost);
-    if (cost) paid.appendChild(h2("b", "", "  \u82B1\u8D39 " + cost));
+    if (cost) paid.appendChild(h3("b", "", "  \u82B1\u8D39 " + cost));
     box.appendChild(paid);
-    box.appendChild(h2("div", "spend-stat", sideText("\u514D\u8D39", stats.free)));
+    box.appendChild(h3("div", "spend-stat", sideText("\u514D\u8D39", stats.free)));
   }
   var STATUS_BADGE = { \u6709\u6548: "b-green", \u5931\u6548: "b-red", \u5F85\u4E0A\u7EBF: "b-amber" };
   var AUTO_LABEL = { found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728", not_found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u6CA1\u627E\u5230", unreachable: "\u81EA\u52A8\u6838\u67E5\uFF1A\u9875\u9762\u6CA1\u53D6\u5230" };
   function rowActions(kind, id) {
-    const td2 = h2("td", "ctr spend-ops");
-    const edit = h2("button", "btn-mini", "\u7F16\u8F91");
+    const td2 = h3("td", "ctr spend-ops");
+    const edit = h3("button", "btn-mini", "\u7F16\u8F91");
     edit.type = "button";
     edit.dataset.spendEdit = kind;
     edit.dataset.id = id;
-    const del = h2("button", "btn-mini", "\u5220\u9664");
+    const del = h3("button", "btn-mini", "\u5220\u9664");
     del.type = "button";
     del.dataset.spendDel = kind;
     del.dataset.id = id;
@@ -11532,62 +11686,62 @@
     return td2;
   }
   function emptyRow(tb, cols, text2) {
-    const tr = h2("tr");
-    const td2 = h2("td", "dim spend-empty", text2);
+    const tr2 = h3("tr");
+    const td2 = h3("td", "dim spend-empty", text2);
     td2.colSpan = cols;
-    tr.appendChild(td2);
-    tb.appendChild(tr);
+    tr2.appendChild(td2);
+    tb.appendChild(tr2);
   }
   function errorRow(tb, cols, label, e) {
     tb.textContent = "";
-    const tr = h2("tr");
-    const td2 = h2("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText6(e) + " ");
+    const tr2 = h3("tr");
+    const td2 = h3("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText7(e) + " ");
     td2.colSpan = cols;
-    const btn = h2("button", "btn-mini", "\u91CD\u8BD5");
+    const btn = h3("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
     btn.addEventListener("click", loadSpend);
     td2.appendChild(btn);
-    tr.appendChild(td2);
-    tb.appendChild(tr);
+    tr2.appendChild(td2);
+    tb.appendChild(tr2);
   }
   function renderBacklinks() {
-    const tb = $9("tb-backlinks");
+    const tb = $10("tb-backlinks");
     if (!tb) return;
     tb.textContent = "";
     if (!backlinkRows.length) {
-      emptyRow(tb, 11, $9("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      emptyRow(tb, 11, $10("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
       return;
     }
     for (const b of backlinkRows) {
-      const tr = h2("tr");
-      tr.appendChild(h2("td", "num", b.acquired_date || "\u672A\u586B"));
-      const src = h2("td", "spend-url");
+      const tr2 = h3("tr");
+      tr2.appendChild(h3("td", "num", b.acquired_date || "\u672A\u586B"));
+      const src = h3("td", "spend-url");
       src.appendChild(linkEl2(b.source_url, shortUrl3(b.source_url)));
-      if (b.vendor) src.appendChild(h2("div", "dim", "\u5356\u5BB6\uFF1A" + b.vendor));
-      if (b.quality_note) src.appendChild(h2("div", "dim", b.quality_note));
-      tr.appendChild(src);
-      const tgt = h2("td", "spend-url");
+      if (b.vendor) src.appendChild(h3("div", "dim", "\u5356\u5BB6\uFF1A" + b.vendor));
+      if (b.quality_note) src.appendChild(h3("div", "dim", b.quality_note));
+      tr2.appendChild(src);
+      const tgt = h3("td", "spend-url");
       if (b.target_url) tgt.appendChild(linkEl2(b.target_url, shortUrl3(b.target_url)));
-      if (b.anchor) tgt.appendChild(h2("div", "dim", "\u951A\u6587\u672C\uFF1A" + b.anchor));
+      if (b.anchor) tgt.appendChild(h3("div", "dim", "\u951A\u6587\u672C\uFF1A" + b.anchor));
       if (b.target_url && b.acquired_date) {
-        const fx = h2("button", "btn-mini spend-effect", "\u6570\u636E\u53D8\u5316");
+        const fx = h3("button", "btn-mini spend-effect", "\u6570\u636E\u53D8\u5316");
         fx.type = "button";
         fx.dataset.backlinkEffect = b.id;
         tgt.appendChild(fx);
       }
-      tr.appendChild(tgt);
-      tr.appendChild(h2("td", "ctr", b.method || ""));
-      tr.appendChild(h2("td", "ctr", b.rel || ""));
-      tr.appendChild(h2("td", "num", b.dr == null ? "" : b.dr));
-      tr.appendChild(h2("td", "num", b.traffic == null ? "" : Number(b.traffic).toLocaleString("en-US")));
-      tr.appendChild(h2("td", "num" + (Number(b.cost) > 0 ? " spend-paid" : " dim"), Number(b.cost) > 0 ? b.currency + " " + money3(b.cost) : "\u514D\u8D39"));
-      const st2 = h2("td", "ctr");
-      if (b.status) st2.appendChild(h2("span", "badge " + (STATUS_BADGE[b.status] || "b-gray"), b.status));
-      st2.appendChild(h2("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
+      tr2.appendChild(tgt);
+      tr2.appendChild(h3("td", "ctr", b.method || ""));
+      tr2.appendChild(h3("td", "ctr", b.rel || ""));
+      tr2.appendChild(h3("td", "num", b.dr == null ? "" : b.dr));
+      tr2.appendChild(h3("td", "num", b.traffic == null ? "" : Number(b.traffic).toLocaleString("en-US")));
+      tr2.appendChild(h3("td", "num" + (Number(b.cost) > 0 ? " spend-paid" : " dim"), Number(b.cost) > 0 ? b.currency + " " + money4(b.cost) : "\u514D\u8D39"));
+      const st2 = h3("td", "ctr");
+      if (b.status) st2.appendChild(h3("span", "badge " + (STATUS_BADGE[b.status] || "b-gray"), b.status));
+      st2.appendChild(h3("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
       if (b.auto_status) {
         const relDiffers = b.auto_status === "found" && b.rel && b.auto_rel && b.rel !== b.auto_rel;
         const lost = b.auto_status === "not_found" && b.auto_lost_at;
-        const auto = h2(
+        const auto = h3(
           "div",
           "spend-auto is-" + (relDiffers ? "mismatch" : b.auto_status) + (lost ? " is-lost" : ""),
           relDiffers ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728\uFF0C\u4F46\u9875\u9762\u4E0A\u662F " + b.auto_rel : lost ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u4E0A\u6B21\u8FD8\u5728\uFF0C\u8FD9\u6B21\u6CA1\u627E\u5230" : AUTO_LABEL[b.auto_status] || b.auto_status
@@ -11596,20 +11750,20 @@
         st2.appendChild(auto);
       }
       if (b.target_url) {
-        const chk3 = h2("button", "btn-mini spend-check", "\u81EA\u52A8\u6838\u67E5");
+        const chk3 = h3("button", "btn-mini spend-check", "\u81EA\u52A8\u6838\u67E5");
         chk3.type = "button";
         chk3.dataset.spendCheck = b.id;
         chk3.title = "\u8BA9\u670D\u52A1\u5668\u53BB\u8FD9\u4E2A\u9875\u9762\u4E0A\u627E\u4E00\u6B21\u6307\u5411\u6211\u4EEC\u7684\u94FE\u63A5";
         st2.appendChild(chk3);
       }
-      tr.appendChild(st2);
-      tr.appendChild(h2("td", "spend-task", b.task_content || ""));
-      tr.appendChild(rowActions("backlink", b.id));
-      tb.appendChild(tr);
+      tr2.appendChild(st2);
+      tr2.appendChild(h3("td", "spend-task", b.task_content || ""));
+      tr2.appendChild(rowActions("backlink", b.id));
+      tb.appendChild(tr2);
     }
   }
   function renderExpenses() {
-    const tb = $9("tb-expenses");
+    const tb = $10("tb-expenses");
     if (!tb) return;
     tb.textContent = "";
     if (!expenseRows.length) {
@@ -11617,40 +11771,40 @@
       return;
     }
     for (const e of expenseRows) {
-      const tr = h2("tr");
-      tr.appendChild(h2("td", "num", e.spend_date));
-      const cat = h2("td", "ctr");
-      cat.appendChild(h2("span", "badge b-gray", e.category));
-      tr.appendChild(cat);
-      const purpose = h2("td", "spend-url", e.purpose);
-      if (e.note) purpose.appendChild(h2("div", "dim", e.note));
-      tr.appendChild(purpose);
-      tr.appendChild(h2("td", "", e.vendor || ""));
-      tr.appendChild(h2("td", "num spend-paid", e.currency + " " + money3(e.amount)));
-      tr.appendChild(h2("td", "ctr", e.owner || ""));
-      tr.appendChild(h2("td", "spend-task", e.task_content || ""));
-      const ev = h2("td", "spend-url");
+      const tr2 = h3("tr");
+      tr2.appendChild(h3("td", "num", e.spend_date));
+      const cat = h3("td", "ctr");
+      cat.appendChild(h3("span", "badge b-gray", e.category));
+      tr2.appendChild(cat);
+      const purpose = h3("td", "spend-url", e.purpose);
+      if (e.note) purpose.appendChild(h3("div", "dim", e.note));
+      tr2.appendChild(purpose);
+      tr2.appendChild(h3("td", "", e.vendor || ""));
+      tr2.appendChild(h3("td", "num spend-paid", e.currency + " " + money4(e.amount)));
+      tr2.appendChild(h3("td", "ctr", e.owner || ""));
+      tr2.appendChild(h3("td", "spend-task", e.task_content || ""));
+      const ev = h3("td", "spend-url");
       if (e.evidence) ev.appendChild(linkEl2(e.evidence, "\u67E5\u770B\u51ED\u8BC1"));
-      else ev.appendChild(h2("span", "spend-noev", "\u65E0\u51ED\u8BC1"));
-      tr.appendChild(ev);
-      tr.appendChild(rowActions("expense", e.id));
-      tb.appendChild(tr);
+      else ev.appendChild(h3("span", "spend-noev", "\u65E0\u51ED\u8BC1"));
+      tr2.appendChild(ev);
+      tr2.appendChild(rowActions("expense", e.id));
+      tb.appendChild(tr2);
     }
   }
   async function loadSpend() {
     bind3();
     if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
-    const input = $9("spend-month");
+    const input = $10("spend-month");
     if (input) input.value = month;
     const range2 = monthRange(month);
-    const seq6 = ++loadSeq;
-    const allLinks = $9("spend-links-all") && $9("spend-links-all").checked;
+    const seq7 = ++loadSeq;
+    const allLinks = $10("spend-links-all") && $10("spend-links-all").checked;
     const [sum, links, exps] = await Promise.allSettled([
       API.get("/api/spend/summary" + qs(range2)),
       API.get("/api/backlinks" + (allLinks ? "" : qs(range2))),
       API.get("/api/expenses" + qs(range2))
     ]);
-    if (seq6 !== loadSeq) return;
+    if (seq7 !== loadSeq) return;
     if (sum.status === "fulfilled") renderSummary4(sum.value);
     else renderSummaryError(sum.reason);
     if (links.status === "fulfilled") {
@@ -11660,14 +11814,14 @@
     } else {
       backlinkRows = [];
       renderLinkStats(null);
-      errorRow($9("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+      errorRow($10("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
     }
     if (exps.status === "fulfilled") {
       expenseRows = exps.value.items || [];
       renderExpenses();
     } else {
       expenseRows = [];
-      errorRow($9("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+      errorRow($10("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
     }
   }
   var BACKLINK_FIELDS = [
@@ -11706,17 +11860,17 @@
     expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
   };
   function fillSelect2(id, values, placeholder, labelOf) {
-    const sel = $9(id);
+    const sel = $10(id);
     if (!sel) return;
     const keep = sel.value;
     sel.textContent = "";
     if (placeholder != null) {
-      const o = h2("option", "", placeholder);
+      const o = h3("option", "", placeholder);
       o.value = "";
       sel.appendChild(o);
     }
     for (const v of values) {
-      const o = h2("option", "", labelOf ? labelOf(v) : v);
+      const o = h3("option", "", labelOf ? labelOf(v) : v);
       o.value = labelOf ? v.id : v;
       sel.appendChild(o);
     }
@@ -11735,10 +11889,10 @@
     fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
   }
   function ensureTaskOption(selectId, row) {
-    const sel = $9(selectId);
+    const sel = $10(selectId);
     if (!sel || !row || row.task_id == null) return;
     if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
-    const o = h2("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
+    const o = h3("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
     o.value = String(row.task_id);
     sel.appendChild(o);
   }
@@ -11747,14 +11901,14 @@
     try {
       await ensureOptions();
     } catch (e) {
-      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText6(e));
+      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText7(e));
       return;
     }
     editing6[kind] = row || null;
-    $9(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    $10(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
     ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el5 = $9(id);
+      const el5 = $10(id);
       if (!el5) continue;
       el5.value = row && row[key] != null ? row[key] : "";
     }
@@ -11762,15 +11916,15 @@
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
       const me = (window.ME || {}).name || "";
       if (kind === "backlink") {
-        $9("bl-date").value = today3;
-        $9("bl-owner").value = me;
+        $10("bl-date").value = today3;
+        $10("bl-owner").value = me;
       } else {
-        $9("ex-date").value = today3;
-        $9("ex-currency").value = "CNY";
-        $9("ex-owner").value = me;
+        $10("ex-date").value = today3;
+        $10("ex-currency").value = "CNY";
+        $10("ex-owner").value = me;
       }
     }
-    $9(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    $10(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
     openModal(form.mask);
   }
   var openBacklink = () => openForm2("backlink", null);
@@ -11779,10 +11933,10 @@
     const form = FORMS[kind];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el5 = $9(id);
+      const el5 = $10(id);
       if (el5) body[key] = el5.value;
     }
-    const errEl = $9(kind === "backlink" ? "bl-error" : "ex-error");
+    const errEl = $10(kind === "backlink" ? "bl-error" : "ex-error");
     const row = editing6[kind];
     if (btn) btn.disabled = true;
     try {
@@ -11793,7 +11947,7 @@
       toast2((row ? "\u5DF2\u66F4\u65B0" : "\u5DF2\u767B\u8BB0") + form.name + " \xB7 \u5DF2\u5165\u5E93");
       loadSpend();
     } catch (e) {
-      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText6(e);
+      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText7(e);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -11801,10 +11955,10 @@
   var submitBacklink = (btn) => submitForm("backlink", btn);
   var submitExpense = (btn) => submitForm("expense", btn);
   function bind3() {
-    if (bound5) return;
-    const panel = $9("panel-spend");
+    if (bound6) return;
+    const panel = $10("panel-spend");
     if (!panel) return;
-    bound5 = true;
+    bound6 = true;
     panel.addEventListener("click", async (e) => {
       const step = e.target.closest("[data-spend-month]");
       if (step) {
@@ -11828,7 +11982,7 @@
         } catch (err) {
           chk3.disabled = false;
           chk3.textContent = "\u81EA\u52A8\u6838\u67E5";
-          toast2("\u6838\u67E5\u5931\u8D25\uFF1A" + failText6(err));
+          toast2("\u6838\u67E5\u5931\u8D25\uFF1A" + failText7(err));
         }
         return;
       }
@@ -11848,17 +12002,17 @@
           toast2("\u5DF2\u5220\u9664" + form.name + "\u8BB0\u5F55");
           loadSpend();
         } catch (err) {
-          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText6(err));
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText7(err));
         }
       }
     });
-    $9("spend-month").addEventListener("change", (e) => {
+    $10("spend-month").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}$/.test(e.target.value)) {
         month = e.target.value;
         loadSpend();
       }
     });
-    $9("spend-links-all").addEventListener("change", loadSpend);
+    $10("spend-links-all").addEventListener("change", loadSpend);
   }
 
   // public/src/app.js
@@ -12371,6 +12525,7 @@
     loadSemBoardAds();
     loadSemBoardFull();
     loadAttribution();
+    loadSiteReturns();
     loadDiagnostics();
     loadDataFreshness();
     await loadDataSourcesStatus();
