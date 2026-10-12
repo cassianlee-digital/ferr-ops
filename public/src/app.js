@@ -16,6 +16,7 @@ import { loadGa4 } from './ga4-view.js';
 import { loadGeo } from './geo.js';
 import { pickGeoShot, submitGeoCheck } from './geo-checks.js';
 import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
+import { loadSites } from './sites.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
 import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
@@ -420,6 +421,7 @@ window.addEventListener('load',async()=>{
   loadDataFreshness();         // 阶段5：数据新鲜度条（三源实际有数据天数 + 最后同步）
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
   await loadIntegrations();    // 设置页 API 接入状态
+  loadSites();                 // 设置页 站点管理（多站点）
   await loadMarket();          // 市场分析问卷表
   if (typeof loadHermesMemories === 'function') await loadHermesMemories(false); // AI 记忆
   await loadBrain();           // AI 记忆体状态 + 摘要

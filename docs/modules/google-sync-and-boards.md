@@ -1,11 +1,28 @@
 # Google 同步与数据看板（GSC / GA4 / Ads）
 
 > 状态：active
-> 守护它的测试：`server/test/googleHighlights.test.js`、`server/test/productionReadiness.test.js`
+> 守护它的测试：`server/test/googleHighlights.test.js`、`server/test/productionReadiness.test.js`、`server/test/sites.test.js`
 >
 > 这里记的是**口径和踩过的坑** —— 代码里看不出来、忘了就会重犯的那些。「现在有哪些文件 / 表 / 接口」看 `docs/FACTS.md`（自动生成）。
 > 2026-10-11 从原来 438 行的 `CLAUDE.md` 里按模块拆出，原文搬运，只更正了几处已核实不成立的说法。
 
+- **多站点(2026-10-12 起,分三步;第 1 步已做)** —— 一个谷歌账号下有好几个网站(贝孚特两个、费尔瑞两个,以后还会加),后台以前只认其中一个。
+  - **「站点」= `google_projects` 表里的一行**:一个网站 + 它的 Search Console 资源 + 它的 GA4 媒体资源 + 域名 + 所属公司。
+    这张表和它的增删改接口早就有,数据表也早就按站点 / 媒体资源 / 账户分开存,**缺的只是界面、和「每个站都同步」**。规则在 `server/src/services/sites.js`(纯函数)。
+  - **第 1 步(已做)**:设置 → API 接入 → 「站点管理」(`public/src/sites.js`,零 innerHTML);每天自动同步**所有**启用的站点;每个站点可单独「立即同步 / 补 90 天历史」。
+    - **Ads 是账户级的**:几个站共用一个 Ads 账户,按系列区分。所以同步计划(`syncPlan`)里 GSC / GA4 每站一次,**Ads 同一个客户编号只一次**;新站点没填 Ads 编号就沿用现有账户。
+    - **第一次加站点时,原来在用的那个站自动登记成默认站点**(`routes/google.js` 的 POST)。不这么做的话,新加的站会变成「默认」,所有看板一声不响换成另一个网站的数据。
+      原来留下的、没有归属的同步记录同时归到它名下。
+    - **同一份数据不能记在两个站点上**:域名 / Search Console 资源 / GA4 媒体资源在启用中的站点里各自唯一(`409 site_exists`);域名和资源必须是同一个站(`400 domain_mismatch`,防选错行)。
+    - **默认站点不能直接取消、不能直接停用**(否则「默认」会悄悄落到别的站上):要换,把另一个设为默认。停用是软的,已同步的数据保留。
+    - **新鲜度按站点各看各的**(`syncSites.staleTargets`):一个站刚同步过,不能替另一个站「显得新鲜」。
+    - **GSC 明细以前只取第一页**(接口单次上限 25000 行):区间一长,后面的行悄悄没了、且没有任何报错 —— 原来的「回补 90 天」按钮就有这个问题。
+      现在翻页取全(`gsc.js` 的 `queryAllRows`);真翻到上限还没完会标 `truncated` 并在界面上说。补历史另外按 30 天一段分段取(`backfillChunks`),某段失败就停在那段,已取到的保留。
+    - **候选清单**:`GET /api/google/discover` 从账号里列出 Search Console 资源和 GA4 媒体资源给表单当候选;两个来源互不拖累,取不到就带原因、照样能手填。
+      **⚠ 没在真实账号上跑过**(本地没有谷歌授权):GA4 那一半用的是 Analytics Admin API,生产的谷歌云项目里很可能还没启用它 —— 没启用时界面会显示谷歌给的原因,手填编号即可。
+    - **已知的缺口**:改了一个站点的 Search Console 资源后,按旧资源同步进来的行还在库里,但不再属于任何站点(不会被删,也不会再显示)。
+  - **还没做的**:第 2 步 —— 看板上选站点(现在所有看板、AI 上下文、周度审核、任务前后对比、GEO 仍然只看默认站点,`resolveProject({})`);
+    第 3 步 —— 询盘 / 线索按域名自动认站点、广告系列归到站点、周度审核按站点分段。**考核口径不按站点拆**(老板定的是部门合计),按站点只做展示。
 - **Google 同步已上线运行:GSC/GA4/Ads 三源均已授权,2026-06-30 首次同步成功并拉到真实数据(已逐源核验落库)。**
   - OAuth 授权/回调/刷新/撤销:`server/src/sync/googleClient.js`。
   - GSC 同步:`server/src/sync/gsc.js`(每日 + query/page)。GA4 同步:`server/src/sync/ga4.js`(每日 + 来源/国家/设备/落地页)。Ads 同步:`server/src/sync/ads.js`(campaign + keyword)。

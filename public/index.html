@@ -860,6 +860,10 @@
         </div>
         </div>
         <div class="subpanel" id="sub-set-api">
+        <!-- 多站点：一个谷歌账号下的每个网站各登记一次（public/src/sites.js 渲染） -->
+        <div class="card" id="sites-card"><div class="card-head"><span class="card-title">站点管理</span><span class="card-sub">一个谷歌账号下的每个网站各登记一次 · 每天自动同步所有站点的 GSC 与 GA4 · 广告账户几个站共用</span></div>
+          <div id="sites-box"></div>
+        </div>
         <!-- V7: Google API 接入（后端环境变量 + OAuth 授权 + 手动同步）-->
         <div class="card csp-s-c53ea1da23"><div class="card-head"><span class="card-title">API 接入 · Google 授权与同步</span><span class="card-sub">显示后端配置、OAuth 授权、最近同步结果；密钥不进入前端</span></div>
           <div class="csp-s-a624e8ba1e" id="integ-rows"></div>

@@ -962,6 +962,8 @@ export function migrate() {
     ['gsc_site_url', 'TEXT'], ['ga4_property_id', 'TEXT'], ['ads_customer_id', 'TEXT'],
     ['is_default', 'INTEGER NOT NULL DEFAULT 0'], ['active', 'INTEGER NOT NULL DEFAULT 1'],
     ['updated_at', 'TEXT'],
+    // 多站点（2026-10-12）：一条记录 = 一个网站。domain 用来认「这条询盘 / 这个网址是哪个站的」，company = 它属于哪家公司
+    ['domain', 'TEXT'], ['company', 'TEXT'],
   ]);
   ensureColumns('hermes_action_runs', [
     ['idempotency_key', 'TEXT'], ['attempt_count', 'INTEGER NOT NULL DEFAULT 0'],

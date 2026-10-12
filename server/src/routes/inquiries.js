@@ -8,12 +8,13 @@ import * as leadsRepo from '../db/repositories/inquiryLeads.js';
 import * as taskLinksRepo from '../db/repositories/taskLinks.js';
 import { leadSource, manualSource } from '../services/inquirySource.js';
 import { buildSourceChecks } from '../services/inquirySourceData.js';
+import { COMPANIES } from '../services/sites.js';
 
 const GRADES = ['A', 'B', 'C'];
 // 是否成交：只认这两个值，前端传别的一律落回「未成交」（避免脏值污染统计）
 const DEALS = ['未成交', '已成交'];
 // 公司：询价通过哪个主体来的。只认这两家，没选就留 NULL（表格显示「未标注」，不替业务瞎归属）
-const COMPANIES = ['贝孚特', '费尔瑞'];
+// 公司名单只有一份（站点所属的公司用的也是它）
 // 渠道：只认这四个（与 services/attribution.js 的 classify 同口径）。以前 PATCH 不校验渠道，任何字符串都能写进去。
 const CHANNELS = ['SEO自然', 'SEM付费', '直接', '其他'];
 // 确认权在经理 / 老板：他们录入即确认，也只有他们能确认、能改已确认的渠道和等级

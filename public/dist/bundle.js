@@ -476,10 +476,10 @@
   var splitActionItems = [];
   var modalRequestVersion = 0;
   function hashText(s) {
-    let h2 = 5381;
+    let h3 = 5381;
     s = String(s || "");
-    for (let i = 0; i < s.length; i++) h2 = (h2 << 5) + h2 + s.charCodeAt(i);
-    return (h2 >>> 0).toString(36);
+    for (let i = 0; i < s.length; i++) h3 = (h3 << 5) + h3 + s.charCodeAt(i);
+    return (h3 >>> 0).toString(36);
   }
   function currentAiPage() {
     const p = document.querySelector(".panel.active");
@@ -613,8 +613,8 @@
     if (!hist.length) return "";
     const idx = aiViewIdx;
     let chips = '<button type="button" class="ai-tl-chip' + (idx < 0 ? " active" : "") + '" data-ai-snapshot="-1">\u672C\u6B21 \xB7 ' + fmtAiTime(item.updated_at) + "</button>";
-    hist.forEach((h2, i) => {
-      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h2.at) + "</button>";
+    hist.forEach((h3, i) => {
+      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h3.at) + "</button>";
     });
     return '<div class="ai-timeline"><span class="ai-tl-label"><i class="ti ti-history"></i> \u5386\u53F2\u5BF9\u6BD4</span>' + chips + "</div>";
   }
@@ -1045,9 +1045,9 @@
   }
   async function loadSeoBoardGsc() {
     const cur = getCurrentRange("data");
-    let data2 = null, prev = null;
+    let data3 = null, prev = null;
     try {
-      data2 = await API.get(withRange2("/api/google/gsc/summary", "data"));
+      data3 = await API.get(withRange2("/api/google/gsc/summary", "data"));
     } catch (e) {
       window._gscBoard = { error: e };
       renderSeoBoard();
@@ -1060,7 +1060,7 @@
         prev = null;
       }
     }
-    window._gscBoard = { data: data2, prev };
+    window._gscBoard = { data: data3, prev };
     renderSeoBoard();
   }
   function _aggByGran(byDate, gran) {
@@ -1101,9 +1101,9 @@
   }
   function renderSeoBoard() {
     const cv = document.getElementById("seoBoard");
-    const board = window._gscBoard, data2 = board && board.data, prev = board && board.prev;
+    const board = window._gscBoard, data3 = board && board.data, prev = board && board.prev;
     const error = board && board.error;
-    const t = data2 && data2.totals || null;
+    const t = data3 && data3.totals || null;
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
@@ -1112,12 +1112,12 @@
       _t("sb-clicks", (t.clicks || 0).toLocaleString());
       _t("sb-impr", (t.impressions || 0).toLocaleString());
       _t("sb-pos", t.position != null ? Number(t.position).toFixed(1) : "\u2014");
-      _t("sb-cov", (data2.queryCount || 0).toLocaleString());
+      _t("sb-cov", (data3.queryCount || 0).toLocaleString());
       const pt = prev && prev.totals;
       _seoDelta("sb-clicks-d", t.clicks, pt ? pt.clicks : null, false, "pct");
       _seoDelta("sb-impr-d", t.impressions, pt ? pt.impressions : null, false, "pct");
       _seoDelta("sb-pos-d", t.position, pt ? pt.position : null, true, "abs");
-      _seoDelta("sb-cov-d", data2.queryCount, prev ? prev.queryCount : null, false, "abs");
+      _seoDelta("sb-cov-d", data3.queryCount, prev ? prev.queryCount : null, false, "abs");
     } else {
       ["sb-clicks", "sb-impr", "sb-pos", "sb-cov"].forEach((id) => _t(id, "\u2014"));
       ["sb-clicks-d", "sb-impr-d", "sb-pos-d", "sb-cov-d"].forEach((id) => {
@@ -1141,12 +1141,12 @@
       let labels, clicks, impr;
       if (!gran || gran === "day") {
         const rng = board && board.data && board.data.range || getCurrentRange("data");
-        const a = _alignDaily(data2 && data2.byDate, rng, "date");
+        const a = _alignDaily(data3 && data3.byDate, rng, "date");
         labels = a.labels;
         clicks = a.rows.map((r) => r ? +r.clicks || 0 : null);
         impr = a.rows.map((r) => r ? +r.impressions || 0 : null);
       } else {
-        const s = _aggByGran(data2 && data2.byDate, gran);
+        const s = _aggByGran(data3 && data3.byDate, gran);
         labels = s.map((x) => x.label);
         clicks = s.map((x) => x.clicks);
         impr = s.map((x) => x.impr);
@@ -1172,7 +1172,7 @@
     }
     const tb = document.getElementById("seoPageRows");
     if (tb) {
-      const pages = data2 && data2.topPages || [];
+      const pages = data3 && data3.topPages || [];
       if (error) {
         tb.innerHTML = loadFailureRow(7, "GSC", error);
       } else if (!pages.length) {
@@ -1246,7 +1246,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h2) => '<span class="seo-hl-chip ' + (h2.tone === "good" ? "good" : "bad") + '">' + esc(h2.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h3) => '<span class="seo-hl-chip ' + (h3.tone === "good" ? "good" : "bad") + '">' + esc(h3.text) + "</span>").join("");
   }
   function renderSeoDeltaTables(d) {
     const error = d && d.error;
@@ -1319,7 +1319,7 @@
         const s = _seoPath(u);
         return s.length > 22 ? "\u2026" + s.slice(-21) : s;
       };
-      const data3 = ps.map((p) => {
+      const data4 = ps.map((p) => {
         const t = isTarget(p);
         return {
           value: [p.sessions, +((p.bounceRate || 0) * 100).toFixed(1), _seoPath(p.page), p.avgDuration || 0],
@@ -1335,7 +1335,7 @@
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(32, 8 + Math.sqrt(v[0] || 0)),
-          data: data3,
+          data: data4,
           markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: true, fontSize: 9, color: "#9aa1ae", formatter: (o) => o.dataType === "max" ? "" : "\u4E2D\u4F4D" }, data: [{ xAxis: medS }, { yAxis: medB }] },
           markArea: { silent: true, itemStyle: { color: "rgba(229,72,77,.07)" }, label: { show: true, position: ["85%", "6%"], color: "#e5484d", fontSize: 11, fontWeight: "bold", formatter: "\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61" }, data: [[{ xAxis: medS, yAxis: medB }, { xAxis: maxS, yAxis: 100 }]] }
         }]
@@ -1359,7 +1359,7 @@
       }
     }
     window._seoScatterChart = echarts.init(el5);
-    const data2 = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
+    const data3 = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
     const medImpr = _median(pts.map((p) => p.impressions)), medPos = _median(pts.map((p) => p.position));
     window._seoScatterChart.setOption({
       grid: { left: 52, right: 24, top: 16, bottom: 44 },
@@ -1369,7 +1369,7 @@
       series: [{
         type: "scatter",
         symbolSize: (v) => Math.min(30, 7 + Math.sqrt(v[2] || 0) * 2.2),
-        data: data2,
+        data: data3,
         itemStyle: { color: "#2f72e8", opacity: 0.68 },
         markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: false }, data: [{ xAxis: medImpr }, { yAxis: medPos }] }
       }]
@@ -1487,20 +1487,20 @@
     sel.value = cur;
   }
   async function loadSemBoardAds() {
-    let data2 = null;
+    let data3 = null;
     try {
-      data2 = await API.get(withSemCampaign(withRange2("/api/google/ads/summary", "data")));
+      data3 = await API.get(withSemCampaign(withRange2("/api/google/ads/summary", "data")));
     } catch (e) {
       window._adsBoard = { error: e };
       renderSemBoard();
       return;
     }
-    window._adsBoard = data2;
+    window._adsBoard = data3;
     renderSemBoard();
   }
   function renderSemBoard() {
-    const data2 = window._adsBoard, t = data2 && data2.totals;
-    const error = data2 && data2.error;
+    const data3 = window._adsBoard, t = data3 && data3.totals;
+    const error = data3 && data3.error;
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
@@ -1520,13 +1520,13 @@
     } else {
       ids.forEach((id) => _t(id, "\u2014"));
     }
-    if (data2) {
-      _fillSemCampaignFilter(data2.campaigns);
-      _fillSemAdGroupFilter(data2.adGroups);
+    if (data3) {
+      _fillSemCampaignFilter(data3.campaigns);
+      _fillSemAdGroupFilter(data3.adGroups);
     }
     const tb = document.getElementById("semHierRows");
     if (!tb) return;
-    const camps = data2 && data2.campaigns || [], kws = data2 && data2.keywords || [];
+    const camps = data3 && data3.campaigns || [], kws = data3 && data3.keywords || [];
     if (error) {
       tb.innerHTML = loadFailureRow(5, "Ads \u6982\u89C8", error);
       return;
@@ -1611,7 +1611,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h2) => '<span class="seo-hl-chip ' + (h2.tone === "good" ? "good" : "bad") + '">' + esc(h2.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h3) => '<span class="seo-hl-chip ' + (h3.tone === "good" ? "good" : "bad") + '">' + esc(h3.text) + "</span>").join("");
   }
   function renderSemDeltaTables(d) {
     const error = d && d.error;
@@ -1688,7 +1688,7 @@
         s = String(s || "");
         return s.length > 20 ? s.slice(0, 19) + "\u2026" : s;
       };
-      const data2 = conv.map((p) => {
+      const data3 = conv.map((p) => {
         const t = p.cpa >= medCpa;
         return { value: [+p.cost.toFixed(0), +p.cpa.toFixed(0), p.keyword, p.conversions], itemStyle: { color: t ? "#e5484d" : "#7b54e0", opacity: t ? 0.85 : 0.62 }, label: { show: t, position: "right", fontSize: 9, color: "#c93338", formatter: (o) => short(o.value[2]) } };
       });
@@ -1700,7 +1700,7 @@
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(30, 8 + Math.sqrt(v[0] || 0) / 3),
-          data: data2,
+          data: data3,
           markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: true, fontSize: 9, color: "#9aa1ae", formatter: "\u4E2D\u4F4D\u6BCF\u8F6C\u5316" }, data: [{ yAxis: medCpa }] },
           markArea: { silent: true, itemStyle: { color: "rgba(229,72,77,.07)" }, label: { show: true, position: ["50%", "8%"], color: "#e5484d", fontSize: 11, fontWeight: "bold", formatter: "\u6BCF\u8F6C\u5316\u504F\u8D35" }, data: [[{ yAxis: medCpa }, { yAxis: "max" }]] }
         }]
@@ -3274,11 +3274,11 @@
     const seq6 = ++checkSeq;
     refreshLeadBadge();
     try {
-      const data2 = await API.get(withRange2("/api/inquiries/source-check", "inquiry"));
+      const data3 = await API.get(withRange2("/api/inquiries/source-check", "inquiry"));
       if (seq6 !== checkSeq) return;
-      checks = new Map((data2.items || []).map((i) => [i.id, i]));
-      verdicts = data2.verdicts || {};
-      lookbackDays = data2.lookback_days || 30;
+      checks = new Map((data3.items || []).map((i) => [i.id, i]));
+      verdicts = data3.verdicts || {};
+      lookbackDays = data3.lookback_days || 30;
       changed();
     } catch (e) {
       if (seq6 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
@@ -3412,9 +3412,9 @@
     const el5 = $("inq-leads-count");
     if (!el5) return;
     try {
-      const data2 = await API.get("/api/inquiry-leads?state=new");
-      el5.textContent = data2.configured ? String(data2.counts.new || 0) : "\u672A\u63A5\u5165";
-      el5.classList.toggle("has-new", data2.configured && data2.counts.new > 0);
+      const data3 = await API.get("/api/inquiry-leads?state=new");
+      el5.textContent = data3.configured ? String(data3.counts.new || 0) : "\u672A\u63A5\u5165";
+      el5.classList.toggle("has-new", data3.configured && data3.counts.new > 0);
     } catch (e) {
       el5.textContent = "\u2014";
     }
@@ -3479,10 +3479,10 @@
     box.textContent = "";
     addLine(box, "\u52A0\u8F7D\u4E2D\u2026", "dim");
     try {
-      const data2 = await API.get("/api/inquiry-leads?state=" + leadState);
-      leadRows = data2.items || [];
-      status.classList.toggle("is-off", !data2.configured);
-      status.textContent = data2.configured ? "\u5F85\u5904\u7406 " + (data2.counts.new || 0) + " \xB7 \u5DF2\u8F6C\u8BE2\u76D8 " + (data2.counts.converted || 0) + " \xB7 \u5DF2\u5FFD\u7565 " + (data2.counts.ignored || 0) : "\u5C1A\u672A\u63A5\u5165\uFF1A\u670D\u52A1\u5668\u6CA1\u6709\u914D\u7F6E INQUIRY_INTAKE_SECRET\uFF0C\u72EC\u7ACB\u7AD9\u8868\u5355\u8FD8\u4E0D\u4F1A\u628A\u7EBF\u7D22\u53D1\u5230\u8FD9\u91CC\uFF08\u63A5\u6CD5\u89C1 docs/INQUIRY_INTAKE.md\uFF09\u3002";
+      const data3 = await API.get("/api/inquiry-leads?state=" + leadState);
+      leadRows = data3.items || [];
+      status.classList.toggle("is-off", !data3.configured);
+      status.textContent = data3.configured ? "\u5F85\u5904\u7406 " + (data3.counts.new || 0) + " \xB7 \u5DF2\u8F6C\u8BE2\u76D8 " + (data3.counts.converted || 0) + " \xB7 \u5DF2\u5FFD\u7565 " + (data3.counts.ignored || 0) : "\u5C1A\u672A\u63A5\u5165\uFF1A\u670D\u52A1\u5668\u6CA1\u6709\u914D\u7F6E INQUIRY_INTAKE_SECRET\uFF0C\u72EC\u7ACB\u7AD9\u8868\u5355\u8FD8\u4E0D\u4F1A\u628A\u7EBF\u7D22\u53D1\u5230\u8FD9\u91CC\uFF08\u63A5\u6CD5\u89C1 docs/INQUIRY_INTAKE.md\uFF09\u3002";
       box.textContent = "";
       if (!leadRows.length) {
         addLine(box, leadState === "new" ? "\u6CA1\u6709\u5F85\u5904\u7406\u7684\u7EBF\u7D22" : "\u6CA1\u6709\u88AB\u5FFD\u7565\u7684\u7EBF\u7D22", "dim lead-empty");
@@ -4397,16 +4397,16 @@
       product: "product",
       channel: "channel"
     };
-    const field2 = fieldMap[kind];
-    if (!field2) return;
+    const field3 = fieldMap[kind];
+    if (!field3) return;
     try {
-      await API.patch(ep + "/" + id, { [field2]: value });
+      await API.patch(ep + "/" + id, { [field3]: value });
       if (ep === "/api/inquiries") {
         const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
         if (it) {
-          it[field2] = value;
-          if (field2 === "channel" || field2 === "grade") it.attr_change_count = (Number(it.attr_change_count) || 0) + 1;
-          if ((field2 === "grade" || field2 === "channel") && tr) {
+          it[field3] = value;
+          if (field3 === "channel" || field3 === "grade") it.attr_change_count = (Number(it.attr_change_count) || 0) + 1;
+          if ((field3 === "grade" || field3 === "channel") && tr) {
             tr.querySelectorAll("td[contenteditable][data-field]").forEach((td2) => {
               it[td2.dataset.field] = td2.innerText.trim();
             });
@@ -4795,16 +4795,16 @@
   function renderSparklines() {
     document.querySelectorAll("[data-spark]").forEach((td2) => {
       const v = td2.dataset.spark.split(",").map(Number);
-      const w = 58, h2 = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
+      const w = 58, h3 = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
       const pts = v.map((d, i) => {
         const x = i / (v.length - 1) * (w - 4) + 2;
-        const y = (d - min) / rng * (h2 - 6) + 3;
+        const y = (d - min) / rng * (h3 - 6) + 3;
         return x.toFixed(1) + "," + y.toFixed(1);
       }).join(" ");
       const up = v[v.length - 1] < v[0];
       const col = up ? "var(--green)" : v[v.length - 1] > v[0] ? "var(--primary)" : "var(--text3)";
-      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h2 - 6) + 3;
-      td2.innerHTML = `<svg class="spark" width="${w}" height="${h2}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
+      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h3 - 6) + 3;
+      td2.innerHTML = `<svg class="spark" width="${w}" height="${h3}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
     });
   }
 
@@ -5018,8 +5018,8 @@
   });
   function isOverduePeriodFirstDay(freq) {
     const now = /* @__PURE__ */ new Date();
-    const h2 = now.getHours();
-    if (h2 < 8) return false;
+    const h3 = now.getHours();
+    if (h3 < 8) return false;
     if (freq === "daily") return true;
     if (freq === "weekly") return now.getDay() === 1;
     if (freq === "monthly") return now.getDate() === 1;
@@ -5499,20 +5499,20 @@
       tbody.appendChild(tr);
     }
   }
-  function renderEffect(data2) {
+  function renderEffect(data3) {
     const box = $4("task-effect-body");
     box.textContent = "";
-    $4("task-effect-title").textContent = data2.task.content || "";
-    if (data2.status !== "OK") {
-      box.appendChild(el("div", "teffect-note", data2.message || "\u6CA1\u6709\u53EF\u5BF9\u6BD4\u7684\u6570\u636E\u3002"));
+    $4("task-effect-title").textContent = data3.task.content || "";
+    if (data3.status !== "OK") {
+      box.appendChild(el("div", "teffect-note", data3.message || "\u6CA1\u6709\u53EF\u5BF9\u6BD4\u7684\u6570\u636E\u3002"));
       return;
     }
-    box.appendChild(el("div", "teffect-note", data2.note));
-    const used = new Set(data2.items.map((i) => i.source).filter(Boolean));
+    box.appendChild(el("div", "teffect-note", data3.note));
+    const used = new Set(data3.items.map((i) => i.source).filter(Boolean));
     const wins = el("div", "teffect-windows");
-    if (used.has("gsc")) wins.appendChild(el("div", "", windowText("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", data2.windows.gsc)));
-    if (used.has("ads")) wins.appendChild(el("div", "", windowText("\u5E7F\u544A\uFF08Ads\uFF09", data2.windows.ads)));
-    if (used.has("ga4")) wins.appendChild(el("div", "", windowText("\u7AD9\u5185\u884C\u4E3A\uFF08GA4\uFF09", data2.windows.ga4)));
+    if (used.has("gsc")) wins.appendChild(el("div", "", windowText("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", data3.windows.gsc)));
+    if (used.has("ads")) wins.appendChild(el("div", "", windowText("\u5E7F\u544A\uFF08Ads\uFF09", data3.windows.ads)));
+    if (used.has("ga4")) wins.appendChild(el("div", "", windowText("\u7AD9\u5185\u884C\u4E3A\uFF08GA4\uFF09", data3.windows.ga4)));
     box.appendChild(wins);
     const table2 = el("table", "dt teffect-table");
     const thead = el("thead");
@@ -5521,14 +5521,14 @@
     thead.appendChild(hr);
     table2.appendChild(thead);
     const tbody = el("tbody");
-    for (const item of data2.items) {
+    for (const item of data3.items) {
       const kind = LINK_LABEL[item.type] || item.type;
       const where = SOURCE_SUFFIX[item.source] || "";
-      effectRows(tbody, kind + where, item.type === "page" ? linkText(item) : item.label || item.ref, item, data2.metrics);
+      effectRows(tbody, kind + where, item.type === "page" ? linkText(item) : item.label || item.ref, item, data3.metrics);
     }
-    if (data2.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F", "", data2.baseline.gsc, data2.metrics, "is-baseline");
-    if (data2.baseline.ads) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u8D26\u6237\u5E7F\u544A\u540C\u671F", "\u91D1\u989D\u4E3A Ads \u8D26\u6237\u5E01\u79CD", data2.baseline.ads, data2.metrics, "is-baseline");
-    if (data2.baseline.ga4) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9 GA4 \u540C\u671F", "", data2.baseline.ga4, data2.metrics, "is-baseline");
+    if (data3.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F", "", data3.baseline.gsc, data3.metrics, "is-baseline");
+    if (data3.baseline.ads) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u8D26\u6237\u5E7F\u544A\u540C\u671F", "\u91D1\u989D\u4E3A Ads \u8D26\u6237\u5E01\u79CD", data3.baseline.ads, data3.metrics, "is-baseline");
+    if (data3.baseline.ga4) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9 GA4 \u540C\u671F", "", data3.baseline.ga4, data3.metrics, "is-baseline");
     table2.appendChild(tbody);
     box.appendChild(table2);
   }
@@ -5539,8 +5539,8 @@
     box.textContent = "";
     box.appendChild(el("div", "dim", "\u52A0\u8F7D\u4E2D\u2026"));
     try {
-      const data2 = await API.get(effectPath + "?days=" + effectDays);
-      if (seq6 === effectSeq) renderEffect(data2);
+      const data3 = await API.get(effectPath + "?days=" + effectDays);
+      if (seq6 === effectSeq) renderEffect(data3);
     } catch (e) {
       if (seq6 !== effectSeq) return;
       box.textContent = "";
@@ -6007,8 +6007,8 @@
   var LUNCH_START_MIN = 12 * 60;
   var LUNCH_END_MIN = 13 * 60 + 30;
   function minToHhmm(m) {
-    const h2 = Math.floor(m / 60), mm = m % 60;
-    return String(h2).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    const h3 = Math.floor(m / 60), mm = m % 60;
+    return String(h3).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
   }
   function annotateTaskTimes(todayGroup) {
     const cards = [...todayGroup.querySelectorAll(":scope > .tcard:not(.done)")];
@@ -6085,9 +6085,9 @@
     if (o) o.value = "\u674E";
     const hs = document.getElementById("subtask-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h2 = 0; h2 < 24; h2++) {
+      for (let h3 = 0; h3 < 24; h3++) {
         const op = document.createElement("option");
-        const hh = String(h2).padStart(2, "0");
+        const hh = String(h3).padStart(2, "0");
         op.value = hh;
         op.textContent = hh + ":00";
         hs.appendChild(op);
@@ -6136,9 +6136,9 @@
     if (lbl) lbl.textContent = dept;
     const hs = document.getElementById("task-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h2 = 0; h2 < 24; h2++) {
+      for (let h3 = 0; h3 < 24; h3++) {
         const o = document.createElement("option");
-        const hh = String(h2).padStart(2, "0");
+        const hh = String(h3).padStart(2, "0");
         o.value = hh;
         o.textContent = hh + ":00";
         hs.appendChild(o);
@@ -6184,9 +6184,9 @@
     if (lbl) lbl.textContent = _taskScope.dept || "";
     const hs = document.getElementById("task-hour");
     if (hs && hs.options.length <= 1) {
-      for (let h2 = 0; h2 < 24; h2++) {
+      for (let h3 = 0; h3 < 24; h3++) {
         const o = document.createElement("option");
-        const hh = String(h2).padStart(2, "0");
+        const hh = String(h3).padStart(2, "0");
         o.value = hh;
         o.textContent = hh + ":00";
         hs.appendChild(o);
@@ -6913,9 +6913,9 @@
       }
     });
   }
-  function renderGa4(data2) {
-    const connected = Boolean(data2.connected);
-    const metrics = data2.metrics;
+  function renderGa4(data3) {
+    const connected = Boolean(data3.connected);
+    const metrics = data3.metrics;
     setStatus(connected);
     if (!connected) {
       setHint({
@@ -6943,44 +6943,44 @@
       setText("ga4-dur", formatDuration(metrics.avgDuration));
     }
     const baseEmpty = connected ? "\u6240\u9009\u533A\u95F4\u6682\u65E0\u6570\u636E" : "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A";
-    fillTable("ga4-sources", "ga4-sources-empty", data2.sources, (row) => [
+    fillTable("ga4-sources", "ga4-sources-empty", data3.sources, (row) => [
       { value: row.source || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-countries", "ga4-countries-empty", data2.countries, (row) => [
+    fillTable("ga4-countries", "ga4-countries-empty", data3.countries, (row) => [
       { value: row.country || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-landing", "ga4-landing-empty", data2.landingPages, (row) => [
+    fillTable("ga4-landing", "ga4-landing-empty", data3.landingPages, (row) => [
       { value: row.page || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.conversions, 1), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-campaigns", "ga4-campaigns-empty", data2.campaigns, (row) => [
+    fillTable("ga4-campaigns", "ga4-campaigns-empty", data3.campaigns, (row) => [
       { value: row.campaign || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" },
       { value: formatNumber(row.conversions, 1), cls: "num" }
     ], metrics ? "\u6240\u9009\u533A\u95F4\u6CA1\u6709\u5E7F\u544A\u7CFB\u5217\u6570\u636E" : baseEmpty);
-    const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data2.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
-    fillTable("ga4-events", "ga4-events-empty", data2.conversionEvents, (row) => [
+    const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data3.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
+    fillTable("ga4-events", "ga4-events-empty", data3.conversionEvents, (row) => [
       { html: `<div class="ga4-event-label">${esc(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc(row.eventName || "")}</div>` },
       { value: formatNumber(row.eventCount), cls: "num" },
       { value: formatNumber(row.keyEvents, 1), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], eventEmpty);
-    renderDevices(data2.devices, baseEmpty);
+    renderDevices(data3.devices, baseEmpty);
   }
   async function loadGa42() {
     const requestId = ++requestSequence;
     const retry = document.getElementById("ga4-retry");
     if (retry) retry.disabled = true;
     try {
-      const data2 = await API.get(withRange("/api/ga4/overview", "data"));
+      const data3 = await API.get(withRange("/api/ga4/overview", "data"));
       if (requestId !== requestSequence) return;
-      renderGa4(data2 || { connected: false });
+      renderGa4(data3 || { connected: false });
     } catch (error) {
       if (requestId !== requestSequence) return;
       setStatus(false, true);
@@ -7526,7 +7526,7 @@
     tr.appendChild(metricCell(row.cac, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
     return tr;
   }
-  function buildTable(data2) {
+  function buildTable(data3) {
     const table2 = make("table", "dt ledger-table");
     const thead = make("thead");
     const htr = make("tr");
@@ -7544,8 +7544,8 @@
     thead.appendChild(htr);
     table2.appendChild(thead);
     const tbody = make("tbody");
-    (data2.channels || []).forEach((row) => tbody.appendChild(channelRow(row, false)));
-    if (data2.totals) tbody.appendChild(channelRow(data2.totals, true));
+    (data3.channels || []).forEach((row) => tbody.appendChild(channelRow(row, false)));
+    if (data3.totals) tbody.appendChild(channelRow(data3.totals, true));
     table2.appendChild(tbody);
     return table2;
   }
@@ -7581,16 +7581,16 @@
     });
     return box;
   }
-  function buildNotes(data2) {
+  function buildNotes(data3) {
     const box = make("div", "ledger-notes");
-    const notes = data2.notes || {};
+    const notes = data3.notes || {};
     [notes.deal, notes.spend, notes.quality, notes.dealRate].forEach((text2) => {
       if (text2) box.appendChild(make("div", "ledger-note", "\xB7 " + text2));
     });
-    if (data2.sources && data2.sources.spend) {
-      box.appendChild(make("div", "ledger-note", "\xB7 \u82B1\u8D39\u53D6\u6570\uFF1A" + data2.sources.spend));
+    if (data3.sources && data3.sources.spend) {
+      box.appendChild(make("div", "ledger-note", "\xB7 \u82B1\u8D39\u53D6\u6570\uFF1A" + data3.sources.spend));
     }
-    const missing = data2.meta && data2.meta.dealStatusMissing;
+    const missing = data3.meta && data3.meta.dealStatusMissing;
     if (missing) box.appendChild(make("div", "ledger-note ledger-warn", "\xB7 \u6709 " + missing + " \u5C01\u8BE2\u76D8\u672A\u6807\u6CE8\u662F\u5426\u6210\u4EA4\uFF0C\u672A\u8BA1\u5165\u6210\u4EA4\u6570\uFF08\u4E5F\u672A\u5F53\u4F5C\u672A\u6210\u4EA4\uFF09"));
     box.appendChild(make("div", "ledger-note", "\xB7 \u672C\u8868\u4E3A\u4E1A\u52A1\u603B\u8D26\uFF0C\u53EA\u8BFB\uFF1B\u4E0D\u53C2\u4E0E KPI \u7EE9\u6548\u8BC4\u5206"));
     return box;
@@ -7622,15 +7622,15 @@
     body.textContent = "";
     body.appendChild(node);
   }
-  function render(card2, data2) {
+  function render(card2, data3) {
     const label = card2.querySelector(".ledger-range");
-    if (label) label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data2.range);
+    if (label) label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data3.range);
     const wrap = make("div");
     const scroller = make("div", "ledger-scroll");
-    scroller.appendChild(buildTable(data2));
+    scroller.appendChild(buildTable(data3));
     wrap.appendChild(scroller);
-    wrap.appendChild(buildTargets(data2.targets));
-    wrap.appendChild(buildNotes(data2));
+    wrap.appendChild(buildTargets(data3.targets));
+    wrap.appendChild(buildNotes(data3));
     setBody(card2, wrap);
   }
   function renderError(card2, message) {
@@ -7652,9 +7652,9 @@
     if (!force && loadedRevision === revision) return true;
     const requestId = ++requestSequence2;
     try {
-      const data2 = await API.get(withRange2("/api/kpi/ledger"));
+      const data3 = await API.get(withRange2("/api/kpi/ledger"));
       if (requestId !== requestSequence2 || revision !== getRangeRevision()) return false;
-      render(card2, data2);
+      render(card2, data3);
       loadedRevision = revision;
       return true;
     } catch (e) {
@@ -7829,8 +7829,8 @@
     const table2 = make2("table", "dt kpi-review-table");
     const thead = make2("thead");
     const hr = make2("tr");
-    for (const h2 of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
-      hr.appendChild(make2("th", h2 === "\u8003\u6838\u9879\u76EE" || h2 === "\u8BF4\u660E" ? "" : "ctr", h2));
+    for (const h3 of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
+      hr.appendChild(make2("th", h3 === "\u8003\u6838\u9879\u76EE" || h3 === "\u8BF4\u660E" ? "" : "ctr", h3));
     }
     thead.appendChild(hr);
     table2.appendChild(thead);
@@ -7932,14 +7932,14 @@
     box.appendChild(basis);
     return box;
   }
-  function render2(card2, data2) {
-    latest = data2;
+  function render2(card2, data3) {
+    latest = data3;
     hoistAboveLedger(card2);
     const label = card2.querySelector(".kpi-review-range");
     if (label) {
-      label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data2.range) + (data2.department.targets.source === "default" ? " \xB7 \u76EE\u6807\u53D6\u901A\u7528\u515C\u5E95\u503C" : "");
+      label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data3.range) + (data3.department.targets.source === "default" ? " \xB7 \u76EE\u6807\u53D6\u901A\u7528\u515C\u5E95\u503C" : "");
     }
-    const s = data2[activeScopeKey] || data2.department;
+    const s = data3[activeScopeKey] || data3.department;
     const wrap = make2("div");
     wrap.appendChild(buildTabs());
     wrap.appendChild(buildHero(s));
@@ -7969,9 +7969,9 @@
     if (!force && loadedRevision2 === revision && latest) return true;
     const requestId = ++requestSequence3;
     try {
-      const data2 = await API.get(withRange2("/api/kpi/review", "kpi"));
+      const data3 = await API.get(withRange2("/api/kpi/review", "kpi"));
       if (requestId !== requestSequence3 || revision !== getRangeRevision("kpi")) return false;
-      render2(card2, data2);
+      render2(card2, data3);
       loadedRevision2 = revision;
       return true;
     } catch (e) {
@@ -8553,9 +8553,9 @@
   }
   document.addEventListener("click", async (e) => {
     const r = e.target.closest(".arch-restore");
-    const h2 = e.target.closest(".arch-hard");
-    if (!r && !h2) return;
-    const tr = (r || h2).closest("tr");
+    const h3 = e.target.closest(".arch-hard");
+    if (!r && !h3) return;
+    const tr = (r || h3).closest("tr");
     if (!tr) return;
     const id = tr.dataset.id, ep = tr.dataset.ep;
     if (!id || !ep) return;
@@ -8573,7 +8573,7 @@
         toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     } else {
-      if (!inlineConfirm(h2, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
+      if (!inlineConfirm(h3, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
       try {
         await API.del(ep + "/" + id + "?hard=1");
         tr.remove();
@@ -8692,8 +8692,8 @@
     tbody.textContent = "";
     setText2(count, "\u52A0\u8F7D\u4E2D...");
     try {
-      const data2 = await window.API.get("/api/hermes/memories");
-      const items = data2.items || [];
+      const data3 = await window.API.get("/api/hermes/memories");
+      const items = data3.items || [];
       items.forEach((item) => tbody.appendChild(renderMemory(item)));
       if (empty2) empty2.style.display = items.length ? "none" : "block";
       setText2(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
@@ -8867,20 +8867,20 @@
     ${auditBlockHtml(view)}
   </div>`;
   }
-  function render3(data2) {
+  function render3(data3) {
     const box = document.getElementById("plan-history");
     if (!box) return;
-    const day = data2.day;
-    const pushed = new Set((data2.checkins || []).map((c) => c.loop_item_id));
-    const noteOf = new Map((data2.checkins || []).filter((c) => c.note).map((c) => [c.loop_item_id, c.note]));
+    const day = data3.day;
+    const pushed = new Set((data3.checkins || []).map((c) => c.loop_item_id));
+    const noteOf = new Map((data3.checkins || []).filter((c) => c.note).map((c) => [c.loop_item_id, c.note]));
     const subsByParent = /* @__PURE__ */ new Map();
-    (data2.subtasks || []).forEach((s) => {
+    (data3.subtasks || []).forEach((s) => {
       if (!subsByParent.has(s.parent_id)) subsByParent.set(s.parent_id, []);
       subsByParent.get(s.parent_id).push(s);
     });
     box.innerHTML = '<div class="tboard">' + DEPTS.map((d) => {
-      const sops = (data2.sops || []).filter((s) => s.dept === d.key);
-      const tasks = (data2.tasks || []).filter((t) => (t.dept || "SEO") === d.key);
+      const sops = (data3.sops || []).filter((s) => s.dept === d.key);
+      const tasks = (data3.tasks || []).filter((t) => (t.dept || "SEO") === d.key);
       const sopDone = sops.filter((s) => s.done).length;
       const spoken = tasks.filter((t) => (t.done_at || "").slice(0, 10) === day || pushed.has(t.id)).length;
       const sopHtml = sops.length ? '<div class="sop-list">' + sops.map((s) => `<div class="hcard hsop${s.done ? " on" : ""}">
@@ -8908,8 +8908,8 @@
     const pk = periodKeysFor(day);
     box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc(day) + " \u7684\u8BB0\u5F55\u2026</div>";
     try {
-      const data2 = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
-      render3(data2);
+      const data3 = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
+      render3(data3);
     } catch (e) {
       box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
     }
@@ -8993,15 +8993,15 @@
     el5.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
     try {
       const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date()))}`;
-      const data2 = await API.get("/api/sop/stats" + q);
-      const items = data2.items || [];
+      const data3 = await API.get("/api/sop/stats" + q);
+      const items = data3.items || [];
       if (!items.length) {
         el5.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
         return;
       }
       const hasMonthly = items.some((i) => i.expected === null);
       el5.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
-        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc(data2.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
+        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc(data3.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
       <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
     } catch (e) {
       el5.dataset.loaded = "";
@@ -9128,17 +9128,17 @@
   }
   function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
     const name = dept === "SEM" ? "SEM \xB7 \u9648" : "SEO \xB7 \u674E";
-    let h2 = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
-    sections.forEach(([field2, title, acts]) => {
-      const items = rec && rec[field2] || [];
-      h2 += `<div class="rv-sec" data-field="${esc(field2)}" data-dept="${esc(dept)}" data-week="${esc(key)}"><h5>${esc(title)}</h5>`;
-      if (field2 === "summary" && !items.length && prevPlan && prevPlan.length) {
-        h2 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
+    let h3 = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
+    sections.forEach(([field3, title, acts]) => {
+      const items = rec && rec[field3] || [];
+      h3 += `<div class="rv-sec" data-field="${esc(field3)}" data-dept="${esc(dept)}" data-week="${esc(key)}"><h5>${esc(title)}</h5>`;
+      if (field3 === "summary" && !items.length && prevPlan && prevPlan.length) {
+        h3 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
       }
-      h2 += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
-      h2 += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
+      h3 += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
+      h3 += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
     });
-    return h2 + "</div>";
+    return h3 + "</div>";
   }
   function prevPlanOf(keys, byKey, key, dept) {
     const idx = keys.indexOf(key);
@@ -9238,11 +9238,11 @@
   }
   function rvSectionSave(sec) {
     if (!sec) return;
-    const field2 = sec.dataset.field;
+    const field3 = sec.dataset.field;
     const dept = sec.dataset.dept;
     const week = sec.dataset.week;
     const items = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
-    API.put("/api/weekly-reports", { week_key: week, dept, field: field2, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
+    API.put("/api/weekly-reports", { week_key: week, dept, field: field3, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
   }
   function rvAdd(el5) {
     const sec = el5.closest(".rv-sec");
@@ -9731,7 +9731,7 @@
     const table2 = make4("table", "dt kra-table");
     const thead = make4("thead");
     const hr = make4("tr");
-    for (const h2 of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h2 === "\u8BF4\u660E" ? "" : "ctr", h2));
+    for (const h3 of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h3 === "\u8BF4\u660E" ? "" : "ctr", h3));
     thead.appendChild(hr);
     table2.appendChild(thead);
     const tbody = make4("tbody", "kra-bands");
@@ -10078,7 +10078,7 @@
     const t = el2("table", "dt audit-table " + (cls || ""));
     const thead = el2("thead");
     const hr = el2("tr");
-    headers.forEach((h2) => hr.appendChild(el2("th", h2.cls || "", h2.label || h2)));
+    headers.forEach((h3) => hr.appendChild(el2("th", h3.cls || "", h3.label || h3)));
     thead.appendChild(hr);
     t.appendChild(thead);
     const tb = el2("tbody");
@@ -10487,9 +10487,9 @@
     root.appendChild(empty("\u6B63\u5728\u53D6\u8FD9\u6BB5\u65F6\u95F4\u7684\u8BB0\u5F55\u2026"));
     $5("audit-ai").textContent = "";
     try {
-      const [data2, ai] = await Promise.all([API.get("/api/audit/weekly?" + query()), API.get("/api/audit/weekly/ai?" + query()).catch(() => ({ item: null }))]);
+      const [data3, ai] = await Promise.all([API.get("/api/audit/weekly?" + query()), API.get("/api/audit/weekly/ai?" + query()).catch(() => ({ item: null }))]);
       if (my !== seq3) return;
-      pkg = data2;
+      pkg = data3;
       render5();
       renderAi(ai.item);
     } catch (e) {
@@ -10587,32 +10587,32 @@
     if (!prev) return d ? "\u4E0A\u671F\u4E3A 0\uFF0C\u672C\u671F " + num3(cur) : "\u4E0E\u4E0A\u671F\u6301\u5E73";
     return "\u8F83\u4E0A\u671F " + (d > 0 ? "+" : "") + num3(d) + "\uFF08" + (d > 0 ? "+" : "") + Math.round(d / prev * 100) + "%\uFF09";
   }
-  function render6(data2) {
+  function render6(data3) {
     const body = $6("geo-body");
     body.textContent = "";
     const sub = $6("geo-range");
-    if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data2.range);
-    if (data2.status === "NOT_SYNCED") {
+    if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data3.range);
+    if (data3.status === "NOT_SYNCED") {
       body.appendChild(el3("div", "geo-empty", "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u6D41\u91CF\u3002\u8BF7\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GA4 \u6D41\u91CF\u300D\u786E\u8BA4\u540C\u6B65\u72B6\u6001\u3002"));
-      body.appendChild(citationLine(data2));
+      body.appendChild(citationLine(data3));
       return;
     }
-    const t = data2.totals;
+    const t = data3.totals;
     const grid = el3("div", "geo-grid");
     const head = el3("div", "geo-block");
     head.appendChild(el3("div", "geo-label", "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE"));
     head.appendChild(el3("div", "geo-big", num3(t.sessions)));
     head.appendChild(el3("div", "geo-sub", "\u5360\u5168\u7AD9 " + (t.share == null ? "\u2014" : (t.share * 100).toFixed(1) + "%") + "\uFF08\u5168\u7AD9 " + num3(t.site_sessions) + " \u6B21\uFF09"));
     head.appendChild(el3("div", "geo-sub", deltaText(t.sessions, t.prev_sessions)));
-    if (data2.data_days) head.appendChild(el3("div", "geo-sub", "\u533A\u95F4\u5185 GA4 \u6709 " + data2.data_days + " \u5929\u6570\u636E \xB7 \u5173\u952E\u4E8B\u4EF6 " + num3(t.key_events)));
+    if (data3.data_days) head.appendChild(el3("div", "geo-sub", "\u533A\u95F4\u5185 GA4 \u6709 " + data3.data_days + " \u5929\u6570\u636E \xB7 \u5173\u952E\u4E8B\u4EF6 " + num3(t.key_events)));
     grid.appendChild(head);
     const list = el3("div", "geo-block");
     list.appendChild(el3("div", "geo-label", "\u6309\u5F15\u64CE"));
-    if (!data2.engines.length) {
+    if (!data3.engines.length) {
       list.appendChild(el3("div", "geo-sub", "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u4EFB\u4F55\u6765\u81EA AI \u5F15\u64CE\u7684\u8BBF\u95EE\u3002"));
     } else {
-      const max = Math.max(...data2.engines.map((e) => e.sessions), 1);
-      for (const e of data2.engines) {
+      const max = Math.max(...data3.engines.map((e) => e.sessions), 1);
+      for (const e of data3.engines) {
         const row = el3("div", "geo-row");
         row.title = e.sources.length ? "GA4 \u6765\u6E90\u503C\uFF1A" + e.sources.join("\u3001") : "\u672C\u671F\u6CA1\u6709\u8BBF\u95EE";
         row.appendChild(el3("span", "geo-name", e.label));
@@ -10628,21 +10628,21 @@
     grid.appendChild(list);
     const inq = el3("div", "geo-block");
     inq.appendChild(el3("div", "geo-label", "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BE2\u76D8"));
-    inq.appendChild(el3("div", "geo-big", data2.inquiries.total));
-    inq.appendChild(el3("div", "geo-sub", "A " + data2.inquiries.a + " \xB7 B " + data2.inquiries.b + " \xB7 C " + data2.inquiries.c));
-    inq.appendChild(el3("div", "geo-sub", "\u8868\u5355\u7EBF\u7D22 " + data2.leads.total + " \u6761" + (data2.leads.ignored ? "\uFF08\u5176\u4E2D " + data2.leads.ignored + " \u6761\u88AB\u5FFD\u7565\uFF09" : "")));
+    inq.appendChild(el3("div", "geo-big", data3.inquiries.total));
+    inq.appendChild(el3("div", "geo-sub", "A " + data3.inquiries.a + " \xB7 B " + data3.inquiries.b + " \xB7 C " + data3.inquiries.c));
+    inq.appendChild(el3("div", "geo-sub", "\u8868\u5355\u7EBF\u7D22 " + data3.leads.total + " \u6761" + (data3.leads.ignored ? "\uFF08\u5176\u4E2D " + data3.leads.ignored + " \u6761\u88AB\u5FFD\u7565\uFF09" : "")));
     inq.appendChild(el3("div", "geo-sub", "\u53EA\u6570\u72EC\u7ACB\u7AD9\u8868\u5355\u5E26\u56DE\u6765\u8DEF\u7684\u8BE2\u76D8\uFF1B\u4EBA\u5DE5\u5F55\u5165\u7684\u8BE2\u76D8\u6CA1\u6709\u53EF\u4FE1\u7684\u6765\u8DEF\uFF0C\u4E0D\u8BA1\u3002"));
     grid.appendChild(inq);
     body.appendChild(grid);
-    if ((data2.unclassified || []).length) {
-      body.appendChild(el3("div", "geo-warn", "\u53EF\u80FD\u6F0F\u5F52\u7C7B\u7684\u6765\u6E90\uFF08\u770B\u8D77\u6765\u50CF AI \u5F15\u64CE\uFF0C\u4F46\u6CA1\u88AB\u8BA4\u51FA\u6765\uFF0C\u6CA1\u6709\u8BA1\u5165\u4E0A\u9762\u7684\u6570\uFF09\uFF1A" + data2.unclassified.map((u) => u.source + "\uFF08" + num3(u.sessions) + " \u6B21\u4F1A\u8BDD\uFF09").join("\u3001") + "\u3002\u5982\u679C\u5176\u4E2D\u786E\u5B9E\u6709 AI \u5F15\u64CE\uFF0C\u8BF7\u628A\u8FD9\u4E00\u884C\u53D1\u7ED9\u5F00\u53D1\uFF0C\u8865\u8FDB\u8BC6\u522B\u8868\u3002"));
+    if ((data3.unclassified || []).length) {
+      body.appendChild(el3("div", "geo-warn", "\u53EF\u80FD\u6F0F\u5F52\u7C7B\u7684\u6765\u6E90\uFF08\u770B\u8D77\u6765\u50CF AI \u5F15\u64CE\uFF0C\u4F46\u6CA1\u88AB\u8BA4\u51FA\u6765\uFF0C\u6CA1\u6709\u8BA1\u5165\u4E0A\u9762\u7684\u6570\uFF09\uFF1A" + data3.unclassified.map((u) => u.source + "\uFF08" + num3(u.sessions) + " \u6B21\u4F1A\u8BDD\uFF09").join("\u3001") + "\u3002\u5982\u679C\u5176\u4E2D\u786E\u5B9E\u6709 AI \u5F15\u64CE\uFF0C\u8BF7\u628A\u8FD9\u4E00\u884C\u53D1\u7ED9\u5F00\u53D1\uFF0C\u8865\u8FDB\u8BC6\u522B\u8868\u3002"));
     }
-    body.appendChild(citationLine(data2));
-    body.appendChild(el3("div", "geo-note", "\u4E0A\u9762\u7684\u8BBF\u95EE\u6570\u53EA\u6709\u300C\u4ECE AI \u56DE\u7B54\u91CC\u70B9\u94FE\u63A5\u8FDB\u7AD9\u300D\u7684\u90A3\u90E8\u5206\u3002AI \u63D0\u5230\u4E86\u6211\u4EEC\u4F46\u7528\u6237\u6CA1\u70B9\u94FE\u63A5\u7684\uFF0C\u6D41\u91CF\u6570\u636E\u91CC\u770B\u4E0D\u5230\uFF0C\u6240\u4EE5\u5B9E\u9645\u5F71\u54CD\u53EA\u4F1A\u6BD4\u8FD9\u91CC\u591A\uFF1B\u90A3\u90E8\u5206\u770B\u4E0B\u9762\u7684\u4EBA\u5DE5\u62BD\u67E5\u3002\u8BC6\u522B\u7684\u5F15\u64CE\uFF1A" + data2.known_engines.join("\u3001") + "\u3002"));
+    body.appendChild(citationLine(data3));
+    body.appendChild(el3("div", "geo-note", "\u4E0A\u9762\u7684\u8BBF\u95EE\u6570\u53EA\u6709\u300C\u4ECE AI \u56DE\u7B54\u91CC\u70B9\u94FE\u63A5\u8FDB\u7AD9\u300D\u7684\u90A3\u90E8\u5206\u3002AI \u63D0\u5230\u4E86\u6211\u4EEC\u4F46\u7528\u6237\u6CA1\u70B9\u94FE\u63A5\u7684\uFF0C\u6D41\u91CF\u6570\u636E\u91CC\u770B\u4E0D\u5230\uFF0C\u6240\u4EE5\u5B9E\u9645\u5F71\u54CD\u53EA\u4F1A\u6BD4\u8FD9\u91CC\u591A\uFF1B\u90A3\u90E8\u5206\u770B\u4E0B\u9762\u7684\u4EBA\u5DE5\u62BD\u67E5\u3002\u8BC6\u522B\u7684\u5F15\u64CE\uFF1A" + data3.known_engines.join("\u3001") + "\u3002"));
   }
-  function citationLine(data2) {
+  function citationLine(data3) {
     const box = el3("div", "geo-cite");
-    const c = data2.citations;
+    const c = data3.citations;
     if (!c) {
       box.appendChild(el3("span", "", "\u5F15\u7528\u62BD\u67E5\uFF1A\u8FD9\u4E2A\u65F6\u95F4\u8303\u56F4\u4E4B\u524D\u8FD8\u6CA1\u6709\u505A\u8FC7\u3002\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GEO \u62BD\u67E5\u300D\u5EFA\u9898\u5E93\u5E76\u67E5\u7B2C\u4E00\u8F6E\u3002"));
       return box;
@@ -10650,7 +10650,7 @@
     const t = c.totals;
     box.appendChild(el3("b", "", "\u5F15\u7528\u62BD\u67E5 " + c.round_date));
     box.appendChild(el3("span", "", "\u5DF2\u67E5 " + t.checked + "/" + t.expected + " \u683C \xB7 \u63D0\u5230\u6211\u4EEC " + t.mentioned + " \xB7 \u5F15\u7528\u6211\u4EEC\u7684\u9875\u9762 " + t.cited));
-    const p = data2.citations_previous;
+    const p = data3.citations_previous;
     if (p && p.totals.checked) box.appendChild(el3("span", "geo-cite-prev", "\u4E0A\u4E00\u8F6E " + p.round_date + "\uFF1A\u63D0\u5230 " + p.totals.mentioned + "/" + p.totals.checked + " \xB7 \u5F15\u7528 " + p.totals.cited + "/" + p.totals.checked));
     if (c.expected_note) box.appendChild(el3("span", "geo-cite-warn", c.expected_note));
     if (t.no_screenshot) box.appendChild(el3("span", "geo-cite-warn", t.no_screenshot + " \u6761\u6CA1\u6709\u622A\u56FE"));
@@ -10663,8 +10663,8 @@
     if (!range2 || !range2.start_date) return;
     const my = ++seq4;
     try {
-      const data2 = await API.get(withRange2("/api/geo/summary", range2));
-      if (my === seq4) render6(data2);
+      const data3 = await API.get(withRange2("/api/geo/summary", range2));
+      if (my === seq4) render6(data3);
     } catch (e) {
       if (my !== seq4 || e && e.message === "unauthorized") return;
       body.textContent = "";
@@ -10971,10 +10971,290 @@
     });
   }
 
-  // public/src/spend.js
+  // public/src/sites.js
   var $8 = (id) => document.getElementById(id);
-  var isHttp4 = (u) => /^https?:\/\//i.test(String(u || ""));
+  var PROVIDER_LABEL = { gsc: "GSC", ga4: "GA4" };
+  var BACKFILL_DAYS = 90;
   function h(tag, cls, text2) {
+    const el5 = document.createElement(tag);
+    if (cls) el5.className = cls;
+    if (text2 != null) el5.textContent = String(text2);
+    return el5;
+  }
+  var failText5 = (e) => e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var canManage = () => ["manager", "boss"].includes(window.ME && window.ME.role);
+  var data2 = null;
+  var found = null;
+  var editing5 = null;
+  var bound3 = false;
+  async function loadSites() {
+    const box = $8("sites-box");
+    if (!box) return;
+    if (!bound3) {
+      box.addEventListener("click", onClick);
+      box.addEventListener("submit", onSubmit);
+      bound3 = true;
+    }
+    try {
+      data2 = await window.API.get("/api/google/projects");
+    } catch (e) {
+      box.textContent = "";
+      box.appendChild(h("div", "sites-error", "\u7AD9\u70B9\u5217\u8868\u8BFB\u53D6\u5931\u8D25\uFF1A" + failText5(e)));
+      return;
+    }
+    render7();
+  }
+  function localTime2(utc) {
+    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
+    if (Number.isNaN(d.getTime())) return "";
+    const p = (n) => String(n).padStart(2, "0");
+    return p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  function runText(provider, site) {
+    const label = PROVIDER_LABEL[provider];
+    if (provider === "gsc" ? !site.gsc_site_url : !site.ga4_property_id) return { text: label + "\uFF1A\u6CA1\u6709\u914D\u7F6E", cls: "sites-run dim" };
+    const run = site.runs && site.runs[provider];
+    if (!run) return { text: label + "\uFF1A\u8FD8\u6CA1\u540C\u6B65\u8FC7", cls: "sites-run warn" };
+    const at = localTime2(run.finished_at || run.started_at);
+    if (run.status === "success") return { text: label + "\uFF1A" + at + " \u540C\u6B65\u6210\u529F \xB7 " + (run.rows_written || 0) + " \u884C\uFF08" + run.date_start + " ~ " + run.date_end + "\uFF09", cls: "sites-run ok" };
+    if (run.status === "failed") return { text: label + "\uFF1A" + at + " \u540C\u6B65\u5931\u8D25 \u2014\u2014 " + (run.error || "\u539F\u56E0\u672A\u77E5"), cls: "sites-run bad" };
+    return { text: label + "\uFF1A" + at + " \u5F00\u59CB\u540C\u6B65\uFF0C\u8FD8\u6CA1\u7ED3\u675F", cls: "sites-run dim" };
+  }
+  function actionBtn(action, id, text2, cls, title) {
+    const b = h("button", cls || "btn-ghost", text2);
+    b.type = "button";
+    b.dataset.siteAction = action;
+    b.dataset.id = String(id);
+    if (title) b.title = title;
+    return b;
+  }
+  function siteRow(site) {
+    const row = h("div", "sites-row");
+    const main = h("div", "sites-main");
+    const head = h("div", "sites-name");
+    head.appendChild(h("b", "", site.name));
+    if (site.is_default) head.appendChild(h("span", "badge b-blue", "\u9ED8\u8BA4"));
+    if (site.company) head.appendChild(h("span", "badge b-gray", site.company));
+    main.appendChild(head);
+    main.appendChild(h("div", "sites-meta", [
+      site.domain || "\u57DF\u540D\u672A\u586B",
+      site.gsc_site_url ? "Search Console\uFF1A" + site.gsc_site_url : "\u6CA1\u6709 Search Console \u8D44\u6E90",
+      site.ga4_property_id ? "GA4\uFF1A" + site.ga4_property_id : "\u6CA1\u6709 GA4 \u5A92\u4F53\u8D44\u6E90"
+    ].join(" \xB7 ")));
+    for (const provider of ["gsc", "ga4"]) {
+      const r = runText(provider, site);
+      main.appendChild(h("div", r.cls, r.text));
+    }
+    row.appendChild(main);
+    const acts = h("div", "sites-acts");
+    if (site.gsc_site_url || site.ga4_property_id) {
+      acts.appendChild(actionBtn("sync", site.id, "\u7ACB\u5373\u540C\u6B65", "btn-primary", "\u540C\u6B65\u6700\u8FD1 7 \u5929"));
+      acts.appendChild(actionBtn("backfill", site.id, "\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2", "btn-ghost", "\u65B0\u52A0\u7684\u7AD9\u70B9\u3001\u6216\u56FE\u8868\u524D\u6BB5\u662F\u7A7A\u7684\u65F6\u5019\u7528\u3002\u5206\u6BB5\u53D6\uFF0C\u53EF\u80FD\u8981\u4E00\u4E24\u5206\u949F"));
+    }
+    if (canManage()) {
+      acts.appendChild(actionBtn("edit", site.id, "\u7F16\u8F91"));
+      if (!site.is_default) {
+        acts.appendChild(actionBtn("default", site.id, "\u8BBE\u4E3A\u9ED8\u8BA4", "btn-ghost", "\u770B\u677F\u5728\u6CA1\u6709\u9009\u7AD9\u70B9\u65F6\u663E\u793A\u9ED8\u8BA4\u7AD9\u70B9\u7684\u6570\u636E"));
+        acts.appendChild(actionBtn("disable", site.id, "\u505C\u7528", "btn-ghost", "\u4E0D\u518D\u540C\u6B65\u3001\u4E0D\u518D\u51FA\u73B0\u5728\u9009\u62E9\u91CC\uFF1B\u5DF2\u540C\u6B65\u7684\u6570\u636E\u4FDD\u7559"));
+      }
+    }
+    row.appendChild(acts);
+    return row;
+  }
+  function render7() {
+    const box = $8("sites-box");
+    box.textContent = "";
+    const sites = data2.sites || [];
+    if (data2.env_site) {
+      const e = data2.env_site;
+      box.appendChild(h(
+        "div",
+        "sites-tip",
+        "\u8FD8\u6CA1\u6709\u767B\u8BB0\u7AD9\u70B9\u3002\u540E\u53F0\u73B0\u5728\u7528\u7684\u662F\u670D\u52A1\u5668\u914D\u7F6E\u91CC\u7684\u8FD9\u4E00\u4E2A\uFF1A" + (e.domain || e.gsc_site_url || "GA4 " + e.ga4_property_id) + "\u3002\u6DFB\u52A0\u7B2C\u4E8C\u4E2A\u7AD9\u70B9\u65F6\uFF0C\u5B83\u4F1A\u81EA\u52A8\u767B\u8BB0\u6210\u9ED8\u8BA4\u7AD9\u70B9\uFF0C\u73B0\u6709\u6570\u636E\u548C\u770B\u677F\u90FD\u4E0D\u53D7\u5F71\u54CD\u3002"
+      ));
+    } else if (!sites.length) {
+      box.appendChild(h("div", "sites-tip", "\u8FD8\u6CA1\u6709\u767B\u8BB0\u7AD9\u70B9\uFF0C\u670D\u52A1\u5668\u4E0A\u4E5F\u6CA1\u6709\u914D\u7F6E\u9ED8\u8BA4\u7AD9\u70B9\u3002"));
+    }
+    for (const site of sites) {
+      box.appendChild(editing5 === site.id ? formEl(site) : siteRow(site));
+    }
+    if (editing5 === "new") box.appendChild(formEl(null));
+    else if (canManage()) {
+      const add = actionBtn("new", 0, "\uFF0B \u6DFB\u52A0\u7AD9\u70B9", "btn-ghost sites-add");
+      box.appendChild(add);
+    } else if (!sites.length) {
+      box.appendChild(h("div", "sites-tip dim", "\u6DFB\u52A0\u7AD9\u70B9\u9700\u8981\u7ECF\u7406\u6216\u8001\u677F\u8D26\u53F7\u3002"));
+    }
+  }
+  function field2(labelText, input, hint) {
+    const wrap = h("label", "sites-field");
+    wrap.appendChild(h("span", "sites-label", labelText));
+    wrap.appendChild(input);
+    if (hint) wrap.appendChild(h("span", "sites-hint", hint));
+    return wrap;
+  }
+  function textInput(name, value, placeholder, listId) {
+    const i = h("input", "input");
+    i.type = "text";
+    i.name = name;
+    i.value = value || "";
+    i.placeholder = placeholder || "";
+    i.autocomplete = "off";
+    if (listId) i.setAttribute("list", listId);
+    return i;
+  }
+  function datalist(id, items) {
+    const dl = h("datalist");
+    dl.id = id;
+    for (const it of items) {
+      const o = h("option");
+      o.value = it.value;
+      o.label = it.label;
+      dl.appendChild(o);
+    }
+    return dl;
+  }
+  function formEl(site) {
+    const form = h("form", "sites-form");
+    form.dataset.id = site ? String(site.id) : "";
+    form.appendChild(h("div", "sites-form-title", site ? "\u7F16\u8F91\u7AD9\u70B9\uFF1A" + site.name : "\u6DFB\u52A0\u7AD9\u70B9"));
+    const gscItems = (found && found.gsc.items || []).map((i) => ({ value: i.site_url, label: i.kind + (i.used_by ? " \xB7 \u5DF2\u767B\u8BB0\u5728\u300C" + i.used_by + "\u300D" : "") }));
+    const ga4Items = (found && found.ga4.items || []).map((i) => ({ value: i.property_id, label: i.name + (i.account ? " \xB7 " + i.account : "") + (i.used_by ? " \xB7 \u5DF2\u767B\u8BB0\u5728\u300C" + i.used_by + "\u300D" : "") }));
+    form.appendChild(datalist("sites-gsc-options", gscItems));
+    form.appendChild(datalist("sites-ga4-options", ga4Items));
+    const grid = h("div", "sites-grid");
+    grid.appendChild(field2("\u7AD9\u70B9\u540D\u79F0", textInput("name", site && site.name, "\u6BD4\u5982\uFF1A\u8D1D\u5B5A\u7279-\u7BA1\u4EF6")));
+    const company2 = h("select", "input");
+    company2.name = "company";
+    const blank = h("option", "", "\u672A\u6807\u6CE8");
+    blank.value = "";
+    company2.appendChild(blank);
+    for (const c of data2.companies || []) {
+      const o = h("option", "", c);
+      o.value = c;
+      company2.appendChild(o);
+    }
+    company2.value = site && site.company || "";
+    grid.appendChild(field2("\u6240\u5C5E\u516C\u53F8", company2));
+    grid.appendChild(field2(
+      "Search Console \u8D44\u6E90",
+      textInput("gsc_site_url", site && site.gsc_site_url, "sc-domain:example.com", "sites-gsc-options"),
+      found ? found.gsc.error ? "\u8D26\u53F7\u91CC\u7684\u8D44\u6E90\u5217\u4E0D\u51FA\u6765\uFF1A" + found.gsc.error + "\u3002\u53EF\u4EE5\u624B\u586B" : "\u70B9\u8F93\u5165\u6846\u53EF\u4EE5\u4ECE\u8D26\u53F7\u91CC\u7684 " + gscItems.length + " \u4E2A\u8D44\u6E90\u91CC\u9009" : "\u6B63\u5728\u8BFB\u53D6\u8D26\u53F7\u91CC\u7684\u8D44\u6E90\u2026"
+    ));
+    grid.appendChild(field2(
+      "GA4 \u5A92\u4F53\u8D44\u6E90\u7F16\u53F7",
+      textInput("ga4_property_id", site && site.ga4_property_id, "\u4E00\u4E32\u6570\u5B57\uFF0C\u6BD4\u5982 508026067", "sites-ga4-options"),
+      found ? found.ga4.error ? "\u8D26\u53F7\u91CC\u7684\u5A92\u4F53\u8D44\u6E90\u5217\u4E0D\u51FA\u6765\uFF1A" + found.ga4.error + "\u3002\u53EF\u4EE5\u624B\u586B \u2014\u2014 GA4 \u7684\u5A92\u4F53\u8D44\u6E90\u5217\u8868\u91CC\uFF0C\u540D\u5B57\u4E0B\u9762\u90A3\u4E32\u6570\u5B57" : "\u70B9\u8F93\u5165\u6846\u53EF\u4EE5\u4ECE\u8D26\u53F7\u91CC\u7684 " + ga4Items.length + " \u4E2A\u5A92\u4F53\u8D44\u6E90\u91CC\u9009" : "\u6B63\u5728\u8BFB\u53D6\u8D26\u53F7\u91CC\u7684\u5A92\u4F53\u8D44\u6E90\u2026"
+    ));
+    grid.appendChild(field2("\u57DF\u540D", textInput("domain", site && site.domain, "\u7559\u7A7A = \u6309 Search Console \u8D44\u6E90\u81EA\u52A8\u5E26\u51FA"), "\u7528\u6765\u8BA4\u300C\u8FD9\u6761\u8BE2\u76D8\u3001\u8FD9\u4E2A\u7F51\u5740\u662F\u54EA\u4E2A\u7AD9\u7684\u300D"));
+    form.appendChild(grid);
+    form.appendChild(h("div", "sites-form-error"));
+    const foot = h("div", "sites-form-foot");
+    const save2 = h("button", "btn-primary", site ? "\u4FDD\u5B58" : "\u6DFB\u52A0");
+    save2.type = "submit";
+    foot.appendChild(save2);
+    foot.appendChild(actionBtn("cancel", 0, "\u53D6\u6D88"));
+    foot.appendChild(h("span", "sites-hint", "\u5E7F\u544A\u8D26\u6237\u51E0\u4E2A\u7AD9\u5171\u7528\uFF0C\u4E0D\u7528\u5728\u8FD9\u91CC\u586B\uFF1B\u6DFB\u52A0\u540E\u8BB0\u5F97\u70B9\u4E00\u6B21\u300C\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2\u300D\u3002"));
+    form.appendChild(foot);
+    return form;
+  }
+  async function openForm(target) {
+    editing5 = target;
+    render7();
+    if (found) return;
+    try {
+      found = await window.API.get("/api/google/discover");
+    } catch (e) {
+      found = { gsc: { items: [], error: failText5(e) }, ga4: { items: [], error: failText5(e) } };
+    }
+    const typed = readForm($8("sites-box").querySelector(".sites-form"));
+    if (editing5 !== target) return;
+    render7();
+    const form = $8("sites-box").querySelector(".sites-form");
+    if (form && typed) for (const [k, v] of Object.entries(typed)) form.elements[k].value = v;
+  }
+  function readForm(form) {
+    if (!form) return null;
+    const out = {};
+    for (const name of ["name", "company", "gsc_site_url", "ga4_property_id", "domain"]) out[name] = form.elements[name].value.trim();
+    return out;
+  }
+  async function onSubmit(ev) {
+    const form = ev.target.closest(".sites-form");
+    if (!form) return;
+    ev.preventDefault();
+    const body = readForm(form);
+    const errEl = form.querySelector(".sites-form-error");
+    const btn = form.querySelector('button[type="submit"]');
+    errEl.textContent = "";
+    btn.disabled = true;
+    try {
+      if (form.dataset.id) await window.API.patch("/api/google/projects/" + form.dataset.id, body);
+      else await window.API.post("/api/google/projects", body);
+      toast2(form.dataset.id ? "\u5DF2\u4FDD\u5B58" : "\u7AD9\u70B9\u5DF2\u6DFB\u52A0\u3002\u70B9\u300C\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2\u300D\u628A\u5B83\u7684\u6570\u636E\u53D6\u8FDB\u6765");
+      editing5 = null;
+      found = null;
+      await loadSites();
+    } catch (e) {
+      errEl.textContent = "\u6CA1\u6709\u4FDD\u5B58\uFF1A" + failText5(e);
+      btn.disabled = false;
+    }
+  }
+  function syncSummary(results) {
+    return results.map((r) => {
+      const label = PROVIDER_LABEL[r.provider] || r.provider;
+      if (r.status === "not_configured") return label + " \u6CA1\u6709\u914D\u7F6E";
+      if (r.status === "ok") return label + " \u5199\u5165 " + r.rows + " \u884C" + (r.truncated ? "\uFF08\u6709\u4E00\u6BB5\u6CA1\u53D6\u5168\uFF0C\u8BF7\u7F29\u77ED\u5929\u6570\u91CD\u53D6\uFF09" : "");
+      return label + " \u5931\u8D25\uFF1A" + r.error + (r.chunks > 1 ? "\uFF08" + r.chunks + " \u6BB5\u91CC\u5B8C\u6210\u4E86 " + r.chunks_done + " \u6BB5\uFF0C\u5DF2\u53D6\u5230\u7684\u4FDD\u7559\uFF09" : "");
+    }).join("\uFF1B");
+  }
+  async function runSync(btn, id, days) {
+    const old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = days ? "\u8865\u5386\u53F2\u4E2D\u2026" : "\u540C\u6B65\u4E2D\u2026";
+    try {
+      const r = await window.API.post("/api/google/projects/" + id + "/sync", days ? { days } : {}, { timeoutMs: 6e5 });
+      toast2(syncSummary(r.results));
+      document.dispatchEvent(new CustomEvent("sitesynced", { detail: { id: Number(id) } }));
+    } catch (e) {
+      toast2("\u540C\u6B65\u6CA1\u6709\u5B8C\u6210\uFF1A" + failText5(e));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = old;
+      await loadSites();
+    }
+  }
+  async function onClick(ev) {
+    const btn = ev.target.closest("[data-site-action]");
+    if (!btn) return;
+    const action = btn.dataset.siteAction;
+    const id = btn.dataset.id;
+    if (action === "new") return openForm("new");
+    if (action === "edit") return openForm(Number(id));
+    if (action === "cancel") {
+      editing5 = null;
+      return render7();
+    }
+    if (action === "sync") return runSync(btn, id, null);
+    if (action === "backfill") return runSync(btn, id, BACKFILL_DAYS);
+    if (action === "default" || action === "disable") {
+      if (!inlineConfirm(btn, action === "default" ? "\u786E\u8BA4\u8BBE\u4E3A\u9ED8\u8BA4" : "\u786E\u8BA4\u505C\u7528")) return;
+      try {
+        if (action === "default") await window.API.patch("/api/google/projects/" + id, { is_default: true });
+        else await window.API.del("/api/google/projects/" + id);
+        toast2(action === "default" ? "\u5DF2\u8BBE\u4E3A\u9ED8\u8BA4\u7AD9\u70B9" : "\u5DF2\u505C\u7528");
+        found = null;
+      } catch (e) {
+        toast2("\u6CA1\u6709\u5B8C\u6210\uFF1A" + failText5(e));
+      }
+      await loadSites();
+    }
+  }
+
+  // public/src/spend.js
+  var $9 = (id) => document.getElementById(id);
+  var isHttp4 = (u) => /^https?:\/\//i.test(String(u || ""));
+  function h2(tag, cls, text2) {
     const el5 = document.createElement(tag);
     if (cls) el5.className = cls;
     if (text2 != null) el5.textContent = String(text2);
@@ -10986,8 +11266,8 @@
     return Object.entries(amounts2 || {}).map(([cur, v]) => (CURRENCY_LABEL2[cur] || cur) + " " + money3(v)).join(" \uFF5C ");
   }
   function linkEl2(url, text2, cls) {
-    if (!isHttp4(url)) return h("span", cls, text2 || url || "");
-    const a = h("a", cls, text2 || url);
+    if (!isHttp4(url)) return h2("span", cls, text2 || url || "");
+    const a = h2("a", cls, text2 || url);
     a.href = url;
     a.target = "_blank";
     a.rel = "noopener noreferrer";
@@ -11003,13 +11283,13 @@
       return u || "";
     }
   }
-  var bound3 = false;
+  var bound4 = false;
   var month = "";
   var options = null;
   var loadSeq = 0;
   var backlinkRows = [];
   var expenseRows = [];
-  var editing5 = { backlink: null, expense: null };
+  var editing6 = { backlink: null, expense: null };
   function monthRange(ym) {
     const [y, m] = ym.split("-").map(Number);
     const last = new Date(y, m, 0).getDate();
@@ -11021,40 +11301,40 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
   }
   var qs = (range2) => "?start_date=" + range2.start_date + "&end_date=" + range2.end_date;
-  var failText5 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var failText6 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   function adsSourceText(g) {
     if (g.source === "google_ads") return "Ads \u540C\u6B65\u6570\u636E \xB7 \u8D26\u6237\u5E01\u79CD";
     if (g.source === "sem_weeks") return "\u4EBA\u5DE5\u5468\u62A5\uFF08Ads \u672C\u671F\u65E0\u540C\u6B65\u6570\u636E\uFF09\xB7 \u4EBA\u6C11\u5E01";
     return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
   }
-  function renderSummary4(data2) {
-    const box = $8("spend-summary");
+  function renderSummary4(data3) {
+    const box = $9("spend-summary");
     if (!box) return;
     box.textContent = "";
-    const row = h("div", "spend-groups");
-    for (const g of data2.groups) {
-      const card2 = h("div", "spend-group" + (g.key === "ads" ? " is-ads" : ""));
-      card2.appendChild(h("div", "spend-group-label", g.label));
+    const row = h2("div", "spend-groups");
+    for (const g of data3.groups) {
+      const card2 = h2("div", "spend-group" + (g.key === "ads" ? " is-ads" : ""));
+      card2.appendChild(h2("div", "spend-group-label", g.label));
       const text2 = amountsText(g.amounts);
-      card2.appendChild(h("div", "spend-group-amount" + (text2 ? "" : " is-empty"), text2 || (g.key === "ads" ? "\u6CA1\u6709\u6570\u636E" : "\u672C\u6708\u6CA1\u6709")));
+      card2.appendChild(h2("div", "spend-group-amount" + (text2 ? "" : " is-empty"), text2 || (g.key === "ads" ? "\u6CA1\u6709\u6570\u636E" : "\u672C\u6708\u6CA1\u6709")));
       const sub = g.key === "ads" ? adsSourceText(g) : g.count ? g.count + " \u7B14" : "";
-      if (sub) card2.appendChild(h("div", "spend-group-sub", sub));
+      if (sub) card2.appendChild(h2("div", "spend-group-sub", sub));
       row.appendChild(card2);
     }
     box.appendChild(row);
-    const total = amountsText(data2.totals);
-    const line3 = h("div", "spend-total");
-    line3.appendChild(h("b", "", "\u672C\u6708\u5408\u8BA1"));
-    line3.appendChild(h("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
-    if (Object.keys(data2.totals || {}).length > 1) line3.appendChild(h("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
+    const total = amountsText(data3.totals);
+    const line3 = h2("div", "spend-total");
+    line3.appendChild(h2("b", "", "\u672C\u6708\u5408\u8BA1"));
+    line3.appendChild(h2("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
+    if (Object.keys(data3.totals || {}).length > 1) line3.appendChild(h2("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
     box.appendChild(line3);
   }
   function renderSummaryError(e) {
-    const box = $8("spend-summary");
+    const box = $9("spend-summary");
     if (!box) return;
     box.textContent = "";
-    const line3 = h("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText5(e) + " ");
-    const btn = h("button", "btn-mini", "\u91CD\u8BD5");
+    const line3 = h2("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText6(e) + " ");
+    const btn = h2("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
     btn.addEventListener("click", loadSpend);
     line3.appendChild(btn);
@@ -11069,26 +11349,26 @@
     return parts.join(" \xB7 ");
   }
   function renderLinkStats(stats) {
-    const box = $8("spend-link-stats");
+    const box = $9("spend-link-stats");
     if (!box) return;
     box.textContent = "";
     if (!stats || !stats.total) return;
-    box.appendChild(h("div", "spend-stat", "\u5171 " + stats.total + " \u6761 \xB7 \u6765\u81EA " + stats.domains + " \u4E2A\u7AD9"));
-    const paid = h("div", "spend-stat is-paid", sideText("\u4ED8\u8D39", stats.paid));
+    box.appendChild(h2("div", "spend-stat", "\u5171 " + stats.total + " \u6761 \xB7 \u6765\u81EA " + stats.domains + " \u4E2A\u7AD9"));
+    const paid = h2("div", "spend-stat is-paid", sideText("\u4ED8\u8D39", stats.paid));
     const cost = amountsText(stats.paid.cost);
-    if (cost) paid.appendChild(h("b", "", "  \u82B1\u8D39 " + cost));
+    if (cost) paid.appendChild(h2("b", "", "  \u82B1\u8D39 " + cost));
     box.appendChild(paid);
-    box.appendChild(h("div", "spend-stat", sideText("\u514D\u8D39", stats.free)));
+    box.appendChild(h2("div", "spend-stat", sideText("\u514D\u8D39", stats.free)));
   }
   var STATUS_BADGE = { \u6709\u6548: "b-green", \u5931\u6548: "b-red", \u5F85\u4E0A\u7EBF: "b-amber" };
   var AUTO_LABEL = { found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728", not_found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u6CA1\u627E\u5230", unreachable: "\u81EA\u52A8\u6838\u67E5\uFF1A\u9875\u9762\u6CA1\u53D6\u5230" };
   function rowActions(kind, id) {
-    const td2 = h("td", "ctr spend-ops");
-    const edit = h("button", "btn-mini", "\u7F16\u8F91");
+    const td2 = h2("td", "ctr spend-ops");
+    const edit = h2("button", "btn-mini", "\u7F16\u8F91");
     edit.type = "button";
     edit.dataset.spendEdit = kind;
     edit.dataset.id = id;
-    const del = h("button", "btn-mini", "\u5220\u9664");
+    const del = h2("button", "btn-mini", "\u5220\u9664");
     del.type = "button";
     del.dataset.spendDel = kind;
     del.dataset.id = id;
@@ -11096,18 +11376,18 @@
     return td2;
   }
   function emptyRow(tb, cols, text2) {
-    const tr = h("tr");
-    const td2 = h("td", "dim spend-empty", text2);
+    const tr = h2("tr");
+    const td2 = h2("td", "dim spend-empty", text2);
     td2.colSpan = cols;
     tr.appendChild(td2);
     tb.appendChild(tr);
   }
   function errorRow(tb, cols, label, e) {
     tb.textContent = "";
-    const tr = h("tr");
-    const td2 = h("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText5(e) + " ");
+    const tr = h2("tr");
+    const td2 = h2("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText6(e) + " ");
     td2.colSpan = cols;
-    const btn = h("button", "btn-mini", "\u91CD\u8BD5");
+    const btn = h2("button", "btn-mini", "\u91CD\u8BD5");
     btn.type = "button";
     btn.addEventListener("click", loadSpend);
     td2.appendChild(btn);
@@ -11115,43 +11395,43 @@
     tb.appendChild(tr);
   }
   function renderBacklinks() {
-    const tb = $8("tb-backlinks");
+    const tb = $9("tb-backlinks");
     if (!tb) return;
     tb.textContent = "";
     if (!backlinkRows.length) {
-      emptyRow(tb, 11, $8("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      emptyRow(tb, 11, $9("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
       return;
     }
     for (const b of backlinkRows) {
-      const tr = h("tr");
-      tr.appendChild(h("td", "num", b.acquired_date || "\u672A\u586B"));
-      const src = h("td", "spend-url");
+      const tr = h2("tr");
+      tr.appendChild(h2("td", "num", b.acquired_date || "\u672A\u586B"));
+      const src = h2("td", "spend-url");
       src.appendChild(linkEl2(b.source_url, shortUrl3(b.source_url)));
-      if (b.vendor) src.appendChild(h("div", "dim", "\u5356\u5BB6\uFF1A" + b.vendor));
-      if (b.quality_note) src.appendChild(h("div", "dim", b.quality_note));
+      if (b.vendor) src.appendChild(h2("div", "dim", "\u5356\u5BB6\uFF1A" + b.vendor));
+      if (b.quality_note) src.appendChild(h2("div", "dim", b.quality_note));
       tr.appendChild(src);
-      const tgt = h("td", "spend-url");
+      const tgt = h2("td", "spend-url");
       if (b.target_url) tgt.appendChild(linkEl2(b.target_url, shortUrl3(b.target_url)));
-      if (b.anchor) tgt.appendChild(h("div", "dim", "\u951A\u6587\u672C\uFF1A" + b.anchor));
+      if (b.anchor) tgt.appendChild(h2("div", "dim", "\u951A\u6587\u672C\uFF1A" + b.anchor));
       if (b.target_url && b.acquired_date) {
-        const fx = h("button", "btn-mini spend-effect", "\u6570\u636E\u53D8\u5316");
+        const fx = h2("button", "btn-mini spend-effect", "\u6570\u636E\u53D8\u5316");
         fx.type = "button";
         fx.dataset.backlinkEffect = b.id;
         tgt.appendChild(fx);
       }
       tr.appendChild(tgt);
-      tr.appendChild(h("td", "ctr", b.method || ""));
-      tr.appendChild(h("td", "ctr", b.rel || ""));
-      tr.appendChild(h("td", "num", b.dr == null ? "" : b.dr));
-      tr.appendChild(h("td", "num", b.traffic == null ? "" : Number(b.traffic).toLocaleString("en-US")));
-      tr.appendChild(h("td", "num" + (Number(b.cost) > 0 ? " spend-paid" : " dim"), Number(b.cost) > 0 ? b.currency + " " + money3(b.cost) : "\u514D\u8D39"));
-      const st2 = h("td", "ctr");
-      if (b.status) st2.appendChild(h("span", "badge " + (STATUS_BADGE[b.status] || "b-gray"), b.status));
-      st2.appendChild(h("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
+      tr.appendChild(h2("td", "ctr", b.method || ""));
+      tr.appendChild(h2("td", "ctr", b.rel || ""));
+      tr.appendChild(h2("td", "num", b.dr == null ? "" : b.dr));
+      tr.appendChild(h2("td", "num", b.traffic == null ? "" : Number(b.traffic).toLocaleString("en-US")));
+      tr.appendChild(h2("td", "num" + (Number(b.cost) > 0 ? " spend-paid" : " dim"), Number(b.cost) > 0 ? b.currency + " " + money3(b.cost) : "\u514D\u8D39"));
+      const st2 = h2("td", "ctr");
+      if (b.status) st2.appendChild(h2("span", "badge " + (STATUS_BADGE[b.status] || "b-gray"), b.status));
+      st2.appendChild(h2("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
       if (b.auto_status) {
         const relDiffers = b.auto_status === "found" && b.rel && b.auto_rel && b.rel !== b.auto_rel;
         const lost = b.auto_status === "not_found" && b.auto_lost_at;
-        const auto = h(
+        const auto = h2(
           "div",
           "spend-auto is-" + (relDiffers ? "mismatch" : b.auto_status) + (lost ? " is-lost" : ""),
           relDiffers ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728\uFF0C\u4F46\u9875\u9762\u4E0A\u662F " + b.auto_rel : lost ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u4E0A\u6B21\u8FD8\u5728\uFF0C\u8FD9\u6B21\u6CA1\u627E\u5230" : AUTO_LABEL[b.auto_status] || b.auto_status
@@ -11160,20 +11440,20 @@
         st2.appendChild(auto);
       }
       if (b.target_url) {
-        const chk3 = h("button", "btn-mini spend-check", "\u81EA\u52A8\u6838\u67E5");
+        const chk3 = h2("button", "btn-mini spend-check", "\u81EA\u52A8\u6838\u67E5");
         chk3.type = "button";
         chk3.dataset.spendCheck = b.id;
         chk3.title = "\u8BA9\u670D\u52A1\u5668\u53BB\u8FD9\u4E2A\u9875\u9762\u4E0A\u627E\u4E00\u6B21\u6307\u5411\u6211\u4EEC\u7684\u94FE\u63A5";
         st2.appendChild(chk3);
       }
       tr.appendChild(st2);
-      tr.appendChild(h("td", "spend-task", b.task_content || ""));
+      tr.appendChild(h2("td", "spend-task", b.task_content || ""));
       tr.appendChild(rowActions("backlink", b.id));
       tb.appendChild(tr);
     }
   }
   function renderExpenses() {
-    const tb = $8("tb-expenses");
+    const tb = $9("tb-expenses");
     if (!tb) return;
     tb.textContent = "";
     if (!expenseRows.length) {
@@ -11181,21 +11461,21 @@
       return;
     }
     for (const e of expenseRows) {
-      const tr = h("tr");
-      tr.appendChild(h("td", "num", e.spend_date));
-      const cat = h("td", "ctr");
-      cat.appendChild(h("span", "badge b-gray", e.category));
+      const tr = h2("tr");
+      tr.appendChild(h2("td", "num", e.spend_date));
+      const cat = h2("td", "ctr");
+      cat.appendChild(h2("span", "badge b-gray", e.category));
       tr.appendChild(cat);
-      const purpose = h("td", "spend-url", e.purpose);
-      if (e.note) purpose.appendChild(h("div", "dim", e.note));
+      const purpose = h2("td", "spend-url", e.purpose);
+      if (e.note) purpose.appendChild(h2("div", "dim", e.note));
       tr.appendChild(purpose);
-      tr.appendChild(h("td", "", e.vendor || ""));
-      tr.appendChild(h("td", "num spend-paid", e.currency + " " + money3(e.amount)));
-      tr.appendChild(h("td", "ctr", e.owner || ""));
-      tr.appendChild(h("td", "spend-task", e.task_content || ""));
-      const ev = h("td", "spend-url");
+      tr.appendChild(h2("td", "", e.vendor || ""));
+      tr.appendChild(h2("td", "num spend-paid", e.currency + " " + money3(e.amount)));
+      tr.appendChild(h2("td", "ctr", e.owner || ""));
+      tr.appendChild(h2("td", "spend-task", e.task_content || ""));
+      const ev = h2("td", "spend-url");
       if (e.evidence) ev.appendChild(linkEl2(e.evidence, "\u67E5\u770B\u51ED\u8BC1"));
-      else ev.appendChild(h("span", "spend-noev", "\u65E0\u51ED\u8BC1"));
+      else ev.appendChild(h2("span", "spend-noev", "\u65E0\u51ED\u8BC1"));
       tr.appendChild(ev);
       tr.appendChild(rowActions("expense", e.id));
       tb.appendChild(tr);
@@ -11204,11 +11484,11 @@
   async function loadSpend() {
     bind3();
     if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
-    const input = $8("spend-month");
+    const input = $9("spend-month");
     if (input) input.value = month;
     const range2 = monthRange(month);
     const seq6 = ++loadSeq;
-    const allLinks = $8("spend-links-all") && $8("spend-links-all").checked;
+    const allLinks = $9("spend-links-all") && $9("spend-links-all").checked;
     const [sum, links, exps] = await Promise.allSettled([
       API.get("/api/spend/summary" + qs(range2)),
       API.get("/api/backlinks" + (allLinks ? "" : qs(range2))),
@@ -11224,14 +11504,14 @@
     } else {
       backlinkRows = [];
       renderLinkStats(null);
-      errorRow($8("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+      errorRow($9("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
     }
     if (exps.status === "fulfilled") {
       expenseRows = exps.value.items || [];
       renderExpenses();
     } else {
       expenseRows = [];
-      errorRow($8("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+      errorRow($9("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
     }
   }
   var BACKLINK_FIELDS = [
@@ -11270,17 +11550,17 @@
     expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
   };
   function fillSelect2(id, values, placeholder, labelOf) {
-    const sel = $8(id);
+    const sel = $9(id);
     if (!sel) return;
     const keep = sel.value;
     sel.textContent = "";
     if (placeholder != null) {
-      const o = h("option", "", placeholder);
+      const o = h2("option", "", placeholder);
       o.value = "";
       sel.appendChild(o);
     }
     for (const v of values) {
-      const o = h("option", "", labelOf ? labelOf(v) : v);
+      const o = h2("option", "", labelOf ? labelOf(v) : v);
       o.value = labelOf ? v.id : v;
       sel.appendChild(o);
     }
@@ -11299,26 +11579,26 @@
     fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
   }
   function ensureTaskOption(selectId, row) {
-    const sel = $8(selectId);
+    const sel = $9(selectId);
     if (!sel || !row || row.task_id == null) return;
     if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
-    const o = h("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
+    const o = h2("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
     o.value = String(row.task_id);
     sel.appendChild(o);
   }
-  async function openForm(kind, row) {
+  async function openForm2(kind, row) {
     const form = FORMS[kind];
     try {
       await ensureOptions();
     } catch (e) {
-      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText5(e));
+      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText6(e));
       return;
     }
-    editing5[kind] = row || null;
-    $8(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    editing6[kind] = row || null;
+    $9(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
     ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el5 = $8(id);
+      const el5 = $9(id);
       if (!el5) continue;
       el5.value = row && row[key] != null ? row[key] : "";
     }
@@ -11326,38 +11606,38 @@
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
       const me = (window.ME || {}).name || "";
       if (kind === "backlink") {
-        $8("bl-date").value = today3;
-        $8("bl-owner").value = me;
+        $9("bl-date").value = today3;
+        $9("bl-owner").value = me;
       } else {
-        $8("ex-date").value = today3;
-        $8("ex-currency").value = "CNY";
-        $8("ex-owner").value = me;
+        $9("ex-date").value = today3;
+        $9("ex-currency").value = "CNY";
+        $9("ex-owner").value = me;
       }
     }
-    $8(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    $9(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
     openModal(form.mask);
   }
-  var openBacklink = () => openForm("backlink", null);
-  var openExpense = () => openForm("expense", null);
+  var openBacklink = () => openForm2("backlink", null);
+  var openExpense = () => openForm2("expense", null);
   async function submitForm(kind, btn) {
     const form = FORMS[kind];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el5 = $8(id);
+      const el5 = $9(id);
       if (el5) body[key] = el5.value;
     }
-    const errEl = $8(kind === "backlink" ? "bl-error" : "ex-error");
-    const row = editing5[kind];
+    const errEl = $9(kind === "backlink" ? "bl-error" : "ex-error");
+    const row = editing6[kind];
     if (btn) btn.disabled = true;
     try {
       if (row) await API.patch(form.api + "/" + row.id, body);
       else await API.post(form.api, body);
       closeModal(form.mask);
-      editing5[kind] = null;
+      editing6[kind] = null;
       toast2((row ? "\u5DF2\u66F4\u65B0" : "\u5DF2\u767B\u8BB0") + form.name + " \xB7 \u5DF2\u5165\u5E93");
       loadSpend();
     } catch (e) {
-      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText5(e);
+      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText6(e);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -11365,10 +11645,10 @@
   var submitBacklink = (btn) => submitForm("backlink", btn);
   var submitExpense = (btn) => submitForm("expense", btn);
   function bind3() {
-    if (bound3) return;
-    const panel = $8("panel-spend");
+    if (bound4) return;
+    const panel = $9("panel-spend");
     if (!panel) return;
-    bound3 = true;
+    bound4 = true;
     panel.addEventListener("click", async (e) => {
       const step = e.target.closest("[data-spend-month]");
       if (step) {
@@ -11392,7 +11672,7 @@
         } catch (err) {
           chk3.disabled = false;
           chk3.textContent = "\u81EA\u52A8\u6838\u67E5";
-          toast2("\u6838\u67E5\u5931\u8D25\uFF1A" + failText5(err));
+          toast2("\u6838\u67E5\u5931\u8D25\uFF1A" + failText6(err));
         }
         return;
       }
@@ -11400,7 +11680,7 @@
       if (edit) {
         const kind = edit.dataset.spendEdit;
         const row = FORMS[kind].rows().find((r) => String(r.id) === edit.dataset.id);
-        if (row) openForm(kind, row);
+        if (row) openForm2(kind, row);
         return;
       }
       const del = e.target.closest("[data-spend-del]");
@@ -11412,17 +11692,17 @@
           toast2("\u5DF2\u5220\u9664" + form.name + "\u8BB0\u5F55");
           loadSpend();
         } catch (err) {
-          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText5(err));
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText6(err));
         }
       }
     });
-    $8("spend-month").addEventListener("change", (e) => {
+    $9("spend-month").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}$/.test(e.target.value)) {
         month = e.target.value;
         loadSpend();
       }
     });
-    $8("spend-links-all").addEventListener("change", loadSpend);
+    $9("spend-links-all").addEventListener("change", loadSpend);
   }
 
   // public/src/app.js
@@ -11938,6 +12218,7 @@
     loadDataFreshness();
     await loadDataSourcesStatus();
     await loadIntegrations();
+    loadSites();
     await loadMarket();
     if (typeof loadHermesMemories === "function") await loadHermesMemories(false);
     await loadBrain();

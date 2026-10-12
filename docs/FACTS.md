@@ -47,7 +47,7 @@
 | `taskCheckins.js` | 跨天任务每日推进打卡 API。 |
 | `weeklyReports.js` | 复盘周报 API。 |
 
-## 后端服务（规则与业务逻辑）（41）
+## 后端服务（规则与业务逻辑）（42）
 
 `server/src/services/`
 
@@ -87,6 +87,7 @@
 | `marketBrain.js` | 市场 AI 记忆体：MD5 状态检测 + 缓存摘要 + 注入。 |
 | `productionReadiness.js` | 生产验收：静态检查配置与数据证据； |
 | `riskRegister.js` | 风险清单的组装：把当前的静态检查和最近一次生产实测合成一份带严重程度与下一步的清单。 |
+| `sites.js` | 站点的规则（纯函数，不碰数据库）。 |
 | `sopStats.js` | SOP 执行率的统计。 |
 | `spend.js` | 投入台账的规则（纯函数，不碰数据库）：外链与其它支出的字段校验，以及「钱花在哪」的汇总。 |
 | `taskAudit.js` | 可审计任务的规则（纯函数，不碰数据库 —— 可被 node --test 直接 import）。 |
@@ -139,7 +140,7 @@
 | `taskLinks.js` | 任务关联键数据访问层：任务 ↔ 页面 / 广告系列 / 关键词 / KPI。 |
 | `weeklyReports.js` | 复盘周报数据访问层。 |
 
-## 第三方同步（5）
+## 第三方同步（7）
 
 `server/src/sync/`
 
@@ -148,10 +149,12 @@
 | `ads.js` | Google Ads 同步：广告系列、关键词、搜索词三类日数据落库。 |
 | `ga4.js` | GA4 同步：每日汇总、按来源 / 国家 / 设备 / 落地页的维度数据、事件数据落库。 |
 | `googleClient.js` | Google 接口的公共部分：OAuth 授权与令牌刷新、项目配置解析、带鉴权的请求、日期区间归一。 |
+| `googleDiscovery.js` | 从已授权的谷歌账号里列出「能选的」Search Console 资源和 GA4 媒体资源，给「添加站点」当候选，省得手敲编号敲错。 |
 | `gsc.js` | Search Console 同步：每日汇总与「查询词 × 页面」明细落库。 |
 | `scheduler.js` | 谷歌数据定时自动同步（进程内调度）。 |
+| `syncSites.js` | 多站点同步的编排：每天把所有启用的站点都同步一遍； |
 
-## 前端 ES 模块（打包进 dist/bundle.js）（45）
+## 前端 ES 模块（打包进 dist/bundle.js）（46）
 
 `public/src/`
 
@@ -193,6 +196,7 @@
 | `rank-snapshots.js` | SEO opportunity keyword rank snapshots and first-to-latest trend display. |
 | `risks.js` | 风险清单页：把后端返回的检查结果画出来（全部走 DOM 文本节点，不拼 HTML）。 |
 | `settings.js` | Settings page: persisted KPI targets and account password changes. |
+| `sites.js` | 站点管理（设置 → API 接入）：一个谷歌账号下的每个网站各登记一次。 |
 | `sop-rate.js` | SOP 执行率（ES 模块 · esbuild 打包为 IIFE）。 |
 | `sop.js` | SOP 引擎（ES 模块 · esbuild 打包为 IIFE）。 |
 | `spend.js` | 投入台账（2026-10-10）：钱花在哪 —— 广告 / 外链 / 其它支出。 |
@@ -276,7 +280,7 @@
 | `users` | 账号与角色（seo / sem / manager / boss）。 |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（51）
+## 测试（52）
 
 `server/test/`
 
@@ -324,6 +328,7 @@
 | `routes.test.js` | 路由层冒烟测试。 |
 | `settle.test.js` | Phase 5C 考核期冻结：结算快照后，改目标不改历史（§29）。 |
 | `sitePlugin.test.js` | 独立站那一侧的 WordPress 插件（integrations/wordpress/ferr-intake）：浏览器里记来源的脚本 + 服务器上往后台发的 PHP。 |
+| `sites.test.js` | 多站点：一个谷歌账号下的几个网站各是一个「站点」。 |
 | `spend.test.js` | 投入台账：外链 / 其它支出 / 「钱花在哪」汇总。 |
 | `taskAudit.test.js` | 可审计任务的规则：重要性判定、完成门槛、证据与关联键的合法性。 |
 | `taskAuditRoutes.test.js` | 可审计任务 · 路由层：完成门槛、关联键、重要标记、证据截图。 |
