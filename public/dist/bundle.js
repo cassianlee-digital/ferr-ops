@@ -1212,6 +1212,13 @@
       _seoDelta("sb-impr-d", t.impressions, pt ? pt.impressions : null, false, "pct");
       _seoDelta("sb-pos-d", t.position, pt ? pt.position : null, true, "abs");
       _seoDelta("sb-cov-d", data3.queryCount, prev ? prev.queryCount : null, false, "abs");
+      if (!(prev && (prev.byDate || []).length)) ["sb-clicks-d", "sb-impr-d", "sb-pos-d", "sb-cov-d"].forEach((id) => {
+        const e = document.getElementById(id);
+        if (e) {
+          e.textContent = "\u4E0A\u671F\u6CA1\u6709\u6570\u636E";
+          e.className = "metric-delta";
+        }
+      });
     } else {
       ["sb-clicks", "sb-impr", "sb-pos", "sb-cov"].forEach((id) => _t(id, "\u2014"));
       ["sb-clicks-d", "sb-impr-d", "sb-pos-d", "sb-cov-d"].forEach((id) => {
@@ -1340,7 +1347,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h4) => '<span class="seo-hl-chip ' + (h4.tone === "good" ? "good" : "bad") + '">' + esc(h4.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h4) => '<span class="seo-hl-chip ' + (h4.tone === "good" ? "good" : h4.tone === "muted" ? "muted" : "bad") + '">' + esc(h4.text) + "</span>").join("");
   }
   function renderSeoDeltaTables(d) {
     const error = d && d.error;
@@ -1705,7 +1712,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h4) => '<span class="seo-hl-chip ' + (h4.tone === "good" ? "good" : "bad") + '">' + esc(h4.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h4) => '<span class="seo-hl-chip ' + (h4.tone === "good" ? "good" : h4.tone === "muted" ? "muted" : "bad") + '">' + esc(h4.text) + "</span>").join("");
   }
   function renderSemDeltaTables(d) {
     const error = d && d.error;

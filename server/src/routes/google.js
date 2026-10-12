@@ -25,16 +25,27 @@ export function buildSeoHighlights({ cur, prevTot, queries, pages }) {
   const H = [];
   const hasObservation = [cur?.clicks, cur?.impressions, prevTot?.clicks, prevTot?.impressions]
     .some((value) => Number(value) > 0) || (queries || []).length > 0 || (pages || []).length > 0;
+  /* 上一周期有没有同步数据：有曝光才算有。
+     刚登记、只同步了最近几天的站点，上一周期是「没有数据」，不是 0 —— 以前这里会算成「+100%」，
+     看起来像翻了一倍，其实只是没有可比的数。没有数据就明说没法比；上一周期确实是 0 次的，写 0 次，不编百分比。 */
+  const prevHasData = Number(prevTot?.impressions) > 0;
   if (cur && prevTot && hasObservation) {
     if (cur.clicks != null) {
-      const dc = _pct(cur.clicks, prevTot.clicks);
-      H.push({ tone: dc >= 0 ? 'good' : 'bad', text: `自然点击 ${cur.clicks.toLocaleString()}（${dc >= 0 ? '+' : ''}${dc}% vs 上一周期）` });
+      const now = `自然点击 ${cur.clicks.toLocaleString()}`;
+      if (!prevHasData) H.push({ tone: 'muted', text: `${now}（上一周期没有同步数据，无法对比）` });
+      else if (!prevTot.clicks) H.push({ tone: cur.clicks > 0 ? 'good' : 'muted', text: `${now}（上一周期 0 次）` });
+      else {
+        const dc = _pct(cur.clicks, prevTot.clicks);
+        H.push({ tone: dc >= 0 ? 'good' : 'bad', text: `${now}（${dc >= 0 ? '+' : ''}${dc}% vs 上一周期）` });
+      }
     }
     if (cur.position != null && prevTot.position != null) {
       const dp = +(cur.position - prevTot.position).toFixed(1); // 负=排名变好
       H.push({ tone: dp <= 0 ? 'good' : 'bad', text: `平均排名 ${cur.position.toFixed(1)}（${dp <= 0 ? '↑进步' : '↓退步'} ${Math.abs(dp)}）` });
     }
   }
+  // 单个词、单个页面的涨跌同理：上一周期没有数据时，「+9」只是这个词本期的点击数，不是涨了 9
+  if (!prevHasData) return H.slice(0, 6);
   const wd = (queries || []).map((q) => ({ ...q, d: (q.clicks || 0) - (q.clicksPrev || 0) }));
   const up = [...wd].sort((a, b) => b.d - a.d)[0];
   const dn = [...wd].sort((a, b) => a.d - b.d)[0];
@@ -55,10 +66,17 @@ export function buildAdsHighlights({ cur, prevTot, keywords, campaigns }) {
   const hasObservation = [cur?.costMicros, cur?.impressions, cur?.clicks, cur?.conversions,
     prevTot?.costMicros, prevTot?.impressions, prevTot?.clicks, prevTot?.conversions]
     .some((value) => Number(value) > 0) || (keywords || []).length > 0 || (campaigns || []).length > 0;
+  // 上一周期有没有同步数据（有曝光或有花费才算有）。没有就明说没法比，不写「+100%」
+  const prevHasData = Number(prevTot?.impressions) > 0 || Number(prevTot?.costMicros) > 0;
   if (cur && prevTot && hasObservation) {
     if (cur.conversions != null) {
-      const dc = _pct(cur.conversions, prevTot.conversions);
-      H.push({ tone: dc >= 0 ? 'good' : 'bad', text: `转化 ${Number(cur.conversions).toFixed(1)}（${dc >= 0 ? '+' : ''}${dc}% vs 上一周期）` });
+      const now = `转化 ${Number(cur.conversions).toFixed(1)}`;
+      if (!prevHasData) H.push({ tone: 'muted', text: `${now}（上一周期没有同步数据，无法对比）` });
+      else if (!Number(prevTot.conversions)) H.push({ tone: Number(cur.conversions) > 0 ? 'good' : 'muted', text: `${now}（上一周期 0 次）` });
+      else {
+        const dc = _pct(cur.conversions, prevTot.conversions);
+        H.push({ tone: dc >= 0 ? 'good' : 'bad', text: `${now}（${dc >= 0 ? '+' : ''}${dc}% vs 上一周期）` });
+      }
     }
     if (cur.costPerConversionMicros != null && prevTot.costPerConversionMicros != null) {
       const dp = _pct(_m6(cur.costPerConversionMicros), _m6(prevTot.costPerConversionMicros));

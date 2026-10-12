@@ -385,3 +385,6 @@ body.dark #panel-data .minitabs .minitab {
 .sret-ccost{min-width:90px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text2)}
 .sret-select{min-width:160px;padding:3px 6px;border:1px solid var(--border);border-radius:2px;background:var(--bg);color:var(--text);font:inherit}
 .sret-hint{font-size:12px;color:var(--amber)}
+
+/* 「本周要点」里不带好坏判断的一条（比如上一周期没有数据、没法对比） */
+.seo-hl-chip.muted { background: var(--bg3, #eef2f7); color: var(--text2); border-color: var(--border); }

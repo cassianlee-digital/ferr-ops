@@ -173,6 +173,8 @@ function renderSeoBoard(){
     _seoDelta('sb-impr-d',   t.impressions, pt?pt.impressions:null, false, 'pct');
     _seoDelta('sb-pos-d',    t.position, pt?pt.position:null, true, 'abs');
     _seoDelta('sb-cov-d',    data.queryCount, prev?prev.queryCount:null, false, 'abs');
+    // 上一个等长区间一天数据都没有（刚登记、只同步了最近几天的站点）：写明「上期没有数据」，不留一片空白让人猜为什么没有对比
+    if(!(prev&&(prev.byDate||[]).length)) ['sb-clicks-d','sb-impr-d','sb-pos-d','sb-cov-d'].forEach(id=>{ const e=document.getElementById(id); if(e){ e.textContent='上期没有数据'; e.className='metric-delta'; } });
   } else {
     ['sb-clicks','sb-impr','sb-pos','sb-cov'].forEach(id=>_t(id,'—'));
     ['sb-clicks-d','sb-impr-d','sb-pos-d','sb-cov-d'].forEach(id=>{ const e=document.getElementById(id); if(e){e.textContent='';e.className='metric-delta';} });
@@ -250,7 +252,7 @@ function renderSeoHighlights(d){
   const hs=(d&&d.highlights)||[];
   if(!hs.length){ box.classList.add('is-hidden'); box.innerHTML=''; return; }
   box.classList.remove('is-hidden');
-  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':'bad')+'">'+esc(h.text)+'</span>').join('');
+  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':(h.tone==='muted'?'muted':'bad'))+'">'+esc(h.text)+'</span>').join('');
 }
 function renderSeoDeltaTables(d){
   const error=d&&d.error;
@@ -481,7 +483,7 @@ function renderSemHighlights(d){
   const hs=(d&&d.highlights)||[];
   if(!hs.length){ box.classList.add('is-hidden'); box.innerHTML=''; return; }
   box.classList.remove('is-hidden');
-  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':'bad')+'">'+esc(h.text)+'</span>').join('');
+  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':(h.tone==='muted'?'muted':'bad'))+'">'+esc(h.text)+'</span>').join('');
 }
 function renderSemDeltaTables(d){
   const error=d&&d.error;
