@@ -84,9 +84,12 @@ function ferr_intake_decode_source($raw) {
 }
 
 function ferr_intake_configured() {
-    return defined('FERR_INTAKE_URL') && defined('FERR_INTAKE_TOKEN')
-        && stripos((string) FERR_INTAKE_URL, 'https://') === 0   // 密钥走请求头，不加密的地址不发
-        && strlen((string) FERR_INTAKE_TOKEN) >= 24;
+    if (!defined('FERR_INTAKE_URL') || !defined('FERR_INTAKE_TOKEN') || strlen((string) FERR_INTAKE_TOKEN) < 24) {
+        return false;
+    }
+    // 密钥走请求头，不加密的地址不发。唯一的例外是发给本机（本地演练时后台就跑在同一台电脑上，请求不出这台机器）
+    $url = (string) FERR_INTAKE_URL;
+    return stripos($url, 'https://') === 0 || preg_match('#^http://(localhost|127\.0\.0\.1)(:\d+)?/#i', $url) === 1;
 }
 
 function ferr_intake_form_allowed($formId) {

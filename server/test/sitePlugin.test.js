@@ -126,8 +126,10 @@ function submission() {
 }
 
 test('PHP 语法没问题', needPhp, () => {
-  const r = spawnSync('php', ['-l', join(pluginDir, 'ferr-intake.php')], { encoding: 'utf8' });
-  assert.equal(r.status, 0, r.stdout + r.stderr);
+  for (const file of [join(pluginDir, 'ferr-intake.php'), join(root, 'integrations/wordpress/local-demo/demo.php')]) {
+    const r = spawnSync('php', ['-l', file], { encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+  }
 });
 
 test('整条链路：访客从广告进站 → 提交表单 → 插件发出的请求，后台原样收得下', needPhp, () => {
@@ -175,6 +177,11 @@ test('不该发的时候不发：没配好、地址不是 https、密钥太短�
   const sent = (scenario) => wordpress({ formData, ...scenario }).requests.length;
   assert.equal(sent({ defines: {} }), 0);
   assert.equal(sent({ defines: { ...DEFINES, FERR_INTAKE_URL: 'http://ops.example/api/inquiry-intake' } }), 0, '密钥走请求头，不加密的地址不发');
+  // 唯一的例外：发给本机（本地演练）。长得像本机的外部域名不算
+  assert.equal(sent({ defines: { ...DEFINES, FERR_INTAKE_URL: 'http://localhost:3611/api/inquiry-intake' } }), 1);
+  assert.equal(sent({ defines: { ...DEFINES, FERR_INTAKE_URL: 'http://127.0.0.1:3611/api/inquiry-intake' } }), 1);
+  assert.equal(sent({ defines: { ...DEFINES, FERR_INTAKE_URL: 'http://localhost.evil.example/api/inquiry-intake' } }), 0);
+  assert.equal(sent({ defines: { ...DEFINES, FERR_INTAKE_URL: 'http://localhost@evil.example/api/inquiry-intake' } }), 0);
   assert.equal(sent({ defines: { ...DEFINES, FERR_INTAKE_TOKEN: 'short' } }), 0);
   const { ferr_source: _drop, ...newsletter } = formData;
   assert.equal(wordpress({ defines: DEFINES, formData: newsletter }).requests.length, 0, '订阅之类别的表单不回传');

@@ -82,6 +82,23 @@ define('FERR_INTAKE_TOKEN', '<第 1 步生成的密钥>');
 
 没出现的话，看 WordPress 后台顶部有没有红色提示，它会写明原因（密钥不对 / 连不上后台 / 字段不合格）。
 
+## 先在自己电脑上演练一遍（可选，不碰独立站）
+
+仓库里带了一个演练页 `integrations/wordpress/local-demo/demo.php`：不装 WordPress，在本机把
+「带广告参数进站 → 点到联系页 → 提交表单 → 插件发给后台」真走一遍。需要本机有 PHP，后台也在本机跑着
+（仓库根目录的 `.env` 里有 `PORT` 和 `INQUIRY_INTAKE_SECRET`）。在仓库根目录运行：
+
+```bash
+php -S localhost:8787 -t integrations/wordpress integrations/wordpress/local-demo/demo.php
+```
+
+然后打开 `http://localhost:8787/valves/?campaign_id=test1&keyword=test+word&utm_source=google&utm_medium=cpc`，
+页面会一步步显示：浏览器里记下了什么 → 隐藏字段里填了什么 → 插件发给后台的内容和后台的回复。
+最后到本机后台的「询盘评级 → 表单线索」看这一条。
+
+真的部分：浏览器、记来源的脚本、插件本身（原样加载）、发给后台的请求、后台。
+**假的部分：WordPress 和 Fluent Forms**，所以它验不了「你的表单里各字段到底叫什么」—— 那一条只能在真站上看（第 4 步）。
+
 ## 它是怎么工作的
 
 - **记来源**（`ferr-source.js`，每个页面加载）：访客从站外进来的那一刻，把落地页、来路、广告参数记在他自己浏览器里，保留 30 天。
