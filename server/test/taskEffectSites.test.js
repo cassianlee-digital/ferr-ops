@@ -84,3 +84,31 @@ test('外链的前后对比同样按它指向的页面认站点', async () => {
   assert.equal(r.site, '贝孚特-管件');
   assert.deepEqual(clicks(r.items[0]), [9, 27]);
 });
+
+test('周度审核：登记了多个站点时自然搜索按站点分列；询盘和线索带上站点；导出里也有', async () => {
+  const { buildAuditPackage } = await import('../src/services/auditPackage.js');
+  const { auditSheets } = await import('../src/services/auditExport.js');
+  const sites = googleRepo.listProjects();
+  const fitting = sites.find((s) => s.domain === 'bestflowfitting.com');
+  const made = await call('POST', '/api/inquiries', { date: '2026-09-20', channel: 'SEO自然', product: '阀门', grade: 'A', site_id: fitting.id });
+  assert.equal(made.statusCode, 201, made.body);
+  await call('POST', '/api/inquiries', { date: '2026-09-21', channel: '直接', product: '阀门', grade: 'C' });
+
+  const pkg = buildAuditPackage({ range: { start_date: '2026-09-16', end_date: '2026-09-22' }, person: 'all', today: '2026-09-23' });
+  // 每个站一行本期对上期，各是各的数
+  assert.deepEqual(pkg.seo_sites.map((s) => [s.site, s.status, s.current && s.current.clicks]), [['FERR-OEM五金件', 'OK', 770], ['贝孚特-管件', 'OK', 1800]]);
+  assert.equal(pkg.seo.site, 'FERR-OEM五金件', '老的 seo 一项仍是默认站点的，并写明是哪个站');
+  assert.equal(pkg.seo.current.clicks, 770);
+  assert.ok(pkg.meta.notes.some((n) => /按站点分列/.test(n)));
+  // 询盘：按站点计数，没标的单列，不按公司去猜
+  assert.deepEqual(pkg.inquiries.by_site, { '贝孚特-管件': 1, '未标注': 1 });
+  assert.equal(pkg.inquiries.items.find((i) => i.grade === 'A').site, '贝孚特-管件');
+  // 只看陈（SEM）时没有自然搜索，也就没有按站点的那一段
+  assert.deepEqual(buildAuditPackage({ range: { start_date: '2026-09-16', end_date: '2026-09-22' }, person: '陈', today: '2026-09-23' }).seo_sites, []);
+
+  const sheets = auditSheets(pkg);
+  const trendSources = [...new Set(sheets.find((s) => s.key === 'trend').rows.map((r) => r.source))];
+  assert.ok(trendSources.includes('自然搜索（GSC）· 贝孚特-管件') && trendSources.includes('自然搜索（GSC）· FERR-OEM五金件'), trendSources.join(' | '));
+  const inqSheet = sheets.find((s) => s.key === 'inquiries');
+  assert.ok(inqSheet.columns.some((c) => c[0] === 'site' || c.key === 'site'), '导出的询盘表里有站点一列');
+});

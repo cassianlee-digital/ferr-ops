@@ -10415,10 +10415,12 @@
     if (!pkg.seo && !pkg.sem) return;
     const c = card("\u6570\u636E", "\u672C\u671F\u5BF9\u6BD4\u4E0A\u4E00\u7B49\u957F\u533A\u95F4 \xB7 \u5168\u7AD9 / \u5168\u8D26\u6237\u53E3\u5F84");
     const grid = el2("div", "audit-cols");
-    if (pkg.seo) {
+    const seoLabels = { clicks: ["\u70B9\u51FB", "higher"], impressions: ["\u66DD\u5149", "higher"], position: ["\u5E73\u5747\u6392\u540D", "lower"] };
+    const seoBlocks = (pkg.seo_sites || []).length ? pkg.seo_sites.map((s) => ["\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09\xB7 " + s.site, s]) : pkg.seo ? [["\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", pkg.seo]] : [];
+    for (const [title, t] of seoBlocks) {
       const b = el2("div");
-      b.appendChild(el2("div", "audit-sub", "\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09" + (pkg.seo.days_with_data ? " \xB7 " + pkg.seo.days_with_data + " \u5929\u6709\u6570\u636E" : "")));
-      b.appendChild(trendTable(pkg.seo, { clicks: ["\u70B9\u51FB", "higher"], impressions: ["\u66DD\u5149", "higher"], position: ["\u5E73\u5747\u6392\u540D", "lower"] }));
+      b.appendChild(el2("div", "audit-sub", title + (t.days_with_data ? " \xB7 " + t.days_with_data + " \u5929\u6709\u6570\u636E" : "")));
+      b.appendChild(trendTable(t, seoLabels));
       grid.appendChild(b);
     }
     if (pkg.sem) {
@@ -10456,6 +10458,7 @@
         ));
       }
       c.appendChild(el2("div", "audit-line", "\u6E20\u9053\uFF1A" + mapText(q.by_channel)));
+      if (q.by_site && Object.keys(q.by_site).some((k) => k !== "\u672A\u6807\u6CE8")) c.appendChild(el2("div", "audit-line", "\u7AD9\u70B9\uFF1A" + mapText(q.by_site)));
       c.appendChild(el2("div", "audit-line", "\u6765\u6E90\u5BF9\u8D26\uFF1A" + mapText(q.by_source_verdict)));
       const SHOW = 40;
       c.appendChild(table(

@@ -39,10 +39,10 @@ export function auditAiPayload(pkg) {
       flags: t.flags,
     })),
     sop: pkg.sop.items.map((s) => ({ title: clip(s.title, 80), dept: s.dept, freq: s.freq, expected: s.expected, done: s.done, missed: (s.missed_days || []).length })),
-    seo: pkg.seo, sem: pkg.sem,
+    seo: pkg.seo, seo_by_site: (pkg.seo_sites || []).length ? pkg.seo_sites : undefined, sem: pkg.sem,
     geo: pkg.geo && { status: pkg.geo.status, totals: pkg.geo.totals, engines: (pkg.geo.engines || []).map((e) => ({ engine: e.label, sessions: e.sessions, prev: e.prevSessions })), inquiries: pkg.geo.inquiries, citations: pkg.geo.citations && pkg.geo.citations.totals },
     inquiries: {
-      total: pkg.inquiries.total, by_grade: pkg.inquiries.by_grade, junk_ratio: pkg.inquiries.junk_ratio, by_channel: pkg.inquiries.by_channel,
+      total: pkg.inquiries.total, by_grade: pkg.inquiries.by_grade, junk_ratio: pkg.inquiries.junk_ratio, by_channel: pkg.inquiries.by_channel, by_site: pkg.inquiries.by_site,
       by_product: pkg.inquiries.by_product, by_source_verdict: pkg.inquiries.by_source_verdict, with_form_evidence: pkg.inquiries.with_form_evidence, deals: pkg.inquiries.deals, confirmation: pkg.inquiries.confirmation,
       // 本期标为成交的（询盘可能更早）与本期被归档的（已不在上面的统计里）；带人名，不带客户信息
       deals_marked_this_period: pkg.inquiries.deals_marked.map((d) => ({ inquiry_id: d.id, inquiry_date: d.inquiry_date, channel: d.channel, product: d.product, grade: d.grade, marked: d.marked_date, by: d.marked_by })),

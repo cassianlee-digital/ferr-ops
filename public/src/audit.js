@@ -207,7 +207,10 @@ function renderData(root) {
   if (!pkg.seo && !pkg.sem) return;
   const c = card('数据', '本期对比上一等长区间 · 全站 / 全账户口径');
   const grid = el('div', 'audit-cols');
-  if (pkg.seo) { const b = el('div'); b.appendChild(el('div', 'audit-sub', '自然搜索（GSC）' + (pkg.seo.days_with_data ? ' · ' + pkg.seo.days_with_data + ' 天有数据' : ''))); b.appendChild(trendTable(pkg.seo, { clicks: ['点击', 'higher'], impressions: ['曝光', 'higher'], position: ['平均排名', 'lower'] })); grid.appendChild(b); }
+  // 登记了多个站点时自然搜索按站点分块（每个站一张本期对上期）；否则就是那一个站
+  const seoLabels = { clicks: ['点击', 'higher'], impressions: ['曝光', 'higher'], position: ['平均排名', 'lower'] };
+  const seoBlocks = (pkg.seo_sites || []).length ? pkg.seo_sites.map((s) => ['自然搜索（GSC）· ' + s.site, s]) : (pkg.seo ? [['自然搜索（GSC）', pkg.seo]] : []);
+  for (const [title, t] of seoBlocks) { const b = el('div'); b.appendChild(el('div', 'audit-sub', title + (t.days_with_data ? ' · ' + t.days_with_data + ' 天有数据' : ''))); b.appendChild(trendTable(t, seoLabels)); grid.appendChild(b); }
   if (pkg.sem) { const b = el('div'); b.appendChild(el('div', 'audit-sub', '广告（Ads，账户币种）' + (pkg.sem.days_with_data ? ' · ' + pkg.sem.days_with_data + ' 天有数据' : ''))); b.appendChild(trendTable(pkg.sem, { cost: ['花费', 'neutral'], clicks: ['点击', 'higher'], conversions: ['转化', 'higher'], cpa: ['每转化成本', 'lower'] })); grid.appendChild(b); }
   c.appendChild(grid);
   const g = pkg.geo;
@@ -244,6 +247,8 @@ function renderInquiries(root) {
         '渠道与等级已确认 ' + cf.confirmed + '/' + cf.total + '（' + cf.confirmedRate + '%）· 待确认 ' + cf.proposed + ' · 历史未审 ' + cf.legacy));
     }
     c.appendChild(el('div', 'audit-line', '渠道：' + mapText(q.by_channel)));
+    // 按站点：只有登记了站点、且至少有一条标了站点时才值得列（否则就是一行「未标注：全部」）
+    if (q.by_site && Object.keys(q.by_site).some((k) => k !== '未标注')) c.appendChild(el('div', 'audit-line', '站点：' + mapText(q.by_site)));
     c.appendChild(el('div', 'audit-line', '来源对账：' + mapText(q.by_source_verdict)));
     const SHOW = 40;
     c.appendChild(table(['日期', '国家', '渠道', '产品', { label: '等级', cls: 'ctr' }, '确认', '来源词 / 系列 / 落地页', '对账', '成交'],

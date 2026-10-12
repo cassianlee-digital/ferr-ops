@@ -86,7 +86,10 @@ export function auditSheets(pkg) {
   add('trend', '数据概览', [
     ['source', '数据源'], ['metric', '指标'], ['current', '本期'], ['previous', '上期'], ['change', '变化'], ['change_pct', '变化%'], ['days', '本期有数据的天数'],
   ], [
-    ...trendRows('自然搜索（GSC）', pkg.seo, { clicks: '点击', impressions: '曝光', position: '平均排名' }),
+    // 登记了多个站点时按站点分列；否则就是那一个站
+    ...((pkg.seo_sites || []).length
+      ? pkg.seo_sites.flatMap((s) => trendRows('自然搜索（GSC）· ' + s.site, s, { clicks: '点击', impressions: '曝光', position: '平均排名' }))
+      : trendRows('自然搜索（GSC）', pkg.seo, { clicks: '点击', impressions: '曝光', position: '平均排名' })),
     ...trendRows('广告（Ads，账户币种）', pkg.sem, { cost: '花费', clicks: '点击', conversions: '转化', cpa: '每转化成本' }),
   ]);
 
@@ -108,7 +111,7 @@ export function auditSheets(pkg) {
 
   add('inquiries', '询盘', [
     ['id', '编号'], ['date', '日期'], ['country', '国家'], ['region', '大区'], ['channel', '渠道'], ['product', '产品'], ['grade', '等级'], ['original_grade', '原始等级'],
-    ['deal_status', '是否成交'], ['company', '公司'], ['customer_code', '客户编码'], ['salesperson', '业务员'], ['source', '来源词'], ['src_campaign', '广告系列'],
+    ['deal_status', '是否成交'], ['company', '公司'], ['site', '站点'], ['customer_code', '客户编码'], ['salesperson', '业务员'], ['source', '来源词'], ['src_campaign', '广告系列'],
     ['src_landing_page', '落地页'], ['evidence', '来源证据'], ['source_verdict_label', '对账结论'], ['confirmation_label', '渠道等级确认'], ['attr_change_count', '渠道等级被改次数'], ['followups', '跟进次数'], ['note', '备注'],
   ], pkg.inquiries.items.map((i) => ({ ...i, evidence: EVIDENCE_LABEL[i.src_evidence] || '无' })));
 

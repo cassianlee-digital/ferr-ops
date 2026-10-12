@@ -21,7 +21,9 @@ import * as backlinksRepo from '../db/repositories/backlinks.js';
 import * as expensesRepo from '../db/repositories/expenses.js';
 import * as effectRepo from '../db/repositories/taskEffect.js';
 import { previousRange } from '../lib/parseDateRange.js';
-import { resolveProject } from '../sync/googleClient.js';
+import { readScope, resolveProject } from '../sync/googleClient.js';
+import { listProjects } from '../db/repositories/googleSync.js';
+import { leadSite } from './inquirySource.js';
 import { FLAGS, PEOPLE, deptOfPerson, effectDigest, personOf, summarizeTasks, taskFlags, taskState } from './auditRules.js';
 import { buildGeoSummary } from './geoData.js';
 import { VERDICTS } from './inquirySource.js';
@@ -122,6 +124,8 @@ function buildInquiries(range) {
       customer_code: r.customer_code, salesperson: r.salesperson,
       source: r.source, src_campaign: r.src_campaign || null, src_landing_page: r.src_landing_page || null,
       src_evidence: r.src_evidence || null,
+      // 从哪个网站来的（表单带回的按域名认；手工录入的可能没标）
+      site: r.site_name || null,
       source_verdict: verdict, source_verdict_label: verdict ? VERDICTS[verdict].label : null,
       // 渠道 / 等级有没有经过经理或老板确认；被改过几次
       confirmation: r.attribution_status || 'legacy',
@@ -141,6 +145,8 @@ function buildInquiries(range) {
     junk_ratio: items.length ? Math.round(((g.C || 0) / items.length) * 10000) / 10000 : null,
     by_channel: count((i) => i.channel),
     by_product: count((i) => i.product),
+    // 按站点：没标的单列「未标注」，不按公司去猜。老询盘都没标，所以这一行在刚上线时大多是未标注
+    by_site: (() => { const m = {}; for (const i of items) { const k = i.site || '未标注'; m[k] = (m[k] || 0) + 1; } return m; })(),
     by_source_verdict: count((i) => i.source_verdict_label),
     with_form_evidence: items.filter((i) => i.src_evidence === 'form').length,
     // 等级是人评的。这些 A / B 里有多少是经理或老板确认过的，决定了上面这些数能信到什么程度
@@ -164,8 +170,10 @@ function buildInquiries(range) {
 /* ---------- 表单线索（部门口径；不带联系人与留言） ---------- */
 function buildLeads(range) {
   const rows = leadsRepo.listBetween(range.start_date, range.end_date);
+  const sites = listProjects();
   const items = rows.map((l) => ({
     id: l.id, received_date: dayOf(l.received_at), state: l.state, ignore_reason: l.ignore_reason || null,
+    site: leadSite(l, sites)?.name || null,
     suggested_channel: l.suggested_channel, keyword: l.keyword || l.utm_term || null,
     campaign: l.campaign_id || l.utm_campaign || null, landing_page: l.landing_page || l.page_url || null,
     referrer: l.referrer || null, inquiry_id: l.inquiry_id || null,
@@ -260,6 +268,11 @@ export function buildAuditPackage({ range, person = 'all', today = null }) {
   const who = PEOPLE.includes(person) ? person : null;
   const dept = who ? deptOfPerson(who) : null;
   const scope = projectScope();
+  // 登记了两个以上站点时，自然搜索按站点分列（每个站一行本期对上期）。seo 那一项仍是默认站点的，给只认它的老读者
+  const sites = listProjects();
+  const seoSites = sites.length >= 2 && (!who || who === '李')
+    ? sites.filter((s) => s.gsc_site_url).map((s) => ({ site: s.name, is_default: s.is_default, ...trend('gsc', (r) => effectRepo.gscSite(r, readScope(s)), range) }))
+    : [];
 
   const tasks = buildTasks(range, who, today);
   const sop = sopStats(range.start_date, range.end_date, today);
@@ -280,6 +293,7 @@ export function buildAuditPackage({ range, person = 'all', today = null }) {
         '询盘、线索、花费、KPI 是部门口径，不按人拆：询盘渠道多数是人工填的，按它拆等于用手填字段决定谁的功劳。',
         '疑点只陈述事实（没填、超时、没证据），不是结论；用时超出预估可能只是估少了。',
         'KPI 是月度考核口径，这里显示的是区间结束日所在月份的「本月至今」。',
+        ...(seoSites.length ? ['登记了多个站点：自然搜索按站点分列（seo_sites）；广告是整个账户的、询盘和考核是部门口径，不按站点拆。询盘上的站点只有表单带回的是机器认的，手工录入的可能没标。'] : []),
       ],
     },
     summary: {
@@ -288,7 +302,8 @@ export function buildAuditPackage({ range, person = 'all', today = null }) {
     },
     tasks,
     sop: { counted_to: sop.counted_to, items: sopItems.map((s) => ({ id: s.id, title: s.title, dept: s.dept, freq: s.freq, expected: s.expected, done: s.done, missed_days: s.missed_days })) },
-    seo: !who || who === '李' ? trend('gsc', (r) => effectRepo.gscSite(r, scope), range) : null,
+    seo: !who || who === '李' ? { site: scope.id != null ? scope.name : null, ...trend('gsc', (r) => effectRepo.gscSite(r, scope), range) } : null,
+    seo_sites: seoSites,
     sem: !who || who === '陈' ? trend('ads', (r) => effectRepo.adsAccount(r, scope), range) : null,
     geo: !who || who === '李' ? buildGeoSummary(range) : null,
     inquiries: buildInquiries(range),
