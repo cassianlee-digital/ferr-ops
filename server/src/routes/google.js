@@ -6,7 +6,7 @@ import { syncSite } from '../sync/syncSites.js';
 import { config } from '../config.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
 import { adsSummary, ga4Overview, gscSummary } from '../db/repositories/googleSync.js';
-import { buildAuthUrl, exchangeCode, normalizeRange, projectProviderConfig, resolveProject } from '../sync/googleClient.js';
+import { buildAuthUrl, exchangeCode, normalizeRange, projectProviderConfig, readScope, resolveProject } from '../sync/googleClient.js';
 
 // 上一等长窗口（用于 Δ 环比）
 function seoPrevRange(range) {
@@ -272,7 +272,7 @@ export async function googleRoutes(app) {
   app.get('/api/google/gsc/summary', { preHandler: requireAuth }, async (request, reply) => {
     try {
       const project = resolveProject(request.query || {});
-      const range = { ...normalizeRange(request.query || {}), gsc_site_url: project.gsc_site_url };
+      const range = { ...normalizeRange(request.query || {}), gsc_site_url: readScope(project).gsc_site_url };
       return { connected: googleRepo.tokenStatus().gsc.authorized, project, ...gscSummary(range) };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
@@ -282,7 +282,7 @@ export async function googleRoutes(app) {
   app.get('/api/google/ga4/overview', { preHandler: requireAuth }, async (request, reply) => {
     try {
       const project = resolveProject(request.query || {});
-      const range = { ...normalizeRange(request.query || {}), ga4_property_id: project.ga4_property_id };
+      const range = { ...normalizeRange(request.query || {}), ga4_property_id: readScope(project).ga4_property_id };
       return { connected: googleRepo.tokenStatus().ga4.authorized, project, ...ga4Overview(range) };
     } catch (e) {
       return reply.code(400).send({ error: e.message || 'bad_request' });
@@ -295,9 +295,10 @@ export async function googleRoutes(app) {
       const project = resolveProject(request.query || {});
       const range = normalizeRange(request.query || {});
       const prev = seoPrevRange(range);
-      const gsc = { ...range, gsc_site_url: project.gsc_site_url };
-      const gscPrev = { ...prev, gsc_site_url: project.gsc_site_url };
-      const ga = { ...range, ga4_property_id: project.ga4_property_id };
+      const scope = readScope(project);
+      const gsc = { ...range, gsc_site_url: scope.gsc_site_url };
+      const gscPrev = { ...prev, gsc_site_url: scope.gsc_site_url };
+      const ga = { ...range, ga4_property_id: scope.ga4_property_id };
 
       const cur = gscSummary(gsc).totals;
       const prevTot = gscSummary(gscPrev).totals;

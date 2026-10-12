@@ -10,6 +10,7 @@
  * 跟随总览页的时间范围（scope = dashboard），自己听 timerange。全部 createElement，没有 innerHTML。
  */
 import { withRange, rangeText, getCurrentRange } from './timerange.js';
+import { withSite } from './site-scope.js';
 
 const $ = (id) => document.getElementById(id);
 let seq = 0;
@@ -110,7 +111,7 @@ export async function loadGeo() {
   if (!range || !range.start_date) return;
   const my = ++seq;
   try {
-    const data = await API.get(withRange('/api/geo/summary', range));
+    const data = await API.get(withSite(withRange('/api/geo/summary', range)));
     if (my === seq) render(data);
   } catch (e) {
     if (my !== seq || (e && e.message === 'unauthorized')) return;

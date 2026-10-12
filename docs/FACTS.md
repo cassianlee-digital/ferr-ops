@@ -154,7 +154,7 @@
 | `scheduler.js` | 谷歌数据定时自动同步（进程内调度）。 |
 | `syncSites.js` | 多站点同步的编排：每天把所有启用的站点都同步一遍； |
 
-## 前端 ES 模块（打包进 dist/bundle.js）（46）
+## 前端 ES 模块（打包进 dist/bundle.js）（47）
 
 `public/src/`
 
@@ -196,6 +196,7 @@
 | `rank-snapshots.js` | SEO opportunity keyword rank snapshots and first-to-latest trend display. |
 | `risks.js` | 风险清单页：把后端返回的检查结果画出来（全部走 DOM 文本节点，不拼 HTML）。 |
 | `settings.js` | Settings page: persisted KPI targets and account password changes. |
+| `site-scope.js` | 当前看的是哪个站点（多站点第 2 步）。 |
 | `sites.js` | 站点管理（设置 → API 接入）：一个谷歌账号下的每个网站各登记一次。 |
 | `sop-rate.js` | SOP 执行率（ES 模块 · esbuild 打包为 IIFE）。 |
 | `sop.js` | SOP 引擎（ES 模块 · esbuild 打包为 IIFE）。 |

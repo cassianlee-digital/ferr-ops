@@ -7,6 +7,7 @@ import { formatLocalDate, getCurrentRange, getRangeRevision, rangeText, withRang
 import { createEvidenceFix, persistFailMsg } from './closed-loop.js';
 import { runAiAnalysis } from './ai.js';
 import { fetchInquiries } from './inquiry-data.js';
+import { withSite } from './site-scope.js';
 
 function loadFailureText(label,error){
   const reason=error&&error.message&&error.message!=='unauthorized'?error.message:'登录状态已失效或服务不可用';
@@ -130,9 +131,9 @@ function _shiftRange(r){
 export async function loadSeoBoardGsc(){
   const cur=getCurrentRange('data');
   let data=null, prev=null;
-  try{ data=await API.get(withRange('/api/google/gsc/summary','data')); }
+  try{ data=await API.get(withSite(withRange('/api/google/gsc/summary','data'))); }
   catch(e){ window._gscBoard={error:e}; renderSeoBoard(); return; }
-  if(cur){ try{ prev=await API.get(withRange('/api/google/gsc/summary', _shiftRange(cur))); }catch(e){ prev=null; } }
+  if(cur){ try{ prev=await API.get(withSite(withRange('/api/google/gsc/summary', _shiftRange(cur)))); }catch(e){ prev=null; } }
   window._gscBoard={data,prev};
   renderSeoBoard();
 }
@@ -161,8 +162,8 @@ function renderSeoBoard(){
   const error=board&&board.error;
   const t=(data&&data.totals)||null;
   const _t=(id,v)=>{ const e=document.getElementById(id); if(e)e.textContent=v; };
-  // 顶部卡
-  if(t){
+  // 顶部卡。区间里一天同步数据都没有（比如刚登记、还没补历史的站点）：写「—」，不写 0 —— 没有数据不等于零点击
+  if(t&&(data.byDate||[]).length){
     _t('sb-clicks',(t.clicks||0).toLocaleString());
     _t('sb-impr',(t.impressions||0).toLocaleString());
     _t('sb-pos',t.position!=null?Number(t.position).toFixed(1):'—');
@@ -240,7 +241,7 @@ function _deltaHtml(cur,prev,lowerBetter,fmt){
 }
 export async function loadSeoBoardFull(){
   let d=null;
-  try{ d=await API.get(withRange('/api/google/seo/board','data')); }catch(e){ d={error:e}; }
+  try{ d=await API.get(withSite(withRange('/api/google/seo/board','data'))); }catch(e){ d={error:e}; }
   renderSeoHighlights(d); renderSeoDeltaTables(d); renderSeoScatter(d); renderSeoSources(d);
 }
 function renderSeoHighlights(d){
@@ -635,7 +636,7 @@ async function adoptFinding(btn,dept,title,detail,evidence){
 /* 阶段5：数据新鲜度条——三源实际有数据天数 / 区间总天数 + 最后同步时间 + 连接态 */
 export async function loadDataFreshness(){
   const el=document.getElementById('dataFreshness'); if(!el)return;
-  let d=null; try{ d=await API.get(withRange('/api/data-freshness','data')); }catch(e){ el.innerHTML='<span class="dim">'+esc(loadFailureText('数据新鲜度',e))+'</span>'; return; }
+  let d=null; try{ d=await API.get(withSite(withRange('/api/data-freshness','data'))); }catch(e){ el.innerHTML='<span class="dim">'+esc(loadFailureText('数据新鲜度',e))+'</span>'; return; }
   const fmt=v=>{ if(!v)return '从未'; const s=String(v).replace(' ','T'); const t=new Date(/Z|[+-]\d{2}/.test(s)?s:s+'Z'); if(isNaN(t))return esc(String(v).slice(5,16));
     const p=n=>String(n).padStart(2,'0'); const dif=Math.floor((Date.now()-t.getTime())/60000);
     if(dif<60)return dif+' 分钟前'; if(dif<1440)return Math.floor(dif/60)+' 小时前';
@@ -664,7 +665,7 @@ export async function loadDashboardBoards(){
   const requestId=++dashboardBoardsRequestSequence, revision=getRangeRevision('dashboard'), r=getCurrentRange('dashboard');
   const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const [gscResult,adsResult]=await Promise.allSettled([
-    API.get(withRange('/api/google/gsc/summary',r)),
+    API.get(withSite(withRange('/api/google/gsc/summary',r))),
     API.get(withRange('/api/google/ads/board',r))
   ]);
   if(requestId!==dashboardBoardsRequestSequence||revision!==getRangeRevision('dashboard'))return false;
@@ -688,7 +689,7 @@ export async function loadDashboardBoards(){
 }
 export async function loadDiagnostics(){
   let d=null;
-  try{ d=await API.get(withRange('/api/diagnostics','data')); }catch(e){ d={error:e}; }
+  try{ d=await API.get(withSite(withRange('/api/diagnostics','data'))); }catch(e){ d={error:e}; }
   renderDiagnostics(d);
 }
 function renderDiagnostics(d){

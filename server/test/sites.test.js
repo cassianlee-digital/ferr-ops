@@ -241,3 +241,63 @@ test('从账号里列出能选的资源：两个来源互不拖累，失败的�
   assert.match(found.ga4.error, /Admin API/, '接口没开通：把谷歌给的原因原样带回，界面上照样可以手填编号');
   assert.equal((await call('seo', 'GET', '/api/google/discover')).statusCode, 403);
 });
+
+test('看板按所选站点取数：只有这个站点的；没配 GA4 的站点是「没有数据」，不是所有站点加在一起；站点不存在要报错', async () => {
+  // 此时：站点 1 = ferrcasting（默认），站点 2 = bestflowfitting（上面同步进来 25010 次点击）
+  db.prepare("INSERT INTO gsc_daily (date, site_url, clicks, impressions, ctr, position) VALUES ('2026-09-01', 'sc-domain:ferrcasting.com', 7, 70, 0.1, 9)").run();
+  db.prepare("INSERT INTO ga4_daily (date, property_id, active_users, sessions, page_views) VALUES ('2026-09-01', '508026067', 40, 50, 90)").run();
+  db.prepare("INSERT INTO ga4_daily (date, property_id, active_users, sessions, page_views) VALUES ('2026-09-01', '435505484', 3, 4, 5)").run();
+  const power = (await call('boss', 'POST', '/api/google/projects', { name: 'FERR-电力', gsc_site_url: 'sc-domain:ferrpowerfittings.com' })).json().project;
+  const q = '&start_date=2026-09-01&end_date=2026-09-01';
+  const get = async (url) => { const r = await call('seo', 'GET', url); return { status: r.statusCode, body: r.json() }; };
+
+  // 不指定站点 = 默认站点
+  assert.equal((await get('/api/google/gsc/summary?x=1' + q)).body.totals.clicks, 7);
+  assert.equal((await get('/api/google/gsc/summary?project_id=2' + q)).body.totals.clicks, 25010);
+  assert.equal((await get('/api/google/seo/board?project_id=2' + q)).body.totals.clicks, 25010);
+  assert.equal((await get('/api/google/seo/board?project_id=1' + q)).body.totals.clicks, 7);
+  // GA4：各站点各自的媒体资源
+  assert.equal((await get('/api/ga4/overview?project_id=2' + q)).body.metrics.sessions, 50);
+  assert.equal((await get('/api/ga4/overview?project_id=1' + q)).body.metrics.sessions, 4);
+  // 电力站没配 GA4：以前「没给资源 = 不过滤」，会把另外两个站的 54 次会话算成它的
+  const noGa4 = (await get(`/api/ga4/overview?project_id=${power.id}` + q)).body;
+  assert.ok(!noGa4.metrics || !noGa4.metrics.sessions, '没配 GA4 的站点不能显示别的站点的会话：' + JSON.stringify(noGa4.metrics));
+  assert.ok(!(await get(`/api/google/gsc/summary?project_id=${power.id}` + q)).body.totals.clicks, '还没同步过的站点没有点击');
+  // 新鲜度：各站点各看各的
+  const fresh = (await get(`/api/data-freshness?project_id=2` + q)).body;
+  assert.equal(fresh.gsc.daysWithData, 1);
+  assert.equal(fresh.ga4.daysWithData, 1);
+  const freshPower = (await get(`/api/data-freshness?project_id=${power.id}` + q)).body;
+  assert.deepEqual([freshPower.gsc.daysWithData, freshPower.ga4.daysWithData, freshPower.gsc.lastSync], [0, 0, null]);
+  // 诊断、GEO 同样按站点
+  assert.equal((await get('/api/diagnostics?project_id=1' + q)).status, 200);
+  assert.equal((await get('/api/geo/summary?project_id=2' + q)).body.totals.sessions != null, true);
+  // 站点已经不存在（被停用）：明确报错，不能悄悄换成「全部」或默认站点
+  for (const url of ['/api/google/gsc/summary', '/api/google/seo/board', '/api/ga4/overview', '/api/diagnostics', '/api/data-freshness', '/api/geo/summary']) {
+    assert.equal((await get(url + '?project_id=99999' + q)).status, 400, url);
+  }
+});
+
+test('前端：按网站算的取数点都带上了当前站点；按账户 / 部门算的没有带', async () => {
+  const { readFileSync } = await import('node:fs');
+  const read = (rel) => readFileSync(new URL('../../' + rel, import.meta.url), 'utf8');
+  const charts = read('public/src/charts.js');
+  for (const api of ['google/gsc/summary', 'google/seo/board', 'diagnostics', 'data-freshness']) {
+    const all = charts.split("'/api/" + api + "'").length - 1;
+    const wrapped = charts.split("withSite(withRange('/api/" + api + "'").length - 1;
+    assert.ok(all > 0 && all === wrapped, api + '：' + all + ' 处取数里只有 ' + wrapped + ' 处带了站点。漏带的那处永远显示默认站点的数据');
+  }
+  assert.match(read('public/src/ga4-view.js'), /withSite\(withRange\('\/api\/ga4\/overview'/);
+  assert.match(read('public/src/geo.js'), /withSite\(withRange\('\/api\/geo\/summary'/);
+  // 广告是整个账户的、询盘归因是部门口径：带上站点也不会变，反而让人以为它们按站点分了
+  for (const api of ['google/ads/summary', 'google/ads/board', 'attribution']) {
+    assert.equal(charts.includes("withSite(withRange('/api/" + api + "'"), false, api);
+  }
+  // 两个页面上各有一个选择器入口，旁边带着「哪些不随站点变」的说明
+  const html = read('public/index.html');
+  assert.equal(html.split('data-site-select').length - 1, 2);
+  assert.equal(html.split('data-site-note="').length - 1, 2);
+  // 启动时先定下当前站点，再取按站点算的数据（否则会先显示默认站点的数，再跳成所选站点的）
+  const app = read('public/src/app.js');
+  assert.ok(app.indexOf('await loadSiteScope()') !== -1 && app.indexOf('await loadSiteScope()') < app.indexOf('loadDashboardBoards();'));
+});

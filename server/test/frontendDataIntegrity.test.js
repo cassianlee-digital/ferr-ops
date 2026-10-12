@@ -129,13 +129,13 @@ test('every dated consumer names its own page scope and rejects stale responses'
   assert.match(kpiViewSource, /const scope=activeScope\(\)/); // 顶栏 KPI 跟随「当前所在页面」
   assert.match(settingsSource, /API\.put\(withRange\('\/api\/kpi-targets','kpi'\)/);
   assert.match(chartsSource, /r=getCurrentRange\('dashboard'\)/);
-  assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/gsc\/summary',r\)\)/);
+  assert.match(chartsSource, /API\.get\(withSite\(withRange\('\/api\/google\/gsc\/summary',r\)\)\)/);
   assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/ads\/board',r\)\)/);
   assert.match(chartsSource, /await fetchInquiries\('dashboard'\)/);
   assert.match(chartsSource, /await fetchInquiries\('kpi'\)/); // KPI 圆环自带取数，不蹭询盘页缓存
-  assert.match(chartsSource, /API\.get\(withRange\('\/api\/google\/seo\/board','data'\)\)/);
-  assert.match(chartsSource, /API\.get\(withRange\('\/api\/diagnostics','data'\)\)/);
-  assert.match(ga4Source, /API\.get\(withRange\('\/api\/ga4\/overview','data'\)\)/);
+  assert.match(chartsSource, /API\.get\(withSite\(withRange\('\/api\/google\/seo\/board','data'\)\)\)/);
+  assert.match(chartsSource, /API\.get\(withSite\(withRange\('\/api\/diagnostics','data'\)\)\)/);
+  assert.match(ga4Source, /API\.get\(withSite\(withRange\('\/api\/ga4\/overview','data'\)\)\)/);
   assert.match(chartsSource, /requestId!==dashboardBoardsRequestSequence\|\|revision!==getRangeRevision\('dashboard'\)/);
   assert.match(chartsSource, /requestId!==dashboardInqRequestSequence\|\|revision!==getRangeRevision\('dashboard'\)/);
   assert.match(chartsSource, /loadDashboardInq\(\);[\s\S]*loadDashboardBoards\(\);/);

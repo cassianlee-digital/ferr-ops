@@ -78,6 +78,11 @@ export async function geoRoutes(app) {
     const { range, error } = parseDateRange(request.query || {});
     if (error) return reply.code(400).send({ error: 'bad_date_range', detail: error });
     if (!range) return reply.code(400).send({ error: 'bad_date_range', detail: 'start_date 和 end_date 必填' });
-    return buildGeoSummary(range, request.query || {}); // 组装在 services/geoData.js，周度审核包也用同一份
+    try {
+      return buildGeoSummary(range, request.query || {}); // 组装在 services/geoData.js，周度审核包也用同一份
+    } catch (e) {
+      if (e.message === 'google_project_not_found') return reply.code(400).send({ error: e.message, detail: '选的站点已经不存在（可能被停用了），请重新选择站点' });
+      throw e;
+    }
   });
 }

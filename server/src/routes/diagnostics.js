@@ -1,7 +1,7 @@
 // 诊断引擎路由：基于已同步真实数据跑规则，返回结构化 findings（机会词/蚕食/衰退/点击率偏低/高花费零有效）。
 import { requireAuth } from '../auth/middleware.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
-import { normalizeRange, resolveProject } from '../sync/googleClient.js';
+import { normalizeRange, readScope, resolveProject } from '../sync/googleClient.js';
 import { previousRange } from '../lib/parseDateRange.js';
 import { CTR_RULE, findCtrAnomalies } from '../services/ctrAnomaly.js';
 
@@ -10,7 +10,7 @@ export async function diagnosticsRoutes(app) {
     try {
       const project = resolveProject(request.query || {});
       const range = normalizeRange(request.query || {});
-      const gsc = { ...range, gsc_site_url: project.gsc_site_url };
+      const gsc = { ...range, gsc_site_url: readScope(project).gsc_site_url };
       const ads = { ...range, ads_customer_id: project.ads_customer_id };
       const prev = previousRange(range);
 

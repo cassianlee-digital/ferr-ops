@@ -24,6 +24,7 @@
 - **app.js 里仍靠隐式全局解析的只剩 16 个**(已审计,零漏网):`api.js` 的 `API`/`ensureAuth`/`can`/`ME`,以及 `hermes.js` 自己挂 window 的 14 个面板函数(`openHermesPanel`/`sendHermesPrompt` 等)。这两个经典脚本在 `bundle.js` **之前**加载,故运行时一定就绪。
 - **隐形风险降级但没消失**:经典脚本裸引用同样对打包器/静态分析隐形,改名依旧**没有编译期报错**。但排查方式变了 —— **改前端函数名前该 grep 的是 3 个经典脚本**(`hermes.js`/`api.js`/`login.js`),**不再是 `onclick=`**;`data-ui-action` 的动作名由 `app.js` 的 `STATIC_UI_ACTIONS` 表集中分发,改名会在表里露出来(且有测试校验 HTML 里每个动作都已注册)。
 - ~~已知死代码 `renderLoopbars()` + `LOOP`~~ **已于 2026-10-10 删除**(`.loopbar` 元素早就不在 HTML 里)。`base.css` 里 `.loopbar` / `.loopstep` 几条样式因此成了死样式,没动。
+- **当前站点是全后台一个,不是每页各存各的**(2026-10-12,`public/src/site-scope.js`):和下面的时间范围正相反 —— 细节与理由见 `docs/modules/google-sync-and-boards.md` 的多站点一节。
 - **时间范围已改成「每个页面各存各的」**(2026-08-26,`public/src/timerange.js` 重写):以前全站共用一个 `window._timeRange`,在询盘页点「近一年」,数据看板也跟着变成近一年。
   现按 **scope** 隔离:`dashboard / kpi / inquiry / data / fix`,各自一份 label+range+revision,各自 `localStorage`(`ferr:timeRange:<scope>` / `ferr:customRange:<scope>`;老的全站单 key 只在首次加载时读一次做迁移)。
   - **scope 来自 HTML 上的 `[data-time][data-scope]`,不靠 DOM 推导** —— GA4 面板会被 `mountGa4IntoData()` 搬进数据看板,`closest('.panel')` 会推错;GA4 与数据看板**共用 `data`**(同一屏两个互不相干的时间条会误导人)。

@@ -104,6 +104,7 @@
       <!-- ============ 总览 ============ -->
       <div class="panel active" id="panel-dashboard">
         <div class="page-head"><div><div class="page-title">运营总览</div><div class="page-sub">询盘 · SEO · SEM 三块趋势一眼掌握</div></div></div>
+        <div class="site-select-bar is-hidden" data-site-select data-site-note="SEO 小看板和 GEO 卡随站点切换；询盘、考核、SEM 是部门 / 账户口径，不随站点变。"></div>
         <div class="timebar-inline" data-time data-scope="dashboard" data-gran="day,week,month"></div>
         <div class="grid32">
           <div class="card"><div class="card-head"><span class="card-title" id="overviewKpiTitle">所选区间 KPI 考核总分</span><span class="card-link" data-ui-action="go" data-tab="kpi">查看明细 →</span></div>
@@ -250,6 +251,8 @@
       <!-- ============ ③ 数据看板 ============ -->
       <div class="panel" id="panel-data">
         <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
+        <!-- 多站点：登记了两个以上站点时出现（public/src/site-scope.js）。只有一个站点时什么都不显示 -->
+        <div class="site-select-bar is-hidden" data-site-select data-site-note="SEO 看板、GA4 流量、诊断随站点切换。SEM 看板是整个广告账户的数据、GEO 抽查是全公司一份题库，不随站点变。"></div>
         <div class="timebar-inline" data-time data-scope="data" data-gran="week,month"></div>
         <!-- 阶段5：数据新鲜度条——三源实际有数据天数 + 最后同步时间，替代之前删掉的碎提示 -->
         <div id="dataFreshness" class="data-fresh"><span class="dim">数据新鲜度加载中…</span></div>

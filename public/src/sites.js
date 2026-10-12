@@ -227,6 +227,7 @@ async function onSubmit(ev) {
     else await window.API.post('/api/google/projects', body);
     toast(form.dataset.id ? '已保存' : '站点已添加。点「补 ' + BACKFILL_DAYS + ' 天历史」把它的数据取进来');
     editing = null; found = null; // 候选里的「已登记在…」变了，下次打开重新取
+    document.dispatchEvent(new CustomEvent('siteschanged'));
     await loadSites();
   } catch (e) {
     // 哪个字段不对、和哪个站点冲突，由后端说；留在表单里让人直接改
@@ -276,6 +277,7 @@ async function onClick(ev) {
       else await window.API.del('/api/google/projects/' + id);
       toast(action === 'default' ? '已设为默认站点' : '已停用');
       found = null;
+      document.dispatchEvent(new CustomEvent('siteschanged'));
     } catch (e) { toast('没有完成：' + failText(e)); }
     await loadSites();
   }

@@ -17,6 +17,7 @@ import { loadGeo } from './geo.js';
 import { pickGeoShot, submitGeoCheck } from './geo-checks.js';
 import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
 import { loadSites } from './sites.js';
+import { loadSiteScope } from './site-scope.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
 import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
@@ -400,6 +401,7 @@ window.addEventListener('load',async()=>{
   charts();
   bindSettings();              // 设置页目标值回写
   renderSparklines();
+  await loadSiteScope();       // 多站点：先定下「当前看哪个站点」，后面按站点算的取数才带得上它
   loadDashboardInq();          // 总览询盘趋势按当前时间范围重算。排在 hydrate 前面发出：与询盘列表同范围时共用一次请求
   await hydrate();             // 询盘/否词/广告/排名快照
   loadDashboardBoards();       // 总览 SEO/SEM 两卡按当前时间范围重算

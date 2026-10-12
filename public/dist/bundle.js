@@ -467,6 +467,99 @@
     toast2(SCOPE_LABEL[scope] + " \u5DF2\u5E94\u7528\uFF1A" + cur.range.period_label);
   }
 
+  // public/src/site-scope.js
+  var LS_KEY = "ferr:site";
+  var SCOPES_BY_SITE = ["data", "dashboard"];
+  var sites = [];
+  var current = null;
+  var bound = false;
+  var defaultSite = () => sites.find((s) => s.is_default) || sites[0] || null;
+  var currentSite = () => sites.find((s) => s.id === current) || null;
+  var viewingOtherSite = () => {
+    const d = defaultSite();
+    return !!(d && current != null && current !== d.id);
+  };
+  var defaultSiteName = () => defaultSite() ? defaultSite().name : "";
+  function withSite(path) {
+    if (current == null) return path;
+    return path + (path.includes("?") ? "&" : "?") + "project_id=" + encodeURIComponent(current);
+  }
+  function remembered() {
+    try {
+      const v = Number(localStorage.getItem(LS_KEY));
+      return Number.isInteger(v) && v > 0 ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function render() {
+    document.querySelectorAll("[data-site-select]").forEach((box) => {
+      box.textContent = "";
+      box.classList.toggle("is-hidden", sites.length < 2);
+      if (sites.length < 2) return;
+      const label = document.createElement("label");
+      label.className = "site-select";
+      const text2 = document.createElement("span");
+      text2.textContent = "\u7AD9\u70B9";
+      const select = document.createElement("select");
+      select.className = "site-select-input";
+      for (const s of sites) {
+        const o = document.createElement("option");
+        o.value = String(s.id);
+        o.textContent = s.name + (s.is_default ? "\uFF08\u9ED8\u8BA4\uFF09" : "");
+        select.appendChild(o);
+      }
+      select.value = String(current);
+      label.appendChild(text2);
+      label.appendChild(select);
+      box.appendChild(label);
+      if (box.dataset.siteNote) {
+        const note = document.createElement("span");
+        note.className = "site-select-note";
+        note.textContent = box.dataset.siteNote;
+        box.appendChild(note);
+      }
+    });
+  }
+  function choose(id) {
+    if (!sites.some((s) => s.id === id) || id === current) return;
+    current = id;
+    try {
+      localStorage.setItem(LS_KEY, String(id));
+    } catch (e) {
+    }
+    render();
+    for (const scope of SCOPES_BY_SITE) refreshRangeConsumers(scope);
+    toast2("\u5F53\u524D\u7AD9\u70B9\uFF1A" + currentSite().name);
+  }
+  async function loadSiteScope() {
+    if (!bound) {
+      document.addEventListener("change", (e) => {
+        const select = e.target.closest && e.target.closest(".site-select-input");
+        if (select) choose(Number(select.value));
+      });
+      document.addEventListener("siteschanged", () => {
+        loadSiteScope();
+      });
+      bound = true;
+    }
+    let list;
+    try {
+      list = (await window.API.get("/api/google/projects")).sites || [];
+    } catch (e) {
+      return false;
+    }
+    sites = list;
+    const before = current;
+    const want = current != null ? current : remembered();
+    current = sites.some((s) => s.id === want) ? want : defaultSite() ? defaultSite().id : null;
+    render();
+    const servedBefore = before != null ? before : defaultSite() ? defaultSite().id : null;
+    const changed3 = servedBefore !== current;
+    if (changed3) for (const scope of SCOPES_BY_SITE) refreshRangeConsumers(scope);
+    return changed3;
+  }
+
   // public/src/ai.js
   var apiUnavailableMsg = '<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF1A\u8BF7\u68C0\u67E5\u540E\u53F0 AI Provider\u3001API Key \u4E0E\u6A21\u578B\u914D\u7F6E\uFF0C\u6216\u7A0D\u540E\u91CD\u8BD5\u3002</div>';
   var aiAnalyses = /* @__PURE__ */ new Map();
@@ -738,7 +831,7 @@
     aiViewIdx = -1;
     splitActionItems = [];
     lastAi = { text: "", dept: meta.dept, quality: null };
-    document.getElementById("aiModalTitle").textContent = meta.title;
+    document.getElementById("aiModalTitle").textContent = meta.title + (viewingOtherSite() ? "\uFF08\u6CE8\u610F\uFF1AAI \u76EE\u524D\u53EA\u8BFB\u9ED8\u8BA4\u7AD9\u70B9\u300C" + defaultSiteName() + "\u300D\u7684\u6570\u636E\uFF0C\u4E0D\u662F\u5F53\u524D\u6240\u9009\u7AD9\u70B9\uFF09" : "");
     document.getElementById("aiModalBody").innerHTML = '<div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7ED3\u5408\u5F53\u524D\u9875\u9762\u6570\u636E\u548C\u5E02\u573A\u8BB0\u5FC6\u5206\u6790...</div>';
     document.getElementById("aiModalFoot").style.display = "none";
     if (btn) btn.disabled = true;
@@ -1047,7 +1140,7 @@
     const cur = getCurrentRange("data");
     let data3 = null, prev = null;
     try {
-      data3 = await API.get(withRange2("/api/google/gsc/summary", "data"));
+      data3 = await API.get(withSite(withRange2("/api/google/gsc/summary", "data")));
     } catch (e) {
       window._gscBoard = { error: e };
       renderSeoBoard();
@@ -1055,7 +1148,7 @@
     }
     if (cur) {
       try {
-        prev = await API.get(withRange2("/api/google/gsc/summary", _shiftRange(cur)));
+        prev = await API.get(withSite(withRange2("/api/google/gsc/summary", _shiftRange(cur))));
       } catch (e) {
         prev = null;
       }
@@ -1108,7 +1201,7 @@
       const e = document.getElementById(id);
       if (e) e.textContent = v;
     };
-    if (t) {
+    if (t && (data3.byDate || []).length) {
       _t("sb-clicks", (t.clicks || 0).toLocaleString());
       _t("sb-impr", (t.impressions || 0).toLocaleString());
       _t("sb-pos", t.position != null ? Number(t.position).toFixed(1) : "\u2014");
@@ -1222,7 +1315,7 @@
   async function loadSeoBoardFull() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/google/seo/board", "data"));
+      d = await API.get(withSite(withRange2("/api/google/seo/board", "data")));
     } catch (e) {
       d = { error: e };
     }
@@ -1873,7 +1966,7 @@
     if (!el5) return;
     let d = null;
     try {
-      d = await API.get(withRange2("/api/data-freshness", "data"));
+      d = await API.get(withSite(withRange2("/api/data-freshness", "data")));
     } catch (e) {
       el5.innerHTML = '<span class="dim">' + esc(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
       return;
@@ -1930,7 +2023,7 @@
       if (e) e.textContent = v;
     };
     const [gscResult, adsResult] = await Promise.allSettled([
-      API.get(withRange2("/api/google/gsc/summary", r)),
+      API.get(withSite(withRange2("/api/google/gsc/summary", r))),
       API.get(withRange2("/api/google/ads/board", r))
     ]);
     if (requestId !== dashboardBoardsRequestSequence || revision !== getRangeRevision("dashboard")) return false;
@@ -1955,7 +2048,7 @@
   async function loadDiagnostics() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/diagnostics", "data"));
+      d = await API.get(withSite(withRange2("/api/diagnostics", "data")));
     } catch (e) {
       d = { error: e };
     }
@@ -2821,8 +2914,8 @@
     if (event.key === "Tab") {
       event.preventDefault();
       const cells = [...table2.querySelectorAll("td[contenteditable]")];
-      const current = cells.indexOf(cell3);
-      const next = cells[current + (event.shiftKey ? -1 : 1)];
+      const current2 = cells.indexOf(cell3);
+      const next = cells[current2 + (event.shiftKey ? -1 : 1)];
       if (next) {
         cell3.blur();
         next.focus();
@@ -6978,7 +7071,7 @@
     const retry = document.getElementById("ga4-retry");
     if (retry) retry.disabled = true;
     try {
-      const data3 = await API.get(withRange("/api/ga4/overview", "data"));
+      const data3 = await API.get(withSite(withRange("/api/ga4/overview", "data")));
       if (requestId !== requestSequence) return;
       renderGa4(data3 || { connected: false });
     } catch (error) {
@@ -7622,7 +7715,7 @@
     body.textContent = "";
     body.appendChild(node);
   }
-  function render(card2, data3) {
+  function render2(card2, data3) {
     const label = card2.querySelector(".ledger-range");
     if (label) label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data3.range);
     const wrap = make("div");
@@ -7654,7 +7747,7 @@
     try {
       const data3 = await API.get(withRange2("/api/kpi/ledger"));
       if (requestId !== requestSequence2 || revision !== getRangeRevision()) return false;
-      render(card2, data3);
+      render2(card2, data3);
       loadedRevision = revision;
       return true;
     } catch (e) {
@@ -7893,9 +7986,9 @@
     const box = make2("div", "kpi-review-bands");
     box.appendChild(make2("div", "kpi-review-sub", "\u7EE9\u6548\u7CFB\u6570\u5206\u6863"));
     const row = make2("div", "kpi-review-band-row");
-    const current = s.score != null ? s.band : null;
+    const current2 = s.score != null ? s.band : null;
     for (const b of s.config.bands) {
-      const active = current && current.label === b.label;
+      const active = current2 && current2.label === b.label;
       const chip = make2("div", "kpi-review-band" + (active ? " on " + bandTone(b.coef) : ""));
       chip.title = b.note || "";
       chip.appendChild(make2("span", "kpi-review-band-range", "\u2265 " + b.min));
@@ -7932,7 +8025,7 @@
     box.appendChild(basis);
     return box;
   }
-  function render2(card2, data3) {
+  function render3(card2, data3) {
     latest = data3;
     hoistAboveLedger(card2);
     const label = card2.querySelector(".kpi-review-range");
@@ -7971,7 +8064,7 @@
     try {
       const data3 = await API.get(withRange2("/api/kpi/review", "kpi"));
       if (requestId !== requestSequence3 || revision !== getRangeRevision("kpi")) return false;
-      render2(card2, data3);
+      render3(card2, data3);
       loadedRevision2 = revision;
       return true;
     } catch (e) {
@@ -7995,7 +8088,7 @@
       if (next === activeScopeKey || !latest) return;
       activeScopeKey = next;
       const card2 = document.getElementById(CARD_ID2);
-      if (card2) render2(card2, latest);
+      if (card2) render3(card2, latest);
       return;
     }
     if (e.target.closest("[data-kpi-review-retry]")) loadKpiReview(true);
@@ -8867,7 +8960,7 @@
     ${auditBlockHtml(view)}
   </div>`;
   }
-  function render3(data3) {
+  function render4(data3) {
     const box = document.getElementById("plan-history");
     if (!box) return;
     const day = data3.day;
@@ -8909,7 +9002,7 @@
     box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc(day) + " \u7684\u8BB0\u5F55\u2026</div>";
     try {
       const data3 = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
-      render3(data3);
+      render4(data3);
     } catch (e) {
       box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
     }
@@ -9849,7 +9942,7 @@
     cellEl.textContent = String(Math.round(sum * 100) / 100);
     cellEl.classList.toggle("kra-sum-off", Math.abs(sum - 100) > 1e-3);
   }
-  function render4(host, cfg) {
+  function render5(host, cfg) {
     loaded = cfg;
     host.textContent = "";
     const wrap = make4("div", "kra");
@@ -9892,7 +9985,7 @@
     const host = document.getElementById(HOST_ID);
     if (!host) return false;
     try {
-      render4(host, await API.get("/api/kpi/review-config"));
+      render5(host, await API.get("/api/kpi/review-config"));
       return true;
     } catch (e) {
       if (e && e.message === "unauthorized") return false;
@@ -9945,7 +10038,7 @@
     if (btn) btn.disabled = true;
     try {
       const cfg = await API.put("/api/kpi/review-config", { config, bands, targets });
-      render4(host, cfg);
+      render5(host, cfg);
       loadKpiReview(true);
       toast2("\u8003\u6838\u65B9\u6848\u5DF2\u4FDD\u5B58 \xB7 KPI \u9875\u5DF2\u6309\u65B0\u65B9\u6848\u91CD\u7B97");
     } catch (e) {
@@ -10006,7 +10099,7 @@
     if (delPeriod) {
       const key = delPeriod.dataset.kraDelPeriod;
       try {
-        render4(host, await API.del("/api/kpi/review-targets/" + encodeURIComponent(key)));
+        render5(host, await API.del("/api/kpi/review-targets/" + encodeURIComponent(key)));
         toast2("\u5DF2\u5220\u9664 " + key + " \u7684\u5355\u72EC\u76EE\u6807 \xB7 \u8BE5\u6708\u56DE\u843D\u5230\u901A\u7528\u515C\u5E95");
       } catch (err) {
         toast2(err && err.status === 403 ? "\u65E0\u6743\u4FEE\u6539\u8003\u6838\u65B9\u6848" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
@@ -10050,7 +10143,7 @@
   var EFFECT_STATUS = { PARTIAL: "\u6570\u636E\u672A\u6EE1", PENDING: "\u5F85\u6570\u636E", NOT_SYNCED: "\u672A\u540C\u6B65", NO_DATA: "\u65E0\u6570\u636E" };
   var CURRENCY_LABEL = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
   var amounts = (a) => Object.entries(a || {}).map(([c, v]) => (CURRENCY_LABEL[c] || c) + " " + num2(v)).join(" \uFF5C ");
-  var bound = false;
+  var bound2 = false;
   var range = null;
   var person = "all";
   var pkg = null;
@@ -10463,7 +10556,7 @@
     aiList(c, "\u56E0\u4E3A\u7F3A\u6570\u636E\u800C\u4E0B\u4E0D\u4E86\u7ED3\u8BBA\u7684\u5730\u65B9", p.data_gaps, (x) => x);
     box.appendChild(c);
   }
-  function render5() {
+  function render6() {
     const root = $5("audit-body");
     root.textContent = "";
     renderSummary2(root);
@@ -10490,7 +10583,7 @@
       const [data3, ai] = await Promise.all([API.get("/api/audit/weekly?" + query()), API.get("/api/audit/weekly/ai?" + query()).catch(() => ({ item: null }))]);
       if (my !== seq3) return;
       pkg = data3;
-      render5();
+      render6();
       renderAi(ai.item);
     } catch (e) {
       if (my !== seq3 || e && e.message === "unauthorized") return;
@@ -10540,10 +10633,10 @@
     a.remove();
   }
   function bind() {
-    if (bound) return;
+    if (bound2) return;
     const panel = $5("panel-audit");
     if (!panel) return;
-    bound = true;
+    bound2 = true;
     panel.addEventListener("click", (e) => {
       const step = e.target.closest("[data-audit-week]");
       if (step) {
@@ -10587,7 +10680,7 @@
     if (!prev) return d ? "\u4E0A\u671F\u4E3A 0\uFF0C\u672C\u671F " + num3(cur) : "\u4E0E\u4E0A\u671F\u6301\u5E73";
     return "\u8F83\u4E0A\u671F " + (d > 0 ? "+" : "") + num3(d) + "\uFF08" + (d > 0 ? "+" : "") + Math.round(d / prev * 100) + "%\uFF09";
   }
-  function render6(data3) {
+  function render7(data3) {
     const body = $6("geo-body");
     body.textContent = "";
     const sub = $6("geo-range");
@@ -10663,8 +10756,8 @@
     if (!range2 || !range2.start_date) return;
     const my = ++seq4;
     try {
-      const data3 = await API.get(withRange2("/api/geo/summary", range2));
-      if (my === seq4) render6(data3);
+      const data3 = await API.get(withSite(withRange2("/api/geo/summary", range2)));
+      if (my === seq4) render7(data3);
     } catch (e) {
       if (my !== seq4 || e && e.message === "unauthorized") return;
       body.textContent = "";
@@ -10690,7 +10783,7 @@
     if (text2 != null) n.textContent = String(text2);
     return n;
   }
-  var bound2 = false;
+  var bound3 = false;
   var round = "";
   var questions = [];
   var data = null;
@@ -10871,10 +10964,10 @@
     loadGeoChecks();
   }
   function bind2() {
-    if (bound2) return;
+    if (bound3) return;
     const panel = $7("sub-data-geo");
     if (!panel) return;
-    bound2 = true;
+    bound3 = true;
     panel.addEventListener("click", async (e) => {
       const cell3 = e.target.closest("[data-geo-question]");
       if (cell3) {
@@ -10986,14 +11079,14 @@
   var data2 = null;
   var found = null;
   var editing5 = null;
-  var bound3 = false;
+  var bound4 = false;
   async function loadSites() {
     const box = $8("sites-box");
     if (!box) return;
-    if (!bound3) {
+    if (!bound4) {
       box.addEventListener("click", onClick);
       box.addEventListener("submit", onSubmit);
-      bound3 = true;
+      bound4 = true;
     }
     try {
       data2 = await window.API.get("/api/google/projects");
@@ -11002,7 +11095,7 @@
       box.appendChild(h("div", "sites-error", "\u7AD9\u70B9\u5217\u8868\u8BFB\u53D6\u5931\u8D25\uFF1A" + failText5(e)));
       return;
     }
-    render7();
+    render8();
   }
   function localTime2(utc) {
     const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
@@ -11061,10 +11154,10 @@
     row.appendChild(acts);
     return row;
   }
-  function render7() {
+  function render8() {
     const box = $8("sites-box");
     box.textContent = "";
-    const sites = data2.sites || [];
+    const sites2 = data2.sites || [];
     if (data2.env_site) {
       const e = data2.env_site;
       box.appendChild(h(
@@ -11072,17 +11165,17 @@
         "sites-tip",
         "\u8FD8\u6CA1\u6709\u767B\u8BB0\u7AD9\u70B9\u3002\u540E\u53F0\u73B0\u5728\u7528\u7684\u662F\u670D\u52A1\u5668\u914D\u7F6E\u91CC\u7684\u8FD9\u4E00\u4E2A\uFF1A" + (e.domain || e.gsc_site_url || "GA4 " + e.ga4_property_id) + "\u3002\u6DFB\u52A0\u7B2C\u4E8C\u4E2A\u7AD9\u70B9\u65F6\uFF0C\u5B83\u4F1A\u81EA\u52A8\u767B\u8BB0\u6210\u9ED8\u8BA4\u7AD9\u70B9\uFF0C\u73B0\u6709\u6570\u636E\u548C\u770B\u677F\u90FD\u4E0D\u53D7\u5F71\u54CD\u3002"
       ));
-    } else if (!sites.length) {
+    } else if (!sites2.length) {
       box.appendChild(h("div", "sites-tip", "\u8FD8\u6CA1\u6709\u767B\u8BB0\u7AD9\u70B9\uFF0C\u670D\u52A1\u5668\u4E0A\u4E5F\u6CA1\u6709\u914D\u7F6E\u9ED8\u8BA4\u7AD9\u70B9\u3002"));
     }
-    for (const site of sites) {
+    for (const site of sites2) {
       box.appendChild(editing5 === site.id ? formEl(site) : siteRow(site));
     }
     if (editing5 === "new") box.appendChild(formEl(null));
     else if (canManage()) {
       const add = actionBtn("new", 0, "\uFF0B \u6DFB\u52A0\u7AD9\u70B9", "btn-ghost sites-add");
       box.appendChild(add);
-    } else if (!sites.length) {
+    } else if (!sites2.length) {
       box.appendChild(h("div", "sites-tip dim", "\u6DFB\u52A0\u7AD9\u70B9\u9700\u8981\u7ECF\u7406\u6216\u8001\u677F\u8D26\u53F7\u3002"));
     }
   }
@@ -11160,7 +11253,7 @@
   }
   async function openForm(target) {
     editing5 = target;
-    render7();
+    render8();
     if (found) return;
     try {
       found = await window.API.get("/api/google/discover");
@@ -11169,7 +11262,7 @@
     }
     const typed = readForm($8("sites-box").querySelector(".sites-form"));
     if (editing5 !== target) return;
-    render7();
+    render8();
     const form = $8("sites-box").querySelector(".sites-form");
     if (form && typed) for (const [k, v] of Object.entries(typed)) form.elements[k].value = v;
   }
@@ -11194,6 +11287,7 @@
       toast2(form.dataset.id ? "\u5DF2\u4FDD\u5B58" : "\u7AD9\u70B9\u5DF2\u6DFB\u52A0\u3002\u70B9\u300C\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2\u300D\u628A\u5B83\u7684\u6570\u636E\u53D6\u8FDB\u6765");
       editing5 = null;
       found = null;
+      document.dispatchEvent(new CustomEvent("siteschanged"));
       await loadSites();
     } catch (e) {
       errEl.textContent = "\u6CA1\u6709\u4FDD\u5B58\uFF1A" + failText5(e);
@@ -11233,7 +11327,7 @@
     if (action === "edit") return openForm(Number(id));
     if (action === "cancel") {
       editing5 = null;
-      return render7();
+      return render8();
     }
     if (action === "sync") return runSync(btn, id, null);
     if (action === "backfill") return runSync(btn, id, BACKFILL_DAYS);
@@ -11244,6 +11338,7 @@
         else await window.API.del("/api/google/projects/" + id);
         toast2(action === "default" ? "\u5DF2\u8BBE\u4E3A\u9ED8\u8BA4\u7AD9\u70B9" : "\u5DF2\u505C\u7528");
         found = null;
+        document.dispatchEvent(new CustomEvent("siteschanged"));
       } catch (e) {
         toast2("\u6CA1\u6709\u5B8C\u6210\uFF1A" + failText5(e));
       }
@@ -11283,7 +11378,7 @@
       return u || "";
     }
   }
-  var bound4 = false;
+  var bound5 = false;
   var month = "";
   var options = null;
   var loadSeq = 0;
@@ -11645,10 +11740,10 @@
   var submitBacklink = (btn) => submitForm("backlink", btn);
   var submitExpense = (btn) => submitForm("expense", btn);
   function bind3() {
-    if (bound4) return;
+    if (bound5) return;
     const panel = $9("panel-spend");
     if (!panel) return;
-    bound4 = true;
+    bound5 = true;
     panel.addEventListener("click", async (e) => {
       const step = e.target.closest("[data-spend-month]");
       if (step) {
@@ -12197,6 +12292,7 @@
     charts();
     bindSettings();
     renderSparklines();
+    await loadSiteScope();
     loadDashboardInq();
     await hydrate();
     loadDashboardBoards();
