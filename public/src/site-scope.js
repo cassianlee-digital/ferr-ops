@@ -39,30 +39,34 @@ function remembered() {
 }
 
 function render() {
-  document.querySelectorAll('[data-site-select]').forEach((box) => {
-    box.textContent = '';
-    box.classList.toggle('is-hidden', sites.length < 2);
+  document.querySelectorAll('[data-site-select]').forEach((bar) => {
+    bar.textContent = '';
+    bar.classList.toggle('is-hidden', sites.length < 2);
     if (sites.length < 2) return;
-    const label = document.createElement('label');
-    label.className = 'site-select';
-    const text = document.createElement('span');
-    text.textContent = '站点';
-    const select = document.createElement('select');
-    select.className = 'site-select-input';
+    const label = document.createElement('span');
+    label.className = 'tlabel';
+    const icon = document.createElement('i'); icon.className = 'ti ti-world';
+    label.appendChild(icon); label.appendChild(document.createTextNode(' 站点'));
+    bar.appendChild(label);
     for (const s of sites) {
-      const o = document.createElement('option');
-      o.value = String(s.id);
-      o.textContent = s.name + (s.is_default ? '（默认）' : '');
-      select.appendChild(o);
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'trange site-chip' + (s.id === current ? ' active' : '');
+      chip.dataset.siteId = String(s.id);
+      chip.setAttribute('aria-pressed', s.id === current ? 'true' : 'false');
+      chip.textContent = s.name;
+      if (s.is_default) { const tag = document.createElement('span'); tag.className = 'site-chip-tag'; tag.textContent = '默认'; chip.appendChild(tag); }
+      if (s.domain && s.domain !== s.name) chip.title = s.domain;
+      bar.appendChild(chip);
     }
-    select.value = String(current);
-    label.appendChild(text); label.appendChild(select);
-    box.appendChild(label);
-    if (box.dataset.siteNote) {
+    // 哪些不随站点变：短的一句放在行尾，完整的说明在悬停提示里
+    if (bar.dataset.siteNote) {
       const note = document.createElement('span');
-      note.className = 'site-select-note';
-      note.textContent = box.dataset.siteNote;
-      box.appendChild(note);
+      note.className = 'site-bar-note';
+      note.title = bar.dataset.siteNoteFull || bar.dataset.siteNote;
+      const info = document.createElement('i'); info.className = 'ti ti-info-circle';
+      note.appendChild(info); note.appendChild(document.createTextNode(' ' + bar.dataset.siteNote));
+      bar.appendChild(note);
     }
   });
 }
@@ -80,9 +84,9 @@ function choose(id) {
    返回 true = 当前站点变了（调用方不用管，取数已经重新触发）。 */
 export async function loadSiteScope() {
   if (!bound) {
-    document.addEventListener('change', (e) => {
-      const select = e.target.closest && e.target.closest('.site-select-input');
-      if (select) choose(Number(select.value));
+    document.addEventListener('click', (e) => {
+      const chip = e.target.closest && e.target.closest('.site-chip');
+      if (chip) choose(Number(chip.dataset.siteId));
     });
     document.addEventListener('siteschanged', () => { loadSiteScope(); });
     bound = true;

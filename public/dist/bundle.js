@@ -494,31 +494,42 @@
     }
   }
   function render() {
-    document.querySelectorAll("[data-site-select]").forEach((box) => {
-      box.textContent = "";
-      box.classList.toggle("is-hidden", sites.length < 2);
+    document.querySelectorAll("[data-site-select]").forEach((bar) => {
+      bar.textContent = "";
+      bar.classList.toggle("is-hidden", sites.length < 2);
       if (sites.length < 2) return;
-      const label = document.createElement("label");
-      label.className = "site-select";
-      const text2 = document.createElement("span");
-      text2.textContent = "\u7AD9\u70B9";
-      const select = document.createElement("select");
-      select.className = "site-select-input";
+      const label = document.createElement("span");
+      label.className = "tlabel";
+      const icon = document.createElement("i");
+      icon.className = "ti ti-world";
+      label.appendChild(icon);
+      label.appendChild(document.createTextNode(" \u7AD9\u70B9"));
+      bar.appendChild(label);
       for (const s of sites) {
-        const o = document.createElement("option");
-        o.value = String(s.id);
-        o.textContent = s.name + (s.is_default ? "\uFF08\u9ED8\u8BA4\uFF09" : "");
-        select.appendChild(o);
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "trange site-chip" + (s.id === current ? " active" : "");
+        chip.dataset.siteId = String(s.id);
+        chip.setAttribute("aria-pressed", s.id === current ? "true" : "false");
+        chip.textContent = s.name;
+        if (s.is_default) {
+          const tag = document.createElement("span");
+          tag.className = "site-chip-tag";
+          tag.textContent = "\u9ED8\u8BA4";
+          chip.appendChild(tag);
+        }
+        if (s.domain && s.domain !== s.name) chip.title = s.domain;
+        bar.appendChild(chip);
       }
-      select.value = String(current);
-      label.appendChild(text2);
-      label.appendChild(select);
-      box.appendChild(label);
-      if (box.dataset.siteNote) {
+      if (bar.dataset.siteNote) {
         const note = document.createElement("span");
-        note.className = "site-select-note";
-        note.textContent = box.dataset.siteNote;
-        box.appendChild(note);
+        note.className = "site-bar-note";
+        note.title = bar.dataset.siteNoteFull || bar.dataset.siteNote;
+        const info = document.createElement("i");
+        info.className = "ti ti-info-circle";
+        note.appendChild(info);
+        note.appendChild(document.createTextNode(" " + bar.dataset.siteNote));
+        bar.appendChild(note);
       }
     });
   }
@@ -535,9 +546,9 @@
   }
   async function loadSiteScope() {
     if (!bound) {
-      document.addEventListener("change", (e) => {
-        const select = e.target.closest && e.target.closest(".site-select-input");
-        if (select) choose(Number(select.value));
+      document.addEventListener("click", (e) => {
+        const chip = e.target.closest && e.target.closest(".site-chip");
+        if (chip) choose(Number(chip.dataset.siteId));
       });
       document.addEventListener("siteschanged", () => {
         loadSiteScope();
@@ -8508,9 +8519,11 @@
       <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
       ${missing}${lastError}
     </div>
+    <div class="integ-acts">
     <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
     <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
     <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
+    </div>
   </div>`;
   }
   function bindGoogleProviderActions(box) {
@@ -11171,15 +11184,14 @@
     const p = (n) => String(n).padStart(2, "0");
     return p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
   }
-  function runText(provider, site) {
-    const label = PROVIDER_LABEL[provider];
-    if (provider === "gsc" ? !site.gsc_site_url : !site.ga4_property_id) return { text: label + "\uFF1A\u6CA1\u6709\u914D\u7F6E", cls: "sites-run dim" };
+  function runState(provider, site) {
+    if (provider === "gsc" ? !site.gsc_site_url : !site.ga4_property_id) return { state: "dim", text: "\u6CA1\u6709\u914D\u7F6E" };
     const run = site.runs && site.runs[provider];
-    if (!run) return { text: label + "\uFF1A\u8FD8\u6CA1\u540C\u6B65\u8FC7", cls: "sites-run warn" };
+    if (!run) return { state: "warn", text: "\u8FD8\u6CA1\u540C\u6B65\u8FC7" };
     const at = localTime2(run.finished_at || run.started_at);
-    if (run.status === "success") return { text: label + "\uFF1A" + at + " \u540C\u6B65\u6210\u529F \xB7 " + (run.rows_written || 0) + " \u884C\uFF08" + run.date_start + " ~ " + run.date_end + "\uFF09", cls: "sites-run ok" };
-    if (run.status === "failed") return { text: label + "\uFF1A" + at + " \u540C\u6B65\u5931\u8D25 \u2014\u2014 " + (run.error || "\u539F\u56E0\u672A\u77E5"), cls: "sites-run bad" };
-    return { text: label + "\uFF1A" + at + " \u5F00\u59CB\u540C\u6B65\uFF0C\u8FD8\u6CA1\u7ED3\u675F", cls: "sites-run dim" };
+    if (run.status === "success") return { state: "ok", text: at + " \u540C\u6B65\u6210\u529F \xB7 " + (run.rows_written || 0) + " \u884C \xB7 " + run.date_start + " ~ " + run.date_end };
+    if (run.status === "failed") return { state: "bad", text: at + " \u540C\u6B65\u5931\u8D25 \u2014\u2014 " + (run.error || "\u539F\u56E0\u672A\u77E5") };
+    return { state: "dim", text: at + " \u5F00\u59CB\u540C\u6B65\uFF0C\u8FD8\u6CA1\u7ED3\u675F" };
   }
   function actionBtn(action, id, text2, cls, title) {
     const b = h("button", cls || "btn-ghost", text2);
@@ -11189,35 +11201,46 @@
     if (title) b.title = title;
     return b;
   }
+  function kv(grid, label, text2, state2) {
+    grid.appendChild(h("span", "sites-k", label));
+    const v = h("span", "sites-v" + (state2 ? " is-" + state2 : ""));
+    if (state2) v.appendChild(h("i", "sites-dot"));
+    v.appendChild(document.createTextNode(text2));
+    grid.appendChild(v);
+  }
   function siteRow(site) {
     const row = h("div", "sites-row");
-    const main = h("div", "sites-main");
-    const head = h("div", "sites-name");
-    head.appendChild(h("b", "", site.name));
-    if (site.is_default) head.appendChild(h("span", "badge b-blue", "\u9ED8\u8BA4"));
-    if (site.company) head.appendChild(h("span", "badge b-gray", site.company));
-    main.appendChild(head);
-    main.appendChild(h("div", "sites-meta", [
-      site.domain || "\u57DF\u540D\u672A\u586B",
-      site.gsc_site_url ? "Search Console\uFF1A" + site.gsc_site_url : "\u6CA1\u6709 Search Console \u8D44\u6E90",
-      site.ga4_property_id ? "GA4\uFF1A" + site.ga4_property_id : "\u6CA1\u6709 GA4 \u5A92\u4F53\u8D44\u6E90"
-    ].join(" \xB7 ")));
+    const id = h("div", "sites-id");
+    id.appendChild(h("div", "sites-name", site.name));
+    if (site.domain && site.domain !== site.name) id.appendChild(h("div", "sites-domain", site.domain));
+    const tags = h("div", "sites-tags");
+    if (site.is_default) tags.appendChild(h("span", "badge b-blue", "\u9ED8\u8BA4"));
+    if (site.company) tags.appendChild(h("span", "badge b-gray", site.company));
+    if (tags.children.length) id.appendChild(tags);
+    row.appendChild(id);
+    const info = h("div", "sites-kv");
+    kv(info, "Search Console", site.gsc_site_url || "\u6CA1\u6709\u914D\u7F6E");
+    kv(info, "GA4 \u5A92\u4F53\u8D44\u6E90", site.ga4_property_id || "\u6CA1\u6709\u914D\u7F6E");
     for (const provider of ["gsc", "ga4"]) {
-      const r = runText(provider, site);
-      main.appendChild(h("div", r.cls, r.text));
+      const r = runState(provider, site);
+      kv(info, PROVIDER_LABEL[provider] + " \u540C\u6B65", r.text, r.state);
     }
-    row.appendChild(main);
+    row.appendChild(info);
     const acts = h("div", "sites-acts");
     if (site.gsc_site_url || site.ga4_property_id) {
-      acts.appendChild(actionBtn("sync", site.id, "\u7ACB\u5373\u540C\u6B65", "btn-primary", "\u540C\u6B65\u6700\u8FD1 7 \u5929"));
-      acts.appendChild(actionBtn("backfill", site.id, "\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2", "btn-ghost", "\u65B0\u52A0\u7684\u7AD9\u70B9\u3001\u6216\u56FE\u8868\u524D\u6BB5\u662F\u7A7A\u7684\u65F6\u5019\u7528\u3002\u5206\u6BB5\u53D6\uFF0C\u53EF\u80FD\u8981\u4E00\u4E24\u5206\u949F"));
+      const sync = h("div", "sites-sync");
+      sync.appendChild(actionBtn("sync", site.id, "\u7ACB\u5373\u540C\u6B65", "btn-primary", "\u540C\u6B65\u6700\u8FD1 7 \u5929"));
+      sync.appendChild(actionBtn("backfill", site.id, "\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2", "btn-ghost", "\u65B0\u52A0\u7684\u7AD9\u70B9\u3001\u6216\u56FE\u8868\u524D\u6BB5\u662F\u7A7A\u7684\u65F6\u5019\u7528\u3002\u5206\u6BB5\u53D6\uFF0C\u53EF\u80FD\u8981\u4E00\u4E24\u5206\u949F"));
+      acts.appendChild(sync);
     }
     if (canManage()) {
-      acts.appendChild(actionBtn("edit", site.id, "\u7F16\u8F91"));
+      const more = h("div", "sites-more");
+      more.appendChild(actionBtn("edit", site.id, "\u7F16\u8F91", "sites-link"));
       if (!site.is_default) {
-        acts.appendChild(actionBtn("default", site.id, "\u8BBE\u4E3A\u9ED8\u8BA4", "btn-ghost", "\u770B\u677F\u5728\u6CA1\u6709\u9009\u7AD9\u70B9\u65F6\u663E\u793A\u9ED8\u8BA4\u7AD9\u70B9\u7684\u6570\u636E"));
-        acts.appendChild(actionBtn("disable", site.id, "\u505C\u7528", "btn-ghost", "\u4E0D\u518D\u540C\u6B65\u3001\u4E0D\u518D\u51FA\u73B0\u5728\u9009\u62E9\u91CC\uFF1B\u5DF2\u540C\u6B65\u7684\u6570\u636E\u4FDD\u7559"));
+        more.appendChild(actionBtn("default", site.id, "\u8BBE\u4E3A\u9ED8\u8BA4", "sites-link", "\u770B\u677F\u5728\u6CA1\u6709\u9009\u7AD9\u70B9\u65F6\u663E\u793A\u9ED8\u8BA4\u7AD9\u70B9\u7684\u6570\u636E"));
+        more.appendChild(actionBtn("disable", site.id, "\u505C\u7528", "sites-link is-danger", "\u4E0D\u518D\u540C\u6B65\u3001\u4E0D\u518D\u51FA\u73B0\u5728\u9009\u62E9\u91CC\uFF1B\u5DF2\u540C\u6B65\u7684\u6570\u636E\u4FDD\u7559"));
       }
+      acts.appendChild(more);
     }
     row.appendChild(acts);
     return row;
@@ -11241,7 +11264,7 @@
     }
     if (editing5 === "new") box.appendChild(formEl(null));
     else if (canManage()) {
-      const add = actionBtn("new", 0, "\uFF0B \u6DFB\u52A0\u7AD9\u70B9", "btn-ghost sites-add");
+      const add = actionBtn("new", 0, "\uFF0B \u6DFB\u52A0\u7AD9\u70B9", "sites-add");
       box.appendChild(add);
     } else if (!sites2.length) {
       box.appendChild(h("div", "sites-tip dim", "\u6DFB\u52A0\u7AD9\u70B9\u9700\u8981\u7ECF\u7406\u6216\u8001\u677F\u8D26\u53F7\u3002"));
@@ -11255,7 +11278,7 @@
     return wrap;
   }
   function textInput(name, value, placeholder, listId) {
-    const i = h("input", "input");
+    const i = h("input");
     i.type = "text";
     i.name = name;
     i.value = value || "";
@@ -11285,7 +11308,7 @@
     form.appendChild(datalist("sites-ga4-options", ga4Items));
     const grid = h("div", "sites-grid");
     grid.appendChild(field2("\u7AD9\u70B9\u540D\u79F0", textInput("name", site && site.name, "\u6BD4\u5982\uFF1A\u8D1D\u5B5A\u7279-\u7BA1\u4EF6")));
-    const company2 = h("select", "input");
+    const company2 = h("select");
     company2.name = "company";
     const blank = h("option", "", "\u672A\u6807\u6CE8");
     blank.value = "";

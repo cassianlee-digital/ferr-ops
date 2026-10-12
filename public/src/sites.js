@@ -51,15 +51,15 @@ function localTime(utc) {
   return p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
-function runText(provider, site) {
-  const label = PROVIDER_LABEL[provider];
-  if (provider === 'gsc' ? !site.gsc_site_url : !site.ga4_property_id) return { text: label + '：没有配置', cls: 'sites-run dim' };
+// 一个数据源的同步状态：state 决定小圆点的颜色，text 是那一行字
+function runState(provider, site) {
+  if (provider === 'gsc' ? !site.gsc_site_url : !site.ga4_property_id) return { state: 'dim', text: '没有配置' };
   const run = site.runs && site.runs[provider];
-  if (!run) return { text: label + '：还没同步过', cls: 'sites-run warn' };
+  if (!run) return { state: 'warn', text: '还没同步过' };
   const at = localTime(run.finished_at || run.started_at);
-  if (run.status === 'success') return { text: label + '：' + at + ' 同步成功 · ' + (run.rows_written || 0) + ' 行（' + run.date_start + ' ~ ' + run.date_end + '）', cls: 'sites-run ok' };
-  if (run.status === 'failed') return { text: label + '：' + at + ' 同步失败 —— ' + (run.error || '原因未知'), cls: 'sites-run bad' };
-  return { text: label + '：' + at + ' 开始同步，还没结束', cls: 'sites-run dim' };
+  if (run.status === 'success') return { state: 'ok', text: at + ' 同步成功 · ' + (run.rows_written || 0) + ' 行 · ' + run.date_start + ' ~ ' + run.date_end };
+  if (run.status === 'failed') return { state: 'bad', text: at + ' 同步失败 —— ' + (run.error || '原因未知') };
+  return { state: 'dim', text: at + ' 开始同步，还没结束' };
 }
 
 function actionBtn(action, id, text, cls, title) {
@@ -69,36 +69,51 @@ function actionBtn(action, id, text, cls, title) {
   return b;
 }
 
+// 资源与状态用「标签 | 内容」两列对齐：四行一眼能扫完，不用在一长串灰字里找
+function kv(grid, label, text, state) {
+  grid.appendChild(h('span', 'sites-k', label));
+  const v = h('span', 'sites-v' + (state ? ' is-' + state : ''));
+  if (state) v.appendChild(h('i', 'sites-dot'));
+  v.appendChild(document.createTextNode(text));
+  grid.appendChild(v);
+}
+
 function siteRow(site) {
   const row = h('div', 'sites-row');
-  const main = h('div', 'sites-main');
-  const head = h('div', 'sites-name');
-  head.appendChild(h('b', '', site.name));
-  if (site.is_default) head.appendChild(h('span', 'badge b-blue', '默认'));
-  if (site.company) head.appendChild(h('span', 'badge b-gray', site.company));
-  main.appendChild(head);
-  main.appendChild(h('div', 'sites-meta', [
-    site.domain || '域名未填',
-    site.gsc_site_url ? 'Search Console：' + site.gsc_site_url : '没有 Search Console 资源',
-    site.ga4_property_id ? 'GA4：' + site.ga4_property_id : '没有 GA4 媒体资源',
-  ].join(' · ')));
-  for (const provider of ['gsc', 'ga4']) {
-    const r = runText(provider, site);
-    main.appendChild(h('div', r.cls, r.text));
-  }
-  row.appendChild(main);
 
+  const id = h('div', 'sites-id');
+  id.appendChild(h('div', 'sites-name', site.name));
+  // 站点名字就是域名时（自动登记的默认站点）不再重复写一遍域名
+  if (site.domain && site.domain !== site.name) id.appendChild(h('div', 'sites-domain', site.domain));
+  const tags = h('div', 'sites-tags');
+  if (site.is_default) tags.appendChild(h('span', 'badge b-blue', '默认'));
+  if (site.company) tags.appendChild(h('span', 'badge b-gray', site.company));
+  if (tags.children.length) id.appendChild(tags);
+  row.appendChild(id);
+
+  const info = h('div', 'sites-kv');
+  kv(info, 'Search Console', site.gsc_site_url || '没有配置');
+  kv(info, 'GA4 媒体资源', site.ga4_property_id || '没有配置');
+  for (const provider of ['gsc', 'ga4']) { const r = runState(provider, site); kv(info, PROVIDER_LABEL[provider] + ' 同步', r.text, r.state); }
+  row.appendChild(info);
+
+  // 操作区两行：上面是常用的两个同步按钮，下面是不常用的管理操作（不带边框的文字按钮）。
+  // 每一行站点的按钮个数不一样，叠成两行、宽度固定，各站点的这一列才对得齐
   const acts = h('div', 'sites-acts');
   if (site.gsc_site_url || site.ga4_property_id) {
-    acts.appendChild(actionBtn('sync', site.id, '立即同步', 'btn-primary', '同步最近 7 天'));
-    acts.appendChild(actionBtn('backfill', site.id, '补 ' + BACKFILL_DAYS + ' 天历史', 'btn-ghost', '新加的站点、或图表前段是空的时候用。分段取，可能要一两分钟'));
+    const sync = h('div', 'sites-sync');
+    sync.appendChild(actionBtn('sync', site.id, '立即同步', 'btn-primary', '同步最近 7 天'));
+    sync.appendChild(actionBtn('backfill', site.id, '补 ' + BACKFILL_DAYS + ' 天历史', 'btn-ghost', '新加的站点、或图表前段是空的时候用。分段取，可能要一两分钟'));
+    acts.appendChild(sync);
   }
   if (canManage()) {
-    acts.appendChild(actionBtn('edit', site.id, '编辑'));
+    const more = h('div', 'sites-more');
+    more.appendChild(actionBtn('edit', site.id, '编辑', 'sites-link'));
     if (!site.is_default) {
-      acts.appendChild(actionBtn('default', site.id, '设为默认', 'btn-ghost', '看板在没有选站点时显示默认站点的数据'));
-      acts.appendChild(actionBtn('disable', site.id, '停用', 'btn-ghost', '不再同步、不再出现在选择里；已同步的数据保留'));
+      more.appendChild(actionBtn('default', site.id, '设为默认', 'sites-link', '看板在没有选站点时显示默认站点的数据'));
+      more.appendChild(actionBtn('disable', site.id, '停用', 'sites-link is-danger', '不再同步、不再出现在选择里；已同步的数据保留'));
     }
+    acts.appendChild(more);
   }
   row.appendChild(acts);
   return row;
@@ -121,7 +136,7 @@ function render() {
   }
   if (editing === 'new') box.appendChild(formEl(null));
   else if (canManage()) {
-    const add = actionBtn('new', 0, '＋ 添加站点', 'btn-ghost sites-add');
+    const add = actionBtn('new', 0, '＋ 添加站点', 'sites-add');
     box.appendChild(add);
   } else if (!sites.length) {
     box.appendChild(h('div', 'sites-tip dim', '添加站点需要经理或老板账号。'));
@@ -137,7 +152,7 @@ function field(labelText, input, hint) {
   return wrap;
 }
 function textInput(name, value, placeholder, listId) {
-  const i = h('input', 'input');
+  const i = h('input');
   i.type = 'text'; i.name = name; i.value = value || ''; i.placeholder = placeholder || ''; i.autocomplete = 'off';
   if (listId) i.setAttribute('list', listId);
   return i;
@@ -166,7 +181,7 @@ function formEl(site) {
 
   const grid = h('div', 'sites-grid');
   grid.appendChild(field('站点名称', textInput('name', site && site.name, '比如：贝孚特-管件')));
-  const company = h('select', 'input');
+  const company = h('select');
   company.name = 'company';
   const blank = h('option', '', '未标注'); blank.value = '';
   company.appendChild(blank);

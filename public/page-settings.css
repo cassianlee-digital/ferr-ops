@@ -816,31 +816,80 @@ body.dark #sub-set-sop #sop-empty {
 body.dark .kra-readonly,body.dark .kra-sum-row td{background:#0f172a}
 body.dark .kra-input{background:#0b1220;border-color:#273142;color:#e5e7eb}
 
-/* ===== 站点管理（多站点，public/src/sites.js）===== */
-#sites-card{margin-bottom:16px}
-.sites-tip{padding:10px 12px;margin-bottom:10px;border-left:2px solid var(--blue);background:var(--blue-soft,#eff6ff);font-size:13px;line-height:1.7;color:var(--text2)}
-.sites-error{padding:12px;color:var(--red)}
-.sites-row{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;padding:12px 0;border-top:1px solid var(--border)}
-.sites-row:first-child{border-top:0}
-.sites-main{min-width:0;flex:1}
-.sites-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px}
-.sites-meta{margin-top:2px;font-size:12px;color:var(--text3);overflow-wrap:anywhere}
-.sites-run{margin-top:4px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
-.sites-run.ok{color:var(--text2)}
-.sites-run.warn{color:var(--amber)}
-.sites-run.bad{color:var(--red)}
-.sites-run.dim{color:var(--text3)}
-.sites-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:340px}
-.sites-add{margin-top:10px}
-.sites-form{margin-top:10px;padding:14px;border:1px solid var(--border);background:var(--bg2,#f8fafc)}
-.sites-form-title{font-weight:600;margin-bottom:10px}
+/* ===== 站点管理（多站点，public/src/sites.js）=====
+   一行 = 名称 | 资源与同步状态 | 操作，和下面「Google 授权与同步」的行用同一套栅格和颜色，两张卡上下对得齐。 */
+#sites-card{margin-bottom:14px}
+#sites-box{padding:0 16px 16px;background:#fff;container-type:inline-size}
+.sites-tip{margin:14px 0 2px;padding:10px 12px;border:1px solid var(--primary-soft);border-radius:var(--radius);background:var(--primary-soft);color:#4e5969;font-size:12px;line-height:1.7}
+.sites-tip.dim{border-color:#e5e8ef;background:#f7f8fa}
+.sites-error{padding:16px 0;color:var(--red)}
+
+.sites-row{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr) 196px;gap:14px;align-items:start;padding:14px 0;border-bottom:1px solid #eef1f5}
+.sites-id{min-width:0}
+.sites-name{color:#1f2329;font-size:13px;font-weight:500;line-height:1.5;overflow-wrap:anywhere}
+.sites-domain{margin-top:1px;color:#86909c;font-size:12px;overflow-wrap:anywhere}
+.sites-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+
+.sites-kv{display:grid;grid-template-columns:104px minmax(0,1fr);gap:3px 12px;font-size:12px;line-height:1.7}
+.sites-k{color:#86909c}
+.sites-v{color:#4e5969;overflow-wrap:anywhere}
+.sites-dot{display:inline-block;width:6px;height:6px;margin-right:7px;border-radius:50%;background:#c9cdd4;vertical-align:middle}
+.sites-v.is-ok .sites-dot{background:var(--green)}
+.sites-v.is-warn{color:#8a5a00}
+.sites-v.is-warn .sites-dot{background:var(--amber)}
+.sites-v.is-bad{color:var(--red)}
+.sites-v.is-bad .sites-dot{background:var(--red)}
+.sites-v.is-dim{color:#86909c}
+
+.sites-acts{display:flex;flex-direction:column;align-items:flex-end;gap:6px;white-space:nowrap}
+.sites-sync{display:flex;align-items:center;gap:8px}
+#sites-box .btn-primary,#sites-box .btn-ghost{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:var(--radius);font-size:12px;font-weight:400;white-space:nowrap}
+#sites-box .btn-ghost{border:1px solid #dfe3eb;background:#fff;color:#4e5969}
+#sites-box .btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+#sites-box button:disabled{opacity:.6;cursor:default}
+.sites-more{display:flex;align-items:center;gap:2px;margin-right:-8px}
+.sites-link{height:30px;padding:0 8px;border:0;border-radius:var(--radius);background:none;color:#4e5969;font:inherit;font-size:12px;cursor:pointer}
+.sites-link:hover{background:#f2f3f5;color:var(--primary)}
+.sites-link.is-danger:hover,.sites-link.confirming{background:#fff1f0;color:var(--red)}
+
+.sites-add{display:flex;align-items:center;justify-content:center;width:100%;height:36px;margin-top:14px;border:1px dashed #c9cdd4;border-radius:var(--radius);background:#fff;color:var(--primary);font:inherit;font-size:13px;cursor:pointer}
+.sites-add:hover{border-color:var(--primary);background:var(--primary-soft)}
+
+.sites-form{margin-top:14px;padding:16px;border:1px solid #e5e8ef;border-radius:var(--radius);background:#f7f8fa}
+.sites-row + .sites-form,.sites-form + .sites-row{margin-top:0}
+.sites-form-title{margin-bottom:12px;color:#1f2329;font-size:13px;font-weight:500}
 .sites-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
-.sites-field{display:flex;flex-direction:column;gap:4px;min-width:0}
-.sites-field .input{width:100%;box-sizing:border-box}
-.sites-label{font-size:12px;color:var(--text2)}
-.sites-hint{font-size:12px;color:var(--text3);line-height:1.5;overflow-wrap:anywhere}
-.sites-form-error{margin-top:10px;color:var(--red);font-size:13px;min-height:1em}
-.sites-form-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
-@media (max-width:900px){.sites-row{flex-direction:column}.sites-acts{justify-content:flex-start;max-width:none}.sites-grid{grid-template-columns:1fr}}
-body.dark .sites-form{background:#0f172a}
-body.dark .sites-tip{background:#0f1b2e}
+.sites-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.sites-label{color:#4e5969;font-size:12px}
+.sites-form input[type="text"],.sites-form select{width:100%;height:32px;box-sizing:border-box;padding:0 10px;border:1px solid #dfe3eb;border-radius:var(--radius);background:#fff;color:#1f2329;font:inherit;font-size:13px}
+.sites-form input[type="text"]:focus,.sites-form select:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+.sites-hint{color:#86909c;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.sites-form-error{min-height:18px;margin-top:10px;color:var(--red);font-size:12px}
+.sites-form-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+
+/* Google 授权行：三个按钮在一个格子里排成一行（以前是三个并排的子元素，后两个被挤到下一行、其中一个被拉成整条） */
+#integ-rows .integ-acts{display:flex;align-items:center;justify-content:flex-end;gap:8px;white-space:nowrap}
+
+@container (max-width:760px){
+  .sites-row{grid-template-columns:minmax(120px,180px) minmax(0,1fr)}
+  .sites-acts{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px 12px}
+  .sites-more{margin-right:0}
+}
+@container (max-width:520px){
+  .sites-row{grid-template-columns:1fr;gap:8px}
+  .sites-grid{grid-template-columns:1fr}
+  .sites-kv{grid-template-columns:96px minmax(0,1fr)}
+}
+@media (max-width:900px){
+  #integ-rows .integ-acts{justify-content:flex-start;flex-wrap:wrap;white-space:normal}
+}
+
+body.dark #sites-box{background:transparent}
+body.dark .sites-row{border-bottom-color:#273142}
+body.dark .sites-name,body.dark .sites-form-title{color:#e5e7eb}
+body.dark .sites-v,body.dark .sites-label{color:#c0c6cf}
+body.dark .sites-tip{border-color:#1d3a66;background:#0f1b2e;color:#c0c6cf}
+body.dark .sites-form{border-color:#273142;background:#0f172a}
+body.dark .sites-form input[type="text"],body.dark .sites-form select,body.dark #sites-box .btn-ghost,body.dark .sites-add{border-color:#273142;background:#0b1220;color:#e5e7eb}
+body.dark .sites-link{color:#c0c6cf}
+body.dark .sites-link:hover{background:#1b2536}

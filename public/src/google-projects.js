@@ -101,9 +101,11 @@ function googleProviderRow(provider,s,project){
       <div>${esc(providerConfigNote)} · 最近同步：${esc(String(lastSync))} · 状态：${esc(String(lastStatus))}</div>
       ${missing}${lastError}
     </div>
+    <div class="integ-acts">
     <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> 授权</button>
     <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="回补最近 90 天历史（首次接入或图表前段空白时用，可能耗时较久）"><i class="ti ti-history"></i> 回补90天</button>
     <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> 立即同步</button>
+    </div>
   </div>`;
 }
 
