@@ -7,7 +7,14 @@ import * as salesNotesRepo from './inquirySalesNotes.js';
 // P3：默认排除已归档（state='archived'）；归档项只在归档页通过 listArchived() 取。
 const NOT_ARCHIVED = "(state IS NULL OR state <> 'archived')";
 // 列表统一走这里：挂 feedbacks + 渠道 / 等级被改过几次（都是批量取，不做 N+1）
-function decorate(rows) { return attachChangeCounts(attachFeedbacks(rows)); }
+// 站点名字跟着行一起给：表格直接显示、表头直接按它筛。停用了的站点名字照样带（那条询盘确实是从它来的）
+function attachSiteNames(rows) {
+  if (!rows.some((r) => r.site_id != null)) { for (const r of rows) r.site_name = null; return rows; }
+  const names = new Map(db.prepare('SELECT id, name FROM google_projects').all().map((p) => [p.id, p.name]));
+  for (const r of rows) r.site_name = r.site_id != null ? (names.get(r.site_id) || null) : null;
+  return rows;
+}
+function decorate(rows) { return attachSiteNames(attachChangeCounts(attachFeedbacks(rows))); }
 
 export function list(range) {
   if (range && range.start_date && range.end_date) {
@@ -111,7 +118,7 @@ export function updateWithLog(id, fields, { changes = [], source = null } = {}) 
    通用 PATCH 把请求体原样传进来，白名单里有 src_evidence 的话，任何人都能把自己手填的来源改成「表单证据」。
    这里只给路由在校验完之后调用。 */
 const SOURCE_COLS = ['source', 'src_campaign_id', 'src_campaign', 'src_landing_page',
-  'src_referrer', 'src_gclid', 'src_utm', 'src_evidence', 'lead_id'];
+  'src_referrer', 'src_gclid', 'src_utm', 'src_evidence', 'lead_id', 'site_id'];
 export function setSource(id, fields) {
   updateById('inquiries', id, fields, SOURCE_COLS);
   return get(id);

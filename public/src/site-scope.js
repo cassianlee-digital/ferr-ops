@@ -21,6 +21,8 @@ let sites = [];        // 启用中的站点，默认站点在最前
 let current = null;    // 当前站点 id；null = 还没取到站点列表（请求不带站点，后端按默认站点算）
 let bound = false;
 
+// 启用中的全部站点（询盘的「站点」下拉、线索收件箱用）。还没取到时是空数组
+export const allSites = () => sites;
 const defaultSite = () => sites.find((s) => s.is_default) || sites[0] || null;
 export const currentSite = () => sites.find((s) => s.id === current) || null;
 // 选的是不是默认站点以外的站（AI 分析目前只读默认站点的数据，界面要在这种时候说明）

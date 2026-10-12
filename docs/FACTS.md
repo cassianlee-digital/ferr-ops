@@ -281,7 +281,7 @@
 | `users` | 账号与角色（seo / sem / manager / boss）。 |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（52）
+## 测试（53）
 
 `server/test/`
 
@@ -315,6 +315,7 @@
 | `hermesPrompt.test.js` | （没有写说明） |
 | `hermesStatus.test.js` | （没有写说明） |
 | `inquiryFeedback.test.js` | 跟踪反馈：一条询盘多条带时间的记录（2026-08-27 改版）。 |
+| `inquirySite.test.js` | 询盘和表单线索认得出是哪个站点来的。 |
 | `inquirySource.test.js` | 询盘来源：表单线索接收、线索转询盘、手填来源的对账。 |
 | `kpi.test.js` | KPI 评分：整个后台「公司分/李分/陈分」的权威算法。 |
 | `kpiLedger.test.js` | 运营总账：老板年终看的那张「花钱→询盘→优质→成交→效率」表。 |

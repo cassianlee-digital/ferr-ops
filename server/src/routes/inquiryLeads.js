@@ -11,7 +11,8 @@ import { timingSafeEqual } from 'node:crypto';
 import * as repo from '../db/repositories/inquiryLeads.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 import { config } from '../config.js';
-import { normalizeLead } from '../services/inquirySource.js';
+import { leadSite, normalizeLead } from '../services/inquirySource.js';
+import { listProjects } from '../db/repositories/googleSync.js';
 
 export const MIN_INTAKE_SECRET_LENGTH = 24;
 
@@ -43,7 +44,10 @@ export async function inquiryLeadsRoutes(app) {
   app.get('/api/inquiry-leads', { preHandler: requireAuth }, async (request, reply) => {
     const state = request.query?.state || 'new';
     if (!repo.STATES.includes(state)) return reply.code(400).send({ error: 'bad_state' });
-    return { configured: intakeConfigured(), counts: repo.counts(), items: repo.list(state) };
+    // 每条线索带上「是哪个站点的表单来的」（按它带回的网址认；没登记这个域名就是 null，界面显示「未识别站点」）
+    const sites = listProjects();
+    const items = repo.list(state).map((lead) => ({ ...lead, site_name: leadSite(lead, sites)?.name || null }));
+    return { configured: intakeConfigured(), counts: repo.counts(), items };
   });
 
   // 忽略：垃圾 / 重复 / 非询价。要写原因 —— 「为什么收到这么多垃圾询价」正是要靠这些原因加上它带的来源去分析的。

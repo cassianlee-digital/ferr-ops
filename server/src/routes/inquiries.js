@@ -6,7 +6,8 @@ import { recomputeActuals } from '../services/kpi.js';
 import { isIsoDate, parseDateRange } from '../lib/parseDateRange.js';
 import * as leadsRepo from '../db/repositories/inquiryLeads.js';
 import * as taskLinksRepo from '../db/repositories/taskLinks.js';
-import { leadSource, manualSource } from '../services/inquirySource.js';
+import { leadSite, leadSource, manualSource } from '../services/inquirySource.js';
+import * as googleRepo from '../db/repositories/googleSync.js';
 import { buildSourceChecks } from '../services/inquirySourceData.js';
 import { COMPANIES } from '../services/sites.js';
 
@@ -82,12 +83,16 @@ export async function inquiriesRoutes(app) {
       }
     }
     const campaignNames = taskLinksRepo.campaignNames();
-    const manual = manualSource(lead ? {} : body, campaignNames);
+    const sites = googleRepo.listProjects();
+    const manual = manualSource(lead ? {} : body, campaignNames, sites);
     if (!manual.ok) return reply.code(400).send({ error: 'bad_source', detail: manual.detail });
+    // 知道是哪个站点来的、而「公司」没填：站点属于哪家公司是登记好的，直接带出（填了的不动）
+    const knownSite = lead ? leadSite(lead, sites) : sites.find((s) => s.id === manual.value.site_id);
+    if (!rec.company && knownSite && knownSite.company) rec.company = knownSite.company;
 
     let item = repo.create(rec, request.user.id);
     if (lead) {
-      item = repo.setSource(item.id, leadSource(lead, campaignNames));
+      item = repo.setSource(item.id, leadSource(lead, campaignNames, sites));
       leadsRepo.markConverted(lead.id, item.id, request.user.id);
     } else if (Object.values(manual.value).some((v) => v != null)) {
       item = repo.setSource(item.id, { ...manual.value, src_evidence: 'manual' });
@@ -134,13 +139,13 @@ export async function inquiriesRoutes(app) {
     }
 
     // 来源字段：表单带回的是机器证据，谁都不能手改（改了它就不再是证据）；手填的可以改，改完标记为「人填」
-    const touchesSource = ['source', 'src_campaign_id', 'src_landing_page'].some((k) => k in body);
+    const touchesSource = ['source', 'src_campaign_id', 'src_landing_page', 'site_id'].some((k) => k in body);
     let manual = null;
     if (touchesSource) {
       if (cur.src_evidence === 'form') {
         return reply.code(409).send({ error: 'source_locked', detail: '这条询盘的来源是独立站表单带回的机器证据，不能手改' });
       }
-      manual = manualSource(body, taskLinksRepo.campaignNames());
+      manual = manualSource(body, taskLinksRepo.campaignNames(), googleRepo.listProjects());
       if (!manual.ok) return reply.code(400).send({ error: 'bad_source', detail: manual.detail });
     }
     // 是否成交不锁（它本来就会随时间变），但改动要留痕：否则答不出「哪天成交的、谁标的」

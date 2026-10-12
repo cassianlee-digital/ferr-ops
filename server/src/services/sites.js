@@ -20,6 +20,17 @@ export function normalizeDomain(raw) {
   return DOMAIN_RE.test(t) ? t : '';
 }
 
+/* 一个网址是哪个站点的：主机名等于站点域名，或是它的子域名（www.、shop. …）。认不出来是 null。
+   用在：表单线索的落地页 → 站点；手填来源的落地页 → 站点；任务 / 外链关联的页面 → 站点。 */
+export function siteOfUrl(url, sites) {
+  let host = '';
+  try { host = new URL(String(url || '')).hostname.toLowerCase(); } catch (e) { return null; }
+  if (!host) return null;
+  // 域名长的先比：example.com 和 shop.example.com 都登记了的话，shop 下的网址归 shop 那个站
+  const sorted = (sites || []).filter((s) => s.domain).sort((a, b) => b.domain.length - a.domain.length);
+  return sorted.find((s) => host === s.domain || host.endsWith('.' + s.domain)) || null;
+}
+
 // Search Console 的资源只有两种写法：网域资源 sc-domain:example.com，或网址前缀资源 https://www.example.com/
 function gscProperty(raw) {
   const t = String(raw || '').trim();

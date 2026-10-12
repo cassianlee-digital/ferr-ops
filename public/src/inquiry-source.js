@@ -11,6 +11,7 @@
  */
 import { esc, openModal, closeModal, toast } from './ui-kit.js';
 import { withRange } from './timerange.js';
+import { allSites } from './site-scope.js';
 
 const $ = (id) => document.getElementById(id);
 const isHttp = (u) => /^https?:\/\//i.test(String(u || ''));
@@ -45,6 +46,27 @@ export function sourceCellHtml(r) {
   if (r.src_landing_page) subs += `<span class="inq-src-sub">落地页 ${esc(pathOf(r.src_landing_page))}</span>`;
   return `<button type="button" class="inq-src" data-inq-source="${esc(r.id)}" title="${esc((v && v.hint) || '点击查看 / 填写来源')}">`
     + `<span class="inq-src-term">${esc(r.source || '')}</span>${subs}${badge}</button>`;
+}
+
+/* 表格里的站点格：这条询盘是从哪个网站来的。点开和来源格是同一个弹框（站点是来源的一部分）。
+   表单带回来的由网址域名认出、带锁；手工录入的没标就是「—」，不按公司去猜。 */
+export function siteCellHtml(r) {
+  const locked = r.src_evidence === 'form';
+  return `<button type="button" class="inq-site-btn${r.site_name ? '' : ' is-empty'}" data-inq-source="${esc(r.id)}" title="${locked ? '表单带回的来源，按网址域名认出的站点，不能手改' : '点击选择 / 修改站点'}">`
+    + `${esc(r.site_name || '—')}${locked && r.site_name ? '<i class="ti ti-lock"></i>' : ''}</button>`;
+}
+
+// 来源弹框里的站点下拉：未标注 + 启用中的站点；这条询盘原来的站点已被停用的话补一项，否则会显示成「未标注」
+function fillSites(row) {
+  const sel = $('inq-src-site'); const sites = allSites();
+  $('inq-src-site-fld').classList.toggle('is-hidden', !sites.length && row.site_id == null);
+  sel.textContent = '';
+  const first = document.createElement('option'); first.value = ''; first.textContent = '未标注'; sel.appendChild(first);
+  for (const s of sites) { const o = document.createElement('option'); o.value = String(s.id); o.textContent = s.name; sel.appendChild(o); }
+  if (row.site_id != null && !sites.some((s) => s.id === row.site_id)) {
+    const o = document.createElement('option'); o.value = String(row.site_id); o.textContent = (row.site_name || '站点 ' + row.site_id) + '（已停用）'; sel.appendChild(o);
+  }
+  sel.value = row.site_id != null ? String(row.site_id) : '';
 }
 
 /* 表格画完之后再拉对账结果（它要扫同步表，不该拖慢列表）。拉到了通知 inquiries.js 重画徽章。
@@ -113,7 +135,8 @@ async function openSource(id) {
     : '来源是人填的，只是主张；下面是系统拿来源词去 Ads / GSC 点击数据里对账的结果。';
   $('inq-src-term').value = r.source || '';
   $('inq-src-page').value = r.src_landing_page || '';
-  for (const fid of ['inq-src-term', 'inq-src-campaign', 'inq-src-page']) $(fid).disabled = locked;
+  fillSites(r);
+  for (const fid of ['inq-src-term', 'inq-src-campaign', 'inq-src-page', 'inq-src-site']) $(fid).disabled = locked;
   $('inq-src-save').classList.toggle('is-hidden', locked);
   $('inq-src-error').textContent = '';
 
@@ -139,13 +162,17 @@ async function openSource(id) {
 export async function submitInquirySource(btn) {
   const r = editing; if (!r) return;
   const body = { source: $('inq-src-term').value.trim() || '待补', src_campaign_id: $('inq-src-campaign').value, src_landing_page: $('inq-src-page').value.trim() };
+  // 站点没动就不传：不传时后端会按落地页的域名自动认；传了就以选的为准（和落地页对不上会被拒绝并说明）
+  const site = $('inq-src-site').value;
+  if (site !== (r.site_id != null ? String(r.site_id) : '')) body.site_id = site || null;
   if (btn) btn.disabled = true;
   try {
     const { item } = await API.patch('/api/inquiries/' + r.id, body);
     Object.assign(r, item); // 同步缓存行：表格重画读的是它（不回写的话翻页就退回旧值）
     closeModal('inqSourceMask'); editing = null;
     toast('来源已更新 · 已入库');
-    changed();
+    // saved：这次是人改了来源 / 站点（不是对账结果回来了），表头筛选里的候选和条数要跟着变
+    document.dispatchEvent(new CustomEvent('inqsourcechanged', { detail: { saved: true } }));
     loadSourceChecks(); // 词变了，对账结论要重算
   } catch (e) {
     $('inq-src-error').textContent = '未入库：' + failText(e);
@@ -185,6 +212,9 @@ function leadCard(l) {
 
   const src = document.createElement('div'); src.className = 'lead-src';
   addLine(src, '建议渠道：' + (l.suggested_channel || '—'), 'lead-src-channel');
+  // 是哪个站点的表单来的（后端按网址域名认）。登记了站点却认不出来，说明这个域名还没登记成站点
+  if (l.site_name) addLine(src, '站点：' + l.site_name);
+  else if (allSites().length) addLine(src, '站点：未识别（这条线索的域名还没有登记成站点）', 'dim');
   const term = l.keyword || l.utm_term; if (term) addLine(src, '关键词：' + term);
   const camp = l.campaign_id || l.utm_campaign; if (camp) addLine(src, '系列：' + camp);
   if (l.landing_page || l.page_url) addLink(src, '落地页：', l.landing_page || l.page_url);

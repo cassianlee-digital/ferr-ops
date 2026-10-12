@@ -473,6 +473,7 @@
   var sites = [];
   var current = null;
   var bound = false;
+  var allSites = () => sites;
   var defaultSite = () => sites.find((s) => s.is_default) || sites[0] || null;
   var currentSite = () => sites.find((s) => s.id === current) || null;
   var viewingOtherSite = () => {
@@ -3363,6 +3364,33 @@
     if (r.src_landing_page) subs += `<span class="inq-src-sub">\u843D\u5730\u9875 ${esc(pathOf(r.src_landing_page))}</span>`;
     return `<button type="button" class="inq-src" data-inq-source="${esc(r.id)}" title="${esc(v && v.hint || "\u70B9\u51FB\u67E5\u770B / \u586B\u5199\u6765\u6E90")}"><span class="inq-src-term">${esc(r.source || "")}</span>${subs}${badge3}</button>`;
   }
+  function siteCellHtml(r) {
+    const locked = r.src_evidence === "form";
+    return `<button type="button" class="inq-site-btn${r.site_name ? "" : " is-empty"}" data-inq-source="${esc(r.id)}" title="${locked ? "\u8868\u5355\u5E26\u56DE\u7684\u6765\u6E90\uFF0C\u6309\u7F51\u5740\u57DF\u540D\u8BA4\u51FA\u7684\u7AD9\u70B9\uFF0C\u4E0D\u80FD\u624B\u6539" : "\u70B9\u51FB\u9009\u62E9 / \u4FEE\u6539\u7AD9\u70B9"}">${esc(r.site_name || "\u2014")}${locked && r.site_name ? '<i class="ti ti-lock"></i>' : ""}</button>`;
+  }
+  function fillSites(row) {
+    const sel = $("inq-src-site");
+    const sites2 = allSites();
+    $("inq-src-site-fld").classList.toggle("is-hidden", !sites2.length && row.site_id == null);
+    sel.textContent = "";
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = "\u672A\u6807\u6CE8";
+    sel.appendChild(first);
+    for (const s of sites2) {
+      const o = document.createElement("option");
+      o.value = String(s.id);
+      o.textContent = s.name;
+      sel.appendChild(o);
+    }
+    if (row.site_id != null && !sites2.some((s) => s.id === row.site_id)) {
+      const o = document.createElement("option");
+      o.value = String(row.site_id);
+      o.textContent = (row.site_name || "\u7AD9\u70B9 " + row.site_id) + "\uFF08\u5DF2\u505C\u7528\uFF09";
+      sel.appendChild(o);
+    }
+    sel.value = row.site_id != null ? String(row.site_id) : "";
+  }
   async function loadSourceChecks() {
     const seq6 = ++checkSeq;
     refreshLeadBadge();
@@ -3445,7 +3473,8 @@
     ev.textContent = locked ? "\u6765\u6E90\u662F\u72EC\u7ACB\u7AD9\u8868\u5355\u63D0\u4EA4\u65F6\u5E26\u56DE\u7684\u673A\u5668\u8BC1\u636E\uFF0C\u4E0D\u80FD\u624B\u6539\u3002" : "\u6765\u6E90\u662F\u4EBA\u586B\u7684\uFF0C\u53EA\u662F\u4E3B\u5F20\uFF1B\u4E0B\u9762\u662F\u7CFB\u7EDF\u62FF\u6765\u6E90\u8BCD\u53BB Ads / GSC \u70B9\u51FB\u6570\u636E\u91CC\u5BF9\u8D26\u7684\u7ED3\u679C\u3002";
     $("inq-src-term").value = r.source || "";
     $("inq-src-page").value = r.src_landing_page || "";
-    for (const fid of ["inq-src-term", "inq-src-campaign", "inq-src-page"]) $(fid).disabled = locked;
+    fillSites(r);
+    for (const fid of ["inq-src-term", "inq-src-campaign", "inq-src-page", "inq-src-site"]) $(fid).disabled = locked;
     $("inq-src-save").classList.toggle("is-hidden", locked);
     $("inq-src-error").textContent = "";
     const box = $("inq-src-check");
@@ -3477,6 +3506,8 @@
     const r = editing2;
     if (!r) return;
     const body = { source: $("inq-src-term").value.trim() || "\u5F85\u8865", src_campaign_id: $("inq-src-campaign").value, src_landing_page: $("inq-src-page").value.trim() };
+    const site = $("inq-src-site").value;
+    if (site !== (r.site_id != null ? String(r.site_id) : "")) body.site_id = site || null;
     if (btn) btn.disabled = true;
     try {
       const { item } = await API.patch("/api/inquiries/" + r.id, body);
@@ -3484,7 +3515,7 @@
       closeModal("inqSourceMask");
       editing2 = null;
       toast2("\u6765\u6E90\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
-      changed();
+      document.dispatchEvent(new CustomEvent("inqsourcechanged", { detail: { saved: true } }));
       loadSourceChecks();
     } catch (e) {
       $("inq-src-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText(e);
@@ -3526,6 +3557,8 @@
     const src = document.createElement("div");
     src.className = "lead-src";
     addLine(src, "\u5EFA\u8BAE\u6E20\u9053\uFF1A" + (l.suggested_channel || "\u2014"), "lead-src-channel");
+    if (l.site_name) addLine(src, "\u7AD9\u70B9\uFF1A" + l.site_name);
+    else if (allSites().length) addLine(src, "\u7AD9\u70B9\uFF1A\u672A\u8BC6\u522B\uFF08\u8FD9\u6761\u7EBF\u7D22\u7684\u57DF\u540D\u8FD8\u6CA1\u6709\u767B\u8BB0\u6210\u7AD9\u70B9\uFF09", "dim");
     const term = l.keyword || l.utm_term;
     if (term) addLine(src, "\u5173\u952E\u8BCD\uFF1A" + term);
     const camp = l.campaign_id || l.utm_campaign;
@@ -3885,6 +3918,23 @@
     ["f-country", "f-code", "f-sales", "f-source", "f-note"].forEach((i) => document.getElementById(i).value = "");
     document.getElementById("f-deal").value = "\u672A\u6210\u4EA4";
     document.getElementById("f-company").value = "";
+    const siteSel = document.getElementById("f-site"), sites2 = allSites();
+    siteSel.textContent = "";
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "\u672A\u6807\u6CE8";
+    siteSel.appendChild(none);
+    sites2.forEach((s) => {
+      const o = document.createElement("option");
+      o.value = String(s.id);
+      o.textContent = s.name;
+      siteSel.appendChild(o);
+    });
+    document.getElementById("f-site-fld").classList.toggle("is-hidden", !sites2.length);
+    siteSel.onchange = () => {
+      const s = sites2.find((x) => String(x.id) === siteSel.value), c = document.getElementById("f-company");
+      if (s && s.company && !c.value) c.value = s.company;
+    };
     pendingLead = null;
     const banner = document.getElementById("inq-lead-banner");
     if (banner) banner.classList.add("is-hidden");
@@ -3909,6 +3959,7 @@
       note: g("f-note")
     };
     if (pendingLead) rec.lead_id = pendingLead.id;
+    else if (g("f-site")) rec.site_id = Number(g("f-site"));
     try {
       const { item } = await API.post("/api/inquiries", rec);
       closeModal("inqMask");
@@ -4028,7 +4079,7 @@
     const up = isUpgraded(r);
     const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc(r.original_grade)} \u2192 \u73B0 ${esc(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
     const locked = isConfirmed(r);
-    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc(r.country || "")}</td><td class="ctr"><span class="tagselect ${esc(REGION_BADGE[r.region] || "b-gray")}" data-kind="region">${esc(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(CH_BADGE[r.channel] || "b-gray", r.channel) : `<span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td><td class="inq-source">${sourceCellHtml(r)}</td><td class="ctr"><span class="tagselect ${esc(PRODUCT_BADGE[r.product] || "b-gray")}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(GRADE_BADGE[r.grade] || "b-gray", r.grade) : `<span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr inq-ops">${attrConfirmBtnHtml(r)}<button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc(r.country || "")}</td><td class="ctr"><span class="tagselect ${esc(REGION_BADGE[r.region] || "b-gray")}" data-kind="region">${esc(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(CH_BADGE[r.channel] || "b-gray", r.channel) : `<span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td><td class="inq-source">${sourceCellHtml(r)}</td><td class="ctr inq-site">${siteCellHtml(r)}</td><td class="ctr"><span class="tagselect ${esc(PRODUCT_BADGE[r.product] || "b-gray")}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(GRADE_BADGE[r.grade] || "b-gray", r.grade) : `<span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr inq-ops">${attrConfirmBtnHtml(r)}<button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
@@ -4043,6 +4094,8 @@
     { key: "region", type: "select", ph: "\u5927\u533A", blank: "\u672A\u586B", catalog: REGION_NAMES },
     { key: "channel", type: "select", ph: "\u6E20\u9053", blank: "\u672A\u586B" },
     { key: "source", type: "text", ph: "\u6765\u6E90\u8BCD" },
+    { key: "site_name", type: "select", ph: "\u7AD9\u70B9", blank: "\u672A\u6807\u6CE8" },
+    // 多站点：从哪个网站来的（后端按 site_id 带出名字）
     { key: "product", type: "select", ph: "\u4EA7\u54C1", blank: "\u672A\u586B", catalog: PRODUCT_NAMES },
     { key: "grade", type: "select", ph: "\u7B49\u7EA7" },
     { key: "company", type: "select", ph: "\u516C\u53F8", blank: "\u672A\u6807\u6CE8" },
@@ -4217,7 +4270,10 @@
     else it[d.field] = d.value;
   });
   document.addEventListener("salesnoteschanged", () => renderInqTable());
-  document.addEventListener("inqsourcechanged", () => renderInqTable());
+  document.addEventListener("inqsourcechanged", (e) => {
+    if (e.detail && e.detail.saved) renderInqFilterRow();
+    renderInqTable();
+  });
   document.addEventListener("attributionchanged", () => loadInquiries());
   var pendingLead = null;
   document.addEventListener("leadconvert", (e) => {
@@ -4226,6 +4282,7 @@
     if (!lead) return;
     openInquiry();
     pendingLead = lead;
+    document.getElementById("f-site-fld").classList.add("is-hidden");
     const set = (id, v) => {
       const el5 = document.getElementById(id);
       if (el5 && v != null && v !== "") el5.value = v;

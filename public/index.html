@@ -182,7 +182,7 @@
           <!-- 录入改版：客户姓名 → 客户编码，等级后加 公司 / 业务员 / 是否成交 -->
           <!-- 2026-09-20：业务员后加「业务反馈」（业务发回来的文字 + 截图）；总列数 = 15（colspan 同步） -->
           <thead>
-            <tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr inq-th-sales">业务反馈</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr>
+            <tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">站点</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr inq-th-sales">业务反馈</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr>
             <!-- 筛选行由 inquiries.js renderInqFilterRow() 填充：产品/大区列出完整目录，其余取真实出现过的值 -->
             <tr class="inq-filter-row" id="inqFilterRow"></tr>
           </thead>
@@ -986,6 +986,8 @@
         <div class="fld"><label>国家</label><input id="f-country" placeholder="🇩🇪 德国"></div>
         <div class="fld"><label>公司（询价通过哪家）</label><select id="f-company"><option value="">未标注</option><option>贝孚特</option><option>费尔瑞</option></select></div>
       </div>
+      <!-- 多站点：登记了站点才出现。从线索转来的不用选（按线索带回的网址自动认） -->
+      <div class="fld is-hidden" id="f-site-fld"><label>站点（从哪个网站来的；不确定就留「未标注」）</label><select id="f-site"></select></div>
       <div class="fld-row">
         <!-- 大区 / 产品的 option 由 openInquiry() 调 fillSelect() 按 public/src/catalog.js 渲染。
              这里刻意留空：清单写两份就会出现「表格里有、录入框里没有」，那正是要修的毛病。 -->
@@ -1289,6 +1291,7 @@
       <div class="fld"><label>来源词（客户搜的词 / 广告触发的词）</label><input type="text" id="inq-src-term" maxlength="200"></div>
       <div class="fld"><label>广告系列（只能选已同步的）</label><select id="inq-src-campaign"></select></div>
       <div class="fld"><label>落地页（完整网址）</label><input type="text" id="inq-src-page" placeholder="https://…"></div>
+      <div class="fld" id="inq-src-site-fld"><label>站点（从哪个网站来的；填了落地页会按域名自动认）</label><select id="inq-src-site"></select></div>
       <div class="inq-src-check" id="inq-src-check"></div>
       <div class="task-done-error" id="inq-src-error"></div>
     </div>

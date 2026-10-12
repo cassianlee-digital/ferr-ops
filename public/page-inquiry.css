@@ -556,3 +556,10 @@ body.dark .sales-pending-item{background:#0f172a;border-color:#273142}
 .attr-log-head{font-size:12px;font-weight:600;color:var(--text1);overflow-wrap:anywhere}
 .attr-log-meta{margin-top:2px;font-size:11px;color:var(--text3)}
 .attr-log-reason{margin-top:3px;font-size:12px;color:var(--text2);overflow-wrap:anywhere}
+
+/* 站点格（多站点）：点开的是来源弹框 */
+.inq-site{white-space:nowrap}
+.inq-site-btn{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:2px 6px;border:0;background:none;font:inherit;font-size:12px;color:var(--text);cursor:pointer;border-radius:2px;overflow:hidden;text-overflow:ellipsis}
+.inq-site-btn:hover{background:var(--bg3,#eef2f7)}
+.inq-site-btn.is-empty{color:var(--text3)}
+.inq-site-btn .ti-lock{font-size:12px;color:var(--text3)}

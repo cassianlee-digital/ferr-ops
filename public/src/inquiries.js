@@ -21,7 +21,8 @@ import { getRangeRevision } from './timerange.js';
 import { commitPendingCellEdit } from './table-editor.js';
 import { PRODUCT_BADGE, REGION_BADGE, PRODUCT_NAMES, REGION_NAMES, fillSelect } from './catalog.js';
 import { salesCellHtml } from './inquiry-sales.js';
-import { loadSourceChecks, sourceCellHtml } from './inquiry-source.js';
+import { loadSourceChecks, siteCellHtml, sourceCellHtml } from './inquiry-source.js';
+import { allSites } from './site-scope.js';
 import { attrConfirmBtnHtml, attrLockHtml, attrMarkHtml, isConfirmed, loadAttrCoverage } from './inquiry-attribution.js';
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
@@ -41,6 +42,12 @@ export function openInquiry(){
   ['f-country','f-code','f-sales','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('f-deal').value='未成交'; // 每次打开都回默认，避免沿用上一条
   document.getElementById('f-company').value=''; // 公司不给默认值：没选就是没选，别替业务瞎归属
+  // 站点：登记了站点才给选，默认「未标注」。选了站点、公司还空着时，把这个站点所属的公司带出来（后端也会这么做）
+  const siteSel=document.getElementById('f-site'), sites=allSites();
+  siteSel.textContent=''; const none=document.createElement('option'); none.value=''; none.textContent='未标注'; siteSel.appendChild(none);
+  sites.forEach(s=>{ const o=document.createElement('option'); o.value=String(s.id); o.textContent=s.name; siteSel.appendChild(o); });
+  document.getElementById('f-site-fld').classList.toggle('is-hidden',!sites.length);
+  siteSel.onchange=()=>{ const s=sites.find(x=>String(x.id)===siteSel.value), c=document.getElementById('f-company'); if(s&&s.company&&!c.value)c.value=s.company; };
   // 普通录入不带线索；从线索转来的由 leadconvert 监听在本函数之后再挂上
   pendingLead=null; const banner=document.getElementById('inq-lead-banner'); if(banner)banner.classList.add('is-hidden');
   openModal('inqMask');
@@ -53,6 +60,7 @@ export async function submitInquiry(){
     country:g('f-country')||'🏳️ 未填',region:g('f-region'),channel:g('f-channel'),
     source:g('f-source')||'待补',product:g('f-product'),grade:g('f-grade'),note:g('f-note')};
   if(pendingLead)rec.lead_id=pendingLead.id;
+  else if(g('f-site'))rec.site_id=Number(g('f-site'));
   try{
     const {item}=await API.post('/api/inquiries',rec);
     closeModal('inqMask'); pendingLead=null;
@@ -179,6 +187,7 @@ export function inqRowHtml(r){
     +`<td class="ctr"><span class="tagselect ${esc(REGION_BADGE[r.region]||'b-gray')}" data-kind="region">${esc(r.region||'未填')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr inq-attr-cell">${locked?attrLockHtml(CH_BADGE[r.channel]||'b-gray',r.channel):`<span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td>`
     +`<td class="inq-source">${sourceCellHtml(r)}</td>`
+    +`<td class="ctr inq-site">${siteCellHtml(r)}</td>`
     +`<td class="ctr"><span class="tagselect ${esc(PRODUCT_BADGE[r.product]||'b-gray')}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr inq-attr-cell">${locked?attrLockHtml(GRADE_BADGE[r.grade]||'b-gray',r.grade):`<span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td>`
     +`<td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company]||'b-gray'}" data-kind="company">${esc(r.company||'未标注')}<i class="ti ti-chevron-down"></i></span></td>`
@@ -206,6 +215,7 @@ const FILTER_COLS=[
   {key:'region',type:'select',ph:'大区',blank:'未填',catalog:REGION_NAMES},
   {key:'channel',type:'select',ph:'渠道',blank:'未填'},
   {key:'source',type:'text',ph:'来源词'},
+  {key:'site_name',type:'select',ph:'站点',blank:'未标注'}, // 多站点：从哪个网站来的（后端按 site_id 带出名字）
   {key:'product',type:'select',ph:'产品',blank:'未填',catalog:PRODUCT_NAMES},
   {key:'grade',type:'select',ph:'等级'},
   {key:'company',type:'select',ph:'公司',blank:'未标注'},
@@ -361,7 +371,8 @@ document.addEventListener('cellsaved',e=>{
 document.addEventListener('salesnoteschanged',()=>renderInqTable());
 /* 来源格（来源词 / 系列 / 落地页 + 对账徽章）由 inquiry-source.js 管：对账结果回来、或来源被改了，
    它广播 inqsourcechanged，这里重画整表（来源词同时是表头筛选的一列）。同样用事件，不互相 import。 */
-document.addEventListener('inqsourcechanged',()=>renderInqTable());
+// 只有「人保存了来源 / 站点」时才重画表头筛选（站点是筛选的一列）；对账结果回来时不重画 —— 那时人可能正在筛选框里打字，重画会把光标顶掉
+document.addEventListener('inqsourcechanged',e=>{ if(e.detail&&e.detail.saved)renderInqFilterRow(); renderInqTable(); });
 /* 渠道 / 等级被确认、撤销确认或被经理改过之后整页重拉：行上的锁、确认标记、改动次数、顶部进度都要跟着变。
    inquiry-attribution.js 广播 attributionchanged，同样用事件而不是互相 import。 */
 document.addEventListener('attributionchanged',()=>loadInquiries());
@@ -373,6 +384,7 @@ document.addEventListener('leadconvert',e=>{
   const d=e.detail||{}; const lead=d.lead; if(!lead)return;
   openInquiry();
   pendingLead=lead;
+  document.getElementById('f-site-fld').classList.add('is-hidden'); // 线索的站点由后端按网址认，不在这里选
   const set=(id,v)=>{ const el=document.getElementById(id); if(el&&v!=null&&v!=='')el.value=v; };
   set('f-date',d.date); set('f-country',lead.country); set('f-channel',lead.suggested_channel);
   set('f-source',lead.keyword||lead.utm_term);

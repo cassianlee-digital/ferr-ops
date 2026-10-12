@@ -9,6 +9,7 @@
 // 对账只是把疑点挑出来给人复核，它不改渠道，也不参与计分。
 import { aiEngineOf, isSearchEngine } from './aiEngines.js';
 import { classify } from './attribution.js';
+import { siteOfUrl } from './sites.js';
 
 export const LOOKBACK_DAYS = 30;   // 询盘日往前看几天的点击：外贸询盘常在点击后好几天才发
 export const SOURCE_PLACEHOLDERS = new Set(['', '待补', '未知', '不详', '无', '-', '—']);
@@ -90,7 +91,12 @@ function utmSource(json) {
 
 /* 表单线索 → 询盘的来源字段。campaignNames = Map(campaign_id → 已同步到的系列名)。
    关键词：线索里有就用线索的（机器证据），没有才留人填的那个，所以没有时这里不回 source 字段。 */
-export function leadSource(lead, campaignNames = new Map()) {
+// 这条线索是从哪个站点的表单来的：看它带回的网址（先落地页，再表单所在页）。没登记这个域名就是 null
+export function leadSite(lead, sites = []) {
+  return siteOfUrl(lead.landing_page, sites) || siteOfUrl(lead.page_url, sites);
+}
+
+export function leadSource(lead, campaignNames = new Map(), sites = []) {
   const utm = {};
   for (const k of ['source', 'medium', 'campaign', 'term', 'content']) if (lead['utm_' + k]) utm[k] = lead['utm_' + k];
   const out = {
@@ -102,16 +108,28 @@ export function leadSource(lead, campaignNames = new Map()) {
     src_utm: Object.keys(utm).length ? JSON.stringify(utm) : null,
     src_evidence: 'form',
     lead_id: lead.id,
+    // 站点也是表单带回来的证据的一部分（由网址的域名认出来），和别的来源字段一样人改不了
+    site_id: leadSite(lead, sites)?.id ?? null,
   };
   const term = lead.keyword || lead.utm_term;
   if (term) out.source = term;
   return out;
 }
 
-/* 人手填的来源（系列 / 落地页）。只处理 body 里出现的字段；返回 { ok, value } 或 { ok:false, detail }。
-   系列只收已同步过的 campaign_id：手敲的名字对不上任何花费数据。 */
-export function manualSource(body, campaignNames = new Map()) {
+/* 人手填的来源（系列 / 落地页 / 站点）。只处理 body 里出现的字段；返回 { ok, value } 或 { ok:false, detail }。
+   系列只收已同步过的 campaign_id：手敲的名字对不上任何花费数据。
+   站点只收登记过的；填了落地页没选站点时，按落地页的域名自动认；两者指向不同的站点就拒绝（多半是选错了）。 */
+export function manualSource(body, campaignNames = new Map(), sites = []) {
   const out = {};
+  if ('site_id' in body) {
+    const raw = body.site_id;
+    if (raw == null || raw === '') out.site_id = null;
+    else {
+      const site = sites.find((s) => s.id === Number(raw));
+      if (!site) return { ok: false, detail: '选的站点不存在（可能已被停用）' };
+      out.site_id = site.id;
+    }
+  }
   if ('src_campaign_id' in body) {
     const id = body.src_campaign_id == null ? '' : String(body.src_campaign_id).trim();
     if (id && !campaignNames.has(id)) return { ok: false, detail: '广告系列不在已同步的 Ads 数据里' };
@@ -122,6 +140,13 @@ export function manualSource(body, campaignNames = new Map()) {
     const page = body.src_landing_page == null ? '' : String(body.src_landing_page).trim();
     if (page && (page.length > 500 || !httpUrl(page))) return { ok: false, detail: '落地页要填完整网址（http/https 开头）' };
     out.src_landing_page = page || null;
+    const fromPage = page ? siteOfUrl(page, sites) : null;
+    if (fromPage) {
+      if (out.site_id != null && out.site_id !== fromPage.id) {
+        return { ok: false, detail: '落地页是「' + fromPage.name + '」这个站的，站点却选了另一个' };
+      }
+      if (!('site_id' in body) || out.site_id == null) out.site_id = fromPage.id;
+    }
   }
   return { ok: true, value: out };
 }

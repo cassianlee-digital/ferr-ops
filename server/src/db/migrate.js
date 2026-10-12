@@ -947,6 +947,9 @@ export function migrate() {
     ['src_campaign_id', 'TEXT'], ['src_campaign', 'TEXT'], ['src_landing_page', 'TEXT'],
     ['src_referrer', 'TEXT'], ['src_gclid', 'TEXT'], ['src_utm', 'TEXT'],
     ['src_evidence', 'TEXT'], ['lead_id', 'INTEGER'],
+    // 多站点（2026-10-12）：这条询盘是从哪个站点来的（google_projects.id）。表单来的由网址域名认出、人改不了；
+    // 手工录入的可选。老行留 NULL = 没标注，不按公司或别的字段去猜。
+    ['site_id', 'INTEGER'],
     // 确认状态：proposed = 录入人填的建议值 / confirmed = 经理或老板已确认。
     // 老行留 NULL = 历史未审：既不算已确认也不算刚提交，不补假值。
     ['attribution_status', 'TEXT'], ['attribution_confirmed_by', 'INTEGER'], ['attribution_confirmed_at', 'TEXT'],
