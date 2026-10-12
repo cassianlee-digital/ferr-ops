@@ -1,12 +1,29 @@
 // 任务前后对比的数据组装：按任务的关联键去同步表里取两个窗口的数，交给 taskEffect.js 的规则算。
 // 周度审核（第三阶段）会直接复用 buildTaskEffect，所以它不依赖 request，只吃任务行和关联键。
 import * as repo from '../db/repositories/taskEffect.js';
-import { resolveProject } from '../sync/googleClient.js';
+import { readScope, resolveProject } from '../sync/googleClient.js';
+import { listProjects } from '../db/repositories/googleSync.js';
+import { siteOfUrl } from './sites.js';
 import { METRICS, businessDate, compare, effectWindow, itemStatus } from './taskEffect.js';
 
-// 取默认 Google 项目的站点 / 账户做过滤；没配项目就不过滤（单站点部署时等价）
-function projectScope() {
-  try { return resolveProject({}); } catch (e) { return {}; }
+/* 去哪个站点的数据里找。
+   以前一律用默认站点：任务关联的是别的站的页面时，永远是「没有数据」，看起来像这个页面没人搜。
+   现在按页面网址的域名认站点（services/sites.js 的 siteOfUrl）：
+     · 页面：各用各自所在站点的数据（一条任务关联了两个站的页面也没问题）；
+     · 关键词、参照行（全站同期）：跟着这条任务的「主站点」走 —— 第一个认得出站点的页面所在的站；一个都认不出就是默认站点；
+     · 广告系列：广告是账户级的，几个站共用，不分站点。
+   没登记任何站点时（老的单站点情况），等价于以前。 */
+function siteScopes() {
+  let fallback = {};
+  try { fallback = resolveProject({}); } catch (e) { fallback = {}; }
+  const sites = listProjects();
+  const toScope = (p) => ({
+    ...readScope(p),
+    ads_customer_id: p.ads_customer_id || fallback.ads_customer_id || '',
+    site_name: p && p.id != null ? p.name : null,
+  });
+  const byUrl = (url) => { const s = siteOfUrl(url, sites); return s ? toScope(s) : null; };
+  return { fallback: toScope(fallback), byUrl };
 }
 
 // 完整网址 → 路径（GA4 的落地页维度只有路径，没有域名）
@@ -30,25 +47,42 @@ function buildEffect({ subject, originDate, links, days, note, missing }) {
   const doneDate = originDate;
   if (!doneDate) return { ...base, status: missing.status, message: missing.message, items: [], baseline: {}, windows: {} };
 
-  const scope = projectScope();
-  const latest = repo.latestDates(scope);
-  const windows = {
-    gsc: { ...effectWindow(doneDate, days, latest.gsc), latest_date: latest.gsc },
-    ads: { ...effectWindow(doneDate, days, latest.ads), latest_date: latest.ads },
-    ga4: { ...effectWindow(doneDate, days, latest.ga4), latest_date: latest.ga4 },
+  const scopes = siteScopes();
+  // 主站点：第一个认得出站点的页面所在的站；认不出就是默认站点
+  const pageScopes = (links || []).filter((l) => l.type === 'page').map((l) => scopes.byUrl(l.ref));
+  const primary = pageScopes.find(Boolean) || scopes.fallback;
+  // 每个站点同步到哪天不一样，窗口也就各算各的（同一个站点只算一次）
+  const windowCache = new Map();
+  const windowsFor = (sc) => {
+    const key = sc.gsc_site_url + '|' + sc.ga4_property_id;
+    if (!windowCache.has(key)) {
+      const latest = repo.latestDates(sc);
+      windowCache.set(key, {
+        gsc: { ...effectWindow(doneDate, days, latest.gsc), latest_date: latest.gsc },
+        ads: { ...effectWindow(doneDate, days, latest.ads), latest_date: latest.ads },
+        ga4: { ...effectWindow(doneDate, days, latest.ga4), latest_date: latest.ga4 },
+      });
+    }
+    return windowCache.get(key);
   };
+  const scope = primary;
+  const windows = windowsFor(primary);
 
   const items = [];
   for (const l of links || []) {
     const head = { type: l.type, ref: l.ref, label: l.label || null };
     if (l.type === 'page') {
-      items.push({ ...head, ...measure('gsc', windows.gsc, (r) => repo.gscPage(l.ref, r, scope)) });
+      // 这个页面自己所在的站点（和主站点不是同一个站时，标出来）
+      const own = scopes.byUrl(l.ref) || scopes.fallback;
+      const ownWindows = windowsFor(own);
+      if (own.site_name && own.site_name !== primary.site_name) head.site = own.site_name;
+      items.push({ ...head, ...measure('gsc', ownWindows.gsc, (r) => repo.gscPage(l.ref, r, own)) });
       /* 同一个页面在 GA4 里的表现：有多少会话从它进站、其中发生了多少关键事件。
          搜索点击涨了不等于带来了询盘，这一行才接近「这次改页面有没有带来转化」。
          只在 GA4 真有这个页面的数据时才列（没同步 / 没人从这页进站时多列一行空的只是噪音）。 */
       const pagePath = pathOf(l.ref);
       if (pagePath) {
-        const ga4 = measure('ga4', windows.ga4, (r) => repo.ga4LandingPage(pagePath, r, scope));
+        const ga4 = measure('ga4', ownWindows.ga4, (r) => repo.ga4LandingPage(pagePath, r, own));
         if (ga4.status === 'OK' || ga4.status === 'PARTIAL') items.push({ ...head, ...ga4 });
       }
     } else if (l.type === 'keyword') {
@@ -69,7 +103,8 @@ function buildEffect({ subject, originDate, links, days, note, missing }) {
   if (items.some((i) => i.source === 'ads')) baseline.ads = measure('ads', windows.ads, (r) => repo.adsAccount(r, scope));
   if (items.some((i) => i.source === 'ga4')) baseline.ga4 = measure('ga4', windows.ga4, (r) => repo.ga4Site(r, scope));
 
-  return { ...base, status: 'OK', done_date: doneDate, windows, items, baseline };
+  // site = 参照行和关键词用的是哪个站点的数据（没登记站点时是 null，界面不显示）
+  return { ...base, status: 'OK', done_date: doneDate, site: primary.site_name, windows, items, baseline };
 }
 
 export function buildTaskEffect(task, links, days) {

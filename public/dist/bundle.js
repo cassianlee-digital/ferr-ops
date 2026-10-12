@@ -5674,11 +5674,12 @@
     for (const item of data3.items) {
       const kind = LINK_LABEL[item.type] || item.type;
       const where = SOURCE_SUFFIX[item.source] || "";
-      effectRows(tbody, kind + where, item.type === "page" ? linkText(item) : item.label || item.ref, item, data3.metrics);
+      effectRows(tbody, kind + where + (item.site ? " \xB7 " + item.site : ""), item.type === "page" ? linkText(item) : item.label || item.ref, item, data3.metrics);
     }
-    if (data3.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F", "", data3.baseline.gsc, data3.metrics, "is-baseline");
+    const whose = data3.site ? "\uFF08" + data3.site + "\uFF09" : "";
+    if (data3.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F" + whose, "", data3.baseline.gsc, data3.metrics, "is-baseline");
     if (data3.baseline.ads) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u8D26\u6237\u5E7F\u544A\u540C\u671F", "\u91D1\u989D\u4E3A Ads \u8D26\u6237\u5E01\u79CD", data3.baseline.ads, data3.metrics, "is-baseline");
-    if (data3.baseline.ga4) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9 GA4 \u540C\u671F", "", data3.baseline.ga4, data3.metrics, "is-baseline");
+    if (data3.baseline.ga4) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9 GA4 \u540C\u671F" + whose, "", data3.baseline.ga4, data3.metrics, "is-baseline");
     table2.appendChild(tbody);
     box.appendChild(table2);
   }

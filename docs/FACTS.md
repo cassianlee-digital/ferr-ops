@@ -281,7 +281,7 @@
 | `users` | 账号与角色（seo / sem / manager / boss）。 |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（53）
+## 测试（54）
 
 `server/test/`
 
@@ -336,6 +336,7 @@
 | `taskAuditRoutes.test.js` | 可审计任务 · 路由层：完成门槛、关联键、重要标记、证据截图。 |
 | `taskChanges.test.js` | 任务的改动留痕与日期校验。 |
 | `taskEffect.test.js` | 任务完成前后的数据对比。 |
+| `taskEffectSites.test.js` | 多站点下的「任务完成前后数据对比」：关联的页面是哪个站的，就去哪个站的数据里找。 |
 | `timeRangeIntegration.test.js` | 时间范围端到端契约：KPI、总览、询盘必须消费同一日期口径，且只读查询不能污染共享快照。 |
 | `updateHelper.test.js` | updateById：7 个仓库共用的「按白名单部分更新」helper。 |
 | `verifiedAiAnswer.test.js` | AI 回答的证据核验：没有证据的数据结论降级为待验证； |

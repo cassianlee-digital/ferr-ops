@@ -430,12 +430,15 @@ function renderEffect(data) {
   for (const item of data.items) {
     const kind = LINK_LABEL[item.type] || item.type;
     const where = SOURCE_SUFFIX[item.source] || '';
-    effectRows(tbody, kind + where, item.type === 'page' ? linkText(item) : (item.label || item.ref), item, data.metrics);
+    // item.site：这个页面所在的站点和参照行用的站点不是同一个时，后端会标出来
+    effectRows(tbody, kind + where + (item.site ? ' · ' + item.site : ''), item.type === 'page' ? linkText(item) : (item.label || item.ref), item, data.metrics);
   }
   // 参照行：全站都涨的时候，单个页面跟着涨不算这条任务的功劳
-  if (data.baseline.gsc) effectRows(tbody, '参照 · 全站自然搜索同期', '', data.baseline.gsc, data.metrics, 'is-baseline');
+  // 登记了多个站点时写明「全站」指的是哪个站（按关联页面的域名认的）
+  const whose = data.site ? '（' + data.site + '）' : '';
+  if (data.baseline.gsc) effectRows(tbody, '参照 · 全站自然搜索同期' + whose, '', data.baseline.gsc, data.metrics, 'is-baseline');
   if (data.baseline.ads) effectRows(tbody, '参照 · 全账户广告同期', '金额为 Ads 账户币种', data.baseline.ads, data.metrics, 'is-baseline');
-  if (data.baseline.ga4) effectRows(tbody, '参照 · 全站 GA4 同期', '', data.baseline.ga4, data.metrics, 'is-baseline');
+  if (data.baseline.ga4) effectRows(tbody, '参照 · 全站 GA4 同期' + whose, '', data.baseline.ga4, data.metrics, 'is-baseline');
   table.appendChild(tbody); box.appendChild(table);
 }
 
