@@ -3,6 +3,7 @@
 // 缺数据不能当 0 分、没目标不能悄悄出分、花了钱零结果必须扣分、SEO 不能因为没广告预算被判 0。
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import '../test-support/tempDb.js'; // 必须在所有 ../src/ 的 import 之前：给本文件配一个临时库，不碰真实的开发库
 import {
   computeReview, getReviewConfig, bandFor, DEFAULT_REVIEW_CONFIG, REVIEW_STATUS,
   fixProgress, testProgress, weeklyProgress, summarizeLeads, periodKeyFor,

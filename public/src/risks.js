@@ -1,3 +1,4 @@
+// 风险清单页：把后端返回的检查结果画出来（全部走 DOM 文本节点，不拼 HTML）。
 const STATUS_LABELS={fail:'失败',unverified:'待验证',warn:'警告',pass:'通过'};
 const SOURCE_LABELS={production_live:'最近生产验收',current_static:'当前配置与数据库'};
 const EVIDENCE_LABELS={

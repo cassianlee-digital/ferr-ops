@@ -1,3 +1,4 @@
+// Ads 搜索词同步：取的是真实搜索词视图、重复同步不重复落库、候选否词排除已否掉的。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';

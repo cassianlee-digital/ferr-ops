@@ -1,6 +1,7 @@
 // 闭环条目数据访问层（plan/test/deposit/task）+ 归档地基（state/archived/deleted）。
 import { db } from '../connection.js';
 import { updateById } from '../updateHelper.js';
+import * as changesRepo from './loopItemChanges.js';
 
 /**
  * 列表查询。opts:
@@ -33,28 +34,44 @@ export function list(kind, opts = {}) {
 // 调用方少给的补 null、多给的丢掉，新增列不再逼着每个调用方同步改。
 const CREATE_COLS = ['kind', 'dept', 'content', 'owner', 'status',
   'task_date', 'start_date', 'task_hour', 'note', 'urgent', 'parent_id', 'fix_id',
-  'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how', 'task_priority'];
+  'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how',
+  'project', 'est_hours', 'important', 'task_priority'];
 
+// 列清单是上面的硬编码常量（不含任何请求输入），拼进 SQL 是安全的；INSERT 的列与占位符由它一处生成，不再手抄三遍。
 export function create(rec) {
   const row = {};
   for (const c of CREATE_COLS) row[c] = rec?.[c] ?? null;
   const info = db
     .prepare(
-      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, start_date, task_hour, note, urgent, parent_id, fix_id, task_why, task_done_when, task_verify_date, task_verify_how, task_priority)
-       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@start_date,@task_hour,@note,@urgent,@parent_id,@fix_id,@task_why,@task_done_when,@task_verify_date,@task_verify_how,@task_priority)`
+      `INSERT INTO loop_items (${CREATE_COLS.join(', ')})
+       VALUES (${CREATE_COLS.map((c) => '@' + c).join(',')})`
     )
     .run(row);
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(info.lastInsertRowid);
 }
 
+// PATCH 可写的列。导出给路由：完成门槛要按「更新后的样子」预判，只能拿白名单内的字段去合并，
+// 否则请求里夹一个白名单外的 parent_id / fix_id 就能把「重要任务」伪装成普通任务。
+export const UPDATABLE = ['dept', 'content', 'owner', 'status',
+  'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis',
+  'task_date', 'start_date', 'task_hour', 'note',
+  'state', 'archived_at', 'deleted_at', 'archive_kind',
+  'urgent', 'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how',
+  'project', 'result', 'task_actions', 'evidence', 'est_hours', 'actual_hours', 'important',
+  'task_priority'];
+
 export function update(id, fields) {
-  const allowed = ['dept', 'content', 'owner', 'status',
-    'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis',
-    'task_date', 'start_date', 'task_hour', 'note',
-    'state', 'archived_at', 'deleted_at', 'archive_kind',
-    'urgent', 'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how', 'task_priority'];
-  updateById('loop_items', id, fields, allowed);
+  updateById('loop_items', id, fields, UPDATABLE);
   return get(id);
+}
+
+// 改动与它的流水同生共死：流水记了而改动没落库（类型不对被拒），或者反过来，都是假账
+export function updateWithLog(id, fields, changes, userId) {
+  return db.transaction(() => {
+    updateById('loop_items', id, fields, UPDATABLE);
+    changesRepo.log(id, changes, userId);
+    return get(id);
+  })();
 }
 
 export function get(id) {
@@ -180,14 +197,23 @@ export function restore(id) {
 }
 
 // 软删：DELETE 默认走这里。
-export function softDelete(id) {
+export function softDelete(id, userId) {
   const row = get(id);
   if (!row) return null;
   if (row.state === 'deleted') return row;
   db.prepare(
-    "UPDATE loop_items SET state = 'deleted', deleted_at = datetime('now') WHERE id = @id"
-  ).run({ id });
+    "UPDATE loop_items SET state = 'deleted', deleted_at = datetime('now'), deleted_by = @by WHERE id = @id"
+  ).run({ id, by: userId ?? null });
   return get(id);
+}
+
+// 这些任务分别是谁删的：{ id → 姓名 }。没记到人的（这一列上线前删的）不在结果里。
+export function deleterNames(ids) {
+  if (!ids || !ids.length) return {};
+  const rows = db.prepare(
+    `SELECT l.id, u.name FROM loop_items l JOIN users u ON u.id = l.deleted_by WHERE l.id IN (${ids.map(() => '?').join(',')})`
+  ).all(...ids);
+  return Object.fromEntries(rows.map((r) => [r.id, r.name]));
 }
 
 // 物理删除：仅 boss/管理操作用，路由层 hard=1 才会调到。

@@ -2,6 +2,7 @@
 // 权限：定义的写入仅 manager+boss；完成记录任意登录运营都可写（共担文化）。
 import * as repo from '../db/repositories/sop.js';
 import { requireAuth, editor, onlyManagerBoss } from '../auth/middleware.js';
+import { sopStats } from '../services/sopStats.js';
 
 const FREQS = ['daily', 'weekly', 'monthly'];
 const DEPTS = ['SEM', 'SEO', '公司'];
@@ -38,18 +39,6 @@ function defFields(b) {
     sort_order: num(b.sort_order),
     source: s(b.source, 40),
   };
-}
-
-// [from..to] 的每一天（含两端）；to 早于 from 返回空数组
-function daysBetween(from, to) {
-  const out = [];
-  const d = new Date(from + 'T00:00:00Z');
-  const end = new Date(to + 'T00:00:00Z');
-  while (d <= end) {
-    out.push(d.toISOString().slice(0, 10));
-    d.setUTCDate(d.getUTCDate() + 1);
-  }
-  return out;
 }
 
 export async function sopRoutes(app) {
@@ -111,26 +100,7 @@ export async function sopRoutes(app) {
     const to = s(request.query?.to, 20);
     if (!DAY_RE.test(from || '') || !DAY_RE.test(to || '')) return reply.code(400).send({ error: 'from_and_to_required' });
     const today = DAY_RE.test(s(request.query?.today, 20) || '') ? s(request.query.today, 20) : null;
-    const end = today && today < to ? today : to; // 本周只算到今天
-    const defs = repo.listDefs({ activeOnly: true });
-    const rows = repo.completionsBetween(from, to);
-    const doneDays = new Map(); // sop_id -> Set(打卡日期)
-    for (const r of rows) {
-      if (!doneDays.has(r.sop_id)) doneDays.set(r.sop_id, new Set());
-      doneDays.get(r.sop_id).add(String(r.completed_at || '').slice(0, 10));
-    }
-    const items = defs.map((d) => {
-      const created = String(d.created_at || '').slice(0, 10);
-      const start = created > from ? created : from;
-      const days = daysBetween(start, end);
-      const hit = doneDays.get(d.id) || new Set();
-      if (d.freq === 'monthly') return { ...d, expected: null, done: hit.size, missed_days: [] };
-      if (d.freq === 'weekly') {
-        return { ...d, expected: days.length ? 1 : 0, done: hit.size ? 1 : 0, missed_days: [] };
-      }
-      return { ...d, expected: days.length, done: days.filter((x) => hit.has(x)).length, missed_days: days.filter((x) => !hit.has(x)) };
-    });
-    return { from, to, counted_to: end, items };
+    return sopStats(from, to, today); // 统计本身在 services/sopStats.js，周度审核也用同一份
   });
 
   // 当前周期完成态：传 ?daily=YYYY-MM-DD&weekly=YYYY-Www&monthly=YYYY-MM

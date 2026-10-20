@@ -1,3 +1,4 @@
+// AI 提供方：配置集中读取、未知提供方被拒绝、请求到时限真的会中断。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { callAnthropic } from '../src/services/anthropic.js';

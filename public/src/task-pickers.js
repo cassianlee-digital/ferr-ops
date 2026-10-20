@@ -27,7 +27,9 @@ export const prioOf = (it) => normPrio(it && it.task_priority);
 export function prioFlagHtml(p, { action = 'task-prio', title = '设优先级' } = {}) {
   const v = normPrio(p);
   const meta = PRIOS[v - 1];
-  return `<span class="tprio ${meta.cls}${v === 4 ? ' tprio-none' : ''}" data-loop-action="${action}" data-v="${v}" title="${esc(title)}：${meta.label}">`
+  // cls/label 取自本模块的 PRIOS、action 是调用方给的常量 —— 但 auditHtmlSinks 把参数和
+  // 算出来的表一律当未知（宁可多报不可少报）。都是短字符串，esc() 一遍不改变渲染结果。
+  return `<span class="tprio ${esc(meta.cls)}${v === 4 ? ' tprio-none' : ''}" data-loop-action="${esc(action)}" data-v="${v}" title="${esc(title)}：${esc(meta.label)}">`
     + `<i class="ti ti-flag${v === 4 ? '' : '-filled'}"></i></span>`;
 }
 
@@ -189,15 +191,15 @@ export function openDatePop(anchor, state, onApply) {
 
   const render = () => {
     if (mode === 'time') {
-      const opts = TIME_OPTS.map((t) => `<div class="tpop-opt${t === fmtHour(hour) ? ' on' : ''}" data-pop="h" data-v="${t}">${t}</div>`).join('');
+      const opts = TIME_OPTS.map((t) => `<div class="tpop-opt${t === fmtHour(hour) ? ' on' : ''}" data-pop="h" data-v="${esc(t)}">${esc(t)}</div>`).join('');
       return `<div class="tpop-head"><button type="button" class="tpop-back" data-pop="back"><i class="ti ti-chevron-left"></i> 返回</button>`
         + `<button type="button" class="tpop-clear" data-pop="hclear">清除时刻</button></div>`
         + `<div class="tpop-times">${opts}</div>`;
     }
     const sel = parseYmd(date);
     const title = date ? (cnDate(sel) + ' ' + WD[sel.getDay()]) : '未设日期';
-    const quick = quickRows(today).map((q) => `<div class="tpop-opt" data-pop="${q.k}" data-v="${q.v}">`
-      + `<i class="ti ${q.icon}"></i><span>${q.label}</span><em>${esc(q.hint)}</em></div>`).join('');
+    const quick = quickRows(today).map((q) => `<div class="tpop-opt" data-pop="${esc(q.k)}" data-v="${esc(q.v)}">`
+      + `<i class="ti ${esc(q.icon)}"></i><span>${esc(q.label)}</span><em>${esc(q.hint)}</em></div>`).join('');
     const m1 = monthHtml(sel || today, date, today);
     const m2 = monthHtml(new Date((sel || today).getFullYear(), (sel || today).getMonth() + 1, 1), date, today);
     return `<div class="tpop-title">${esc(title)}</div>`

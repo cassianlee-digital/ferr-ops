@@ -13,6 +13,7 @@ import { registerAuth } from './auth/routes.js';
 import { registerRoutes } from './routes/index.js';
 import { startHermesHealthMonitor } from './services/hermesStatus.js';
 import { startSyncScheduler } from './sync/scheduler.js';
+import { startBacklinkCheckScheduler } from './services/linkCheckBatch.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = resolve(__dirname, '../../public');
@@ -101,6 +102,7 @@ async function main() {
 
   // 谷歌数据定时自动同步（进程内调度）
   startSyncScheduler(app.log);
+  startBacklinkCheckScheduler(app.log);
   startHermesHealthMonitor(app.log);
 }
 

@@ -11,6 +11,10 @@
 import * as repo from '../db/repositories/attachments.js';
 import * as salesNoteRepo from '../db/repositories/inquirySalesNotes.js';
 import * as keywordRepo from '../db/repositories/keywords.js';
+import * as loopRepo from '../db/repositories/loopItems.js';
+import * as geoChecksRepo from '../db/repositories/geoChecks.js';
+import { completionMissing, importance, isDone } from '../services/taskAudit.js';
+import { spendTaskIds } from '../services/taskAuditData.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 
 export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;   // 单张 4MB（前端已压过，正常远小于此）
@@ -26,7 +30,23 @@ const OWNERS = {
     const row = keywordRepo.get(id);
     return !!row && row.type === 'customer'; // 目前只有「客户信息词库」这一栏要传图
   },
+  // 任务完成证据截图（排名截图、后台改动前后对比等）。只有任务卡能挂，计划/测试/沉淀不行。
+  task: (id) => loopRepo.get(id)?.kind === 'task',
+  // GEO 引用抽查的截图：AI 当时到底怎么回答的。没有它，「提到了 / 引用了」只是一句话。
+  geo_check: (id) => !!geoChecksRepo.getCheck(id),
 };
+
+/* 已完成的重要任务，最后一份证据不能删。
+   完成门槛拦的是「没证据就勾完成」；不拦这里的话，交一张图勾完再把图删掉，门槛就白设了。
+   要换图：先传新的，再删旧的。 */
+function isLastEvidenceOfDoneTask(meta) {
+  if (meta.owner_type !== 'task') return false;
+  const task = loopRepo.get(meta.owner_id);
+  if (!task || !isDone(task)) return false;
+  const imp = importance(task, { spend: spendTaskIds().has(task.id) });
+  const left = repo.bytesForOwner('task', task.id).count - 1;
+  return completionMissing(task, { important: imp.important, attachments: left }).includes('evidence');
+}
 
 /* 文件头魔数 → 真实类型。前端可以随便写 type，这里以字节为准。 */
 export function sniffImageMime(buf) {
@@ -107,6 +127,9 @@ export async function attachmentsRoutes(app) {
   app.delete('/api/attachments/:id', editor, async (request, reply) => {
     const meta = repo.getMeta(Number(request.params.id));
     if (!meta) return reply.code(404).send({ error: 'not_found' });
+    if (isLastEvidenceOfDoneTask(meta)) {
+      return reply.code(409).send({ error: 'last_evidence', detail: '这是已完成重要任务的最后一份证据，不能删；要换图请先上传新的' });
+    }
     repo.remove(meta.id);
     return { ok: true };
   });

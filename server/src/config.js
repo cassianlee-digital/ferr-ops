@@ -4,10 +4,17 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// 项目根目录在 server/ 的上一级；优先读根目录的 .env，方便 docker 与本地共用
-dotenv.config({ path: resolve(__dirname, '../../.env') });
-// 兜底：也尝试 server/.env（本地单独跑后端时）
-dotenv.config({ path: resolve(__dirname, '../.env') });
+/* 测试不读本机的 .env —— 测试要什么配置，由测试文件自己在 import 之前声明。
+   以前会读：于是同一套测试在每台机器上红的条数都不一样（这台 .env 里关了自动同步、缺种子口令、缺 AI 密钥，
+   就固定红 6 条，而且被当成「环境问题」写进了文档）。永远红的检查等于没有检查。
+   NODE_TEST_CONTEXT 是 `node --test` 给每个测试文件的进程设上的。 */
+export const UNDER_TEST = Boolean(process.env.NODE_TEST_CONTEXT);
+if (!UNDER_TEST) {
+  // 项目根目录在 server/ 的上一级；优先读根目录的 .env，方便 docker 与本地共用
+  dotenv.config({ path: resolve(__dirname, '../../.env') });
+  // 兜底：也尝试 server/.env（本地单独跑后端时）
+  dotenv.config({ path: resolve(__dirname, '../.env') });
+}
 
 const DEV_JWT_SECRET = 'dev-insecure-secret-change-me';
 const WEAK_JWT_SECRETS = new Set([
@@ -68,6 +75,11 @@ export const config = {
   settingsSecret: process.env.SETTINGS_SECRET || jwtSecret || 'dev-settings-key',
   settingsSecretExplicit: !!process.env.SETTINGS_SECRET,
 
+  // 独立站询盘表单 → 后台的接收入口。不配（或短于 24 位）= 入口关闭。
+  inquiryIntake: {
+    secret: process.env.INQUIRY_INTAKE_SECRET || '',
+  },
+
   hermes: {
     sharedSecret: process.env.HERMES_SHARED_SECRET || '',
     dailyLearningAuto: process.env.HERMES_DAILY_LEARNING_AUTO !== 'false',
@@ -86,6 +98,14 @@ export const config = {
   },
 
   // 谷歌数据定时自动同步（进程内调度，无需外部 cron）。
+  // 外链定时批量核查（services/linkCheckBatch.js）。服务器会去别人的站上取页面，所以一次的量和节奏都收着
+  backlinks: {
+    autoCheck: process.env.BACKLINK_AUTO_CHECK !== 'false',                 // 默认开启；BACKLINK_AUTO_CHECK=false 关闭
+    hourUtc: Number(process.env.BACKLINK_CHECK_HOUR_UTC ?? 19),             // 每天 UTC 几点跑（默认 19 点 = 北京凌晨 3 点）
+    staleDays: Number(process.env.BACKLINK_CHECK_STALE_DAYS ?? 7),          // 多少天没查过才再查
+    batch: Number(process.env.BACKLINK_CHECK_BATCH ?? 40),                  // 一次最多查几条
+    pauseMs: Number(process.env.BACKLINK_CHECK_PAUSE_MS ?? 1500),           // 每条之间停多久
+  },
   sync: {
     enabled: process.env.SYNC_AUTO !== 'false',                              // 默认开启；SYNC_AUTO=false 关闭
     dailyHourUtc: Number(process.env.SYNC_DAILY_HOUR_UTC ?? 5),              // 每天 UTC 几点跑（默认 5 点≈北京 13 点）

@@ -1,0 +1,78 @@
+/* ================= 周度审核页（2026-10-10）=================
+   渲染在 src/audit.js，全部 createElement，没有行内 style（本站 CSP 是 style-src-attr 'none'）。 */
+
+/* —— 工具条：区间、人员、AI、导出 —— */
+#panel-audit .audit-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+#panel-audit .audit-bar select {
+  height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg2); color: var(--text1); font-size: 12px; font-family: var(--font);
+}
+#panel-audit .audit-bar-gap { flex: 1 1 auto; }
+
+#panel-audit .audit-card { margin-bottom: 14px; }
+#panel-audit .audit-empty { padding: 14px 0; font-size: 13px; color: var(--text3); }
+#panel-audit .audit-missing { color: var(--danger); font-weight: 600; }
+#panel-audit .audit-sub { margin: 14px 0 6px; font-size: 12px; font-weight: 600; color: var(--text3); }
+#panel-audit .audit-line { font-size: 12px; line-height: 1.8; color: var(--text2); overflow-wrap: anywhere; }
+#panel-audit .audit-more { margin-top: 6px; font-size: 12px; }
+#panel-audit .audit-link { color: var(--blue); }
+#panel-audit .audit-link:hover { text-decoration: underline; }
+#panel-audit .audit-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+#panel-audit .audit-cols .audit-sub { margin-top: 0; }
+
+/* —— 概要：一人一块 —— */
+#panel-audit .audit-people { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+#panel-audit .audit-person { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); min-width: 0; }
+#panel-audit .audit-person-name { font-size: 12px; font-weight: 600; color: var(--text3); }
+#panel-audit .audit-person-big { margin: 2px 0 4px; font-size: 13px; color: var(--text2); }
+#panel-audit .audit-person-big b { font-size: 24px; font-weight: 600; color: var(--text1); font-variant-numeric: tabular-nums; }
+#panel-audit .audit-person-line { font-size: 12px; line-height: 1.8; color: var(--text2); font-variant-numeric: tabular-nums; }
+#panel-audit .audit-person-line.is-bad { color: var(--danger); font-weight: 600; }
+#panel-audit .audit-person-line.is-warn { color: var(--amber); }
+#panel-audit .audit-notes { margin-top: 12px; font-size: 12px; line-height: 1.8; color: var(--text2); }
+#panel-audit .audit-notes summary { cursor: pointer; color: var(--text3); }
+
+/* —— 表格 —— */
+#panel-audit .audit-table { width: 100%; }
+#panel-audit .audit-table td { vertical-align: top; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+#panel-audit .audit-table td.num, #panel-audit .audit-table th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#panel-audit .audit-delta.is-good { color: var(--green); font-weight: 600; }
+#panel-audit .audit-delta.is-bad { color: var(--danger); font-weight: 600; }
+
+/* —— 任务 —— */
+#panel-audit .audit-group { margin: 14px 0 6px; padding: 4px 10px; border-left: 3px solid var(--border2); background: var(--bg3); font-size: 12px; font-weight: 600; color: var(--text1); }
+#panel-audit .audit-group-completed { border-left-color: var(--green); }
+#panel-audit .audit-group-overdue { border-left-color: var(--danger); }
+#panel-audit .audit-group-in_progress { border-left-color: var(--blue); }
+#panel-audit .audit-tasks { table-layout: fixed; }
+#panel-audit .audit-tasks th:nth-child(1) { width: 26%; }
+#panel-audit .audit-tasks th:nth-child(2) { width: 26%; }
+#panel-audit .audit-tasks th:nth-child(3) { width: 22%; }
+#panel-audit .audit-tasks th:nth-child(4) { width: 9%; }
+#panel-audit .audit-tasks th:nth-child(5) { width: 17%; }
+#panel-audit .audit-task-title { font-weight: 600; color: var(--text1); }
+#panel-audit .audit-task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; color: var(--text3); }
+#panel-audit .audit-task-links { margin-top: 2px; color: var(--text3); }
+#panel-audit .audit-result-text { color: var(--text1); white-space: pre-wrap; }
+#panel-audit .audit-actions { margin-top: 2px; color: var(--text2); white-space: pre-wrap; }
+#panel-audit .audit-evidence { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+#panel-audit .audit-effect-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 600; color: var(--text1); }
+#panel-audit .audit-effect-line { color: var(--text2); font-variant-numeric: tabular-nums; }
+#panel-audit .audit-effect .btn-mini { margin-top: 4px; }
+#panel-audit .audit-hours { color: var(--text2); font-variant-numeric: tabular-nums; }
+#panel-audit .audit-flags { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+#panel-audit .audit-flags .badge { white-space: normal; text-align: left; line-height: 1.4; height: auto; padding-top: 2px; padding-bottom: 2px; }
+
+/* —— AI 审核意见 —— */
+#panel-audit .audit-ai-note { margin-bottom: 10px; padding: 6px 10px; border-left: 3px solid var(--amber); background: var(--amber-soft); font-size: 12px; line-height: 1.6; color: var(--text1); }
+#panel-audit .audit-ai-overview { margin-bottom: 10px; font-size: 13px; line-height: 1.8; color: var(--text1); }
+#panel-audit .audit-ai-person { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+#panel-audit .audit-ai-h { margin: 8px 0 2px; font-size: 12px; font-weight: 600; color: var(--text1); }
+#panel-audit .audit-ai-list { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.8; color: var(--text2); }
+#panel-audit .audit-ai-raw { max-height: 360px; overflow: auto; padding: 10px; border: 1px solid var(--border); background: var(--bg3); font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (max-width: 1100px) {
+  #panel-audit .audit-cols { grid-template-columns: 1fr; }
+  #panel-audit .audit-tasks { table-layout: auto; }
+}
+#panel-audit .audit-task-changes { margin-top: 2px; color: var(--amber); overflow-wrap: anywhere; }

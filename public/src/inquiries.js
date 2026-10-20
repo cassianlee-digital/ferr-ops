@@ -14,12 +14,16 @@
 
 import { esc, openModal, closeModal, toast, tableLoadState } from './ui-kit.js';
 import { loadDashboardInq, loadKpiInqDonuts } from './charts.js';
+import { fetchInquiries } from './inquiry-data.js';
 import { inlineConfirm } from './keywords.js';
 import { renderGlobe } from './inquiry-globe.js';
-import { getRangeRevision, withRange } from './timerange.js';
+import { getRangeRevision } from './timerange.js';
 import { commitPendingCellEdit } from './table-editor.js';
 import { PRODUCT_BADGE, REGION_BADGE, PRODUCT_NAMES, REGION_NAMES, fillSelect } from './catalog.js';
 import { salesCellHtml } from './inquiry-sales.js';
+import { loadSourceChecks, siteCellHtml, sourceCellHtml } from './inquiry-source.js';
+import { allSites } from './site-scope.js';
+import { attrConfirmBtnHtml, attrLockHtml, attrMarkHtml, isConfirmed, loadAttrCoverage } from './inquiry-attribution.js';
 
 /* ================= 询盘录入（真实弹框 + 持久化）================= */
 // 产品 / 大区的可选值与配色统一来自 catalog.js —— 以前这里各写一份，加个产品要改四处，
@@ -38,6 +42,14 @@ export function openInquiry(){
   ['f-country','f-code','f-sales','f-source','f-note'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('f-deal').value='未成交'; // 每次打开都回默认，避免沿用上一条
   document.getElementById('f-company').value=''; // 公司不给默认值：没选就是没选，别替业务瞎归属
+  // 站点：登记了站点才给选，默认「未标注」。选了站点、公司还空着时，把这个站点所属的公司带出来（后端也会这么做）
+  const siteSel=document.getElementById('f-site'), sites=allSites();
+  siteSel.textContent=''; const none=document.createElement('option'); none.value=''; none.textContent='未标注'; siteSel.appendChild(none);
+  sites.forEach(s=>{ const o=document.createElement('option'); o.value=String(s.id); o.textContent=s.name; siteSel.appendChild(o); });
+  document.getElementById('f-site-fld').classList.toggle('is-hidden',!sites.length);
+  siteSel.onchange=()=>{ const s=sites.find(x=>String(x.id)===siteSel.value), c=document.getElementById('f-company'); if(s&&s.company&&!c.value)c.value=s.company; };
+  // 普通录入不带线索；从线索转来的由 leadconvert 监听在本函数之后再挂上
+  pendingLead=null; const banner=document.getElementById('inq-lead-banner'); if(banner)banner.classList.add('is-hidden');
   openModal('inqMask');
 }
 export async function submitInquiry(){
@@ -47,9 +59,11 @@ export async function submitInquiry(){
     company:g('f-company'),salesperson:g('f-sales'),deal_status:g('f-deal'), // 公司 / 业务员 / 是否成交
     country:g('f-country')||'🏳️ 未填',region:g('f-region'),channel:g('f-channel'),
     source:g('f-source')||'待补',product:g('f-product'),grade:g('f-grade'),note:g('f-note')};
+  if(pendingLead)rec.lead_id=pendingLead.id;
+  else if(g('f-site'))rec.site_id=Number(g('f-site'));
   try{
     const {item}=await API.post('/api/inquiries',rec);
-    closeModal('inqMask');
+    closeModal('inqMask'); pendingLead=null;
     await loadInquiries(); // BUG-15：按当前时间区间重拉，统计/趋势/列表全部一致；不再用 POST 返回的全量 stats 污染显示
     loadDashboardInq(); // 6.23 文档 2：总览趋势独立缓存，新增询盘后也同步重绘
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
@@ -82,10 +96,10 @@ function renderTrackLog(){
   const list=fbList(_trackEditing);
   if(!list.length){ box.innerHTML='<div class="track-log-empty">还没有跟踪记录，在下面写第一条。</div>'; return; }
   box.innerHTML='<div class="track-log-head">跟踪记录 · '+list.length+' 条（新的在上）</div>'
-    +list.map(f=>`<div class="track-item" data-fb="${f.id}">`
+    +list.map(f=>`<div class="track-item" data-fb="${esc(f.id)}">`
       +`<div class="track-item-meta"><span class="track-item-date${f.created_at?'':' track-item-nodate'}"><i class="ti ti-clock"></i>${esc(fbDateLabel(f,true))}</span>`
       +(f.created_by_name?`<span class="track-item-who">${esc(f.created_by_name)}</span>`:'')
-      +`<button type="button" class="track-item-del" data-fb-del="${f.id}" title="删除这条记录"><i class="ti ti-trash"></i></button></div>`
+      +`<button type="button" class="track-item-del" data-fb-del="${esc(f.id)}" title="删除这条记录"><i class="ti ti-trash"></i></button></div>`
       +`<div class="track-item-text">${esc(f.text)}</div></div>`).join('');
 }
 function openTrack(tr){
@@ -165,21 +179,24 @@ export function inqRowHtml(r){
   // 国家/大区后期可改（2026-09-20 老板要求）：录入当下常常不知道客户是哪来的，
   // 先留空或填错，等业务问清楚再补。国家是自由文本（带国旗 emoji），故用可编辑格；
   // 大区是固定几个值，改成彩色标签下拉，和渠道/产品一致，点一下就换。
+  // 确认闸门：渠道 / 等级一旦被经理或老板确认，就不再给下拉（点了后端也会拒绝），换成带锁的静态徽章
+  const locked=isConfirmed(r);
   return `<td>${esc(r.date.slice(5))}</td>`
     +`<td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code||'')}</td>`
     +`<td class="editable" contenteditable data-field="country">${esc(r.country||'')}</td>`
-    +`<td class="ctr"><span class="tagselect ${REGION_BADGE[r.region]||'b-gray'}" data-kind="region">${esc(r.region||'未填')}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr"><span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td>${esc(r.source)}</td>`
-    +`<td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product]||'b-gray'}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
-    +`<td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td>`
+    +`<td class="ctr"><span class="tagselect ${esc(REGION_BADGE[r.region]||'b-gray')}" data-kind="region">${esc(r.region||'未填')}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr inq-attr-cell">${locked?attrLockHtml(CH_BADGE[r.channel]||'b-gray',r.channel):`<span class="tagselect ${CH_BADGE[r.channel]||'b-gray'}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td>`
+    +`<td class="inq-source">${sourceCellHtml(r)}</td>`
+    +`<td class="ctr inq-site">${siteCellHtml(r)}</td>`
+    +`<td class="ctr"><span class="tagselect ${esc(PRODUCT_BADGE[r.product]||'b-gray')}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td>`
+    +`<td class="ctr inq-attr-cell">${locked?attrLockHtml(GRADE_BADGE[r.grade]||'b-gray',r.grade):`<span class="tagselect ${GRADE_BADGE[r.grade]||'b-gray'}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td>`
     +`<td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company]||'b-gray'}" data-kind="company">${esc(r.company||'未标注')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson||'')}</td>`
     +`<td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td>`
     +`<td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status]||'b-gray'}" data-kind="deal">${esc(r.deal_status||'未标记')}<i class="ti ti-chevron-down"></i></span></td>`
     +`<td class="dim csp-s-33ee298127">${esc(r.note||'')}</td>`
     +`<td class="ctr inq-track-feedback">${trackCellHtml(r)}</td>`
-    +`<td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="删除（归档到归档页）"><i class="ti ti-trash"></i></button></td>`;
+    +`<td class="ctr inq-ops">${attrConfirmBtnHtml(r)}<button class="btn-mini inq-del csp-s-7ee38adc7c" title="删除（归档到归档页）"><i class="ti ti-trash"></i></button></td>`;
 }
 function monthLabel(ym){ const p=ym.split('-'); return p[0]+'年'+(+p[1])+'月'; }
 
@@ -198,6 +215,7 @@ const FILTER_COLS=[
   {key:'region',type:'select',ph:'大区',blank:'未填',catalog:REGION_NAMES},
   {key:'channel',type:'select',ph:'渠道',blank:'未填'},
   {key:'source',type:'text',ph:'来源词'},
+  {key:'site_name',type:'select',ph:'站点',blank:'未标注'}, // 多站点：从哪个网站来的（后端按 site_id 带出名字）
   {key:'product',type:'select',ph:'产品',blank:'未填',catalog:PRODUCT_NAMES},
   {key:'grade',type:'select',ph:'等级'},
   {key:'company',type:'select',ph:'公司',blank:'未标注'},
@@ -264,11 +282,11 @@ export function renderInqFilterRow(){
     }
     const cur=FILTERS[col.key]||'';
     if(col.type==='text')
-      return `<td><input type="search" class="inq-f-input" data-inq-filter="${col.key}" placeholder="${esc(col.ph)}" value="${esc(cur)}"></td>`;
+      return `<td><input type="search" class="inq-f-input" data-inq-filter="${esc(col.key)}" placeholder="${esc(col.ph)}" value="${esc(cur)}"></td>`;
     const opts=col.type==='has'
       ?[{value:'有',label:'有反馈'},{value:'无',label:'无反馈'}]
       :optionsFor(col);
-    return `<td class="ctr"><select class="inq-f-select${cur?' on':''}" data-inq-filter="${col.key}">`
+    return `<td class="ctr"><select class="inq-f-select${cur?' on':''}" data-inq-filter="${esc(col.key)}">`
       +`<option value="">${esc(col.ph)}</option>`
       +opts.map(o=>`<option value="${esc(o.value)}"${o.value===cur?' selected':''}>${esc(o.label)}</option>`).join('')
       +'</select></td>';
@@ -309,12 +327,12 @@ function renderInqPager(total,pages,from,to){
   if(!total){ el.innerHTML=''; return; }
   const nums=pageNumbers(_page,pages).map(n=>n==='…'
     ?'<span class="pg-gap">…</span>'
-    :`<button type="button" class="pg-num${n===_page?' on':''}" data-inq-page="${n}">${n}</button>`).join('');
+    :`<button type="button" class="pg-num${n===_page?' on':''}" data-inq-page="${esc(n)}">${esc(n)}</button>`).join('');
   el.innerHTML=`<span class="pg-info">第 ${from}-${to} 条 · 共 ${total} 条 · ${pages} 页</span>`
     +`<span class="pg-mid">`
     +`<button type="button" class="pg-num" data-inq-page="${_page-1}"${_page<=1?' disabled':''}><i class="ti ti-chevron-left"></i></button>`
     +nums
-    +`<button type="button" class="pg-num" data-inq-page="${_page+1}"${_page>=pages?' disabled':''}><i class="ti ti-chevron-right"></i></button>`
+    +`<button type="button" class="pg-num" data-inq-page="${Number(_page)+1}"${_page>=pages?' disabled':''}><i class="ti ti-chevron-right"></i></button>`
     +`</span>`
     +`<span class="pg-size">每页 <select data-inq-size>`
     +PAGE_SIZES.map(n=>`<option value="${n}"${n===_pageSize?' selected':''}>${n}</option>`).join('')
@@ -331,7 +349,7 @@ document.addEventListener('click',async e=>{
     loadDashboardInq();      // 总览当月趋势同步
     if(window._curTab==='archive'){try{loadArchive();}catch(_){}}
     toast('已删除 · 已归档到「归档」页');
-  }catch(err){ toast(err&&err.status===403?'无权操作':'删除失败：'+(err.message||'请求失败')); }
+  }catch(err){ toast('删除失败：'+((err&&err.message)||'请求失败')); }
 });
 /* ===== 可编辑单元格（客户编码 / 业务员）与行缓存的同步（2026-09-08）=====
    老板反馈「客户编码后期补录后，有的直接就不显示」，根因是缓存不同步而不是没存进库：
@@ -351,6 +369,30 @@ document.addEventListener('cellsaved',e=>{
 /* 业务反馈由 inquiry-sales.js 管（它自己重画那一格），但「有/无业务反馈」这个筛选条件
    与条数统计在本模块，所以要重画整表。用事件而不是互相 import —— 否则两个模块成环。 */
 document.addEventListener('salesnoteschanged',()=>renderInqTable());
+/* 来源格（来源词 / 系列 / 落地页 + 对账徽章）由 inquiry-source.js 管：对账结果回来、或来源被改了，
+   它广播 inqsourcechanged，这里重画整表（来源词同时是表头筛选的一列）。同样用事件，不互相 import。 */
+// 只有「人保存了来源 / 站点」时才重画表头筛选（站点是筛选的一列）；对账结果回来时不重画 —— 那时人可能正在筛选框里打字，重画会把光标顶掉
+document.addEventListener('inqsourcechanged',e=>{ if(e.detail&&e.detail.saved)renderInqFilterRow(); renderInqTable(); });
+/* 渠道 / 等级被确认、撤销确认或被经理改过之后整页重拉：行上的锁、确认标记、改动次数、顶部进度都要跟着变。
+   inquiry-attribution.js 广播 attributionchanged，同样用事件而不是互相 import。 */
+document.addEventListener('attributionchanged',()=>loadInquiries());
+/* 表单线索「转为询盘」：inquiry-source.js 把线索交过来，这里打开录入弹框并预填。
+   来源字段（系列 / 关键词 / 落地页 / gclid…）不在这里填 —— 提交时只带 lead_id，后端自己从线索里取，
+   免得「机器证据」在前端转一道手。等级不预填：评级是人的判断。 */
+let pendingLead=null;
+document.addEventListener('leadconvert',e=>{
+  const d=e.detail||{}; const lead=d.lead; if(!lead)return;
+  openInquiry();
+  pendingLead=lead;
+  document.getElementById('f-site-fld').classList.add('is-hidden'); // 线索的站点由后端按网址认，不在这里选
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el&&v!=null&&v!=='')el.value=v; };
+  set('f-date',d.date); set('f-country',lead.country); set('f-channel',lead.suggested_channel);
+  set('f-source',lead.keyword||lead.utm_term);
+  if(PRODUCT_NAMES.includes(lead.product))set('f-product',lead.product);
+  set('f-note',[lead.contact_company,(lead.message||'').slice(0,300)].filter(Boolean).join(' · '));
+  const banner=document.getElementById('inq-lead-banner');
+  if(banner){ banner.textContent='来自表单线索 #'+lead.id+'：系列、关键词、落地页等来源会按线索自动带入并锁定，不用手填。请核对内容并评级。'; banner.classList.remove('is-hidden'); }
+});
 /* 重画前把「改了但还没确认存盘」的可编辑单元格收回缓存。
    只收 dirty 的（td._old 由 table-editor 在 focusin 时记、存盘成功后更新）——
    存盘成功的行已由 cellsaved 用服务端整行同步过，全量收会让过期 DOM 反过来盖掉刚拉回来的新数据。 */
@@ -451,14 +493,18 @@ let inquiryRequestSequence=0;
 export async function loadInquiries(){
   const requestId=++inquiryRequestSequence;
   const revision=getRangeRevision('inquiry');
+  // KPI 页两个 donut 按 KPI 页自己的区间取数（不受询盘页区间/筛选影响）。与列表**同时**发出：
+  // 两边时间范围相同时共用一次请求（见 inquiry-data.js），以前是等列表回来再取一遍一模一样的
+  loadKpiInqDonuts();
   try{
-    const {items,stats}=await API.get(withRange('/api/inquiries','inquiry'));
+    const {items,stats}=await fetchInquiries('inquiry');
     if(requestId!==inquiryRequestSequence||revision!==getRangeRevision('inquiry'))return;
     window._inqCache=items||[];
     renderInqList(); // 唯一一张表：表头筛选 + 日期倒序 + 月份分隔 + 分页
     refreshInqStats(stats);
+    loadAttrCoverage(); // 渠道 / 等级的确认进度：未确认占比跟着列表一起刷
+    loadSourceChecks(); // 来源对账 + 表单线索待处理数：表格先出来，这些随后补上（不 await，不拖慢列表）
     // 6.23 文档 2：总览询盘趋势改为「当月按日」独立缓存；不再被 loadInquiries 触发
-    loadKpiInqDonuts(); // KPI 页两个 donut 按 KPI 页自己的区间取数（不受询盘页区间/筛选影响）
     if(window._curTab==='inquiry'){try{renderGlobe();}catch(e){}}
   }catch(e){ if(requestId===inquiryRequestSequence&&e&&e.message!=='unauthorized'){
     window._inqCache=[];

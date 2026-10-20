@@ -26,6 +26,8 @@
 <link rel="stylesheet" href="/page-keywords.css">
 <link rel="stylesheet" href="/page-ga4.css">
 <link rel="stylesheet" href="/page-archive.css">
+<link rel="stylesheet" href="/page-spend.css">
+<link rel="stylesheet" href="/page-audit.css">
 <link rel="stylesheet" href="/components.css">
 <link rel="stylesheet" href="/csp-utilities.css">
 </head>
@@ -39,10 +41,12 @@
       <div class="nav-item" data-tab="kpi"><i class="ti ti-award"></i> KPI 考核<span class="dot dot-amber"></span></div>
       <div class="nav-item" data-tab="inquiry"><i class="ti ti-mail-star"></i> 询盘评级<span class="dot dot-green"></span></div></div>
     <div class="nav-section"><div class="nav-label">数据中心</div>
-      <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div></div>
+      <div class="nav-item" data-tab="data"><i class="ti ti-chart-histogram"></i> 数据看板</div>
+      <div class="nav-item" data-tab="spend"><i class="ti ti-receipt-2"></i> 投入台账</div></div>
     <div class="nav-section"><div class="nav-label">行动中心</div>
       <div class="nav-item" data-tab="planning"><i class="ti ti-calendar-stats"></i> 计划 / 总结<span class="dot dot-red is-hidden" id="nav-tasks-dot"></span></div>
       <div class="nav-item" data-tab="action"><i class="ti ti-git-branch"></i> 测试 / 整改</div>
+      <div class="nav-item" data-tab="audit"><i class="ti ti-clipboard-check"></i> 周度审核</div>
     </div>
     <div class="nav-section"><div class="nav-label">资产库</div>
       <div class="nav-item" data-tab="keywords"><i class="ti ti-key"></i> 关键词库</div>
@@ -100,6 +104,7 @@
       <!-- ============ 总览 ============ -->
       <div class="panel active" id="panel-dashboard">
         <div class="page-head"><div><div class="page-title">运营总览</div><div class="page-sub">询盘 · SEO · SEM 三块趋势一眼掌握</div></div></div>
+        <div class="site-select-bar is-hidden" data-site-select data-site-note="SEO 小看板和 GEO 卡随站点切换；询盘、考核、SEM 是部门 / 账户口径，不随站点变。"></div>
         <div class="timebar-inline" data-time data-scope="dashboard" data-gran="day,week,month"></div>
         <div class="grid32">
           <div class="card"><div class="card-head"><span class="card-title" id="overviewKpiTitle">所选区间 KPI 考核总分</span><span class="card-link" data-ui-action="go" data-tab="kpi">查看明细 →</span></div>
@@ -110,15 +115,11 @@
             <div class="legend"><div class="legend-item"><div class="legend-dot csp-s-2eeb30cb25"></div>有效询盘</div><div class="legend-item"><div class="legend-dot csp-s-9a7b826d35"></div>询盘总量</div></div>
             <div class="chart-wrap csp-s-f6f4334f92"><canvas id="inqTrend"></canvas></div></div>
         </div>
-        <!-- 6.23 文档 4：GEO 监控（占位，后续接入） -->
-        <div class="card csp-s-0c2d35ec2b">
-          <div class="csp-s-5c7facb46f">
-            <i class="ti ti-world-search csp-s-551dec436c"></i>
-            <div class="csp-s-0deeda8007">
-              <div class="csp-s-b44f80d0fa">GEO 监控</div>
-              <div class="csp-s-bd299c8ad6">占位中 · 后期接入地理位置/区域级 SEO/SEM 监控</div>
-            </div>
-          </div>
+        <!-- GEO（生成式引擎优化，2026-10-10 接入真实数据，原占位已撤）：AI 引擎带来的访问与询盘。
+             跟随总览页时间范围；渲染在 src/geo.js，口径在 server/src/services/geo.js -->
+        <div class="card geo-card">
+          <div class="card-head"><span class="card-title"><i class="ti ti-sparkles csp-s-e1bc9acca5"></i> GEO · AI 引擎带来的流量</span><span class="card-sub" id="geo-range">GA4 · 所选区间</span></div>
+          <div class="geo-body" id="geo-body"><div class="geo-empty">加载中…</div></div>
         </div>
         <div class="grid2">
           <div class="card"><div class="card-head"><span class="card-title"><i class="ti ti-world-search csp-s-e1bc9acca5"></i> SEO 总览</span><span class="card-sub" id="ov-seo-range">GSC · 所选区间</span></div>
@@ -171,17 +172,17 @@
 
       <!-- ============ 询盘评级 ============ -->
       <div class="panel" id="panel-inquiry">
-        <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><button class="btn-primary" data-ui-action="open-inquiry"><i class="ti ti-plus"></i> 录入询盘</button></div>
+        <div class="page-head"><div><div class="page-title">询盘评级</div><div class="page-sub">每日录入 · 自动汇总进数据看板与考核</div></div><div class="inq-head-ops"><button class="btn-ghost" data-ui-action="open-leads" title="独立站表单带着来源参数提交进来的线索，确认并评级后转为询盘"><i class="ti ti-inbox"></i> 表单线索 <span class="inq-leads-count" id="inq-leads-count"></span></button><button class="btn-primary" data-ui-action="open-inquiry"><i class="ti ti-plus"></i> 录入询盘</button></div></div>
         <div class="timebar-inline" data-time data-scope="inquiry" data-gran="day,week,month"></div>
 <!-- 询盘明细表（全宽 · 唯一一张表：表头筛选行 + 月份分隔行 + 底部分页）-->
         <div>
-          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；表头第二行按列筛选，下方地图跟随筛选结果</span><span class="inq-summary" id="inqSummary"></span></div>
+          <div class="sheet-toolbar"><span class="sheet-tip"><i class="ti ti-info-circle"></i> 下拉是彩色标签，点一下切换；表头第二行按列筛选，下方地图跟随筛选结果</span><span class="inq-attr-bar-box" id="inqAttrBar"></span><span class="inq-summary" id="inqSummary"></span></div>
           <div class="card"><table class="dt inq-table">
           <!-- 6.23 文档 11/12/7：删销售确认列；加跟踪反馈（备注后）；P3 末尾加「操作」删除列 -->
           <!-- 录入改版：客户姓名 → 客户编码，等级后加 公司 / 业务员 / 是否成交 -->
           <!-- 2026-09-20：业务员后加「业务反馈」（业务发回来的文字 + 截图）；总列数 = 15（colspan 同步） -->
           <thead>
-            <tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr inq-th-sales">业务反馈</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr>
+            <tr><th>日期</th><th>客户编码</th><th>国家</th><th class="ctr">大区</th><th class="ctr">渠道</th><th>来源词 / 落地页</th><th class="ctr">站点</th><th class="ctr">产品</th><th class="ctr">等级</th><th class="ctr">公司</th><th class="ctr">业务员</th><th class="ctr inq-th-sales">业务反馈</th><th class="ctr">是否成交</th><th>备注</th><th class="ctr csp-s-d334b57bfc">跟踪反馈</th><th class="ctr csp-s-8071f21693">操作</th></tr>
             <!-- 筛选行由 inquiries.js renderInqFilterRow() 填充：产品/大区列出完整目录，其余取真实出现过的值 -->
             <tr class="inq-filter-row" id="inqFilterRow"></tr>
           </thead>
@@ -250,14 +251,16 @@
       <!-- ============ ③ 数据看板 ============ -->
       <div class="panel" id="panel-data">
         <div class="page-head"><div><div class="page-title">数据看板</div><div class="page-sub">SEO / SEM 唯一数据中心 · 周报+诊断+明细都在这里 · AI 诊断可一键「采纳」入整改清单</div></div></div>
+        <!-- 多站点：登记了两个以上站点时出现（public/src/site-scope.js）。只有一个站点时什么都不显示 -->
+        <div class="site-select-bar is-hidden" data-site-select data-site-note="SEO 看板、GA4 流量、诊断随站点切换。SEM 看板是整个广告账户的数据、GEO 抽查是全公司一份题库，不随站点变。"></div>
         <div class="timebar-inline" data-time data-scope="data" data-gran="week,month"></div>
         <!-- 阶段5：数据新鲜度条——三源实际有数据天数 + 最后同步时间，替代之前删掉的碎提示 -->
         <div id="dataFreshness" class="data-fresh"><span class="dim">数据新鲜度加载中…</span></div>
-        <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div><div class="subtab" data-sub="data-report">AI 周报</div></div>
+        <div class="subtabs"><div class="subtab active" data-sub="data-seo">SEO 看板</div><div class="subtab" data-sub="data-sem">SEM 看板</div><div class="subtab" data-sub="data-ga4">GA4 流量</div><div class="subtab" data-sub="data-geo">GEO 抽查</div><div class="subtab" data-sub="data-report">AI 周报</div></div>
 
         <!-- ===== SEO 看板 ===== -->
         <div class="subpanel active" id="sub-data-seo">
-          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber is-hidden" id="diag-opp-n"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red is-hidden" id="diag-decay-n"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple is-hidden" id="diag-cann-n"></span></div></div>
+          <div class="minitabs"><div class="minitab active" data-mini="seo-overview">概览</div><div class="minitab" data-mini="seo-opp">站点机会 <span class="badge b-amber is-hidden" id="diag-opp-n"></span></div><div class="minitab" data-mini="seo-decay">流量衰退 <span class="badge b-red is-hidden" id="diag-decay-n"></span></div><div class="minitab" data-mini="seo-cann">关键词蚕食 <span class="badge b-purple is-hidden" id="diag-cann-n"></span></div><div class="minitab" data-mini="seo-ctr">点击率偏低 <span class="badge b-blue is-hidden" id="diag-ctr-n"></span></div></div>
 
           <div class="minipanel active" id="mp-seo-overview">
             <!-- AI 周报已移至「AI 周报」子tab；数据由 GSC 同步驱动，手动录入入口已移除 -->
@@ -312,6 +315,13 @@
               <tr><td colspan="5" class="dim csp-s-45c174bbec">加载中…</td></tr>
             </tbody></table></div>
           </div>
+
+          <div class="minipanel" id="mp-seo-ctr">
+            <div class="sheet-tip csp-s-b922c89f16"><i class="ti ti-click"></i> 已经排在首页、曝光也不少，但点进来的人明显比同样排位的词少——排名不用再冲，改标题和描述就可能多拿点击。对比的是<b>本站自己同位次的词</b>，不是行业水平</div>
+            <div class="card"><table class="dt"><thead><tr><th>关键词</th><th>页面</th><th class="num">排名</th><th class="num">曝光</th><th class="num">点击率</th><th class="num">少拿的点击</th><th class="ctr">动作</th></tr></thead><tbody id="diagCtrRows">
+              <tr><td colspan="7" class="dim csp-s-45c174bbec">加载中…</td></tr>
+            </tbody></table></div>
+          </div>
         </div>
 
         <!-- ===== SEM 看板 ===== -->
@@ -342,6 +352,11 @@
               <div class="card-head"><span class="card-title"><i class="ti ti-coin"></i> 真实询盘回报</span><span class="card-sub">花费 ÷ 真实有效询盘<span class="sem-attr-scope is-hidden" id="semAttrScope"> · 账户级，不随系列筛选</span></span></div>
               <div id="semAttrBody"></div>
             </div>
+          </div>
+          <!-- 多站点：每个站花了多少广告费、带来几条询盘（public/src/site-returns.js）。登记了两个以上站点才出现 -->
+          <div class="card is-hidden" id="siteReturnsCard">
+            <div class="card-head"><span class="card-title"><i class="ti ti-world"></i> 按站点：广告花费与询盘</span><span class="card-sub">广告是整个账户的，按「系列归属」落到站点 · 参考用，不进考核</span></div>
+            <div id="siteReturnsBody"></div>
           </div>
           <!-- 手动「导入本周 Ads 数据」入口已移除：数据由 Google Ads 同步驱动 -->
           <!-- 图表提前：老板一眼看走向 -->
@@ -385,6 +400,20 @@
           </div>
         </div>
         <div class="subpanel" id="sub-data-ga4"></div>
+
+        <!-- ===== GEO 引用抽查（2026-10-10）：固定题库 × 固定引擎，一轮一张矩阵。渲染与事件在 src/geo-checks.js ===== -->
+        <div class="subpanel" id="sub-data-geo">
+          <div class="geochk-intro">AI 回答里有没有提到我们、有没有引用我们的页面，流量数据看不到，只能人去问。同一批问题、同一批引擎，每两周问一遍并截图，前后才能比。<b>问题加进题库后文字不能再改</b>，要换就停用后另加一条。</div>
+          <div class="geochk-bar">
+            <label>这一轮的日期 <input type="date" id="geochk-date" class="cell-date"></label>
+            <button class="btn-mini" type="button" id="geochk-today"><i class="ti ti-calendar-due"></i> 今天</button>
+            <select id="geochk-rounds"></select>
+            <label class="geochk-off"><input type="checkbox" id="geochk-show-off"> 显示已停用的问题</label>
+          </div>
+          <div class="geochk-summary" id="geochk-summary"></div>
+          <div class="geochk-add"><input type="text" id="geochk-new" maxlength="300" placeholder="加一个客户真会拿去问 AI 的问题，例如：best gate valve manufacturer in China"><button class="btn-primary" type="button" id="geochk-add"><i class="ti ti-plus"></i> 加入题库</button></div>
+          <div class="card geochk-card"><table class="dt geochk-table"><thead id="geochk-head"></thead><tbody id="geochk-body"></tbody></table></div>
+        </div>
 
         <!-- ===== AI 周报（SEO + SEM 合一，周级低频，独立 tab，不占概览黄金位） ===== -->
         <div class="subpanel" id="sub-data-report">
@@ -621,6 +650,57 @@
       </div>
 
       <!-- ============ 任务看板 V3 ============ -->
+      <!-- ============ 周度审核（2026-10-10）：按日期和人员，一次看全任务 / 数据 / 询盘 / 测试 / 整改 / 花费 / KPI。
+           页面只读后端的审核包（/api/audit/weekly），导出和 AI 审核吃的是同一份数。渲染与事件在 src/audit.js ============ -->
+      <div class="panel" id="panel-audit">
+        <div class="page-head"><div><div class="page-title">周度审核</div><div class="page-sub">这段时间做了什么、证据在哪、数据变没变、钱花在哪 · 每个数都能回到任务和询盘上核对</div></div></div>
+        <div class="audit-bar">
+          <button class="btn-mini" type="button" data-audit-week="-1" title="上一周"><i class="ti ti-chevron-left"></i></button>
+          <input type="date" id="audit-start" class="cell-date"><span class="dim">~</span><input type="date" id="audit-end" class="cell-date">
+          <button class="btn-mini" type="button" data-audit-week="1" title="下一周"><i class="ti ti-chevron-right"></i></button>
+          <button class="btn-mini" type="button" data-audit-week="0"><i class="ti ti-calendar-due"></i> 本周</button>
+          <select id="audit-person"><option value="all">全部人员</option><option value="李">李 · SEO</option><option value="陈">陈 · SEM</option></select>
+          <span class="audit-bar-gap"></span>
+          <button class="btn-primary" type="button" data-ui-action="audit-ai"><i class="ti ti-sparkles"></i> <span id="audit-ai-label">AI 审核</span></button>
+          <button class="btn-ghost" type="button" data-ui-action="audit-export" data-format="xlsx"><i class="ti ti-file-spreadsheet"></i> 导出 XLSX</button>
+          <button class="btn-ghost" type="button" data-ui-action="audit-export" data-format="json"><i class="ti ti-braces"></i> 导出 JSON</button>
+          <select id="audit-csv-section">
+            <option value="">CSV 导哪张表…</option>
+            <option value="tasks">任务</option><option value="effects">数据变化</option><option value="inquiries">询盘</option><option value="leads">表单线索</option>
+            <option value="fixes">整改</option><option value="tests">测试</option><option value="sop">SOP</option><option value="spend">花费汇总</option>
+            <option value="backlinks">外链</option><option value="expenses">其它支出</option><option value="geo">GEO</option><option value="kpi">KPI</option><option value="summary">概要</option>
+          </select>
+          <button class="btn-ghost" type="button" data-ui-action="audit-export" data-format="csv"><i class="ti ti-file-type-csv"></i> 导出 CSV</button>
+        </div>
+        <div id="audit-ai"></div>
+        <div id="audit-body"></div>
+      </div>
+
+      <!-- ============ 投入台账（2026-10-10）：钱花在哪 —— 广告 / 外链 / 其它支出。渲染与事件全在 src/spend.js ============ -->
+      <div class="panel" id="panel-spend">
+        <div class="page-head"><div><div class="page-title">投入台账</div><div class="page-sub">钱花在哪：广告费取自 Ads 同步，外链和其它支出逐笔登记 · 每一笔都要查得到是哪一条、花在哪条任务上</div></div></div>
+        <div class="spend-month">
+          <button class="btn-mini" type="button" data-spend-month="-1" title="上个月"><i class="ti ti-chevron-left"></i></button>
+          <input type="month" id="spend-month" class="cell-date">
+          <button class="btn-mini" type="button" data-spend-month="1" title="下个月"><i class="ti ti-chevron-right"></i></button>
+          <button class="btn-mini" type="button" id="spend-month-now"><i class="ti ti-calendar-due"></i> 本月</button>
+        </div>
+        <div class="spend-summary" id="spend-summary"></div>
+        <div class="subtabs">
+          <div class="subtab active" data-sub="spend-links"><i class="ti ti-link"></i> 外链台账</div>
+          <div class="subtab" data-sub="spend-exp"><i class="ti ti-receipt-2"></i> 其它支出</div>
+        </div>
+        <div class="subpanel active" id="sub-spend-links">
+          <div class="spend-toolbar"><label class="spend-all"><input type="checkbox" id="spend-links-all"> 显示全部时间的外链（不限本月）</label><button class="btn-primary" data-ui-action="open-backlink"><i class="ti ti-plus"></i> 登记外链</button></div>
+          <div class="spend-stats" id="spend-link-stats"></div>
+          <div class="card spend-card"><table class="dt spend-table"><thead><tr><th class="num">日期</th><th>外链所在页面</th><th>指向页面 / 锚文本</th><th class="ctr">方式</th><th class="ctr">属性</th><th class="num">DR</th><th class="num">月流量</th><th class="num">费用</th><th class="ctr">状态</th><th>关联任务</th><th class="ctr">操作</th></tr></thead><tbody id="tb-backlinks"></tbody></table></div>
+        </div>
+        <div class="subpanel" id="sub-spend-exp">
+          <div class="spend-toolbar"><span class="dim">广告费来自 Ads 同步、外链费记在外链台账，这里只记其余的钱（同一笔不要记两处）</span><button class="btn-primary" data-ui-action="open-expense"><i class="ti ti-plus"></i> 登记支出</button></div>
+          <div class="card spend-card"><table class="dt spend-table"><thead><tr><th class="num">日期</th><th class="ctr">类别</th><th>用途</th><th>付给谁</th><th class="num">金额</th><th class="ctr">负责人</th><th>关联任务</th><th>凭证</th><th class="ctr">操作</th></tr></thead><tbody id="tb-expenses"></tbody></table></div>
+        </div>
+      </div>
+
       <div class="panel" id="panel-tasks">
         <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">每列上=SOP 固定清单(日/周/月合并一条一行)、下=每日新增 · 陈=SEM、李=SEO、公司任务在左</div></div>
           <button class="btn-ghost btn-mini co-add-task-btn" id="co-add-task-hdr" data-ui-action="open-task" data-dept="公司" title="派发公司任务"><i class="ti ti-building"></i> 派发公司任务</button>
@@ -783,11 +863,15 @@
         </div>
         <div class="subpanel" id="sub-set-ds">
         <!-- 1d-b: 数据源状态卡（只读，读 /api/data-sources/status 真实状态）-->
-        <div class="card csp-s-c53ea1da23" id="ds-status-card"><div class="card-head"><span class="card-title">数据源状态</span><span id="ds-demo-tag"></span><span class="card-sub">各数据源真实接入状态 · 人工录入 / Google 同步 / AI Provider</span></div>
+        <div class="card csp-s-c53ea1da23" id="ds-status-card"><div class="card-head"><span class="card-title">数据源状态</span><span class="card-sub">各数据源真实接入状态 · 人工录入 / Google 同步 / AI Provider</span></div>
           <div class="csp-s-690699d0d0" id="ds-status-rows"></div>
         </div>
         </div>
         <div class="subpanel" id="sub-set-api">
+        <!-- 多站点：一个谷歌账号下的每个网站各登记一次（public/src/sites.js 渲染） -->
+        <div class="card" id="sites-card"><div class="card-head"><span class="card-title">站点管理</span><span class="card-sub">一个谷歌账号下的每个网站各登记一次 · 每天自动同步所有站点的 GSC 与 GA4 · 广告账户几个站共用</span></div>
+          <div id="sites-box"></div>
+        </div>
         <!-- V7: Google API 接入（后端环境变量 + OAuth 授权 + 手动同步）-->
         <div class="card csp-s-c53ea1da23"><div class="card-head"><span class="card-title">API 接入 · Google 授权与同步</span><span class="card-sub">显示后端配置、OAuth 授权、最近同步结果；密钥不进入前端</span></div>
           <div class="csp-s-a624e8ba1e" id="integ-rows"></div>
@@ -897,6 +981,8 @@
   <div class="modal">
     <div class="modal-head"><i class="ti ti-mail-plus csp-s-b0e08465c2"></i> 录入询盘<span class="x" data-ui-action="close-modal" data-modal="inqMask"><i class="ti ti-x"></i></span></div>
     <div class="modal-body">
+      <!-- 从表单线索转来时显示（src/inquiries.js 的 leadconvert 监听）：告诉录入人来源会自动带入 -->
+      <div class="task-done-rule is-hidden" id="inq-lead-banner"></div>
       <div class="fld-row">
         <div class="fld"><label>日期</label><input type="date" id="f-date"></div>
         <div class="fld"><label>客户编码（可选）</label><input id="f-code" placeholder="DE-2026-018"></div>
@@ -905,6 +991,8 @@
         <div class="fld"><label>国家</label><input id="f-country" placeholder="🇩🇪 德国"></div>
         <div class="fld"><label>公司（询价通过哪家）</label><select id="f-company"><option value="">未标注</option><option>贝孚特</option><option>费尔瑞</option></select></div>
       </div>
+      <!-- 多站点：登记了站点才出现。从线索转来的不用选（按线索带回的网址自动认） -->
+      <div class="fld is-hidden" id="f-site-fld"><label>站点（从哪个网站来的；不确定就留「未标注」）</label><select id="f-site"></select></div>
       <div class="fld-row">
         <!-- 大区 / 产品的 option 由 openInquiry() 调 fillSelect() 按 public/src/catalog.js 渲染。
              这里刻意留空：清单写两份就会出现「表格里有、录入框里没有」，那正是要修的毛病。 -->
@@ -1041,11 +1129,214 @@
         <div class="fld"><label>验证日期（可选）</label><input type="date" id="task-verify-date"></div>
         <div class="fld"><label>怎么验证（可选）</label><input type="text" id="task-verify-how" placeholder="截图对比 / 看数据 / 客户反馈…"></div>
       </div>
+      <!-- 可审计任务（2026-10-10）：产品/项目、预估工时、关联对象、重要标记。逻辑在 src/task-audit.js -->
+      <div class="fld-row">
+        <div class="fld"><label>产品 / 项目（可选）</label><input type="text" id="task-project" list="task-project-list" maxlength="60" placeholder="阀门 / 官网改版…"><datalist id="task-project-list"></datalist></div>
+        <div class="fld"><label>预估工时（小时，可选）</label><input type="number" id="task-est-hours" min="0" step="0.5" placeholder="例如 2"></div>
+      </div>
+      <div class="fld"><label>关联对象（可选）· 动的是哪个页面 / 系列 / 关键词，想推动哪个指标</label>
+        <div class="tlink-add">
+          <select id="task-link-type"><option value="page">页面</option><option value="campaign">广告系列</option><option value="keyword">关键词</option><option value="kpi">KPI</option></select>
+          <span class="tlink-value" id="task-link-value"></span>
+          <button type="button" class="btn-mini" data-ui-action="task-link-add"><i class="ti ti-plus"></i> 添加</button>
+        </div>
+        <div class="tlink-chips" id="task-link-chips"></div>
+      </div>
       <div class="fld"><label>备注（可选）</label><textarea id="task-note" placeholder="补充说明…"></textarea></div>
+      <div class="fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="task-important"> 标为重要任务（完成时必须附证据；只有经理/老板能取消）</label></div>
       <!-- Step C：urgent 勾选，仅经理/老板派发公司任务时显示 -->
       <div class="fld is-hidden" id="task-urgent-fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="task-urgent"> ⚠️ 设为紧急（顶部强提示，所有人可见，完成后消失）</label></div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskMask">取消</button><button class="btn-primary" data-ui-action="submit-task"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- 任务完成弹框：勾完成 = 交结果。所有任务必须写完成结果；重要任务还要证据（链接或截图）。
+     缺什么由后端判并回原因，显示在 #task-done-error，不关窗让人直接补。逻辑在 src/task-audit.js -->
+<div class="modal-mask" id="taskDoneMask">
+  <div class="modal task-done-modal">
+    <div class="modal-head"><i class="ti ti-circle-check csp-s-b0e08465c2"></i> <span id="task-done-verb">完成任务</span><span class="x" data-ui-action="close-modal" data-modal="taskDoneMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="task-done-title" id="task-done-title"></div>
+      <div class="task-done-rule" id="task-done-rule"></div>
+      <div class="fld"><label>完成结果（必填）</label><textarea id="task-done-result" rows="3" maxlength="2000" placeholder="结果是什么：上线了什么 / 改成了什么 / 数据到了多少…"></textarea></div>
+      <div class="fld"><label>具体动作（可选）</label><textarea id="task-done-actions" rows="2" maxlength="2000" placeholder="实际做了哪几件事，一行一件…"></textarea></div>
+      <div class="fld"><label>证据链接（一行一个，http/https 开头）</label><textarea id="task-done-evidence" rows="2" placeholder="上线后的页面 / 后台改动记录 / 文档链接…"></textarea></div>
+      <div class="fld"><label>证据截图</label>
+        <div class="task-done-shots"><span id="task-done-thumbs"></span><button type="button" class="btn-mini" data-ui-action="pick-task-evidence"><i class="ti ti-photo-plus"></i> 上传截图</button></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>实际用时（小时，可选）</label><input type="number" id="task-done-hours" min="0" step="0.5" placeholder="例如 1.5"></div>
+        <div class="fld"><label>&nbsp;</label><div class="dim csp-s-25b23d2157" id="task-done-est"></div></div>
+      </div>
+      <div class="task-done-error" id="task-done-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskDoneMask">取消</button><button class="btn-primary" data-ui-action="submit-task-done"><i class="ti ti-check"></i> <span id="task-done-submit-label">确认完成</span></button></div>
+  </div>
+</div>
+
+<!-- 投入台账：登记 / 编辑外链。下拉选项由 /api/spend/options 运行时填充（HTML 里刻意留空，只有后端一份）。逻辑在 src/spend.js -->
+<div class="modal-mask" id="backlinkMask">
+  <div class="modal spend-modal">
+    <div class="modal-head"><i class="ti ti-link csp-s-b0e08465c2"></i> <span id="bl-verb">登记</span>外链<span class="x" data-ui-action="close-modal" data-modal="backlinkMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld"><label>外链所在页面（必填，完整网址）</label><input type="text" id="bl-source" placeholder="https://…"></div>
+      <div class="fld-row">
+        <div class="fld"><label>指向我们的哪个页面</label><input type="text" id="bl-target" placeholder="https://…"></div>
+        <div class="fld"><label>锚文本</label><input type="text" id="bl-anchor" maxlength="200"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>获得方式</label><select id="bl-method"></select></div>
+        <div class="fld"><label>链接属性</label><select id="bl-rel"></select></div>
+        <div class="fld"><label>状态</label><select id="bl-status"></select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>费用（免费留空）</label><input type="number" id="bl-cost" min="0" step="0.01"></div>
+        <div class="fld"><label>币种</label><select id="bl-currency"></select></div>
+        <div class="fld"><label>卖家 / 中介</label><input type="text" id="bl-vendor" maxlength="100"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>来源站 DR（0~100）</label><input type="number" id="bl-dr" min="0" max="100" step="1"></div>
+        <div class="fld"><label>来源站月流量</label><input type="number" id="bl-traffic" min="0" step="1"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>日期（上线日；未上线填付款日）</label><input type="date" id="bl-date"></div>
+        <div class="fld"><label>最近核查日（确认还在的那天）</label><input type="date" id="bl-checked"></div>
+      </div>
+      <div class="fld"><label>质量判断（相关性、页面质量、为什么值这个钱）</label><textarea id="bl-quality" rows="2" maxlength="500"></textarea></div>
+      <div class="fld-row">
+        <div class="fld"><label>关联任务</label><select id="bl-task"></select></div>
+        <div class="fld"><label>负责人</label><input type="text" id="bl-owner" maxlength="20"></div>
+      </div>
+      <div class="fld"><label>备注</label><textarea id="bl-note" rows="2" maxlength="500"></textarea></div>
+      <div class="task-done-error" id="bl-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="backlinkMask">取消</button><button class="btn-primary" data-ui-action="submit-backlink"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- 投入台账：登记 / 编辑其它支出 -->
+<div class="modal-mask" id="expenseMask">
+  <div class="modal spend-modal">
+    <div class="modal-head"><i class="ti ti-receipt-2 csp-s-b0e08465c2"></i> <span id="ex-verb">登记</span>支出<span class="x" data-ui-action="close-modal" data-modal="expenseMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld-row">
+        <div class="fld"><label>日期（必填）</label><input type="date" id="ex-date"></div>
+        <div class="fld"><label>类别（必填）</label><select id="ex-category"></select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>金额（必填）</label><input type="number" id="ex-amount" min="0" step="0.01"></div>
+        <div class="fld"><label>币种（必填）</label><select id="ex-currency"></select></div>
+      </div>
+      <div class="fld"><label>用途（必填）· 买了什么、为什么买</label><textarea id="ex-purpose" rows="2" maxlength="300"></textarea></div>
+      <div class="fld-row">
+        <div class="fld"><label>付给谁</label><input type="text" id="ex-vendor" maxlength="100"></div>
+        <div class="fld"><label>负责人</label><input type="text" id="ex-owner" maxlength="20"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>关联任务</label><select id="ex-task"></select></div>
+        <div class="fld"><label>订单 / 发票链接</label><input type="text" id="ex-evidence" placeholder="https://…"></div>
+      </div>
+      <div class="fld"><label>备注</label><textarea id="ex-note" rows="2" maxlength="500"></textarea></div>
+      <div class="task-done-error" id="ex-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="expenseMask">取消</button><button class="btn-primary" data-ui-action="submit-expense"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- 任务完成前后的数据变化：按任务关联的页面 / 系列 / 关键词，对比完成日前后等长的两段同步数据。
+     口径与状态说明全由后端给，src/task-audit.js 只负责画。入口是卡片 / 归档行上的「数据变化」按钮 -->
+<div class="modal-mask" id="taskEffectMask">
+  <div class="modal task-effect-modal">
+    <div class="modal-head"><i class="ti ti-chart-line csp-s-b0e08465c2"></i> 完成前后的数据变化<span class="x" data-ui-action="close-modal" data-modal="taskEffectMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="teffect-top">
+        <div class="task-done-title" id="task-effect-title"></div>
+        <div class="teffect-days"><button type="button" class="btn-mini" data-effect-days="7">前后 7 天</button><button type="button" class="btn-mini" data-effect-days="14">14 天</button><button type="button" class="btn-mini" data-effect-days="28">28 天</button></div>
+      </div>
+      <div id="task-effect-body"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="taskEffectMask">关闭</button></div>
+  </div>
+</div>
+
+<!-- 渠道 / 等级 / 确认状态的改动流水：谁、什么时候、从什么改成什么、为什么。逻辑在 src/inquiry-attribution.js -->
+<div class="modal-mask" id="attrLogModal">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-history csp-s-b0e08465c2"></i> <span id="attrLogTitle">改动流水</span><span class="x" data-ui-action="close-modal" data-modal="attrLogModal"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="attr-log" id="attrLogBody"></div>
+      <div class="task-done-rule" id="attrLogRule"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="attrLogModal">关闭</button></div>
+  </div>
+</div>
+
+<!-- 修改已确认的渠道 / 等级，或撤销确认（仅经理 / 老板有入口）：强制填原因 -->
+<div class="modal-mask" id="attrEditModal">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-shield-check csp-s-b0e08465c2"></i> <span id="attrEditTitle">修改已确认的渠道 / 等级</span><span class="x" data-ui-action="close-modal" data-modal="attrEditModal"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="fld-row" id="attrEditFields">
+        <div class="fld"><label>渠道</label><select id="attrEditChannel"><option>SEO自然</option><option>SEM付费</option><option>直接</option><option>其他</option></select></div>
+        <div class="fld"><label>等级</label><select id="attrEditGrade"><option>A</option><option>B</option><option>C</option></select></div>
+      </div>
+      <div class="fld"><label>原因（必填）</label><textarea id="attrEditReason" rows="3" maxlength="500" placeholder="例：业务确认客户已下样品单，等级上调为 A"></textarea></div>
+      <div class="task-done-rule">这次操作会写进改动流水，包含你的名字、时间和原因。</div>
+      <div class="task-done-error" id="attrEditError"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="attrEditModal">取消</button><button class="btn-primary" data-ui-action="submit-attr-edit"><i class="ti ti-device-floppy"></i> 保存</button></div>
+  </div>
+</div>
+
+<!-- 询盘来源详情：来源词 / 系列 / 落地页 + 对账结果。表单带回的来源整块只读。逻辑在 src/inquiry-source.js -->
+<div class="modal-mask" id="inqSourceMask">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-route csp-s-b0e08465c2"></i> 询盘来源<span class="x" data-ui-action="close-modal" data-modal="inqSourceMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="task-done-title" id="inq-src-title"></div>
+      <div class="task-done-rule" id="inq-src-evidence"></div>
+      <div class="fld"><label>来源词（客户搜的词 / 广告触发的词）</label><input type="text" id="inq-src-term" maxlength="200"></div>
+      <div class="fld"><label>广告系列（只能选已同步的）</label><select id="inq-src-campaign"></select></div>
+      <div class="fld"><label>落地页（完整网址）</label><input type="text" id="inq-src-page" placeholder="https://…"></div>
+      <div class="fld" id="inq-src-site-fld"><label>站点（从哪个网站来的；填了落地页会按域名自动认）</label><select id="inq-src-site"></select></div>
+      <div class="inq-src-check" id="inq-src-check"></div>
+      <div class="task-done-error" id="inq-src-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="inqSourceMask">关闭</button><button class="btn-primary" id="inq-src-save" data-ui-action="submit-inq-source"><i class="ti ti-device-floppy"></i> 保存并入库</button></div>
+  </div>
+</div>
+
+<!-- 表单线索收件箱：独立站询盘表单带着来源参数提交进来的原始记录。线索不是询盘，不进任何统计 -->
+<div class="modal-mask" id="leadsMask">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-inbox csp-s-b0e08465c2"></i> 表单线索<span class="x" data-ui-action="close-modal" data-modal="leadsMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="task-done-rule" id="leads-status"></div>
+      <div class="teffect-days leads-tabs"><button type="button" class="btn-mini" data-lead-state="new">待处理</button><button type="button" class="btn-mini" data-lead-state="ignored">已忽略</button></div>
+      <div class="leads-list" id="leads-list"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="leadsMask">关闭</button></div>
+  </div>
+</div>
+
+<!-- GEO 引用抽查：录入某一轮里「某个问题 × 某个引擎」的结果。保存后不关窗，紧接着传截图。逻辑在 src/geo-checks.js -->
+<div class="modal-mask" id="geoCheckMask">
+  <div class="modal">
+    <div class="modal-head"><i class="ti ti-sparkles csp-s-b0e08465c2"></i> GEO 抽查 · <span id="geochk-title"></span><span class="x" data-ui-action="close-modal" data-modal="geoCheckMask"><i class="ti ti-x"></i></span></div>
+    <div class="modal-body">
+      <div class="task-done-title" id="geochk-question"></div>
+      <div class="task-done-rule">把上面这个问题原样拿去问这个引擎（新开对话、不登录个性化账号更接近客户看到的），按它的回答如实勾选。</div>
+      <div class="fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="geochk-mentioned"> 回答里提到了我们（品牌 / 公司名）</label></div>
+      <div class="fld"><label class="csp-s-4e7f580757"><input class="csp-s-641778be2c" type="checkbox" id="geochk-cited"> 回答引用 / 链接了我们的页面</label></div>
+      <div class="fld"><label>被引用的是哪个页面（勾了「引用」才需要）</label><input type="text" id="geochk-url" placeholder="https://…"></div>
+      <div class="fld"><label>备注（提到的位置、同时推荐了哪些对手…）</label><textarea id="geochk-note" rows="2" maxlength="1000"></textarea></div>
+      <div class="fld"><label>回答截图</label>
+        <div class="task-done-shots"><span id="geochk-thumbs"></span><button type="button" class="btn-mini" id="geochk-shot-btn" data-ui-action="pick-geo-shot"><i class="ti ti-photo-plus"></i> 上传截图</button><span class="dim" id="geochk-shot-tip"></span></div>
+      </div>
+      <div class="task-done-error" id="geochk-error"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-mini is-hidden" type="button" id="geochk-del">删除这一格</button><button class="btn-ghost" data-ui-action="close-modal" data-modal="geoCheckMask">关闭</button><button class="btn-primary" data-ui-action="submit-geo-check"><i class="ti ti-device-floppy"></i> 保存</button></div>
   </div>
 </div>
 

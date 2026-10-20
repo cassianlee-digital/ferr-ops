@@ -1,3 +1,11 @@
+# PROJECT_STATUS（已归档）
+
+> 状态：superseded
+> 2026-06 的 UI 改版交接笔记和当时的待办。其中「Google 同步未接入」等说法早已不成立。
+> **只为查历史保留，不要把这里的任何说法当成现状引用。** 现状从 `AGENTS.md` 看起。
+
+---
+
 # ferr-ops Project Status
 
 ## UI Follow-up Notes - 2026-06-29

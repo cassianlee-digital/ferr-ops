@@ -1,3 +1,4 @@
+// 把上传的文档（xlsx / csv / 文本等）解析成有长度上限的纯文字，供 AI 读取。
 import { createRequire } from 'node:module';
 import readExcelFile from 'read-excel-file/node';
 

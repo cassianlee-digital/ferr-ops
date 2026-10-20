@@ -1,3 +1,4 @@
+// AI 分析结果的数据访问层：按 scope 存一份当前结论，重跑时旧结论进历史。
 import { db } from '../connection.js';
 
 const safeJson = (value, fallback) => {

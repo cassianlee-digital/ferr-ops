@@ -3,6 +3,7 @@
    main.js 仅向 app.js 暴露静态动作和初始化真正需要的兼容入口。 */
 
 import { esc, mdToHtml, openModal, closeModal, toast, toastGo } from './ui-kit.js';
+import { defaultSiteName, viewingOtherSite } from './site-scope.js';
 import { addDeposit, addFixFromObj, clip, createEvidenceFix, persistFailMsg, persistFix, persistLoop } from './closed-loop.js';
 
 const apiUnavailableMsg='<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI 服务暂时不可用：请检查后台 AI Provider、API Key 与模型配置，或稍后重试。</div>';
@@ -54,7 +55,7 @@ function aiQualityBanner(quality,historical){
   return '<div class="hermes-confidence '+esc(q.level||'not_applicable')+'"><div class="hermes-confidence-head"><strong>'+title+'</strong><span>'+esc(q.decision||'')+'</span></div>'+(entries?'<div class="hermes-confidence-grid">'+entries+'</div>':'')+'</div>';
 }
 function aiIsActionable(item){ const q=item&&item.quality&&item.quality.confidenceAssessment; return !!(q&&q.level&&q.level!=='low'); }
-function fmtAiTime(v){ if(!v)return ''; const d=new Date(String(v).replace(' ','T')+(/[Z+]/.test(String(v))?'':'Z')); if(isNaN(d))return String(v).slice(5,16); const p=n=>String(n).padStart(2,'0'); return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+function fmtAiTime(v){ if(!v)return ''; const d=new Date(String(v).replace(' ','T')+(/[Z+]/.test(String(v))?'':'Z')); if(isNaN(d))return esc(String(v).slice(5,16)); const p=n=>String(n).padStart(2,'0'); return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes()); }
 function aiTimeline(item){
   const hist=(item&&item.history)||[]; if(!hist.length)return '';
   const idx=aiViewIdx;
@@ -117,14 +118,14 @@ async function splitActions(){
     if(blocked){ box.innerHTML='<div class="dim csp-s-46909fa053">当前结论置信度低，不能拆成可执行动作。</div>'; return; }
     splitActionItems=(actions||[]).map(a=>({dept:a&&a.dept==='SEM'?'SEM':'SEO',title:String(a&&a.title||'AI 整改动作'),detail:String(a&&a.detail||''),evidence:String(a&&a.evidence||''),confidence:a&&a.confidence||null}));
     if(!splitActionItems.length){ box.innerHTML='<div class="dim csp-s-46909fa053">未能从结论中提取到明确可执行的动作。</div>'; return; }
-    box.innerHTML='<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> 可采纳的整改动作（逐条）</div>'+splitActionItems.map((a,i)=>'<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge '+(a.dept==='SEM'?'b-purple':'b-blue')+'">'+a.dept+'</span> '+esc(a.title)+'</div><div class="ai-action-d">'+esc(a.detail)+'</div>'+(a.evidence?'<div class="ai-action-e dim">依据：'+esc(a.evidence)+'</div>':'')+'</div><button type="button" class="btn-mini" data-ai-split-index="'+i+'"><i class="ti ti-clipboard-check"></i> 采纳</button></div>').join('')+'</div>';
+    box.innerHTML='<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> 可采纳的整改动作（逐条）</div>'+splitActionItems.map((a,i)=>'<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge '+(a.dept==='SEM'?'b-purple':'b-blue')+'">'+esc(a.dept)+'</span> '+esc(a.title)+'</div><div class="ai-action-d">'+esc(a.detail)+'</div>'+(a.evidence?'<div class="ai-action-e dim">依据：'+esc(a.evidence)+'</div>':'')+'</div><button type="button" class="btn-mini" data-ai-split-index="'+i+'"><i class="ti ti-clipboard-check"></i> 采纳</button></div>').join('')+'</div>';
   }catch(e){ splitActionItems=[]; if(box)box.innerHTML='<div class="dim csp-s-46909fa053">拆解失败：'+esc(e.message||'ai_failed')+'</div>'; }
 }
 export async function runAiAnalysis(btn,prompt,title,force){
   const meta=aiMeta(btn,prompt,title);
   const requestVersion=++modalRequestVersion;
   activeAi=null; aiViewIdx=-1; splitActionItems=[]; lastAi={text:'',dept:meta.dept,quality:null};
-  document.getElementById('aiModalTitle').textContent=meta.title;
+  document.getElementById('aiModalTitle').textContent=meta.title+(viewingOtherSite()?'（注意：AI 目前只读默认站点「'+defaultSiteName()+'」的数据，不是当前所选站点）':'');
   document.getElementById('aiModalBody').innerHTML='<div class="ai-loading"><span class="spin"></span> AI 正在结合当前页面数据和市场记忆分析...</div>';
   document.getElementById('aiModalFoot').style.display='none';
   if(btn)btn.disabled=true;

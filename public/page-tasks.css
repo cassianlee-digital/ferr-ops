@@ -1212,3 +1212,142 @@ body.dark .tpop { box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
   flex-wrap: nowrap;
 }
 #panel-tasks .sop-log-btn, #panel-tasks .sop-info-btn { flex: none; white-space: nowrap; }
+/* ================= 可审计任务（2026-10-10）=================
+   三块界面共用，故意不挂 #panel-tasks 前缀：任务卡、归档页的内容列、两个弹框都要用。
+   class 一律走样式表 —— 本站 CSP 是 style-src-attr 'none'，行内 style 属性会被浏览器直接丢掉。 */
+
+/* —— 卡片 / 归档行上的审计信息块：关联 / 结果 / 动作 / 证据 / 工时，一条一行 —— */
+.taudit {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+.taudit-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text2);
+  min-width: 0;
+}
+.taudit-label {
+  flex: none;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--bg3);
+  color: var(--text3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.taudit-val {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: pre-wrap;      /* 结果 / 动作是人写的多行文字，换行要保住 */
+  overflow-wrap: anywhere;    /* 长链接不许把卡片撑破 */
+}
+.taudit-result .taudit-label { background: #edfaf3; color: #2e6b4a; }
+.taudit-missing { color: var(--danger); font-weight: 600; }
+.taudit-link {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 6px 2px 0;
+  overflow-wrap: anywhere;
+}
+.taudit-link b { margin-right: 3px; color: var(--text3); font-weight: 600; }
+.taudit-ev { display: inline-block; margin-right: 8px; color: var(--blue); overflow-wrap: anywhere; }
+a.taudit-ev:hover { text-decoration: underline; }
+.taudit-edit { margin-left: 4px; }
+.taudit-imp, .taudit-proj { flex: none; }
+/* 完成的卡整体会被划线变淡；审计信息恰恰是完成之后才要看的，不能跟着一起淡掉 */
+#panel-tasks .tcard.done .taudit,
+#panel-tasks .tcard.done .taudit * { text-decoration: none; opacity: 1; }
+/* 归档页内容列：单元格不是 flex 容器，信息块自己成块；徽章与标题留一点间距 */
+#panel-archive .archive-content .taudit { margin-bottom: 6px; }
+#panel-archive .archive-content .taudit-imp,
+#panel-archive .archive-content .taudit-proj { margin: 4px 4px 0 0; }
+body.dark .taudit { border-top-color: #202838; }
+body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
+
+/* —— 任务弹框：关联对象编辑器 —— */
+.tlink-add { display: flex; gap: 6px; align-items: center; }
+.tlink-add > select { flex: none; width: 96px; }
+.tlink-value { flex: 1 1 auto; min-width: 0; }
+.tlink-add > .btn-mini { flex: none; white-space: nowrap; }
+.tlink-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tlink-chips:empty { display: none; }
+.tlink-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg3);
+  font-size: 12px;
+  color: var(--text1);
+  overflow-wrap: anywhere;
+}
+.tlink-chip b { flex: none; color: var(--text3); font-weight: 600; }
+.tlink-del {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text3);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tlink-del:hover { background: var(--danger-soft); color: var(--danger); }
+
+/* —— 完成弹框（宽度随全站 .modal 统一的 560px，styles.css 里是 !important，这里不另设）—— */
+.task-done-title { margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--text1); overflow-wrap: anywhere; }
+.task-done-rule {
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--border2);
+  background: var(--bg3);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text2);
+}
+.task-done-rule.is-important { border-left-color: var(--danger); background: var(--danger-soft); color: var(--text1); }
+.task-done-shots { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.task-done-shots .att-thumbs { margin-top: 0; }
+.task-done-error { min-height: 18px; font-size: 12px; line-height: 1.5; color: var(--danger); font-weight: 600; }
+
+/* —— 完成前后的数据变化（弹框） —— */
+.taudit-effect { margin-left: 4px; }
+.teffect-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.teffect-days { flex: none; display: inline-flex; gap: 4px; }
+.teffect-days .btn-mini.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+.teffect-note {
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--amber);
+  background: var(--amber-soft);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text1);
+}
+.teffect-windows { margin-bottom: 10px; font-size: 12px; line-height: 1.7; color: var(--text2); }
+.teffect-table td, .teffect-table th { font-size: 12px; }
+.teffect-table td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.teffect-head td { padding-top: 10px; font-weight: 600; color: var(--text1); background: var(--bg3); overflow-wrap: anywhere; }
+.teffect-head.is-baseline td { color: var(--text3); }
+.teffect-sub { margin-left: 8px; font-weight: 400; color: var(--text3); }
+.teffect-good { color: var(--green); font-weight: 600; }
+.teffect-bad { color: var(--danger); font-weight: 600; }
+/* 任务被改过几次：点开看改动记录（弹框与询盘的改动流水共用） */
+.taudit-changes { padding: 0 5px; border: 0; border-radius: var(--radius); background: var(--amber-soft); color: var(--amber); font-size: 10px; font-weight: 600; line-height: 16px; cursor: pointer; }
+.taudit-changes:hover { background: var(--amber); color: #fff; }

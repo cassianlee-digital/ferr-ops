@@ -1,3 +1,4 @@
+// 风险清单的组装：把当前的静态检查和最近一次生产实测合成一份带严重程度与下一步的清单。
 import { db as defaultDb } from '../db/connection.js';
 import {
   checkProductionReadiness,

@@ -9,16 +9,16 @@ import { db } from './connection.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // schema 版本仅作记录与未来增量迁移的挂钩点；不再触发任何自动清库。
-const SCHEMA_VERSION = '12';
+const SCHEMA_VERSION = '13';
 
 const ALL_TABLES = [
-  'users', 'inquiries', 'inquiry_feedbacks', 'inquiry_sales_notes', 'attachments',
+  'users', 'inquiries', 'inquiry_feedbacks', 'inquiry_sales_notes', 'inquiry_leads', 'inquiry_field_changes', 'attachments',
   'seo_weeks', 'sem_weeks', 'neg_keywords', 'ad_creatives',
   'rank_snapshots', 'kpi_targets', 'kpi_period_snapshots', 'kpi_config', 'kpi_review_targets',
   'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions', 'task_checkins', 'hermes_action_runs',
+  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'geo_questions', 'geo_checks', 'geo_rounds', 'ads_campaign_sites', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily', 'ga4_event_daily',
@@ -26,6 +26,7 @@ const ALL_TABLES = [
 ];
 
 const SCHEMA = `
+-- 账号与角色（seo / sem / manager / boss）。
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT NOT NULL UNIQUE,
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 询盘：日期、国家、渠道、产品、等级、来源、是否成交，以及渠道 / 等级的确认状态。
 CREATE TABLE IF NOT EXISTS inquiries (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   date        TEXT NOT NULL,
@@ -62,6 +64,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
 );
 CREATE INDEX IF NOT EXISTS idx_inquiries_date ON inquiries(date);
 
+-- SEO 周数据（人工录入的周报口径，与 GSC 同步的事实表不是一个来源）。
 CREATE TABLE IF NOT EXISTS seo_weeks (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   week_date     TEXT NOT NULL,
@@ -77,6 +80,7 @@ CREATE TABLE IF NOT EXISTS seo_weeks (
 );
 CREATE INDEX IF NOT EXISTS idx_seo_weeks_date ON seo_weeks(week_date);
 
+-- SEM 周数据（人工录入的周报口径，与 Ads 同步的事实表不是一个来源）。
 CREATE TABLE IF NOT EXISTS sem_weeks (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   week_date     TEXT NOT NULL,
@@ -93,6 +97,7 @@ CREATE TABLE IF NOT EXISTS sem_weeks (
 );
 CREATE INDEX IF NOT EXISTS idx_sem_weeks_date ON sem_weeks(week_date);
 
+-- 否定关键词库。
 CREATE TABLE IF NOT EXISTS neg_keywords (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   word           TEXT NOT NULL,
@@ -104,6 +109,7 @@ CREATE TABLE IF NOT EXISTS neg_keywords (
   created_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 广告创意库：标题、描述、点击率、A/B 结论。
 CREATE TABLE IF NOT EXISTS ad_creatives (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   title        TEXT NOT NULL,
@@ -114,6 +120,7 @@ CREATE TABLE IF NOT EXISTS ad_creatives (
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 关键词排名快照：哪天、哪个词、排第几、落在哪个页面。
 CREATE TABLE IF NOT EXISTS rank_snapshots (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   snapshot_date TEXT NOT NULL,
@@ -124,6 +131,7 @@ CREATE TABLE IF NOT EXISTS rank_snapshots (
 );
 CREATE INDEX IF NOT EXISTS idx_rank_snapshots_date ON rank_snapshots(snapshot_date);
 
+-- KPI 指标的权重、目标值与实际值（旧版考核表盘与运营总账用；月度绩效考核的目标在 kpi_review_targets）。
 CREATE TABLE IF NOT EXISTS kpi_targets (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   grp        TEXT NOT NULL CHECK (grp IN ('total','seo','sem')),
@@ -193,6 +201,7 @@ CREATE TABLE IF NOT EXISTS execution_loops (
 CREATE INDEX IF NOT EXISTS idx_execution_loops_channel ON execution_loops(channel);
 CREATE INDEX IF NOT EXISTS idx_execution_loops_due ON execution_loops(verification_due_at);
 
+-- 关键词库：SEO / SEM / 客户信息等几类共用一张表（type 区分），各类特有的属性存在 attrs 里。
 CREATE TABLE IF NOT EXISTS keywords (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   type      TEXT NOT NULL CHECK (type IN ('seo','sem','high','customer')),
@@ -203,6 +212,7 @@ CREATE TABLE IF NOT EXISTS keywords (
 );
 CREATE INDEX IF NOT EXISTS idx_keywords_type ON keywords(type);
 
+-- 整改清单：问题、依据、动作、负责人、截止日、状态。
 CREATE TABLE IF NOT EXISTS fixes (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   title      TEXT NOT NULL,
@@ -222,6 +232,7 @@ CREATE TABLE IF NOT EXISTS fixes (
 );
 -- 注意：fixes(state) 索引在下方 ensureColumns 之后用 db.exec 创建（旧库 state 列由 ensureColumns 补，不能在此 IF NOT EXISTS 阶段建索引）
 
+-- 闭环条目：任务、月度计划、测试登记、沉淀四种共用一张表（kind 区分）。
 CREATE TABLE IF NOT EXISTS loop_items (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   kind       TEXT NOT NULL CHECK (kind IN ('plan','test','deposit','task')),
@@ -260,6 +271,7 @@ CREATE TABLE IF NOT EXISTS integrations (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- AI 分析结果：每个 scope 一份当前结论，重跑时旧结论进 history_json。
 CREATE TABLE IF NOT EXISTS ai_analyses (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   scope_key     TEXT NOT NULL UNIQUE,
@@ -280,6 +292,7 @@ CREATE TABLE IF NOT EXISTS ai_analyses (
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_state ON ai_analyses(state);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_scope_type ON ai_analyses(scope_type);
 
+-- Google 授权令牌（加密存储，绝不返回前端）。
 CREATE TABLE IF NOT EXISTS google_oauth_tokens (
   provider         TEXT PRIMARY KEY CHECK (provider IN ('gsc','ga4','ads')),
   access_token_enc TEXT,
@@ -290,12 +303,14 @@ CREATE TABLE IF NOT EXISTS google_oauth_tokens (
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Google 授权流程里的一次性 state，用来确认回调确实是自己发起的。
 CREATE TABLE IF NOT EXISTS google_oauth_states (
   state      TEXT PRIMARY KEY,
   provider   TEXT NOT NULL CHECK (provider IN ('gsc','ga4','ads')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- 每一次同步的运行记录：哪个源、哪段区间、成没成功、写了多少行。
 CREATE TABLE IF NOT EXISTS google_sync_runs (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   provider     TEXT NOT NULL CHECK (provider IN ('gsc','ga4','ads')),
@@ -310,6 +325,7 @@ CREATE TABLE IF NOT EXISTS google_sync_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_google_sync_runs_provider_started ON google_sync_runs(provider, started_at);
 
+-- Google 项目：一组 GSC 站点 / GA4 媒体资源 / Ads 账户的对应关系。
 CREATE TABLE IF NOT EXISTS google_projects (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   name            TEXT NOT NULL,
@@ -323,6 +339,7 @@ CREATE TABLE IF NOT EXISTS google_projects (
 );
 CREATE INDEX IF NOT EXISTS idx_google_projects_default ON google_projects(is_default, active);
 
+-- Search Console 每日汇总：点击、曝光、点击率、平均排名。
 CREATE TABLE IF NOT EXISTS gsc_daily (
   date         TEXT NOT NULL,
   site_url     TEXT NOT NULL,
@@ -335,6 +352,7 @@ CREATE TABLE IF NOT EXISTS gsc_daily (
   PRIMARY KEY (date, site_url)
 );
 
+-- Search Console「查询词 × 页面」每日明细。
 CREATE TABLE IF NOT EXISTS gsc_query_daily (
   date         TEXT NOT NULL,
   site_url     TEXT NOT NULL,
@@ -350,6 +368,7 @@ CREATE TABLE IF NOT EXISTS gsc_query_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_gsc_query_daily_query ON gsc_query_daily(query, date);
 
+-- GA4 每日汇总：用户、会话、浏览、关键事件、跳出率、平均时长。
 CREATE TABLE IF NOT EXISTS ga4_daily (
   date                 TEXT NOT NULL,
   property_id          TEXT NOT NULL,
@@ -364,6 +383,7 @@ CREATE TABLE IF NOT EXISTS ga4_daily (
   PRIMARY KEY (date, property_id)
 );
 
+-- GA4 按维度的每日数据：来源 / 国家 / 设备 / 落地页 / 广告系列（dimension_type 区分）。
 CREATE TABLE IF NOT EXISTS ga4_dimension_daily (
   date            TEXT NOT NULL,
   property_id     TEXT NOT NULL,
@@ -381,6 +401,7 @@ CREATE TABLE IF NOT EXISTS ga4_dimension_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_ga4_dimension_daily_type ON ga4_dimension_daily(dimension_type, date);
 
+-- GA4 每日事件：事件名、次数、用户数、关键事件数。
 CREATE TABLE IF NOT EXISTS ga4_event_daily (
   date          TEXT NOT NULL,
   property_id   TEXT NOT NULL,
@@ -394,6 +415,7 @@ CREATE TABLE IF NOT EXISTS ga4_event_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_ga4_event_daily_name ON ga4_event_daily(event_name, date);
 
+-- Google Ads 广告系列每日数据：花费、展示、点击、转化。
 CREATE TABLE IF NOT EXISTS google_ads_campaign_daily (
   date                       TEXT NOT NULL,
   customer_id                TEXT NOT NULL,
@@ -411,6 +433,7 @@ CREATE TABLE IF NOT EXISTS google_ads_campaign_daily (
   PRIMARY KEY (date, customer_id, campaign_id)
 );
 
+-- Google Ads 关键词每日数据。
 CREATE TABLE IF NOT EXISTS google_ads_keyword_daily (
   date                       TEXT NOT NULL,
   customer_id                TEXT NOT NULL,
@@ -434,6 +457,7 @@ CREATE TABLE IF NOT EXISTS google_ads_keyword_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_google_ads_keyword_daily_text ON google_ads_keyword_daily(keyword_text, date);
 
+-- Google Ads 真实搜索词每日数据（用户实际搜的词，不是投放的关键词）。
 CREATE TABLE IF NOT EXISTS google_ads_search_term_daily (
   date                       TEXT NOT NULL,
   customer_id                TEXT NOT NULL,
@@ -571,6 +595,7 @@ CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_user_created
   ON hermes_action_runs(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_hermes_action_runs_loop_item
   ON hermes_action_runs(loop_item_id);
+-- SOP 固定任务的定义：部门、频率（日 / 周 / 月）、标题。
 CREATE TABLE IF NOT EXISTS sop_definitions (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   dept       TEXT NOT NULL,                                -- SEM / SEO / 公司
@@ -583,6 +608,7 @@ CREATE TABLE IF NOT EXISTS sop_definitions (
 );
 CREATE INDEX IF NOT EXISTS idx_sop_def_dept_freq_active ON sop_definitions(dept, freq, active);
 
+-- SOP 的完成打卡：某条固定任务在某个周期做了没有。
 CREATE TABLE IF NOT EXISTS sop_completions (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   sop_id        INTEGER NOT NULL,
@@ -629,6 +655,95 @@ CREATE TABLE IF NOT EXISTS task_checkins (
 );
 CREATE INDEX IF NOT EXISTS idx_task_checkins_item ON task_checkins(loop_item_id);
 
+-- 任务关联键（2026-10-10）：一条任务指向它动过的页面 / 广告系列 / 关键词，以及它想推动的 KPI。
+-- 没有这张表，任务和 GSC/Ads 同步数据就是两座孤岛：能看到「做了什么」，却永远对不上
+-- 「做完之后哪个数变了」。ref 的取值按 link_type：
+--   page     = 页面 URL（与 gsc_query_daily.page 同写法才能对上）
+--   campaign = google_ads_campaign_daily.campaign_id（只收已同步过的系列，手敲的名字对不上任何数据）
+--   keyword  = 关键词原文（小写；对 gsc_query_daily.query / google_ads_keyword_daily.keyword_text）
+--   kpi      = services/taskAudit.js 的 TASK_KPIS 里的 key
+CREATE TABLE IF NOT EXISTS task_links (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  loop_item_id  INTEGER NOT NULL,
+  link_type     TEXT NOT NULL CHECK (link_type IN ('page','campaign','keyword','kpi')),
+  ref           TEXT NOT NULL,
+  label         TEXT,                                       -- 展示名（系列名 / KPI 名）；page、keyword 留空
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(loop_item_id, link_type, ref)
+);
+CREATE INDEX IF NOT EXISTS idx_task_links_item ON task_links(loop_item_id);
+CREATE INDEX IF NOT EXISTS idx_task_links_ref ON task_links(link_type, ref);
+
+-- 任务改动流水（2026-10-11）。询盘改渠道 / 等级早就留痕，任务却没有：完成之后还能改标题、把截止日往后挪、
+-- 把跨天任务改成单日来躲「重要任务要证据」，系统里一点痕迹都不剩。规则在 services/taskAudit.js 的 taskChanges()。
+--   field = loop_items 的列名，或两个合成项：
+--     done      完成 / 撤销完成（'0' ↔ '1'）—— 撤销会清掉 done_at，不记的话「完成过又撤销」就查不到了
+--     multi_day 跨天任务被执行人改成了单日（'1' → '0'）—— 它让这条任务继续按「重要任务」要证据
+-- 不设外键：彻底删除任务时由路由显式清（与 task_links 同一做法）。
+CREATE TABLE IF NOT EXISTS loop_item_changes (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  loop_item_id  INTEGER NOT NULL,
+  field         TEXT NOT NULL,
+  old_value     TEXT,
+  new_value     TEXT,
+  changed_by    INTEGER,
+  changed_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_loop_item_changes_item ON loop_item_changes(loop_item_id, id);
+
+-- 外链台账（2026-10-10）。经理的原话：花钱买的外链要能直接查到是哪一条、值不值；
+-- 不花钱的外链做了哪些、质量怎么样，也要看得到。所以付费与免费记在同一张表里，才能并排比。
+-- dr / traffic 是第三方工具（Ahrefs 等）读数，人工录入：没接这些工具的 API，不录就留空，绝不估。
+-- status + checked_date：外链会失效，「最近一次核查是哪天」本身就是质量信息。
+CREATE TABLE IF NOT EXISTS backlinks (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_url    TEXT NOT NULL,          -- 外链所在页面
+  source_domain TEXT,                   -- 由 source_url 推出，按域名汇总用
+  target_url    TEXT,                   -- 指向我们的哪个页面
+  anchor        TEXT,                   -- 锚文本
+  method        TEXT,                   -- 购买 / 客座投稿 / 交换 / 目录提交 / 自然获得 / 其他
+  rel           TEXT,                   -- dofollow / nofollow / sponsored / ugc
+  cost          REAL,                   -- 花了多少；NULL 或 0 = 没花钱
+  currency      TEXT,                   -- 有 cost 时必填
+  vendor        TEXT,                   -- 卖家 / 中介
+  dr            REAL,                   -- 来源域名评级（0~100）
+  traffic       REAL,                   -- 来源站月自然流量
+  quality_note  TEXT,                   -- 相关性 / 质量判断
+  status        TEXT,                   -- 待上线 / 有效 / 失效
+  acquired_date TEXT,                   -- 上线日（还没上线的付费外链填付款日）；花费按它归月
+  checked_date  TEXT,                   -- 最近一次人工核查
+  owner         TEXT,
+  task_id       INTEGER,                -- 这条外链是哪条任务做出来的
+  note          TEXT,
+  created_by    INTEGER REFERENCES users(id),
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at    TEXT                    -- 软删：台账是审计材料，不物理删
+);
+CREATE INDEX IF NOT EXISTS idx_backlinks_date ON backlinks(acquired_date);
+CREATE INDEX IF NOT EXISTS idx_backlinks_task ON backlinks(task_id);
+
+-- 其它支出台账：广告费从 Ads 同步、外链费在 backlinks，除此之外的钱（工具订阅、内容外包、建站技术…）记这里。
+-- 三处合起来才答得上「这个月的钱都花在哪」。外链费不许记到这里 —— 否则同一笔钱会被数两遍。
+CREATE TABLE IF NOT EXISTS expenses (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  spend_date  TEXT NOT NULL,            -- YYYY-MM-DD
+  category    TEXT NOT NULL,            -- 工具订阅 / 内容外包 / 建站技术 / 设计素材 / 其他
+  amount      REAL NOT NULL,
+  currency    TEXT NOT NULL,
+  vendor      TEXT,                     -- 付给谁
+  purpose     TEXT NOT NULL,            -- 买了什么、为什么买
+  dept        TEXT,
+  owner       TEXT,
+  task_id     INTEGER,                  -- 这笔钱花在哪条任务上
+  evidence    TEXT,                     -- 订单 / 发票链接
+  note        TEXT,
+  created_by  INTEGER REFERENCES users(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(spend_date);
+CREATE INDEX IF NOT EXISTS idx_expenses_task ON expenses(task_id);
+
 -- 跟踪反馈改成「多条带时间的记录」（2026-08-27）。
 -- 原来 inquiries.tracking_feedback 是单个 TEXT：一条询盘只能存一段话，覆盖式保存，
 -- 既不知道是哪天写的，也看不出跟进了几次 —— 复盘时等于没有证据。
@@ -649,7 +764,7 @@ CREATE INDEX IF NOT EXISTS idx_inquiry_feedbacks_inq ON inquiry_feedbacks(inquir
 -- 列表接口只回元数据（不含 data），原图走 GET /api/attachments/:id/raw，避免列表把图片一起拖回来。
 CREATE TABLE IF NOT EXISTS attachments (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  owner_type  TEXT NOT NULL,          -- 'inquiry_sales_note' | 'keyword'
+  owner_type  TEXT NOT NULL,          -- 'inquiry_sales_note' | 'keyword' | 'task'（任务完成证据截图）| 'geo_check'（GEO 抽查截图）
   owner_id    INTEGER NOT NULL,
   name        TEXT,
   mime        TEXT NOT NULL,
@@ -671,6 +786,103 @@ CREATE TABLE IF NOT EXISTS inquiry_sales_notes (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_inquiry_sales_notes_inq ON inquiry_sales_notes(inquiry_id);
+
+-- GEO 引用抽查（2026-10-10）：AI 回答里有没有提到 / 引用我们，没有接口能自动拿，只能人按固定题库去问。
+-- geo_questions 是题库：问题文字不可改（改了就不是同一个问题），只能停用后另加，所以没有「修改问题」这条路。
+-- geo_checks 是每一轮的结果：同一轮 + 同一题 + 同一引擎只有一条。截图走 attachments(owner_type='geo_check')。
+CREATE TABLE IF NOT EXISTS geo_questions (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  question    TEXT NOT NULL UNIQUE,
+  active      INTEGER NOT NULL DEFAULT 1,
+  created_by  INTEGER REFERENCES users(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- GEO 引用抽查的每一格结果：某一轮 × 某个问题 × 某个引擎，提没提到、引没引用。
+CREATE TABLE IF NOT EXISTS geo_checks (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  question_id INTEGER NOT NULL REFERENCES geo_questions(id),
+  engine      TEXT NOT NULL,            -- services/geoChecks.js 的 CHECK_ENGINE_KEYS
+  round_date  TEXT NOT NULL,            -- 这一轮是哪天查的（YYYY-MM-DD）
+  mentioned   INTEGER NOT NULL DEFAULT 0,  -- 回答里提到了我们
+  cited       INTEGER NOT NULL DEFAULT 0,  -- 回答引用 / 链接了我们的页面
+  cited_url   TEXT,
+  note        TEXT,
+  checked_by  INTEGER REFERENCES users(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT,
+  UNIQUE(question_id, engine, round_date)
+);
+CREATE INDEX IF NOT EXISTS idx_geo_checks_round ON geo_checks(round_date);
+-- 广告系列归到哪个站点：Ads 是一个账户几个站共用、按系列区分，这张表记「这个系列投的是哪个站」（由人指定，不自动推断）。
+CREATE TABLE IF NOT EXISTS ads_campaign_sites (
+  campaign_id TEXT PRIMARY KEY,
+  site_id     INTEGER NOT NULL REFERENCES google_projects(id),
+  set_by      INTEGER REFERENCES users(id),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- GEO 引用抽查每一轮定格的题数：题库会变，旧轮次的「应查几题」不能跟着现在的题库变（规矩见 services/geoChecks.js 的 roundExpected）。
+CREATE TABLE IF NOT EXISTS geo_rounds (
+  round_date     TEXT PRIMARY KEY,
+  question_count INTEGER NOT NULL,       -- 这一轮最后一次保存记录时，题库里启用的题数
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- 询盘确认权与改动留痕（2026-10-10 移植自旧分支的设计）。
+-- 等级（A/B/C）决定月度考核里 60 分的 A / B 询价数量，渠道决定「这条询盘算谁带来的」，
+-- 而这两个字段录入人自己就能填、能改 —— 等于被考核的人给自己评分。
+-- 没有表单证据的询盘拿不到独立于录入人的机器证据，能立的只有流程规矩：
+--   ① 录入的是建议值，经理 / 老板确认后才是定稿（inquiries.attribution_status）；
+--   ② 改动留痕：谁、什么时候、从什么改成什么、为什么 —— 就是本表；
+--   ③ 未确认占比是页面上的明数字。
+-- 老列 channel / grade 仍是生效值（所有既有消费者不用改）。
+CREATE TABLE IF NOT EXISTS inquiry_field_changes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  inquiry_id  INTEGER NOT NULL REFERENCES inquiries(id),
+  field       TEXT NOT NULL,               -- 'channel' | 'grade' | 'attribution_status'
+  old_value   TEXT,
+  new_value   TEXT,
+  reason      TEXT,                        -- 改已确认的值时必填；建议阶段的修改可空
+  changed_by  INTEGER REFERENCES users(id),
+  changed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_inquiry_field_changes_inq ON inquiry_field_changes(inquiry_id, id);
+
+-- 表单线索（2026-10-10）：独立站询盘表单提交时带着来源参数进来的原始记录。
+-- 线索不是询盘：不进任何统计，要有人确认「这就是业务收到的那条」并评了等级才转成询盘（inquiry_id 回指）。
+-- 被忽略的也留着并记原因 —— 垃圾询价从哪个系列 / 关键词来，正是要靠这些行去查。
+CREATE TABLE IF NOT EXISTS inquiry_leads (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  received_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  submission_id     TEXT,             -- 站点给的提交编号（有则用它去重）
+  submitted_at      TEXT,             -- 站点记录的提交时间，原样保存
+  contact_name      TEXT,
+  contact_email     TEXT,
+  contact_company   TEXT,
+  country           TEXT,
+  product           TEXT,
+  message           TEXT,
+  page_url          TEXT,             -- 提交表单的那个页面
+  landing_page      TEXT,             -- 这次访问进站的第一个页面
+  referrer          TEXT,             -- 进站时的来路
+  gclid             TEXT,
+  utm_source        TEXT,
+  utm_medium        TEXT,
+  utm_campaign      TEXT,
+  utm_term          TEXT,
+  utm_content       TEXT,
+  campaign_id       TEXT,             -- Ads 跟踪模板带的 {campaignid}
+  adgroup_id        TEXT,
+  keyword           TEXT,             -- Ads 跟踪模板带的 {keyword}
+  match_type        TEXT,
+  suggested_channel TEXT,             -- 按机器证据建议的渠道（转询盘时人可改）
+  state             TEXT NOT NULL DEFAULT 'new' CHECK (state IN ('new','converted','ignored')),
+  ignore_reason     TEXT,
+  inquiry_id        INTEGER,          -- 转成了哪条询盘
+  handled_by        INTEGER REFERENCES users(id),
+  handled_at        TEXT,
+  dedupe_key        TEXT NOT NULL UNIQUE  -- 表单 webhook 会重试，同一次提交只留一条
+);
+CREATE INDEX IF NOT EXISTS idx_inquiry_leads_state ON inquiry_leads(state, id);
 
 -- 月度绩效考核目标（老板《2026 运营部绩效考核表》的「目标设置」页口径）。
 -- period_key = 'YYYY-MM'；'default' 行是兜底：某月没单独设就用它。两者都没有 → 该指标标「目标待定」，绝不猜。
@@ -718,6 +930,28 @@ export function migrate() {
     ['task_verify_date', 'TEXT'], ['task_verify_how', 'TEXT'],
     // 优先级 1-4（Todoist 口径：1 最高、4 普通）。老数据留 NULL = 普通，不回填。
     ['task_priority', 'INTEGER'],
+    // 可审计任务（2026-10-10，经理反馈）：光有任务名不够，要能回答「做了什么、结果如何、证据在哪、花了多久」。
+    // 老行全部留 NULL —— 以前没记就是没记，归档页显示「结果未记录」，不补假值。
+    ['project', 'TEXT'],          // 产品 / 项目
+    ['result', 'TEXT'],           // 完成结果（勾完成时必填）
+    ['task_actions', 'TEXT'],     // 具体动作：实际做了哪几件事
+    ['evidence', 'TEXT'],         // 证据链接，一行一个 http(s) URL；截图走 attachments(owner_type='task')
+    ['est_hours', 'REAL'],        // 预估工时（小时）
+    ['actual_hours', 'REAL'],     // 实际用时（小时，完成时自报）
+    ['important', 'INTEGER'],     // 1=人工标为重要；NULL=按规则判定（见 services/taskAudit.js）
+    ['deleted_by', 'INTEGER'],    // 谁删的（2026-10-10）。老的删除记录留 NULL = 不知道，不猜
+  ]);
+  ensureColumns('expenses', [['deleted_by', 'INTEGER']]);
+  // 外链的自动核查结果（2026-10-10）。与人工填的 status / checked_date 分开存：
+  // 自动核查拿不到页面、或页面用脚本加载链接时都会「没找到」，那不等于外链失效，不能让它去改人工判断的状态。
+  ensureColumns('backlinks', [
+    ['auto_status', 'TEXT'],      // found / not_found / unreachable
+    ['auto_checked_at', 'TEXT'],
+    ['auto_detail', 'TEXT'],      // 给人看的一句话：看到了什么、为什么拿不到
+    ['auto_rel', 'TEXT'],         // 页面上实际的链接属性
+    ['auto_anchor', 'TEXT'],      // 页面上实际的锚文本
+    ['auto_lost_at', 'TEXT'],     // 上次自动核查还在、这次没找到的时刻；再次找到就清空。它只是提醒，不改人工状态
+    ['deleted_by', 'INTEGER'],
   ]);
   // SOP 引擎 v2（2026-10-20）：老板那两张 SOP 表（SEM+社媒、SEO+GEO）的列原样接进来。
   // 以前一条 SOP 只有 title + content 一段话，执行人看不到「为什么做 / 怎么做 / 做到什么算完成」，
@@ -760,6 +994,18 @@ export function migrate() {
     ['state', 'TEXT'], ['archived_at', 'TEXT'], // P3：询盘软删→归档
     // 询盘录入改版：客户编码 / 公司 / 业务员 / 是否成交（老库补列，老行留 NULL，不补假值）
     ['customer_code', 'TEXT'], ['company', 'TEXT'], ['salesperson', 'TEXT'], ['deal_status', 'TEXT'],
+    // 询盘来源（2026-10-10）：系列 / 落地页 / 来路 / gclid / utm。来源词仍在老的 source 列。
+    // src_evidence 单独记「这些来源是怎么来的」：form = 表单带回的机器证据（人改不了），manual = 人填的主张。
+    // 绝不用 channel 的取值去暗示有没有证据 —— 那样被考核的人会挑着填。老行全部 NULL，不补。
+    ['src_campaign_id', 'TEXT'], ['src_campaign', 'TEXT'], ['src_landing_page', 'TEXT'],
+    ['src_referrer', 'TEXT'], ['src_gclid', 'TEXT'], ['src_utm', 'TEXT'],
+    ['src_evidence', 'TEXT'], ['lead_id', 'INTEGER'],
+    // 多站点（2026-10-12）：这条询盘是从哪个站点来的（google_projects.id）。表单来的由网址域名认出、人改不了；
+    // 手工录入的可选。老行留 NULL = 没标注，不按公司或别的字段去猜。
+    ['site_id', 'INTEGER'],
+    // 确认状态：proposed = 录入人填的建议值 / confirmed = 经理或老板已确认。
+    // 老行留 NULL = 历史未审：既不算已确认也不算刚提交，不补假值。
+    ['attribution_status', 'TEXT'], ['attribution_confirmed_by', 'INTEGER'], ['attribution_confirmed_at', 'TEXT'],
   ]);
   ensureColumns('google_sync_runs', [
     ['project_id', 'INTEGER'],
@@ -772,6 +1018,8 @@ export function migrate() {
     ['gsc_site_url', 'TEXT'], ['ga4_property_id', 'TEXT'], ['ads_customer_id', 'TEXT'],
     ['is_default', 'INTEGER NOT NULL DEFAULT 0'], ['active', 'INTEGER NOT NULL DEFAULT 1'],
     ['updated_at', 'TEXT'],
+    // 多站点（2026-10-12）：一条记录 = 一个网站。domain 用来认「这条询盘 / 这个网址是哪个站的」，company = 它属于哪家公司
+    ['domain', 'TEXT'], ['company', 'TEXT'],
   ]);
   ensureColumns('hermes_action_runs', [
     ['idempotency_key', 'TEXT'], ['attempt_count', 'INTEGER NOT NULL DEFAULT 0'],

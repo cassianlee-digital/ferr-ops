@@ -1,7 +1,7 @@
 // 数据新鲜度：一次返回 GSC/GA4/Ads 三源在所选区间内的 实际有数据天数 + 区间总天数 + 最后同步时间 + 连接态。
 // 用于替代看板顶部被删的碎提示：让用户一眼看清"为什么 30/90/1年 看着一样"。
 import { requireAuth } from '../auth/middleware.js';
-import { normalizeRange, resolveProject } from '../sync/googleClient.js';
+import { normalizeRange, readScope, resolveProject } from '../sync/googleClient.js';
 import { db } from '../db/connection.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
 
@@ -22,7 +22,10 @@ export async function dataFreshnessRoutes(app) {
       const project = resolveProject(request.query || {});
       const range = normalizeRange(request.query || {});
       const days = dayDiff(range.start_date, range.end_date);
-      const runs = googleRepo.latestRuns();
+      // 「最后同步」看的是这个站点自己的同步记录：别的站点刚同步过，不能替它显得新鲜
+      // （广告是账户级的，几个站点共用一份同步记录，所以它看全局最近一次）
+      const runs = { ...googleRepo.latestProjectRuns(project.id), ads: googleRepo.latestRuns().ads };
+      const scope = readScope(project);
       const tokens = googleRepo.tokenStatus();
 
       const src = (provider, table, dateCol, extraCond, extraParams) => ({
@@ -36,8 +39,8 @@ export async function dataFreshnessRoutes(app) {
 
       return {
         range,
-        gsc: src('gsc', 'gsc_query_daily', 'date', project.gsc_site_url ? 'site_url = @siteUrl' : null, project.gsc_site_url ? { siteUrl: project.gsc_site_url } : null),
-        ga4: src('ga4', 'ga4_daily', 'date', project.ga4_property_id ? 'property_id = @propertyId' : null, project.ga4_property_id ? { propertyId: project.ga4_property_id } : null),
+        gsc: src('gsc', 'gsc_query_daily', 'date', scope.gsc_site_url ? 'site_url = @siteUrl' : null, scope.gsc_site_url ? { siteUrl: scope.gsc_site_url } : null),
+        ga4: src('ga4', 'ga4_daily', 'date', scope.ga4_property_id ? 'property_id = @propertyId' : null, scope.ga4_property_id ? { propertyId: scope.ga4_property_id } : null),
         ads: src('ads', 'google_ads_campaign_daily', 'date', project.ads_customer_id ? 'customer_id = @customerId' : null, project.ads_customer_id ? { customerId: project.ads_customer_id } : null),
       };
     } catch (e) {

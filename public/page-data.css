@@ -336,3 +336,55 @@ body.dark #panel-data .minitabs .minitab {
 .fresh-chip.gray { color: var(--text3); }
 
 .fresh-help { margin-left: auto; font-size: 11px; }
+
+/* ================= GEO 引用抽查（2026-10-10）：固定题库 × 固定引擎的矩阵。渲染在 src/geo-checks.js ================= */
+#sub-data-geo .geochk-intro {
+  margin-bottom: 12px; padding: 8px 12px; border-left: 3px solid var(--amber); background: var(--amber-soft);
+  font-size: 12px; line-height: 1.7; color: var(--text1);
+}
+#sub-data-geo .geochk-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--text2); }
+#sub-data-geo .geochk-bar select { height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); color: var(--text1); font-size: 12px; font-family: var(--font); }
+#sub-data-geo .geochk-summary { margin-bottom: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); }
+#sub-data-geo .geochk-total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 4px; font-size: 13px; color: var(--text1); }
+#sub-data-geo .geochk-warn { font-size: 12px; font-weight: 600; color: var(--danger); }
+#sub-data-geo .geochk-line { font-size: 12px; line-height: 1.8; color: var(--text2); font-variant-numeric: tabular-nums; }
+#sub-data-geo .geochk-add { display: flex; gap: 8px; margin-bottom: 10px; }
+#sub-data-geo .geochk-add input {
+  flex: 1 1 auto; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg2); color: var(--text1); font-size: 13px; font-family: var(--font);
+}
+#sub-data-geo .geochk-card { overflow-x: auto; }
+#sub-data-geo .geochk-table td { vertical-align: middle; font-size: 12px; }
+#sub-data-geo .geochk-q { min-width: 260px; line-height: 1.6; color: var(--text1); overflow-wrap: anywhere; }
+#sub-data-geo .geochk-q .badge { margin-left: 6px; }
+#sub-data-geo tr.is-off .geochk-q { color: var(--text3); }
+#sub-data-geo .geochk-empty { padding: 28px 12px; text-align: center; }
+#sub-data-geo .geochk-cell {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 1px; min-width: 84px; padding: 4px 8px;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); color: var(--text2);
+  font-size: 12px; font-family: var(--font); line-height: 1.4; cursor: pointer;
+}
+#sub-data-geo .geochk-cell:hover { border-color: var(--blue); }
+#sub-data-geo .geochk-cell.is-empty { border-style: dashed; color: var(--text3); }
+#sub-data-geo .geochk-cell.is-none { background: var(--bg3); }
+#sub-data-geo .geochk-cell.is-mentioned { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+#sub-data-geo .geochk-cell.is-cited { border-color: var(--green); background: var(--green-soft); color: var(--green); font-weight: 600; }
+#sub-data-geo .geochk-noshot { font-size: 10px; font-weight: 600; color: var(--danger); }
+#geoCheckMask .modal-foot #geochk-del { margin-right: auto; }
+#sub-data-geo .geochk-off { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* ===== 按站点：广告花费与询盘（多站点，public/src/site-returns.js）===== */
+#siteReturnsCard{margin-bottom:16px}
+.sret-table td.num,.sret-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+.sret-table tr.sret-rest td{color:var(--text3);border-top:1px dashed var(--border)}
+.sret-note{margin:8px 0;font-size:12px;line-height:1.6;color:var(--text3)}
+.sret-campaigns{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.sret-sub{font-size:13px;font-weight:600;margin-bottom:6px}
+.sret-campaign{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:5px 0;font-size:13px}
+.sret-cname{min-width:160px;max-width:320px;overflow-wrap:anywhere}
+.sret-ccost{min-width:90px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text2)}
+.sret-select{min-width:160px;padding:3px 6px;border:1px solid var(--border);border-radius:2px;background:var(--bg);color:var(--text);font:inherit}
+.sret-hint{font-size:12px;color:var(--amber)}
+
+/* 「本周要点」里不带好坏判断的一条（比如上一周期没有数据、没法对比） */
+.seo-hl-chip.muted { background: var(--bg3, #eef2f7); color: var(--text2); border-color: var(--border); }

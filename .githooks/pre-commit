@@ -1,0 +1,76 @@
+#!/bin/sh
+# 提交前门禁：跑全量测试（约 4 秒），不通过不让提交。
+#
+# 为什么放在这里：构建镜像时不跑测试，提交这一下是离改动最近、最快的一道检查。
+# 推送之后 GitHub 上还会再跑一遍同一套（.github/workflows/check.yml）—— 那是给没启用这个钩子的克隆兜底的，不能替代这里。
+# 测试里已经包含：打包产物是否过期、前端 HTML 拼接是否安全、文档里的事实是否过期、以及全部业务规则。
+#
+# 启用（每个克隆一次；工作树共用同一份配置）：  git config core.hooksPath .githooks
+# 没启用的话，测试 server/test/gateInstalled.test.js 会失败并提示这条命令。
+
+root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+main="$(cd "$(git rev-parse --git-common-dir)" && cd .. && pwd)"
+
+# 找 Node。先找项目自带的（.tooling/ 下的便携版，工作树里没有就去主仓库找），再看 PATH：
+# 数据库依赖是原生模块，按 Node 20 编译（线上镜像也是 Node 20，见 .node-version）。
+# 系统里另装的新版 Node 加载不了它，用它跑会有几十条测试因为「加载不了依赖」而失败，那不是代码的问题。
+find_node() {
+  for base in "$root" "$main"; do
+    for candidate in "$base"/.tooling/node-*/node.exe "$base"/.tooling/node-*/bin/node; do
+      if [ -x "$candidate" ]; then echo "$candidate"; return; fi
+    done
+  done
+  if command -v node >/dev/null 2>&1; then command -v node; fi
+}
+NODE="$(find_node | head -n 1)"
+
+skip() {
+  # 跑不了就明说跑不了。悄悄放行比没有门禁更危险：人会以为检查过了
+  echo "" >&2
+  echo "⚠ 提交前检查【已跳过】：$1" >&2
+  echo "  这次提交没有经过任何测试。$2" >&2
+  echo "" >&2
+  exit 0
+}
+
+[ -n "$NODE" ] || skip "找不到 Node（.tooling/ 下没有，PATH 里也没有）。" "装好 Node 20 之后请手动跑一遍：cd server && node --test"
+
+if ! (cd "$root/server" && "$NODE" -e "require('better-sqlite3')") >/dev/null 2>&1; then
+  skip "这个 Node（$("$NODE" --version 2>/dev/null)，$NODE）加载不了数据库依赖。" \
+       "依赖是按 Node 20 编译的：请改用 Node 20（见 .node-version），或者在 server/ 里运行 npm rebuild better-sqlite3 之后再跑 cd server && node --test"
+fi
+
+# 固定用 tap 格式：不同版本的 Node 默认的输出格式不一样，下面要从输出里挑失败的那几条
+out="$(cd "$root/server" && "$NODE" --test --test-reporter=tap 2>&1)"
+status=$?
+
+if [ $status -ne 0 ]; then
+  echo "" >&2
+  echo "✗ 提交被拦下：测试没有全部通过。" >&2
+  echo "" >&2
+  # 只打印失败的那几条和它们的说明（很多测试的失败信息里直接写了改法）。
+  # 每条失败是一行「not ok」，后面跟着一段以 --- 开头、... 结尾的说明
+  echo "$out" | awk '
+    /^ *not ok / { show = 1; print; next }
+    show && /^ *[.][.][.]$/ { show = 0; print ""; next }
+    show && /^ *(---|stack|code|name|failureType|duration_ms|type|operator|expected|actual):/ { next }
+    show && /^ *---$/ { next }
+    show && /node:internal|node:async_hooks|file:\/\/\/|^ *location:/ { next }
+    show { print }
+  ' | head -n 120 >&2
+  echo "$out" | grep -E '^# (tests|pass|fail|skipped) ' >&2
+  echo "" >&2
+  echo "  看完整输出：cd server && node --test" >&2
+  echo "  修好再提交。不要用 --no-verify 绕过：这是唯一的自动检查，绕过去的问题会直接上线。" >&2
+  echo "" >&2
+  exit 1
+fi
+
+echo "✓ 提交前检查通过：$(echo "$out" | grep -E '^# pass ' | tr -dc '0-9') 条测试"
+skipped="$(echo "$out" | grep -E '^# skipped ' | tr -dc '0-9')"
+if [ -n "$skipped" ] && [ "$skipped" != "0" ]; then
+  # 被跳过的检查要让人看见，连同原因
+  echo "  其中 $skipped 条被跳过：" >&2
+  echo "$out" | grep -E '# SKIP' | sed 's/^ */    /' >&2
+fi
+exit 0

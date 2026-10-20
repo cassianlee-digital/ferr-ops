@@ -1,3 +1,4 @@
+// AI 分析 API：发起分析、按 scope 存取历史、追问、采纳 / 归档、把结论拆成整改动作。
 import { requireAuth, editor } from '../auth/middleware.js';
 import { buildContext } from '../services/aiContext.js';
 import { callAnthropic } from '../services/anthropic.js';

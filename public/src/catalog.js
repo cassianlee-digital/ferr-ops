@@ -10,6 +10,7 @@
  *
  * 本模块保持「无 DOM 也能被 import」——纯数据，没有任何 document 访问。
  */
+import { esc } from './ui-kit.js'; // ui-kit 同样保证无 DOM 可 import
 
 /* 产品目录。第二项是彩色标签的样式类（可用：b-blue/b-purple/b-teal/b-green/b-amber/b-red/b-gray）。
    颜色只有 7 个而产品有 11 个，必然重复；分配时刻意让**名字相近的两个不同色**
@@ -66,9 +67,7 @@ export const REGION_NAMES = REGIONS.map((r) => r[0]);
 export function fillSelect(el, names, { placeholder = null } = {}) {
   if (!el) return;
   const keepValue = el.value;
-  const opts = [];
-  if (placeholder != null) opts.push(`<option value="">${placeholder}</option>`);
-  for (const n of names) opts.push(`<option>${n}</option>`);
-  el.innerHTML = opts.join('');
+  el.innerHTML = (placeholder != null ? `<option value="">${esc(placeholder)}</option>` : '')
+    + names.map((n) => `<option>${esc(n)}</option>`).join('');
   if (keepValue && names.indexOf(keepValue) >= 0) el.value = keepValue;
 }

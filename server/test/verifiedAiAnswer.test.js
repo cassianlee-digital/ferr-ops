@@ -1,3 +1,4 @@
+// AI 回答的证据核验：没有证据的数据结论降级为待验证；纠偏只做一次且只采用更可信的版本。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { finalizeVerifiedAnswer, generateVerifiedAiAnswer } from '../src/services/verifiedAiAnswer.js';

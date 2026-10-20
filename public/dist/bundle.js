@@ -18,7 +18,7 @@
   var ui_kit_exports = {};
   __export(ui_kit_exports, {
     closeModal: () => closeModal,
-    esc: () => esc2,
+    esc: () => esc,
     hideToast: () => hideToast,
     mdToHtml: () => mdToHtml,
     openModal: () => openModal,
@@ -29,14 +29,14 @@
     toastGo: () => toastGo,
     toastUndo: () => toastUndo
   });
-  function esc2(s) {
+  function esc(s) {
     return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function renderText(el, s) {
-    if (el) el.textContent = s == null ? "" : String(s);
+  function renderText(el5, s) {
+    if (el5) el5.textContent = s == null ? "" : String(s);
   }
   function mdToHtml(t) {
-    const src = esc2(t).split(/\n/);
+    const src = esc(t).split(/\n/);
     let html = "", para = [], inList = false;
     const flushP = () => {
       if (para.length) {
@@ -50,9 +50,9 @@
         inList = false;
       }
     };
-    for (let line of src) {
-      line = line.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
-      const m = line.match(/^\s*[-*]\s+(.*)$/);
+    for (let line3 of src) {
+      line3 = line3.replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>");
+      const m = line3.match(/^\s*[-*]\s+(.*)$/);
       if (m) {
         flushP();
         if (!inList) {
@@ -60,12 +60,12 @@
           inList = true;
         }
         html += "<li>" + m[1] + "</li>";
-      } else if (line.trim() === "") {
+      } else if (line3.trim() === "") {
         flushP();
         flushL();
       } else {
         flushL();
-        para.push(line);
+        para.push(line3);
       }
     }
     flushP();
@@ -87,7 +87,7 @@
     const tb = document.getElementById(id);
     if (!tb) return;
     const retry = typeof retryAction === "function" ? ' <button type="button" class="btn-mini table-retry"><i class="ti ti-refresh"></i> \u91CD\u8BD5</button>' : "";
-    tb.innerHTML = `<tr data-load-state="${state2}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc2(message)}${retry}</td></tr>`;
+    tb.innerHTML = `<tr data-load-state="${state2}"><td colspan="${colspan}" class="dim csp-s-d48bfa87bb">${esc(message)}${retry}</td></tr>`;
     const retryBtn = tb.querySelector(".table-retry");
     if (retryBtn) retryBtn.addEventListener("click", retryAction);
   }
@@ -320,10 +320,10 @@
     return st(scope || activeScope()).label;
   }
   function withRange2(path, arg) {
-    const range = arg && typeof arg === "object" ? arg : getCurrentRange(typeof arg === "string" ? arg : void 0);
-    if (!range || !range.start_date || !range.end_date) return path;
+    const range2 = arg && typeof arg === "object" ? arg : getCurrentRange(typeof arg === "string" ? arg : void 0);
+    if (!range2 || !range2.start_date || !range2.end_date) return path;
     const sep = path.includes("?") ? "&" : "?";
-    return path + sep + "start_date=" + encodeURIComponent(range.start_date) + "&end_date=" + encodeURIComponent(range.end_date);
+    return path + sep + "start_date=" + encodeURIComponent(range2.start_date) + "&end_date=" + encodeURIComponent(range2.end_date);
   }
   function rangeText(r) {
     return r && r.start_date ? r.start_date + " ~ " + r.end_date : "\u2014";
@@ -332,14 +332,14 @@
     document.querySelectorAll("[data-time][data-scope]").forEach((bar) => {
       const s = st(bar.dataset.scope);
       bar.querySelectorAll(".trange").forEach((x) => x.classList.toggle("active", x.textContent.trim() === s.label));
-      bar.querySelectorAll("[data-tauto]").forEach((el) => {
-        el.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      bar.querySelectorAll("[data-tauto]").forEach((el5) => {
+        el5.innerHTML = '<i class="ti ti-calendar"></i> ' + esc(rangeText(s.range));
       });
     });
     const top = document.getElementById("topRange");
     if (top) {
       const s = st(activeScope());
-      top.innerHTML = '<i class="ti ti-calendar"></i> ' + rangeText(s.range);
+      top.innerHTML = '<i class="ti ti-calendar"></i> ' + esc(rangeText(s.range));
       top.title = "\u5F53\u524D\u9875\u9762\u65F6\u95F4\u8303\u56F4\uFF1A" + rangeText(s.range) + "\uFF08\u5404\u9875\u9762\u5404\u81EA\u8BB0\u5FC6\uFF0C\u4E92\u4E0D\u5F71\u54CD\uFF09";
     }
   }
@@ -373,8 +373,8 @@
     const s = st(bar.dataset.scope);
     const grans = (bar.dataset.gran || "").split(",").map((x) => x.trim()).filter(Boolean);
     const onlyWeekly = grans.indexOf("week") >= 0 && grans.indexOf("day") < 0;
-    const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${g}"${g === window._gran ? " selected" : ""}>${GRAN_LABEL[g] || g}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
-    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === s.label ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${rangeText(s.range)}</button>` + granHtml + '<span class="tscope-note" title="\u6BCF\u4E2A\u9875\u9762\u5404\u81EA\u8BB0\u4F4F\u81EA\u5DF1\u7684\u65F6\u95F4\u8303\u56F4\uFF0C\u4E92\u4E0D\u5F71\u54CD">\u4EC5\u672C\u9875</span>';
+    const granHtml = grans.length ? '<span class="tlabel tlabel-gap"><i class="ti ti-chart-dots"></i> \u7C92\u5EA6</span><select class="tgran">' + grans.map((g) => `<option value="${esc(g)}"${g === window._gran ? " selected" : ""}>${esc(GRAN_LABEL[g] || g)}</option>`).join("") + "</select>" + (onlyWeekly ? '<span class="tgran-note">\xB7 \u6309\u5468\u8BB0\u5F55</span>' : "") : "";
+    bar.innerHTML = '<span class="tlabel"><i class="ti ti-calendar-stats"></i> \u65F6\u95F4</span>' + RANGES.map((r) => `<button type="button" class="trange${r === s.label ? " active" : ""}">${r}</button>`).join("") + `<button type="button" class="tauto tauto-btn" data-tauto title="\u9009\u62E9\u5177\u4F53\u65E5\u671F\u8303\u56F4"><i class="ti ti-calendar"></i> ${esc(rangeText(s.range))}</button>` + granHtml + '<span class="tscope-note" title="\u6BCF\u4E2A\u9875\u9762\u5404\u81EA\u8BB0\u4F4F\u81EA\u5DF1\u7684\u65F6\u95F4\u8303\u56F4\uFF0C\u4E92\u4E0D\u5F71\u54CD">\u4EC5\u672C\u9875</span>';
   }
   try {
     const g = localStorage.getItem("ferr:gran");
@@ -467,6 +467,100 @@
     toast2(SCOPE_LABEL[scope] + " \u5DF2\u5E94\u7528\uFF1A" + cur.range.period_label);
   }
 
+  // public/src/site-scope.js
+  var LS_KEY = "ferr:site";
+  var SCOPES_BY_SITE = ["data", "dashboard"];
+  var sites = [];
+  var current = null;
+  var bound = false;
+  var allSites = () => sites;
+  var defaultSite = () => sites.find((s) => s.is_default) || sites[0] || null;
+  var currentSite = () => sites.find((s) => s.id === current) || null;
+  var viewingOtherSite = () => {
+    const d = defaultSite();
+    return !!(d && current != null && current !== d.id);
+  };
+  var defaultSiteName = () => defaultSite() ? defaultSite().name : "";
+  function withSite(path) {
+    if (current == null) return path;
+    return path + (path.includes("?") ? "&" : "?") + "project_id=" + encodeURIComponent(current);
+  }
+  function remembered() {
+    try {
+      const v = Number(localStorage.getItem(LS_KEY));
+      return Number.isInteger(v) && v > 0 ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function render() {
+    document.querySelectorAll("[data-site-select]").forEach((box) => {
+      box.textContent = "";
+      box.classList.toggle("is-hidden", sites.length < 2);
+      if (sites.length < 2) return;
+      const label = document.createElement("label");
+      label.className = "site-select";
+      const text2 = document.createElement("span");
+      text2.textContent = "\u7AD9\u70B9";
+      const select = document.createElement("select");
+      select.className = "site-select-input";
+      for (const s of sites) {
+        const o = document.createElement("option");
+        o.value = String(s.id);
+        o.textContent = s.name + (s.is_default ? "\uFF08\u9ED8\u8BA4\uFF09" : "");
+        select.appendChild(o);
+      }
+      select.value = String(current);
+      label.appendChild(text2);
+      label.appendChild(select);
+      box.appendChild(label);
+      if (box.dataset.siteNote) {
+        const note = document.createElement("span");
+        note.className = "site-select-note";
+        note.textContent = box.dataset.siteNote;
+        box.appendChild(note);
+      }
+    });
+  }
+  function choose(id) {
+    if (!sites.some((s) => s.id === id) || id === current) return;
+    current = id;
+    try {
+      localStorage.setItem(LS_KEY, String(id));
+    } catch (e) {
+    }
+    render();
+    for (const scope of SCOPES_BY_SITE) refreshRangeConsumers(scope);
+    toast2("\u5F53\u524D\u7AD9\u70B9\uFF1A" + currentSite().name);
+  }
+  async function loadSiteScope() {
+    if (!bound) {
+      document.addEventListener("change", (e) => {
+        const select = e.target.closest && e.target.closest(".site-select-input");
+        if (select) choose(Number(select.value));
+      });
+      document.addEventListener("siteschanged", () => {
+        loadSiteScope();
+      });
+      bound = true;
+    }
+    let list;
+    try {
+      list = (await window.API.get("/api/google/projects")).sites || [];
+    } catch (e) {
+      return false;
+    }
+    sites = list;
+    const before = current;
+    const want = current != null ? current : remembered();
+    current = sites.some((s) => s.id === want) ? want : defaultSite() ? defaultSite().id : null;
+    render();
+    const servedBefore = before != null ? before : defaultSite() ? defaultSite().id : null;
+    const changed3 = servedBefore !== current;
+    if (changed3) for (const scope of SCOPES_BY_SITE) refreshRangeConsumers(scope);
+    return changed3;
+  }
+
   // public/src/ai.js
   var apiUnavailableMsg = '<div class="api-warn"><i class="ti ti-plug-connected-x"></i> AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF1A\u8BF7\u68C0\u67E5\u540E\u53F0 AI Provider\u3001API Key \u4E0E\u6A21\u578B\u914D\u7F6E\uFF0C\u6216\u7A0D\u540E\u91CD\u8BD5\u3002</div>';
   var aiAnalyses = /* @__PURE__ */ new Map();
@@ -476,20 +570,20 @@
   var splitActionItems = [];
   var modalRequestVersion = 0;
   function hashText(s) {
-    let h = 5381;
+    let h4 = 5381;
     s = String(s || "");
-    for (let i = 0; i < s.length; i++) h = (h << 5) + h + s.charCodeAt(i);
-    return (h >>> 0).toString(36);
+    for (let i = 0; i < s.length; i++) h4 = (h4 << 5) + h4 + s.charCodeAt(i);
+    return (h4 >>> 0).toString(36);
   }
   function currentAiPage() {
     const p = document.querySelector(".panel.active");
     return { tab: (p && p.id || "").replace("panel-", ""), title: (p && p.querySelector(".page-title") || {}).textContent || "", sub: (p && p.querySelector(".page-sub") || {}).textContent || "" };
   }
   function rowContext(btn) {
-    const tr = btn && btn.closest && btn.closest("tr");
-    if (!tr) return null;
-    const th = [...(tr.closest("table") || document).querySelectorAll("thead th")].map((x) => x.innerText.trim());
-    const td2 = [...tr.children].map((x) => x.innerText.trim());
+    const tr2 = btn && btn.closest && btn.closest("tr");
+    if (!tr2) return null;
+    const th = [...(tr2.closest("table") || document).querySelectorAll("thead th")].map((x) => x.innerText.trim());
+    const td2 = [...tr2.children].map((x) => x.innerText.trim());
     const cells = {};
     td2.forEach((v, i) => cells[th[i] || "col" + (i + 1)] = v);
     return { text: td2.join(" | "), cells };
@@ -515,8 +609,8 @@
     if (!btn || !item || !btn.classList) return;
     btn.classList.add("analyzed");
     btn.innerHTML = '<i class="ti ti-check"></i> \u5DF2\u5206\u6790';
-    const tr = btn.closest("tr");
-    if (tr) tr.classList.add("ai-analyzed-row");
+    const tr2 = btn.closest("tr");
+    if (tr2) tr2.classList.add("ai-analyzed-row");
   }
   function applyAiAnalysisStates(root) {
     const base = root || document;
@@ -528,10 +622,10 @@
       if (item) markAiTrigger(btn, item);
     });
     base.querySelectorAll(".kw-ai").forEach((btn) => {
-      const tr = btn.closest("tr");
-      if (!tr) return;
-      const n = tr.querySelector(".kw-name");
-      const kw = (n ? n.textContent : tr.cells[0].textContent).trim();
+      const tr2 = btn.closest("tr");
+      if (!tr2) return;
+      const n = tr2.querySelector(".kw-name");
+      const kw = (n ? n.textContent : tr2.cells[0].textContent).trim();
       const prompt2 = "\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE";
       const title = "\u300C" + kw + "\u300D\u610F\u56FE";
       const item = aiAnalyses.get(aiMeta(btn, prompt2, title).scope_key);
@@ -581,7 +675,7 @@
     const files = document.getElementById("aiChatFiles");
     if (files) files.addEventListener("change", () => {
       const list = document.getElementById("aiFileList");
-      if (list) list.innerHTML = [...files.files].slice(0, 5).map((f) => '<span class="ai-file-chip">' + esc2(f.name) + "</span>").join("");
+      if (list) list.innerHTML = [...files.files].slice(0, 5).map((f) => '<span class="ai-file-chip">' + esc(f.name) + "</span>").join("");
     });
   }
   function aiMessages(item) {
@@ -594,8 +688,8 @@
     const dims = q.dimensions || {};
     const labels = { evidenceCoverage: "\u8BC1\u636E\u8986\u76D6", sourceQuality: "\u6765\u6E90\u8D28\u91CF", freshness: "\u6570\u636E\u65F6\u6548", inferenceDiscipline: "\u63A8\u7406\u7EA6\u675F", numericConsistency: "\u6570\u5B57\u4E00\u81F4", temporalConsistency: "\u65F6\u95F4\u4E00\u81F4" };
     const entries = Object.keys(labels).filter((k) => Number.isFinite(Number(dims[k]))).map((k) => "<span>" + labels[k] + " " + Number(dims[k]) + "</span>").join("");
-    const title = q.applicable ? "\u7F6E\u4FE1\u5EA6 " + Number(q.score || 0) + "/100 \xB7 " + esc2(q.label || "") : esc2(q.label || "\u975E\u6570\u636E\u578B\u56DE\u7B54");
-    return '<div class="hermes-confidence ' + esc2(q.level || "not_applicable") + '"><div class="hermes-confidence-head"><strong>' + title + "</strong><span>" + esc2(q.decision || "") + "</span></div>" + (entries ? '<div class="hermes-confidence-grid">' + entries + "</div>" : "") + "</div>";
+    const title = q.applicable ? "\u7F6E\u4FE1\u5EA6 " + Number(q.score || 0) + "/100 \xB7 " + esc(q.label || "") : esc(q.label || "\u975E\u6570\u636E\u578B\u56DE\u7B54");
+    return '<div class="hermes-confidence ' + esc(q.level || "not_applicable") + '"><div class="hermes-confidence-head"><strong>' + title + "</strong><span>" + esc(q.decision || "") + "</span></div>" + (entries ? '<div class="hermes-confidence-grid">' + entries + "</div>" : "") + "</div>";
   }
   function aiIsActionable(item) {
     const q = item && item.quality && item.quality.confidenceAssessment;
@@ -604,7 +698,7 @@
   function fmtAiTime(v) {
     if (!v) return "";
     const d = /* @__PURE__ */ new Date(String(v).replace(" ", "T") + (/[Z+]/.test(String(v)) ? "" : "Z"));
-    if (isNaN(d)) return String(v).slice(5, 16);
+    if (isNaN(d)) return esc(String(v).slice(5, 16));
     const p = (n) => String(n).padStart(2, "0");
     return d.getMonth() + 1 + "/" + d.getDate() + " " + p(d.getHours()) + ":" + p(d.getMinutes());
   }
@@ -613,8 +707,8 @@
     if (!hist.length) return "";
     const idx = aiViewIdx;
     let chips = '<button type="button" class="ai-tl-chip' + (idx < 0 ? " active" : "") + '" data-ai-snapshot="-1">\u672C\u6B21 \xB7 ' + fmtAiTime(item.updated_at) + "</button>";
-    hist.forEach((h, i) => {
-      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h.at) + "</button>";
+    hist.forEach((h4, i) => {
+      chips += '<button type="button" class="ai-tl-chip' + (idx === i ? " active" : "") + '" data-ai-snapshot="' + i + '">' + (i === 0 ? "\u4E0A\u6B21" : "\u4E0A" + (i + 1) + "\u6B21") + " \xB7 " + fmtAiTime(h4.at) + "</button>";
     });
     return '<div class="ai-timeline"><span class="ai-tl-label"><i class="ti ti-history"></i> \u5386\u53F2\u5BF9\u6BD4</span>' + chips + "</div>";
   }
@@ -725,10 +819,10 @@
         box.innerHTML = '<div class="dim csp-s-46909fa053">\u672A\u80FD\u4ECE\u7ED3\u8BBA\u4E2D\u63D0\u53D6\u5230\u660E\u786E\u53EF\u6267\u884C\u7684\u52A8\u4F5C\u3002</div>';
         return;
       }
-      box.innerHTML = '<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> \u53EF\u91C7\u7EB3\u7684\u6574\u6539\u52A8\u4F5C\uFF08\u9010\u6761\uFF09</div>' + splitActionItems.map((a, i) => '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge ' + (a.dept === "SEM" ? "b-purple" : "b-blue") + '">' + a.dept + "</span> " + esc2(a.title) + '</div><div class="ai-action-d">' + esc2(a.detail) + "</div>" + (a.evidence ? '<div class="ai-action-e dim">\u4F9D\u636E\uFF1A' + esc2(a.evidence) + "</div>" : "") + '</div><button type="button" class="btn-mini" data-ai-split-index="' + i + '"><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div>').join("") + "</div>";
+      box.innerHTML = '<div class="ai-actions-list"><div class="ai-actions-h"><i class="ti ti-list-check"></i> \u53EF\u91C7\u7EB3\u7684\u6574\u6539\u52A8\u4F5C\uFF08\u9010\u6761\uFF09</div>' + splitActionItems.map((a, i) => '<div class="ai-action-row"><div class="ai-action-main"><div class="ai-action-t"><span class="badge ' + (a.dept === "SEM" ? "b-purple" : "b-blue") + '">' + esc(a.dept) + "</span> " + esc(a.title) + '</div><div class="ai-action-d">' + esc(a.detail) + "</div>" + (a.evidence ? '<div class="ai-action-e dim">\u4F9D\u636E\uFF1A' + esc(a.evidence) + "</div>" : "") + '</div><button type="button" class="btn-mini" data-ai-split-index="' + i + '"><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div>').join("") + "</div>";
     } catch (e) {
       splitActionItems = [];
-      if (box) box.innerHTML = '<div class="dim csp-s-46909fa053">\u62C6\u89E3\u5931\u8D25\uFF1A' + esc2(e.message || "ai_failed") + "</div>";
+      if (box) box.innerHTML = '<div class="dim csp-s-46909fa053">\u62C6\u89E3\u5931\u8D25\uFF1A' + esc(e.message || "ai_failed") + "</div>";
     }
   }
   async function runAiAnalysis(btn, prompt2, title, force) {
@@ -738,7 +832,7 @@
     aiViewIdx = -1;
     splitActionItems = [];
     lastAi = { text: "", dept: meta.dept, quality: null };
-    document.getElementById("aiModalTitle").textContent = meta.title;
+    document.getElementById("aiModalTitle").textContent = meta.title + (viewingOtherSite() ? "\uFF08\u6CE8\u610F\uFF1AAI \u76EE\u524D\u53EA\u8BFB\u9ED8\u8BA4\u7AD9\u70B9\u300C" + defaultSiteName() + "\u300D\u7684\u6570\u636E\uFF0C\u4E0D\u662F\u5F53\u524D\u6240\u9009\u7AD9\u70B9\uFF09" : "");
     document.getElementById("aiModalBody").innerHTML = '<div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7ED3\u5408\u5F53\u524D\u9875\u9762\u6570\u636E\u548C\u5E02\u573A\u8BB0\u5FC6\u5206\u6790...</div>';
     document.getElementById("aiModalFoot").style.display = "none";
     if (btn) btn.disabled = true;
@@ -751,7 +845,7 @@
       renderAiItem(item);
     } catch (e) {
       if (requestVersion !== modalRequestVersion) return;
-      document.getElementById("aiModalBody").innerHTML = apiUnavailableMsg + '<p class="dim">\u5931\u8D25\u539F\u56E0\uFF1A' + esc2(e.message || "ai_failed") + "</p>";
+      document.getElementById("aiModalBody").innerHTML = apiUnavailableMsg + '<p class="dim">\u5931\u8D25\u539F\u56E0\uFF1A' + esc(e.message || "ai_failed") + "</p>";
       setupAiFooter();
     } finally {
       if (requestVersion === modalRequestVersion && btn) btn.disabled = false;
@@ -773,7 +867,7 @@
     const files = [...(document.getElementById("aiChatFiles") || {}).files || []].slice(0, 5).map((f) => ({ name: f.name, type: f.type, size: f.size }));
     const requestVersion = ++modalRequestVersion;
     if (input) input.value = "";
-    document.getElementById("aiModalBody").insertAdjacentHTML("beforeend", '<div class="ai-chat-item user"><div class="bubble">' + esc2(msg) + '</div></div><div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7EE7\u7EED\u5206\u6790...</div>');
+    document.getElementById("aiModalBody").insertAdjacentHTML("beforeend", '<div class="ai-chat-item user"><div class="bubble">' + esc(msg) + '</div></div><div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7EE7\u7EED\u5206\u6790...</div>');
     try {
       const { item: next } = await API.post("/api/ai/analyses/" + item.id + "/chat", { message: msg, attachments: files });
       if (requestVersion !== modalRequestVersion) return;
@@ -850,26 +944,25 @@
     }
   }
 
-  // public/src/charts.js
-  window.DEMO_MODE = window.DEMO_MODE || false;
-  var DEMO = {
-    inqTrend: { a: [2, 1, 2, 1, 2, 1, 2, 1], total: [6, 5, 7, 8, 6, 7, 8, 8] },
-    seoMini: [95, 98, 92, 100, 104, 99, 108, 112],
-    semMini: [2.8, 2.9, 3, 2.95, 3.1, 3, 3.15, 3.2],
-    inqDonut: { a: 7, b: 5, c: 43, rate: "22%" },
-    chanDonut: { seo: 42, sem: 33, direct: 17, other: 8 },
-    seoSeries: {
-      labels: Array.from({ length: 14 }, (_, i) => "5/" + (4 + i * 2)),
-      clicks: [95, 98, 92, 100, 104, 99, 108, 112, 109, 115, 118, 114, 120, 124],
-      impr: [120, 128, 124, 132, 140, 134, 145, 150, 148, 155, 160, 156, 165, 170]
+  // public/src/inquiry-data.js
+  var pending = /* @__PURE__ */ new Map();
+  function fetchInquiries(scope) {
+    const url = withRange2("/api/inquiries", scope);
+    let p = pending.get(url);
+    if (!p) {
+      p = API.get(url).finally(() => pending.delete(url));
+      pending.set(url, p);
     }
-  };
+    return p.then((res) => structuredClone(res));
+  }
+
+  // public/src/charts.js
   function loadFailureText(label, error) {
     const reason = error && error.message && error.message !== "unauthorized" ? error.message : "\u767B\u5F55\u72B6\u6001\u5DF2\u5931\u6548\u6216\u670D\u52A1\u4E0D\u53EF\u7528";
     return label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + reason;
   }
   function loadFailureRow(cols, label, error) {
-    return '<tr><td colspan="' + cols + '" class="dim csp-s-45c174bbec">' + esc2(loadFailureText(label, error)) + "</td></tr>";
+    return '<tr><td colspan="' + cols + '" class="dim csp-s-45c174bbec">' + esc(loadFailureText(label, error)) + "</td></tr>";
   }
   function chartEmpty(id, detail, title) {
     const cv = document.getElementById(id);
@@ -896,9 +989,6 @@
       if (e) e.textContent = map[id];
     });
   }
-  function fillDonutLegendDemo() {
-    setDonutLegend({ lgInqA: DEMO.inqDonut.a, lgInqB: DEMO.inqDonut.b, lgInqC: DEMO.inqDonut.c, lgInqRate: DEMO.inqDonut.rate, lgChSeo: DEMO.chanDonut.seo + "%", lgChSem: DEMO.chanDonut.sem + "%", lgChDirect: DEMO.chanDonut.direct + "%", lgChOther: DEMO.chanDonut.other + "%" });
-  }
   function blankDonutLegend() {
     setDonutLegend({ lgInqA: "\u2014", lgInqB: "\u2014", lgInqC: "\u2014", lgInqRate: "\u2014", lgChSeo: "\u2014", lgChSem: "\u2014", lgChDirect: "\u2014", lgChOther: "\u2014" });
   }
@@ -907,7 +997,7 @@
   async function loadKpiInqDonuts() {
     const requestId = ++kpiInqRequestSequence, revision = getRangeRevision("kpi");
     try {
-      const { items } = await API.get(withRange2("/api/inquiries", "kpi"));
+      const { items } = await fetchInquiries("kpi");
       if (requestId !== kpiInqRequestSequence || revision !== getRangeRevision("kpi")) return false;
       window._inqKpiCache = items || [];
     } catch (e) {
@@ -920,7 +1010,6 @@
   var _inqDonutChart = null;
   var _chanDonutChart = null;
   function renderInqDonuts() {
-    if (window.DEMO_MODE) return;
     const rows2 = window._inqKpiCache || [];
     const cv1 = document.getElementById("inqDonut"), cv2 = document.getElementById("chanDonut");
     if (_inqDonutChart) {
@@ -999,7 +1088,7 @@
       }
       return { labels: w.map((x) => x.date), clicks: w.map((x) => x.clicks), impr: w.map((x) => Math.round(x.impr / 20)) };
     }
-    return window.DEMO_MODE ? DEMO.seoSeries : null;
+    return null;
   }
   function buildSeoData(s) {
     return { labels: s.labels, datasets: [{ label: "\u70B9\u51FB", data: s.clicks, borderColor: "#2f72e8", backgroundColor: "rgba(47,114,232,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }, { label: "\u5C55\u73B0\xF720", data: s.impr, borderColor: "#9aa1ae", borderDash: [4, 3], tension: 0.4, pointRadius: 0, borderWidth: 1.5 }] };
@@ -1050,9 +1139,9 @@
   }
   async function loadSeoBoardGsc() {
     const cur = getCurrentRange("data");
-    let data = null, prev = null;
+    let data3 = null, prev = null;
     try {
-      data = await API.get(withRange2("/api/google/gsc/summary", "data"));
+      data3 = await API.get(withSite(withRange2("/api/google/gsc/summary", "data")));
     } catch (e) {
       window._gscBoard = { error: e };
       renderSeoBoard();
@@ -1060,12 +1149,12 @@
     }
     if (cur) {
       try {
-        prev = await API.get(withRange2("/api/google/gsc/summary", _shiftRange(cur)));
+        prev = await API.get(withSite(withRange2("/api/google/gsc/summary", _shiftRange(cur))));
       } catch (e) {
         prev = null;
       }
     }
-    window._gscBoard = { data, prev };
+    window._gscBoard = { data: data3, prev };
     renderSeoBoard();
   }
   function _aggByGran(byDate, gran) {
@@ -1083,19 +1172,19 @@
     return [...m.keys()].sort().map((k) => ({ label: gran === "month" ? k : k.slice(5), clicks: m.get(k).clicks, impr: m.get(k).impr }));
   }
   function _seoDelta(id, cur, prev, lowerBetter, fmt2) {
-    const el = document.getElementById(id);
-    if (!el) return;
+    const el5 = document.getElementById(id);
+    if (!el5) return;
     if (prev == null || !isFinite(prev) || prev === 0 || cur == null) {
-      el.textContent = "";
-      el.className = "metric-delta";
+      el5.textContent = "";
+      el5.className = "metric-delta";
       return;
     }
     const diff = cur - prev;
     const better = lowerBetter ? diff < 0 : diff > 0;
     const arrow = diff > 0 ? "\u25B2" : diff < 0 ? "\u25BC" : "\u2014";
     const txt = fmt2 === "pct" ? Math.abs(diff / prev * 100).toFixed(1) + "%" : Math.abs(diff).toFixed(1);
-    el.textContent = arrow + " " + txt;
-    el.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
+    el5.textContent = arrow + " " + txt;
+    el5.className = "metric-delta " + (better ? "delta-pos" : "delta-neg");
   }
   function _seoPath(u) {
     try {
@@ -1106,23 +1195,30 @@
   }
   function renderSeoBoard() {
     const cv = document.getElementById("seoBoard");
-    const board = window._gscBoard, data = board && board.data, prev = board && board.prev;
+    const board = window._gscBoard, data3 = board && board.data, prev = board && board.prev;
     const error = board && board.error;
-    const t = data && data.totals || null;
+    const t = data3 && data3.totals || null;
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
     };
-    if (t) {
+    if (t && (data3.byDate || []).length) {
       _t("sb-clicks", (t.clicks || 0).toLocaleString());
       _t("sb-impr", (t.impressions || 0).toLocaleString());
       _t("sb-pos", t.position != null ? Number(t.position).toFixed(1) : "\u2014");
-      _t("sb-cov", (data.queryCount || 0).toLocaleString());
+      _t("sb-cov", (data3.queryCount || 0).toLocaleString());
       const pt = prev && prev.totals;
       _seoDelta("sb-clicks-d", t.clicks, pt ? pt.clicks : null, false, "pct");
       _seoDelta("sb-impr-d", t.impressions, pt ? pt.impressions : null, false, "pct");
       _seoDelta("sb-pos-d", t.position, pt ? pt.position : null, true, "abs");
-      _seoDelta("sb-cov-d", data.queryCount, prev ? prev.queryCount : null, false, "abs");
+      _seoDelta("sb-cov-d", data3.queryCount, prev ? prev.queryCount : null, false, "abs");
+      if (!(prev && (prev.byDate || []).length)) ["sb-clicks-d", "sb-impr-d", "sb-pos-d", "sb-cov-d"].forEach((id) => {
+        const e = document.getElementById(id);
+        if (e) {
+          e.textContent = "\u4E0A\u671F\u6CA1\u6709\u6570\u636E";
+          e.className = "metric-delta";
+        }
+      });
     } else {
       ["sb-clicks", "sb-impr", "sb-pos", "sb-cov"].forEach((id) => _t(id, "\u2014"));
       ["sb-clicks-d", "sb-impr-d", "sb-pos-d", "sb-cov-d"].forEach((id) => {
@@ -1146,12 +1242,12 @@
       let labels, clicks, impr;
       if (!gran || gran === "day") {
         const rng = board && board.data && board.data.range || getCurrentRange("data");
-        const a = _alignDaily(data && data.byDate, rng, "date");
+        const a = _alignDaily(data3 && data3.byDate, rng, "date");
         labels = a.labels;
         clicks = a.rows.map((r) => r ? +r.clicks || 0 : null);
         impr = a.rows.map((r) => r ? +r.impressions || 0 : null);
       } else {
-        const s = _aggByGran(data && data.byDate, gran);
+        const s = _aggByGran(data3 && data3.byDate, gran);
         labels = s.map((x) => x.label);
         clicks = s.map((x) => x.clicks);
         impr = s.map((x) => x.impr);
@@ -1177,7 +1273,7 @@
     }
     const tb = document.getElementById("seoPageRows");
     if (tb) {
-      const pages = data && data.topPages || [];
+      const pages = data3 && data3.topPages || [];
       if (error) {
         tb.innerHTML = loadFailureRow(7, "GSC", error);
       } else if (!pages.length) {
@@ -1189,7 +1285,7 @@
           const pos = p.position != null ? Number(p.position).toFixed(1) : "\u2014";
           const q = "\u5206\u6790\u9875\u9762 " + path + " \u7684SEO\u8868\u73B0\uFF1A\u70B9\u51FB" + (p.clicks || 0) + "\u3001\u5C55\u73B0" + (p.impressions || 0) + "\u3001CTR" + ctr + "\u3001\u5747\u6392\u540D" + pos + "\u3002\u7ED9\u51FA\u6700\u8BE5\u5148\u6539\u76843\u4E2A\u52A8\u4F5C\u3002";
           const title = path + " \u8BCA\u65AD";
-          return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + pos + '</td><td class="num dim">\u2014</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, title) + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
+          return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + Number(p.clicks || 0).toLocaleString() + '</td><td class="num">' + Number(p.impressions || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + pos + '</td><td class="num dim">\u2014</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, title) + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
         }).join("");
       }
     }
@@ -1227,7 +1323,7 @@
   async function loadSeoBoardFull() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/google/seo/board", "data"));
+      d = await API.get(withSite(withRange2("/api/google/seo/board", "data")));
     } catch (e) {
       d = { error: e };
     }
@@ -1251,7 +1347,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc2(h.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h4) => '<span class="seo-hl-chip ' + (h4.tone === "good" ? "good" : h4.tone === "muted" ? "muted" : "bad") + '">' + esc(h4.text) + "</span>").join("");
   }
   function renderSeoDeltaTables(d) {
     const error = d && d.error;
@@ -1261,15 +1357,15 @@
       pt.innerHTML = error ? loadFailureRow(5, "SEO \u770B\u677F", error) : pages.length ? pages.map((p) => {
         const path = _seoPath(p.page);
         const q = "\u5206\u6790\u843D\u5730\u9875 " + path + " \u7684SEO\u8868\u73B0\uFF1A\u672C\u671F\u70B9\u51FB" + (p.clicks || 0) + "(\u4E0A\u671F" + (p.clicksPrev || 0) + ")\u3001\u5C55\u73B0" + (p.impressions || 0) + "\u3002\u7ED9\u51FA\u6700\u8BE5\u5148\u6539\u76843\u4E2A\u52A8\u4F5C\u3002";
-        return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num">' + (p.clicks || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(p.clicks, p.clicksPrev, false, "pct") + '</td><td class="num">' + (p.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u843D\u5730\u9875\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
+        return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + Number(p.clicks || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(p.clicks, p.clicksPrev, false, "pct") + '</td><td class="num">' + Number(p.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u843D\u5730\u9875\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
     }
     const qt = document.getElementById("seoQueriesDelta");
     if (qt) {
-      const qs = d && d.queries || [];
-      qt.innerHTML = error ? loadFailureRow(6, "SEO \u770B\u677F", error) : qs.length ? qs.map((q) => {
+      const qs2 = d && d.queries || [];
+      qt.innerHTML = error ? loadFailureRow(6, "SEO \u770B\u677F", error) : qs2.length ? qs2.map((q) => {
         const pos = q.position != null ? Number(q.position).toFixed(1) : "\u2014";
-        return "<tr><td>" + esc2(q.query) + '</td><td class="num">' + (q.impressions || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(q.impressions, q.imprPrev, false, "pct") + '</td><td class="num">' + (q.clicks || 0).toLocaleString() + '</td><td class="num">' + pos + '</td><td class="num">' + _deltaHtml(q.position, q.positionPrev, true, "abs1") + "</td></tr>";
+        return "<tr><td>" + esc(q.query) + '</td><td class="num">' + Number(q.impressions || 0).toLocaleString() + '</td><td class="num">' + _deltaHtml(q.impressions, q.imprPrev, false, "pct") + '</td><td class="num">' + Number(q.clicks || 0).toLocaleString() + '</td><td class="num">' + pos + '</td><td class="num">' + _deltaHtml(q.position, q.positionPrev, true, "abs1") + "</td></tr>";
       }).join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 GSC \u540C\u6B65</td></tr>';
     }
   }
@@ -1289,26 +1385,26 @@
       const path = _seoPath(p.page), b = Math.round((p.bounceRate || 0) * 100), dur = Math.round(p.avgDuration || 0);
       const q = "\u843D\u5730\u9875 " + path + " \u4F1A\u8BDD" + p.sessions + "\u3001\u8DF3\u51FA\u7387" + b + "%\u3001\u5747\u65F6\u957F" + dur + "s\uFF0C\u6D41\u91CF\u4E0D\u5C0F\u4F46\u8DF3\u51FA\u504F\u9AD8\u3002\u7ED9\u51FA\u964D\u4F4E\u8DF3\u51FA\u3001\u63D0\u5347\u7559\u5B58\u4E0E\u8F6C\u5316\u7684\u5177\u4F53\u4F18\u5316\u52A8\u4F5C\uFF08\u9996\u5C4F/\u5185\u5BB9\u5339\u914D/CTA/\u52A0\u8F7D\u901F\u5EA6\uFF09\u3002";
       const ti = "\u964D\u8DF3\u51FA\uFF1A" + path, de = "\u843D\u5730\u9875 " + path + " \u9AD8\u6D41\u91CF(" + p.sessions + "\u4F1A\u8BDD)\u9AD8\u8DF3\u51FA(" + b + "%)\uFF0C\u4F18\u5316\u9996\u5C4F/\u5185\u5BB9\u5339\u914D/CTA \u964D\u4F4E\u8DF3\u51FA\u3001\u63D0\u5347\u8F6C\u5316\u3002", ev = "GA4 \u4F1A\u8BDD" + p.sessions + " \u8DF3\u51FA" + b + "% \u65F6\u957F" + dur + "s";
-      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc2(path) + '</span><span class="st-meta dim">' + p.sessions.toLocaleString() + ' \u4F1A\u8BDD \xB7 \u8DF3\u51FA <b class="csp-s-371de31267">' + b + "%</b> \xB7 " + dur + 's</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u964D\u8DF3\u51FA\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(path) + '</span><span class="st-meta dim">' + Number(p.sessions).toLocaleString() + ' \u4F1A\u8BDD \xB7 \u8DF3\u51FA <b class="csp-s-371de31267">' + b + "%</b> \xB7 " + dur + 's</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u964D\u8DF3\u51FA\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u8BCA\u65AD</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></div></div>';
     }).join("") + "</div>";
   }
   function renderSeoScatter(d) {
-    const el = document.getElementById("seoScatter"), empty = document.getElementById("seoScatterEmpty");
-    if (!el) return;
+    const el5 = document.getElementById("seoScatter"), empty2 = document.getElementById("seoScatterEmpty");
+    if (!el5) return;
     const _tb = document.getElementById("seoScatterTargets");
     if (_tb) _tb.innerHTML = "";
     if (d && d.error) {
-      el.style.display = "none";
-      if (empty) {
-        empty.classList.remove("is-hidden");
-        empty.textContent = loadFailureText("SEO \u6563\u70B9", d.error);
+      el5.style.display = "none";
+      if (empty2) {
+        empty2.classList.remove("is-hidden");
+        empty2.textContent = loadFailureText("SEO \u6563\u70B9", d.error);
       }
       return;
     }
     const ps = d && d.pageScatter || [];
     if (ps.length && typeof echarts !== "undefined") {
-      el.style.display = "";
-      if (empty) empty.classList.add("is-hidden");
+      el5.style.display = "";
+      if (empty2) empty2.classList.add("is-hidden");
       _seoScatterTitles("\u627E\u51FA\u9700\u8981\u4F18\u5316\u7684\u9875\u9762 \xB7 \u4F1A\u8BDD \xD7 \u8DF3\u51FA\u7387", "\u53F3\u4E0A\u7EA2\u533A=\u9AD8\u6D41\u91CF+\u9AD8\u8DF3\u51FA=\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61\uFF1B\u4E2D\u4F4D\u7EBF\u5206\u56DB\u8C61\u9650\uFF1B\u70B9=\u843D\u5730\u9875");
       if (window._seoScatterChart) {
         try {
@@ -1316,7 +1412,7 @@
         } catch (e) {
         }
       }
-      window._seoScatterChart = echarts.init(el);
+      window._seoScatterChart = echarts.init(el5);
       const medS = _median(ps.map((p) => p.sessions)), medB = _median(ps.map((p) => (p.bounceRate || 0) * 100));
       const maxS = Math.max(...ps.map((p) => p.sessions), 1) * 1.6;
       const isTarget = (p) => p.sessions >= medS && (p.bounceRate || 0) * 100 >= medB;
@@ -1324,7 +1420,7 @@
         const s = _seoPath(u);
         return s.length > 22 ? "\u2026" + s.slice(-21) : s;
       };
-      const data2 = ps.map((p) => {
+      const data4 = ps.map((p) => {
         const t = isTarget(p);
         return {
           value: [p.sessions, +((p.bounceRate || 0) * 100).toFixed(1), _seoPath(p.page), p.avgDuration || 0],
@@ -1336,11 +1432,11 @@
         grid: { left: 52, right: 120, top: 16, bottom: 44 },
         xAxis: { type: "log", name: "\u4F1A\u8BDD", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
         yAxis: { type: "value", name: "\u8DF3\u51FA\u7387%", min: 0, max: 100, nameGap: 30, axisLabel: { fontSize: 10 } },
-        tooltip: { formatter: (o) => esc2(o.value[2]) + "<br/>\u4F1A\u8BDD " + o.value[0].toLocaleString() + " \xB7 \u8DF3\u51FA\u7387 " + o.value[1] + "% \xB7 \u5747\u65F6\u957F " + Math.round(o.value[3]) + "s" },
+        tooltip: { formatter: (o) => esc(o.value[2]) + "<br/>\u4F1A\u8BDD " + Number(o.value[0]).toLocaleString() + " \xB7 \u8DF3\u51FA\u7387 " + esc(o.value[1]) + "% \xB7 \u5747\u65F6\u957F " + Math.round(o.value[3]) + "s" },
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(32, 8 + Math.sqrt(v[0] || 0)),
-          data: data2,
+          data: data4,
           markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: true, fontSize: 9, color: "#9aa1ae", formatter: (o) => o.dataType === "max" ? "" : "\u4E2D\u4F4D" }, data: [{ xAxis: medS }, { yAxis: medB }] },
           markArea: { silent: true, itemStyle: { color: "rgba(229,72,77,.07)" }, label: { show: true, position: ["85%", "6%"], color: "#e5484d", fontSize: 11, fontWeight: "bold", formatter: "\u91CD\u70B9\u4F18\u5316\u5BF9\u8C61" }, data: [[{ xAxis: medS, yAxis: medB }, { xAxis: maxS, yAxis: 100 }]] }
         }]
@@ -1350,12 +1446,12 @@
     }
     const pts = d && d.scatter || [];
     if (typeof echarts === "undefined" || !pts.length) {
-      el.style.display = "none";
-      if (empty) empty.classList.remove("is-hidden");
+      el5.style.display = "none";
+      if (empty2) empty2.classList.remove("is-hidden");
       return;
     }
-    el.style.display = "";
-    if (empty) empty.classList.add("is-hidden");
+    el5.style.display = "";
+    if (empty2) empty2.classList.add("is-hidden");
     _seoScatterTitles("\u673A\u4F1A\u8BCD\u8C61\u9650 \xB7 \u5C55\u73B0 \xD7 \u6392\u540D", "\uFF08GA4 \u8DF3\u51FA\u7387\u5F85\u91CD\u65B0\u540C\u6B65\u540E\u5207\u6362\u4E3A\u201C\u4F1A\u8BDD\xD7\u8DF3\u51FA\u7387\u201D\uFF09\u53F3\u4E0A=\u9AD8\u5C55\u73B0\u5DEE\u6392\u540D=\u91CD\u70B9\u653B\uFF1B\u70B9=\u5173\u952E\u8BCD");
     if (window._seoScatterChart) {
       try {
@@ -1363,18 +1459,18 @@
       } catch (e) {
       }
     }
-    window._seoScatterChart = echarts.init(el);
-    const data = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
+    window._seoScatterChart = echarts.init(el5);
+    const data3 = pts.map((p) => [p.impressions, p.position, p.clicks, p.query]);
     const medImpr = _median(pts.map((p) => p.impressions)), medPos = _median(pts.map((p) => p.position));
     window._seoScatterChart.setOption({
       grid: { left: 52, right: 24, top: 16, bottom: 44 },
       xAxis: { type: "log", name: "\u5C55\u73B0", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
       yAxis: { type: "value", name: "\u6392\u540D(\u8D8A\u4F4E\u8D8A\u597D)", inverse: true, min: 1, nameGap: 30, axisLabel: { fontSize: 10 } },
-      tooltip: { formatter: (o) => esc2(o.data[3]) + "<br/>\u5C55\u73B0 " + o.data[0].toLocaleString() + " \xB7 \u6392\u540D " + o.data[1].toFixed(1) + " \xB7 \u70B9\u51FB " + o.data[2] },
+      tooltip: { formatter: (o) => esc(o.data[3]) + "<br/>\u5C55\u73B0 " + Number(o.data[0]).toLocaleString() + " \xB7 \u6392\u540D " + o.data[1].toFixed(1) + " \xB7 \u70B9\u51FB " + esc(o.data[2]) },
       series: [{
         type: "scatter",
         symbolSize: (v) => Math.min(30, 7 + Math.sqrt(v[2] || 0) * 2.2),
-        data,
+        data: data3,
         itemStyle: { color: "#2f72e8", opacity: 0.68 },
         markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: false }, data: [{ xAxis: medImpr }, { yAxis: medPos }] }
       }]
@@ -1400,10 +1496,10 @@
         const total = top.reduce((a, s) => a + (s.sessions || 0), 0) || 1;
         if (legend) legend.innerHTML = top.map((s, i) => {
           const b = s.bounceRate != null ? '<span class="dim csp-s-128d24435a"> \xB7 \u8DF3\u51FA' + Math.round(s.bounceRate * 100) + "%</span>" : "";
-          return '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc2(s.source) + b + "</span><b>" + Math.round((s.sessions || 0) / total * 100) + "%</b></div>";
+          return '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc(s.source) + b + "</span><b>" + Math.round((s.sessions || 0) / total * 100) + "%</b></div>";
         }).join("");
       } else if (legend) {
-        legend.innerHTML = '<span class="dim">' + (error ? esc2(loadFailureText("SEO \u6765\u6E90", error)) : "\u6682\u65E0 GA4 \u6765\u6E90\u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
+        legend.innerHTML = '<span class="dim">' + (error ? esc(loadFailureText("SEO \u6765\u6E90", error)) : "\u6682\u65E0 GA4 \u6765\u6E90\u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
       }
     }
     const areaCv = document.getElementById("seoSrcArea");
@@ -1450,8 +1546,8 @@
     return p;
   }
   function _semScopeNote() {
-    const el = document.getElementById("semAttrScope");
-    if (el) el.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
+    const el5 = document.getElementById("semAttrScope");
+    if (el5) el5.classList.toggle("is-hidden", !(window._semCampaign || window._semAdGroup));
   }
   function onSemCampaignChange(v) {
     window._semCampaign = v || "";
@@ -1481,31 +1577,31 @@
     }
     sel.disabled = false;
     const cur = sel.value;
-    sel.innerHTML = ['<option value="">\u5168\u90E8\u5E7F\u544A\u7EC4</option>'].concat((list || []).map((g) => '<option value="' + esc2(g.adGroupId) + '">' + esc2(g.adGroupName || "(\u672A\u547D\u540D\u5E7F\u544A\u7EC4)") + "</option>")).join("");
+    sel.innerHTML = ['<option value="">\u5168\u90E8\u5E7F\u544A\u7EC4</option>'].concat((list || []).map((g) => '<option value="' + esc(g.adGroupId) + '">' + esc(g.adGroupName || "(\u672A\u547D\u540D\u5E7F\u544A\u7EC4)") + "</option>")).join("");
     sel.value = cur;
   }
   function _fillSemCampaignFilter(list) {
     const sel = document.getElementById("semCampFilter");
     if (!sel || window._semCampaign) return;
     const cur = sel.value;
-    sel.innerHTML = ['<option value="">\u5168\u90E8\u7CFB\u5217</option>'].concat((list || []).map((c) => '<option value="' + esc2(c.campaignId) + '">' + esc2(c.campaignName || "(\u672A\u547D\u540D)") + "</option>")).join("");
+    sel.innerHTML = ['<option value="">\u5168\u90E8\u7CFB\u5217</option>'].concat((list || []).map((c) => '<option value="' + esc(c.campaignId) + '">' + esc(c.campaignName || "(\u672A\u547D\u540D)") + "</option>")).join("");
     sel.value = cur;
   }
   async function loadSemBoardAds() {
-    let data = null;
+    let data3 = null;
     try {
-      data = await API.get(withSemCampaign(withRange2("/api/google/ads/summary", "data")));
+      data3 = await API.get(withSemCampaign(withRange2("/api/google/ads/summary", "data")));
     } catch (e) {
       window._adsBoard = { error: e };
       renderSemBoard();
       return;
     }
-    window._adsBoard = data;
+    window._adsBoard = data3;
     renderSemBoard();
   }
   function renderSemBoard() {
-    const data = window._adsBoard, t = data && data.totals;
-    const error = data && data.error;
+    const data3 = window._adsBoard, t = data3 && data3.totals;
+    const error = data3 && data3.error;
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
@@ -1525,13 +1621,13 @@
     } else {
       ids.forEach((id) => _t(id, "\u2014"));
     }
-    if (data) {
-      _fillSemCampaignFilter(data.campaigns);
-      _fillSemAdGroupFilter(data.adGroups);
+    if (data3) {
+      _fillSemCampaignFilter(data3.campaigns);
+      _fillSemAdGroupFilter(data3.adGroups);
     }
     const tb = document.getElementById("semHierRows");
     if (!tb) return;
-    const camps = data && data.campaigns || [], kws = data && data.keywords || [];
+    const camps = data3 && data3.campaigns || [], kws = data3 && data3.keywords || [];
     if (error) {
       tb.innerHTML = loadFailureRow(5, "Ads \u6982\u89C8", error);
       return;
@@ -1549,10 +1645,10 @@
     const cpc = (cost, conv) => conv && conv > 0 ? _money(cost / conv) : "\u2014";
     let html = "";
     camps.forEach((c) => {
-      html += '<tr class="h-camp" data-chart-action="toggle-hier"><td><i class="ti ti-chevron-down hicon"></i> <b>' + esc2(c.campaignName || "(\u672A\u547D\u540D)") + '</b></td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
+      html += '<tr class="h-camp" data-chart-action="toggle-hier"><td><i class="ti ti-chevron-down hicon"></i> <b>' + esc(c.campaignName || "(\u672A\u547D\u540D)") + '</b></td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
       (byCamp.get(c.campaignName || "") || []).forEach((k) => {
-        const mt = k.matchType ? " \xB7 " + esc2(k.matchType) : "";
-        html += '<tr class="h-kw"><td>\u3000\u2022 ' + esc2(k.keyword || "") + '<span class="dim csp-s-33ee298127">' + mt + '</span></td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>";
+        const mt = k.matchType ? " \xB7 " + esc(k.matchType) : "";
+        html += '<tr class="h-kw"><td>\u3000\u2022 ' + esc(k.keyword || "") + '<span class="dim csp-s-33ee298127">' + mt + '</span></td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>";
       });
     });
     tb.innerHTML = html;
@@ -1567,24 +1663,24 @@
     renderAttribution(d);
   }
   function renderAttribution(d) {
-    const card = document.getElementById("semAttrCard"), body = document.getElementById("semAttrBody");
-    if (!card || !body) return;
+    const card2 = document.getElementById("semAttrCard"), body = document.getElementById("semAttrBody");
+    if (!card2 || !body) return;
     if (d && d.error) {
-      card.classList.remove("is-hidden");
-      body.innerHTML = '<div class="dim">' + esc2(loadFailureText("\u8BE2\u76D8\u5F52\u56E0", d.error)) + "</div>";
+      card2.classList.remove("is-hidden");
+      body.innerHTML = '<div class="dim">' + esc(loadFailureText("\u8BE2\u76D8\u5F52\u56E0", d.error)) + "</div>";
       return;
     }
     const sem = d && d.sem;
     if (!sem || !sem.costMicros && !sem.inquiriesTotal) {
-      card.classList.add("is-hidden");
+      card2.classList.add("is-hidden");
       return;
     }
-    card.classList.remove("is-hidden");
+    card2.classList.remove("is-hidden");
     const cost = sem.costMicros / 1e6;
     const real = sem.costPerEffective != null ? Math.round(sem.costPerEffective).toLocaleString() : "\u2014";
     const adsCpa = sem.adsConversions > 0 ? Math.round(cost / sem.adsConversions).toLocaleString() : "\u2014";
     const gap = sem.costPerEffective != null && sem.adsConversions > 0 ? sem.costPerEffective / (cost / sem.adsConversions) : null;
-    body.innerHTML = '<div class="attr-report-grid"><div class="attr-box"><div class="attr-num">' + (sem.inquiriesEffective || 0) + '<span class="dim csp-s-a49cca52be">/' + (sem.inquiriesTotal || 0) + '</span></div><div class="attr-lbl">\u771F\u5B9E\u6709\u6548\u8BE2\u76D8 (A/B)</div></div><div class="attr-box"><div class="attr-num">' + (sem.inquiriesA || 0) + '</div><div class="attr-lbl">A \u7EA7\u8BE2\u76D8\u6570\u91CF</div></div><div class="attr-box"><div class="attr-num">' + real + '</div><div class="attr-lbl">\u771F\u5B9E\u6BCF\u6709\u6548\u8BE2\u76D8\u6210\u672C \xB7 Ads \u81EA\u62A5 ' + adsCpa + "</div></div></div>" + (gap && gap >= 1.3 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u771F\u5B9E\u6BCF\u8BE2\u76D8\u6210\u672C\u7EA6\u4E3A Ads \u81EA\u62A5\u7684 ' + gap.toFixed(1) + " \u500D\u2014\u2014Ads \u8F6C\u5316\u7EDF\u8BA1\u53EF\u80FD\u865A\u9AD8\uFF0C\u522B\u53EA\u770B Ads \u540E\u53F0\u6570\u5B57\u3002</div>" : "") + (sem.inquiriesEffective === 0 && sem.costMicros > 0 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u672C\u533A\u95F4 SEM \u4ED8\u8D39\u82B1\u4E86 ' + _money(sem.costMicros) + " \u4F46\u771F\u5B9E\u6709\u6548\u8BE2\u76D8\u4E3A 0\u2014\u2014\u68C0\u67E5\u6E20\u9053\u6807\u6CE8\u6216\u6295\u653E\u6548\u679C\u3002</div>" : "");
+    body.innerHTML = '<div class="attr-report-grid"><div class="attr-box"><div class="attr-num">' + esc(sem.inquiriesEffective || 0) + '<span class="dim csp-s-a49cca52be">/' + esc(sem.inquiriesTotal || 0) + '</span></div><div class="attr-lbl">\u771F\u5B9E\u6709\u6548\u8BE2\u76D8 (A/B)</div></div><div class="attr-box"><div class="attr-num">' + esc(sem.inquiriesA || 0) + '</div><div class="attr-lbl">A \u7EA7\u8BE2\u76D8\u6570\u91CF</div></div><div class="attr-box"><div class="attr-num">' + real + '</div><div class="attr-lbl">\u771F\u5B9E\u6BCF\u6709\u6548\u8BE2\u76D8\u6210\u672C \xB7 Ads \u81EA\u62A5 ' + adsCpa + "</div></div></div>" + (gap && gap >= 1.3 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u771F\u5B9E\u6BCF\u8BE2\u76D8\u6210\u672C\u7EA6\u4E3A Ads \u81EA\u62A5\u7684 ' + gap.toFixed(1) + " \u500D\u2014\u2014Ads \u8F6C\u5316\u7EDF\u8BA1\u53EF\u80FD\u865A\u9AD8\uFF0C\u522B\u53EA\u770B Ads \u540E\u53F0\u6570\u5B57\u3002</div>" : "") + (sem.inquiriesEffective === 0 && sem.costMicros > 0 ? '<div class="attr-warn"><i class="ti ti-alert-triangle"></i> \u672C\u533A\u95F4 SEM \u4ED8\u8D39\u82B1\u4E86 ' + _money(sem.costMicros) + " \u4F46\u771F\u5B9E\u6709\u6548\u8BE2\u76D8\u4E3A 0\u2014\u2014\u68C0\u67E5\u6E20\u9053\u6807\u6CE8\u6216\u6295\u653E\u6548\u679C\u3002</div>" : "");
   }
   window._semCostDonut = null;
   window._semTrend = null;
@@ -1616,7 +1712,7 @@
       return;
     }
     box.classList.remove("is-hidden");
-    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h) => '<span class="seo-hl-chip ' + (h.tone === "good" ? "good" : "bad") + '">' + esc2(h.text) + "</span>").join("");
+    box.innerHTML = '<span class="seo-hl-t"><i class="ti ti-flame"></i> \u672C\u5468\u8981\u70B9</span>' + hs.map((h4) => '<span class="seo-hl-chip ' + (h4.tone === "good" ? "good" : h4.tone === "muted" ? "muted" : "bad") + '">' + esc(h4.text) + "</span>").join("");
   }
   function renderSemDeltaTables(d) {
     const error = d && d.error;
@@ -1628,13 +1724,13 @@
       ct.innerHTML = error ? loadFailureRow(10, "SEM \u770B\u677F", error) : cs.length ? cs.map((c) => {
         const ctr = rate(c.clicks, c.impressions), cvr = rate(Number(c.conversions || 0), c.clicks);
         const cpcCost = c.clicks && c.clicks > 0 ? _money(c.costMicros / c.clicks) : "\u2014";
-        return "<tr><td>" + esc2(c.name || "(\u672A\u547D\u540D)") + '</td><td class="num">' + (c.impressions || 0).toLocaleString() + '</td><td class="num">' + (c.clicks || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + cpcCost + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cvr + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
+        return "<tr><td>" + esc(c.name || "(\u672A\u547D\u540D)") + '</td><td class="num">' + Number(c.impressions || 0).toLocaleString() + '</td><td class="num">' + Number(c.clicks || 0).toLocaleString() + '</td><td class="num">' + ctr + '</td><td class="num">' + _money(c.costMicros) + '</td><td class="num">' + cpcCost + '</td><td class="num">' + _conv(c.conversions) + '</td><td class="num">' + cvr + '</td><td class="num">' + cpc(c.costMicros, c.conversions) + '</td><td class="ctr">' + _adsBadge(c.costMicros, c.conversions) + "</td></tr>";
       }).join("") : '<tr><td colspan="10" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
     }
     const kt = document.getElementById("semKwRows");
     if (kt) {
       const ks = d && d.keywords || [];
-      kt.innerHTML = error ? loadFailureRow(6, "SEM \u770B\u677F", error) : ks.length ? ks.map((k) => "<tr><td>" + esc2(k.keyword || "") + '</td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + _deltaHtml(k.conversions, k.convPrev, false, "abs1") + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>").join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
+      kt.innerHTML = error ? loadFailureRow(6, "SEM \u770B\u677F", error) : ks.length ? ks.map((k) => "<tr><td>" + esc(k.keyword || "") + '</td><td class="num">' + _money(k.costMicros) + '</td><td class="num">' + _conv(k.conversions) + '</td><td class="num">' + _deltaHtml(k.conversions, k.convPrev, false, "abs1") + '</td><td class="num">' + cpc(k.costMicros, k.conversions) + '</td><td class="ctr">' + _adsBadge(k.costMicros, k.conversions) + "</td></tr>").join("") : '<tr><td colspan="6" class="dim csp-s-45c174bbec">\u6682\u65E0\u6570\u636E \xB7 \u5B8C\u6210 Ads \u540C\u6B65</td></tr>';
     }
   }
   function _semScatterTitles(t, s) {
@@ -1659,19 +1755,19 @@
       const scope = [p.campaignName, p.adGroupName, p.matchType].filter(Boolean).join(" \xB7 ");
       const q = "\u771F\u5B9E\u641C\u7D22\u8BCD\u300C" + p.searchTerm + "\u300D\u5728\u6240\u9009\u533A\u95F4\u82B1\u8D39" + cost.toFixed(0) + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\u3001Ads\u8F6C\u5316" + c + "\u3002\u7ED3\u5408\u6709\u6548\u8BE2\u76D8\u5F52\u56E0\u548C\u4E70\u5BB6\u610F\u56FE\uFF0C\u5224\u65AD\u5E94\u52A0\u5426\u8BCD\u8FD8\u662F\u7EE7\u7EED\u89C2\u5BDF\uFF1B\u4E0D\u8981\u4EC5\u51ED\u96F6Ads\u8F6C\u5316\u76F4\u63A5\u5426\u5B9A\u3002";
       const ti = "\u6838\u9A8C\u5019\u9009\u5426\u8BCD\uFF1A" + p.searchTerm, de = "\u771F\u5B9E\u641C\u7D22\u8BCD\u300C" + p.searchTerm + "\u300D(" + (scope || "\u8303\u56F4\u672A\u77E5") + ") \u82B1\u8D39" + cost.toFixed(0) + "\u3001\u70B9\u51FB" + (p.clicks || 0) + "\u3001Ads\u8F6C\u5316" + c + "\u3002\u6838\u5BF9\u8BE2\u76D8\u5F52\u56E0\u548C\u610F\u56FE\u540E\u51B3\u5B9A\u662F\u5426\u52A0\u5426\u8BCD\u3002", ev = "Ads\u771F\u5B9E\u641C\u7D22\u8BCD \u82B1\u8D39" + cost.toFixed(0) + " \u8F6C\u5316" + c + " \u70B9\u51FB" + (p.clicks || 0);
-      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc2(p.searchTerm) + '</span><span class="st-meta dim">' + esc2(scope || "\u8303\u56F4\u672A\u77E5") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u641C\u7D22\u8BCD\u6838\u9A8C") + '><i class="ti ti-bulb"></i> \u6838\u9A8C</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u8F6C\u4EFB\u52A1</button></div></div>';
+      return '<div class="st-row"><div class="st-main"><span class="st-path">' + esc(p.searchTerm) + '</span><span class="st-meta dim">' + esc(scope || "\u8303\u56F4\u672A\u77E5") + ' \xB7 \u82B1 <b class="csp-s-371de31267">' + cost.toFixed(0) + "</b> \xB7 \u8F6C\u5316 " + c + '</span></div><div class="st-acts"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u641C\u7D22\u8BCD\u6838\u9A8C") + '><i class="ti ti-bulb"></i> \u6838\u9A8C</button><button type="button" class="btn-mini"' + _adoptActionAttrs("SEM", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u8F6C\u4EFB\u52A1</button></div></div>';
     }).join("") + "</div>";
   }
   function renderSemScatter(d) {
-    const el = document.getElementById("semScatter"), empty = document.getElementById("semScatterEmpty");
-    if (!el) return;
+    const el5 = document.getElementById("semScatter"), empty2 = document.getElementById("semScatterEmpty");
+    if (!el5) return;
     const _tb = document.getElementById("semScatterTargets");
     if (_tb) _tb.innerHTML = "";
     if (d && d.error) {
-      el.style.display = "none";
-      if (empty) {
-        empty.classList.remove("is-hidden");
-        empty.textContent = loadFailureText("SEM \u6563\u70B9", d.error);
+      el5.style.display = "none";
+      if (empty2) {
+        empty2.classList.remove("is-hidden");
+        empty2.textContent = loadFailureText("SEM \u6563\u70B9", d.error);
       }
       return;
     }
@@ -1679,21 +1775,21 @@
     const conv = all.filter((p) => Number(p.conversions || 0) > 0).map((p) => ({ ...p, cost: p.costMicros / 1e6, cpa: p.costMicros / 1e6 / Number(p.conversions) }));
     _semScatterTitles("\u82B1\u8D39 \xD7 \u6BCF\u8F6C\u5316\u6210\u672C \xB7 \u627E\u53C8\u8D35\u53C8\u4E0D\u5212\u7B97\u7684\u8BCD", "\u70B9=\u6709\u8F6C\u5316\u7684\u6295\u653E\u5173\u952E\u8BCD\uFF1B\u4E0B\u65B9\u5019\u9009\u5426\u8BCD\u53EA\u4F7F\u7528\u771F\u5B9E\u641C\u7D22\u8BCD\u660E\u7EC6");
     if (typeof echarts !== "undefined" && conv.length) {
-      el.style.display = "";
-      if (empty) empty.classList.add("is-hidden");
+      el5.style.display = "";
+      if (empty2) empty2.classList.add("is-hidden");
       if (window._semScatterChart) {
         try {
           window._semScatterChart.dispose();
         } catch (e) {
         }
       }
-      window._semScatterChart = echarts.init(el);
+      window._semScatterChart = echarts.init(el5);
       const medCpa = _median(conv.map((p) => p.cpa));
       const short = (s) => {
         s = String(s || "");
         return s.length > 20 ? s.slice(0, 19) + "\u2026" : s;
       };
-      const data = conv.map((p) => {
+      const data3 = conv.map((p) => {
         const t = p.cpa >= medCpa;
         return { value: [+p.cost.toFixed(0), +p.cpa.toFixed(0), p.keyword, p.conversions], itemStyle: { color: t ? "#e5484d" : "#7b54e0", opacity: t ? 0.85 : 0.62 }, label: { show: t, position: "right", fontSize: 9, color: "#c93338", formatter: (o) => short(o.value[2]) } };
       });
@@ -1701,17 +1797,17 @@
         grid: { left: 56, right: 120, top: 16, bottom: 44 },
         xAxis: { type: "log", name: "\u82B1\u8D39", nameLocation: "middle", nameGap: 26, axisLabel: { fontSize: 10 } },
         yAxis: { type: "log", name: "\u6BCF\u8F6C\u5316\u6210\u672C", nameGap: 8, axisLabel: { fontSize: 10 } },
-        tooltip: { formatter: (o) => esc2(o.value[2]) + "<br/>\u82B1\u8D39 " + o.value[0] + " \xB7 \u6BCF\u8F6C\u5316\u6210\u672C " + o.value[1] + " \xB7 \u8F6C\u5316 " + o.value[3] },
+        tooltip: { formatter: (o) => esc(o.value[2]) + "<br/>\u82B1\u8D39 " + esc(o.value[0]) + " \xB7 \u6BCF\u8F6C\u5316\u6210\u672C " + esc(o.value[1]) + " \xB7 \u8F6C\u5316 " + esc(o.value[3]) },
         series: [{
           type: "scatter",
           symbolSize: (v) => Math.min(30, 8 + Math.sqrt(v[0] || 0) / 3),
-          data,
+          data: data3,
           markLine: { silent: true, symbol: "none", lineStyle: { type: "dashed", color: "#c2c7d0" }, label: { show: true, fontSize: 9, color: "#9aa1ae", formatter: "\u4E2D\u4F4D\u6BCF\u8F6C\u5316" }, data: [{ yAxis: medCpa }] },
           markArea: { silent: true, itemStyle: { color: "rgba(229,72,77,.07)" }, label: { show: true, position: ["50%", "8%"], color: "#e5484d", fontSize: 11, fontWeight: "bold", formatter: "\u6BCF\u8F6C\u5316\u504F\u8D35" }, data: [[{ yAxis: medCpa }, { yAxis: "max" }]] }
         }]
       });
     } else {
-      el.style.display = "none";
+      el5.style.display = "none";
       if (window._semScatterChart) {
         try {
           window._semScatterChart.dispose();
@@ -1719,9 +1815,9 @@
         }
         window._semScatterChart = null;
       }
-      if (empty) {
-        empty.classList.remove("is-hidden");
-        empty.textContent = all.length ? "\u672C\u533A\u95F4\u6682\u65E0\u6709\u8F6C\u5316\u7684\u6295\u653E\u5173\u952E\u8BCD\uFF1B\u641C\u7D22\u8BCD\u5019\u9009\u89C1\u4E0B\u65B9" : "\u6682\u65E0\u8DB3\u591F\u6570\u636E \xB7 \u5B8C\u6210 Google Ads \u540C\u6B65\u540E\u663E\u793A";
+      if (empty2) {
+        empty2.classList.remove("is-hidden");
+        empty2.textContent = all.length ? "\u672C\u533A\u95F4\u6682\u65E0\u6709\u8F6C\u5316\u7684\u6295\u653E\u5173\u952E\u8BCD\uFF1B\u641C\u7D22\u8BCD\u5019\u9009\u89C1\u4E0B\u65B9" : "\u6682\u65E0\u8DB3\u591F\u6570\u636E \xB7 \u5B8C\u6210 Google Ads \u540C\u6B65\u540E\u663E\u793A";
       }
     }
     renderSemScatterTargets(d && d.wasteSearchTerms || [], d && d.searchTermCoverage);
@@ -1729,9 +1825,9 @@
   function _dayDiff(a, b) {
     return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 864e5);
   }
-  function _alignDaily(rows2, range, dateKey) {
+  function _alignDaily(rows2, range2, dateKey) {
     const key = dateKey || "date";
-    const r = range || getCurrentRange("data");
+    const r = range2 || getCurrentRange("data");
     if (!r || !r.start_date || !r.end_date) return { labels: (rows2 || []).map((x) => String(x[key]).slice(5, 10)), rows: (rows2 || []).slice(), isoDates: (rows2 || []).map((x) => String(x[key]).slice(0, 10)) };
     const m = new Map((rows2 || []).map((x) => [String(x[key]).slice(0, 10), x]));
     const labels = [], out = [], iso = [];
@@ -1771,9 +1867,9 @@
       if (top.length) {
         window._semCostDonut = new Chart(donutCv, { type: "doughnut", data: { labels: top.map((c) => c.name), datasets: [{ data: top.map((c) => c.costMicros / 1e6), backgroundColor: palette, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "62%" } });
         const total = top.reduce((a, c) => a + (c.costMicros || 0), 0) || 1;
-        if (legend) legend.innerHTML = top.map((c, i) => '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc2(c.name) + "</span><b>" + Math.round((c.costMicros || 0) / total * 100) + "%</b></div>").join("");
+        if (legend) legend.innerHTML = top.map((c, i) => '<div class="csp-s-ace6cccdf9"><span><span class="' + paletteClasses[i % paletteClasses.length] + '">\u25CF</span> ' + esc(c.name) + "</span><b>" + Math.round((c.costMicros || 0) / total * 100) + "%</b></div>").join("");
       } else if (legend) {
-        legend.innerHTML = '<span class="dim">' + (error ? esc2(loadFailureText("SEM \u82B1\u8D39", error)) : "\u6682\u65E0 Ads \u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
+        legend.innerHTML = '<span class="dim">' + (error ? esc(loadFailureText("SEM \u82B1\u8D39", error)) : "\u6682\u65E0 Ads \u6570\u636E \xB7 \u5B8C\u6210\u540C\u6B65\u540E\u663E\u793A") + "</span>";
       }
     }
     const trendCv = document.getElementById("semTrend");
@@ -1829,7 +1925,7 @@
     }
   }
   function _dataActionAttr(name, value) {
-    return " data-" + name + '="' + esc2(String(value == null ? "" : value)) + '"';
+    return " data-" + name + '="' + esc(String(value == null ? "" : value)) + '"';
   }
   function _aiActionAttrs(prompt2, title) {
     return _dataActionAttr("ferr-action", "ai") + _dataActionAttr("ai-prompt", prompt2) + _dataActionAttr("ai-title", title);
@@ -1874,20 +1970,20 @@
     }
   }
   async function loadDataFreshness() {
-    const el = document.getElementById("dataFreshness");
-    if (!el) return;
+    const el5 = document.getElementById("dataFreshness");
+    if (!el5) return;
     let d = null;
     try {
-      d = await API.get(withRange2("/api/data-freshness", "data"));
+      d = await API.get(withSite(withRange2("/api/data-freshness", "data")));
     } catch (e) {
-      el.innerHTML = '<span class="dim">' + esc2(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
+      el5.innerHTML = '<span class="dim">' + esc(loadFailureText("\u6570\u636E\u65B0\u9C9C\u5EA6", e)) + "</span>";
       return;
     }
     const fmt2 = (v) => {
       if (!v) return "\u4ECE\u672A";
       const s = String(v).replace(" ", "T");
       const t = new Date(/Z|[+-]\d{2}/.test(s) ? s : s + "Z");
-      if (isNaN(t)) return String(v).slice(5, 16);
+      if (isNaN(t)) return esc(String(v).slice(5, 16));
       const p = (n) => String(n).padStart(2, "0");
       const dif = Math.floor((Date.now() - t.getTime()) / 6e4);
       if (dif < 60) return dif + " \u5206\u949F\u524D";
@@ -1898,9 +1994,9 @@
       if (!s.connected) return '<span class="fresh-chip gray"><b>' + name + "</b> \u672A\u63A5\u5165</span>";
       const cov = s.days > 0 ? Math.round(s.daysWithData / s.days * 100) : 0;
       const tone = s.daysWithData === 0 ? "bad" : cov < 70 ? "warn" : "good";
-      return '<span class="fresh-chip ' + tone + '"><b>' + name + "</b> \u6709\u6570\u636E " + s.daysWithData + "/" + s.days + ' \u5929<span class="dim"> \xB7 ' + fmt2(s.lastSync) + (s.status === "failed" ? ' <b class="csp-s-b0e08465c2">\u5931\u8D25</b>' : "") + "</span></span>";
+      return '<span class="fresh-chip ' + tone + '"><b>' + name + "</b> \u6709\u6570\u636E " + esc(s.daysWithData) + "/" + esc(s.days) + ' \u5929<span class="dim"> \xB7 ' + fmt2(s.lastSync) + (s.status === "failed" ? ' <b class="csp-s-b0e08465c2">\u5931\u8D25</b>' : "") + "</span></span>";
     };
-    el.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
+    el5.innerHTML = '<i class="ti ti-database"></i> ' + chip("GSC", d.gsc) + chip("GA4", d.ga4) + chip("Ads", d.ads) + '<span class="dim fresh-help">\u533A\u95F4\u5B9E\u9645\u6709\u6570\u636E\u5929\u6570 / \u6240\u9009\u603B\u5929\u6570 \xB7 \u65F6\u95F4\u8303\u56F4\u5F71\u54CD\uFF1A\u8BE2\u76D8\u3001SEO(GSC)\u3001SEM(Ads)\u3001GA4</span>';
   }
   window._ovSeoMini = null;
   window._ovSemMini = null;
@@ -1929,14 +2025,13 @@
   }
   var dashboardBoardsRequestSequence = 0;
   async function loadDashboardBoards() {
-    if (window.DEMO_MODE) return;
     const requestId = ++dashboardBoardsRequestSequence, revision = getRangeRevision("dashboard"), r = getCurrentRange("dashboard");
     const _t = (id, v) => {
       const e = document.getElementById(id);
       if (e) e.textContent = v;
     };
     const [gscResult, adsResult] = await Promise.allSettled([
-      API.get(withRange2("/api/google/gsc/summary", r)),
+      API.get(withSite(withRange2("/api/google/gsc/summary", r))),
       API.get(withRange2("/api/google/ads/board", r))
     ]);
     if (requestId !== dashboardBoardsRequestSequence || revision !== getRangeRevision("dashboard")) return false;
@@ -1961,7 +2056,7 @@
   async function loadDiagnostics() {
     let d = null;
     try {
-      d = await API.get(withRange2("/api/diagnostics", "data"));
+      d = await API.get(withSite(withRange2("/api/diagnostics", "data")));
     } catch (e) {
       d = { error: e };
     }
@@ -1979,7 +2074,7 @@
         const path = _seoPath(o.page), pos = o.position != null ? Number(o.position).toFixed(1) : "\u2014";
         const q = "\u5173\u952E\u8BCD\u300C" + o.query + "\u300D\u5F53\u524D\u6392\u540D" + pos + "\u3001\u9875\u9762" + path + "\u3001\u533A\u95F4\u66DD\u5149" + (o.impressions || 0) + "\uFF0C\u7ED9\u51FA\u51B2\u8FDBTop10\u7684\u5177\u4F53\u4F18\u5316\u6E05\u5355\uFF08\u6807\u9898/\u5185\u5BB9/\u5185\u94FE/\u5916\u94FE\uFF09\u3002";
         const ti = "\u673A\u4F1A\u8BCD\u51B2\u9996\u9875\uFF1A" + o.query, de = "\u5173\u952E\u8BCD\u300C" + o.query + "\u300D\u5F53\u524D\u6392\u540D" + pos + "\uFF08\u9875\u9762" + path + "\uFF09\uFF0C\u533A\u95F4\u66DD\u5149" + (o.impressions || 0) + "\u3002\u4F18\u5316\u6807\u9898/\u5185\u5BB9/\u5185\u94FE\u51B2\u8FDB Top10\u3002", ev = "GSC\u673A\u4F1A\u8BCD \u6392\u540D" + pos + " \u5C55\u73B0" + (o.impressions || 0) + " \u70B9\u51FB" + (o.clicks || 0);
-        return "<tr><td>" + esc2(o.query) + '</td><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num"><span class="badge b-amber">' + pos + '</span></td><td class="num">' + (o.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u673A\u4F1A\u8BCD\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u51B2\u9996\u9875</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return "<tr><td>" + esc(o.query) + '</td><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num"><span class="badge b-amber">' + pos + '</span></td><td class="num">' + Number(o.impressions || 0).toLocaleString() + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u673A\u4F1A\u8BCD\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u51B2\u9996\u9875</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u673A\u4F1A\u8BCD \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
     }
     const t2 = document.getElementById("diagDecayRows");
@@ -1989,19 +2084,32 @@
         const posChg = p.positionPrev != null && p.positionCur != null ? Number(p.positionPrev).toFixed(1) + "\u2192" + Number(p.positionCur).toFixed(1) : "\u2014";
         const q = path + " \u70B9\u51FB\u8FD1\u4E00\u7A97\u8DCC" + p.dropPct + "%\uFF08" + p.clicksPrev + "\u2192" + p.clicksCur + "\uFF09\uFF0C\u6392\u540D" + posChg + "\u3002\u7ED9\u51FA\u6392\u67E5\u4E0E\u6B62\u635F\u6B65\u9AA4\u3002";
         const ti = "\u8870\u9000\u6B62\u635F\uFF1A" + path, de = "\u9875\u9762" + path + " \u70B9\u51FB\u73AF\u6BD4\u8DCC" + p.dropPct + "%\uFF08" + p.clicksPrev + "\u2192" + p.clicksCur + "\uFF09\uFF0C\u6392\u540D" + posChg + "\u3002\u6392\u67E5\u539F\u56E0\u5E76\u6B62\u635F\u3002", ev = "GSC\u73AF\u6BD4 \u70B9\u51FB\u2193" + p.dropPct + "% \u6392\u540D" + posChg;
-        return '<tr><td class="dim csp-s-33ee298127">' + esc2(path) + '</td><td class="num csp-s-b0e08465c2">\u25BC' + p.dropPct + '%</td><td class="num">' + esc2(posChg) + '</td><td class="ctr"><span class="badge b-gray">\u9700\u6392\u67E5</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8870\u9000\u6B62\u635F") + '><i class="ti ti-bulb"></i> \u6B62\u635F\u65B9\u6848</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return '<tr><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num csp-s-b0e08465c2">\u25BC' + esc(p.dropPct) + '%</td><td class="num">' + esc(posChg) + '</td><td class="ctr"><span class="badge b-gray">\u9700\u6392\u67E5</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8870\u9000\u6B62\u635F") + '><i class="ti ti-bulb"></i> \u6B62\u635F\u65B9\u6848</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u660E\u663E\u8870\u9000\u9875 \xB7 \u9700\u22652 \u4E2A\u7B49\u957F\u7A97\u53E3\u6570\u636E\u624D\u80FD\u6BD4\u8F83</td></tr>';
     }
     const t3 = document.getElementById("diagCannRows");
     if (t3) {
       t3.innerHTML = error ? loadFailureRow(5, "SEO \u8695\u98DF\u8BCA\u65AD", error) : can2.length ? can2.map((g) => {
-        const urls = g.pages.map((p) => esc2(_seoPath(p.page))).join("<br>");
+        const urls = g.pages.map((p) => esc(_seoPath(p.page))).join("<br>");
         const ranks = g.pages.map((p) => p.position != null ? Number(p.position).toFixed(0) : "\u2014").join(" / ");
         const detail = g.pages.map((p) => _seoPath(p.page) + "(\u6392\u540D" + (p.position != null ? Number(p.position).toFixed(1) : "\u2014") + ")").join("\u3001");
         const q = "\u5173\u952E\u8BCD\u300C" + g.query + "\u300D\u88AB" + g.pages.length + "\u4E2AURL\u540C\u65F6\u7ADE\u4E89\uFF1A" + detail + "\u3002\u7ED9\u51FA\u5408\u5E76\u65B9\u6848\uFF1A\u4FDD\u7559\u54EA\u4E2A\u4E3A\u4E3B\u9875\u3001\u5176\u4F59\u5982\u4F55301\u6216\u6539\u5199\u5DEE\u5F02\u5316\u610F\u56FE\u3001\u5185\u94FE\u600E\u4E48\u8C03\u3002";
         const ti = "\u8695\u98DF\u5408\u5E76\uFF1A" + g.query, de = "\u5173\u952E\u8BCD\u300C" + g.query + "\u300D\u88AB" + g.pages.length + "\u4E2AURL\u7ADE\u4E89\uFF1A" + detail + "\u3002\u5408\u5E76/\u5DEE\u5F02\u5316\u610F\u56FE\u3001\u8C03\u6574\u5185\u94FE\u3002", ev = "GSC " + g.pages.length + "\u9875\u5206\u6563\u6392\u540D " + ranks;
-        return "<tr><td>" + esc2(g.query) + '</td><td class="dim csp-s-33ee298127">' + urls + '</td><td class="num"><span class="badge b-red">' + esc2(ranks) + '</span></td><td class="ctr"><span class="badge b-amber">' + g.pages.length + '\u9875\u62A21\u610F\u56FE</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8695\u98DF\u5408\u5E76\u5EFA\u8BAE") + '><i class="ti ti-git-merge"></i> AI \u5408\u5E76\u5EFA\u8BAE</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+        return "<tr><td>" + esc(g.query) + '</td><td class="dim csp-s-33ee298127">' + urls + '</td><td class="num"><span class="badge b-red">' + esc(ranks) + '</span></td><td class="ctr"><span class="badge b-amber">' + g.pages.length + '\u9875\u62A21\u610F\u56FE</span></td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u8695\u98DF\u5408\u5E76\u5EFA\u8BAE") + '><i class="ti ti-git-merge"></i> AI \u5408\u5E76\u5EFA\u8BAE</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
       }).join("") : '<tr><td colspan="5" class="dim csp-s-45c174bbec">\u6682\u65E0\u8695\u98DF\u7EC4 \xB7 \u5B8C\u6210 GSC \u540C\u6B65\u540E\u6309\u89C4\u5219\u81EA\u52A8\u8BC6\u522B</td></tr>';
+    }
+    const ctr = seo.ctr || {}, low = ctr.items || [];
+    _badgeCount("diag-ctr-n", low.length);
+    const t4 = document.getElementById("diagCtrRows");
+    if (t4) {
+      const pct5 = (v) => (Number(v) * 100).toFixed(1) + "%";
+      const none = (ctr.baselines || []).length ? "\u6682\u65E0\u70B9\u51FB\u7387\u660E\u663E\u504F\u4F4E\u7684\u8BCD\uFF08\u4E0E\u672C\u7AD9\u540C\u4F4D\u6B21\u7684\u8BCD\u76F8\u6BD4\uFF09" : "\u9996\u9875\u4E0A\u66DD\u5149\u591F\u591A\u7684\u8BCD\u592A\u5C11\uFF0C\u5EFA\u7ACB\u4E0D\u4E86\u5BF9\u6BD4\u57FA\u51C6 \xB7 \u8FD9\u4E0D\u4EE3\u8868\u70B9\u51FB\u7387\u6CA1\u95EE\u9898";
+      t4.innerHTML = error ? loadFailureRow(7, "SEO \u70B9\u51FB\u7387\u8BCA\u65AD", error) : low.length ? low.map((c) => {
+        const path = _seoPath(c.page), pos = Number(c.position).toFixed(1), mine = pct5(c.ctr), peers = pct5(c.expectedCtr);
+        const q = "\u5173\u952E\u8BCD\u300C" + c.query + "\u300D\u6392\u540D" + pos + "\u3001\u533A\u95F4\u66DD\u5149" + c.impressions + "\u3001\u70B9\u51FB\u7387" + mine + "\uFF0C\u800C\u672C\u7AD9\u540C\u4F4D\u6B21\u7684\u8BCD\u70B9\u51FB\u7387\u4E2D\u4F4D\u6570\u662F" + peers + "\u3002\u9875\u9762\u662F" + path + "\u3002\u5206\u6790\u5B83\u7684\u6807\u9898\u548C\u63CF\u8FF0\u4E3A\u4EC0\u4E48\u4E0D\u5438\u5F15\u4EBA\u70B9\uFF0C\u7ED9\u51FA 3 \u7EC4\u6539\u5199\u65B9\u6848\uFF08\u6807\u9898 + \u63CF\u8FF0\uFF09\u3002";
+        const ti = "\u70B9\u51FB\u7387\u504F\u4F4E\uFF1A" + c.query, de = "\u5173\u952E\u8BCD\u300C" + c.query + "\u300D\u6392\u540D" + pos + "\uFF08\u9875\u9762" + path + "\uFF09\uFF0C\u66DD\u5149" + c.impressions + "\uFF0C\u70B9\u51FB\u7387\u53EA\u6709" + mine + "\uFF0C\u672C\u7AD9\u540C\u4F4D\u6B21\u4E2D\u4F4D\u6570" + peers + "\u3002\u6539\u5199\u6807\u9898\u548C\u63CF\u8FF0\u3002", ev = "GSC \u6392\u540D" + pos + " \u66DD\u5149" + c.impressions + " \u70B9\u51FB\u7387" + mine + "\uFF08\u672C\u7AD9\u540C\u4F4D\u6B21\u4E2D\u4F4D " + peers + "\uFF09";
+        return "<tr><td>" + esc(c.query) + '</td><td class="dim csp-s-33ee298127">' + esc(path) + '</td><td class="num">' + esc(pos) + '</td><td class="num">' + Number(c.impressions || 0).toLocaleString() + '</td><td class="num"><span class="badge b-red">' + esc(mine) + '</span> <span class="dim">\u540C\u4F4D\u6B21 ' + esc(peers) + '</span></td><td class="num">' + esc(c.missedClicks) + '</td><td class="ctr"><button type="button" class="btn-mini"' + _aiActionAttrs(q, "\u70B9\u51FB\u7387\u8BCA\u65AD") + '><i class="ti ti-bulb"></i> \u600E\u4E48\u6539\u6807\u9898</button> <button type="button" class="btn-mini"' + _adoptActionAttrs("SEO", ti, de, ev) + '><i class="ti ti-clipboard-check"></i> \u91C7\u7EB3</button></td></tr>';
+      }).join("") : '<tr><td colspan="7" class="dim csp-s-45c174bbec">' + none + "</td></tr>";
     }
   }
   var inqChart = null;
@@ -2038,7 +2146,7 @@
   async function loadDashboardInq() {
     const requestId = ++dashboardInqRequestSequence, revision = getRangeRevision("dashboard");
     try {
-      const { items } = await API.get(withRange2("/api/inquiries", "dashboard"));
+      const { items } = await fetchInquiries("dashboard");
       if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision("dashboard")) return false;
       window._inqDashboardCache = items || [];
       _inqDashboardError = null;
@@ -2052,7 +2160,7 @@
   }
   function renderInqTrend() {
     const cv = document.getElementById("inqTrend");
-    if (!cv || window.DEMO_MODE) return;
+    if (!cv) return;
     const rows2 = window._inqDashboardCache || [], gran = window._gran || "day", r = getCurrentRange("dashboard");
     const sub = document.getElementById("inqTrendSub");
     if (sub) {
@@ -2098,22 +2206,11 @@
     Chart.defaults.color = "#9aa1ae";
     Chart.defaults.borderColor = "rgba(128,128,128,.12)";
     Chart.defaults.font.size = 10;
-    const wk = ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"];
-    const sp = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } };
-    if (window.DEMO_MODE) {
-      new Chart(inqTrend, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.inqTrend.a, borderColor: "#15a85a", backgroundColor: "rgba(21,168,90,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }, { data: DEMO.inqTrend.total, borderColor: "#9aa1ae", backgroundColor: "rgba(154,161,174,.06)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 1.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
-      new Chart(seoMini, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.seoMini, borderColor: "#2f72e8", backgroundColor: "rgba(47,114,232,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] }, options: sp });
-      new Chart(semMini, { type: "line", data: { labels: wk, datasets: [{ data: DEMO.semMini, borderColor: "#7b54e0", backgroundColor: "rgba(123,84,224,.1)", fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 }] }, options: sp });
-      new Chart(inqDonut, { type: "doughnut", data: { labels: ["A", "B", "C"], datasets: [{ data: [DEMO.inqDonut.a, DEMO.inqDonut.b, DEMO.inqDonut.c], backgroundColor: ["#15a85a", "#2f72e8", "#dfe2e8"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
-      new Chart(chanDonut, { type: "doughnut", data: { labels: ["SEO", "SEM", "\u76F4\u63A5", "\u5176\u4ED6"], datasets: [{ data: [DEMO.chanDonut.seo, DEMO.chanDonut.sem, DEMO.chanDonut.direct, DEMO.chanDonut.other], backgroundColor: ["#2f72e8", "#7b54e0", "#0b9d8f", "#ef9514"], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "66%" } });
-      fillDonutLegendDemo();
-    } else {
-      ["seoMini", "semMini"].forEach(chartEmpty);
-      chartEmpty("inqTrend");
-      chartEmpty("inqDonut");
-      chartEmpty("chanDonut");
-      blankDonutLegend();
-    }
+    ["seoMini", "semMini"].forEach(chartEmpty);
+    chartEmpty("inqTrend");
+    chartEmpty("inqDonut");
+    chartEmpty("chanDonut");
+    blankDonutLegend();
     seoFull = seoSeriesFromWeeks();
     const so = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 7 } } } };
     if (document.getElementById("seoBoard")) {
@@ -2435,9 +2532,9 @@
   `).join("");
     const more = group.rows.length > 4 ? `<div class="inq-map-tip-more">\u8FD8\u6709 ${group.rows.length - 4} \u6761\u8BE2\u76D8</div>` : "";
     return `
-    <div class="inq-map-tip-title">${inqMapEsc(group.country)} \xB7 ${group.total} \u6761\u8BE2\u76D8</div>
+    <div class="inq-map-tip-title">${inqMapEsc(group.country)} \xB7 ${inqMapEsc(group.total)} \u6761\u8BE2\u76D8</div>
     <div class="inq-map-tip-stats">
-      <span>A\u7EA7 ${group.A || 0}</span><span>B\u7EA7 ${group.B || 0}</span><span>C\u7EA7 ${group.C || 0}</span><span>A\u7EA7\u5360\u6BD4 ${aRatio}%</span>
+      <span>A\u7EA7 ${inqMapEsc(group.A || 0)}</span><span>B\u7EA7 ${inqMapEsc(group.B || 0)}</span><span>C\u7EA7 ${inqMapEsc(group.C || 0)}</span><span>A\u7EA7\u5360\u6BD4 ${aRatio}%</span>
     </div>
     <div class="inq-map-tip-meta">\u4E3B\u8BE2\u4EA7\u54C1\uFF1A${inqMapEsc(modeOf(group.products))} \xB7 \u4E3B\u8981\u6E20\u9053\uFF1A${inqMapEsc(modeOf(group.channels))}</div>
     ${rows2}${more}
@@ -2468,15 +2565,15 @@
   }
   function unmappedNoteHtml(unmappedList, unmappedTotal) {
     if (!unmappedTotal) return "";
-    const names = unmappedList.map((u) => `${inqMapEsc(u.country)}${u.count > 1 ? ` \xD7${u.count}` : ""}`).join("\u3001");
+    const names = unmappedList.map((u) => `${inqMapEsc(u.country)}${u.count > 1 ? ` \xD7${inqMapEsc(u.count)}` : ""}`).join("\u3001");
     return `
     <div class="inq-map-note">
-      \u6709 ${unmappedTotal} \u6761\u8BE2\u76D8\u56E0\u56FD\u5BB6\u6682\u65E0\u5730\u56FE\u5750\u6807\u672A\u753B\u4E0A\u98DE\u7EBF:${names}\u3002\u6570\u636E\u6CA1\u4E22,\u53EA\u662F\u5730\u56FE\u7F3A\u8BE5\u56FD\u5750\u6807,\u8BF7\u8865\u5145\u5750\u6807\u8868\u3002
+      \u6709 ${inqMapEsc(unmappedTotal)} \u6761\u8BE2\u76D8\u56E0\u56FD\u5BB6\u6682\u65E0\u5730\u56FE\u5750\u6807\u672A\u753B\u4E0A\u98DE\u7EBF:${names}\u3002\u6570\u636E\u6CA1\u4E22,\u53EA\u662F\u5730\u56FE\u7F3A\u8BE5\u56FD\u5750\u6807,\u8BF7\u8865\u5145\u5750\u6807\u8868\u3002
     </div>
   `;
   }
-  function renderShell(el, groups, bodyHtml, unmappedList, unmappedTotal) {
-    el.innerHTML = `
+  function renderShell(el5, groups, bodyHtml, unmappedList, unmappedTotal) {
+    el5.innerHTML = `
     <div class="inq-flat-map inq-blue-map">
       <div class="inq-map-head">
         <div><span>\u771F\u5B9E\u4E16\u754C\u5730\u56FE</span><strong>\u5168\u7403\u8BE2\u76D8\u98DE\u7EBF</strong></div>
@@ -2505,21 +2602,21 @@
     });
   }
   async function renderGlobe() {
-    const el = document.getElementById("inqGlobe");
-    if (!el) return;
-    const seq3 = ++renderSeq;
+    const el5 = document.getElementById("inqGlobe");
+    if (!el5) return;
+    const seq7 = ++renderSeq;
     const { groups, unmappedList, unmappedTotal } = collectMapData();
-    const empty = document.getElementById("inqGlobe-empty");
-    if (empty) empty.style.display = "none";
+    const empty2 = document.getElementById("inqGlobe-empty");
+    if (empty2) empty2.style.display = "none";
     disposeMap();
-    renderShell(el, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
+    renderShell(el5, groups, '<div class="inq-map-loading">\u6B63\u5728\u52A0\u8F7D\u771F\u5B9E\u4E16\u754C\u5730\u56FE...</div>', unmappedList, unmappedTotal);
     try {
       await ensureWorldMap();
-      if (seq3 !== renderSeq) return;
+      if (seq7 !== renderSeq) return;
     } catch (err) {
-      if (seq3 !== renderSeq) return;
+      if (seq7 !== renderSeq) return;
       const msg = inqMapEsc(err && err.message ? err.message : "\u4E16\u754C\u5730\u56FE\u6570\u636E\u52A0\u8F7D\u5931\u8D25");
-      renderShell(el, groups, `
+      renderShell(el5, groups, `
       <div class="inq-map-error">
         <b>\u4E16\u754C\u5730\u56FE\u52A0\u8F7D\u5931\u8D25</b>
         <span>${msg}</span>
@@ -2528,10 +2625,10 @@
     `, unmappedList, unmappedTotal);
       return;
     }
-    renderShell(el, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
-    const chartEl = el.querySelector(".inq-echarts-map");
+    renderShell(el5, groups, '<div class="inq-echarts-map"></div>', unmappedList, unmappedTotal);
+    const chartEl = el5.querySelector(".inq-echarts-map");
     if (!chartEl || !window.echarts) return;
-    inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "svg" });
+    inqGlobeChart = window.echarts.init(chartEl, null, { renderer: "canvas" });
     bindResize();
     const lineData = groups.map((group) => ({
       name: `\u9752\u5C9B \u2192 ${group.country}`,
@@ -2675,33 +2772,33 @@
     if (opts.nonempty && value === "") return { ok: false, msg: opts.emptyMsg || "\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A" };
     return { ok: true, value };
   }
-  function setSavingState(el, state2) {
-    if (!el) return;
-    el.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
-    if (state2 === "saving") el.classList.add("kpi-saving");
+  function setSavingState(el5, state2) {
+    if (!el5) return;
+    el5.classList.remove("kpi-saving", "kpi-ok", "kpi-error");
+    if (state2 === "saving") el5.classList.add("kpi-saving");
     else if (state2 === "ok") {
-      el.classList.add("kpi-ok");
-      setTimeout(() => el.classList.remove("kpi-ok"), 1200);
+      el5.classList.add("kpi-ok");
+      setTimeout(() => el5.classList.remove("kpi-ok"), 1200);
     } else if (state2 === "error") {
-      el.classList.add("kpi-error");
-      setTimeout(() => el.classList.remove("kpi-error"), 2e3);
+      el5.classList.add("kpi-error");
+      setTimeout(() => el5.classList.remove("kpi-error"), 2e3);
     }
   }
-  function rollbackEditable(el, oldValue) {
-    if (el) el.textContent = oldValue == null ? "" : String(oldValue);
+  function rollbackEditable(el5, oldValue) {
+    if (el5) el5.textContent = oldValue == null ? "" : String(oldValue);
   }
-  function showSaveError(el, msg) {
-    setSavingState(el, "error");
+  function showSaveError(el5, msg) {
+    setSavingState(el5, "error");
     toast2(msg);
   }
-  function placeCaretEnd(el) {
+  function placeCaretEnd(el5) {
     try {
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.collapse(false);
+      const range2 = document.createRange();
+      range2.selectNodeContents(el5);
+      range2.collapse(false);
       const selection = getSelection();
       selection.removeAllRanges();
-      selection.addRange(range);
+      selection.addRange(range2);
     } catch (e) {
     }
   }
@@ -2820,13 +2917,13 @@
   function handleKeyDown(event) {
     const cell3 = closest(event.target, "td[contenteditable]");
     if (!cell3) return;
-    const table = cell3.closest("table");
-    if (!table) return;
+    const table2 = cell3.closest("table");
+    if (!table2) return;
     if (event.key === "Tab") {
       event.preventDefault();
-      const cells = [...table.querySelectorAll("td[contenteditable]")];
-      const current = cells.indexOf(cell3);
-      const next = cells[current + (event.shiftKey ? -1 : 1)];
+      const cells = [...table2.querySelectorAll("td[contenteditable]")];
+      const current2 = cells.indexOf(cell3);
+      const next = cells[current2 + (event.shiftKey ? -1 : 1)];
       if (next) {
         cell3.blur();
         next.focus();
@@ -2899,14 +2996,11 @@
   var REGION_BADGE = toMap(REGIONS, LEGACY_REGION_BADGE);
   var PRODUCT_NAMES = PRODUCTS.map((p) => p[0]);
   var REGION_NAMES = REGIONS.map((r) => r[0]);
-  function fillSelect(el, names, { placeholder = null } = {}) {
-    if (!el) return;
-    const keepValue = el.value;
-    const opts = [];
-    if (placeholder != null) opts.push(`<option value="">${placeholder}</option>`);
-    for (const n of names) opts.push(`<option>${n}</option>`);
-    el.innerHTML = opts.join("");
-    if (keepValue && names.indexOf(keepValue) >= 0) el.value = keepValue;
+  function fillSelect(el5, names, { placeholder = null } = {}) {
+    if (!el5) return;
+    const keepValue = el5.value;
+    el5.innerHTML = (placeholder != null ? `<option value="">${esc(placeholder)}</option>` : "") + names.map((n) => `<option>${esc(n)}</option>`).join("");
+    if (keepValue && names.indexOf(keepValue) >= 0) el5.value = keepValue;
   }
 
   // public/src/attachments.js
@@ -3017,8 +3111,8 @@
     const list = Array.isArray(images) ? images : [];
     if (!list.length) return "";
     return '<span class="att-thumbs">' + list.map((im) => {
-      const label = esc2((im.name || "\u56FE\u7247") + (im.bytes ? " \xB7 " + humanBytes(im.bytes) : ""));
-      return `<span class="att-thumb-wrap"><img class="att-thumb" src="${esc2(rawUrl(im.id))}" alt="${label}" title="${label}" data-att-view="${esc2(im.id)}" data-att-name="${esc2(im.name || "\u56FE\u7247")}" data-att-bytes="${esc2(im.bytes || 0)}" loading="lazy">` + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc2(im.id)}" title="\u5220\u9664\u8FD9\u5F20\u56FE"><i class="ti ti-x"></i></button>` : "") + "</span>";
+      const label = esc((im.name || "\u56FE\u7247") + (im.bytes ? " \xB7 " + humanBytes(im.bytes) : ""));
+      return `<span class="att-thumb-wrap"><img class="att-thumb" src="${esc(rawUrl(im.id))}" alt="${label}" title="${label}" data-att-view="${esc(im.id)}" data-att-name="${esc(im.name || "\u56FE\u7247")}" data-att-bytes="${esc(im.bytes || 0)}" loading="lazy">` + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc(im.id)}" title="\u5220\u9664\u8FD9\u5F20\u56FE"><i class="ti ti-x"></i></button>` : "") + "</span>";
     }).join("") + "</span>";
   }
   var lightbox = null;
@@ -3042,7 +3136,7 @@
     const box = ensureLightbox();
     const img = box.querySelector(".att-lightbox-img");
     const url = rawUrl(id);
-    const seq3 = ++lightboxSeq;
+    const seq7 = ++lightboxSeq;
     img.src = url;
     box.querySelector(".att-lightbox-name").textContent = meta.name || "\u56FE\u7247";
     box.querySelector(".att-lightbox-open").href = url;
@@ -3050,7 +3144,7 @@
     const sizeText = meta.bytes ? humanBytes(meta.bytes) : "";
     dim.textContent = sizeText;
     const showDim = () => {
-      if (seq3 !== lightboxSeq || !img.naturalWidth) return;
+      if (seq7 !== lightboxSeq || !img.naturalWidth) return;
       const px = img.naturalWidth + " \xD7 " + img.naturalHeight;
       dim.textContent = sizeText ? px + " \xB7 " + sizeText : px;
     };
@@ -3086,8 +3180,8 @@
     const d = /* @__PURE__ */ new Date(String(iso).replace(" ", "T") + "Z");
     if (isNaN(d)) return String(iso);
     const p = (n) => String(n).padStart(2, "0");
-    const md = p(d.getMonth() + 1) + "-" + p(d.getDate());
-    return withTime ? d.getFullYear() + "-" + md + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md;
+    const md3 = p(d.getMonth() + 1) + "-" + p(d.getDate());
+    return withTime ? d.getFullYear() + "-" + md3 + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md3;
   }
   function salesCellHtml(r) {
     const list = noteList(r);
@@ -3095,14 +3189,14 @@
       return '<button type="button" class="track-add track-add-first" data-sales-open><i class="ti ti-plus"></i>\u4E1A\u52A1\u53CD\u9988</button>';
     }
     const title = list.map((n) => noteDate(n.created_at, true) + "\u3000" + (n.text || "(\u4EC5\u56FE\u7247)")).join("\n\n");
-    return `<div class="track-cell-wrap"><button type="button" class="track-list sales-list" data-sales-open title="${esc2(title)}">` + list.map((n) => `<span class="track-line sales-line"><span class="track-line-date sales-line-date">${esc2(noteDate(n.created_at, false))}</span><span class="track-line-text">` + (n.text ? esc2(n.text) : '<span class="sales-only-img">\u4EC5\u56FE\u7247</span>') + thumbsHtml(n.images) + "</span></span>").join("") + `</button><button type="button" class="track-add" data-sales-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
+    return `<div class="track-cell-wrap"><button type="button" class="track-list sales-list" data-sales-open title="${esc(title)}">` + list.map((n) => `<span class="track-line sales-line"><span class="track-line-date sales-line-date">${esc(noteDate(n.created_at, false))}</span><span class="track-line-text">` + (n.text ? esc(n.text) : '<span class="sales-only-img">\u4EC5\u56FE\u7247</span>') + thumbsHtml(n.images) + "</span></span>").join("") + `</button><button type="button" class="track-add" data-sales-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
   }
   var editing = null;
   var pendingFiles = [];
   function repaintCell() {
     if (!editing) return;
-    const tr = document.querySelector('.inq-tb tr[data-id="' + editing.id + '"]');
-    const cell3 = tr && tr.querySelector(".inq-sales-feedback");
+    const tr2 = document.querySelector('.inq-tb tr[data-id="' + editing.id + '"]');
+    const cell3 = tr2 && tr2.querySelector(".inq-sales-feedback");
     if (cell3) cell3.innerHTML = salesCellHtml(editing);
     document.dispatchEvent(new CustomEvent("salesnoteschanged", { detail: { id: editing.id } }));
   }
@@ -3113,7 +3207,7 @@
       box.innerHTML = "";
       return;
     }
-    box.innerHTML = '<div class="sales-pending-head">\u5F85\u4E0A\u4F20 ' + pendingFiles.length + " \u5F20\uFF1A</div>" + pendingFiles.map((f, i) => `<span class="sales-pending-item">${esc2(f.name)}<button type="button" class="sales-pending-del" data-sales-unpick="${i}" title="\u4E0D\u4F20\u8FD9\u5F20"><i class="ti ti-x"></i></button></span>`).join("");
+    box.innerHTML = '<div class="sales-pending-head">\u5F85\u4E0A\u4F20 ' + pendingFiles.length + " \u5F20\uFF1A</div>" + pendingFiles.map((f, i) => `<span class="sales-pending-item">${esc(f.name)}<button type="button" class="sales-pending-del" data-sales-unpick="${i}" title="\u4E0D\u4F20\u8FD9\u5F20"><i class="ti ti-x"></i></button></span>`).join("");
   }
   function renderLog() {
     const box = document.getElementById("sales-log");
@@ -3123,10 +3217,10 @@
       box.innerHTML = '<div class="track-log-empty">\u8FD8\u6CA1\u6709\u4E1A\u52A1\u53CD\u9988\uFF0C\u5728\u4E0B\u9762\u5199\u7B2C\u4E00\u6761\u6216\u76F4\u63A5\u4F20\u56FE\u3002</div>';
       return;
     }
-    box.innerHTML = '<div class="track-log-head">\u4E1A\u52A1\u53CD\u9988 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((n) => `<div class="track-item" data-note="${esc2(n.id)}"><div class="track-item-meta"><span class="track-item-date${n.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc2(noteDate(n.created_at, true))}</span>` + (n.created_by_name ? `<span class="track-item-who">${esc2(n.created_by_name)}</span>` : "") + `<button type="button" class="sales-item-add-img" data-sales-addimg="${esc2(n.id)}" title="\u7ED9\u8FD9\u6761\u8865\u56FE"><i class="ti ti-photo-plus"></i></button><button type="button" class="track-item-del" data-sales-del="${esc2(n.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div>` + (n.text ? `<div class="track-item-text">${esc2(n.text)}</div>` : '<div class="track-item-text dim">\uFF08\u4EC5\u56FE\u7247\uFF09</div>') + thumbsHtml(n.images, { deletable: true }) + "</div>").join("");
+    box.innerHTML = '<div class="track-log-head">\u4E1A\u52A1\u53CD\u9988 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((n) => `<div class="track-item" data-note="${esc(n.id)}"><div class="track-item-meta"><span class="track-item-date${n.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc(noteDate(n.created_at, true))}</span>` + (n.created_by_name ? `<span class="track-item-who">${esc(n.created_by_name)}</span>` : "") + `<button type="button" class="sales-item-add-img" data-sales-addimg="${esc(n.id)}" title="\u7ED9\u8FD9\u6761\u8865\u56FE"><i class="ti ti-photo-plus"></i></button><button type="button" class="track-item-del" data-sales-del="${esc(n.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div>` + (n.text ? `<div class="track-item-text">${esc(n.text)}</div>` : '<div class="track-item-text dim">\uFF08\u4EC5\u56FE\u7247\uFF09</div>') + thumbsHtml(n.images, { deletable: true }) + "</div>").join("");
   }
-  function openSales(tr) {
-    const id = tr && tr.dataset.id;
+  function openSales(tr2) {
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
     if (!it) return;
@@ -3189,8 +3283,8 @@
   document.addEventListener("click", (e) => {
     const t = e.target.closest(".inq-tb [data-sales-open]");
     if (!t) return;
-    const tr = t.closest("tr");
-    if (tr) openSales(tr);
+    const tr2 = t.closest("tr");
+    if (tr2) openSales(tr2);
   });
   document.addEventListener("click", async (e) => {
     const unpick = e.target.closest("[data-sales-unpick]");
@@ -3244,6 +3338,580 @@
     }
   });
 
+  // public/src/inquiry-source.js
+  var $ = (id) => document.getElementById(id);
+  var isHttp = (u) => /^https?:\/\//i.test(String(u || ""));
+  var TONE_BADGE = { good: "b-green", warn: "b-amber", bad: "b-red", muted: "b-gray" };
+  var FORM_VERDICT = { label: "\u8868\u5355\u6765\u6E90", tone: "good", hint: "\u72EC\u7ACB\u7AD9\u8868\u5355\u63D0\u4EA4\u65F6\u5E26\u56DE\u7684\u6765\u6E90\uFF0C\u673A\u5668\u8BC1\u636E" };
+  var checks = /* @__PURE__ */ new Map();
+  var verdicts = {};
+  var lookbackDays = 30;
+  var checkSeq = 0;
+  var changed = () => document.dispatchEvent(new CustomEvent("inqsourcechanged"));
+  var rowById = (id) => (window._inqCache || []).find((r) => String(r.id) === String(id));
+  var failText = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  function verdictOf(r) {
+    if (r.src_evidence === "form") return FORM_VERDICT;
+    const c = checks.get(r.id);
+    return c && verdicts[c.verdict] || null;
+  }
+  function pathOf(u) {
+    try {
+      const x = new URL(u);
+      return x.pathname + x.search || "/";
+    } catch (e) {
+      return u || "";
+    }
+  }
+  function sourceCellHtml(r) {
+    const v = verdictOf(r);
+    const badge3 = v && v.label ? `<span class="badge ${TONE_BADGE[v.tone] || "b-gray"} inq-src-verdict">${esc(v.label)}</span>` : "";
+    let subs = "";
+    if (r.src_campaign || r.src_campaign_id) subs += `<span class="inq-src-sub">\u7CFB\u5217 ${esc(r.src_campaign || r.src_campaign_id)}</span>`;
+    if (r.src_landing_page) subs += `<span class="inq-src-sub">\u843D\u5730\u9875 ${esc(pathOf(r.src_landing_page))}</span>`;
+    return `<button type="button" class="inq-src" data-inq-source="${esc(r.id)}" title="${esc(v && v.hint || "\u70B9\u51FB\u67E5\u770B / \u586B\u5199\u6765\u6E90")}"><span class="inq-src-term">${esc(r.source || "")}</span>${subs}${badge3}</button>`;
+  }
+  function siteCellHtml(r) {
+    const locked = r.src_evidence === "form";
+    return `<button type="button" class="inq-site-btn${r.site_name ? "" : " is-empty"}" data-inq-source="${esc(r.id)}" title="${locked ? "\u8868\u5355\u5E26\u56DE\u7684\u6765\u6E90\uFF0C\u6309\u7F51\u5740\u57DF\u540D\u8BA4\u51FA\u7684\u7AD9\u70B9\uFF0C\u4E0D\u80FD\u624B\u6539" : "\u70B9\u51FB\u9009\u62E9 / \u4FEE\u6539\u7AD9\u70B9"}">${esc(r.site_name || "\u2014")}${locked && r.site_name ? '<i class="ti ti-lock"></i>' : ""}</button>`;
+  }
+  function fillSites(row) {
+    const sel = $("inq-src-site");
+    const sites2 = allSites();
+    $("inq-src-site-fld").classList.toggle("is-hidden", !sites2.length && row.site_id == null);
+    sel.textContent = "";
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = "\u672A\u6807\u6CE8";
+    sel.appendChild(first);
+    for (const s of sites2) {
+      const o = document.createElement("option");
+      o.value = String(s.id);
+      o.textContent = s.name;
+      sel.appendChild(o);
+    }
+    if (row.site_id != null && !sites2.some((s) => s.id === row.site_id)) {
+      const o = document.createElement("option");
+      o.value = String(row.site_id);
+      o.textContent = (row.site_name || "\u7AD9\u70B9 " + row.site_id) + "\uFF08\u5DF2\u505C\u7528\uFF09";
+      sel.appendChild(o);
+    }
+    sel.value = row.site_id != null ? String(row.site_id) : "";
+  }
+  async function loadSourceChecks() {
+    const seq7 = ++checkSeq;
+    refreshLeadBadge();
+    try {
+      const data3 = await API.get(withRange2("/api/inquiries/source-check", "inquiry"));
+      if (seq7 !== checkSeq) return;
+      checks = new Map((data3.items || []).map((i) => [i.id, i]));
+      verdicts = data3.verdicts || {};
+      lookbackDays = data3.lookback_days || 30;
+      changed();
+    } catch (e) {
+      if (seq7 === checkSeq && e && e.message !== "unauthorized") toast2("\u6765\u6E90\u5BF9\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+    }
+  }
+  var editing2 = null;
+  var campaigns = null;
+  function evidenceLine(name, ev) {
+    if (!ev) return name + "\uFF1A\u5C1A\u672A\u5BF9\u8D26";
+    if (ev.hit) return name + "\uFF1A\u8FD1 " + lookbackDays + " \u5929\u6709\u70B9\u51FB\uFF0C\u6700\u8FD1\u4E00\u6B21 " + String(ev.last_date || "").slice(5);
+    if (!ev.covered) return name + "\uFF1A\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u65E0\u6CD5\u5224\u65AD";
+    return name + "\uFF1A\u8FD1 " + lookbackDays + " \u5929\u6CA1\u6709\u8FD9\u4E2A\u8BCD\u7684\u70B9\u51FB";
+  }
+  function addLine(box, text2, cls) {
+    const d = document.createElement("div");
+    d.className = cls || "";
+    d.textContent = text2;
+    box.appendChild(d);
+  }
+  function addLink(box, label, url) {
+    const d = document.createElement("div");
+    d.appendChild(document.createTextNode(label));
+    if (isHttp(url)) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = url;
+      d.appendChild(a);
+    } else d.appendChild(document.createTextNode(url || ""));
+    box.appendChild(d);
+  }
+  async function fillCampaigns(row) {
+    const sel = $("inq-src-campaign");
+    if (!campaigns) {
+      try {
+        campaigns = (await API.get("/api/loop-items/link-options")).campaigns || [];
+      } catch (e) {
+        campaigns = null;
+        toast2("\u5E7F\u544A\u7CFB\u5217\u5019\u9009\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e));
+      }
+    }
+    sel.textContent = "";
+    const list = campaigns || [];
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = list.length ? "\u672A\u5173\u8054\u7CFB\u5217" : "\u5C1A\u65E0\u5DF2\u540C\u6B65\u7684\u5E7F\u544A\u7CFB\u5217";
+    sel.appendChild(first);
+    for (const c of list) {
+      const o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name || c.id;
+      sel.appendChild(o);
+    }
+    if (row.src_campaign_id && !list.some((c) => c.id === row.src_campaign_id)) {
+      const o = document.createElement("option");
+      o.value = row.src_campaign_id;
+      o.textContent = row.src_campaign || row.src_campaign_id;
+      sel.appendChild(o);
+    }
+    sel.value = row.src_campaign_id || "";
+  }
+  async function openSource(id) {
+    const r = rowById(id);
+    if (!r) return;
+    editing2 = r;
+    const locked = r.src_evidence === "form";
+    $("inq-src-title").textContent = [r.date, r.country, r.channel].filter(Boolean).join(" \xB7 ");
+    const ev = $("inq-src-evidence");
+    ev.classList.toggle("is-form", locked);
+    ev.textContent = locked ? "\u6765\u6E90\u662F\u72EC\u7ACB\u7AD9\u8868\u5355\u63D0\u4EA4\u65F6\u5E26\u56DE\u7684\u673A\u5668\u8BC1\u636E\uFF0C\u4E0D\u80FD\u624B\u6539\u3002" : "\u6765\u6E90\u662F\u4EBA\u586B\u7684\uFF0C\u53EA\u662F\u4E3B\u5F20\uFF1B\u4E0B\u9762\u662F\u7CFB\u7EDF\u62FF\u6765\u6E90\u8BCD\u53BB Ads / GSC \u70B9\u51FB\u6570\u636E\u91CC\u5BF9\u8D26\u7684\u7ED3\u679C\u3002";
+    $("inq-src-term").value = r.source || "";
+    $("inq-src-page").value = r.src_landing_page || "";
+    fillSites(r);
+    for (const fid of ["inq-src-term", "inq-src-campaign", "inq-src-page", "inq-src-site"]) $(fid).disabled = locked;
+    $("inq-src-save").classList.toggle("is-hidden", locked);
+    $("inq-src-error").textContent = "";
+    const box = $("inq-src-check");
+    box.textContent = "";
+    if (locked) {
+      if (r.src_referrer) addLink(box, "\u6765\u8DEF\uFF1A", r.src_referrer);
+      if (r.src_gclid) addLine(box, "\u5E7F\u544A\u70B9\u51FB\u6807\u8BC6\uFF08gclid\uFF09\uFF1A" + r.src_gclid);
+      let utm = {};
+      try {
+        utm = JSON.parse(r.src_utm || "{}");
+      } catch (e) {
+        utm = {};
+      }
+      const parts = Object.entries(utm).map(([k, v]) => k + "=" + v);
+      if (parts.length) addLine(box, "UTM\uFF1A" + parts.join("\u3000"));
+      if (!box.children.length) addLine(box, "\u8868\u5355\u6CA1\u6709\u5E26\u56DE\u6765\u8DEF / gclid / UTM\u3002", "dim");
+    } else {
+      const c = checks.get(r.id);
+      const v = c && verdicts[c.verdict];
+      if (v && v.label) addLine(box, v.label + "\uFF1A" + v.hint, "inq-src-result tone-" + v.tone);
+      addLine(box, evidenceLine("\u5E7F\u544A\uFF08Ads\uFF09", c && c.ads));
+      addLine(box, evidenceLine("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", c && c.gsc));
+      addLine(box, "\u5BF9\u8D26\u53EA\u662F\u628A\u7591\u70B9\u6311\u51FA\u6765\u7ED9\u4EBA\u590D\u6838\uFF0C\u4E0D\u4F1A\u6539\u6E20\u9053\uFF0C\u4E5F\u4E0D\u53C2\u4E0E\u8BA1\u5206\u3002", "dim");
+    }
+    openModal("inqSourceMask");
+    await fillCampaigns(r);
+  }
+  async function submitInquirySource(btn) {
+    const r = editing2;
+    if (!r) return;
+    const body = { source: $("inq-src-term").value.trim() || "\u5F85\u8865", src_campaign_id: $("inq-src-campaign").value, src_landing_page: $("inq-src-page").value.trim() };
+    const site = $("inq-src-site").value;
+    if (site !== (r.site_id != null ? String(r.site_id) : "")) body.site_id = site || null;
+    if (btn) btn.disabled = true;
+    try {
+      const { item } = await API.patch("/api/inquiries/" + r.id, body);
+      Object.assign(r, item);
+      closeModal("inqSourceMask");
+      editing2 = null;
+      toast2("\u6765\u6E90\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
+      document.dispatchEvent(new CustomEvent("inqsourcechanged", { detail: { saved: true } }));
+      loadSourceChecks();
+    } catch (e) {
+      $("inq-src-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText(e);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  var leadState = "new";
+  var leadRows = [];
+  var leadsBound = false;
+  function localDate(utc) {
+    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
+    if (isNaN(d)) return String(utc || "").slice(0, 10);
+    const p = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  async function refreshLeadBadge() {
+    const el5 = $("inq-leads-count");
+    if (!el5) return;
+    try {
+      const data3 = await API.get("/api/inquiry-leads?state=new");
+      el5.textContent = data3.configured ? String(data3.counts.new || 0) : "\u672A\u63A5\u5165";
+      el5.classList.toggle("has-new", data3.configured && data3.counts.new > 0);
+    } catch (e) {
+      el5.textContent = "\u2014";
+    }
+  }
+  function leadCard(l) {
+    const card2 = document.createElement("div");
+    card2.className = "lead-card";
+    card2.dataset.id = l.id;
+    const head = document.createElement("div");
+    head.className = "lead-head";
+    const who = [l.contact_name, l.contact_company, l.country].filter(Boolean).join(" \xB7 ") || "\u672A\u7559\u59D3\u540D";
+    addLine(head, localDate(l.received_at) + "\u3000" + who, "lead-who");
+    if (l.contact_email) addLine(head, l.contact_email, "dim");
+    card2.appendChild(head);
+    if (l.message) addLine(card2, l.message, "lead-msg");
+    const src = document.createElement("div");
+    src.className = "lead-src";
+    addLine(src, "\u5EFA\u8BAE\u6E20\u9053\uFF1A" + (l.suggested_channel || "\u2014"), "lead-src-channel");
+    if (l.site_name) addLine(src, "\u7AD9\u70B9\uFF1A" + l.site_name);
+    else if (allSites().length) addLine(src, "\u7AD9\u70B9\uFF1A\u672A\u8BC6\u522B\uFF08\u8FD9\u6761\u7EBF\u7D22\u7684\u57DF\u540D\u8FD8\u6CA1\u6709\u767B\u8BB0\u6210\u7AD9\u70B9\uFF09", "dim");
+    const term = l.keyword || l.utm_term;
+    if (term) addLine(src, "\u5173\u952E\u8BCD\uFF1A" + term);
+    const camp = l.campaign_id || l.utm_campaign;
+    if (camp) addLine(src, "\u7CFB\u5217\uFF1A" + camp);
+    if (l.landing_page || l.page_url) addLink(src, "\u843D\u5730\u9875\uFF1A", l.landing_page || l.page_url);
+    if (l.referrer) addLink(src, "\u6765\u8DEF\uFF1A", l.referrer);
+    if (src.children.length === 1) addLine(src, "\u8868\u5355\u6CA1\u6709\u5E26\u56DE\u4EFB\u4F55\u6765\u6E90\u53C2\u6570", "dim");
+    card2.appendChild(src);
+    const ops = document.createElement("div");
+    ops.className = "lead-ops";
+    if (l.state === "new") {
+      const conv = document.createElement("button");
+      conv.type = "button";
+      conv.className = "btn-primary btn-mini";
+      conv.dataset.leadConvert = l.id;
+      conv.textContent = "\u8F6C\u4E3A\u8BE2\u76D8";
+      const reason = document.createElement("input");
+      reason.type = "text";
+      reason.className = "lead-reason";
+      reason.maxLength = 200;
+      reason.placeholder = "\u5FFD\u7565\u539F\u56E0\uFF08\u5783\u573E / \u91CD\u590D / \u975E\u8BE2\u4EF7\u2026\uFF09";
+      const ign = document.createElement("button");
+      ign.type = "button";
+      ign.className = "btn-mini";
+      ign.dataset.leadIgnore = l.id;
+      ign.textContent = "\u5FFD\u7565";
+      ops.append(conv, reason, ign);
+    } else {
+      addLine(ops, "\u5FFD\u7565\u539F\u56E0\uFF1A" + (l.ignore_reason || "\u2014"), "dim");
+      const re = document.createElement("button");
+      re.type = "button";
+      re.className = "btn-mini";
+      re.dataset.leadReopen = l.id;
+      re.textContent = "\u6062\u590D\u4E3A\u5F85\u5904\u7406";
+      ops.appendChild(re);
+    }
+    card2.appendChild(ops);
+    return card2;
+  }
+  async function loadLeads() {
+    const box = $("leads-list");
+    const status = $("leads-status");
+    document.querySelectorAll("#leadsMask [data-lead-state]").forEach((b) => b.classList.toggle("active", b.dataset.leadState === leadState));
+    box.textContent = "";
+    addLine(box, "\u52A0\u8F7D\u4E2D\u2026", "dim");
+    try {
+      const data3 = await API.get("/api/inquiry-leads?state=" + leadState);
+      leadRows = data3.items || [];
+      status.classList.toggle("is-off", !data3.configured);
+      status.textContent = data3.configured ? "\u5F85\u5904\u7406 " + (data3.counts.new || 0) + " \xB7 \u5DF2\u8F6C\u8BE2\u76D8 " + (data3.counts.converted || 0) + " \xB7 \u5DF2\u5FFD\u7565 " + (data3.counts.ignored || 0) : "\u5C1A\u672A\u63A5\u5165\uFF1A\u670D\u52A1\u5668\u6CA1\u6709\u914D\u7F6E INQUIRY_INTAKE_SECRET\uFF0C\u72EC\u7ACB\u7AD9\u8868\u5355\u8FD8\u4E0D\u4F1A\u628A\u7EBF\u7D22\u53D1\u5230\u8FD9\u91CC\uFF08\u63A5\u6CD5\u89C1 docs/INQUIRY_INTAKE.md\uFF09\u3002";
+      box.textContent = "";
+      if (!leadRows.length) {
+        addLine(box, leadState === "new" ? "\u6CA1\u6709\u5F85\u5904\u7406\u7684\u7EBF\u7D22" : "\u6CA1\u6709\u88AB\u5FFD\u7565\u7684\u7EBF\u7D22", "dim lead-empty");
+        return;
+      }
+      leadRows.forEach((l) => box.appendChild(leadCard(l)));
+    } catch (e) {
+      box.textContent = "";
+      addLine(box, "\u7EBF\u7D22\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText(e), "task-done-error");
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "btn-mini";
+      retry.textContent = "\u91CD\u8BD5";
+      retry.addEventListener("click", loadLeads);
+      box.appendChild(retry);
+    }
+  }
+  function openLeads() {
+    if (!leadsBound) {
+      leadsBound = true;
+      $("leadsMask").addEventListener("click", async (e) => {
+        const tab = e.target.closest("[data-lead-state]");
+        if (tab) {
+          leadState = tab.dataset.leadState;
+          loadLeads();
+          return;
+        }
+        const conv = e.target.closest("[data-lead-convert]");
+        if (conv) {
+          const lead = leadRows.find((l) => String(l.id) === conv.dataset.leadConvert);
+          if (!lead) return;
+          closeModal("leadsMask");
+          document.dispatchEvent(new CustomEvent("leadconvert", { detail: { lead, date: localDate(lead.received_at) } }));
+          return;
+        }
+        const ign = e.target.closest("[data-lead-ignore]");
+        if (ign) {
+          const reason = ign.closest(".lead-ops").querySelector(".lead-reason").value.trim();
+          if (!reason) {
+            toast2("\u8BF7\u5148\u5199\u5FFD\u7565\u539F\u56E0");
+            return;
+          }
+          try {
+            await API.post("/api/inquiry-leads/" + ign.dataset.leadIgnore + "/ignore", { reason });
+            toast2("\u5DF2\u5FFD\u7565 \xB7 \u539F\u56E0\u5DF2\u8BB0\u5F55");
+            loadLeads();
+            refreshLeadBadge();
+          } catch (err) {
+            toast2("\u672A\u5165\u5E93\uFF1A" + failText(err));
+          }
+          return;
+        }
+        const re = e.target.closest("[data-lead-reopen]");
+        if (re) {
+          try {
+            await API.post("/api/inquiry-leads/" + re.dataset.leadReopen + "/reopen");
+            toast2("\u5DF2\u6062\u590D\u4E3A\u5F85\u5904\u7406");
+            loadLeads();
+            refreshLeadBadge();
+          } catch (err) {
+            toast2("\u672A\u5165\u5E93\uFF1A" + failText(err));
+          }
+        }
+      });
+    }
+    leadState = "new";
+    openModal("leadsMask");
+    loadLeads();
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-inq-source]");
+      if (btn) openSource(btn.dataset.inqSource);
+    });
+  }
+
+  // public/src/change-log.js
+  var $2 = (id) => document.getElementById(id);
+  function localTime(utc) {
+    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
+    if (isNaN(d)) return utc || "\u65F6\u95F4\u4E0D\u8BE6";
+    const p = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  function line(parent, cls, text2) {
+    const d = document.createElement("div");
+    d.className = cls;
+    d.textContent = text2;
+    parent.appendChild(d);
+    return d;
+  }
+  async function openChangeLog({ path, title, rule, empty: empty2, describe }) {
+    const box = $2("attrLogBody");
+    if (!box) return;
+    $2("attrLogTitle").textContent = title;
+    $2("attrLogRule").textContent = rule;
+    box.textContent = "";
+    line(box, "attr-log-empty", "\u52A0\u8F7D\u4E2D\u2026");
+    openModal("attrLogModal");
+    try {
+      const { items } = await API.get(path);
+      box.textContent = "";
+      if (!items.length) {
+        line(box, "attr-log-empty", empty2);
+        return;
+      }
+      for (const c of items) {
+        const item = document.createElement("div");
+        item.className = "attr-log-item";
+        line(item, "attr-log-head", describe(c));
+        line(item, "attr-log-meta", (c.changed_by_name || "\u672A\u8BB0\u5F55\u662F\u8C01") + " \xB7 " + localTime(c.changed_at));
+        if (c.reason) line(item, "attr-log-reason", "\u539F\u56E0\uFF1A" + c.reason);
+        box.appendChild(item);
+      }
+    } catch (e) {
+      box.textContent = "";
+      line(box, "attr-log-empty", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  }
+
+  // public/src/inquiry-attribution.js
+  var $3 = (id) => document.getElementById(id);
+  var isAuthority = () => {
+    const r = window.ME && window.ME.role;
+    return r === "manager" || r === "boss";
+  };
+  var failText2 = (e) => e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var changed2 = () => document.dispatchEvent(new CustomEvent("attributionchanged"));
+  var isConfirmed = (r) => !!r && r.attribution_status === "confirmed";
+  var statusOf = (r) => isConfirmed(r) ? "confirmed" : r && r.attribution_status === "proposed" ? "proposed" : "legacy";
+  var STATUS_LABEL = { confirmed: "\u5DF2\u786E\u8BA4", proposed: "\u5F85\u786E\u8BA4", legacy: "\u5386\u53F2\u672A\u5BA1" };
+  function attrMarkHtml(r) {
+    const st2 = statusOf(r);
+    const n = Number(r.attr_change_count) || 0;
+    const changes = n > 0 ? `<button type="button" class="attr-changes" data-attr-log title="\u6E20\u9053 / \u7B49\u7EA7 / \u65E5\u671F / \u5F52\u6863\u72B6\u6001\u88AB\u6539\u8FC7 ${n} \u6B21\uFF0C\u70B9\u51FB\u770B\u662F\u8C01\u6539\u7684\u3001\u4E3A\u4EC0\u4E48">\u6539 ${n}</button>` : "";
+    return `<span class="attr-mark attr-${st2}">${STATUS_LABEL[st2]}</span>${changes}`;
+  }
+  function attrLockHtml(cls, text2) {
+    const auth = isAuthority();
+    const hint = auth ? "\u5DF2\u786E\u8BA4\uFF1B\u70B9\u51FB\u4FEE\u6539\uFF08\u9700\u586B\u539F\u56E0\uFF09" : "\u5DF2\u786E\u8BA4\uFF0C\u5982\u9700\u66F4\u6B63\u8BF7\u627E\u7ECF\u7406\u6216\u8001\u677F";
+    return `<span class="badge ${esc(cls)} attr-locked"${auth ? " data-attr-edit" : ""} title="${esc(hint)}">${esc(text2)}<i class="ti ti-lock attr-lock-ico"></i></span>`;
+  }
+  function attrConfirmBtnHtml(r) {
+    if (!isAuthority()) return "";
+    return isConfirmed(r) ? '<button type="button" class="btn-mini attr-unconfirm" data-attr-unconfirm title="\u64A4\u9500\u786E\u8BA4\uFF08\u9700\u586B\u539F\u56E0\uFF09"><i class="ti ti-arrow-back-up"></i></button>' : '<button type="button" class="btn-mini attr-confirm" data-attr-confirm title="\u786E\u8BA4\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u4E0E\u7B49\u7EA7"><i class="ti ti-check"></i></button>';
+  }
+  function renderBar(cov) {
+    const box = $3("inqAttrBar");
+    if (!box) return;
+    box.textContent = "";
+    if (!cov || !cov.total) return;
+    const pending2 = cov.proposed + cov.legacy;
+    const bar = document.createElement("span");
+    bar.className = "attr-bar " + (cov.unconfirmedRate >= 50 ? "attr-bar-warn" : cov.unconfirmedRate > 0 ? "attr-bar-mid" : "attr-bar-ok");
+    bar.textContent = "\u6E20\u9053\u4E0E\u7B49\u7EA7\u5DF2\u786E\u8BA4 " + cov.confirmed + "/" + cov.total + (cov.confirmedRate != null ? "\uFF08" + cov.confirmedRate + "%\uFF09" : "") + (pending2 ? " \xB7 \u5F85\u786E\u8BA4 " + cov.proposed + " \xB7 \u5386\u53F2\u672A\u5BA1 " + cov.legacy : "");
+    bar.title = "\u7B49\u7EA7\u7531\u5F55\u5165\u4EBA\u81EA\u5DF1\u586B\uFF1B\u7ECF\u7406\u6216\u8001\u677F\u786E\u8BA4\u8FC7\u7684\u624D\u7B97\u5B9A\u7A3F";
+    box.appendChild(bar);
+    if (isAuthority() && pending2 > 0) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-mini attr-bar-btn";
+      btn.dataset.attrConfirmAll = "1";
+      btn.textContent = "\u5168\u90E8\u786E\u8BA4\uFF08" + pending2 + "\uFF09";
+      btn.title = "\u786E\u8BA4\u5F53\u524D\u65F6\u95F4\u8303\u56F4\u5185\u6240\u6709\u672A\u786E\u8BA4\u7684\u8BE2\u76D8\uFF08\u4E0D\u53D7\u8868\u5934\u7B5B\u9009\u5F71\u54CD\uFF09\uFF1B\u60F3\u9010\u6761\u770B\u518D\u786E\u8BA4\uFF0C\u5C31\u7528\u6BCF\u884C\u7684 \u2713";
+      box.appendChild(btn);
+    }
+  }
+  async function loadAttrCoverage() {
+    try {
+      renderBar(await API.get(withRange2("/api/inquiries/attribution-coverage", "inquiry")));
+    } catch (e) {
+      const box = $3("inqAttrBar");
+      if (!box || e && e.message === "unauthorized") return;
+      box.textContent = "";
+      const bar = document.createElement("span");
+      bar.className = "attr-bar attr-bar-warn";
+      bar.textContent = "\u786E\u8BA4\u8FDB\u5EA6\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText2(e);
+      box.appendChild(bar);
+    }
+  }
+  var FIELD_LABEL = { channel: "\u6E20\u9053", grade: "\u7B49\u7EA7", date: "\u65E5\u671F", state: "\u5F52\u6863", deal_status: "\u662F\u5426\u6210\u4EA4", attribution_status: "\u786E\u8BA4\u72B6\u6001" };
+  var VALUE_LABEL = { confirmed: "\u5DF2\u786E\u8BA4", proposed: "\u5F85\u786E\u8BA4", active: "\u5728\u518C", archived: "\u5DF2\u5F52\u6863" };
+  var valText = (v) => v == null || v === "" ? "\uFF08\u7A7A / \u5386\u53F2\u672A\u5BA1\uFF09" : VALUE_LABEL[v] || v;
+  var openChangeLog2 = (id) => openChangeLog({
+    path: "/api/inquiries/" + encodeURIComponent(id) + "/changes",
+    title: "\u6E20\u9053\u4E0E\u7B49\u7EA7\u7684\u6539\u52A8\u6D41\u6C34",
+    rule: "\u7B49\u7EA7\u51B3\u5B9A\u8003\u6838\u91CC A / B \u8BE2\u4EF7\u7684\u6570\u91CF\uFF0C\u6240\u4EE5\u6BCF\u6B21\u6539\u52A8\u90FD\u7559\u6863\uFF1B\u6539\u5DF2\u786E\u8BA4\u7684\u503C\u5FC5\u987B\u586B\u539F\u56E0\u3002",
+    empty: "\u8FD9\u6761\u8BE2\u76D8\u7684\u6E20\u9053\u3001\u7B49\u7EA7\u3001\u65E5\u671F\u548C\u786E\u8BA4\u72B6\u6001\u4ECE\u672A\u88AB\u6539\u8FC7\u3002",
+    describe: (c) => (FIELD_LABEL[c.field] || c.field) + "\uFF1A" + valText(c.old_value) + " \u2192 " + valText(c.new_value)
+  });
+  var editing3 = null;
+  function openAttrEdit(row, mode) {
+    editing3 = { row, mode };
+    const unconfirm = mode === "unconfirm";
+    $3("attrEditTitle").textContent = (unconfirm ? "\u64A4\u9500\u786E\u8BA4 \xB7 " : "\u4FEE\u6539\u5DF2\u786E\u8BA4\u7684\u6E20\u9053 / \u7B49\u7EA7 \xB7 ") + (row.customer_code || row.country || "#" + row.id);
+    $3("attrEditChannel").value = row.channel || "";
+    $3("attrEditGrade").value = row.grade || "";
+    $3("attrEditFields").classList.toggle("is-hidden", unconfirm);
+    $3("attrEditReason").value = "";
+    $3("attrEditError").textContent = "";
+    openModal("attrEditModal");
+    setTimeout(() => $3("attrEditReason").focus(), 50);
+  }
+  async function submitAttrEdit(btn) {
+    const e = editing3;
+    if (!e) return;
+    const reason = $3("attrEditReason").value.trim();
+    if (!reason) {
+      $3("attrEditError").textContent = "\u5FC5\u987B\u5199\u6E05\u695A\u539F\u56E0\uFF1A\u5B83\u4F1A\u8FDE\u540C\u4F60\u7684\u540D\u5B57\u548C\u65F6\u95F4\u4E00\u8D77\u8BB0\u8FDB\u6D41\u6C34";
+      return;
+    }
+    if (btn) btn.disabled = true;
+    try {
+      if (e.mode === "unconfirm") await API.post("/api/inquiries/" + e.row.id + "/unconfirm", { reason });
+      else await API.patch("/api/inquiries/" + e.row.id, { channel: $3("attrEditChannel").value, grade: $3("attrEditGrade").value, reason });
+      closeModal("attrEditModal");
+      editing3 = null;
+      toast2(e.mode === "unconfirm" ? "\u5DF2\u64A4\u9500\u786E\u8BA4 \xB7 \u5DF2\u8BB0\u5165\u6D41\u6C34" : "\u5DF2\u4FEE\u6539 \xB7 \u5DF2\u8BB0\u5165\u6D41\u6C34");
+      changed2();
+    } catch (err) {
+      $3("attrEditError").textContent = "\u672A\u5165\u5E93\uFF1A" + failText2(err);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", async (e) => {
+      const inTable = (sel) => e.target.closest("#tb-inq " + sel);
+      const rowOf = (el5) => {
+        const tr2 = el5.closest("tr");
+        return (window._inqCache || []).find((x) => String(x.id) === String(tr2 && tr2.dataset.id));
+      };
+      const logBtn = inTable("[data-attr-log]");
+      if (logBtn) {
+        const row = rowOf(logBtn);
+        if (row) openChangeLog2(row.id);
+        return;
+      }
+      const editBtn = inTable("[data-attr-edit]");
+      if (editBtn) {
+        const row = rowOf(editBtn);
+        if (row) openAttrEdit(row, "edit");
+        return;
+      }
+      const undoBtn = inTable("[data-attr-unconfirm]");
+      if (undoBtn) {
+        const row = rowOf(undoBtn);
+        if (row) openAttrEdit(row, "unconfirm");
+        return;
+      }
+      const okBtn = inTable("[data-attr-confirm]");
+      if (okBtn) {
+        const row = rowOf(okBtn);
+        if (!row) return;
+        okBtn.disabled = true;
+        try {
+          await API.post("/api/inquiries/" + row.id + "/confirm", {});
+          toast2("\u5DF2\u786E\u8BA4");
+          changed2();
+        } catch (err) {
+          okBtn.disabled = false;
+          toast2("\u786E\u8BA4\u5931\u8D25\uFF1A" + failText2(err));
+        }
+        return;
+      }
+      const allBtn = e.target.closest("[data-attr-confirm-all]");
+      if (allBtn) {
+        const pending2 = (window._inqCache || []).filter((r) => !isConfirmed(r)).map((r) => r.id);
+        if (!pending2.length) {
+          toast2("\u5F53\u524D\u65F6\u95F4\u8303\u56F4\u5185\u6CA1\u6709\u5F85\u786E\u8BA4\u7684\u8BE2\u76D8");
+          return;
+        }
+        if (allBtn.dataset.armed !== "1") {
+          allBtn.dataset.armed = "1";
+          allBtn.textContent = "\u518D\u70B9\u4E00\u6B21\uFF1A\u786E\u8BA4 " + pending2.length + " \u6761";
+          setTimeout(() => {
+            if (allBtn.isConnected) {
+              allBtn.dataset.armed = "";
+              allBtn.textContent = "\u5168\u90E8\u786E\u8BA4\uFF08" + pending2.length + "\uFF09";
+            }
+          }, 4e3);
+          return;
+        }
+        allBtn.disabled = true;
+        try {
+          const r = await API.post("/api/inquiries/confirm", { ids: pending2 });
+          toast2("\u5DF2\u786E\u8BA4 " + r.confirmed + " \u6761");
+          changed2();
+        } catch (err) {
+          allBtn.disabled = false;
+          toast2("\u6279\u91CF\u786E\u8BA4\u5931\u8D25\uFF1A" + failText2(err));
+        }
+      }
+    });
+  }
+
   // public/src/inquiries.js
   var CH_BADGE = { "SEO\u81EA\u7136": "b-blue", "SEM\u4ED8\u8D39": "b-purple", "\u76F4\u63A5": "b-teal", "\u5176\u4ED6": "b-gray" };
   var GRADE_BADGE = { A: "b-green", B: "b-blue", C: "b-gray" };
@@ -3257,6 +3925,26 @@
     ["f-country", "f-code", "f-sales", "f-source", "f-note"].forEach((i) => document.getElementById(i).value = "");
     document.getElementById("f-deal").value = "\u672A\u6210\u4EA4";
     document.getElementById("f-company").value = "";
+    const siteSel = document.getElementById("f-site"), sites2 = allSites();
+    siteSel.textContent = "";
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "\u672A\u6807\u6CE8";
+    siteSel.appendChild(none);
+    sites2.forEach((s) => {
+      const o = document.createElement("option");
+      o.value = String(s.id);
+      o.textContent = s.name;
+      siteSel.appendChild(o);
+    });
+    document.getElementById("f-site-fld").classList.toggle("is-hidden", !sites2.length);
+    siteSel.onchange = () => {
+      const s = sites2.find((x) => String(x.id) === siteSel.value), c = document.getElementById("f-company");
+      if (s && s.company && !c.value) c.value = s.company;
+    };
+    pendingLead = null;
+    const banner = document.getElementById("inq-lead-banner");
+    if (banner) banner.classList.add("is-hidden");
     openModal("inqMask");
   }
   async function submitInquiry() {
@@ -3277,9 +3965,12 @@
       grade: g("f-grade"),
       note: g("f-note")
     };
+    if (pendingLead) rec.lead_id = pendingLead.id;
+    else if (g("f-site")) rec.site_id = Number(g("f-site"));
     try {
       const { item } = await API.post("/api/inquiries", rec);
       closeModal("inqMask");
+      pendingLead = null;
       await loadInquiries();
       loadDashboardInq();
       if (window._curTab === "inquiry") {
@@ -3306,8 +3997,8 @@
     const d = /* @__PURE__ */ new Date(String(iso).replace(" ", "T") + "Z");
     if (isNaN(d)) return String(iso);
     const p = (n) => String(n).padStart(2, "0");
-    const md = p(d.getMonth() + 1) + "-" + p(d.getDate());
-    return withTime ? d.getFullYear() + "-" + md + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md;
+    const md3 = p(d.getMonth() + 1) + "-" + p(d.getDate());
+    return withTime ? d.getFullYear() + "-" + md3 + " " + p(d.getHours()) + ":" + p(d.getMinutes()) : md3;
   }
   function fbDateLabel(f, withTime) {
     return f.created_at ? fbDate(f.created_at, withTime) : "\u65E5\u671F\u4E0D\u8BE6";
@@ -3320,10 +4011,10 @@
       box.innerHTML = '<div class="track-log-empty">\u8FD8\u6CA1\u6709\u8DDF\u8E2A\u8BB0\u5F55\uFF0C\u5728\u4E0B\u9762\u5199\u7B2C\u4E00\u6761\u3002</div>';
       return;
     }
-    box.innerHTML = '<div class="track-log-head">\u8DDF\u8E2A\u8BB0\u5F55 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((f) => `<div class="track-item" data-fb="${f.id}"><div class="track-item-meta"><span class="track-item-date${f.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc2(fbDateLabel(f, true))}</span>` + (f.created_by_name ? `<span class="track-item-who">${esc2(f.created_by_name)}</span>` : "") + `<button type="button" class="track-item-del" data-fb-del="${f.id}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div><div class="track-item-text">${esc2(f.text)}</div></div>`).join("");
+    box.innerHTML = '<div class="track-log-head">\u8DDF\u8E2A\u8BB0\u5F55 \xB7 ' + list.length + " \u6761\uFF08\u65B0\u7684\u5728\u4E0A\uFF09</div>" + list.map((f) => `<div class="track-item" data-fb="${esc(f.id)}"><div class="track-item-meta"><span class="track-item-date${f.created_at ? "" : " track-item-nodate"}"><i class="ti ti-clock"></i>${esc(fbDateLabel(f, true))}</span>` + (f.created_by_name ? `<span class="track-item-who">${esc(f.created_by_name)}</span>` : "") + `<button type="button" class="track-item-del" data-fb-del="${esc(f.id)}" title="\u5220\u9664\u8FD9\u6761\u8BB0\u5F55"><i class="ti ti-trash"></i></button></div><div class="track-item-text">${esc(f.text)}</div></div>`).join("");
   }
-  function openTrack(tr) {
-    const id = tr && tr.dataset.id;
+  function openTrack(tr2) {
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
     if (!it) return;
@@ -3335,8 +4026,8 @@
     setTimeout(() => document.getElementById("track-text").focus(), 50);
   }
   function repaintTrackCell(it) {
-    const tr = document.querySelector('.inq-tb tr[data-id="' + it.id + '"]');
-    const cell3 = tr && tr.querySelector(".inq-track-feedback");
+    const tr2 = document.querySelector('.inq-tb tr[data-id="' + it.id + '"]');
+    const cell3 = tr2 && tr2.querySelector(".inq-track-feedback");
     if (cell3) cell3.innerHTML = trackCellHtml(it);
   }
   async function submitTrack() {
@@ -3364,8 +4055,8 @@
   document.addEventListener("click", (e) => {
     const t = e.target.closest(".inq-tb [data-track-open]");
     if (!t) return;
-    const tr = t.closest("tr");
-    if (tr) openTrack(tr);
+    const tr2 = t.closest("tr");
+    if (tr2) openTrack(tr2);
   });
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("#track-log [data-fb-del]");
@@ -3389,12 +4080,13 @@
       return `<button type="button" class="track-add track-add-first" data-track-open><i class="ti ti-plus"></i>\u53CD\u9988</button>`;
     }
     const title = list.map((f) => fbDateLabel(f, true) + "\u3000" + f.text).join("\n\n");
-    return `<div class="track-cell-wrap"><button type="button" class="track-list" data-track-open title="${esc2(title)}">` + list.map((f) => `<span class="track-line"><span class="track-line-date${f.created_at ? "" : " track-line-nodate"}">${esc2(fbDateLabel(f, false))}</span><span class="track-line-text">${esc2(f.text)}</span></span>`).join("") + `</button><button type="button" class="track-add" data-track-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
+    return `<div class="track-cell-wrap"><button type="button" class="track-list" data-track-open title="${esc(title)}">` + list.map((f) => `<span class="track-line"><span class="track-line-date${f.created_at ? "" : " track-line-nodate"}">${esc(fbDateLabel(f, false))}</span><span class="track-line-text">${esc(f.text)}</span></span>`).join("") + `</button><button type="button" class="track-add" data-track-open><i class="ti ti-plus"></i>\u6DFB\u52A0<span class="track-count">${list.length}</span></button></div>`;
   }
   function inqRowHtml(r) {
     const up = isUpgraded(r);
-    const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc2(r.original_grade)} \u2192 \u73B0 ${esc2(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
-    return `<td>${esc2(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc2(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc2(r.country || "")}</td><td class="ctr"><span class="tagselect ${REGION_BADGE[r.region] || "b-gray"}" data-kind="region">${esc2(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc2(r.channel)}<i class="ti ti-chevron-down"></i></span></td><td>${esc2(r.source)}</td><td class="ctr"><span class="tagselect ${PRODUCT_BADGE[r.product] || "b-gray"}" data-kind="product">${esc2(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc2(r.grade)}<i class="ti ti-chevron-down"></i></span>${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc2(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc2(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc2(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc2(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr"><button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
+    const upMark = up ? ` <i class="ti ti-alert-triangle csp-s-d6508e1886" title="\u7B49\u7EA7\u5DF2\u4E0A\u8C03\uFF08\u539F ${esc(r.original_grade)} \u2192 \u73B0 ${esc(r.grade)}\uFF09 \xB7 \u91CD\u70B9\u5904\u7406"></i>` : "";
+    const locked = isConfirmed(r);
+    return `<td>${esc(r.date.slice(5))}</td><td class="editable" contenteditable data-field="customer_code">${esc(r.customer_code || "")}</td><td class="editable" contenteditable data-field="country">${esc(r.country || "")}</td><td class="ctr"><span class="tagselect ${esc(REGION_BADGE[r.region] || "b-gray")}" data-kind="region">${esc(r.region || "\u672A\u586B")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(CH_BADGE[r.channel] || "b-gray", r.channel) : `<span class="tagselect ${CH_BADGE[r.channel] || "b-gray"}" data-kind="channel">${esc(r.channel)}<i class="ti ti-chevron-down"></i></span>`}${attrMarkHtml(r)}</td><td class="inq-source">${sourceCellHtml(r)}</td><td class="ctr inq-site">${siteCellHtml(r)}</td><td class="ctr"><span class="tagselect ${esc(PRODUCT_BADGE[r.product] || "b-gray")}" data-kind="product">${esc(r.product)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr inq-attr-cell">${locked ? attrLockHtml(GRADE_BADGE[r.grade] || "b-gray", r.grade) : `<span class="tagselect ${GRADE_BADGE[r.grade] || "b-gray"}" data-kind="grade">${esc(r.grade)}<i class="ti ti-chevron-down"></i></span>`}${upMark}</td><td class="ctr"><span class="tagselect ${COMPANY_BADGE[r.company] || "b-gray"}" data-kind="company">${esc(r.company || "\u672A\u6807\u6CE8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr editable" contenteditable data-field="salesperson">${esc(r.salesperson || "")}</td><td class="ctr inq-sales-feedback">${salesCellHtml(r)}</td><td class="ctr"><span class="tagselect ${DEAL_BADGE[r.deal_status] || "b-gray"}" data-kind="deal">${esc(r.deal_status || "\u672A\u6807\u8BB0")}<i class="ti ti-chevron-down"></i></span></td><td class="dim csp-s-33ee298127">${esc(r.note || "")}</td><td class="ctr inq-track-feedback">${trackCellHtml(r)}</td><td class="ctr inq-ops">${attrConfirmBtnHtml(r)}<button class="btn-mini inq-del csp-s-7ee38adc7c" title="\u5220\u9664\uFF08\u5F52\u6863\u5230\u5F52\u6863\u9875\uFF09"><i class="ti ti-trash"></i></button></td>`;
   }
   function monthLabel(ym) {
     const p = ym.split("-");
@@ -3409,6 +4101,8 @@
     { key: "region", type: "select", ph: "\u5927\u533A", blank: "\u672A\u586B", catalog: REGION_NAMES },
     { key: "channel", type: "select", ph: "\u6E20\u9053", blank: "\u672A\u586B" },
     { key: "source", type: "text", ph: "\u6765\u6E90\u8BCD" },
+    { key: "site_name", type: "select", ph: "\u7AD9\u70B9", blank: "\u672A\u6807\u6CE8" },
+    // 多站点：从哪个网站来的（后端按 site_id 带出名字）
     { key: "product", type: "select", ph: "\u4EA7\u54C1", blank: "\u672A\u586B", catalog: PRODUCT_NAMES },
     { key: "grade", type: "select", ph: "\u7B49\u7EA7" },
     { key: "company", type: "select", ph: "\u516C\u53F8", blank: "\u672A\u6807\u6CE8" },
@@ -3495,12 +4189,12 @@
       }
       const cur = FILTERS[col.key] || "";
       if (col.type === "text")
-        return `<td><input type="search" class="inq-f-input" data-inq-filter="${col.key}" placeholder="${esc2(col.ph)}" value="${esc2(cur)}"></td>`;
+        return `<td><input type="search" class="inq-f-input" data-inq-filter="${esc(col.key)}" placeholder="${esc(col.ph)}" value="${esc(cur)}"></td>`;
       const opts = col.type === "has" ? [{ value: "\u6709", label: "\u6709\u53CD\u9988" }, { value: "\u65E0", label: "\u65E0\u53CD\u9988" }] : optionsFor(col);
-      return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${col.key}"><option value="">${esc2(col.ph)}</option>` + opts.map((o) => `<option value="${esc2(o.value)}"${o.value === cur ? " selected" : ""}>${esc2(o.label)}</option>`).join("") + "</select></td>";
+      return `<td class="ctr"><select class="inq-f-select${cur ? " on" : ""}" data-inq-filter="${esc(col.key)}"><option value="">${esc(col.ph)}</option>` + opts.map((o) => `<option value="${esc(o.value)}"${o.value === cur ? " selected" : ""}>${esc(o.label)}</option>`).join("") + "</select></td>";
     }).join("");
-    row.querySelectorAll("[data-inq-filter]").forEach((el) => {
-      el.value = FILTERS[el.dataset.inqFilter] || "";
+    row.querySelectorAll("[data-inq-filter]").forEach((el5) => {
+      el5.value = FILTERS[el5.dataset.inqFilter] || "";
     });
   }
   function syncClearBadge() {
@@ -3511,14 +4205,14 @@
     btn.innerHTML = '<i class="ti ti-filter-off"></i>' + (n ? " " + n : "");
   }
   function renderInqSummary(total, shown) {
-    const el = document.getElementById("inqSummary");
-    if (!el) return;
+    const el5 = document.getElementById("inqSummary");
+    if (!el5) return;
     const n = activeFilterCount();
     if (!n) {
-      el.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
+      el5.innerHTML = `<span class="dim">\u5171 ${total} \u6761\u8BE2\u76D8</span>`;
       return;
     }
-    el.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
+    el5.innerHTML = `<span class="inq-filtered"><i class="ti ti-filter"></i> \u5DF2\u7B5B\u9009 <b>${shown}</b> / ${total} \u6761</span><button type="button" class="inq-f-clear-link" data-inq-clear>\u6E05\u7A7A\u7B5B\u9009</button>`;
   }
   function pageNumbers(page, pages) {
     if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
@@ -3539,20 +4233,20 @@
     return out;
   }
   function renderInqPager(total, pages, from, to) {
-    const el = document.getElementById("inqPager");
-    if (!el) return;
+    const el5 = document.getElementById("inqPager");
+    if (!el5) return;
     if (!total) {
-      el.innerHTML = "";
+      el5.innerHTML = "";
       return;
     }
-    const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${n}">${n}</button>`).join("");
-    el.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${_page + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
+    const nums = pageNumbers(_page, pages).map((n) => n === "\u2026" ? '<span class="pg-gap">\u2026</span>' : `<button type="button" class="pg-num${n === _page ? " on" : ""}" data-inq-page="${esc(n)}">${esc(n)}</button>`).join("");
+    el5.innerHTML = `<span class="pg-info">\u7B2C ${from}-${to} \u6761 \xB7 \u5171 ${total} \u6761 \xB7 ${pages} \u9875</span><span class="pg-mid"><button type="button" class="pg-num" data-inq-page="${_page - 1}"${_page <= 1 ? " disabled" : ""}><i class="ti ti-chevron-left"></i></button>` + nums + `<button type="button" class="pg-num" data-inq-page="${Number(_page) + 1}"${_page >= pages ? " disabled" : ""}><i class="ti ti-chevron-right"></i></button></span><span class="pg-size">\u6BCF\u9875 <select data-inq-size>` + PAGE_SIZES.map((n) => `<option value="${n}"${n === _pageSize ? " selected" : ""}>${n}</option>`).join("") + `</select> \u6761</span>`;
   }
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".inq-tb .inq-del");
     if (!btn) return;
-    const tr = btn.closest("tr");
-    const id = tr && tr.dataset.id;
+    const tr2 = btn.closest("tr");
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
     try {
@@ -3567,7 +4261,7 @@
       }
       toast2("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5F52\u6863\u5230\u300C\u5F52\u6863\u300D\u9875");
     } catch (err) {
-      toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   });
   document.addEventListener("cellsaved", (e) => {
@@ -3583,12 +4277,41 @@
     else it[d.field] = d.value;
   });
   document.addEventListener("salesnoteschanged", () => renderInqTable());
+  document.addEventListener("inqsourcechanged", (e) => {
+    if (e.detail && e.detail.saved) renderInqFilterRow();
+    renderInqTable();
+  });
+  document.addEventListener("attributionchanged", () => loadInquiries());
+  var pendingLead = null;
+  document.addEventListener("leadconvert", (e) => {
+    const d = e.detail || {};
+    const lead = d.lead;
+    if (!lead) return;
+    openInquiry();
+    pendingLead = lead;
+    document.getElementById("f-site-fld").classList.add("is-hidden");
+    const set = (id, v) => {
+      const el5 = document.getElementById(id);
+      if (el5 && v != null && v !== "") el5.value = v;
+    };
+    set("f-date", d.date);
+    set("f-country", lead.country);
+    set("f-channel", lead.suggested_channel);
+    set("f-source", lead.keyword || lead.utm_term);
+    if (PRODUCT_NAMES.includes(lead.product)) set("f-product", lead.product);
+    set("f-note", [lead.contact_company, (lead.message || "").slice(0, 300)].filter(Boolean).join(" \xB7 "));
+    const banner = document.getElementById("inq-lead-banner");
+    if (banner) {
+      banner.textContent = "\u6765\u81EA\u8868\u5355\u7EBF\u7D22 #" + lead.id + "\uFF1A\u7CFB\u5217\u3001\u5173\u952E\u8BCD\u3001\u843D\u5730\u9875\u7B49\u6765\u6E90\u4F1A\u6309\u7EBF\u7D22\u81EA\u52A8\u5E26\u5165\u5E76\u9501\u5B9A\uFF0C\u4E0D\u7528\u624B\u586B\u3002\u8BF7\u6838\u5BF9\u5185\u5BB9\u5E76\u8BC4\u7EA7\u3002";
+      banner.classList.remove("is-hidden");
+    }
+  });
   function absorbEditedCells(tb) {
     tb.querySelectorAll("tr[data-id] td[contenteditable][data-field]").forEach((td2) => {
       const now = td2.innerText.trim();
       if (td2._old == null || String(td2._old).trim() === now) return;
-      const tr = td2.closest("tr");
-      const it = (window._inqCache || []).find((x) => String(x.id) === String(tr.dataset.id));
+      const tr2 = td2.closest("tr");
+      const it = (window._inqCache || []).find((x) => String(x.id) === String(tr2.dataset.id));
       if (it) it[td2.dataset.field] = now;
     });
   }
@@ -3625,18 +4348,18 @@
         const sep = document.createElement("tr");
         sep.className = "inq-msep";
         sep.dataset.month = ym;
-        sep.innerHTML = `<td colspan="${COLSPAN}"><i class="ti ti-calendar-month hicon"></i> ${esc2(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
+        sep.innerHTML = `<td colspan="${COLSPAN}"><i class="ti ti-calendar-month hicon"></i> ${esc(monthLabel(ym))} <span class="dim csp-s-8bde36d0d6">\xB7 ${n} \u6761</span></td>`;
         tb.appendChild(sep);
       }
-      const tr = document.createElement("tr");
-      tr.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
-      tr.dataset.month = ym;
+      const tr2 = document.createElement("tr");
+      tr2.className = "inq-mrow" + (isUpgraded(r) ? " inq-upgraded" : "");
+      tr2.dataset.month = ym;
       if (r.id) {
-        tr.dataset.id = r.id;
-        tr.dataset.ep = "/api/inquiries";
+        tr2.dataset.id = r.id;
+        tr2.dataset.ep = "/api/inquiries";
       }
-      tr.innerHTML = inqRowHtml(r);
-      tb.appendChild(tr);
+      tr2.innerHTML = inqRowHtml(r);
+      tb.appendChild(tr2);
     });
     renderInqPager(rows2.length, pages, start + 1, start + slice.length);
   }
@@ -3652,9 +4375,9 @@
     }
   }
   document.addEventListener("input", (e) => {
-    const el = e.target.closest("#inqFilterRow input[data-inq-filter]");
-    if (!el) return;
-    FILTERS[el.dataset.inqFilter] = el.value.trim();
+    const el5 = e.target.closest("#inqFilterRow input[data-inq-filter]");
+    if (!el5) return;
+    FILTERS[el5.dataset.inqFilter] = el5.value.trim();
     afterFilterChange(false);
   });
   document.addEventListener("change", (e) => {
@@ -3701,13 +4424,15 @@
   async function loadInquiries() {
     const requestId = ++inquiryRequestSequence;
     const revision = getRangeRevision("inquiry");
+    loadKpiInqDonuts();
     try {
-      const { items, stats } = await API.get(withRange2("/api/inquiries", "inquiry"));
+      const { items, stats } = await fetchInquiries("inquiry");
       if (requestId !== inquiryRequestSequence || revision !== getRangeRevision("inquiry")) return;
       window._inqCache = items || [];
       renderInqList();
       refreshInqStats(stats);
-      loadKpiInqDonuts();
+      loadAttrCoverage();
+      loadSourceChecks();
       if (window._curTab === "inquiry") {
         try {
           renderGlobe();
@@ -3773,7 +4498,7 @@
       const kind = ts.dataset.kind;
       const opts = OPT[kind] || [];
       const r = ts.getBoundingClientRect();
-      menu.innerHTML = opts.map((o) => `<div class="opt" data-v="${o[0]}" data-c="${o[1]}"><span class="badge ${o[1]}">${o[0]}</span></div>`).join("");
+      menu.innerHTML = opts.map((o) => `<div class="opt" data-v="${esc(o[0])}" data-c="${esc(o[1])}"><span class="badge ${esc(o[1])}">${esc(o[0])}</span></div>`).join("");
       menu.style.display = "flex";
       menu.style.left = Math.min(r.left, window.innerWidth - 160) + "px";
       menu.style.top = r.bottom + 4 + "px";
@@ -3783,7 +4508,7 @@
       const o = e.target.closest(".opt");
       if (o && curSel) {
         curSel.className = "tagselect " + o.dataset.c;
-        curSel.innerHTML = o.dataset.v + '<i class="ti ti-chevron-down"></i>';
+        curSel.innerHTML = esc(o.dataset.v) + '<i class="ti ti-chevron-down"></i>';
         persistTagChange(curSel, o.dataset.v);
       }
       menu.style.display = "none";
@@ -3791,12 +4516,12 @@
     }
     menu.style.display = "none";
   });
-  async function persistTagChange(el, value) {
-    const kind = el.dataset.kind;
-    const tr = el.closest("tr");
-    const id = tr && tr.dataset.id;
+  async function persistTagChange(el5, value) {
+    const kind = el5.dataset.kind;
+    const tr2 = el5.closest("tr");
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
-    if (tr.dataset.kwType) {
+    if (tr2.dataset.kwType) {
       const attrKey = { comp: "comp", optstatus: "optstatus", match: "match", priority: "priority", intent: "searchIntent" }[kind];
       if (!attrKey) return;
       try {
@@ -3806,7 +4531,7 @@
       }
       return;
     }
-    const ep = tr.dataset.ep;
+    const ep = tr2.dataset.ep;
     if (!ep) return;
     const fieldMap = {
       negmatch: "match_type",
@@ -3829,33 +4554,35 @@
       product: "product",
       channel: "channel"
     };
-    const field2 = fieldMap[kind];
-    if (!field2) return;
+    const field3 = fieldMap[kind];
+    if (!field3) return;
     try {
-      await API.patch(ep + "/" + id, { [field2]: value });
+      await API.patch(ep + "/" + id, { [field3]: value });
       if (ep === "/api/inquiries") {
         const it = (window._inqCache || []).find((x) => String(x.id) === String(id));
         if (it) {
-          it[field2] = value;
-          if (field2 === "grade" && tr) {
-            tr.querySelectorAll("td[contenteditable][data-field]").forEach((td2) => {
+          it[field3] = value;
+          if (field3 === "channel" || field3 === "grade") it.attr_change_count = (Number(it.attr_change_count) || 0) + 1;
+          if ((field3 === "grade" || field3 === "channel") && tr2) {
+            tr2.querySelectorAll("td[contenteditable][data-field]").forEach((td2) => {
               it[td2.dataset.field] = td2.innerText.trim();
             });
-            tr.innerHTML = inqRowHtml(it);
-            tr.classList.toggle("inq-upgraded", isUpgraded(it));
+            tr2.innerHTML = inqRowHtml(it);
+            tr2.classList.toggle("inq-upgraded", isUpgraded(it));
           }
         }
       }
-      if (ep === "/api/loop-items" && kind === "status" && value === "\u5DF2\u5B8C\u6210" && (tr.querySelector('[data-field="content"]') || {}).innerText) {
-        const dept = tr.querySelector('[data-kind="dept"]');
-        const isSem = tr.closest("#tb-plan-sem") != null;
+      if (ep === "/api/loop-items" && kind === "status" && value === "\u5DF2\u5B8C\u6210" && (tr2.querySelector('[data-field="content"]') || {}).innerText) {
+        const dept = tr2.querySelector('[data-kind="dept"]');
+        const isSem = tr2.closest("#tb-plan-sem") != null;
         const ak = isSem ? "sem" : "seo";
         await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
-        tr.remove();
+        tr2.remove();
         toast2("\u5DF2\u5B8C\u6210 \xB7 \u5DF2\u81EA\u52A8\u5F52\u6863");
       }
     } catch (err) {
-      toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      const code = err && err.body && err.body.error;
+      toast2(code === "attribution_locked" || code === "reason_required" ? err.message : err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
 
@@ -3880,62 +4607,62 @@
   }
   function kwRow(type, r) {
     const a = r.attrs || {};
-    const tr = document.createElement("tr");
-    tr.dataset.id = r.id;
-    tr.dataset.kwType = type;
-    tr.dataset.cat = r.category || "";
+    const tr2 = document.createElement("tr");
+    tr2.dataset.id = r.id;
+    tr2.dataset.kwType = type;
+    tr2.dataset.cat = r.category || "";
     const aiBtn = '<button class="btn-mini kw-ai"><i class="ti ti-bulb"></i> \u5206\u6790\u610F\u56FE</button>';
     const del = '<button class="btn-mini kw-del csp-s-7ee38adc7c" title="\u5220\u9664"><i class="ti ti-trash"></i></button>';
     const ev = (v) => v == null ? "" : v;
-    const ed = (attr, val) => `<td class="editable" contenteditable data-attr="${attr}">${esc2(ev(val))}</td>`;
-    const ct = `<td class="dim csp-s-4a01f70563">${esc2((r.created_at || "").slice(0, 10))}</td>`;
+    const ed = (attr, val) => `<td class="editable" contenteditable data-attr="${attr}">${esc(ev(val))}</td>`;
+    const ct = `<td class="dim csp-s-4a01f70563">${esc((r.created_at || "").slice(0, 10))}</td>`;
     if (type === "seo") {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc2(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc2(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc2(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr2.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td>` + ed("gradeText", a.gradeText) + ed("volume", a.volume) + ed("gscRank", a.gscRank) + ed("landing", a.landing) + ed("spark", a.spark) + `<td class="ctr"><span class="tagselect ${clsOf("comp", a.comp)}" data-kind="comp">${esc(a.comp || "\u4E2D (30-60)")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("optstatus", a.optstatus)}" data-kind="optstatus">${esc(a.optstatus || "\u4F18\u5316\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
     } else if (type === "sem") {
-      tr.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc2(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc2(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc2(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc2(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr2.innerHTML = ct + `<td class="editable" contenteditable data-cat="1">${esc(r.category || "")}</td><td class="editable kw-name" contenteditable>${esc(r.keyword)}</td><td class="ctr"><span class="tagselect ${clsOf("intent", a.searchIntent)}" data-kind="intent">${esc(a.searchIntent || "\u9009\u610F\u56FE")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${clsOf("match", a.match)}" data-kind="match">${esc(a.match || "\u8BCD\u7EC4\u5339\u914D")}<i class="ti ti-chevron-down"></i></span></td>` + ed("landing", a.landing) + `<td class="ctr"><span class="tagselect ${clsOf("priority", a.priority)}" data-kind="priority">${esc(a.priority || "\u9AD8")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr">${aiBtn} ${del}</td>`;
     } else if (type === "high") {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
+      tr2.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("ktype", a.ktype) + ed("channel", a.channel) + ed("inquiry", a.inquiry) + ed("gradeText", a.gradeText) + `<td class="ctr">${aiBtn} ${del}</td>`;
     } else {
-      tr.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc2(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr kw-sales">${kwSalesCellHtml(r)}</td><td class="ctr">${aiBtn} ${del}</td>`;
-      tr._kwImages = Array.isArray(r.images) ? r.images.slice() : [];
+      tr2.innerHTML = ct + `<td class="editable kw-name" contenteditable>${esc(r.keyword)}</td>` + ed("sourceCustomer", a.sourceCustomer) + ed("mapped", a.mapped) + `<td class="ctr kw-sales">${kwSalesCellHtml(r)}</td><td class="ctr">${aiBtn} ${del}</td>`;
+      tr2._kwImages = Array.isArray(r.images) ? r.images.slice() : [];
     }
-    return tr;
+    return tr2;
   }
   function kwSalesCellHtml(r) {
     const imgs = Array.isArray(r.images) ? r.images : [];
     return thumbsHtml(imgs, { deletable: true }) + `<button type="button" class="btn-mini kw-img-add" title="\u4E0A\u4F20\u4E1A\u52A1\u53D1\u6765\u7684\u56FE\u7247"><i class="ti ti-photo-plus"></i> ${imgs.length ? "\u52A0\u56FE" : "\u4F20\u56FE"}</button>`;
   }
-  function kwRowRecord(tr) {
-    if (!tr._kwImages) tr._kwImages = [];
-    return tr._kwImages;
+  function kwRowRecord(tr2) {
+    if (!tr2._kwImages) tr2._kwImages = [];
+    return tr2._kwImages;
   }
-  function repaintKwSales(tr) {
-    const cell3 = tr.querySelector(".kw-sales");
+  function repaintKwSales(tr2) {
+    const cell3 = tr2.querySelector(".kw-sales");
     if (!cell3) return;
-    cell3.innerHTML = kwSalesCellHtml({ images: kwRowRecord(tr) });
+    cell3.innerHTML = kwSalesCellHtml({ images: kwRowRecord(tr2) });
   }
   document.addEventListener("click", async (e) => {
     const add = e.target.closest("#tb-kw-cust .kw-img-add");
     if (add) {
-      const tr = add.closest("tr");
-      if (!tr || !tr.dataset.id) return;
-      const done = await pickAndUpload(KEYWORD_OWNER, tr.dataset.id, { multiple: true });
+      const tr2 = add.closest("tr");
+      if (!tr2 || !tr2.dataset.id) return;
+      const done = await pickAndUpload(KEYWORD_OWNER, tr2.dataset.id, { multiple: true });
       if (done.length) {
-        tr._kwImages = kwRowRecord(tr).concat(done);
-        repaintKwSales(tr);
+        tr2._kwImages = kwRowRecord(tr2).concat(done);
+        repaintKwSales(tr2);
       }
       return;
     }
     const del = e.target.closest("#tb-kw-cust [data-att-del]");
     if (del) {
-      const tr = del.closest("tr");
-      if (!tr) return;
+      const tr2 = del.closest("tr");
+      if (!tr2) return;
       if (!inlineConfirm(del, "\u786E\u8BA4")) return;
       const id = del.dataset.attDel;
       try {
         await deleteImage(id);
-        tr._kwImages = kwRowRecord(tr).filter((im) => String(im.id) !== String(id));
-        repaintKwSales(tr);
+        tr2._kwImages = kwRowRecord(tr2).filter((im) => String(im.id) !== String(id));
+        repaintKwSales(tr2);
         toast2("\u5DF2\u5220\u9664\u8FD9\u5F20\u56FE");
       } catch (err) {
         toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
@@ -3958,19 +4685,19 @@
   document.addEventListener("focusout", async (e) => {
     const c = e.target.closest && e.target.closest("#panel-keywords td[contenteditable][data-attr],#panel-keywords td[contenteditable][data-cat]");
     if (!c) return;
-    const tr = c.closest("tr");
-    if (!tr || !tr.dataset.id) return;
+    const tr2 = c.closest("tr");
+    if (!tr2 || !tr2.dataset.id) return;
     const val = c.innerText.trim();
     const oldVal = c._old != null ? c._old : c.innerText;
     if (val === String(oldVal).trim()) return;
     const isCat = c.dataset.cat != null;
     const body = isCat ? { category: val } : { attrs: { [c.dataset.attr]: val } };
     try {
-      await API.patch("/api/keywords/" + tr.dataset.id, body);
+      await API.patch("/api/keywords/" + tr2.dataset.id, body);
       c._old = val;
       if (isCat) {
-        tr.dataset.cat = val;
-        renderCatTabs(tr.dataset.kwType);
+        tr2.dataset.cat = val;
+        renderCatTabs(tr2.dataset.kwType);
       }
     } catch (err) {
       rollbackEditable(c, oldVal);
@@ -3984,8 +4711,8 @@
     const tb = document.getElementById(KW_TB[type]);
     if (!box || !tb) return;
     const active = (box.querySelector(".cat-tab.active") || {}).textContent;
-    const cats = [...new Set([...tb.querySelectorAll("tr")].map((tr) => tr.dataset.cat).filter(Boolean))];
-    box.innerHTML = '<span class="cat-tab cat-all">\u5168\u90E8</span>' + cats.map((c) => `<span class="cat-tab">${esc2(c)}</span>`).join("") + '<span class="cat-tab add"><i class="ti ti-plus"></i> \u65B0\u5EFA\u5206\u7C7B</span>';
+    const cats = [...new Set([...tb.querySelectorAll("tr")].map((tr2) => tr2.dataset.cat).filter(Boolean))];
+    box.innerHTML = '<span class="cat-tab cat-all">\u5168\u90E8</span>' + cats.map((c) => `<span class="cat-tab">${esc(c)}</span>`).join("") + '<span class="cat-tab add"><i class="ti ti-plus"></i> \u65B0\u5EFA\u5206\u7C7B</span>';
     const keep = [...box.querySelectorAll(".cat-tab")].find((x) => x.textContent.trim() === (active || "").trim()) || box.querySelector(".cat-all");
     keep.classList.add("active");
     filterKwByCat(type, keep.classList.contains("cat-all") ? null : keep.textContent.trim());
@@ -3999,37 +4726,37 @@
     if (!tb) return;
     const cat = type === "seo" || type === "sem" ? activeCat(type) : null;
     const all = [...tb.querySelectorAll("tr")];
-    const rows2 = all.filter((tr) => !cat || tr.dataset.cat === cat);
+    const rows2 = all.filter((tr2) => !cat || tr2.dataset.cat === cat);
     const size = _kwSize[type] || 20, total = rows2.length, pages = Math.max(1, Math.ceil(total / size));
     let p = _kwPage[type] || 0;
     if (p > pages - 1) p = pages - 1;
     if (p < 0) p = 0;
     _kwPage[type] = p;
-    all.forEach((tr) => tr.style.display = "none");
-    rows2.slice(p * size, (p + 1) * size).forEach((tr) => tr.style.display = "");
+    all.forEach((tr2) => tr2.style.display = "none");
+    rows2.slice(p * size, (p + 1) * size).forEach((tr2) => tr2.style.display = "");
     renderKwPager(type, p, pages, total);
   }
   function renderKwPager(type, p, pages, total) {
     const tb = document.getElementById(KW_TB[type]);
     if (!tb) return;
-    const card = tb.closest(".card") || (tb.closest("table") || {}).parentNode;
-    if (!card) return;
-    let pg = card.querySelector(".kw-pager");
+    const card2 = tb.closest(".card") || (tb.closest("table") || {}).parentNode;
+    if (!card2) return;
+    let pg = card2.querySelector(".kw-pager");
     if (!pg) {
       pg = document.createElement("div");
       pg.className = "kw-pager";
-      card.appendChild(pg);
+      card2.appendChild(pg);
     }
-    const sizeSel = `<select class="kw-pg-size" data-kwsize="${type}" title="\u6BCF\u9875\u6761\u6570">${KW_PAGE_OPTS.map((n) => `<option value="${n}"${n === _kwSize[type] ? " selected" : ""}>${n}/\u9875</option>`).join("")}</select>`;
+    const sizeSel = `<select class="kw-pg-size" data-kwsize="${esc(type)}" title="\u6BCF\u9875\u6761\u6570">${KW_PAGE_OPTS.map((n) => `<option value="${n}"${n === _kwSize[type] ? " selected" : ""}>${n}/\u9875</option>`).join("")}</select>`;
     if (pages <= 1) {
       pg.innerHTML = (total ? `<span class="kw-pg-info">\u5171 ${total} \u6761</span>` : '<span class="kw-pg-info">\u6682\u65E0\u6570\u636E</span>') + sizeSel;
       return;
     }
     let btns = "";
     for (let i = 0; i < pages; i++) {
-      btns += `<button class="kw-pg${i === p ? " active" : ""}" data-kwpg="${type}" data-pg="${i}">${i + 1}</button>`;
+      btns += `<button class="kw-pg${i === p ? " active" : ""}" data-kwpg="${esc(type)}" data-pg="${i}">${i + 1}</button>`;
     }
-    pg.innerHTML = `<button class="kw-pg" data-kwpg="${type}" data-pg="${p - 1}"${p === 0 ? " disabled" : ""}>\u2039</button>${btns}<button class="kw-pg" data-kwpg="${type}" data-pg="${p + 1}"${p === pages - 1 ? " disabled" : ""}>\u203A</button><span class="kw-pg-info">\u5171 ${total} \u6761 \xB7 \u7B2C ${p + 1}/${pages} \u9875</span>${sizeSel}`;
+    pg.innerHTML = `<button class="kw-pg" data-kwpg="${esc(type)}" data-pg="${p - 1}"${p === 0 ? " disabled" : ""}>\u2039</button>${btns}<button class="kw-pg" data-kwpg="${esc(type)}" data-pg="${p + 1}"${p === pages - 1 ? " disabled" : ""}>\u203A</button><span class="kw-pg-info">\u5171 ${total} \u6761 \xB7 \u7B2C ${p + 1}/${pages} \u9875</span>${sizeSel}`;
   }
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-kwpg]");
@@ -4094,13 +4821,13 @@
       const { item } = await API.post("/api/keywords", { type, keyword: "\u65B0\u5173\u952E\u8BCD", attrs: {}, category });
       const tb = document.getElementById(KW_TB[type]);
       if (tb) {
-        const tr = kwRow(type, item);
-        tb.appendChild(tr);
+        const tr2 = kwRow(type, item);
+        tb.appendChild(tr2);
         renderSparklines();
         if (type === "seo" || type === "sem") renderCatTabs(type);
         _kwPage[type] = 1e9;
         applyKwPaging(type);
-        const c = tr.querySelector(".kw-name");
+        const c = tr2.querySelector(".kw-name");
         if (c) {
           c.focus();
           placeCaretEnd(c);
@@ -4132,8 +4859,8 @@
     }, 3e3);
     return false;
   }
-  async function kwDelete(tr, btn) {
-    if (!tr || !tr.dataset.id) return;
+  async function kwDelete(tr2, btn) {
+    if (!tr2 || !tr2.dataset.id) return;
     if (btn && btn.dataset.confirm !== "1") {
       btn.dataset.confirm = "1";
       if (!btn.dataset.old) btn.dataset.old = btn.innerHTML;
@@ -4149,9 +4876,9 @@
     }
     if (btn) clearTimeout(btn._t);
     try {
-      const type = tr.dataset.kwType;
-      await API.del("/api/keywords/" + tr.dataset.id);
-      tr.remove();
+      const type = tr2.dataset.kwType;
+      await API.del("/api/keywords/" + tr2.dataset.id);
+      tr2.remove();
       if (type === "seo" || type === "sem") renderCatTabs(type);
       else applyKwPaging(type);
       toast2("\u5DF2\u5220\u9664 \xB7 \u5DF2\u5165\u5E93");
@@ -4167,9 +4894,9 @@
   document.addEventListener("click", (e) => {
     const ai = e.target.closest(".kw-ai");
     if (ai) {
-      const tr = ai.closest("tr");
-      const n = tr.querySelector(".kw-name");
-      const kw = (n ? n.textContent : tr.cells[0].textContent).trim();
+      const tr2 = ai.closest("tr");
+      const n = tr2.querySelector(".kw-name");
+      const kw = (n ? n.textContent : tr2.cells[0].textContent).trim();
       runAiAnalysis(ai, "\u5206\u6790\u5173\u952E\u8BCD\u300C" + kw + "\u300D\u7684\u641C\u7D22\u610F\u56FE\u4E0E\u843D\u5730\u5EFA\u8BAE", "\u300C" + kw + "\u300D\u610F\u56FE", false);
       return;
     }
@@ -4195,8 +4922,8 @@
   document.addEventListener("focusout", async (e) => {
     const cell3 = e.target.closest && e.target.closest(".kw-name");
     if (!cell3) return;
-    const tr = cell3.closest("tr");
-    if (!tr || !tr.dataset.id) return;
+    const tr2 = cell3.closest("tr");
+    if (!tr2 || !tr2.dataset.id) return;
     const oldVal = cell3.dataset.kwOld != null ? cell3.dataset.kwOld : cell3.textContent;
     const vr = validateEditableValue(cell3.textContent, "text", { nonempty: true, emptyMsg: "\u5173\u952E\u8BCD\u4E0D\u80FD\u4E3A\u7A7A" });
     if (!vr.ok) {
@@ -4212,7 +4939,7 @@
     }
     setSavingState(cell3, "saving");
     try {
-      await API.patch("/api/keywords/" + tr.dataset.id, { keyword: v });
+      await API.patch("/api/keywords/" + tr2.dataset.id, { keyword: v });
       cell3.textContent = v;
       cell3.dataset.kwOld = v;
       setSavingState(cell3, "ok");
@@ -4225,16 +4952,16 @@
   function renderSparklines() {
     document.querySelectorAll("[data-spark]").forEach((td2) => {
       const v = td2.dataset.spark.split(",").map(Number);
-      const w = 58, h = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
+      const w = 58, h4 = 18, max = Math.max(...v), min = Math.min(...v), rng = Math.max(max - min, 1);
       const pts = v.map((d, i) => {
         const x = i / (v.length - 1) * (w - 4) + 2;
-        const y = (d - min) / rng * (h - 6) + 3;
+        const y = (d - min) / rng * (h4 - 6) + 3;
         return x.toFixed(1) + "," + y.toFixed(1);
       }).join(" ");
       const up = v[v.length - 1] < v[0];
       const col = up ? "var(--green)" : v[v.length - 1] > v[0] ? "var(--primary)" : "var(--text3)";
-      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h - 6) + 3;
-      td2.innerHTML = `<svg class="spark" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
+      const last = v[v.length - 1], lx = w - 4 + 2, ly = (last - min) / rng * (h4 - 6) + 3;
+      td2.innerHTML = `<svg class="spark" width="${w}" height="${h4}"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2" fill="${col}"/></svg>`;
     });
   }
 
@@ -4347,10 +5074,10 @@
       const list = window._sops.filter((s) => s.dept === dept);
       anchor.innerHTML = '<div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>';
       if (!list.length) {
-        const empty = document.createElement("div");
-        empty.className = "sop-empty-hint";
-        empty.textContent = "\u6682\u65E0 SOP";
-        anchor.appendChild(empty);
+        const empty2 = document.createElement("div");
+        empty2.className = "sop-empty-hint";
+        empty2.textContent = "\u6682\u65E0 SOP";
+        anchor.appendChild(empty2);
         return;
       }
       const known = DEPT_TRACKS[dept] || [dept];
@@ -4369,7 +5096,7 @@
     const hit = weekly.filter(sopDone).length;
     const cap = document.createElement("div");
     cap.className = "sop-track-cap";
-    cap.innerHTML = `<span>${esc2(track)}</span>` + (weekly.length ? `<em class="${hit === weekly.length ? "ok" : ""}">\u672C\u5468\u671F ${hit}/${weekly.length} \u8FBE\u6807</em>` : "");
+    cap.innerHTML = `<span>${esc(track)}</span>` + (weekly.length ? `<em class="${hit === weekly.length ? "ok" : ""}">\u672C\u5468\u671F ${hit}/${weekly.length} \u8FBE\u6807</em>` : "");
     box.appendChild(cap);
     ["daily", "weekly", "monthly"].forEach((freq) => {
       const rows2 = items.filter((s) => s.freq === freq);
@@ -4393,11 +5120,11 @@
     row.className = "tcard sop-row" + (done ? " done" : "");
     row.dataset.sopId = s.id;
     row.dataset.sopFreq = s.freq;
-    const code = s.code ? `<b class="sop-code">${esc2(s.code)}</b> ` : "";
-    const hint = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(s.time_hint)}</span>` : "";
+    const code = s.code ? `<b class="sop-code">${esc(s.code)}</b> ` : "";
+    const hint = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
     const left = quota ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>` : logged ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}</span>` : `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span>`;
     const logBtn = logged ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> \u8BB0\u4E00\u6761</button>` : "";
-    row.innerHTML = left + `<span class="sop-text">${code}${esc2(s.title)}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u5B8C\u6210\u6807\u51C6"><i class="ti ti-info-circle"></i></button></span>`;
+    row.innerHTML = left + `<span class="sop-text">${code}${esc(s.title)}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u5B8C\u6210\u6807\u51C6"><i class="ti ti-info-circle"></i></button></span>`;
     if (quota) {
       const bar = document.createElement("div");
       bar.className = "sop-bar";
@@ -4423,7 +5150,7 @@
   function fieldEl(label, text2) {
     const d = document.createElement("div");
     d.className = "sop-field";
-    d.innerHTML = `<b>${esc2(label)}</b><span>${esc2(text2)}</span>`;
+    d.innerHTML = `<b>${esc(label)}</b><span>${esc(text2)}</span>`;
     return d;
   }
   function detailEl(s) {
@@ -4447,8 +5174,8 @@
         const li = document.createElement("div");
         li.className = "sop-log";
         li.dataset.logId = l.id;
-        const link = l.evidence_url ? `<a href="${esc2(l.evidence_url)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i></a>` : "";
-        li.innerHTML = `<em>${esc2((l.day_key || "").slice(5))}</em><span>${esc2(l.subject || l.detail || "\uFF08\u672A\u586B\u5BF9\u8C61\uFF09")}</span>` + (Number(l.qty) !== 1 ? `<b>\xD7${fmtQty(l.qty)}</b>` : "") + link + `<button type="button" class="btn-mini sop-log-del" title="\u64A4\u9500\u8FD9\u6761"><i class="ti ti-trash"></i></button>`;
+        const link = l.evidence_url ? `<a href="${esc(l.evidence_url)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i></a>` : "";
+        li.innerHTML = `<em>${esc((l.day_key || "").slice(5))}</em><span>${esc(l.subject || l.detail || "\uFF08\u672A\u586B\u5BF9\u8C61\uFF09")}</span>` + (Number(l.qty) !== 1 ? `<b>\xD7${fmtQty(l.qty)}</b>` : "") + link + `<button type="button" class="btn-mini sop-log-del" title="\u64A4\u9500\u8FD9\u6761"><i class="ti ti-trash"></i></button>`;
         box.appendChild(li);
       });
     }
@@ -4458,13 +5185,13 @@
   }
   function updateSopCounts() {
     [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
-      const el = document.getElementById("kcount-" + key);
-      if (!el) return;
+      const el5 = document.getElementById("kcount-" + key);
+      if (!el5) return;
       const cur = window._sops.filter((s) => s.dept === dept && s.freq !== "monthly");
       const hit = cur.filter(sopDone).length;
       const addCol = document.getElementById("newtask-" + key);
       const addN = addCol ? addCol.querySelectorAll(".tcard:not(.subtask)").length : 0;
-      el.textContent = "SOP " + hit + "/" + cur.length + " \xB7 " + verb + " " + addN;
+      el5.textContent = "SOP " + hit + "/" + cur.length + " \xB7 " + verb + " " + addN;
     });
   }
   function isSopWritable() {
@@ -4487,12 +5214,12 @@
     const e = document.getElementById("sop-empty");
     if (e) e.style.display = "none";
     list.forEach((s) => {
-      const tr = document.createElement("tr");
-      tr.dataset.sopId = s.id;
+      const tr2 = document.createElement("tr");
+      tr2.dataset.sopId = s.id;
       const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>` : '<span class="dim csp-s-33ee298127">\u53EA\u8BFB</span>';
       const target = hasQuota(s) ? fmtQty(s.target_qty) + (s.unit ? " " + s.unit : "") : "\u2014";
-      tr.innerHTML = `<td>${esc2(s.dept)}</td><td>${esc2(trackOf(s) || "")}</td><td>${esc2(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc2(s.code || "")}</td><td>${esc2(s.title)}</td><td>${esc2(target)}</td><td>${s.effort_h == null ? "" : esc2(fmtQty(s.effort_h))}</td><td class="dim csp-s-33ee298127">${esc2(s.done_when || s.content || "")}</td><td>${esc2(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
-      tb.appendChild(tr);
+      tr2.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(trackOf(s) || "")}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.code || "")}</td><td>${esc(s.title)}</td><td>${esc(target)}</td><td>${s.effort_h == null ? "" : esc(fmtQty(s.effort_h))}</td><td class="dim csp-s-33ee298127">${esc(s.done_when || s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
+      tb.appendChild(tr2);
     });
   }
   var _sopEditing = null;
@@ -4506,8 +5233,8 @@
     document.getElementById("sop-dept").value = sop ? sop.dept : "SEM";
     document.getElementById("sop-freq").value = sop ? sop.freq : "daily";
     const set = (id, v) => {
-      const el = document.getElementById(id);
-      if (el) el.value = v == null ? "" : v;
+      const el5 = document.getElementById(id);
+      if (el5) el5.value = v == null ? "" : v;
     };
     set("sop-title", sop ? sop.title : "");
     set("sop-track", sop ? sop.track || "" : "");
@@ -4575,8 +5302,8 @@
     const edit = e.target.closest(".sop-edit");
     const del = e.target.closest(".sop-del");
     if (!edit && !del) return;
-    const tr = (edit || del).closest("tr");
-    const id = tr && tr.dataset.sopId;
+    const tr2 = (edit || del).closest("tr");
+    const id = tr2 && tr2.dataset.sopId;
     if (!id) return;
     if (edit) {
       const s = window._sops.find((x) => String(x.id) === String(id));
@@ -4596,8 +5323,8 @@
   });
   function isOverduePeriodFirstDay(freq) {
     const now = /* @__PURE__ */ new Date();
-    const h = now.getHours();
-    if (h < 8) return false;
+    const h4 = now.getHours();
+    if (h4 < 8) return false;
     if (freq === "daily") return true;
     if (freq === "weekly") return now.getDay() === 1;
     if (freq === "monthly") return now.getDate() === 1;
@@ -4612,7 +5339,7 @@
         if (s.freq !== freq) return;
         if (sopDone(s)) return;
         const gap = hasQuota(s) ? "\uFF0C\u8FD8\u5DEE " + fmtQty(Number(s.target_qty) - doneQty(s)) + (s.unit ? " " + s.unit : "") : "";
-        lines.push(esc2(trackOf(s)) + "-" + today3 + "-" + esc2(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc2(s.title) + " \u672A\u8FBE\u6807" + esc2(gap) + "\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
+        lines.push(esc(trackOf(s)) + "-" + today3 + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u672A\u8FBE\u6807" + esc(gap) + "\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
       });
     });
     return lines;
@@ -4657,8 +5384,8 @@
     }
     box.style.display = "flex";
     list.innerHTML = arr.map((it) => {
-      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc2(it.task_date) + "\uFF09" : "";
-      return "<div>" + esc2(it.content || "") + due + "</div>";
+      const due = it.task_date ? "\uFF08\u622A\u6B62 " + esc(it.task_date) + "\uFF09" : "";
+      return "<div>" + esc(it.content || "") + due + "</div>";
     }).join("");
   }
   function refreshNavTaskDot() {
@@ -4703,12 +5430,12 @@
   function openSopLogModal(s) {
     _sopLogging = s;
     const set = (id, v) => {
-      const el = document.getElementById(id);
-      if (el) el.value = v;
+      const el5 = document.getElementById(id);
+      if (el5) el5.value = v;
     };
     const txt = (id, v) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = v;
+      const el5 = document.getElementById(id);
+      if (el5) el5.textContent = v;
     };
     txt("soplog-title", (s.code ? s.code + " \xB7 " : "") + s.title);
     txt("soplog-standard", s.done_when || s.content || "");
@@ -4778,10 +5505,10 @@
   function prioFlagHtml(p, { action = "task-prio", title = "\u8BBE\u4F18\u5148\u7EA7" } = {}) {
     const v = normPrio(p);
     const meta = PRIOS[v - 1];
-    return `<span class="tprio ${meta.cls}${v === 4 ? " tprio-none" : ""}" data-loop-action="${action}" data-v="${v}" title="${esc2(title)}\uFF1A${meta.label}"><i class="ti ti-flag${v === 4 ? "" : "-filled"}"></i></span>`;
+    return `<span class="tprio ${esc(meta.cls)}${v === 4 ? " tprio-none" : ""}" data-loop-action="${esc(action)}" data-v="${v}" title="${esc(title)}\uFF1A${esc(meta.label)}"><i class="ti ti-flag${v === 4 ? "" : "-filled"}"></i></span>`;
   }
-  function hourToMin(h) {
-    const t = String(h || "").trim();
+  function hourToMin(h4) {
+    const t = String(h4 || "").trim();
     if (!t) return null;
     const m = t.match(/^(\d{1,2})(?::(\d{2}))?$/);
     if (!m) return null;
@@ -4790,8 +5517,8 @@
     if (!(hh >= 0 && hh <= 23) || !(mm >= 0 && mm <= 59)) return null;
     return hh * 60 + mm;
   }
-  function fmtHour(h) {
-    const min = hourToMin(h);
+  function fmtHour(h4) {
+    const min = hourToMin(h4);
     if (min == null) return "";
     return String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0");
   }
@@ -4833,30 +5560,30 @@
     _onClose = null;
     if (cb) cb();
   }
-  function openPop(anchor, html, onClick, onClose) {
-    const h = host();
+  function openPop(anchor, html, onClick2, onClose) {
+    const h4 = host();
     _onClose = onClose || null;
     _openedAt = Date.now();
-    h.innerHTML = html;
-    h.style.left = "0px";
-    h.style.top = "0px";
-    h.hidden = false;
+    h4.innerHTML = html;
+    h4.style.left = "0px";
+    h4.style.top = "0px";
+    h4.hidden = false;
     const r = anchor.getBoundingClientRect();
-    const w = h.offsetWidth, ht = h.offsetHeight;
+    const w = h4.offsetWidth, ht = h4.offsetHeight;
     let left = r.left;
     if (left + w > window.innerWidth - 8) left = window.innerWidth - w - 8;
     let top = r.bottom + 6;
     if (top + ht > window.innerHeight - 8) top = r.top - ht - 6;
     const fit = (v, size, max) => Math.min(Math.max(8, v), Math.max(8, max - size - 8));
-    h.style.left = fit(left, w, window.innerWidth) + "px";
-    h.style.top = fit(top, ht, window.innerHeight) + "px";
-    h.onclick = (e) => {
+    h4.style.left = fit(left, w, window.innerWidth) + "px";
+    h4.style.top = fit(top, ht, window.innerHeight) + "px";
+    h4.onclick = (e) => {
       const hit = e.target.closest("[data-pop]");
       if (!hit) return;
       e.stopPropagation();
-      onClick(hit.dataset.pop, hit.dataset.v || "", hit);
+      onClick2(hit.dataset.pop, hit.dataset.v || "", hit);
     };
-    return h;
+    return h4;
   }
   function openPrioPop(anchor, cur, onPick) {
     const v = normPrio(cur);
@@ -4915,28 +5642,28 @@
     let date = state2.date || "";
     let hour = state2.hour || "";
     let mode = "date";
-    const render5 = () => {
+    const render10 = () => {
       if (mode === "time") {
-        const opts = TIME_OPTS.map((t) => `<div class="tpop-opt${t === fmtHour(hour) ? " on" : ""}" data-pop="h" data-v="${t}">${t}</div>`).join("");
+        const opts = TIME_OPTS.map((t) => `<div class="tpop-opt${t === fmtHour(hour) ? " on" : ""}" data-pop="h" data-v="${esc(t)}">${esc(t)}</div>`).join("");
         return `<div class="tpop-head"><button type="button" class="tpop-back" data-pop="back"><i class="ti ti-chevron-left"></i> \u8FD4\u56DE</button><button type="button" class="tpop-clear" data-pop="hclear">\u6E05\u9664\u65F6\u523B</button></div><div class="tpop-times">${opts}</div>`;
       }
       const sel = parseYmd(date);
       const title = date ? cnDate(sel) + " " + WD[sel.getDay()] : "\u672A\u8BBE\u65E5\u671F";
-      const quick = quickRows(today3).map((q) => `<div class="tpop-opt" data-pop="${q.k}" data-v="${q.v}"><i class="ti ${q.icon}"></i><span>${q.label}</span><em>${esc2(q.hint)}</em></div>`).join("");
+      const quick = quickRows(today3).map((q) => `<div class="tpop-opt" data-pop="${esc(q.k)}" data-v="${esc(q.v)}"><i class="ti ${esc(q.icon)}"></i><span>${esc(q.label)}</span><em>${esc(q.hint)}</em></div>`).join("");
       const m1 = monthHtml(sel || today3, date, today3);
       const m2 = monthHtml(new Date((sel || today3).getFullYear(), (sel || today3).getMonth() + 1, 1), date, today3);
-      return `<div class="tpop-title">${esc2(title)}</div><div class="tpop-list">${quick}</div><div class="tpop-cal">${m1}${m2}</div><button type="button" class="tpop-foot" data-pop="time"><i class="ti ti-clock"></i> \u5B8C\u6210\u65F6\u523B<em>${hour ? esc2(fmtHour(hour)) : "\u672A\u5B9A"}</em></button>`;
+      return `<div class="tpop-title">${esc(title)}</div><div class="tpop-list">${quick}</div><div class="tpop-cal">${m1}${m2}</div><button type="button" class="tpop-foot" data-pop="time"><i class="ti ti-clock"></i> \u5B8C\u6210\u65F6\u523B<em>${hour ? esc(fmtHour(hour)) : "\u672A\u5B9A"}</em></button>`;
     };
     const paint = () => {
-      const h = host();
-      h.innerHTML = render5();
-      const times = h.querySelector(".tpop-times");
+      const h4 = host();
+      h4.innerHTML = render10();
+      const times = h4.querySelector(".tpop-times");
       if (times) {
         const target = times.querySelector(".tpop-opt.on") || times.querySelector('[data-v="09:00"]');
         if (target) times.scrollTop = Math.max(0, target.offsetTop - times.clientHeight / 2 + target.offsetHeight / 2);
       }
     };
-    openPop(anchor, render5(), (kind, val) => {
+    openPop(anchor, render10(), (kind, val) => {
       if (kind === "d") {
         date = val;
         onApply({ date, hour });
@@ -4989,6 +5716,511 @@
     chip.innerHTML = `<i class="ti ti-flag${p === 4 ? "" : "-filled"}"></i> ${meta.label}`;
   }
 
+  // public/src/task-audit.js
+  var $4 = (id) => document.getElementById(id);
+  var LINK_LABEL = { page: "\u9875\u9762", campaign: "\u7CFB\u5217", keyword: "\u5173\u952E\u8BCD", kpi: "KPI" };
+  var KPI_GROUP_LABEL = { review: "\u8003\u6838\u6307\u6807", process: "\u8FC7\u7A0B\u6307\u6807\uFF08\u4E0D\u8BA1\u5165\u8003\u6838\uFF09" };
+  var isHttp2 = (u) => /^https?:\/\//i.test(String(u || ""));
+  var OPTIONS_TTL_MS = 10 * 60 * 1e3;
+  var linkOptions = null;
+  var linkOptionsAt = 0;
+  var draftLinks = [];
+  var linkEditorBound = false;
+  async function loadLinkOptions() {
+    if (linkOptions && Date.now() - linkOptionsAt < OPTIONS_TTL_MS) return linkOptions;
+    try {
+      linkOptions = await API.get("/api/loop-items/link-options");
+      linkOptionsAt = Date.now();
+    } catch (e) {
+      if (e && e.message !== "unauthorized") toast2("\u5173\u8054\u5019\u9009\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25"));
+      linkOptions = linkOptions || { campaigns: [], pages: [], keywords: [], kpis: [] };
+    }
+    return linkOptions;
+  }
+  function option(value, text2) {
+    const o = document.createElement("option");
+    o.value = value;
+    o.textContent = text2;
+    return o;
+  }
+  function renderLinkInput() {
+    const box = $4("task-link-value");
+    const typeEl = $4("task-link-type");
+    if (!box || !typeEl) return;
+    const type = typeEl.value;
+    const opts = linkOptions || {};
+    box.textContent = "";
+    if (type === "page" || type === "keyword") {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.id = "task-link-input";
+      input.placeholder = type === "page" ? "https://\u2026 \u5B8C\u6574\u7F51\u5740" : "\u5173\u952E\u8BCD\u539F\u6587";
+      input.setAttribute("list", "task-link-list");
+      const list = document.createElement("datalist");
+      list.id = "task-link-list";
+      ((type === "page" ? opts.pages : opts.keywords) || []).forEach((v) => list.appendChild(option(v, v)));
+      box.append(input, list);
+      return;
+    }
+    const sel = document.createElement("select");
+    sel.id = "task-link-input";
+    if (type === "campaign") {
+      const list = opts.campaigns || [];
+      sel.appendChild(option("", list.length ? "\u9009\u62E9\u5E7F\u544A\u7CFB\u5217\u2026" : "\u5C1A\u65E0\u5DF2\u540C\u6B65\u7684\u5E7F\u544A\u7CFB\u5217"));
+      sel.disabled = !list.length;
+      list.forEach((c) => sel.appendChild(option(c.id, c.name || c.id)));
+    } else {
+      sel.appendChild(option("", "\u9009\u62E9 KPI\u2026"));
+      for (const group of Object.keys(KPI_GROUP_LABEL)) {
+        const items = (opts.kpis || []).filter((k) => k.group === group);
+        if (!items.length) continue;
+        const og = document.createElement("optgroup");
+        og.label = KPI_GROUP_LABEL[group];
+        items.forEach((k) => og.appendChild(option(k.key, k.label)));
+        sel.appendChild(og);
+      }
+    }
+    box.appendChild(sel);
+  }
+  function linkText(l) {
+    if (l.type === "page") {
+      try {
+        const u = new URL(l.ref);
+        return u.pathname + u.search || "/";
+      } catch (e) {
+        return l.ref;
+      }
+    }
+    return l.label || l.ref;
+  }
+  function renderLinkChips() {
+    const box = $4("task-link-chips");
+    if (!box) return;
+    box.textContent = "";
+    draftLinks.forEach((l, i) => {
+      const chip = document.createElement("span");
+      chip.className = "tlink-chip";
+      chip.title = l.ref;
+      const kind = document.createElement("b");
+      kind.textContent = LINK_LABEL[l.type] || l.type;
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "tlink-del";
+      del.dataset.linkIdx = String(i);
+      del.title = "\u79FB\u9664";
+      del.textContent = "\xD7";
+      chip.append(kind, document.createTextNode(linkText(l)), del);
+      box.appendChild(chip);
+    });
+  }
+  function pendingLink() {
+    const typeEl = $4("task-link-type");
+    const input = $4("task-link-input");
+    if (!typeEl || !input) return null;
+    const type = typeEl.value;
+    let ref2 = String(input.value || "").trim();
+    if (!ref2) return null;
+    let label = null;
+    if (type === "page" && !isHttp2(ref2)) return "\u9875\u9762\u8981\u586B\u5B8C\u6574\u7F51\u5740\uFF08http/https \u5F00\u5934\uFF09";
+    if (type === "keyword") ref2 = ref2.toLowerCase().replace(/\s+/g, " ");
+    if (type === "campaign" || type === "kpi") label = input.options[input.selectedIndex].textContent;
+    return { type, ref: ref2, label };
+  }
+  function addTaskLink() {
+    const l = pendingLink();
+    if (l === null) {
+      toast2("\u5148\u9009\u62E9\u6216\u586B\u5199\u8981\u5173\u8054\u7684\u5BF9\u8C61");
+      return false;
+    }
+    if (typeof l === "string") {
+      toast2(l);
+      return false;
+    }
+    if (!draftLinks.some((x) => x.type === l.type && x.ref === l.ref)) draftLinks.push(l);
+    const input = $4("task-link-input");
+    if (input) input.value = "";
+    renderLinkChips();
+    return true;
+  }
+  function bindLinkEditor() {
+    if (linkEditorBound) return;
+    const typeEl = $4("task-link-type");
+    const chips = $4("task-link-chips");
+    if (!typeEl || !chips) return;
+    linkEditorBound = true;
+    typeEl.addEventListener("change", renderLinkInput);
+    chips.addEventListener("click", (e) => {
+      const del = e.target.closest("[data-link-idx]");
+      if (!del) return;
+      draftLinks.splice(Number(del.dataset.linkIdx), 1);
+      renderLinkChips();
+    });
+    $4("task-link-value").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addTaskLink();
+      }
+    });
+  }
+  function fillTaskAuditFields(item) {
+    const it = item || {};
+    bindLinkEditor();
+    const plist = $4("task-project-list");
+    if (plist && !plist.children.length) PRODUCT_NAMES.forEach((n) => plist.appendChild(option(n, n)));
+    const p = $4("task-project");
+    if (p) p.value = it.project || "";
+    const eh = $4("task-est-hours");
+    if (eh) eh.value = it.est_hours == null ? "" : it.est_hours;
+    const imp = $4("task-important");
+    if (imp) {
+      imp.checked = Number(it.important) === 1;
+      const role = (window.ME || {}).role;
+      imp.disabled = imp.checked && role !== "manager" && role !== "boss";
+    }
+    draftLinks = (it.links || []).map((l) => ({ type: l.type, ref: l.ref, label: l.label || null }));
+    const typeEl = $4("task-link-type");
+    if (typeEl) typeEl.value = "page";
+    renderLinkChips();
+    renderLinkInput();
+    loadLinkOptions().then(() => {
+      const cur = $4("task-link-input");
+      if (!cur || !cur.value) renderLinkInput();
+    });
+  }
+  function readTaskAuditFields() {
+    const out = {};
+    out.project = (($4("task-project") || {}).value || "").trim();
+    const eh = (($4("task-est-hours") || {}).value || "").trim();
+    if (eh !== "" && !(Number(eh) >= 0)) {
+      toast2("\u9884\u4F30\u5DE5\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
+      return null;
+    }
+    out.est_hours = eh === "" ? null : Number(eh);
+    const imp = $4("task-important");
+    out.important = imp && imp.checked ? 1 : null;
+    const pending2 = pendingLink();
+    if (typeof pending2 === "string") {
+      toast2(pending2);
+      return null;
+    }
+    if (pending2 && !draftLinks.some((x) => x.type === pending2.type && x.ref === pending2.ref)) draftLinks.push(pending2);
+    out.links = draftLinks.map((l) => ({ type: l.type, ref: l.ref }));
+    return out;
+  }
+  var wasCompleted = (it) => !!it && (it.state === "done" || it.status === "done" || !!it.done_at);
+  function auditBadgesHtml(it) {
+    const imp = it.is_important ? `<span class="badge b-red taudit-imp" title="\u91CD\u8981\u4EFB\u52A1\uFF08${esc(it.important_reason_text || "")}\uFF09\xB7 \u5B8C\u6210\u65F6\u9700\u8981\u8BC1\u636E">\u91CD\u8981</span>` : "";
+    const proj = it.project ? `<span class="badge b-gray taudit-proj" title="\u4EA7\u54C1 / \u9879\u76EE">${esc(it.project)}</span>` : "";
+    const n = Number(it.change_count) || 0;
+    const changes = n && it.id ? `<button type="button" class="taudit-changes" data-task-changes="${esc(it.id)}" title="\u8FD9\u6761\u4EFB\u52A1\u5EFA\u597D\u4E4B\u540E\u88AB\u6539\u8FC7 ${n} \u6B21\uFF0C\u70B9\u51FB\u770B\u662F\u8C01\u6539\u7684\u3001\u6539\u4E86\u4EC0\u4E48">\u6539 ${n}</button>` : "";
+    return imp + proj + changes;
+  }
+  function shortUrl(u) {
+    try {
+      const x = new URL(u);
+      const s = x.host + (x.pathname === "/" ? "" : x.pathname);
+      return s.length > 46 ? s.slice(0, 45) + "\u2026" : s;
+    } catch (e) {
+      return u;
+    }
+  }
+  function evidenceHtml(it) {
+    const links = String(it.evidence || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((u) => isHttp2(u) ? `<a class="taudit-ev" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">${esc(shortUrl(u))}</a>` : `<span class="taudit-ev">${esc(u)}</span>`);
+    return links.join("") + thumbsHtml(it.evidence_images);
+  }
+  function hoursText(it) {
+    const parts = [];
+    if (it.est_hours != null) parts.push("\u9884\u4F30 " + it.est_hours + "h");
+    if (it.actual_hours != null) parts.push("\u5B9E\u9645 " + it.actual_hours + "h");
+    return parts.join(" \xB7 ");
+  }
+  var line2 = (label, html, cls = "") => `<span class="taudit-line ${cls}"><span class="taudit-label">${label}</span><span class="taudit-val">${html}</span></span>`;
+  function auditBlockHtml(it, { editable = false, archived = false } = {}) {
+    const lines = [];
+    const links = it.links || [];
+    const done = wasCompleted(it);
+    if (links.length) {
+      const effect = done && it.id && links.some((l) => l.type !== "kpi") ? ` <button type="button" class="btn-mini taudit-effect" data-task-effect="${esc(it.id)}"><i class="ti ti-chart-line"></i> \u6570\u636E\u53D8\u5316</button>` : "";
+      lines.push(line2("\u5173\u8054", links.map((l) => `<span class="taudit-link" title="${esc(l.ref)}"><b>${LINK_LABEL[l.type] || esc(l.type)}</b>${esc(linkText(l))}</span>`).join("") + effect));
+    }
+    if (done || archived || it.result) {
+      const edit = editable && done && it.id ? ` <button type="button" class="btn-mini taudit-edit" data-loop-action="task-result">${it.result ? "\u6539" : "\u8865\u7ED3\u679C"}</button>` : "";
+      const text2 = it.result ? esc(it.result) : `<span class="taudit-missing">${done ? "\u7ED3\u679C\u672A\u8BB0\u5F55" : "\u65E0\u5B8C\u6210\u8BB0\u5F55"}</span>`;
+      lines.push(line2("\u7ED3\u679C", text2 + edit, "taudit-result"));
+    }
+    if (it.task_actions) lines.push(line2("\u52A8\u4F5C", esc(it.task_actions)));
+    const ev = evidenceHtml(it);
+    if (ev) lines.push(line2("\u8BC1\u636E", ev));
+    else if (done && it.is_important) lines.push(line2("\u8BC1\u636E", '<span class="taudit-missing">\u65E0\u8BC1\u636E</span>'));
+    const hours = hoursText(it);
+    if (hours) lines.push(line2("\u5DE5\u65F6", esc(hours)));
+    return lines.length ? `<div class="taudit">${lines.join("")}</div>` : "";
+  }
+  var doneCtx = null;
+  var doneBound = false;
+  function doneError(msg) {
+    const el5 = $4("task-done-error");
+    if (el5) el5.textContent = msg || "";
+  }
+  function renderDoneThumbs() {
+    const box = $4("task-done-thumbs");
+    if (!box || !doneCtx) return;
+    box.innerHTML = thumbsHtml(doneCtx.item.evidence_images, { deletable: true });
+  }
+  function bindDone() {
+    if (doneBound) return;
+    const box = $4("task-done-thumbs");
+    if (!box) return;
+    doneBound = true;
+    box.addEventListener("click", async (e) => {
+      const del = e.target.closest("[data-att-del]");
+      if (!del || !doneCtx) return;
+      if (!inlineConfirm(del, "\u5220\u9664")) return;
+      const ctx = doneCtx;
+      try {
+        await deleteImage(del.dataset.attDel);
+        ctx.item.evidence_images = (ctx.item.evidence_images || []).filter((im) => String(im.id) !== String(del.dataset.attDel));
+        renderDoneThumbs();
+        if (ctx.onImages) ctx.onImages();
+      } catch (err) {
+        toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      }
+    });
+  }
+  function openTaskDone(item, { edit = false, onDone = null, onImages = null } = {}) {
+    if (!item || !item.id) return;
+    bindDone();
+    doneCtx = { item, edit, onDone, onImages };
+    $4("task-done-verb").textContent = edit ? "\u5B8C\u6210\u8BB0\u5F55" : "\u5B8C\u6210\u4EFB\u52A1";
+    $4("task-done-submit-label").textContent = edit ? "\u4FDD\u5B58" : "\u786E\u8BA4\u5B8C\u6210";
+    $4("task-done-title").textContent = item.content || "";
+    const rule = $4("task-done-rule");
+    rule.classList.toggle("is-important", !!item.is_important);
+    rule.textContent = item.is_important ? "\u91CD\u8981\u4EFB\u52A1\uFF08" + (item.important_reason_text || "") + "\uFF09\uFF1A\u9664\u4E86\u5B8C\u6210\u7ED3\u679C\uFF0C\u8FD8\u9700\u8981\u81F3\u5C11\u4E00\u6761\u8BC1\u636E\u94FE\u63A5\u6216\u4E00\u5F20\u8BC1\u636E\u622A\u56FE\u3002" : "\u5199\u6E05\u5B8C\u6210\u7ED3\u679C\u5373\u53EF\uFF1B\u6709\u8BC1\u636E\u94FE\u63A5\u6216\u622A\u56FE\u66F4\u597D\u2014\u2014\u5468\u5EA6\u5BA1\u6838\u770B\u7684\u5C31\u662F\u8FD9\u4E9B\u3002";
+    $4("task-done-result").value = item.result || "";
+    $4("task-done-actions").value = item.task_actions || "";
+    $4("task-done-evidence").value = item.evidence || "";
+    $4("task-done-hours").value = item.actual_hours == null ? "" : item.actual_hours;
+    $4("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
+    doneError("");
+    renderDoneThumbs();
+    openModal("taskDoneMask");
+    setTimeout(() => $4("task-done-result").focus(), 50);
+  }
+  async function pickTaskEvidence() {
+    const ctx = doneCtx;
+    if (!ctx) return;
+    const added = await pickAndUpload("task", ctx.item.id);
+    if (!added.length) return;
+    ctx.item.evidence_images = (ctx.item.evidence_images || []).concat(added);
+    if (doneCtx === ctx) {
+      renderDoneThumbs();
+      doneError("");
+    }
+    if (ctx.onImages) ctx.onImages();
+  }
+  async function submitTaskDone(btn) {
+    const ctx = doneCtx;
+    if (!ctx) return;
+    const hoursRaw = String($4("task-done-hours").value || "").trim();
+    if (hoursRaw !== "" && !(Number(hoursRaw) >= 0)) {
+      doneError("\u5B9E\u9645\u7528\u65F6\u9700\u8981\u662F\u4E0D\u5C0F\u4E8E 0 \u7684\u6570\u5B57");
+      return;
+    }
+    const body = {
+      result: $4("task-done-result").value,
+      task_actions: $4("task-done-actions").value,
+      evidence: $4("task-done-evidence").value,
+      actual_hours: hoursRaw === "" ? null : Number(hoursRaw)
+    };
+    if (!ctx.edit) {
+      body.state = "done";
+      body.status = "done";
+    }
+    if (btn) btn.disabled = true;
+    try {
+      const { item } = await API.patch("/api/loop-items/" + ctx.item.id, body);
+      Object.assign(ctx.item, item);
+      closeModal("taskDoneMask");
+      doneCtx = null;
+      if (ctx.onDone) ctx.onDone(item);
+    } catch (e) {
+      doneError(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u672A\u5165\u5E93\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25"));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  var SOURCE_SUFFIX = { gsc: " \xB7 \u81EA\u7136\u641C\u7D22", ads: " \xB7 \u5E7F\u544A", ga4: " \xB7 \u4F5C\u4E3A\u843D\u5730\u9875\uFF08GA4\uFF09" };
+  var EFFECT_STATUS_TEXT = {
+    NO_DATA: "\u524D\u540E\u4E24\u6BB5\u65F6\u95F4\u90FD\u6CA1\u6709\u6570\u636E\uFF08\u6CA1\u6709\u66DD\u5149\u6216\u6CA1\u6709\u6295\u653E\uFF09",
+    DECLARED: "\u90E8\u95E8\u7EA7\u6307\u6807\uFF0C\u4E0D\u505A\u5355\u6761\u4EFB\u52A1\u7684\u524D\u540E\u5BF9\u6BD4"
+  };
+  var effectPath = null;
+  var effectDays = 14;
+  var effectSeq = 0;
+  var effectBound = false;
+  function el(tag, cls, text2) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text2 != null) n.textContent = String(text2);
+    return n;
+  }
+  var md = (ymd2) => String(ymd2 || "").slice(5);
+  var fmtNum = (v) => v == null ? "\u2014" : Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  function windowText(name, w) {
+    if (!w) return null;
+    if (w.status === "NOT_SYNCED") return name + "\uFF1A\u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u65E0\u6CD5\u5BF9\u6BD4";
+    if (w.status === "PENDING") return name + "\uFF1A\u5B8C\u6210\u540E\u8FD8\u6CA1\u6709\u540C\u6B65\u5230\u6570\u636E\uFF08\u6700\u65B0\u6570\u636E\u5230 " + (w.latest_date || "\u2014") + "\uFF09\uFF0C\u8FC7\u51E0\u5929\u518D\u770B";
+    const range2 = "\u524D " + md(w.before.start_date) + "~" + md(w.before.end_date) + " \u5BF9\u6BD4 \u540E " + md(w.after.start_date) + "~" + md(w.after.end_date);
+    if (w.status === "PARTIAL") return name + "\uFF1A" + range2 + "\uFF08\u6570\u636E\u672A\u6EE1\uFF1A\u53EA\u6709 " + w.days + " \u5929\uFF1B\u8981\u7B49 " + md(w.full_date) + " \u7684\u6570\u636E\u540C\u6B65\u8FDB\u6765\u624D\u6EE1 " + w.wanted_days + " \u5929\uFF09";
+    return name + "\uFF1A" + range2 + "\uFF08\u5404 " + w.days + " \u5929\uFF09";
+  }
+  function deltaCell(d, better) {
+    const td2 = el("td", "num");
+    if (!d) {
+      td2.textContent = "\u2014";
+      return td2;
+    }
+    const sign = d.abs > 0 ? "+" : "";
+    let text2 = sign + fmtNum(d.abs);
+    if (d.pct != null) text2 += "\uFF08" + (d.pct > 0 ? "+" : "") + Math.round(d.pct * 100) + "%\uFF09";
+    td2.textContent = text2;
+    if (d.abs !== 0 && better !== "neutral") {
+      const good = better === "higher" ? d.abs > 0 : d.abs < 0;
+      td2.classList.add(good ? "teffect-good" : "teffect-bad");
+    }
+    return td2;
+  }
+  function effectRows(tbody, title, sub, item, metrics, cls) {
+    const head = el("tr", "teffect-head " + (cls || ""));
+    const th = el("td", "", title);
+    th.colSpan = 4;
+    if (sub) th.appendChild(el("span", "teffect-sub", sub));
+    head.appendChild(th);
+    tbody.appendChild(head);
+    const list = metrics[item.source];
+    if (!item.before || !list) {
+      const tr2 = el("tr");
+      const td2 = el("td", "dim", EFFECT_STATUS_TEXT[item.status] || "\u8FD9\u4E2A\u6570\u636E\u6E90\u6682\u65F6\u65E0\u6CD5\u5BF9\u6BD4\uFF08\u89C1\u4E0A\u65B9\u8BF4\u660E\uFF09");
+      td2.colSpan = 4;
+      tr2.appendChild(td2);
+      tbody.appendChild(tr2);
+      return;
+    }
+    if (item.status === "NO_DATA") {
+      const tr2 = el("tr");
+      const td2 = el("td", "dim", EFFECT_STATUS_TEXT.NO_DATA);
+      td2.colSpan = 4;
+      tr2.appendChild(td2);
+      tbody.appendChild(tr2);
+      return;
+    }
+    for (const m of list) {
+      const tr2 = el("tr");
+      tr2.appendChild(el("td", "", m.label));
+      tr2.appendChild(el("td", "num", fmtNum(item.before[m.key])));
+      tr2.appendChild(el("td", "num", fmtNum(item.after[m.key])));
+      tr2.appendChild(deltaCell(item.delta[m.key], m.better));
+      tbody.appendChild(tr2);
+    }
+  }
+  function renderEffect(data3) {
+    const box = $4("task-effect-body");
+    box.textContent = "";
+    $4("task-effect-title").textContent = data3.task.content || "";
+    if (data3.status !== "OK") {
+      box.appendChild(el("div", "teffect-note", data3.message || "\u6CA1\u6709\u53EF\u5BF9\u6BD4\u7684\u6570\u636E\u3002"));
+      return;
+    }
+    box.appendChild(el("div", "teffect-note", data3.note));
+    const used = new Set(data3.items.map((i) => i.source).filter(Boolean));
+    const wins = el("div", "teffect-windows");
+    if (used.has("gsc")) wins.appendChild(el("div", "", windowText("\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", data3.windows.gsc)));
+    if (used.has("ads")) wins.appendChild(el("div", "", windowText("\u5E7F\u544A\uFF08Ads\uFF09", data3.windows.ads)));
+    if (used.has("ga4")) wins.appendChild(el("div", "", windowText("\u7AD9\u5185\u884C\u4E3A\uFF08GA4\uFF09", data3.windows.ga4)));
+    box.appendChild(wins);
+    const table2 = el("table", "dt teffect-table");
+    const thead = el("thead");
+    const hr = el("tr");
+    ["\u6307\u6807", "\u4E4B\u524D", "\u4E4B\u540E", "\u53D8\u5316"].forEach((t, i) => hr.appendChild(el("th", i ? "num" : "", t)));
+    thead.appendChild(hr);
+    table2.appendChild(thead);
+    const tbody = el("tbody");
+    for (const item of data3.items) {
+      const kind = LINK_LABEL[item.type] || item.type;
+      const where = SOURCE_SUFFIX[item.source] || "";
+      effectRows(tbody, kind + where + (item.site ? " \xB7 " + item.site : ""), item.type === "page" ? linkText(item) : item.label || item.ref, item, data3.metrics);
+    }
+    const whose = data3.site ? "\uFF08" + data3.site + "\uFF09" : "";
+    if (data3.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F" + whose, "", data3.baseline.gsc, data3.metrics, "is-baseline");
+    if (data3.baseline.ads) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u8D26\u6237\u5E7F\u544A\u540C\u671F", "\u91D1\u989D\u4E3A Ads \u8D26\u6237\u5E01\u79CD", data3.baseline.ads, data3.metrics, "is-baseline");
+    if (data3.baseline.ga4) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9 GA4 \u540C\u671F" + whose, "", data3.baseline.ga4, data3.metrics, "is-baseline");
+    table2.appendChild(tbody);
+    box.appendChild(table2);
+  }
+  async function loadEffect() {
+    const box = $4("task-effect-body");
+    const seq7 = ++effectSeq;
+    document.querySelectorAll("#taskEffectMask [data-effect-days]").forEach((b) => b.classList.toggle("active", Number(b.dataset.effectDays) === effectDays));
+    box.textContent = "";
+    box.appendChild(el("div", "dim", "\u52A0\u8F7D\u4E2D\u2026"));
+    try {
+      const data3 = await API.get(effectPath + "?days=" + effectDays);
+      if (seq7 === effectSeq) renderEffect(data3);
+    } catch (e) {
+      if (seq7 !== effectSeq) return;
+      box.textContent = "";
+      box.appendChild(el("div", "task-done-error", "\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25") + " "));
+      const retry = el("button", "btn-mini", "\u91CD\u8BD5");
+      retry.type = "button";
+      retry.addEventListener("click", loadEffect);
+      box.appendChild(retry);
+    }
+  }
+  function openEffect(path) {
+    if (!path) return;
+    if (!effectBound) {
+      effectBound = true;
+      $4("taskEffectMask").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-effect-days]");
+        if (!b) return;
+        effectDays = Number(b.dataset.effectDays);
+        loadEffect();
+      });
+    }
+    effectPath = path;
+    $4("task-effect-title").textContent = "";
+    openModal("taskEffectMask");
+    loadEffect();
+  }
+  var DONE_TEXT = { 0: "\u672A\u5B8C\u6210", 1: "\u5DF2\u5B8C\u6210" };
+  var changeValue = (c, v) => v == null || v === "" ? "\uFF08\u7A7A\uFF09" : c.field === "done" ? DONE_TEXT[v] || v : c.field === "important" ? "\u5DF2\u6807\u91CD\u8981" : c.field === "multi_day" ? v === "1" ? "\u8DE8\u5929" : "\u5355\u65E5" : v;
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-task-effect]");
+      if (btn) {
+        openEffect("/api/loop-items/" + encodeURIComponent(btn.dataset.taskEffect) + "/effect");
+        return;
+      }
+      const link = e.target.closest("[data-backlink-effect]");
+      if (link) {
+        openEffect("/api/backlinks/" + encodeURIComponent(link.dataset.backlinkEffect) + "/effect");
+        return;
+      }
+      const log = e.target.closest("[data-task-changes]");
+      if (log) {
+        e.stopPropagation();
+        openChangeLog({
+          path: "/api/loop-items/" + encodeURIComponent(log.dataset.taskChanges) + "/changes",
+          title: "\u8FD9\u6761\u4EFB\u52A1\u7684\u6539\u52A8\u8BB0\u5F55",
+          rule: "\u4EFB\u52A1\u5EFA\u597D\u4E4B\u540E\uFF0C\u5185\u5BB9\u3001\u8D1F\u8D23\u4EBA\u3001\u8D77\u6B62\u65E5\u3001\u5DE5\u65F6\u3001\u5B8C\u6210\u7ED3\u679C\u6BCF\u6539\u4E00\u6B21\u90FD\u7559\u6863\uFF1B\u5B8C\u6210\u65F6\u7B2C\u4E00\u6B21\u586B\u5199\u7ED3\u679C\u4E0D\u7B97\u6539\u52A8\u3002",
+          empty: "\u8FD9\u6761\u4EFB\u52A1\u5EFA\u597D\u4E4B\u540E\u6CA1\u6709\u88AB\u6539\u8FC7\u3002",
+          describe: (c) => c.label + "\uFF1A" + changeValue(c, c.old_value) + " \u2192 " + changeValue(c, c.new_value)
+        });
+      }
+    });
+  }
+
   // public/src/closed-loop.js
   var _2 = (n) => String(n).padStart(2, "0");
   var today = () => {
@@ -4998,21 +6230,21 @@
   function futureDate(days) {
     return formatLocalDate(new Date(Date.now() + days * 864e5));
   }
-  function flashRow(tr) {
-    tr.style.transition = "background .25s";
-    tr.style.background = "var(--green-soft)";
-    setTimeout(() => tr.style.background = "", 1700);
+  function flashRow(tr2) {
+    tr2.style.transition = "background .25s";
+    tr2.style.background = "var(--green-soft)";
+    setTimeout(() => tr2.style.background = "", 1700);
   }
   function prepend(tbId, html) {
     const tb = document.getElementById(tbId);
     if (!tb) return null;
     const state2 = tb.querySelector("tr[data-load-state]");
     if (state2) state2.remove();
-    const tr = document.createElement("tr");
-    tr.innerHTML = html;
-    tb.insertBefore(tr, tb.firstChild);
-    flashRow(tr);
-    return tr;
+    const tr2 = document.createElement("tr");
+    tr2.innerHTML = html;
+    tb.insertBefore(tr2, tb.firstChild);
+    flashRow(tr2);
+    return tr2;
   }
   function grabText(btn) {
     const it = btn.closest(".ai-item");
@@ -5045,8 +6277,8 @@
       else if (box && box.classList.contains("blue")) d = "SEO";
     }
     if (!d) {
-      const card = btn.closest(".card");
-      const t = card && card.querySelector(".card-title");
+      const card2 = btn.closest(".card");
+      const t = card2 && card2.querySelector(".card-title");
       if (t && /SEM/.test(t.textContent)) d = "SEM";
       else if (t && /SEO/.test(t.textContent)) d = "SEO";
     }
@@ -5058,7 +6290,7 @@
   }
   function addDeposit(s, text2, act) {
     const ac = act === "\u91C7\u7EB3" ? "b-green" : "b-teal";
-    prepend("tb-dep", `<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc2(s.dept)}\u8BCA\u65AD</span></td><td>${esc2(text2)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc2(act)}</span></td>`);
+    prepend("tb-dep", `<td class="num">${today()}</td><td class="ctr"><span class="badge ${esc(s.c)}">${esc(s.dept)}\u8BCA\u65AD</span></td><td>${esc(text2)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);
   }
   function fixRowHtml(f) {
     const dept = f.dept === "SEM" ? "SEM" : "SEO";
@@ -5067,7 +6299,7 @@
     const oc = owner === "\u9648" ? "b-purple" : "b-blue";
     const RES = ["\u5DF2\u6539", "\u8FDB\u884C\u4E2D", "\u8BA1\u5212\u4E0B\u5468", "\u653E\u5F03"];
     const status = RES.includes(f.status) ? f.status : "\u8BA1\u5212\u4E0B\u5468";
-    return `<td class="fix-title editable" contenteditable data-field="title">${esc2(f.title || "")}</td><td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc2(dept)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc2(f.evidence || "")}</td><td class="fix-detail editable" contenteditable data-field="detail">${esc2(f.detail || "")}</td><td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc2(owner)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td><td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc2(status)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-actions ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i> \u5F52\u6863</button></td>`;
+    return `<td class="fix-title editable" contenteditable data-field="title">${esc(f.title || "")}</td><td class="fix-dept ctr"><span class="tagselect ${c}" data-kind="dept">${esc(dept)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-evidence editable dim csp-s-33ee298127" contenteditable data-field="evidence">${esc(f.evidence || "")}</td><td class="fix-detail editable" contenteditable data-field="detail">${esc(f.detail || "")}</td><td class="fix-owner ctr"><span class="tagselect ${oc}" data-kind="owner">${esc(owner)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-date"><input type="date" class="cell-date" data-field="due_date" value="${ymd(f.due_date)}"></td><td class="fix-result ctr"><span class="tagselect b-blue" data-kind="result">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="fix-actions ctr">${fixPlanHtml(f)} <button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i> \u5F52\u6863</button></td>`;
   }
   function fixPlanHtml(f) {
     if (f && f.planned_done) return `<span class="badge b-green row-plan-go csp-s-9463ff4798" title="\u65E5\u8BA1\u5212\u91CC\u5DF2\u5B8C\u6210\uFF0C\u70B9\u51FB\u67E5\u770B">\u5DF2\u505A\u5B8C</span>`;
@@ -5087,6 +6319,7 @@
       else if (kind === "task-prio") taskPrioPop(action);
       else if (kind === "task-date-pop") taskDatePop(action);
       else if (kind === "task-push") taskPush(action);
+      else if (kind === "task-result") taskResult(action);
       else if (kind === "deposit-delete") depDel(action);
       else if (kind === "content-delete") contentDel(action);
       else if (kind === "ai-action") aiAct(action, action.dataset.kind);
@@ -5100,13 +6333,13 @@
     }
     const btn = e.target.closest(".row-plan");
     if (!btn) return;
-    const tr = btn.closest("tr");
-    const id = tr && tr.dataset.id;
+    const tr2 = btn.closest("tr");
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     btn.disabled = true;
     try {
       const { item, existed } = await API.post("/api/fixes/" + id + "/plan", { start_date: formatLocalDate(/* @__PURE__ */ new Date()) });
-      const tag = tr.querySelector('[data-kind="result"]');
+      const tag = tr2.querySelector('[data-kind="result"]');
       if (tag && tag.firstChild && !/已改|放弃/.test(tag.textContent)) tag.firstChild.nodeValue = "\u8FDB\u884C\u4E2D";
       btn.outerHTML = fixPlanHtml({ planned_task_id: item.id });
       if (!existed && document.getElementById("newtask-sem")) {
@@ -5125,33 +6358,33 @@
     go("action");
     if (typeof setActionTab === "function") setActionTab("fix");
   });
-  function bindFixRow(tr, f) {
-    if (tr && f && f.id) {
-      tr.dataset.id = f.id;
-      tr.dataset.ep = "/api/fixes";
+  function bindFixRow(tr2, f) {
+    if (tr2 && f && f.id) {
+      tr2.dataset.id = f.id;
+      tr2.dataset.ep = "/api/fixes";
     }
-    return tr;
+    return tr2;
   }
   function addFixFromObj(f) {
     return bindFixRow(prepend("tb-fix", fixRowHtml(f)), f);
   }
-  function bindLoopRow(tr, it) {
-    if (tr && it && it.id) {
-      tr.dataset.id = it.id;
-      tr.dataset.ep = "/api/loop-items";
+  function bindLoopRow(tr2, it) {
+    if (tr2 && it && it.id) {
+      tr2.dataset.id = it.id;
+      tr2.dataset.ep = "/api/loop-items";
     }
-    return tr;
+    return tr2;
   }
   function addTest(s, content, it) {
     it = it || {};
     const id = s.dept === "SEM" ? "tb-test-sem" : "tb-test-seo";
-    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc2(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc2(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="variable">${esc2(it.variable || "")}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc2(it.conclusion || "")}</td><td class="ctr"><button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
+    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable || "")}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion || "")}</td><td class="ctr"><button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
   }
   function addPlan(s, content, it) {
     it = it || {};
     const id = s.dept === "SEM" ? "tb-plan-sem" : "tb-plan-seo";
     const status = it.status || "\u5F85\u5F00\u59CB";
-    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc2(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc2(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="metric">${esc2(it.metric || "")}</td><td class="editable" contenteditable data-field="due_or_budget">${esc2(it.due_or_budget || "")}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc2(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
+    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric || "")}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget || "")}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
   }
   function coScope() {
     return { dept: "\u516C\u53F8", owner: "", c: "b-red" };
@@ -5169,18 +6402,18 @@
     return "today";
   }
   function taskGroupEl(col, g) {
-    let el = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
-    if (el) return el;
+    let el5 = col.querySelector(':scope > .tgroup[data-g="' + g + '"]');
+    if (el5) return el5;
     const label = (TASK_GROUPS.find((x) => x[0] === g) || [, g])[1];
-    el = document.createElement("div");
-    el.className = "tgroup";
-    el.dataset.g = g;
-    el.innerHTML = `<div class="tgroup-cap">${esc2(label)} <span class="n"></span></div>`;
+    el5 = document.createElement("div");
+    el5.className = "tgroup";
+    el5.dataset.g = g;
+    el5.innerHTML = `<div class="tgroup-cap">${esc(label)} <span class="n"></span></div>`;
     const order = TASK_GROUPS.map((x) => x[0]);
     const after = [...col.querySelectorAll(":scope > .tgroup")].find((x) => order.indexOf(x.dataset.g) > order.indexOf(g)) || col.querySelector(".donefold") || col.querySelector(".add-task");
-    if (after) col.insertBefore(el, after);
-    else col.appendChild(el);
-    return el;
+    if (after) col.insertBefore(el5, after);
+    else col.appendChild(el5);
+    return el5;
   }
   function addTaskCard(s, content, it) {
     const col = taskColFor(s.dept);
@@ -5189,44 +6422,66 @@
     item.content = content || item.content || "";
     const done = !!(item.state === "done" || item.status === "done");
     const isCoParent = s.dept === "\u516C\u53F8";
-    const card = document.createElement("div");
-    card.className = "tcard" + (isCoParent ? " cotask" : "") + (done ? " done" : "");
-    if (item.id) card.dataset.id = item.id;
-    card._item = item;
-    card._scope = s;
-    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc2(item.content)}</div><div class="tmeta"></div>`;
+    const card2 = document.createElement("div");
+    card2.className = "tcard" + (isCoParent ? " cotask" : "") + (done ? " done" : "");
+    if (item.id) card2.dataset.id = item.id;
+    card2._item = item;
+    card2._scope = s;
+    card2.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span>${esc(item.content)}</div><div class="tmeta"></div>`;
     if (isCoParent) {
       const box = document.createElement("div");
       box.className = "subtasks";
-      card.appendChild(box);
+      card2.appendChild(box);
     }
-    renderTaskMeta(card);
-    placeTaskCard(card);
-    return card;
+    renderTaskMeta(card2);
+    placeTaskCard(card2);
+    return card2;
   }
-  function renderTaskMeta(card) {
-    const it = card._item || {}, s = card._scope || {}, box = card.querySelector(".tmeta");
+  function renderTaskMeta(card2) {
+    const it = card2._item || {}, s = card2._scope || {}, box = card2.querySelector(".tmeta");
     if (!box) return;
-    const isCo = card.classList.contains("cotask"), g = taskGroupOf(it);
-    const deptBadge = isCo ? `<span class="badge ${s.c || "b-gray"}">${esc2(s.dept || "")}</span>` : "";
+    const isCo = card2.classList.contains("cotask"), g = taskGroupOf(it);
+    const deptBadge = isCo ? `<span class="badge ${esc(s.c || "b-gray")}">${esc(s.dept || "")}</span>` : "";
     const srcBadge = it.fix_id ? `<span class="badge b-amber src-fix" title="\u6765\u81EA\u6574\u6539\u6E05\u5355 \xB7 \u70B9\u51FB\u67E5\u770B\u4F9D\u636E">\u6574\u6539</span>` : "";
-    const note = it.note ? `<span class="tnote">${esc2(it.note)}</span>` : "";
-    const whyLine = it.task_why ? `<span class="tloop-why"><span class="tloop-label">\u76EE\u7684</span>${esc2(it.task_why)}</span>` : "";
-    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u5B8C\u6210\u6807\u51C6</span>${esc2(it.task_done_when)}</span>` : "";
-    const verifyLine = it.task_verify_date || it.task_verify_how ? `<span class="tloop-verify"><span class="tloop-label">\u68C0\u9A8C\u65F6\u95F4\u53CA\u6807\u51C6</span>${it.task_verify_date ? esc2(it.task_verify_date.slice(5)) : ""}${it.task_verify_date && it.task_verify_how ? " \xB7 " : ""}${it.task_verify_how ? esc2(it.task_verify_how) : ""}</span>` : "";
+    const note = it.note ? `<span class="tnote">${esc(it.note)}</span>` : "";
+    const whyLine = it.task_why ? `<span class="tloop-why"><span class="tloop-label">\u76EE\u7684</span>${esc(it.task_why)}</span>` : "";
+    const doneWhenLine = it.task_done_when ? `<span class="tloop-done"><span class="tloop-label">\u5B8C\u6210\u6807\u51C6</span>${esc(it.task_done_when)}</span>` : "";
+    const verifyLine = it.task_verify_date || it.task_verify_how ? `<span class="tloop-verify"><span class="tloop-label">\u68C0\u9A8C\u65F6\u95F4\u53CA\u6807\u51C6</span>${it.task_verify_date ? esc(it.task_verify_date.slice(5)) : ""}${it.task_verify_date && it.task_verify_how ? " \xB7 " : ""}${it.task_verify_how ? esc(it.task_verify_how) : ""}</span>` : "";
     const loopBlock = whyLine || doneWhenLine || verifyLine ? `<div class="tloop">${whyLine}${doneWhenLine}${verifyLine}</div>` : "";
     const ops = g === "overdue" && it.id ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="\u987A\u5EF6\u5230\u4ECA\u5929"><i class="ti ti-calendar-plus"></i></button><button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="\u653E\u5F03\u5E76\u5F52\u6863"><i class="ti ti-archive"></i></button>` : "";
     const push = taskPushHtml(it, g);
     const split = isCo ? `<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> \u5206\u53D1</button>` : "";
     const del = it.id ? `<button type="button" class="btn-mini csp-task-delete ${isCo || ops || push ? "csp-task-delete-spaced" : "csp-task-delete-pushed"}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
-    box.innerHTML = deptBadge + srcBadge + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
-    let lb = card.querySelector(".tloop");
+    box.innerHTML = deptBadge + srcBadge + auditBadgesHtml(it) + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
+    let lb = card2.querySelector(".tloop");
     if (lb) lb.remove();
     if (loopBlock) {
       const tmp = document.createElement("div");
       tmp.innerHTML = loopBlock;
-      card.appendChild(tmp.firstChild);
+      card2.appendChild(tmp.firstChild);
     }
+    const ab = card2.querySelector(":scope > .taudit");
+    if (ab) ab.remove();
+    const auditHtml = auditBlockHtml(it, { editable: true });
+    if (auditHtml) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = auditHtml;
+      card2.appendChild(tmp.firstChild);
+    }
+  }
+  document.addEventListener("taskchanged", (e) => {
+    const card2 = e.detail && e.detail.card;
+    if (card2 && card2._item && !card2.classList.contains("subtask")) renderTaskMeta(card2);
+  });
+  function taskResult(btn) {
+    const card2 = btn.closest(".tcard");
+    const it = card2 && card2._item;
+    if (!it || !it.id) return;
+    const redraw = () => renderTaskMeta(card2);
+    openTaskDone(it, { edit: true, onDone: () => {
+      redraw();
+      toast2("\u5B8C\u6210\u8BB0\u5F55\u5DF2\u66F4\u65B0 \xB7 \u5DF2\u5165\u5E93");
+    }, onImages: redraw });
   }
   function taskDueHtml(it) {
     const due = it.task_date || "", st2 = it.start_date || "", hr = it.task_hour || "";
@@ -5234,25 +6489,25 @@
     const short = (d) => st2.slice(0, 4) === due.slice(0, 4) ? d.slice(5) : d;
     const txt = span ? short(st2) + " ~ " + short(due) : due;
     const time = hr ? (txt ? " " : "") + fmtHour(hr) : "";
-    const empty = !txt && !time;
-    if (!it.id) return empty ? "" : `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(txt) + esc2(time)}</span>`;
-    const cls = "tdue" + (empty ? " tdue-none" : "") + " task-date-pop";
-    const attrs = ` data-loop-action="task-date-pop" title="${span ? esc2(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F / \u8BBE\u65F6\u523B"`;
-    return `<span class="${cls}"${attrs}><i class="ti ${empty ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty ? "\u8BBE\u65E5\u671F" : esc2(txt) + esc2(time)}</span>` + prioFlagHtml(it.task_priority) + `<button type="button" class="btn-mini task-edit-pen" data-loop-action="task-edit" title="\u7F16\u8F91\u4EFB\u52A1"><i class="ti ti-pencil"></i></button>`;
+    const empty2 = !txt && !time;
+    if (!it.id) return empty2 ? "" : `<span class="tdue"><i class="ti ti-clock"></i> ${esc(txt) + esc(time)}</span>`;
+    const cls = "tdue" + (empty2 ? " tdue-none" : "") + " task-date-pop";
+    const attrs = ` data-loop-action="task-date-pop" title="${span ? esc(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F / \u8BBE\u65F6\u523B"`;
+    return `<span class="${cls}"${attrs}><i class="ti ${empty2 ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty2 ? "\u8BBE\u65E5\u671F" : esc(txt) + esc(time)}</span>` + prioFlagHtml(it.task_priority) + `<button type="button" class="btn-mini task-edit-pen" data-loop-action="task-edit" title="\u7F16\u8F91\u4EFB\u52A1"><i class="ti ti-pencil"></i></button>`;
   }
-  function taskCardCtx(el) {
-    const card = el.closest(".tcard");
-    const it = card && card._item;
+  function taskCardCtx(el5) {
+    const card2 = el5.closest(".tcard");
+    const it = card2 && card2._item;
     if (!it || !it.id) return null;
-    return { card, it, dept: card._scope && card._scope.dept || "\u516C\u53F8" };
+    return { card: card2, it, dept: card2._scope && card2._scope.dept || "\u516C\u53F8" };
   }
   async function patchTaskCard(ctx, fields) {
-    const { card, it, dept } = ctx;
+    const { card: card2, it, dept } = ctx;
     try {
       const { item } = await API.patch("/api/loop-items/" + it.id, fields);
       Object.assign(it, item || fields);
-      renderTaskMeta(card);
-      placeTaskCard(card);
+      renderTaskMeta(card2);
+      placeTaskCard(card2);
       refreshTaskCols();
       const col = taskColFor(dept);
       if (col) sortTaskCardsByTime(col);
@@ -5260,16 +6515,16 @@
       toast2(persistFailMsg(e));
     }
   }
-  function taskPrioPop(el) {
-    const ctx = taskCardCtx(el);
+  function taskPrioPop(el5) {
+    const ctx = taskCardCtx(el5);
     if (!ctx) return;
-    openPrioPop(el, ctx.it.task_priority, (v) => patchTaskCard(ctx, { task_priority: normPrio(v) }));
+    openPrioPop(el5, ctx.it.task_priority, (v) => patchTaskCard(ctx, { task_priority: normPrio(v) }));
   }
-  function taskDatePop(el) {
-    const ctx = taskCardCtx(el);
+  function taskDatePop(el5) {
+    const ctx = taskCardCtx(el5);
     if (!ctx) return;
     const it = ctx.it;
-    openDatePop(el, { date: it.task_date || "", hour: it.task_hour || "" }, ({ date, hour }) => {
+    openDatePop(el5, { date: it.task_date || "", hour: it.task_hour || "" }, ({ date, hour }) => {
       const fields = { task_date: date, task_hour: hour };
       if (date && it.start_date && it.start_date > date) fields.start_date = date;
       if (!date) fields.start_date = "";
@@ -5286,7 +6541,7 @@
     if (g === "doing" && it.start_date && it.task_date) {
       const total = dayDiff(it.start_date, it.task_date) + 1, cur = dayDiff(it.start_date, t) + 1;
       const ck = taskCheckin(it.id);
-      const pushed = ck.days ? ` \xB7 \u5DF2\u63A8\u8FDB ${ck.days} \u5929` : "";
+      const pushed = ck.days ? ` \xB7 \u5DF2\u63A8\u8FDB ${esc(ck.days)} \u5929` : "";
       const idle = !ck.today && (ck.last ? dayDiff(ck.last, t) >= 2 : dayDiff(it.start_date, t) >= 2);
       return `<span class="tage${idle ? " tage-idle" : ""}">\u7B2C ${cur}/${total} \u5929${pushed}</span>`;
     }
@@ -5303,8 +6558,8 @@
     return `<button type="button" class="btn-mini task-push${on ? " on" : ""}" data-loop-action="task-push" title="${on ? "\u4ECA\u5929\u5DF2\u8BB0\u63A8\u8FDB\uFF0C\u70B9\u4E00\u4E0B\u64A4\u9500" : "\u8BB0\u4E00\u7B14\uFF1A\u4ECA\u5929\u63A8\u8FDB\u4E86\u8FD9\u6761"}"><i class="ti ti-${on ? "check" : "player-track-next"}"></i> ${on ? "\u4ECA\u65E5\u5DF2\u63A8\u8FDB" : "\u63A8\u8FDB"}</button>`;
   }
   async function taskPush(btn) {
-    const card = btn.closest(".tcard");
-    const it = card && card._item;
+    const card2 = btn.closest(".tcard");
+    const it = card2 && card2._item;
     if (!it || !it.id) return;
     const day = formatLocalDate(/* @__PURE__ */ new Date());
     const cur = taskCheckin(it.id);
@@ -5321,7 +6576,7 @@
         taskCheckins.set(Number(it.id), { days: cur.days + 1, last: day, today: true });
         toast2("\u5DF2\u8BB0\u4ECA\u65E5\u63A8\u8FDB \xB7 \u5DF2\u5165\u5E93");
       }
-      renderTaskMeta(card);
+      renderTaskMeta(card2);
     } catch (e) {
       btn.disabled = false;
       toast2(persistFailMsg(e));
@@ -5342,43 +6597,43 @@
       return e;
     }
   }
-  function placeTaskCard(card) {
-    const s = card._scope || {}, col = taskColFor(s.dept);
+  function placeTaskCard(card2) {
+    const s = card2._scope || {}, col = taskColFor(s.dept);
     if (!col) return;
-    const g = taskGroupOf(card._item || {});
-    card.classList.toggle("t-overdue", g === "overdue");
+    const g = taskGroupOf(card2._item || {});
+    card2.classList.toggle("t-overdue", g === "overdue");
     if (s.dept === "\u516C\u53F8") {
       const anchor = col.querySelector(".donefold") || col.querySelector(".add-task");
-      if (anchor) col.insertBefore(card, anchor);
-      else col.appendChild(card);
+      if (anchor) col.insertBefore(card2, anchor);
+      else col.appendChild(card2);
       return;
     }
-    taskGroupEl(col, g).appendChild(card);
+    taskGroupEl(col, g).appendChild(card2);
   }
   function taskDefer(btn) {
-    const card = btn.closest(".tcard");
-    const it = card && card._item;
+    const card2 = btn.closest(".tcard");
+    const it = card2 && card2._item;
     if (!it || !it.id) return;
     const t = formatLocalDate(/* @__PURE__ */ new Date());
     const body = { task_date: t };
     if (!it.start_date || it.start_date > t) body.start_date = t;
     API.patch("/api/loop-items/" + it.id, body).then(({ item }) => {
       Object.assign(it, item || body);
-      renderTaskMeta(card);
-      placeTaskCard(card);
+      renderTaskMeta(card2);
+      placeTaskCard(card2);
       refreshTaskCols();
       toast2("\u5DF2\u987A\u5EF6\u5230\u4ECA\u5929 \xB7 \u5DF2\u5165\u5E93");
     }).catch((e) => toast2(persistFailMsg(e)));
   }
   function taskDrop(btn) {
-    const card = btn.closest(".tcard");
-    const it = card && card._item;
+    const card2 = btn.closest(".tcard");
+    const it = card2 && card2._item;
     if (!it || !it.id) return;
     if (!inlineConfirm(btn, "\u786E\u8BA4\u653E\u5F03")) return;
-    const dept = (card._scope || {}).dept || it.dept;
+    const dept = (card2._scope || {}).dept || it.dept;
     const ak = dept === "\u516C\u53F8" ? "company" : dept === "SEM" ? "sem" : "seo";
     API.post("/api/loop-items/" + it.id + "/archive", { archive_kind: ak }).then(() => {
-      card.remove();
+      card2.remove();
       refreshTaskCols();
       updateSopCounts();
       toastGo("\u5DF2\u653E\u5F03 \xB7 \u5F52\u6863\u7559\u75D5", "archive");
@@ -5418,23 +6673,23 @@
   var LUNCH_START_MIN = 12 * 60;
   var LUNCH_END_MIN = 13 * 60 + 30;
   function minToHhmm(m) {
-    const h = Math.floor(m / 60), mm = m % 60;
-    return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+    const h4 = Math.floor(m / 60), mm = m % 60;
+    return String(h4).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
   }
   function annotateTaskTimes(todayGroup) {
     const cards = [...todayGroup.querySelectorAll(":scope > .tcard:not(.done)")];
     let cursor = WORK_START_MIN;
-    cards.forEach((card, i) => {
-      let old = card.querySelector(".tseq-badge");
+    cards.forEach((card2, i) => {
+      let old = card2.querySelector(".tseq-badge");
       if (old) old.remove();
-      old = card.querySelector(".ttime-badge");
+      old = card2.querySelector(".ttime-badge");
       if (old) old.remove();
       const seqEl = document.createElement("span");
       seqEl.className = "tseq-badge";
       seqEl.textContent = String(i + 1);
-      const ttitle = card.querySelector(".ttitle");
+      const ttitle = card2.querySelector(".ttitle");
       if (ttitle) ttitle.prepend(seqEl);
-      const it = card._item || {};
+      const it = card2._item || {};
       const endMin = hourToMin(it.task_hour);
       if (endMin == null) return;
       const startMin = cursor;
@@ -5452,9 +6707,9 @@
         badge3.classList.add("task-date-pop");
         badge3.title = "\u70B9\u51FB\u6539\u671F / \u6539\u65F6\u523B";
       }
-      const metaBox = card.querySelector(".tmeta");
+      const metaBox = card2.querySelector(".tmeta");
       if (metaBox) metaBox.prepend(badge3);
-      else card.appendChild(badge3);
+      else card2.appendChild(badge3);
       const duePill = metaBox && metaBox.querySelector(".tdue");
       if (duePill) duePill.style.display = "none";
       cursor = endMin;
@@ -5472,22 +6727,23 @@
       parentCard.appendChild(box);
     }
     const done = !!(it && (it.state === "done" || it.status === "done"));
-    const card = document.createElement("div");
-    card.className = "tcard subtask" + (done ? " done" : "");
-    if (it && it.id) card.dataset.id = it.id;
+    const card2 = document.createElement("div");
+    card2.className = "tcard subtask" + (done ? " done" : "");
+    if (it && it.id) card2.dataset.id = it.id;
+    card2._item = it;
     const owner = it && it.owner || "\u674E";
     const oc = subOwnerBadge(owner);
     const del = it && it.id ? `<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
     const dt = it && it.task_date || "", hr = it && it.task_hour || "";
-    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(dt)}${hr ? (dt ? " " : "") + esc2(fmtHour(hr)) : ""}</span>` : "";
-    card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sub-text">${esc2(it && it.content || "")}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc2(owner)}</span>${del}</span></div>`;
-    box.appendChild(card);
-    return card;
+    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr ? (dt ? " " : "") + esc(fmtHour(hr)) : ""}</span>` : "";
+    card2.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sub-text">${esc(it && it.content || "")}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc(owner)}</span>${del}</span></div>`;
+    box.appendChild(card2);
+    return card2;
   }
   var _subtaskParentId = null;
   function openSubtaskModal(btn) {
-    const card = btn.closest(".tcard");
-    const pid = card && card.dataset.id;
+    const card2 = btn.closest(".tcard");
+    const pid = card2 && card2.dataset.id;
     if (!pid) {
       toast2("\u8BF7\u5148\u4FDD\u5B58\u5927\u4EFB\u52A1\u518D\u5206\u53D1");
       return;
@@ -5504,7 +6760,7 @@
     if (de) de.value = "";
     const ti = document.getElementById("subtask-parent-title");
     if (ti) {
-      const tt2 = card.querySelector(".ttitle");
+      const tt2 = card2.querySelector(".ttitle");
       ti.textContent = tt2 ? tt2.innerText.trim() : "";
     }
     openModal("subtaskMask");
@@ -5589,15 +6845,16 @@
     if (uf) uf.classList.toggle("is-hidden", !canUrgent);
     const uc = document.getElementById("task-urgent");
     if (uc) uc.checked = false;
+    fillTaskAuditFields(null);
     openModal("taskMask");
     if (tc) tc.focus();
   }
-  function openTaskEdit(el) {
-    const card = el.closest(".tcard");
-    const it = card && card._item;
+  function openTaskEdit(el5) {
+    const card2 = el5.closest(".tcard");
+    const it = card2 && card2._item;
     if (!it || !it.id) return;
-    _taskScope = card._scope || coScope();
-    _taskEditing = card;
+    _taskScope = card2._scope || coScope();
+    _taskEditing = card2;
     const verb = document.getElementById("task-mod-verb");
     if (verb) verb.textContent = "\u7F16\u8F91";
     const lbl = document.getElementById("task-deptlabel");
@@ -5626,6 +6883,7 @@
     if (tvh) tvh.value = it.task_verify_how || "";
     const uf = document.getElementById("task-urgent-fld");
     if (uf) uf.classList.add("is-hidden");
+    fillTaskAuditFields(it);
     openModal("taskMask");
     if (tc) tc.focus();
   }
@@ -5652,22 +6910,24 @@
     const task_done_when = (document.getElementById("task-done-when") && document.getElementById("task-done-when").value || "").trim();
     const task_verify_date = document.getElementById("task-verify-date") && document.getElementById("task-verify-date").value || "";
     const task_verify_how = (document.getElementById("task-verify-how") && document.getElementById("task-verify-how").value || "").trim();
+    const audit = readTaskAuditFields();
+    if (!audit) return;
     const ucEl = document.getElementById("task-urgent");
     const urgent = ucEl && ucEl.checked && !document.getElementById("task-urgent-fld").classList.contains("is-hidden") ? 1 : void 0;
     if (_taskEditing) {
-      const card = _taskEditing, it = card._item || {};
+      const card2 = _taskEditing, it = card2._item || {};
       try {
-        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, task_priority, note, task_why, task_done_when, task_verify_date, task_verify_how });
+        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, task_priority, note, task_why, task_done_when, task_verify_date, task_verify_how, ...audit });
         Object.assign(it, item || { content, task_date, start_date, task_hour, task_priority, note, task_why, task_done_when, task_verify_date, task_verify_how });
-        const t = card.querySelector(".ttitle");
+        const t = card2.querySelector(".ttitle");
         if (t) {
           [...t.childNodes].forEach((n) => {
             if (n.nodeType === 3) n.remove();
           });
           t.appendChild(document.createTextNode(it.content || ""));
         }
-        renderTaskMeta(card);
-        placeTaskCard(card);
+        renderTaskMeta(card2);
+        placeTaskCard(card2);
         refreshTaskCols();
         const col = taskColFor(s.dept);
         if (col) sortTaskCardsByTime(col);
@@ -5680,7 +6940,7 @@
       return;
     }
     try {
-      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, task_priority, note, task_why, task_done_when, task_verify_date, task_verify_how };
+      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, task_priority, note, task_why, task_done_when, task_verify_date, task_verify_how, ...audit };
       if (urgent) body.urgent = 1;
       const { item } = await API.post("/api/loop-items", body);
       addTaskCard(s, item.content, item);
@@ -5695,11 +6955,11 @@
     }
   }
   function taskDel(btn) {
-    const card = btn.closest(".tcard");
-    if (!card || !card.dataset.id) return;
+    const card2 = btn.closest(".tcard");
+    if (!card2 || !card2.dataset.id) return;
     if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
-    API.del("/api/loop-items/" + card.dataset.id).then(() => {
-      card.remove();
+    API.del("/api/loop-items/" + card2.dataset.id).then(() => {
+      card2.remove();
       refreshTaskCols();
     }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
   }
@@ -5764,10 +7024,10 @@
     ["company", "sem", "seo"].forEach((k) => {
       const col = document.getElementById("newtask-" + k);
       if (!col) return;
-      [...col.querySelectorAll(".tcard:not(.subtask)")].forEach((card) => {
-        if (card._item) {
-          renderTaskMeta(card);
-          placeTaskCard(card);
+      [...col.querySelectorAll(".tcard:not(.subtask)")].forEach((card2) => {
+        if (card2._item) {
+          renderTaskMeta(card2);
+          placeTaskCard(card2);
         }
       });
     });
@@ -5782,8 +7042,8 @@
     const s = sFromDept("SEO");
     try {
       const { item } = await API.post("/api/fixes", { title: "\u65B0\u6574\u6539\u9879", dept: s.dept, detail: "", evidence: "", owner: s.owner, due_date: futureDate(7), status: "\u8BA1\u5212\u4E0B\u5468", source: "\u624B\u52A8" });
-      const tr = addFixFromObj(item);
-      const c = tr && tr.querySelector('[data-field="title"]');
+      const tr2 = addFixFromObj(item);
+      const c = tr2 && tr2.querySelector('[data-field="title"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -5821,8 +7081,8 @@
     const tb = document.getElementById(id);
     if (!tb) return;
     tb.innerHTML = "";
-    const tr = document.createElement("tr");
-    tr.dataset.loadState = "error";
+    const tr2 = document.createElement("tr");
+    tr2.dataset.loadState = "error";
     const td2 = document.createElement("td");
     td2.colSpan = colspan;
     td2.className = "dim csp-s-d48bfa87bb";
@@ -5833,8 +7093,8 @@
     btn.innerHTML = '<i class="ti ti-refresh"></i> \u91CD\u8BD5';
     btn.addEventListener("click", retry);
     td2.appendChild(btn);
-    tr.appendChild(td2);
-    tb.appendChild(tr);
+    tr2.appendChild(td2);
+    tb.appendChild(tr2);
   }
   function resetClosedLoopView() {
     ["tb-fix", "tb-dep", "tb-test-sem", "tb-test-seo", "tb-plan-sem", "tb-plan-seo"].forEach((id) => {
@@ -5844,7 +7104,7 @@
     ["company", "sem", "seo"].forEach((key) => {
       const col = document.getElementById("newtask-" + key);
       if (!col) return;
-      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el) => el.remove());
+      col.querySelectorAll(":scope > .tgroup, :scope > .tcard, :scope > .donefold, :scope > [data-closed-loop-load-state]").forEach((el5) => el5.remove());
       col.classList.remove("folded");
     });
     const depEmpty = document.getElementById("dep-empty");
@@ -5885,7 +7145,7 @@
       btn.addEventListener("click", async () => {
         const retryError = await loadTaskCheckins();
         if (retryError) return;
-        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el) => el.remove());
+        document.querySelectorAll('[data-closed-loop-load-state="checkins"]').forEach((el5) => el5.remove());
         rerenderTaskCards();
       });
       const anchor = col.querySelector(".add-task");
@@ -5924,11 +7184,11 @@
       (items || []).slice().reverse().forEach((it) => {
         const s = sFromDept(it.dept);
         if (it.kind === "deposit") {
-          const tr = document.createElement("tr");
-          tr.dataset.id = it.id;
-          tr.dataset.ep = "/api/loop-items";
-          tr.innerHTML = depRowHtml(it);
-          depTb && depTb.appendChild(tr);
+          const tr2 = document.createElement("tr");
+          tr2.dataset.id = it.id;
+          tr2.dataset.ep = "/api/loop-items";
+          tr2.innerHTML = depRowHtml(it);
+          depTb && depTb.appendChild(tr2);
           aiDone[it.status === "\u91C7\u7EB3" ? "\u91C7\u7EB3" : "\u6C89\u6DC0"].add(aiFp(it.dept, it.content));
         } else if (it.kind === "test") {
           addTest(s, it.content, it);
@@ -5985,7 +7245,7 @@
   function depRowHtml(it) {
     const date = (it.created_at || "").slice(5, 10) || today();
     const badge3 = it.status === "\u91C7\u7EB3" ? '<span class="badge b-green">\u91C7\u7EB3</span>' : '<span class="badge b-teal">\u6C89\u6DC0</span>';
-    return `<td class="num">${esc2(date)}</td><td class="ctr">${badge3}</td><td class="editable" contenteditable data-field="content">${esc2(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc2(it.analysis || "")}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
+    return `<td class="num">${esc(date)}</td><td class="ctr">${badge3}</td><td class="editable" contenteditable data-field="content">${esc(it.content)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="analysis">${esc(it.analysis || "")}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="deposit-delete"><i class="ti ti-trash"></i></button></td>`;
   }
   async function addDepositRow() {
     try {
@@ -5993,13 +7253,13 @@
       const tb = document.getElementById("tb-dep");
       const state2 = tb.querySelector("tr[data-load-state]");
       if (state2) state2.remove();
-      const tr = document.createElement("tr");
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/loop-items";
-      tr.innerHTML = depRowHtml(item);
-      tb.insertBefore(tr, tb.firstChild);
+      const tr2 = document.createElement("tr");
+      tr2.dataset.id = item.id;
+      tr2.dataset.ep = "/api/loop-items";
+      tr2.innerHTML = depRowHtml(item);
+      tb.insertBefore(tr2, tb.firstChild);
       document.getElementById("dep-empty").style.display = "none";
-      const c = tr.querySelector('[data-field="content"]');
+      const c = tr2.querySelector('[data-field="content"]');
       if (c) {
         c.focus();
       }
@@ -6008,11 +7268,11 @@
     }
   }
   function depDel(btn) {
-    const tr = btn.closest("tr");
-    if (!tr.dataset.id) return;
+    const tr2 = btn.closest("tr");
+    if (!tr2.dataset.id) return;
     if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
-    API.del("/api/loop-items/" + tr.dataset.id).then(() => {
-      tr.remove();
+    API.del("/api/loop-items/" + tr2.dataset.id).then(() => {
+      tr2.remove();
       const tb = document.getElementById("tb-dep");
       if (tb && !tb.children.length) document.getElementById("dep-empty").style.display = "block";
     }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
@@ -6021,8 +7281,8 @@
     const s = sFromDept(dept);
     try {
       const { item } = await persistLoop("plan", s, "\u65B0\u6708\u5EA6\u8BA1\u5212", "\u5F85\u5F00\u59CB");
-      const tr = addPlan(s, item.content, item);
-      const c = tr && tr.querySelector('[data-field="content"]');
+      const tr2 = addPlan(s, item.content, item);
+      const c = tr2 && tr2.querySelector('[data-field="content"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6036,8 +7296,8 @@
     const s = sFromDept(dept);
     try {
       const { item } = await persistLoop("test", s, "\u65B0\u6D4B\u8BD5\u767B\u8BB0", "\u89C2\u5BDF\u4E2D");
-      const tr = addTest(s, item.content, item);
-      const c = tr && tr.querySelector('[data-field="content"]');
+      const tr2 = addTest(s, item.content, item);
+      const c = tr2 && tr2.querySelector('[data-field="content"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6051,7 +7311,7 @@
   var CA_OWNER = { "\u674E": "b-blue", "\u9648": "b-purple", "\u4E3B\u7BA1": "b-teal" };
   var CA_STATUS = { "\u5F85\u5F00\u59CB": "b-gray", "\u8FDB\u884C\u4E2D": "b-amber", "\u5DF2\u5B8C\u6210": "b-green" };
   function contentRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="name">${esc2(r.name)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="problem">${esc2(r.problem)}</td><td class="editable csp-s-33ee298127" contenteditable data-field="type">${esc2(r.type)}</td><td class="ctr"><span class="tagselect ${CA_PRIO[r.priority] || "b-blue"}" data-kind="priority">${esc2(r.priority || "\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_OWNER[r.owner] || "b-blue"}" data-kind="owner">${esc2(r.owner || "\u674E")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_STATUS[r.status] || "b-gray"}" data-kind="status">${esc2(r.status || "\u5F85\u5F00\u59CB")}<i class="ti ti-chevron-down"></i></span></td><td class="num">${esc2(r.add_date || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc2(r.note)}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
+    return `<td class="editable" contenteditable data-field="name">${esc(r.name)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="problem">${esc(r.problem)}</td><td class="editable csp-s-33ee298127" contenteditable data-field="type">${esc(r.type)}</td><td class="ctr"><span class="tagselect ${CA_PRIO[r.priority] || "b-blue"}" data-kind="priority">${esc(r.priority || "\u4E2D")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_OWNER[r.owner] || "b-blue"}" data-kind="owner">${esc(r.owner || "\u674E")}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><span class="tagselect ${CA_STATUS[r.status] || "b-gray"}" data-kind="status">${esc(r.status || "\u5F85\u5F00\u59CB")}<i class="ti ti-chevron-down"></i></span></td><td class="num">${esc(r.add_date || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="note">${esc(r.note)}</td><td class="ctr"><button type="button" class="btn-mini csp-s-b0e08465c2" data-loop-action="content-delete"><i class="ti ti-trash"></i></button></td>`;
   }
   async function loadContent() {
     const loadVersion = ++contentLoadVersion;
@@ -6062,11 +7322,11 @@
       if (!tb) return;
       tb.innerHTML = "";
       (items || []).forEach((r) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = r.id;
-        tr.dataset.ep = "/api/content-assets";
-        tr.innerHTML = contentRowHtml(r);
-        tb.appendChild(tr);
+        const tr2 = document.createElement("tr");
+        tr2.dataset.id = r.id;
+        tr2.dataset.ep = "/api/content-assets";
+        tr2.innerHTML = contentRowHtml(r);
+        tb.appendChild(tr2);
       });
       const e = document.getElementById("content-empty");
       if (e) e.style.display = items && items.length ? "none" : "block";
@@ -6074,8 +7334,8 @@
       if (loadVersion !== contentLoadVersion) return;
       if (e && e.message !== "unauthorized") {
         showTableFailure("tb-content", 9, "\u5185\u5BB9\u8D44\u4EA7", e, loadContent);
-        const empty = document.getElementById("content-empty");
-        if (empty) empty.style.display = "none";
+        const empty2 = document.getElementById("content-empty");
+        if (empty2) empty2.style.display = "none";
         toast2(loadFailureText2("\u5185\u5BB9\u8D44\u4EA7", e));
       }
     }
@@ -6086,13 +7346,13 @@
       const tb = document.getElementById("tb-content");
       const state2 = tb.querySelector("tr[data-load-state]");
       if (state2) state2.remove();
-      const tr = document.createElement("tr");
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/content-assets";
-      tr.innerHTML = contentRowHtml(item);
-      tb.appendChild(tr);
+      const tr2 = document.createElement("tr");
+      tr2.dataset.id = item.id;
+      tr2.dataset.ep = "/api/content-assets";
+      tr2.innerHTML = contentRowHtml(item);
+      tb.appendChild(tr2);
       document.getElementById("content-empty").style.display = "none";
-      const c = tr.querySelector('[data-field="name"]');
+      const c = tr2.querySelector('[data-field="name"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6102,11 +7362,11 @@
     }
   }
   function contentDel(btn) {
-    const tr = btn.closest("tr");
-    if (!tr.dataset.id) return;
+    const tr2 = btn.closest("tr");
+    if (!tr2.dataset.id) return;
     if (!inlineConfirm(btn, "\u786E\u8BA4\u5220\u9664")) return;
-    API.del("/api/content-assets/" + tr.dataset.id).then(() => {
-      tr.remove();
+    API.del("/api/content-assets/" + tr2.dataset.id).then(() => {
+      tr2.remove();
       const tb = document.getElementById("tb-content");
       if (tb && !tb.children.length) document.getElementById("content-empty").style.display = "block";
     }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
@@ -6179,20 +7439,20 @@
     if (row) row.remove();
   }
   function negRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="word">${esc2(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc2(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc2(r.added_date || "")}</td><td class="editable csp-s-33ee298127" contenteditable data-field="reason">${esc2(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc2(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc2(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
+    return `<td class="editable" contenteditable data-field="word">${esc(r.word)}</td><td class="ctr"><span class="tagselect ${NEGMATCH_BADGE[r.match_type] || "b-blue"}" data-kind="negmatch">${esc(r.match_type || "\u8BCD\u7EC4")}<i class="ti ti-chevron-down"></i></span></td><td class="editable" contenteditable data-field="added_date">${esc(r.added_date || "")}</td><td class="editable csp-s-33ee298127" contenteditable data-field="reason">${esc(r.reason || "")}</td><td class="editable" contenteditable data-field="source_campaign">${esc(r.source_campaign || "")}</td><td class="ctr"><span class="tagselect ${NEGSTATUS_BADGE[r.status] || "b-green"}" data-kind="negstatus">${esc(r.status || "\u751F\u6548")}<i class="ti ti-chevron-down"></i></span></td>`;
   }
   function adRowHtml(r) {
-    return `<td class="editable" contenteditable data-field="title">${esc2(r.title)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="description">${esc2(r.description || "")}</td><td class="editable" contenteditable data-field="ctr">${esc2(r.ctr || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="ab_conclusion">${esc2(r.ab_conclusion || "")}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || "b-amber"}" data-kind="adstatus">${esc2(r.status || "\u6D4B\u8BD5\u4E2D")}<i class="ti ti-chevron-down"></i></span></td>`;
+    return `<td class="editable" contenteditable data-field="title">${esc(r.title)}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="description">${esc(r.description || "")}</td><td class="editable" contenteditable data-field="ctr">${esc(r.ctr || "")}</td><td class="editable dim csp-s-33ee298127" contenteditable data-field="ab_conclusion">${esc(r.ab_conclusion || "")}</td><td class="ctr"><span class="tagselect ${ADSTATUS_BADGE[r.status] || "b-amber"}" data-kind="adstatus">${esc(r.status || "\u6D4B\u8BD5\u4E2D")}<i class="ti ti-chevron-down"></i></span></td>`;
   }
   async function addNeg() {
     try {
       const { item } = await API.post("/api/neg-keywords", { word: "\u65B0\u5426\u8BCD", reason: "" });
       clearLoadState("tb-neg");
       prepend("tb-neg", negRowHtml(item));
-      const tr = document.getElementById("tb-neg").firstChild;
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/neg-keywords";
-      const c = tr.querySelector('[data-field="word"]');
+      const tr2 = document.getElementById("tb-neg").firstChild;
+      tr2.dataset.id = item.id;
+      tr2.dataset.ep = "/api/neg-keywords";
+      const c = tr2.querySelector('[data-field="word"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6207,10 +7467,10 @@
       const { item } = await API.post("/api/ad-creatives", { title: "\u65B0\u521B\u610F", description: "" });
       clearLoadState("tb-ad");
       prepend("tb-ad", adRowHtml(item));
-      const tr = document.getElementById("tb-ad").firstChild;
-      tr.dataset.id = item.id;
-      tr.dataset.ep = "/api/ad-creatives";
-      const c = tr.querySelector('[data-field="title"]');
+      const tr2 = document.getElementById("tb-ad").firstChild;
+      tr2.dataset.id = item.id;
+      tr2.dataset.ep = "/api/ad-creatives";
+      const c = tr2.querySelector('[data-field="title"]');
       if (c) {
         c.focus();
         placeCaretEnd(c);
@@ -6267,16 +7527,16 @@
   }
   function fillTable(tableId, emptyId, rows2, renderCells, emptyText) {
     const body = document.getElementById(tableId);
-    const empty = document.getElementById(emptyId);
+    const empty2 = document.getElementById(emptyId);
     if (!body) return;
     const items = Array.isArray(rows2) ? rows2 : [];
     body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell3) => {
-      const value = cell3.html == null ? esc2(cell3.value ?? "") : cell3.html;
-      return `<td class="${cell3.cls || ""}">${value}</td>`;
+      const value = cell3.html == null ? esc(cell3.value ?? "") : cell3.html;
+      return `<td class="${esc(cell3.cls || "")}">${value}</td>`;
     }).join("")}</tr>`).join("");
-    if (empty) {
-      empty.textContent = emptyText || "\u6682\u65E0\u6570\u636E";
-      empty.classList.toggle("is-hidden", items.length > 0);
+    if (empty2) {
+      empty2.textContent = emptyText || "\u6682\u65E0\u6570\u636E";
+      empty2.classList.toggle("is-hidden", items.length > 0);
     }
   }
   function clearTables(message = "\u6682\u65E0\u6570\u636E") {
@@ -6292,7 +7552,7 @@
   }
   function renderDevices(rows2, emptyText = "\u6682\u65E0\u6570\u636E") {
     const wrap = document.getElementById("ga4-devices-chart");
-    const empty = document.getElementById("ga4-devices-empty");
+    const empty2 = document.getElementById("ga4-devices-empty");
     const canvas = document.getElementById("ga4Devices");
     const items = Array.isArray(rows2) ? rows2.filter((row) => Number(row.sessions || 0) > 0) : [];
     if (devicesChart) {
@@ -6301,14 +7561,14 @@
     }
     if (!items.length || !canvas || typeof Chart === "undefined") {
       if (wrap) wrap.classList.add("is-hidden");
-      if (empty) {
-        empty.textContent = items.length ? "\u56FE\u8868\u7EC4\u4EF6\u672A\u52A0\u8F7D" : emptyText;
-        empty.classList.remove("is-hidden");
+      if (empty2) {
+        empty2.textContent = items.length ? "\u56FE\u8868\u7EC4\u4EF6\u672A\u52A0\u8F7D" : emptyText;
+        empty2.classList.remove("is-hidden");
       }
       return;
     }
     if (wrap) wrap.classList.remove("is-hidden");
-    if (empty) empty.classList.add("is-hidden");
+    if (empty2) empty2.classList.add("is-hidden");
     devicesChart = new Chart(canvas, {
       type: "doughnut",
       data: {
@@ -6327,9 +7587,9 @@
       }
     });
   }
-  function renderGa4(data) {
-    const connected = Boolean(data.connected);
-    const metrics = data.metrics;
+  function renderGa4(data3) {
+    const connected = Boolean(data3.connected);
+    const metrics = data3.metrics;
     setStatus(connected);
     if (!connected) {
       setHint({
@@ -6357,44 +7617,44 @@
       setText("ga4-dur", formatDuration(metrics.avgDuration));
     }
     const baseEmpty = connected ? "\u6240\u9009\u533A\u95F4\u6682\u65E0\u6570\u636E" : "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A";
-    fillTable("ga4-sources", "ga4-sources-empty", data.sources, (row) => [
+    fillTable("ga4-sources", "ga4-sources-empty", data3.sources, (row) => [
       { value: row.source || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-countries", "ga4-countries-empty", data.countries, (row) => [
+    fillTable("ga4-countries", "ga4-countries-empty", data3.countries, (row) => [
       { value: row.country || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-landing", "ga4-landing-empty", data.landingPages, (row) => [
+    fillTable("ga4-landing", "ga4-landing-empty", data3.landingPages, (row) => [
       { value: row.page || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.conversions, 1), cls: "num" }
     ], baseEmpty);
-    fillTable("ga4-campaigns", "ga4-campaigns-empty", data.campaigns, (row) => [
+    fillTable("ga4-campaigns", "ga4-campaigns-empty", data3.campaigns, (row) => [
       { value: row.campaign || "(not set)" },
       { value: formatNumber(row.sessions), cls: "num" },
       { value: formatNumber(row.users), cls: "num" },
       { value: formatNumber(row.conversions, 1), cls: "num" }
     ], metrics ? "\u6240\u9009\u533A\u95F4\u6CA1\u6709\u5E7F\u544A\u7CFB\u5217\u6570\u636E" : baseEmpty);
-    const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
-    fillTable("ga4-events", "ga4-events-empty", data.conversionEvents, (row) => [
-      { html: `<div class="ga4-event-label">${esc2(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc2(row.eventName || "")}</div>` },
+    const eventEmpty = !connected ? "\u63A5\u5165\u5E76\u540C\u6B65\u540E\u663E\u793A" : !data3.eventCoverage?.synced ? "\u5173\u952E\u4E8B\u4EF6\u5C1A\u672A\u540C\u6B65\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C GA4 \u540C\u6B65" : "\u5DF2\u540C\u6B65\u4E8B\u4EF6\uFF0C\u4F46\u6CA1\u6709\u5339\u914D\u7684\u8F6C\u5316\u6216\u5173\u952E\u4E8B\u4EF6";
+    fillTable("ga4-events", "ga4-events-empty", data3.conversionEvents, (row) => [
+      { html: `<div class="ga4-event-label">${esc(row.label || "\u81EA\u5B9A\u4E49\u4E8B\u4EF6")}</div><div class="ga4-event-code">${esc(row.eventName || "")}</div>` },
       { value: formatNumber(row.eventCount), cls: "num" },
       { value: formatNumber(row.keyEvents, 1), cls: "num" },
       { value: formatNumber(row.users), cls: "num" }
     ], eventEmpty);
-    renderDevices(data.devices, baseEmpty);
+    renderDevices(data3.devices, baseEmpty);
   }
   async function loadGa42() {
     const requestId = ++requestSequence;
     const retry = document.getElementById("ga4-retry");
     if (retry) retry.disabled = true;
     try {
-      const data = await API.get(withRange("/api/ga4/overview", "data"));
+      const data3 = await API.get(withSite(withRange("/api/ga4/overview", "data")));
       if (requestId !== requestSequence) return;
-      renderGa4(data || { connected: false });
+      renderGa4(data3 || { connected: false });
     } catch (error) {
       if (requestId !== requestSequence) return;
       setStatus(false, true);
@@ -6425,7 +7685,7 @@
   });
   window._marketById = {};
   function mktEsc(s) {
-    return esc2(s);
+    return esc(s);
   }
   function renderMarket(items) {
     const tb = document.getElementById("tb-market");
@@ -6447,13 +7707,13 @@
         hr.innerHTML = `<td class="csp-s-24cc594aae" colspan="5">${mktEsc(it.section)}</td>`;
         tb.appendChild(hr);
       }
-      const tr = document.createElement("tr");
-      tr.dataset.id = it.id;
-      tr.innerHTML = `<td class="dim csp-s-33ee298127">${mktEsc(it.section)}</td><td class="mkt-q editable csp-s-bd299c8ad6" contenteditable>${mktEsc(it.question)}</td>` + ["\u5B5F\u96EA", "\u738B\u7490\u5E73", "\u71D5\u654F"].map((r) => `<td class="mkt-ans editable csp-s-23e1d32409" contenteditable data-resp="${r}">${mktEsc(ans[r] || "")}</td>`).join("");
-      tb.appendChild(tr);
+      const tr2 = document.createElement("tr");
+      tr2.dataset.id = it.id;
+      tr2.innerHTML = `<td class="dim csp-s-33ee298127">${mktEsc(it.section)}</td><td class="mkt-q editable csp-s-bd299c8ad6" contenteditable>${mktEsc(it.question)}</td>` + ["\u5B5F\u96EA", "\u738B\u7490\u5E73", "\u71D5\u654F"].map((r) => `<td class="mkt-ans editable csp-s-23e1d32409" contenteditable data-resp="${r}">${mktEsc(ans[r] || "")}</td>`).join("");
+      tb.appendChild(tr2);
     });
-    const empty = document.getElementById("market-empty");
-    if (empty) empty.style.display = items.length ? "none" : "block";
+    const empty2 = document.getElementById("market-empty");
+    if (empty2) empty2.style.display = items.length ? "none" : "block";
   }
   async function loadMarket() {
     try {
@@ -6465,8 +7725,8 @@
   document.addEventListener("focusout", (e) => {
     const cell3 = e.target.closest && e.target.closest("#tb-market [contenteditable]");
     if (!cell3) return;
-    const tr = cell3.closest("tr");
-    const id = tr && tr.dataset.id;
+    const tr2 = cell3.closest("tr");
+    const id = tr2 && tr2.dataset.id;
     if (!id) return;
     const it = window._marketById[id];
     if (!it) return;
@@ -6495,13 +7755,13 @@
           chip.textContent = "AI \u8BB0\u5FC6\uFF1A\u5DF2\u662F\u6700\u65B0";
         }
       }
-      const card = document.getElementById("brainSummaryCard");
-      if (card) {
+      const card2 = document.getElementById("brainSummaryCard");
+      if (card2) {
         if (summary) {
-          card.style.display = "block";
+          card2.style.display = "block";
           document.getElementById("brainSummary").innerHTML = mdToHtml(summary);
           document.getElementById("brainUpdatedAt").textContent = state2.updatedAt ? "\u66F4\u65B0\u4E8E " + state2.updatedAt : "";
-        } else card.style.display = "none";
+        } else card2.style.display = "none";
       }
     } catch (e) {
     }
@@ -6577,11 +7837,11 @@
     });
   }
   function syncKpiInputs() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
-      const p = el.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el5) => {
+      const p = el5.dataset.kpi.split(":"), arr = { TOTAL, SEO, SEM }[p[0]], idx = +p[1];
       if (arr && arr[idx] && arr[idx].t != null) {
-        el.textContent = String(arr[idx].t);
-        el.dataset.kpiOld = String(arr[idx].t);
+        el5.textContent = String(arr[idx].t);
+        el5.dataset.kpiOld = String(arr[idx].t);
       }
     });
   }
@@ -6630,17 +7890,17 @@
   document.addEventListener("change", (e) => {
     if (!e.target || e.target.id !== "sem-hlevel") return;
     const v = e.target.value;
-    document.querySelectorAll("#sub-data-sem table.hierarchy tbody tr").forEach((tr) => {
+    document.querySelectorAll("#sub-data-sem table.hierarchy tbody tr").forEach((tr2) => {
       let show = true;
-      if (v === "camp") show = tr.classList.contains("h-camp");
-      else if (v === "grp") show = tr.classList.contains("h-camp") || tr.classList.contains("h-grp");
-      tr.style.display = show ? "" : "none";
+      if (v === "camp") show = tr2.classList.contains("h-camp");
+      else if (v === "grp") show = tr2.classList.contains("h-camp") || tr2.classList.contains("h-grp");
+      tr2.style.display = show ? "" : "none";
     });
   });
   var _fnum = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return null;
-    const v = parseFloat(el.value);
+    const el5 = document.getElementById(id);
+    if (!el5) return null;
+    const v = parseFloat(el5.value);
     return isNaN(v) ? null : v;
   };
   async function submitSeoWeek() {
@@ -6717,9 +7977,9 @@
     const tone = ST_TONE[r.status] || "kpi-tone-muted";
     const res = r.verification_result ? '<span class="exec-res ' + (r.verification_result === "NEGATIVE" ? "kpi-tone-primary" : r.verification_result === "POSITIVE" ? "kpi-tone-green" : "kpi-tone-muted") + '">' + RESULT_LABEL[r.verification_result] + "</span>" : "";
     const adv = NEXT_STATUS.indexOf(r.status);
-    const advBtn = adv >= 0 && adv < NEXT_STATUS.length - 1 ? '<button class="exec-btn" data-exec-advance="' + r.id + '" data-next="' + NEXT_STATUS[adv + 1] + '">\u63A8\u8FDB\u2192' + ST_LABEL[NEXT_STATUS[adv + 1]] + "</button>" : "";
+    const advBtn = adv >= 0 && adv < NEXT_STATUS.length - 1 ? '<button class="exec-btn" data-exec-advance="' + esc(r.id) + '" data-next="' + NEXT_STATUS[adv + 1] + '">\u63A8\u8FDB\u2192' + ST_LABEL[NEXT_STATUS[adv + 1]] + "</button>" : "";
     const excluded = Number(r.exclude_from_assessment) === 1 ? '<span class="kpi-ds-badge">\u5DF2\u6392\u9664</span>' : "";
-    return '<tr><td class="exec-prob">' + esc(r.problem || "") + excluded + (r.analysis ? '<div class="exec-sub">\u5206\u6790\uFF1A' + esc(r.analysis) + "</div>" : "") + (r.action ? '<div class="exec-sub">\u52A8\u4F5C\uFF1A' + esc(r.action) + "</div>" : "") + "</td><td>" + esc(r.owner || "") + '</td><td><span class="exec-imp imp-' + (r.impact_level || "MEDIUM") + '">' + (IMP_LABEL[r.impact_level] || "\u4E2D") + '</span></td><td><span class="exec-st ' + tone + '">' + st2 + '</span></td><td class="exec-verif">' + verifCell(r) + " " + res + '</td><td class="exec-act">' + advBtn + "</td></tr>";
+    return '<tr><td class="exec-prob">' + esc(r.problem || "") + excluded + (r.analysis ? '<div class="exec-sub">\u5206\u6790\uFF1A' + esc(r.analysis) + "</div>" : "") + (r.action ? '<div class="exec-sub">\u52A8\u4F5C\uFF1A' + esc(r.action) + "</div>" : "") + "</td><td>" + esc(r.owner || "") + '</td><td><span class="exec-imp imp-' + esc(r.impact_level || "MEDIUM") + '">' + (IMP_LABEL[r.impact_level] || "\u4E2D") + '</span></td><td><span class="exec-st ' + tone + '">' + esc(st2) + '</span></td><td class="exec-verif">' + verifCell(r) + " " + res + '</td><td class="exec-act">' + advBtn + "</td></tr>";
   }
   function panelHtml(channel, items) {
     const sorted = items.slice().sort((a, b) => {
@@ -6735,9 +7995,9 @@
       return v.length + "/" + e.length;
     };
     const summary = "\u672C\u533A\u95F4\u5230\u671F " + elig.length + " \xB7 \u5DF2\u9A8C\u8BC1 " + ver.length + ' \xB7 <span class="exec-bkt">\u9AD8 ' + bkt("HIGH") + '</span> <span class="exec-bkt">\u4E2D ' + bkt("MEDIUM") + '</span> <span class="exec-bkt">\u4F4E ' + bkt("LOW") + "</span>";
-    const table = sorted.length ? '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u95EE\u9898 / \u5206\u6790 / \u52A8\u4F5C</th><th>\u8D1F\u8D23</th><th>\u5F71\u54CD</th><th>\u72B6\u6001</th><th>\u9A8C\u8BC1</th><th></th></tr></thead><tbody>' + sorted.map(rowHtml).join("") + "</tbody></table></div>" : '<div class="kpi-empty">\u672C\u533A\u95F4\u65E0\u5230\u671F\u9A8C\u8BC1\u7684\u95ED\u73AF</div>';
+    const table2 = sorted.length ? '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u95EE\u9898 / \u5206\u6790 / \u52A8\u4F5C</th><th>\u8D1F\u8D23</th><th>\u5F71\u54CD</th><th>\u72B6\u6001</th><th>\u9A8C\u8BC1</th><th></th></tr></thead><tbody>' + sorted.map(rowHtml).join("") + "</tbody></table></div>" : '<div class="kpi-empty">\u672C\u533A\u95F4\u65E0\u5230\u671F\u9A8C\u8BC1\u7684\u95ED\u73AF</div>';
     const form = '<form class="exec-form" data-exec-form="' + channel + '"><input name="problem" placeholder="\u53D1\u73B0\u7684\u95EE\u9898\uFF08\u5FC5\u586B\uFF09" required><input name="analysis" placeholder="\u5206\u6790\uFF1A\u4E3A\u4EC0\u4E48\u53D1\u751F"><input name="action" placeholder="\u52A8\u4F5C\uFF1A\u91C7\u53D6\u4E86\u4EC0\u4E48"><input name="verification_method" placeholder="\u9A8C\u8BC1\u65B9\u6CD5\uFF1A\u600E\u4E48\u5224\u65AD\u6709\u6548"><select name="impact_level"><option value="HIGH">\u9AD8\u5F71\u54CD</option><option value="MEDIUM" selected>\u4E2D\u5F71\u54CD</option><option value="LOW">\u4F4E\u5F71\u54CD</option></select><label class="exec-due">\u9A8C\u8BC1\u5230\u671F <input type="date" name="verification_due_at"></label><button type="submit" class="exec-btn exec-btn-primary">\u65B0\u589E\u95ED\u73AF</button></form>';
-    return '<details class="exec-panel" open><summary>\u6267\u884C\u9A8C\u8BC1\u95ED\u73AF \xB7 ' + summary + "</summary>" + table + form + "</details>";
+    return '<details class="exec-panel" open><summary>\u6267\u884C\u9A8C\u8BC1\u95ED\u73AF \xB7 ' + summary + "</summary>" + table2 + form + "</details>";
   }
   var CH_ANCHOR = { seo: "seoRows", sem: "semRows" };
   function ensureContainer(channel) {
@@ -6775,8 +8035,8 @@
     e.preventDefault();
     const channel = form.getAttribute("data-exec-form");
     const body = { channel };
-    for (const el of form.elements) {
-      if (el.name && el.value) body[el.name] = el.value;
+    for (const el5 of form.elements) {
+      if (el5.name && el5.value) body[el5.name] = el5.value;
     }
     if (!body.problem) {
       toast("\u95EE\u9898\u5FC5\u586B");
@@ -6820,23 +8080,23 @@
   var pct = (c) => Math.round((Number(c) || 0) * 100);
   function scopeText(s) {
     if (!s) return "\u5F85\u8BC4\u4F30";
-    if (s.score != null) return '<b class="kpi-tone-green">' + s.score + "</b> \u5206";
-    if (s.provisionalScore != null) return "\u53C2\u8003 <b>" + s.provisionalScore + "</b>\uFF08\u8986\u76D6\u7387 " + pct(s.coverage) + "%\uFF0C\u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206\uFF09";
+    if (s.score != null) return '<b class="kpi-tone-green">' + esc(s.score) + "</b> \u5206";
+    if (s.provisionalScore != null) return "\u53C2\u8003 <b>" + esc(s.provisionalScore) + "</b>\uFF08\u8986\u76D6\u7387 " + pct(s.coverage) + "%\uFF0C\u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206\uFF09";
     return "\u5F85\u8BC4\u4F30";
   }
   function snapText(r) {
-    if (r.score != null) return '<b class="kpi-tone-green">' + r.score + "</b> \u5206";
-    if (r.provisional_score != null) return "\u53C2\u8003 " + r.provisional_score + "\uFF08\u8986\u76D6\u7387 " + pct(r.coverage) + "%\uFF09";
-    return "\u5F85\u8BC4\u4F30\uFF08" + (r.status || "") + "\uFF09";
+    if (r.score != null) return '<b class="kpi-tone-green">' + esc(r.score) + "</b> \u5206";
+    if (r.provisional_score != null) return "\u53C2\u8003 " + esc(r.provisional_score) + "\uFF08\u8986\u76D6\u7387 " + pct(r.coverage) + "%\uFF09";
+    return "\u5F85\u8BC4\u4F30\uFF08" + esc(r.status || "") + "\uFF09";
   }
   function currentRowHtml(o) {
     const key = curKey(o.type);
     const s = o._preview;
-    return '<div class="kpip-cur"><span class="kpip-owner">' + o.label + '</span><span class="kpip-period">' + PERIOD_LABEL[o.type] + " " + key + '\uFF08\u8FDB\u884C\u4E2D\uFF09</span><span class="kpip-score">' + (s ? scopeText(s) : "\u2026") + '</span><button class="exec-btn exec-btn-primary" data-settle-owner="' + o.owner + '" data-settle-type="' + o.type + '" data-settle-key="' + key + '">\u7ED3\u7B97\u672C\u671F\u5E76\u51BB\u7ED3</button></div>';
+    return '<div class="kpip-cur"><span class="kpip-owner">' + esc(o.label) + '</span><span class="kpip-period">' + PERIOD_LABEL[o.type] + " " + key + '\uFF08\u8FDB\u884C\u4E2D\uFF09</span><span class="kpip-score">' + (s ? scopeText(s) : "\u2026") + '</span><button class="exec-btn exec-btn-primary" data-settle-owner="' + esc(o.owner) + '" data-settle-type="' + esc(o.type) + '" data-settle-key="' + esc(key) + '">\u7ED3\u7B97\u672C\u671F\u5E76\u51BB\u7ED3</button></div>';
   }
   function historyHtml(items) {
     if (!items.length) return '<div class="kpi-empty">\u6682\u65E0\u5DF2\u7ED3\u7B97\u8003\u6838\u671F</div>';
-    return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u8003\u6838\u671F</th><th>\u5BF9\u8C61</th><th>\u6210\u7EE9</th><th>\u8986\u76D6\u7387</th><th>\u72B6\u6001</th><th>\u7ED3\u7B97\u65F6\u95F4</th></tr></thead><tbody>' + items.map((r) => "<tr><td>" + esc(r.period_key) + "</td><td>" + (OWNER_LABEL[r.owner] || r.owner) + "</td><td>" + snapText(r) + "</td><td>" + pct(r.coverage) + "%</td><td>" + esc(r.status || "") + "</td><td>" + esc((r.settled_at || "").slice(0, 16)) + "</td></tr>").join("") + "</tbody></table></div>";
+    return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u8003\u6838\u671F</th><th>\u5BF9\u8C61</th><th>\u6210\u7EE9</th><th>\u8986\u76D6\u7387</th><th>\u72B6\u6001</th><th>\u7ED3\u7B97\u65F6\u95F4</th></tr></thead><tbody>' + items.map((r) => "<tr><td>" + esc(r.period_key) + "</td><td>" + esc(OWNER_LABEL[r.owner] || r.owner) + "</td><td>" + snapText(r) + "</td><td>" + pct(r.coverage) + "%</td><td>" + esc(r.status || "") + "</td><td>" + esc((r.settled_at || "").slice(0, 16)) + "</td></tr>").join("") + "</tbody></table></div>";
   }
   function ensureMount() {
     const panel = document.getElementById("panel-kpi");
@@ -6895,15 +8155,15 @@
     SPEND_WITH_ZERO_DEAL: "\u6709\u82B1\u8D39\xB7\u96F6\u6210\u4EA4"
   };
   function make(tag, className, text2) {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (text2 != null) el.textContent = String(text2);
-    return el;
+    const el5 = document.createElement(tag);
+    if (className) el5.className = className;
+    if (text2 != null) el5.textContent = String(text2);
+    return el5;
   }
   function cell(tag, className, text2, title) {
-    const el = make(tag, className, text2);
-    if (title) el.title = title;
-    return el;
+    const el5 = make(tag, className, text2);
+    if (title) el5.title = title;
+    return el5;
   }
   var money = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
   var CURRENCY_HINT = "\u91D1\u989D\u4E3A\u5E7F\u544A\u8D26\u6237\u5E01\u79CD\uFF08Ads \u540C\u6B65\u672A\u5B58\u5E01\u79CD\uFF09\uFF0C\u6545\u4E0D\u52A0\u8D27\u5E01\u7B26\u53F7";
@@ -6928,20 +8188,20 @@
     return cell("td", "num", Number(value || 0).toLocaleString("zh-CN"), "");
   }
   function channelRow(row, isTotal) {
-    const tr = make("tr", isTotal ? "ledger-total" : "");
-    tr.appendChild(cell("td", "ledger-ch", row.label, ""));
-    tr.appendChild(metricCell(row.spend));
-    tr.appendChild(numCell(row.inquiries));
-    tr.appendChild(numCell(row.quality));
-    tr.appendChild(numCell(row.deals));
-    tr.appendChild(rateCell(row.qualityRate, "\u4F18\u8D28(A/B) \xF7 \u8BE2\u76D8"));
-    tr.appendChild(rateCell(row.dealRate, "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8" + (row.dealRateOverall != null ? "\uFF1B\u603B\u53E3\u5F84 " + pct2(row.dealRateOverall) : "")));
-    tr.appendChild(metricCell(row.costPerQuality, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09" : ""));
-    tr.appendChild(metricCell(row.cac, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
-    return tr;
+    const tr2 = make("tr", isTotal ? "ledger-total" : "");
+    tr2.appendChild(cell("td", "ledger-ch", row.label, ""));
+    tr2.appendChild(metricCell(row.spend));
+    tr2.appendChild(numCell(row.inquiries));
+    tr2.appendChild(numCell(row.quality));
+    tr2.appendChild(numCell(row.deals));
+    tr2.appendChild(rateCell(row.qualityRate, "\u4F18\u8D28(A/B) \xF7 \u8BE2\u76D8"));
+    tr2.appendChild(rateCell(row.dealRate, "\u4F18\u8D28\u6210\u4EA4 \xF7 \u4F18\u8D28\u8BE2\u76D8" + (row.dealRateOverall != null ? "\uFF1B\u603B\u53E3\u5F84 " + pct2(row.dealRateOverall) : "")));
+    tr2.appendChild(metricCell(row.costPerQuality, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09" : ""));
+    tr2.appendChild(metricCell(row.cac, isTotal ? "\u5408\u8BA1\u4E3A\u6DF7\u5408\u53E3\u5F84\uFF08\u5206\u5B50\u4EC5 SEM \u82B1\u8D39\uFF09\uFF0C\u53EA\u80FD\u5F53\u4E0B\u9650\u770B" : ""));
+    return tr2;
   }
-  function buildTable(data) {
-    const table = make("table", "dt ledger-table");
+  function buildTable(data3) {
+    const table2 = make("table", "dt ledger-table");
     const thead = make("thead");
     const htr = make("tr");
     [
@@ -6956,22 +8216,22 @@
       ["\u6BCF\u6210\u4EA4\u6210\u672C CAC", "num", "\u82B1\u8D39 \xF7 \u6210\u4EA4"]
     ].forEach(([text2, cls, title]) => htr.appendChild(cell("th", cls, text2, title)));
     thead.appendChild(htr);
-    table.appendChild(thead);
+    table2.appendChild(thead);
     const tbody = make("tbody");
-    (data.channels || []).forEach((row) => tbody.appendChild(channelRow(row, false)));
-    if (data.totals) tbody.appendChild(channelRow(data.totals, true));
-    table.appendChild(tbody);
-    return table;
+    (data3.channels || []).forEach((row) => tbody.appendChild(channelRow(row, false)));
+    if (data3.totals) tbody.appendChild(channelRow(data3.totals, true));
+    table2.appendChild(tbody);
+    return table2;
   }
   function buildTargets(targets) {
     const box = make("div", "ledger-targets");
     box.appendChild(make("div", "ledger-sec-title", "\u76EE\u6807 vs \u5F53\u524D\uFF08\u76EE\u6807\u4E3A\u8BBE\u7F6E\u9875\u6708\u5EA6\u76EE\u6807\uFF0C\u672A\u6309\u533A\u95F4\u6298\u7B97\uFF09"));
     (targets || []).forEach((t) => {
-      const line = make("div", "ledger-target");
-      line.appendChild(make("div", "ledger-target-name", t.label));
+      const line3 = make("div", "ledger-target");
+      line3.appendChild(make("div", "ledger-target-name", t.label));
       const actualText2 = t.actual == null ? "\u2014" : t.unit === "\xA5" ? money(t.actual, t.currency) : Number(t.actual).toLocaleString("zh-CN") + t.unit;
       const targetText = t.target == null ? "\u76EE\u6807\u5F85\u5B9A" : "\u76EE\u6807 " + (t.unit === "\xA5" ? money(t.target, "CNY") : Number(t.target).toLocaleString("zh-CN") + t.unit);
-      line.appendChild(cell(
+      line3.appendChild(cell(
         "div",
         "ledger-target-val" + (t.currency_mismatch ? " ledger-warn" : ""),
         actualText2 + " / " + targetText,
@@ -6983,71 +8243,71 @@
       fill.style.width = p + "%";
       fill.classList.add(t.progress == null ? "ledger-fill-muted" : t.progress >= 1 ? "ledger-fill-green" : t.progress >= 0.6 ? "ledger-fill-blue" : "ledger-fill-amber");
       bar.appendChild(fill);
-      line.appendChild(bar);
+      line3.appendChild(bar);
       const tail = t.status === "NO_TARGET" ? "\u5F85\u8001\u677F\u62CD\u677F" : t.status === "NO_ACTUAL" ? "\u6682\u65E0\u5B9E\u9645\u503C" : Math.round(t.progress * 100) + "%";
-      line.appendChild(cell(
+      line3.appendChild(cell(
         "div",
         "ledger-target-pct" + (t.status === "VALID" ? "" : " dim"),
         tail,
         t.inverse ? "\u53CD\u5411\u6307\u6807\uFF1A\u8D8A\u4F4E\u8D8A\u597D\uFF0C\u8FBE\u6807\u5373\u5C01\u9876 100%" : ""
       ));
-      box.appendChild(line);
+      box.appendChild(line3);
     });
     return box;
   }
-  function buildNotes(data) {
+  function buildNotes(data3) {
     const box = make("div", "ledger-notes");
-    const notes = data.notes || {};
+    const notes = data3.notes || {};
     [notes.deal, notes.spend, notes.quality, notes.dealRate].forEach((text2) => {
       if (text2) box.appendChild(make("div", "ledger-note", "\xB7 " + text2));
     });
-    if (data.sources && data.sources.spend) {
-      box.appendChild(make("div", "ledger-note", "\xB7 \u82B1\u8D39\u53D6\u6570\uFF1A" + data.sources.spend));
+    if (data3.sources && data3.sources.spend) {
+      box.appendChild(make("div", "ledger-note", "\xB7 \u82B1\u8D39\u53D6\u6570\uFF1A" + data3.sources.spend));
     }
-    const missing = data.meta && data.meta.dealStatusMissing;
+    const missing = data3.meta && data3.meta.dealStatusMissing;
     if (missing) box.appendChild(make("div", "ledger-note ledger-warn", "\xB7 \u6709 " + missing + " \u5C01\u8BE2\u76D8\u672A\u6807\u6CE8\u662F\u5426\u6210\u4EA4\uFF0C\u672A\u8BA1\u5165\u6210\u4EA4\u6570\uFF08\u4E5F\u672A\u5F53\u4F5C\u672A\u6210\u4EA4\uFF09"));
     box.appendChild(make("div", "ledger-note", "\xB7 \u672C\u8868\u4E3A\u4E1A\u52A1\u603B\u8D26\uFF0C\u53EA\u8BFB\uFF1B\u4E0D\u53C2\u4E0E KPI \u7EE9\u6548\u8BC4\u5206"));
     return box;
   }
   function ensureCard() {
-    let card = document.getElementById(CARD_ID);
-    if (card) return card;
+    let card2 = document.getElementById(CARD_ID);
+    if (card2) return card2;
     const panel = document.getElementById("panel-kpi");
     if (!panel) return null;
-    card = make("div", "card ledger-card");
-    card.id = CARD_ID;
+    card2 = make("div", "card ledger-card");
+    card2.id = CARD_ID;
     const head = make("div", "card-head");
     head.appendChild(make("span", "card-title", "\u8FD0\u8425\u603B\u8D26 \xB7 \u4E1A\u52A1\u7ED3\u679C\u6F0F\u6597"));
     head.appendChild(make("span", "card-sub ledger-range", "\u2014"));
-    card.appendChild(head);
-    card.appendChild(make("div", "ledger-body", "\u6B63\u5728\u52A0\u8F7D\u8FD0\u8425\u603B\u8D26\u2026"));
-    card.addEventListener("click", (e) => {
+    card2.appendChild(head);
+    card2.appendChild(make("div", "ledger-body", "\u6B63\u5728\u52A0\u8F7D\u8FD0\u8425\u603B\u8D26\u2026"));
+    card2.addEventListener("click", (e) => {
       if (e.target && e.target.closest("[data-ledger-retry]")) loadLedger(true);
     });
     const tip = panel.querySelector(":scope > .sheet-tip");
     const anchor = tip || panel.querySelector(":scope > .timebar-inline") || panel.querySelector(":scope > .page-head");
-    if (anchor && anchor.parentNode === panel) anchor.insertAdjacentElement("afterend", card);
-    else panel.appendChild(card);
-    return card;
+    if (anchor && anchor.parentNode === panel) anchor.insertAdjacentElement("afterend", card2);
+    else panel.appendChild(card2);
+    return card2;
   }
-  function setBody(card, node) {
-    const body = card.querySelector(".ledger-body");
+  function setBody(card2, node) {
+    const body = card2.querySelector(".ledger-body");
     if (!body) return;
     body.textContent = "";
     body.appendChild(node);
   }
-  function render(card, data) {
-    const label = card.querySelector(".ledger-range");
-    if (label) label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data.range);
+  function render2(card2, data3) {
+    const label = card2.querySelector(".ledger-range");
+    if (label) label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data3.range);
     const wrap = make("div");
     const scroller = make("div", "ledger-scroll");
-    scroller.appendChild(buildTable(data));
+    scroller.appendChild(buildTable(data3));
     wrap.appendChild(scroller);
-    wrap.appendChild(buildTargets(data.targets));
-    wrap.appendChild(buildNotes(data));
-    setBody(card, wrap);
+    wrap.appendChild(buildTargets(data3.targets));
+    wrap.appendChild(buildNotes(data3));
+    setBody(card2, wrap);
   }
-  function renderError(card, message) {
+  function renderError(card2, message) {
     const box = make("div", "ledger-error");
     box.appendChild(make("div", "", "\u8FD0\u8425\u603B\u8D26\u52A0\u8F7D\u5931\u8D25\uFF1A" + (message || "\u672A\u77E5\u9519\u8BEF")));
     box.appendChild(make("div", "ledger-note", "\u6570\u636E\u6E90\uFF1Ainquiries\uFF08\u8BE2\u76D8/\u7B49\u7EA7/\u662F\u5426\u6210\u4EA4\uFF09+ sem_weeks.cost\uFF08SEM \u82B1\u8D39\uFF09"));
@@ -7055,26 +8315,26 @@
     btn.type = "button";
     btn.setAttribute("data-ledger-retry", "1");
     box.appendChild(btn);
-    setBody(card, box);
+    setBody(card2, box);
   }
   var requestSequence2 = 0;
   var loadedRevision = null;
   async function loadLedger(force) {
-    const card = ensureCard();
-    if (!card) return false;
+    const card2 = ensureCard();
+    if (!card2) return false;
     const revision = getRangeRevision();
     if (!force && loadedRevision === revision) return true;
     const requestId = ++requestSequence2;
     try {
-      const data = await API.get(withRange2("/api/kpi/ledger"));
+      const data3 = await API.get(withRange2("/api/kpi/ledger"));
       if (requestId !== requestSequence2 || revision !== getRangeRevision()) return false;
-      render(card, data);
+      render2(card2, data3);
       loadedRevision = revision;
       return true;
     } catch (e) {
       if (requestId !== requestSequence2) return false;
       if (e && e.message === "unauthorized") return false;
-      renderError(card, e && e.message);
+      renderError(card2, e && e.message);
     }
     return false;
   }
@@ -7107,15 +8367,15 @@
     NO_VALID_DATA: "\u672C\u533A\u95F4\u6682\u65E0\u53EF\u8BC4\u5206\u6570\u636E"
   };
   function make2(tag, className, text2) {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (text2 != null) el.textContent = String(text2);
-    return el;
+    const el5 = document.createElement(tag);
+    if (className) el5.className = className;
+    if (text2 != null) el5.textContent = String(text2);
+    return el5;
   }
   function cell2(tag, className, text2, title) {
-    const el = make2(tag, className, text2);
-    if (title) el.title = title;
-    return el;
+    const el5 = make2(tag, className, text2);
+    if (title) el5.title = title;
+    return el5;
   }
   var pct3 = (v, digits) => v == null || !Number.isFinite(Number(v)) ? null : (Number(v) * 100).toFixed(digits == null ? 1 : digits) + "%";
   var money2 = (v, currency) => v == null || !Number.isFinite(Number(v)) ? null : (currency === "CNY" ? "\xA5" : "") + Number(v).toLocaleString("zh-CN", { maximumFractionDigits: 2 });
@@ -7131,26 +8391,26 @@
     if (existing) return existing;
     const panel = document.getElementById("panel-kpi");
     if (!panel) return null;
-    const card = make2("div", "card kpi-review");
-    card.id = CARD_ID2;
+    const card2 = make2("div", "card kpi-review");
+    card2.id = CARD_ID2;
     const head = make2("div", "card-head");
     head.appendChild(make2("span", "card-title", "\u6708\u5EA6\u7EE9\u6548\u8003\u6838 \xB7 \u8001\u677F\u8003\u6838\u8868\u53E3\u5F84"));
     head.appendChild(make2("span", "card-sub kpi-review-range", "\u5F53\u524D\u533A\u95F4 \u2014"));
-    card.appendChild(head);
-    card.appendChild(make2("div", "kpi-review-body"));
+    card2.appendChild(head);
+    card2.appendChild(make2("div", "kpi-review-body"));
     const anchor = panel.querySelector(".sheet-tip");
-    if (anchor && anchor.nextSibling) panel.insertBefore(card, anchor.nextSibling);
-    else panel.appendChild(card);
-    return card;
+    if (anchor && anchor.nextSibling) panel.insertBefore(card2, anchor.nextSibling);
+    else panel.appendChild(card2);
+    return card2;
   }
-  function hoistAboveLedger(card) {
+  function hoistAboveLedger(card2) {
     const ledger = document.getElementById("kpiLedger");
-    if (!ledger || ledger.parentNode !== card.parentNode) return;
-    if (card.compareDocumentPosition(ledger) & Node.DOCUMENT_POSITION_FOLLOWING) return;
-    card.parentNode.insertBefore(card, ledger);
+    if (!ledger || ledger.parentNode !== card2.parentNode) return;
+    if (card2.compareDocumentPosition(ledger) & Node.DOCUMENT_POSITION_FOLLOWING) return;
+    card2.parentNode.insertBefore(card2, ledger);
   }
-  function setBody2(card, node) {
-    const body = card.querySelector(".kpi-review-body");
+  function setBody2(card2, node) {
+    const body = card2.querySelector(".kpi-review-body");
     if (!body) return;
     body.textContent = "";
     body.appendChild(node);
@@ -7240,76 +8500,76 @@
     return "kpi-tone-primary";
   }
   function buildTable2(s) {
-    const table = make2("table", "dt kpi-review-table");
+    const table2 = make2("table", "dt kpi-review-table");
     const thead = make2("thead");
     const hr = make2("tr");
-    for (const h of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
-      hr.appendChild(make2("th", h === "\u8003\u6838\u9879\u76EE" || h === "\u8BF4\u660E" ? "" : "ctr", h));
+    for (const h4 of ["\u8003\u6838\u9879\u76EE", "\u6743\u91CD", "\u76EE\u6807\u503C", "\u5B9E\u9645\u503C", "\u5B8C\u6210\u7387", "\u5F97\u5206", "\u8BF4\u660E"]) {
+      hr.appendChild(make2("th", h4 === "\u8003\u6838\u9879\u76EE" || h4 === "\u8BF4\u660E" ? "" : "ctr", h4));
     }
     thead.appendChild(hr);
-    table.appendChild(thead);
+    table2.appendChild(thead);
     const tbody = make2("tbody");
     for (const m of s.metrics) {
-      const tr = make2("tr", m.status === "VALID" ? "" : "kpi-review-row-off");
-      tr.appendChild(cell2("td", "kpi-review-name", m.label, m.note || ""));
-      tr.appendChild(make2("td", "ctr num", m.weight));
-      tr.appendChild(make2("td", "ctr num", metricValueText(m, "target") || "\u2014"));
-      tr.appendChild(cell2(
+      const tr2 = make2("tr", m.status === "VALID" ? "" : "kpi-review-row-off");
+      tr2.appendChild(cell2("td", "kpi-review-name", m.label, m.note || ""));
+      tr2.appendChild(make2("td", "ctr num", m.weight));
+      tr2.appendChild(make2("td", "ctr num", metricValueText(m, "target") || "\u2014"));
+      tr2.appendChild(cell2(
         "td",
         "ctr num" + (m.status === "VALID" ? "" : " dim"),
         actualText(m),
         m.status === "VALID" ? "" : m.note || ""
       ));
       const tone = m.status === "VALID" ? toneFor(m.ratio) : "kpi-tone-muted";
-      tr.appendChild(cell2(
+      tr2.appendChild(cell2(
         "td",
         "ctr num " + tone,
         m.ratio == null ? "\u2014" : pct3(m.ratio, 0),
         m.raw_ratio != null && m.ratio != null && m.raw_ratio > m.ratio ? "\u5B9E\u9645\u8FBE\u6210 " + pct3(m.raw_ratio, 0) + "\uFF0C\u6309\u4E0A\u9650 " + pct3(m.ratio, 0) + " \u8BA1\u5206" : ""
       ));
-      tr.appendChild(make2("td", "ctr num kpi-review-score-cell " + tone, m.score == null ? "\u2014" : m.score));
-      tr.appendChild(cell2("td", "kpi-review-note dim", statusNote(m), m.note || ""));
-      tbody.appendChild(tr);
+      tr2.appendChild(make2("td", "ctr num kpi-review-score-cell " + tone, m.score == null ? "\u2014" : m.score));
+      tr2.appendChild(cell2("td", "kpi-review-note dim", statusNote(m), m.note || ""));
+      tbody.appendChild(tr2);
     }
     tbody.appendChild(buildAdRow(s.adSpend));
-    table.appendChild(tbody);
-    return table;
+    table2.appendChild(tbody);
+    return table2;
   }
   function actualText(m) {
     if (m.status !== "VALID") return STATUS_TEXT[m.status] || "\u2014";
-    const num2 = metricValueText(m, "actual");
-    if (m.display_value && num2) return num2 + "\uFF08" + m.display_value + "\uFF09";
-    return m.display_value || num2 || "\u2014";
+    const num4 = metricValueText(m, "actual");
+    if (m.display_value && num4) return num4 + "\uFF08" + m.display_value + "\uFF09";
+    return m.display_value || num4 || "\u2014";
   }
   function statusNote(m) {
     if (m.status === "VALID") return m.note || "";
     return (STATUS_TEXT[m.status] || "") + (m.note ? " \xB7 " + m.note : "");
   }
   function buildAdRow(ad) {
-    const tr = make2("tr", "kpi-review-row-info");
-    tr.appendChild(cell2("td", "kpi-review-name", "\u5E7F\u544A\u6295\u5165\uFF08\u4E0D\u8BA1\u5206\uFF09", ad.note));
-    tr.appendChild(make2("td", "ctr dim", "\u2014"));
-    tr.appendChild(make2("td", "ctr num", ad.budget == null ? "\u9884\u7B97\u5F85\u5B9A" : money2(ad.budget, "CNY")));
-    tr.appendChild(make2("td", "ctr num", ad.status === "VALID" ? money2(ad.value, ad.currency) : "\u7F3A\u6570\u636E"));
+    const tr2 = make2("tr", "kpi-review-row-info");
+    tr2.appendChild(cell2("td", "kpi-review-name", "\u5E7F\u544A\u6295\u5165\uFF08\u4E0D\u8BA1\u5206\uFF09", ad.note));
+    tr2.appendChild(make2("td", "ctr dim", "\u2014"));
+    tr2.appendChild(make2("td", "ctr num", ad.budget == null ? "\u9884\u7B97\u5F85\u5B9A" : money2(ad.budget, "CNY")));
+    tr2.appendChild(make2("td", "ctr num", ad.status === "VALID" ? money2(ad.value, ad.currency) : "\u7F3A\u6570\u636E"));
     const dev = ad.deviation;
     const devText = dev == null ? "\u2014" : (dev > 0 ? "+" : "") + (dev * 100).toFixed(1) + "%";
-    tr.appendChild(cell2(
+    tr2.appendChild(cell2(
       "td",
       "ctr num " + (ad.within_tolerance === false ? "kpi-tone-amber" : "kpi-tone-muted"),
       devText,
       "\u76F8\u5BF9\u9884\u7B97\u7684\u504F\u5DEE\uFF0C\u5BB9\u5FCD\u5E26 \xB1" + Math.round(ad.tolerance * 100) + "%"
     ));
-    tr.appendChild(make2("td", "ctr dim", "\u2014"));
-    tr.appendChild(make2("td", "kpi-review-note dim", ad.note));
-    return tr;
+    tr2.appendChild(make2("td", "ctr dim", "\u2014"));
+    tr2.appendChild(make2("td", "kpi-review-note dim", ad.note));
+    return tr2;
   }
   function buildBands(s) {
     const box = make2("div", "kpi-review-bands");
     box.appendChild(make2("div", "kpi-review-sub", "\u7EE9\u6548\u7CFB\u6570\u5206\u6863"));
     const row = make2("div", "kpi-review-band-row");
-    const current = s.score != null ? s.band : null;
+    const current2 = s.score != null ? s.band : null;
     for (const b of s.config.bands) {
-      const active = current && current.label === b.label;
+      const active = current2 && current2.label === b.label;
       const chip = make2("div", "kpi-review-band" + (active ? " on " + bandTone(b.coef) : ""));
       chip.title = b.note || "";
       chip.appendChild(make2("span", "kpi-review-band-range", "\u2265 " + b.min));
@@ -7346,14 +8606,14 @@
     box.appendChild(basis);
     return box;
   }
-  function render2(card, data) {
-    latest = data;
-    hoistAboveLedger(card);
-    const label = card.querySelector(".kpi-review-range");
+  function render3(card2, data3) {
+    latest = data3;
+    hoistAboveLedger(card2);
+    const label = card2.querySelector(".kpi-review-range");
     if (label) {
-      label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data.range) + (data.department.targets.source === "default" ? " \xB7 \u76EE\u6807\u53D6\u901A\u7528\u515C\u5E95\u503C" : "");
+      label.textContent = "\u5F53\u524D\u533A\u95F4 " + rangeText(data3.range) + (data3.department.targets.source === "default" ? " \xB7 \u76EE\u6807\u53D6\u901A\u7528\u515C\u5E95\u503C" : "");
     }
-    const s = data[activeScopeKey] || data.department;
+    const s = data3[activeScopeKey] || data3.department;
     const wrap = make2("div");
     wrap.appendChild(buildTabs());
     wrap.appendChild(buildHero(s));
@@ -7362,9 +8622,9 @@
     wrap.appendChild(scroller);
     wrap.appendChild(buildBands(s));
     wrap.appendChild(buildFooter(s));
-    setBody2(card, wrap);
+    setBody2(card2, wrap);
   }
-  function renderError2(card, message) {
+  function renderError2(card2, message) {
     const box = make2("div", "kpi-review-error");
     box.appendChild(make2("div", "", "\u6708\u5EA6\u7EE9\u6548\u8003\u6838\u52A0\u8F7D\u5931\u8D25\uFF1A" + (message || "\u672A\u77E5\u9519\u8BEF")));
     box.appendChild(make2("div", "kpi-review-basis", "\u6570\u636E\u6E90\uFF1Ainquiries\uFF08\u8BE2\u4EF7\u7B49\u7EA7\uFF09+ Google Ads / sem_weeks\uFF08\u5E7F\u544A\u6295\u5165\uFF09+ weekly_reports / fixes / loop_items\uFF08\u8FC7\u7A0B\u6307\u6807\uFF09"));
@@ -7372,27 +8632,27 @@
     btn.type = "button";
     btn.setAttribute("data-kpi-review-retry", "1");
     box.appendChild(btn);
-    setBody2(card, box);
+    setBody2(card2, box);
   }
   var requestSequence3 = 0;
   var loadedRevision2 = null;
   async function loadKpiReview(force) {
-    const card = ensureCard2();
-    if (!card) return false;
+    const card2 = ensureCard2();
+    if (!card2) return false;
     const revision = getRangeRevision("kpi");
     if (!force && loadedRevision2 === revision && latest) return true;
     const requestId = ++requestSequence3;
     try {
-      const data = await API.get(withRange2("/api/kpi/review", "kpi"));
+      const data3 = await API.get(withRange2("/api/kpi/review", "kpi"));
       if (requestId !== requestSequence3 || revision !== getRangeRevision("kpi")) return false;
-      render2(card, data);
+      render3(card2, data3);
       loadedRevision2 = revision;
       return true;
     } catch (e) {
       if (requestId !== requestSequence3) return false;
       if (e && e.message === "unauthorized") return false;
       loadedRevision2 = null;
-      renderError2(card, e && e.message);
+      renderError2(card2, e && e.message);
     }
     return false;
   }
@@ -7408,8 +8668,8 @@
       const next = tab.dataset.kpiReviewScope;
       if (next === activeScopeKey || !latest) return;
       activeScopeKey = next;
-      const card = document.getElementById(CARD_ID2);
-      if (card) render2(card, latest);
+      const card2 = document.getElementById(CARD_ID2);
+      if (card2) render3(card2, latest);
       return;
     }
     if (e.target.closest("[data-kpi-review-retry]")) loadKpiReview(true);
@@ -7442,23 +8702,23 @@
     const g = grade(score);
     b.style.background = g.bg;
     b.style.color = g.c;
-    b.innerHTML = '<i class="ti ' + g.i + '"></i> ' + g.t;
+    b.innerHTML = '<i class="ti ' + esc(g.i) + '"></i> ' + esc(g.t);
   }
   function fmt(k, v) {
     if (v == null || !Number.isFinite(Number(v))) return "\u2014";
-    return k.u === "\xA5" ? "\xA5" + Number(v).toLocaleString() : k.u === "%" ? v + "%" : k.u === "" ? v : v + k.u;
+    return k.u === "\xA5" ? "\xA5" + Number(v).toLocaleString() : k.u === "%" ? esc(v) + "%" : k.u === "" ? esc(v) : esc(v) + esc(k.u);
   }
   function scoreTone(r) {
     return r >= 0.9 ? "kpi-tone-green" : r >= 0.7 ? "kpi-tone-blue" : r >= 0.5 ? "kpi-tone-amber" : "kpi-tone-primary";
   }
   function rows(arr, box) {
-    const el = document.getElementById(box);
-    if (!el) return;
-    el.innerHTML = arr.map((k) => {
+    const el5 = document.getElementById(box);
+    if (!el5) return;
+    el5.innerHTML = arr.map((k) => {
       const available = k.actualAvailable !== false && k.a != null, r = available ? ratio(k) : 0, tone = available ? scoreTone(r) : "kpi-tone-muted", progress = Math.max(0, Math.min(100, Number.isFinite(r) ? r * 100 : 0));
-      return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
+      return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(k.n)}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmt(k, k.t)} \xB7 \u5B9E\u9645 ${available ? fmt(k, k.a) : "\u2014"}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${progress}"></div></div></div><div class="kpi-score-value ${tone}">${available ? Math.round(r * 100) : "\u2014"}</div></div>`;
     }).join("");
-    el.querySelectorAll("[data-progress]").forEach((fill) => {
+    el5.querySelectorAll("[data-progress]").forEach((fill) => {
       const progress = Number(fill.dataset.progress);
       fill.style.width = `${Number.isFinite(progress) ? progress : 0}%`;
     });
@@ -7473,9 +8733,9 @@
       ["A\u7EA7\u5360\u6BD4", c.aRatio != null ? c.aRatio + "%" : "\u2014", "", momTxt(d.aRatio)],
       ["\u6709\u6548\u8BE2\u76D8\u7387", c.validRate != null ? c.validRate + "%" : "\u2014", "", momTxt(d.validRate)]
     ];
-    const el = document.getElementById("miniScores");
-    if (!el) return;
-    el.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${x[0]}</div><div class="csp-s-73eb966c81">${x[1]}<span class="csp-s-19439c522a">${x[2]}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${x[3] || ""}</span></div></div>`).join("");
+    const el5 = document.getElementById("miniScores");
+    if (!el5) return;
+    el5.innerHTML = m.map((x) => `<div class="csp-s-b478e20d45"><div class="csp-s-f9c9d2e5d2">${esc(x[0])}</div><div class="csp-s-73eb966c81">${esc(x[1])}<span class="csp-s-19439c522a">${esc(x[2])}</span> <span class="kpi-mini-trend ${(x[3] || "").startsWith("\u25B2") ? "kpi-tone-green" : (x[3] || "").startsWith("\u25BC") ? "kpi-tone-primary" : "kpi-tone-muted"}">${esc(x[3] || "")}</span></div></div>`).join("");
   }
   var overviewRequestSequence = 0;
   async function loadOverview() {
@@ -7497,14 +8757,14 @@
         tg.textContent = c.grade || "";
         tg.className = "kpi-delta " + (c.company >= 75 ? "delta-pos" : "delta-neg");
       }
-      const mom = (el, v) => {
-        if (!el) return;
+      const mom = (el5, v) => {
+        if (!el5) return;
         if (v == null) {
-          el.textContent = "";
+          el5.textContent = "";
           return;
         }
-        el.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " " + comparison;
-        el.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
+        el5.textContent = (v > 0 ? "\u25B2" + v : v < 0 ? "\u25BC" + Math.abs(v) : "\u2014") + " " + comparison;
+        el5.className = "kpi-delta " + (v > 0 ? "delta-pos" : v < 0 ? "delta-neg" : "");
       };
       mom(document.getElementById("topAratioMoM"), d.aRatio);
       mom(document.getElementById("topRateMoM"), d.validRate);
@@ -7540,7 +8800,7 @@
   var DS_LABEL = { NOT_APPLICABLE: "\u4E0D\u9002\u7528", MISSING_DATA: "\u5F85\u63A5\u5165", INSUFFICIENT_DATA: "\u6837\u672C\u4E0D\u8DB3", PENDING: "\u89C2\u5BDF\u4E2D", TRACKING_ERROR: "\u8FFD\u8E2A\u5F02\u5E38" };
   function fmtU(unit, v) {
     if (v == null || !Number.isFinite(Number(v))) return "\u2014";
-    return unit === "\xA5" ? "\xA5" + Number(v).toLocaleString() : unit === "%" ? v + "%" : unit ? v + unit : v;
+    return unit === "\xA5" ? "\xA5" + Number(v).toLocaleString() : unit === "%" ? esc(v) + "%" : unit ? esc(v) + esc(unit) : esc(v);
   }
   var pctCov = (s) => Math.round((s && s.coverage || 0) * 100);
   function gaugeScope(arcId, scoreId, badgeId, s) {
@@ -7556,9 +8816,9 @@
         B.style.color = "var(--text3)";
         let txt;
         if (!s || s.status === "NO_METRICS") txt = '<i class="ti ti-hourglass"></i> \u5F85\u8BC4\u4F30 \xB7 \u6682\u672A\u914D\u7F6E\u7EE9\u6548\u6307\u6807';
-        else if (s.status === "CONFIG_INCOMPLETE") txt = '<i class="ti ti-settings-exclamation"></i> \u7EE9\u6548\u914D\u7F6E\u672A\u5B8C\u6210' + (s.provisionalScore != null ? " \xB7 \u53C2\u8003\u8868\u73B0 " + s.provisionalScore : "") + " \xB7 \u6B63\u5F0F\u7EE9\u6548\u5F85\u8BC4\u4F30";
+        else if (s.status === "CONFIG_INCOMPLETE") txt = '<i class="ti ti-settings-exclamation"></i> \u7EE9\u6548\u914D\u7F6E\u672A\u5B8C\u6210' + (s.provisionalScore != null ? " \xB7 \u53C2\u8003\u8868\u73B0 " + esc(s.provisionalScore) : "") + " \xB7 \u6B63\u5F0F\u7EE9\u6548\u5F85\u8BC4\u4F30";
         else if (s.status === "NO_VALID_DATA") txt = '<i class="ti ti-hourglass"></i> \u5F85\u8BC4\u4F30 \xB7 \u6682\u65E0\u6709\u6548\u6570\u636E';
-        else txt = '<i class="ti ti-alert-circle"></i> \u53C2\u8003\u8868\u73B0 ' + (s.provisionalScore ?? "\u2014") + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "% \xB7 \u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206";
+        else txt = '<i class="ti ti-alert-circle"></i> \u53C2\u8003\u8868\u73B0 ' + esc(s.provisionalScore ?? "\u2014") + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "% \xB7 \u672A\u8DB3\u4EE5\u6B63\u5F0F\u8BC4\u5206";
         B.innerHTML = txt;
       }
       return;
@@ -7577,7 +8837,7 @@
     if (B) {
       B.style.background = g.bg;
       B.style.color = g.c;
-      B.innerHTML = '<i class="ti ' + g.i + '"></i> ' + g.t + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "%";
+      B.innerHTML = '<i class="ti ' + esc(g.i) + '"></i> ' + esc(g.t) + " \xB7 \u8986\u76D6\u7387" + pctCov(s) + "%";
     }
   }
   var PG_LABEL = { business: "\u4E1A\u52A1\u8D21\u732E", visibility: "\u641C\u7D22 & GEO \u53EF\u89C1\u5EA6", asset: "\u5185\u5BB9\u8D44\u4EA7", efficiency: "\u83B7\u5BA2\u6548\u7387", quality: "\u6D41\u91CF\u8D28\u91CF", execution: "\u6267\u884C\u4E0E\u4F18\u5316", experiment: "\u5B9E\u9A8C\u4E0E\u5B66\u4E60" };
@@ -7589,8 +8849,8 @@
     const included = m.included, r = included && Number.isFinite(m.ratio) ? m.ratio : 0;
     const tone = included ? scoreTone(r) : "kpi-tone-muted", prog = Math.max(0, Math.min(100, r * 100));
     const ds = included ? "" : '<span class="kpi-ds-badge">' + (DS_LABEL[m.data_status] || "\u5F85\u63A5\u5165") + "</span>";
-    const actualTxt = included ? m.display_value ? esc2(m.display_value) : fmtU(m.unit, m.actual) : "\u2014";
-    return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc2(m.name)}${ds}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmtU(m.unit, m.target)} \xB7 \u5B9E\u9645 ${actualTxt}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${prog}"></div></div></div><div class="kpi-score-value ${tone}">${included ? Math.round(r * 100) : "\u2014"}</div></div>`;
+    const actualTxt = included ? m.display_value ? esc(m.display_value) : fmtU(m.unit, m.actual) : "\u2014";
+    return `<div class="csp-s-1b8e8a2860"><div class="csp-s-83725d2c6e"><div class="csp-s-6e8bcfac8d">${esc(m.name)}${ds}</div><div class="csp-s-10a2cb4f9a">\u76EE\u6807 ${fmtU(m.unit, m.target)} \xB7 \u5B9E\u9645 ${actualTxt}</div></div><div class="csp-s-d3db975bed"><div class="progress-bar"><div class="progress-fill kpi-progress-fill ${tone}" data-progress="${prog}"></div></div></div><div class="kpi-score-value ${tone}">${included ? Math.round(r * 100) : "\u2014"}</div></div>`;
   }
   function diagChip(d) {
     let tone = "kpi-tone-muted";
@@ -7598,11 +8858,11 @@
       const ach = d.mode === "i" ? d.target / d.actual : d.actual / d.target;
       tone = ach >= 1 ? "kpi-tone-green" : ach >= 0.8 ? "kpi-tone-amber" : "kpi-tone-primary";
     }
-    return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc2(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
+    return `<div class="kpi-diag-chip"><span class="kpi-diag-dot ${tone}"></span><span class="kpi-diag-name">${esc(d.name)}</span><span class="kpi-diag-val ${tone}">${d.available ? fmtU(d.unit, d.actual) : "\u2014"}</span></div>`;
   }
   function renderBlock(grp, containerId, a) {
-    const el = document.getElementById(containerId);
-    if (!el) return;
+    const el5 = document.getElementById(containerId);
+    if (!el5) return;
     const block = a.blocks && a.blocks[grp] || { metrics: [] };
     const diags = (a.diagnostics || []).filter((d) => d.grp === grp);
     const summaries = (a.summaries || []).filter((d) => d.grp === grp);
@@ -7620,13 +8880,13 @@
       }
       html += groups.map(([g, ms]) => {
         const wt = ms.reduce((s, m) => s + (Number(m.weight) || 0), 0);
-        return '<div class="kpi-pg"><div class="kpi-pg-head">' + esc2(pgLabel(grp, g)) + '<span class="kpi-pg-wt">' + wt + "%</span></div>" + ms.map(metricRow).join("") + "</div>";
+        return '<div class="kpi-pg"><div class="kpi-pg-head">' + esc(pgLabel(grp, g)) + '<span class="kpi-pg-wt">' + esc(wt) + "%</span></div>" + ms.map(metricRow).join("") + "</div>";
       }).join("");
     } else html += '<div class="kpi-empty">\u6682\u65E0\u53EF\u8BC4\u5206\u6307\u6807 \xB7 \u5F85\u63A5\u5165</div>';
     if (diags.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u8BCA\u65AD\u6307\u6807\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + diags.map(diagChip).join("") + "</div>";
     if (summaries.length) html += '<div class="kpi-sec-label kpi-sec-diag">\u4E1A\u52A1\u6C47\u603B\uFF08\u4E0D\u8BA1\u5206\uFF09</div><div class="kpi-diag-grid">' + summaries.map(diagChip).join("") + "</div>";
-    el.innerHTML = html;
-    el.querySelectorAll("[data-progress]").forEach((f) => {
+    el5.innerHTML = html;
+    el5.querySelectorAll("[data-progress]").forEach((f) => {
       const p = Number(f.dataset.progress);
       f.style.width = (Number.isFinite(p) ? p : 0) + "%";
     });
@@ -7714,24 +8974,22 @@
     const time = s.type === "manual" ? s.lastAt || "\u2014" : s.type === "sync" ? s.lastSyncAt || "\u2014" : "\u2014";
     const count = s.type === "manual" || s.type === "sync" ? s.count == null ? 0 : s.count : "\u2014";
     let extra = "";
-    if (s.error) extra = `<span class="csp-s-b0e08465c2"> \xB7 \u9519\u8BEF\uFF1A${esc2(s.error)}</span>`;
-    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc2(s.missing.join(", "))}</span>`;
+    if (s.error) extra = `<span class="csp-s-b0e08465c2"> \xB7 \u9519\u8BEF\uFF1A${esc(s.error)}</span>`;
+    else if (s.type === "sync" && s.missing && s.missing.length) extra = `<span class="dim"> \xB7 \u7F3A\u5C11 ${esc(s.missing.join(", "))}</span>`;
     else if (s.note === "google_oauth_required") extra = `<span class="dim"> \xB7 \u9700\u8981 OAuth \u6388\u6743</span>`;
     else if (s.note === "google_sync_ready") extra = `<span class="dim"> \xB7 \u53EF\u624B\u52A8\u540C\u6B65</span>`;
-    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc2(s.provider || "")}${s.model ? " / " + esc2(s.model) : ""}</span>`;
-    return `<div class="csp-s-6d1156dd83"><div class="csp-s-22dccc46c7">${esc2(name)}</div><div class="csp-s-b57829faf1">${esc2(typeText)}</div><span class="badge ${cls}">${esc2(text2)}</span><div class="csp-s-83725d2c6e"></div><div class="csp-s-95144d7b86">\u65F6\u95F4 ${esc2(String(time))} \xB7 \u8BB0\u5F55 ${esc2(String(count))}</div><div class="csp-s-33ee298127">${extra}</div></div>`;
+    else if (s.type === "provider" && s.status === "configured_unverified") extra = `<span class="dim"> \xB7 ${esc(s.provider || "")}${s.model ? " / " + esc(s.model) : ""}</span>`;
+    return `<div class="csp-s-6d1156dd83"><div class="csp-s-22dccc46c7">${esc(name)}</div><div class="csp-s-b57829faf1">${esc(typeText)}</div><span class="badge ${esc(cls)}">${esc(text2)}</span><div class="csp-s-83725d2c6e"></div><div class="csp-s-95144d7b86">\u65F6\u95F4 ${esc(String(time))} \xB7 \u8BB0\u5F55 ${esc(String(count))}</div><div class="csp-s-33ee298127">${extra}</div></div>`;
   }
   async function loadDataSourcesStatus() {
     const box = document.getElementById("ds-status-rows");
     if (!box) return;
-    const tag = document.getElementById("ds-demo-tag");
-    if (tag) tag.innerHTML = window.DEMO_MODE ? '<span class="badge b-amber csp-s-9d5367afed">\u793A\u4F8B\u6A21\u5F0F</span>' : "";
     try {
       const r = await API.get("/api/data-sources/status");
       const src = r && r.sources || {};
-      box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("") + (window.DEMO_MODE ? '<div class="dim csp-s-5698104cf1">\u5F53\u524D\u4E3A\u6F14\u793A\u6807\u8BB0\uFF0C\u4E0B\u65B9\u4ECD\u4E3A\u63A5\u53E3\u771F\u5B9E\u72B6\u6001\u3002</div>' : "");
+      box.innerHTML = DS_ORDER.map((k) => dsRow(k, src[k])).join("");
     } catch (e) {
-      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc2(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
     }
   }
   async function loadIntegrations() {
@@ -7741,11 +8999,11 @@
       const r = await API.get("/api/google/status");
       const providers = r && r.providers || {};
       const project = r && r.defaultProject;
-      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc2(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
+      const projectText = project ? `\u9ED8\u8BA4\u9879\u76EE\uFF1A${esc(project.name || "\u672A\u547D\u540D\u9879\u76EE")}` : "\u672A\u521B\u5EFA\u9879\u76EE\u65F6\u4F7F\u7528 .env \u4E2D\u7684\u9ED8\u8BA4\u7AD9\u70B9 / Property / Customer";
       box.innerHTML = `<div class="sheet-tip csp-s-145afb7049"><i class="ti ti-info-circle"></i> ${projectText}</div>` + GOOGLE_PROVIDER_ORDER.map((p) => googleProviderRow(p, providers[p] || {}, project)).join("");
       bindGoogleProviderActions(box);
     } catch (e) {
-      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc2(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
+      box.innerHTML = `<div class="banner banner-red"><i class="ti ti-plug-connected-x csp-s-fd44150866"></i><div><div class="banner-t">Google \u63A5\u5165\u72B6\u6001\u83B7\u53D6\u5931\u8D25</div><div class="banner-s">${esc(e && e.message ? e.message : "\u8BF7\u6C42\u5931\u8D25")}</div></div></div>`;
     }
   }
   function googleProviderRow(provider, s, project) {
@@ -7753,22 +9011,22 @@
     const authorized = !!s.authorized;
     const ok = configured && authorized;
     const badge3 = ok ? '<span class="badge b-green">\u5DF2\u6388\u6743</span>' : configured ? '<span class="badge b-amber">\u5F85\u6388\u6743</span>' : '<span class="badge b-gray">\u540E\u7AEF\u672A\u914D\u7F6E</span>';
-    const missing = s.missing && s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">\u7F3A\u5C11\uFF1A${esc2(s.missing.join(", "))}</div>` : "";
+    const missing = s.missing && s.missing.length ? `<div class="dim csp-s-c9f8cfee5a">\u7F3A\u5C11\uFF1A${esc(s.missing.join(", "))}</div>` : "";
     const lastSync = s.lastSyncAt || "\u2014";
     const lastStatus = s.lastSyncStatus || "\u672A\u540C\u6B65";
-    const lastError = s.lastError ? `<div class="csp-s-5ade8bf698">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc2(s.lastError)}</div>` : "";
+    const lastError = s.lastError ? `<div class="csp-s-5ade8bf698">\u6700\u8FD1\u9519\u8BEF\uFF1A${esc(s.lastError)}</div>` : "";
     const providerConfigNote = provider === "gsc" ? s.siteUrlConfigured || project?.gsc_site_url ? "\u7AD9\u70B9\u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GSC_SITE_URL \u6216\u9879\u76EE\u7AD9\u70B9" : provider === "ga4" ? s.propertyConfigured || project?.ga4_property_id ? "Property \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GA4_PROPERTY_ID \u6216\u9879\u76EE Property" : s.customerConfigured || project?.ads_customer_id ? "Customer \u5DF2\u914D\u7F6E" : "\u8FD8\u9700\u8981 GOOGLE_ADS_CUSTOMER_ID \u6216\u9879\u76EE Customer";
     const authDisabled = configured ? "" : "disabled";
     const syncDisabled = ok ? "" : "disabled";
     return `<div class="csp-s-98c17c8e1c">
-    <div class="csp-s-fad0d7671e">${esc2(INTEG_LABEL[provider] || provider)} ${badge3}</div>
+    <div class="csp-s-fad0d7671e">${esc(INTEG_LABEL[provider] || provider)} ${badge3}</div>
     <div class="csp-s-fd03ebc21e">
-      <div>${esc2(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc2(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc2(String(lastStatus))}</div>
+      <div>${esc(providerConfigNote)} \xB7 \u6700\u8FD1\u540C\u6B65\uFF1A${esc(String(lastSync))} \xB7 \u72B6\u6001\uFF1A${esc(String(lastStatus))}</div>
       ${missing}${lastError}
     </div>
-    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc2(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
-    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc2(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
-    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc2(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
+    <button type="button" class="btn-ghost" data-google-action="auth" data-provider="${esc(provider)}" ${authDisabled}><i class="ti ti-brand-google"></i> \u6388\u6743</button>
+    <button type="button" class="btn-ghost" data-google-action="backfill" data-provider="${esc(provider)}" ${syncDisabled} title="\u56DE\u8865\u6700\u8FD1 90 \u5929\u5386\u53F2\uFF08\u9996\u6B21\u63A5\u5165\u6216\u56FE\u8868\u524D\u6BB5\u7A7A\u767D\u65F6\u7528\uFF0C\u53EF\u80FD\u8017\u65F6\u8F83\u4E45\uFF09"><i class="ti ti-history"></i> \u56DE\u886590\u5929</button>
+    <button type="button" class="btn-primary" data-google-action="sync" data-provider="${esc(provider)}" ${syncDisabled}><i class="ti ti-refresh"></i> \u7ACB\u5373\u540C\u6B65</button>
   </div>`;
   }
   function bindGoogleProviderActions(box) {
@@ -7846,22 +9104,22 @@
     const arc = e.target.closest(".row-archive");
     const dep = e.target.closest(".row-dep");
     if (!arc && !dep) return;
-    const tr = (arc || dep).closest("tr");
-    if (!tr) return;
-    const id = tr.dataset.id, ep = tr.dataset.ep;
+    const tr2 = (arc || dep).closest("tr");
+    if (!tr2) return;
+    const id = tr2.dataset.id, ep = tr2.dataset.ep;
     if (!id || !ep) return;
-    const dEl = tr.querySelector('[data-kind="dept"]');
+    const dEl = tr2.querySelector('[data-kind="dept"]');
     const deptTxt = dEl ? dEl.textContent.trim() : "";
-    const isSem = deptTxt === "SEM" || /sem/i.test(tr.parentElement && tr.parentElement.id || "");
+    const isSem = deptTxt === "SEM" || /sem/i.test(tr2.parentElement && tr2.parentElement.id || "");
     const isCompany = deptTxt === "\u516C\u53F8";
     const ak = isCompany ? "company" : isSem ? "sem" : "seo";
-    const content = (tr.querySelector('[data-field="content"]') || tr.querySelector('[data-field="title"]') || tr.cells[0]).innerText.trim();
+    const content = (tr2.querySelector('[data-field="content"]') || tr2.querySelector('[data-field="title"]') || tr2.cells[0]).innerText.trim();
     if (arc) {
       if (!inlineConfirm(arc, "\u786E\u8BA4\u5F52\u6863")) return;
       arc.disabled = true;
       try {
         await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
-        tr.remove();
+        tr2.remove();
         toast2("\u5DF2\u5F52\u6863");
       } catch (err) {
         arc.disabled = false;
@@ -7895,20 +9153,21 @@
   function archRowHtml(it, from) {
     const date = (it.archived_at || "").slice(0, 10);
     const dept = it.dept || "\u2014";
-    const content = esc2(it.content || it.title || it.detail || "");
+    const content = esc(it.content || it.title || it.detail || "");
     const fromBadge = '<span class="badge ' + (from === "fix" ? "b-amber" : "b-blue") + '">' + (from === "fix" ? "\u6574\u6539" : it.kind === "task" ? "\u4EFB\u52A1" : it.kind === "plan" ? "\u8BA1\u5212" : it.kind === "test" ? "\u6D4B\u8BD5" : it.kind === "deposit" ? "\u6C89\u6DC0" : "\u95ED\u73AF") + "</span>";
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u539F\u9875"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
-    return `<td class="archive-date num">${esc2(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span></td><td class="archive-dept ctr">${esc2(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
+    const audit = from !== "fix" && it.kind === "task" ? auditBadgesHtml(it) + auditBlockHtml(it, { archived: true }) : "";
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span>${audit}</td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
   }
   function archInqRowHtml(it) {
     const date = (it.archived_at || "").slice(0, 10);
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u8BE2\u76D8\u5217\u8868"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
     const label = it.customer_code || it.customer_name;
-    const cust = (label ? esc2(label) + " \xB7 " : "") + esc2(it.country || "");
-    const source = esc2(it.source || "");
-    return `<td class="archive-date num">${esc2(date || "\u2014")}</td><td class="archive-short-date num">${esc2((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc2(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc2(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
+    const cust = (label ? esc(label) + " \xB7 " : "") + esc(it.country || "");
+    const source = esc(it.source || "");
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-short-date num">${esc((it.date || "").slice(5))}</td><td class="archive-customer"><span class="archive-text" title="${cust}">${cust}</span></td><td class="archive-source-term dim"><span class="archive-text" title="${source}">${source}</span></td><td class="archive-grade ctr"><span class="badge ${GRADE_BADGE[it.grade] || "b-gray"}">${esc(it.grade || "")}</span></td><td class="archive-channel ctr dim">${esc(it.channel || "")}</td><td class="archive-actions ctr">${ops}</td>`;
   }
   async function loadArchive2() {
     const bucket = { sem: [], seo: [], company: [] };
@@ -7934,11 +9193,11 @@
       tb.innerHTML = "";
       const rows2 = bucket[k].slice().sort((a, b) => String(b.archived_at || "").localeCompare(String(a.archived_at || "")));
       rows2.forEach((it) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = it.id;
-        tr.dataset.ep = it._from === "fix" ? "/api/fixes" : "/api/loop-items";
-        tr.innerHTML = archRowHtml(it, it._from);
-        tb.appendChild(tr);
+        const tr2 = document.createElement("tr");
+        tr2.dataset.id = it.id;
+        tr2.dataset.ep = it._from === "fix" ? "/api/fixes" : "/api/loop-items";
+        tr2.innerHTML = archRowHtml(it, it._from);
+        tb.appendChild(tr2);
       });
       const e = document.getElementById("arc-" + k + "-empty");
       if (e) e.style.display = rows2.length ? "none" : "block";
@@ -7953,11 +9212,11 @@
       } catch (e2) {
       }
       inqs.forEach((it) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = it.id;
-        tr.dataset.ep = "/api/inquiries";
-        tr.innerHTML = archInqRowHtml(it);
-        itb.appendChild(tr);
+        const tr2 = document.createElement("tr");
+        tr2.dataset.id = it.id;
+        tr2.dataset.ep = "/api/inquiries";
+        tr2.innerHTML = archInqRowHtml(it);
+        itb.appendChild(tr2);
       });
       const e = document.getElementById("arc-inquiry-empty");
       if (e) e.style.display = inqs.length ? "none" : "block";
@@ -7968,17 +9227,17 @@
   }
   document.addEventListener("click", async (e) => {
     const r = e.target.closest(".arch-restore");
-    const h = e.target.closest(".arch-hard");
-    if (!r && !h) return;
-    const tr = (r || h).closest("tr");
-    if (!tr) return;
-    const id = tr.dataset.id, ep = tr.dataset.ep;
+    const h4 = e.target.closest(".arch-hard");
+    if (!r && !h4) return;
+    const tr2 = (r || h4).closest("tr");
+    if (!tr2) return;
+    const id = tr2.dataset.id, ep = tr2.dataset.ep;
     if (!id || !ep) return;
     if (r) {
       if (!inlineConfirm(r, "\u786E\u8BA4\u6062\u590D")) return;
       try {
         await API.post(ep + "/" + id + "/restore");
-        tr.remove();
+        tr2.remove();
         if (ep === "/api/inquiries") {
           loadInquiries();
           loadDashboardInq();
@@ -7988,10 +9247,10 @@
         toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u6062\u590D\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     } else {
-      if (!inlineConfirm(h, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
+      if (!inlineConfirm(h4, "\u786E\u8BA4\u5F7B\u5E95\u5220\u9664")) return;
       try {
         await API.del(ep + "/" + id + "?hard=1");
-        tr.remove();
+        tr2.remove();
         toast2("\u5DF2\u5F7B\u5E95\u5220\u9664");
       } catch (err) {
         toast2(err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
@@ -8024,12 +9283,12 @@
   function text(value) {
     return value == null ? "" : String(value);
   }
-  function setText2(el, value) {
-    if (el) el.textContent = text(value);
+  function setText2(el5, value) {
+    if (el5) el5.textContent = text(value);
   }
   function field(id) {
-    const el = byId(id);
-    return el ? el.value.trim() : "";
+    const el5 = byId(id);
+    return el5 ? el5.value.trim() : "";
   }
   var FEEDBACK_LABEL = {
     adopted: "\u91C7\u7EB3 \xB7 \u6709\u4EF7\u503C",
@@ -8051,13 +9310,13 @@
     return span;
   }
   function renderMemory(row) {
-    const tr = document.createElement("tr");
+    const tr2 = document.createElement("tr");
     const kind = td("", "");
     kind.appendChild(badge2(KIND_LABEL[row.kind] || row.kind || "\u8BB0\u5FC6", row.kind === "risk" ? "b-red" : row.kind === "decision" ? "b-amber" : "b-blue"));
-    tr.appendChild(kind);
+    tr2.appendChild(kind);
     const importance = td("", "ctr");
     importance.appendChild(badge2(String(row.importance || 3), Number(row.importance) >= 4 ? "b-green" : "b-gray"));
-    tr.appendChild(importance);
+    tr2.appendChild(importance);
     const main = document.createElement("td");
     const title = document.createElement("div");
     title.style.fontWeight = "800";
@@ -8077,12 +9336,12 @@
     trust.style.marginTop = "6px";
     trust.appendChild(row.trust?.trusted ? badge2("\u53EF\u4F5C\u4E3A\u56DE\u7B54\u8BC1\u636E", "b-green") : badge2("\u5F85\u4EBA\u5DE5\u786E\u8BA4 \xB7 \u4E0D\u8FDB\u5165\u56DE\u7B54\u8BC1\u636E", "b-amber"));
     main.append(title, content, source, trust);
-    tr.appendChild(main);
+    tr2.appendChild(main);
     const evidence = td(row.evidence || "\u2014", "");
     evidence.style.whiteSpace = "pre-wrap";
     evidence.style.fontSize = "11.5px";
-    tr.appendChild(evidence);
-    tr.appendChild(td(row.updated_at || row.created_at || "\u2014", "dim"));
+    tr2.appendChild(evidence);
+    tr2.appendChild(td(row.updated_at || row.created_at || "\u2014", "dim"));
     const action = td("", "ctr");
     const editBtn = document.createElement("button");
     editBtn.type = "button";
@@ -8096,33 +9355,33 @@
     stopBtn.style.marginLeft = "6px";
     stopBtn.addEventListener("click", () => deactivateHermesMemory(row.id));
     action.append(editBtn, stopBtn);
-    tr.appendChild(action);
-    return tr;
+    tr2.appendChild(action);
+    return tr2;
   }
   async function loadHermesMemories(manual) {
     const tbody = byId("tb-hermes-memory");
-    const empty = byId("hm-empty");
+    const empty2 = byId("hm-empty");
     const count = byId("hm-count");
     if (!tbody || !window.API) return;
     tbody.textContent = "";
     setText2(count, "\u52A0\u8F7D\u4E2D...");
     try {
-      const data = await window.API.get("/api/hermes/memories");
-      const items = data.items || [];
+      const data3 = await window.API.get("/api/hermes/memories");
+      const items = data3.items || [];
       items.forEach((item) => tbody.appendChild(renderMemory(item)));
-      if (empty) empty.style.display = items.length ? "none" : "block";
+      if (empty2) empty2.style.display = items.length ? "none" : "block";
       setText2(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
       if (manual) toast2("AI \u8BB0\u5FC6\u5DF2\u5237\u65B0");
     } catch (e) {
       setText2(count, "\u52A0\u8F7D\u5931\u8D25");
-      if (empty) empty.style.display = "block";
+      if (empty2) empty2.style.display = "block";
       toast2("AI \u8BB0\u5FC6\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || "unknown_error"));
     }
   }
   function resetHermesMemoryForm() {
     ["hm-id", "hm-title", "hm-content", "hm-evidence"].forEach((id) => {
-      const el = byId(id);
-      if (el) el.value = "";
+      const el5 = byId(id);
+      if (el5) el5.value = "";
     });
     const kind = byId("hm-kind");
     if (kind) kind.value = "market";
@@ -8188,8 +9447,8 @@
   }
   function resetHermesFeedbackForm() {
     ["hf-scope", "hf-suggestion", "hf-note"].forEach((id) => {
-      const el = byId(id);
-      if (el) el.value = "";
+      const el5 = byId(id);
+      if (el5) el5.value = "";
     });
     const result = byId("hf-result");
     if (result) result.value = "adopted";
@@ -8269,35 +9528,38 @@
   }
   function taskRowHtml(t, day, pushed, note) {
     const st2 = taskStateFor(t, day, pushed);
-    const span = t.start_date && t.task_date && t.start_date < t.task_date ? `${esc2(t.start_date.slice(5))} ~ ${esc2(t.task_date.slice(5))}` : esc2(t.task_date || "");
+    const span = t.start_date && t.task_date && t.start_date < t.task_date ? `${esc(t.start_date.slice(5))} ~ ${esc(t.task_date.slice(5))}` : esc(t.task_date || "");
     const src = t.fix_id ? '<span class="badge b-amber">\u6574\u6539</span>' : "";
-    const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc2(t.owner)}</span>` : "";
-    const memo = note ? `<span class="hnote">${esc2(note)}</span>` : "";
+    const owner = t.owner ? `<span class="badge ${t.owner === "\u9648" ? "b-purple" : "b-blue"}">${esc(t.owner)}</span>` : "";
+    const memo = note ? `<span class="hnote">${esc(note)}</span>` : "";
+    const doneDay = (t.done_at || "").slice(0, 10);
+    const view = doneDay && doneDay <= day ? t : { ...t, result: null, task_actions: null, evidence: null, evidence_images: [], actual_hours: null, state: null, status: null, done_at: null };
     return `<div class="hcard">
-    <div class="hrow"><span class="htext">${esc2(t.content || "")}</span>
-      <span class="hright">${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${st2.cls}">${st2.text}</span></span></div>
+    <div class="hrow"><span class="htext">${esc(t.content || "")}</span>
+      <span class="hright">${auditBadgesHtml(t)}${src}${owner}${span ? `<span class="hdue">${span}</span>` : ""}<span class="hstat ${esc(st2.cls)}">${esc(st2.text)}</span></span></div>
     ${memo ? `<div class="hmemo">${memo}</div>` : ""}
+    ${auditBlockHtml(view)}
   </div>`;
   }
-  function render3(data) {
+  function render4(data3) {
     const box = document.getElementById("plan-history");
     if (!box) return;
-    const day = data.day;
-    const pushed = new Set((data.checkins || []).map((c) => c.loop_item_id));
-    const noteOf = new Map((data.checkins || []).filter((c) => c.note).map((c) => [c.loop_item_id, c.note]));
+    const day = data3.day;
+    const pushed = new Set((data3.checkins || []).map((c) => c.loop_item_id));
+    const noteOf = new Map((data3.checkins || []).filter((c) => c.note).map((c) => [c.loop_item_id, c.note]));
     const subsByParent = /* @__PURE__ */ new Map();
-    (data.subtasks || []).forEach((s) => {
+    (data3.subtasks || []).forEach((s) => {
       if (!subsByParent.has(s.parent_id)) subsByParent.set(s.parent_id, []);
       subsByParent.get(s.parent_id).push(s);
     });
     box.innerHTML = '<div class="tboard">' + DEPTS.map((d) => {
-      const sops = (data.sops || []).filter((s) => s.dept === d.key);
-      const tasks = (data.tasks || []).filter((t) => (t.dept || "SEO") === d.key);
+      const sops = (data3.sops || []).filter((s) => s.dept === d.key);
+      const tasks = (data3.tasks || []).filter((t) => (t.dept || "SEO") === d.key);
       const sopDone2 = sops.filter((s) => s.done).length;
       const spoken = tasks.filter((t) => (t.done_at || "").slice(0, 10) === day || pushed.has(t.id)).length;
       const sopHtml = sops.length ? '<div class="sop-list">' + sops.map((s) => `<div class="hcard hsop${s.done ? " on" : ""}">
           <div class="hrow"><span class="hcheck">${s.done ? '<i class="ti ti-check"></i>' : ""}</span>
-            <span class="htext">${esc2(s.title)}</span>
+            <span class="htext">${esc(s.title)}</span>
             <span class="hright">${s.active ? "" : '<span class="badge b-gray">\u5DF2\u505C\u7528</span>'}<span class="freq-tag">${FREQ_TAG[s.freq] || ""}</span></span></div>
         </div>`).join("") + "</div>" : '<div class="hempty">\u5F53\u65F6\u6CA1\u6709\u914D\u7F6E SOP</div>';
       const taskHtml = tasks.length ? tasks.map((t) => {
@@ -8305,7 +9567,7 @@
         return taskRowHtml(t, day, pushed, noteOf.get(t.id)) + (subs.length ? `<div class="hsubs">${subs.map((s2) => taskRowHtml(s2, day, pushed, noteOf.get(s2.id))).join("")}</div>` : "");
       }).join("") : '<div class="hempty">\u90A3\u5929\u8FD9\u4E00\u5217\u6CA1\u6709\u4EFB\u52A1</div>';
       return `<div class="pblock">
-      <div class="pblock-head"><span class="badge ${d.badge}">${esc2(d.key)}</span><span class="pn">${esc2(d.label)}</span>
+      <div class="pblock-head"><span class="badge ${d.badge}">${esc(d.key)}</span><span class="pn">${esc(d.label)}</span>
         <span class="kcount">SOP ${sopDone2}/${sops.length} \xB7 \u4EFB\u52A1 ${tasks.length} \xB7 \u6709\u4EA4\u4EE3 ${spoken}</span></div>
       <div class="sopnew">
         <div><div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>${sopHtml}</div>
@@ -8318,12 +9580,12 @@
     const box = document.getElementById("plan-history");
     if (!box) return;
     const pk = periodKeysFor(day);
-    box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc2(day) + " \u7684\u8BB0\u5F55\u2026</div>";
+    box.innerHTML = '<div class="hloading">\u6B63\u5728\u53D6 ' + esc(day) + " \u7684\u8BB0\u5F55\u2026</div>";
     try {
-      const data = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
-      render3(data);
+      const data3 = await API.get("/api/daily-plan?day=" + encodeURIComponent(day) + "&weekly=" + encodeURIComponent(pk.weekly) + "&monthly=" + encodeURIComponent(pk.monthly));
+      render4(data3);
     } catch (e) {
-      box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
+      box.innerHTML = '<div class="hempty">\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "<br>\u53EF\u91CD\u65B0\u9009\u4E00\u6B21\u65E5\u671F\u91CD\u8BD5</div>";
     }
   }
   function setPlanDay(day) {
@@ -8389,35 +9651,35 @@
     const expected = counted.reduce((a, i) => a + i.expected, 0);
     const p = pct4(done, expected);
     const missed = counted.filter((i) => i.expected > i.done).sort((a, b) => b.expected - b.done - (a.expected - a.done));
-    const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc2(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => d.slice(5)).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
+    const missHtml = missed.length ? missed.map((i) => `<div class="sr-miss"><span class="sr-mt">${esc(i.title)}</span><span class="sr-mf">${FREQ_LABEL2[i.freq] || ""}</span><span class="sr-mn">\u7F3A ${i.expected - i.done}${i.missed_days.length ? " \xB7 " + i.missed_days.map((d) => esc(String(d).slice(5))).join(" ") : ""}</span></div>`).join("") : '<div class="sr-miss sr-ok"><i class="ti ti-check"></i> \u8FD9\u4E00\u5468\u4E00\u6761\u6CA1\u6F0F</div>';
     return `<div class="sr-dept">
-    <div class="sr-head"><span class="badge ${badge3}">${esc2(label)}</span>
-      <span class="sr-num ${rateClass(p)}">${expected ? `${done}/${expected}` : "\u2014"}${p === null ? "" : ` \xB7 ${p}%`}</span></div>
+    <div class="sr-head"><span class="badge ${esc(badge3)}">${esc(label)}</span>
+      <span class="sr-num ${rateClass(p)}">${expected ? `${esc(done)}/${esc(expected)}` : "\u2014"}${p === null ? "" : ` \xB7 ${p}%`}</span></div>
     <div class="sr-misses">${missHtml}</div>
   </div>`;
   }
-  async function mountSopRate(el) {
-    if (!el || el.dataset.loaded === "1") return;
-    const from = el.dataset.from;
-    const to = el.dataset.to;
+  async function mountSopRate(el5) {
+    if (!el5 || el5.dataset.loaded === "1") return;
+    const from = el5.dataset.from;
+    const to = el5.dataset.to;
     if (!from || !to) return;
-    el.dataset.loaded = "1";
-    el.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
+    el5.dataset.loaded = "1";
+    el5.innerHTML = '<div class="sr-loading">\u6B63\u5728\u7B97\u8FD9\u4E00\u5468\u7684 SOP \u6267\u884C\u7387\u2026</div>';
     try {
       const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date()))}`;
-      const data = await API.get("/api/sop/stats" + q);
-      const items = data.items || [];
+      const data3 = await API.get("/api/sop/stats" + q);
+      const items = data3.items || [];
       if (!items.length) {
-        el.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
+        el5.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
         return;
       }
       const hasMonthly = items.some((i) => i.expected === null);
-      el.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
-        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc2(data.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
+      el5.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
+        <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc(data3.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
       <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
     } catch (e) {
-      el.dataset.loaded = "";
-      el.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc2(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
+      el5.dataset.loaded = "";
+      el5.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
     }
   }
   document.addEventListener("click", (e) => {
@@ -8425,8 +9687,8 @@
     if (!bar) return;
     const week = bar.parentElement;
     if (!week || week.classList.contains("collapsed")) return;
-    const el = week.querySelector(".sop-rate");
-    if (el) mountSopRate(el);
+    const el5 = week.querySelector(".sop-rate");
+    if (el5) mountSopRate(el5);
   });
 
   // public/src/weekly-review.js
@@ -8477,8 +9739,8 @@
     const thu = new Date(mon);
     thu.setDate(thu.getDate() + 3);
     const year = thu.getFullYear();
-    const month = thu.getMonth() + 1;
-    return { monday: mon, year, month, monthKey: `${year}-${month}` };
+    const month2 = thu.getMonth() + 1;
+    return { monday: mon, year, month: month2, monthKey: `${year}-${month2}` };
   }
   function parseMonthKey(key) {
     const m = String(key || "").match(/^(\d{4})-(\d{1,2})-month$/);
@@ -8510,8 +9772,8 @@
     return p ? `${p.year}\u5E74${p.month}\u6708\u6708\u62A5` : key;
   }
   function monthGroupLabel(monthKey) {
-    const [year, month] = String(monthKey || "").split("-");
-    return `${year}\u5E74${Number(month)}\u6708\u5468\u62A5`;
+    const [year, month2] = String(monthKey || "").split("-");
+    return `${year}\u5E74${Number(month2)}\u6708\u5468\u62A5`;
   }
   function sortWeekKeys(keys) {
     return [...keys].sort((a, b) => String(b).localeCompare(String(a)));
@@ -8524,33 +9786,33 @@
     });
   }
   function rvItemHtml(text2, acts) {
-    const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === "\u91C7\u7EB3" ? "adopt" : "test"}" data-review-action="act" data-kind="${esc2(a)}">${a}</button>`).join("");
-    return `<div class="rv-item"><span class="txt" contenteditable>${esc2(text2)}</span>${btns}<span class="rv-del" data-review-action="delete" title="\u5220\u9664"><i class="ti ti-x"></i></span></div>`;
+    const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === "\u91C7\u7EB3" ? "adopt" : "test"}" data-review-action="act" data-kind="${esc(a)}">${esc(a)}</button>`).join("");
+    return `<div class="rv-item"><span class="txt" contenteditable>${esc(text2)}</span>${btns}<span class="rv-del" data-review-action="delete" title="\u5220\u9664"><i class="ti ti-x"></i></span></div>`;
   }
   function bindReviewActions(root) {
     root.onclick = (e) => {
-      const el = e.target.closest("[data-review-action]");
-      if (!el || !root.contains(el)) return;
-      const action = el.dataset.reviewAction;
-      if (action === "act") rvAct(el, el.dataset.kind);
-      else if (action === "delete") rvDel(el);
-      else if (action === "add") rvAdd(el);
-      else if (action === "toggle" && el.parentElement) el.parentElement.classList.toggle("collapsed");
+      const el5 = e.target.closest("[data-review-action]");
+      if (!el5 || !root.contains(el5)) return;
+      const action = el5.dataset.reviewAction;
+      if (action === "act") rvAct(el5, el5.dataset.kind);
+      else if (action === "delete") rvDel(el5);
+      else if (action === "add") rvAdd(el5);
+      else if (action === "toggle" && el5.parentElement) el5.parentElement.classList.toggle("collapsed");
     };
   }
   function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
     const name = dept === "SEM" ? "SEM \xB7 \u9648" : "SEO \xB7 \u674E";
-    let h = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
-    sections.forEach(([field2, title, acts]) => {
-      const items = rec && rec[field2] || [];
-      h += `<div class="rv-sec" data-field="${field2}" data-dept="${dept}" data-week="${key}"><h5>${title}</h5>`;
-      if (field2 === "summary" && !items.length && prevPlan && prevPlan.length) {
-        h += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc2(x)).join("\uFF1B")}</div>`;
+    let h4 = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
+    sections.forEach(([field3, title, acts]) => {
+      const items = rec && rec[field3] || [];
+      h4 += `<div class="rv-sec" data-field="${esc(field3)}" data-dept="${esc(dept)}" data-week="${esc(key)}"><h5>${esc(title)}</h5>`;
+      if (field3 === "summary" && !items.length && prevPlan && prevPlan.length) {
+        h4 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
       }
-      h += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
-      h += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
+      h4 += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
+      h4 += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
     });
-    return h + "</div>";
+    return h4 + "</div>";
   }
   function prevPlanOf(keys, byKey, key, dept) {
     const idx = keys.indexOf(key);
@@ -8598,7 +9860,7 @@
       const isCurrent = week === cur;
       const collapsed = isCurrent ? !currentWeekShouldOpen() : true;
       return `<div class="acc-week${collapsed ? " collapsed" : ""}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u5468</span>' : ""}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(weekLabel(week))} ${isCurrent ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u5468</span>' : ""}</div>
       <div class="acc-body">${sopRateShell(week)}${rvColHtml("SEO", byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, "SEO"))}${rvColHtml("SEM", byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, "SEM"))}</div>
     </div>`;
     }).join("");
@@ -8609,18 +9871,18 @@
     }).map((monthKey) => {
       const inner = sortWeekKeys(oldGroups[monthKey]).map((week) => `
       <div class="acc-week collapsed">
-        <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)}</div>
+        <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(weekLabel(week))}</div>
         <div class="acc-body">${sopRateShell(week)}${rvColHtml("SEO", byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, "SEO"))}${rvColHtml("SEM", byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, "SEM"))}</div>
       </div>`).join("");
       return `<div class="acc-month collapsed">
-      <div class="acc-month-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthGroupLabel(monthKey)}</div>
+      <div class="acc-month-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthGroupLabel(monthKey))}</div>
       <div class="acc-month-body">${inner}</div>
     </div>`;
     }).join("");
     acc.innerHTML = currentHtml + groupHtml;
     bindReviewActions(acc);
-    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el) => {
-      mountSopRate(el);
+    acc.querySelectorAll(".acc-week:not(.collapsed) .sop-rate").forEach((el5) => {
+      mountSopRate(el5);
     });
   }
   async function renderMonthReview() {
@@ -8642,7 +9904,7 @@
     acc.innerHTML = keys.map((key) => {
       const collapsed = key !== cur;
       return `<div class="acc-week${collapsed ? " collapsed" : ""}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel2(key)} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span>' : ""}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel2(key))} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span>' : ""}</div>
       <div class="acc-body">${rvColHtml("SEO", byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml("SEM", byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
     </div>`;
     }).join("");
@@ -8650,14 +9912,14 @@
   }
   function rvSectionSave(sec) {
     if (!sec) return;
-    const field2 = sec.dataset.field;
+    const field3 = sec.dataset.field;
     const dept = sec.dataset.dept;
     const week = sec.dataset.week;
     const items = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
-    API.put("/api/weekly-reports", { week_key: week, dept, field: field2, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
+    API.put("/api/weekly-reports", { week_key: week, dept, field: field3, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
   }
-  function rvAdd(el) {
-    const sec = el.closest(".rv-sec");
+  function rvAdd(el5) {
+    const sec = el5.closest(".rv-sec");
     const list = sec.querySelector(".rv-list");
     const isMonth = !!parseMonthKey(sec.dataset.week);
     const sections = isMonth ? RV_MONTH_SECTIONS : RV_SECTIONS;
@@ -8669,19 +9931,19 @@
     const t = node.querySelector(".txt");
     if (t) t.focus();
   }
-  function rvDel(el) {
-    const sec = el.closest(".rv-sec");
-    el.closest(".rv-item").remove();
+  function rvDel(el5) {
+    const sec = el5.closest(".rv-sec");
+    el5.closest(".rv-item").remove();
     rvSectionSave(sec);
   }
-  async function rvAct(el, kind) {
-    const item = el.closest(".rv-item");
+  async function rvAct(el5, kind) {
+    const item = el5.closest(".rv-item");
     const text2 = item.querySelector(".txt").innerText.trim();
     if (!text2) {
       toast2("\u8BF7\u5148\u586B\u5199\u5185\u5BB9");
       return;
     }
-    const sec = el.closest(".rv-sec");
+    const sec = el5.closest(".rv-sec");
     const s = sFromDept(sec.dataset.dept);
     try {
       if (kind === "\u6D4B\u8BD5") {
@@ -8705,53 +9967,53 @@
 
   // public/src/settings.js
   function bindSettings() {
-    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
-      if (el.dataset.settingsBound === "1") return;
-      el.dataset.settingsBound = "1";
-      el.addEventListener("focusin", () => {
-        el.dataset.kpiOld = el.textContent;
+    document.querySelectorAll("#panel-settings [data-kpi]").forEach((el5) => {
+      if (el5.dataset.settingsBound === "1") return;
+      el5.dataset.settingsBound = "1";
+      el5.addEventListener("focusin", () => {
+        el5.dataset.kpiOld = el5.textContent;
       });
       const commit = async () => {
         if (!can("kpiTarget")) {
-          rollbackEditable(el, el.dataset.kpiOld != null ? el.dataset.kpiOld : el.textContent);
+          rollbackEditable(el5, el5.dataset.kpiOld != null ? el5.dataset.kpiOld : el5.textContent);
           toast2("\u4EC5\u8001\u677F/\u4E3B\u7BA1\u53EF\u6539 KPI \u76EE\u6807");
           return;
         }
-        const parts = el.dataset.kpi.split(":");
+        const parts = el5.dataset.kpi.split(":");
         const values = { TOTAL, SEO, SEM }[parts[0]];
         const item = values && values[Number(parts[1])];
         if (!item) return;
-        const oldValue = el.dataset.kpiOld != null ? el.dataset.kpiOld : String(item.t);
-        const result = validateEditableValue(el.textContent, "number", { min: 0 });
+        const oldValue = el5.dataset.kpiOld != null ? el5.dataset.kpiOld : String(item.t);
+        const result = validateEditableValue(el5.textContent, "number", { min: 0 });
         if (!result.ok) {
-          rollbackEditable(el, oldValue);
-          showSaveError(el, result.msg);
+          rollbackEditable(el5, oldValue);
+          showSaveError(el5, result.msg);
           return;
         }
         if (result.value === item.t) {
-          el.textContent = String(result.value);
-          setSavingState(el, null);
+          el5.textContent = String(result.value);
+          setSavingState(el5, null);
           return;
         }
-        setSavingState(el, "saving");
+        setSavingState(el5, "saving");
         try {
           const { rows: rows2 } = await API.put(withRange2("/api/kpi-targets", "kpi"), { updates: [{ id: item.id, target: result.value }] });
           applyKpiServer(rows2);
           renderKPI2();
-          el.textContent = String(item.t);
-          el.dataset.kpiOld = String(item.t);
-          setSavingState(el, "ok");
+          el5.textContent = String(item.t);
+          el5.dataset.kpiOld = String(item.t);
+          setSavingState(el5, "ok");
           toast2("\u5DF2\u66F4\u65B0\u300C" + item.n + "\u300D\u76EE\u6807 \u2192 " + item.t + " \xB7 \u5DF2\u5165\u5E93, \u8BC4\u5206\u5DF2\u91CD\u7B97");
         } catch (error) {
-          rollbackEditable(el, oldValue);
-          showSaveError(el, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
+          rollbackEditable(el5, oldValue);
+          showSaveError(el5, error.status === 403 ? "\u4EC5\u8001\u677F\u53EF\u6539 KPI \u76EE\u6807" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
         }
       };
-      el.addEventListener("blur", commit);
-      el.addEventListener("keydown", (event) => {
+      el5.addEventListener("blur", commit);
+      el5.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
-          el.blur();
+          el5.blur();
         }
       });
     });
@@ -8945,7 +10207,7 @@
     const lines = evidenceLines(item.evidence);
     if (lines.length) {
       const list = make3("ul", "risk-evidence-list");
-      lines.forEach((line) => list.appendChild(make3("li", "", line)));
+      lines.forEach((line3) => list.appendChild(make3("li", "", line3)));
       cell3.appendChild(list);
     }
     cell3.appendChild(make3("div", "risk-evidence-source", SOURCE_LABELS[item.source] || "\u5F53\u524D\u68C0\u67E5"));
@@ -9075,10 +10337,10 @@
   var loaded = null;
   var mounted = false;
   function make4(tag, className, text2) {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (text2 != null) el.textContent = String(text2);
-    return el;
+    const el5 = document.createElement(tag);
+    if (className) el5.className = className;
+    if (text2 != null) el5.textContent = String(text2);
+    return el5;
   }
   function numInput(name, value, step) {
     const input = document.createElement("input");
@@ -9097,31 +10359,31 @@
   function buildWeights(cfg) {
     const box = make4("div", "kra-block");
     box.appendChild(make4("div", "kra-title", "\u2460 \u6743\u91CD\uFF08\u8001\u677F\u8868\u5408\u8BA1 100 \u5206\uFF09"));
-    const table = make4("table", "dt kra-table");
+    const table2 = make4("table", "dt kra-table");
     const thead = make4("thead");
     const hr = make4("tr");
     hr.appendChild(make4("th", "", "\u8003\u6838\u9879\u76EE"));
     hr.appendChild(make4("th", "ctr", "\u6743\u91CD"));
     hr.appendChild(make4("th", "", "\u8BF4\u660E"));
     thead.appendChild(hr);
-    table.appendChild(thead);
+    table2.appendChild(thead);
     const tbody = make4("tbody");
     for (const [key, label, note] of WEIGHT_FIELDS) {
-      const tr = make4("tr");
-      tr.appendChild(make4("td", "", label));
+      const tr2 = make4("tr");
+      tr2.appendChild(make4("td", "", label));
       const td2 = make4("td", "ctr");
       td2.appendChild(numInput(key, cfg.raw[key]));
-      tr.appendChild(td2);
-      tr.appendChild(make4("td", "dim", note));
-      tbody.appendChild(tr);
+      tr2.appendChild(td2);
+      tr2.appendChild(make4("td", "dim", note));
+      tbody.appendChild(tr2);
     }
     const sumRow = make4("tr", "kra-sum-row");
     sumRow.appendChild(make4("td", "", "\u5408\u8BA1"));
     sumRow.appendChild(make4("td", "ctr num kra-weight-sum", ""));
     sumRow.appendChild(make4("td", "dim", "\u4E0D\u5F3A\u5236\u7B49\u4E8E 100\uFF1A\u6743\u91CD\u53EA\u5728\u6709\u6570\u636E\u7684\u6307\u6807\u4E4B\u95F4\u6309\u6BD4\u4F8B\u5F52\u4E00\uFF0C\u5408\u8BA1\u53D8\u4E86\u603B\u5206\u53E3\u5F84\u4E5F\u8DDF\u7740\u53D8"));
     tbody.appendChild(sumRow);
-    table.appendChild(tbody);
-    box.appendChild(table);
+    table2.appendChild(tbody);
+    box.appendChild(table2);
     return box;
   }
   function buildScalars(cfg) {
@@ -9142,16 +10404,16 @@
     const box = make4("div", "kra-block");
     box.appendChild(make4("div", "kra-title", "\u2462 \u7EE9\u6548\u7CFB\u6570\u5206\u6863"));
     box.appendChild(make4("div", "kra-hint", "\u6309\u300C\u603B\u5206\u4E0B\u9650\u300D\u4ECE\u9AD8\u5230\u4F4E\u5339\u914D\u3002\u6700\u4F4E\u4E00\u6863\u7684\u4E0B\u9650\u5EFA\u8BAE\u586B 0\uFF0C\u5426\u5219\u4F4E\u5206\u4F1A\u6389\u51FA\u6240\u6709\u5206\u6863\u3001\u62FF\u4E0D\u5230\u7CFB\u6570\u3002"));
-    const table = make4("table", "dt kra-table");
+    const table2 = make4("table", "dt kra-table");
     const thead = make4("thead");
     const hr = make4("tr");
-    for (const h of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h === "\u8BF4\u660E" ? "" : "ctr", h));
+    for (const h4 of ["\u603B\u5206\u4E0B\u9650", "\u7B49\u7EA7\u540D\u79F0", "\u7EE9\u6548\u7CFB\u6570", "\u8BF4\u660E", ""]) hr.appendChild(make4("th", h4 === "\u8BF4\u660E" ? "" : "ctr", h4));
     thead.appendChild(hr);
-    table.appendChild(thead);
+    table2.appendChild(thead);
     const tbody = make4("tbody", "kra-bands");
     for (const b of cfg.config.bands) tbody.appendChild(bandRow(b));
-    table.appendChild(tbody);
-    box.appendChild(table);
+    table2.appendChild(tbody);
+    box.appendChild(table2);
     const add = make4("button", "btn-ghost kra-add", "+ \u52A0\u4E00\u6863");
     add.type = "button";
     add.setAttribute("data-kra-add-band", "1");
@@ -9159,7 +10421,7 @@
     return box;
   }
   function bandRow(b) {
-    const tr = make4("tr", "kra-band-row");
+    const tr2 = make4("tr", "kra-band-row");
     const mk = (cls, value, type, step) => {
       const td2 = make4("td", "ctr");
       const input = document.createElement("input");
@@ -9170,10 +10432,10 @@
       td2.appendChild(input);
       return td2;
     };
-    tr.appendChild(mk("kra-band-min", b.min, "number", "0.1"));
-    tr.appendChild(mk("kra-band-label", b.label));
-    tr.appendChild(mk("kra-band-coef", b.coef, "number", "0.01"));
-    tr.appendChild(mk("kra-band-note", b.note || ""));
+    tr2.appendChild(mk("kra-band-min", b.min, "number", "0.1"));
+    tr2.appendChild(mk("kra-band-label", b.label));
+    tr2.appendChild(mk("kra-band-coef", b.coef, "number", "0.01"));
+    tr2.appendChild(mk("kra-band-note", b.note || ""));
     const del = make4("td", "ctr");
     const btn = make4("button", "btn-mini kra-band-del", "");
     btn.type = "button";
@@ -9181,8 +10443,8 @@
     btn.setAttribute("data-kra-del-band", "1");
     btn.appendChild(make4("i", "ti ti-trash"));
     del.appendChild(btn);
-    tr.appendChild(del);
-    return tr;
+    tr2.appendChild(del);
+    return tr2;
   }
   function buildTargets2(cfg) {
     const box = make4("div", "kra-block");
@@ -9192,7 +10454,7 @@
       "kra-hint",
       "\u300C\u901A\u7528\u515C\u5E95\u300D\u8FD9\u4E00\u884C\u7528\u4E8E\u6240\u6709\u6CA1\u5355\u72EC\u8BBE\u76EE\u6807\u7684\u6708\u4EFD\u3002\u7559\u7A7A = \u76EE\u6807\u5F85\u5B9A\uFF0C\u8BE5\u6307\u6807\u4E0D\u8BA1\u5206\u5E76\u5728 KPI \u9875\u6807\u300C\u76EE\u6807\u5F85\u5B9A\u300D\uFF0C\u4E0D\u4F1A\u6309 0 \u5206\u7B97\u3002"
     ));
-    const table = make4("table", "dt kra-table");
+    const table2 = make4("table", "dt kra-table");
     const thead = make4("thead");
     const hr = make4("tr");
     hr.appendChild(make4("th", "", "\u6708\u4EFD"));
@@ -9203,7 +10465,7 @@
     }
     hr.appendChild(make4("th", "ctr", ""));
     thead.appendChild(hr);
-    table.appendChild(thead);
+    table2.appendChild(thead);
     const tbody = make4("tbody", "kra-targets");
     const rows2 = cfg.targets.slice().sort((a, b) => {
       if (a.period_key === "default") return -1;
@@ -9211,8 +10473,8 @@
       return b.period_key.localeCompare(a.period_key);
     });
     for (const row of rows2) tbody.appendChild(targetRow(row));
-    table.appendChild(tbody);
-    box.appendChild(table);
+    table2.appendChild(tbody);
+    box.appendChild(table2);
     const addRow = make4("div", "kra-add-period");
     const input = document.createElement("input");
     input.type = "month";
@@ -9227,15 +10489,15 @@
   }
   function targetRow(row) {
     const isDefault = row.period_key === "default";
-    const tr = make4("tr", "kra-target-row" + (isDefault ? " kra-target-default" : ""));
-    tr.setAttribute("data-kra-period", row.period_key);
-    tr.appendChild(make4("td", "", isDefault ? "\u901A\u7528\u515C\u5E95" : row.period_key));
+    const tr2 = make4("tr", "kra-target-row" + (isDefault ? " kra-target-default" : ""));
+    tr2.setAttribute("data-kra-period", row.period_key);
+    tr2.appendChild(make4("td", "", isDefault ? "\u901A\u7528\u515C\u5E95" : row.period_key));
     for (const [key] of TARGET_FIELDS) {
       const td2 = make4("td", "ctr");
       const input = numInput(key, row[key], key === "a_ratio_target" ? "0.01" : "1");
       input.classList.add("kra-target-input");
       td2.appendChild(input);
-      tr.appendChild(td2);
+      tr2.appendChild(td2);
     }
     const ops = make4("td", "ctr");
     if (!isDefault) {
@@ -9248,8 +10510,8 @@
     } else {
       ops.appendChild(make4("span", "dim", "\u2014"));
     }
-    tr.appendChild(ops);
-    return tr;
+    tr2.appendChild(ops);
+    return tr2;
   }
   function syncWeightSum(host2) {
     const cellEl = host2.querySelector(".kra-weight-sum");
@@ -9263,7 +10525,7 @@
     cellEl.textContent = String(Math.round(sum * 100) / 100);
     cellEl.classList.toggle("kra-sum-off", Math.abs(sum - 100) > 1e-3);
   }
-  function render4(host2, cfg) {
+  function render5(host2, cfg) {
     loaded = cfg;
     host2.textContent = "";
     const wrap = make4("div", "kra");
@@ -9287,8 +10549,8 @@
     foot.appendChild(make4("span", "kra-hint", "\u4FDD\u5B58\u540E KPI \u9875\u7684\u300C\u6708\u5EA6\u7EE9\u6548\u8003\u6838\u300D\u7ACB\u5373\u6309\u65B0\u65B9\u6848\u91CD\u7B97\u3002\u5386\u53F2\u5DF2\u7ED3\u7B97\u7684\u8003\u6838\u671F\u4E0D\u53D7\u5F71\u54CD\u3002"));
     wrap.appendChild(foot);
     host2.appendChild(wrap);
-    if (!canEdit()) host2.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el) => {
-      el.disabled = true;
+    if (!canEdit()) host2.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el5) => {
+      el5.disabled = true;
     });
     syncWeightSum(host2);
   }
@@ -9306,7 +10568,7 @@
     const host2 = document.getElementById(HOST_ID);
     if (!host2) return false;
     try {
-      render4(host2, await API.get("/api/kpi/review-config"));
+      render5(host2, await API.get("/api/kpi/review-config"));
       return true;
     } catch (e) {
       if (e && e.message === "unauthorized") return false;
@@ -9333,11 +10595,11 @@
       }
       config[key] = n;
     }
-    const bands = [...host2.querySelectorAll(".kra-band-row")].map((tr) => ({
-      min: Number(tr.querySelector(".kra-band-min").value),
-      label: tr.querySelector(".kra-band-label").value.trim(),
-      coef: Number(tr.querySelector(".kra-band-coef").value),
-      note: tr.querySelector(".kra-band-note").value.trim() || null
+    const bands = [...host2.querySelectorAll(".kra-band-row")].map((tr2) => ({
+      min: Number(tr2.querySelector(".kra-band-min").value),
+      label: tr2.querySelector(".kra-band-label").value.trim(),
+      coef: Number(tr2.querySelector(".kra-band-coef").value),
+      note: tr2.querySelector(".kra-band-note").value.trim() || null
     }));
     if (!bands.length) {
       toast2("\u81F3\u5C11\u8981\u7559\u4E00\u6863\u7EE9\u6548\u7CFB\u6570");
@@ -9348,9 +10610,9 @@
       toast2("\u5206\u6863\u91CC\u300C\u603B\u5206\u4E0B\u9650 / \u7B49\u7EA7\u540D\u79F0 / \u7EE9\u6548\u7CFB\u6570\u300D\u90FD\u8981\u586B \u2014\u2014 \u8FD9\u51B3\u5B9A\u53D1\u591A\u5C11\u94B1\uFF0C\u4E0D\u80FD\u7559\u7A7A");
       return;
     }
-    const targets = [...host2.querySelectorAll(".kra-target-row")].map((tr) => {
-      const out = { period_key: tr.dataset.kraPeriod };
-      tr.querySelectorAll(".kra-target-input").forEach((input) => {
+    const targets = [...host2.querySelectorAll(".kra-target-row")].map((tr2) => {
+      const out = { period_key: tr2.dataset.kraPeriod };
+      tr2.querySelectorAll(".kra-target-input").forEach((input) => {
         out[input.dataset.kraField] = valueOrNull(input);
       });
       return out;
@@ -9359,7 +10621,7 @@
     if (btn) btn.disabled = true;
     try {
       const cfg = await API.put("/api/kpi/review-config", { config, bands, targets });
-      render4(host2, cfg);
+      render5(host2, cfg);
       loadKpiReview(true);
       toast2("\u8003\u6838\u65B9\u6848\u5DF2\u4FDD\u5B58 \xB7 KPI \u9875\u5DF2\u6309\u65B0\u65B9\u6848\u91CD\u7B97");
     } catch (e) {
@@ -9420,7 +10682,7 @@
     if (delPeriod) {
       const key = delPeriod.dataset.kraDelPeriod;
       try {
-        render4(host2, await API.del("/api/kpi/review-targets/" + encodeURIComponent(key)));
+        render5(host2, await API.del("/api/kpi/review-targets/" + encodeURIComponent(key)));
         toast2("\u5DF2\u5220\u9664 " + key + " \u7684\u5355\u72EC\u76EE\u6807 \xB7 \u8BE5\u6708\u56DE\u843D\u5230\u901A\u7528\u515C\u5E95");
       } catch (err) {
         toast2(err && err.status === 403 ? "\u65E0\u6743\u4FEE\u6539\u8003\u6838\u65B9\u6848" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
@@ -9445,23 +10707,1857 @@
     setActionTab: () => setActionTab2,
     setPlanningTab: () => setPlanningTab2
   });
+
+  // public/src/audit.js
+  var $5 = (id) => document.getElementById(id);
+  var failText3 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var isHttp3 = (u) => /^https?:\/\//i.test(String(u || ""));
+  function el2(tag, cls, text2) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text2 != null) n.textContent = String(text2);
+    return n;
+  }
+  var num2 = (v) => v == null ? "\u2014" : Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  var md2 = (d) => String(d || "").slice(5);
+  var TONE_BADGE2 = { bad: "b-red", warn: "b-amber", muted: "b-gray", good: "b-green" };
+  var STATE = [["completed", "\u5DF2\u5B8C\u6210"], ["overdue", "\u903E\u671F\u672A\u5B8C\u6210"], ["in_progress", "\u8FDB\u884C\u4E2D"], ["abandoned", "\u672A\u5B8C\u6210\u5373\u5F52\u6863"], ["deleted", "\u533A\u95F4\u5185\u88AB\u5220\u9664"]];
+  var LINK_LABEL2 = { page: "\u9875\u9762", campaign: "\u7CFB\u5217", keyword: "\u5173\u952E\u8BCD", kpi: "KPI" };
+  var EFFECT_STATUS = { PARTIAL: "\u6570\u636E\u672A\u6EE1", PENDING: "\u5F85\u6570\u636E", NOT_SYNCED: "\u672A\u540C\u6B65", NO_DATA: "\u65E0\u6570\u636E" };
+  var CURRENCY_LABEL = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
+  var amounts = (a) => Object.entries(a || {}).map(([c, v]) => (CURRENCY_LABEL[c] || c) + " " + num2(v)).join(" \uFF5C ");
+  var bound2 = false;
+  var range = null;
+  var person = "all";
+  var pkg = null;
+  var seq3 = 0;
+  function addDays2(ymd2, n) {
+    const d = /* @__PURE__ */ new Date(ymd2 + "T00:00:00");
+    d.setDate(d.getDate() + n);
+    return formatLocalDate(d);
+  }
+  function weekOf(ymd2) {
+    const d = /* @__PURE__ */ new Date(ymd2 + "T00:00:00");
+    const start = addDays2(ymd2, -((d.getDay() + 6) % 7));
+    return { start_date: start, end_date: addDays2(start, 6) };
+  }
+  var query = () => "start_date=" + range.start_date + "&end_date=" + range.end_date + "&person=" + encodeURIComponent(person) + "&today=" + formatLocalDate(/* @__PURE__ */ new Date());
+  function card(title, sub) {
+    const c = el2("div", "card audit-card");
+    const head = el2("div", "card-head");
+    head.appendChild(el2("span", "card-title", title));
+    if (sub) head.appendChild(el2("span", "card-sub", sub));
+    c.appendChild(head);
+    return c;
+  }
+  function table(headers, rows2, cls) {
+    const t = el2("table", "dt audit-table " + (cls || ""));
+    const thead = el2("thead");
+    const hr = el2("tr");
+    headers.forEach((h4) => hr.appendChild(el2("th", h4.cls || "", h4.label || h4)));
+    thead.appendChild(hr);
+    t.appendChild(thead);
+    const tb = el2("tbody");
+    rows2.forEach((cells) => {
+      const tr2 = el2("tr");
+      cells.forEach((c, i) => {
+        const td2 = el2("td", headers[i] && headers[i].cls || "");
+        if (c instanceof Node) td2.appendChild(c);
+        else td2.textContent = c == null ? "" : String(c);
+        tr2.appendChild(td2);
+      });
+      tb.appendChild(tr2);
+    });
+    t.appendChild(tb);
+    return t;
+  }
+  var empty = (text2) => el2("div", "audit-empty", text2);
+  function linkEl(url, text2) {
+    if (!isHttp3(url)) return el2("span", "", text2 || url || "");
+    const a = el2("a", "audit-link", text2 || url);
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.title = url;
+    return a;
+  }
+  function shortUrl2(u) {
+    try {
+      const x = new URL(u);
+      const s = x.host.replace(/^www\./, "") + (x.pathname === "/" ? "" : x.pathname);
+      return s.length > 40 ? s.slice(0, 39) + "\u2026" : s;
+    } catch (e) {
+      return u || "";
+    }
+  }
+  function deltaSpan(m) {
+    const d = m.delta;
+    const s = el2("span", "audit-delta");
+    if (!d) {
+      s.textContent = "";
+      return s;
+    }
+    s.textContent = (d.abs > 0 ? "+" : "") + num2(d.abs) + (d.pct != null ? "\uFF08" + (d.pct > 0 ? "+" : "") + Math.round(d.pct * 100) + "%\uFF09" : "");
+    if (d.abs !== 0 && m.better !== "neutral") s.classList.add((m.better === "higher" ? d.abs > 0 : d.abs < 0) ? "is-good" : "is-bad");
+    return s;
+  }
+  function summaryBlock(name, s) {
+    const b = el2("div", "audit-person");
+    b.appendChild(el2("div", "audit-person-name", name));
+    const big = el2("div", "audit-person-big");
+    big.appendChild(el2("b", "", s.completed));
+    big.appendChild(document.createTextNode(" \u6761\u5B8C\u6210"));
+    b.appendChild(big);
+    const line3 = (t, cls) => b.appendChild(el2("div", "audit-person-line " + (cls || ""), t));
+    line3("\u8FDB\u884C\u4E2D " + s.in_progress + " \xB7 \u903E\u671F " + s.overdue + " \xB7 \u672A\u5B8C\u6210\u5373\u5F52\u6863 " + s.abandoned + (s.deleted ? " \xB7 \u88AB\u5220\u9664 " + s.deleted : ""), s.overdue ? "is-bad" : "");
+    if (s.completed) {
+      line3("\u6709\u7ED3\u679C " + s.with_result + "/" + s.completed + " \xB7 \u6709\u8BC1\u636E " + s.with_evidence + "/" + s.completed);
+      line3("\u6709\u53EF\u91CF\u5316\u5173\u8054 " + s.with_links + "/" + s.completed + " \xB7 \u6709\u5B8C\u6574\u524D\u540E\u6570\u636E " + s.with_effect_data + "/" + s.completed);
+      line3(s.hours_known ? "\u5DE5\u65F6\uFF1A\u9884\u4F30 " + num2(s.est_hours) + "h \u2192 \u5B9E\u9645 " + num2(s.actual_hours) + "h\uFF08" + s.hours_known + "/" + s.completed + " \u6761\u4E24\u9879\u90FD\u586B\u4E86\uFF09" : "\u5DE5\u65F6\uFF1A\u6CA1\u6709\u4E00\u6761\u540C\u65F6\u586B\u4E86\u9884\u4F30\u548C\u5B9E\u9645\uFF0C\u65E0\u6CD5\u6BD4\u8F83", s.hours_known ? "" : "is-warn");
+    }
+    if (s.flagged) line3(s.flagged + " \u6761\u6709\u4E25\u91CD\u7591\u70B9", "is-bad");
+    return b;
+  }
+  function renderSummary2(root) {
+    const c = card("\u6982\u8981", pkg.meta.range.start_date + " ~ " + pkg.meta.range.end_date);
+    const grid = el2("div", "audit-people");
+    if (pkg.meta.person === "all") grid.appendChild(summaryBlock("\u5168\u90E8\uFF08\u542B\u516C\u53F8\u4EFB\u52A1\uFF09", pkg.summary.all));
+    pkg.summary.people.forEach((p) => grid.appendChild(summaryBlock(p.person + " \xB7 " + p.dept, p)));
+    c.appendChild(grid);
+    const notes = el2("details", "audit-notes");
+    notes.appendChild(el2("summary", "", "\u8BFB\u8FD9\u4E9B\u6570\u4E4B\u524D\u8981\u77E5\u9053\u7684\u53E3\u5F84"));
+    pkg.meta.notes.forEach((n) => notes.appendChild(el2("div", "", "\xB7 " + n)));
+    c.appendChild(notes);
+    root.appendChild(c);
+  }
+  var DONE_TEXT2 = { 0: "\u672A\u5B8C\u6210", 1: "\u5DF2\u5B8C\u6210" };
+  var changeValue2 = (c, v) => v == null ? "\uFF08\u7A7A\uFF09" : c.field === "done" ? DONE_TEXT2[v] || v : c.field === "important" ? "\u5DF2\u6807\u91CD\u8981" : String(v).length > 40 ? String(v).slice(0, 39) + "\u2026" : v;
+  var changeText = (c) => c.label + " " + changeValue2(c, c.old) + " \u2192 " + changeValue2(c, c.new) + "\uFF08" + (c.by || "\u672A\u8BB0\u5F55") + " " + md2(c.date) + "\uFF09";
+  function taskCell(t) {
+    const box = el2("div", "audit-task");
+    box.appendChild(el2("div", "audit-task-title", "#" + t.id + " " + (t.content || "")));
+    const meta = el2("div", "audit-task-meta");
+    if (t.is_important) {
+      const b = el2("span", "badge b-red", "\u91CD\u8981");
+      b.title = t.important_reason_text || "";
+      meta.appendChild(b);
+    }
+    if (t.project) meta.appendChild(el2("span", "badge b-gray", t.project));
+    meta.appendChild(el2("span", "", (t.person || t.dept || "\u672A\u6307\u6D3E") + (t.owner && t.owner !== t.person ? "\uFF08" + t.owner + "\uFF09" : "")));
+    const span = t.start_date && t.task_date && t.start_date !== t.task_date ? md2(t.start_date) + " ~ " + md2(t.task_date) : md2(t.task_date || t.start_date);
+    if (span) meta.appendChild(el2("span", "", "\u8BA1\u5212 " + span));
+    if (t.done_date) meta.appendChild(el2("span", "", "\u5B8C\u6210 " + md2(t.done_date)));
+    if (t.deleted_date) meta.appendChild(el2("span", "", "\u5220\u9664 " + md2(t.deleted_date) + " \xB7 " + (t.deleted_by || "\u5220\u9664\u4EBA\u672A\u8BB0\u5F55")));
+    box.appendChild(meta);
+    if (t.changes.length) box.appendChild(el2("div", "audit-task-changes", "\u6539\u52A8\uFF1A" + t.changes.map(changeText).join("\uFF1B")));
+    if (t.links.length) box.appendChild(el2("div", "audit-task-links", t.links.map((l) => (LINK_LABEL2[l.type] || l.type) + " " + (l.type === "page" ? shortUrl2(l.ref) : l.label || l.ref)).join(" \xB7 ")));
+    return box;
+  }
+  function resultCell(t) {
+    const box = el2("div", "audit-result");
+    if (t.audit_state !== "completed" && !(t.audit_state === "deleted" && t.done_date)) {
+      box.appendChild(el2("span", "dim", t.done_when ? "\u5B8C\u6210\u6807\u51C6\uFF1A" + t.done_when : "\u2014"));
+      return box;
+    }
+    box.appendChild(t.result ? el2("div", "audit-result-text", t.result) : el2("div", "audit-missing", "\u7ED3\u679C\u672A\u8BB0\u5F55"));
+    if (t.task_actions) box.appendChild(el2("div", "audit-actions", t.task_actions));
+    const ev = el2("div", "audit-evidence");
+    t.evidence.forEach((u) => ev.appendChild(linkEl(u, shortUrl2(u))));
+    if (t.evidence_images.length) ev.appendChild(el2("span", "", t.evidence_images.length + " \u5F20\u622A\u56FE"));
+    if (!t.evidence.length && !t.evidence_images.length) ev.appendChild(el2("span", t.is_important ? "audit-missing" : "dim", "\u65E0\u8BC1\u636E"));
+    box.appendChild(ev);
+    return box;
+  }
+  function effectCell(t) {
+    const box = el2("div", "audit-effect");
+    if (t.audit_state !== "completed") return box;
+    if (!t.effect.length) {
+      box.appendChild(el2("span", "dim", "\u6CA1\u6709\u53EF\u91CF\u5316\u7684\u5173\u8054\u5BF9\u8C61"));
+      return box;
+    }
+    for (const e of t.effect) {
+      const head = el2("div", "audit-effect-head", (LINK_LABEL2[e.type] || e.type) + " " + (e.type === "page" ? shortUrl2(e.ref) : e.label || e.ref) + (e.source === "ads" ? " \xB7 \u5E7F\u544A" : e.source === "ga4" ? " \xB7 \u843D\u5730\u9875\uFF08GA4\uFF09" : ""));
+      if (e.status !== "OK") head.appendChild(el2("span", "badge b-gray", (EFFECT_STATUS[e.status] || e.status) + (e.days ? " " + e.days + " \u5929" : "")));
+      box.appendChild(head);
+      e.metrics.filter((m) => m.delta).forEach((m) => {
+        const line3 = el2("div", "audit-effect-line", m.label + " " + num2(m.before) + " \u2192 " + num2(m.after) + " ");
+        line3.appendChild(deltaSpan(m));
+        box.appendChild(line3);
+      });
+    }
+    const btn = el2("button", "btn-mini", "\u5B8C\u6574\u5BF9\u6BD4");
+    btn.type = "button";
+    btn.dataset.taskEffect = t.id;
+    box.appendChild(btn);
+    return box;
+  }
+  function hoursCell(t) {
+    const box = el2("div", "audit-hours");
+    box.appendChild(el2("div", "", "\u9884\u4F30 " + (t.est_hours == null ? "\u672A\u586B" : num2(t.est_hours) + "h")));
+    if (t.audit_state === "completed") box.appendChild(el2("div", "", "\u5B9E\u9645 " + (t.actual_hours == null ? "\u672A\u586B" : num2(t.actual_hours) + "h")));
+    if (t.checkin_days) box.appendChild(el2("div", "dim", "\u672C\u671F\u63A8\u8FDB " + t.checkin_days + " \u5929"));
+    return box;
+  }
+  function flagsCell(t) {
+    const box = el2("div", "audit-flags");
+    if (!t.flags.length) {
+      box.appendChild(el2("span", "dim", "\u65E0"));
+      return box;
+    }
+    t.flags.forEach((f) => {
+      const meta = pkg.meta.flags[f] || { label: f, tone: "muted" };
+      box.appendChild(el2("span", "badge " + (TONE_BADGE2[meta.tone] || "b-gray"), meta.label));
+    });
+    return box;
+  }
+  function renderTasks(root) {
+    const c = card("\u4EFB\u52A1", pkg.tasks.length + " \u6761\u4E0E\u8FD9\u6BB5\u65F6\u95F4\u6709\u5173");
+    if (!pkg.tasks.length) {
+      c.appendChild(empty("\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u4EFB\u4F55\u4EFB\u52A1\u8BB0\u5F55\u3002"));
+      root.appendChild(c);
+      return;
+    }
+    for (const [key, label] of STATE) {
+      const rows2 = pkg.tasks.filter((t) => t.audit_state === key);
+      if (!rows2.length) continue;
+      c.appendChild(el2("div", "audit-group audit-group-" + key, label + " " + rows2.length));
+      c.appendChild(table(
+        ["\u4EFB\u52A1", "\u7ED3\u679C\u4E0E\u8BC1\u636E", "\u6570\u636E\u53D8\u5316\uFF08\u5B8C\u6210\u524D\u540E\u5404 " + pkg.meta.effect_days + " \u5929\uFF09", "\u5DE5\u65F6", "\u7591\u70B9"],
+        rows2.map((t) => [taskCell(t), resultCell(t), effectCell(t), hoursCell(t), flagsCell(t)]),
+        "audit-tasks"
+      ));
+    }
+    root.appendChild(c);
+  }
+  function trendTable(t, labels) {
+    if (t.status !== "OK") return empty("\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF08\u4E0D\u662F 0\uFF09\u3002");
+    return table(
+      ["\u6307\u6807", { label: "\u672C\u671F", cls: "num" }, { label: "\u4E0A\u671F", cls: "num" }, { label: "\u53D8\u5316", cls: "num" }],
+      Object.keys(t.current).map((k) => [labels[k][0], num2(t.current[k]), t.previous ? num2(t.previous[k]) : "\u2014", deltaSpan({ delta: t.delta[k], better: labels[k][1] })])
+    );
+  }
+  function renderData(root) {
+    if (!pkg.seo && !pkg.sem) return;
+    const c = card("\u6570\u636E", "\u672C\u671F\u5BF9\u6BD4\u4E0A\u4E00\u7B49\u957F\u533A\u95F4 \xB7 \u5168\u7AD9 / \u5168\u8D26\u6237\u53E3\u5F84");
+    const grid = el2("div", "audit-cols");
+    const seoLabels = { clicks: ["\u70B9\u51FB", "higher"], impressions: ["\u66DD\u5149", "higher"], position: ["\u5E73\u5747\u6392\u540D", "lower"] };
+    const seoBlocks = (pkg.seo_sites || []).length ? pkg.seo_sites.map((s) => ["\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09\xB7 " + s.site, s]) : pkg.seo ? [["\u81EA\u7136\u641C\u7D22\uFF08GSC\uFF09", pkg.seo]] : [];
+    for (const [title, t] of seoBlocks) {
+      const b = el2("div");
+      b.appendChild(el2("div", "audit-sub", title + (t.days_with_data ? " \xB7 " + t.days_with_data + " \u5929\u6709\u6570\u636E" : "")));
+      b.appendChild(trendTable(t, seoLabels));
+      grid.appendChild(b);
+    }
+    if (pkg.sem) {
+      const b = el2("div");
+      b.appendChild(el2("div", "audit-sub", "\u5E7F\u544A\uFF08Ads\uFF0C\u8D26\u6237\u5E01\u79CD\uFF09" + (pkg.sem.days_with_data ? " \xB7 " + pkg.sem.days_with_data + " \u5929\u6709\u6570\u636E" : "")));
+      b.appendChild(trendTable(pkg.sem, { cost: ["\u82B1\u8D39", "neutral"], clicks: ["\u70B9\u51FB", "higher"], conversions: ["\u8F6C\u5316", "higher"], cpa: ["\u6BCF\u8F6C\u5316\u6210\u672C", "lower"] }));
+      grid.appendChild(b);
+    }
+    c.appendChild(grid);
+    const g = pkg.geo;
+    if (g) {
+      c.appendChild(el2("div", "audit-sub", "GEO\uFF08AI \u5F15\u64CE\uFF09"));
+      const line3 = el2("div", "audit-line");
+      line3.textContent = g.status === "OK" ? "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE " + num2(g.totals.sessions) + "\uFF08\u4E0A\u671F " + (g.totals.prev_sessions == null ? "\u65E0\u6570\u636E" : num2(g.totals.prev_sessions)) + "\uFF09" + (g.engines.length ? "\uFF1A" + g.engines.map((e) => e.label + " " + num2(e.sessions)).join("\u3001") : "") + " \xB7 \u5E26\u6765\u8BE2\u76D8 " + g.inquiries.total + " \u6761" : "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE\u3002";
+      c.appendChild(line3);
+      const cite = g.citations;
+      c.appendChild(el2("div", "audit-line", cite ? "\u5F15\u7528\u62BD\u67E5\uFF08" + cite.round_date + "\uFF09\uFF1A\u5DF2\u67E5 " + cite.totals.checked + "/" + cite.totals.expected + " \u683C \xB7 \u63D0\u5230\u6211\u4EEC " + cite.totals.mentioned + " \xB7 \u5F15\u7528\u6211\u4EEC\u7684\u9875\u9762 " + cite.totals.cited + (cite.expected_note ? "\uFF08" + cite.expected_note + "\uFF09" : "") : "\u5F15\u7528\u62BD\u67E5\uFF1A\u8FD9\u6BB5\u65F6\u95F4\u7ED3\u675F\u4E4B\u524D\u8FD8\u6CA1\u6709\u505A\u8FC7\u3002"));
+    }
+    root.appendChild(c);
+  }
+  var mapText = (m) => Object.entries(m || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + " " + v).join(" \xB7 ");
+  function renderInquiries(root) {
+    const q = pkg.inquiries;
+    const c = card("\u8BE2\u76D8\u8D28\u91CF", "\u90E8\u95E8\u53E3\u5F84\uFF0C\u4E0D\u6309\u4EBA\u62C6");
+    if (!q.total) {
+      c.appendChild(empty("\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u5F55\u5165\u8BE2\u76D8\u3002"));
+    } else {
+      c.appendChild(el2("div", "audit-line", "\u5171 " + q.total + " \u6761\uFF1AA " + q.by_grade.A + " \xB7 B " + q.by_grade.B + " \xB7 C " + q.by_grade.C + "\uFF08C \u7EA7\u5360 " + Math.round(q.junk_ratio * 100) + "%\uFF09\xB7 \u6210\u4EA4 " + q.deals + " \xB7 \u6709\u8868\u5355\u6765\u6E90\u8BC1\u636E " + q.with_form_evidence + "/" + q.total));
+      const cf = q.confirmation;
+      if (cf && cf.total) {
+        c.appendChild(el2(
+          "div",
+          "audit-line" + (cf.unconfirmedRate >= 50 ? " audit-missing" : ""),
+          "\u6E20\u9053\u4E0E\u7B49\u7EA7\u5DF2\u786E\u8BA4 " + cf.confirmed + "/" + cf.total + "\uFF08" + cf.confirmedRate + "%\uFF09\xB7 \u5F85\u786E\u8BA4 " + cf.proposed + " \xB7 \u5386\u53F2\u672A\u5BA1 " + cf.legacy
+        ));
+      }
+      c.appendChild(el2("div", "audit-line", "\u6E20\u9053\uFF1A" + mapText(q.by_channel)));
+      if (q.by_site && Object.keys(q.by_site).some((k) => k !== "\u672A\u6807\u6CE8")) c.appendChild(el2("div", "audit-line", "\u7AD9\u70B9\uFF1A" + mapText(q.by_site)));
+      c.appendChild(el2("div", "audit-line", "\u6765\u6E90\u5BF9\u8D26\uFF1A" + mapText(q.by_source_verdict)));
+      const SHOW = 40;
+      c.appendChild(table(
+        ["\u65E5\u671F", "\u56FD\u5BB6", "\u6E20\u9053", "\u4EA7\u54C1", { label: "\u7B49\u7EA7", cls: "ctr" }, "\u786E\u8BA4", "\u6765\u6E90\u8BCD / \u7CFB\u5217 / \u843D\u5730\u9875", "\u5BF9\u8D26", "\u6210\u4EA4"],
+        q.items.slice(0, SHOW).map((i) => [
+          md2(i.date),
+          i.country,
+          i.channel,
+          i.product,
+          i.grade,
+          i.confirmation_label + (i.attr_change_count ? " \xB7 \u6539 " + i.attr_change_count : ""),
+          [i.source, i.src_campaign, i.src_landing_page && shortUrl2(i.src_landing_page)].filter(Boolean).join(" \xB7 "),
+          (i.src_evidence === "form" ? "\u8868\u5355\u6765\u6E90" : i.source_verdict_label) || "",
+          i.deal_status || ""
+        ])
+      ));
+      if (q.items.length > SHOW) c.appendChild(el2("div", "dim audit-more", "\u53EA\u663E\u793A\u524D " + SHOW + " \u6761\uFF0C\u5168\u90E8 " + q.items.length + " \u6761\u5728\u5BFC\u51FA\u6587\u4EF6\u91CC\u3002"));
+    }
+    if (q.deals_marked.length) {
+      c.appendChild(el2("div", "audit-sub", "\u672C\u671F\u6807\u4E3A\u6210\u4EA4 " + q.deals_marked.length + " \u6761\uFF08\u8BE2\u76D8\u53EF\u80FD\u662F\u66F4\u65E9\u6765\u7684\uFF09"));
+      c.appendChild(table(
+        ["\u8BE2\u76D8\u65E5\u671F", "\u56FD\u5BB6", "\u6E20\u9053", "\u4EA7\u54C1", { label: "\u7B49\u7EA7", cls: "ctr" }, "\u6765\u6E90\u8BCD / \u7CFB\u5217", "\u6807\u8BB0\u6210\u4EA4", "\u6807\u8BB0\u4EBA"],
+        q.deals_marked.map((d) => [d.inquiry_date, d.country, d.channel, d.product, d.grade, [d.source, d.src_campaign].filter(Boolean).join(" \xB7 "), md2(d.marked_date), d.marked_by || "\u672A\u8BB0\u5F55"])
+      ));
+    }
+    if (q.archived_items.length) {
+      c.appendChild(el2("div", "audit-sub", "\u672C\u671F\u88AB\u5F52\u6863\u7684\u8BE2\u76D8 " + q.archived_items.length + " \u6761\uFF08\u5DF2\u4E0D\u8BA1\u5165\u4E0A\u9762\u7684\u4EFB\u4F55\u6570\uFF09"));
+      c.appendChild(table(
+        ["\u8BE2\u76D8\u65E5\u671F", "\u56FD\u5BB6", "\u6E20\u9053", "\u4EA7\u54C1", { label: "\u7B49\u7EA7", cls: "ctr" }, "\u5F52\u6863\u524D", "\u5F52\u6863\u65E5", "\u5F52\u6863\u4EBA"],
+        q.archived_items.map((i) => [i.date, i.country, i.channel, i.product, i.grade, i.confirmation_label, md2(i.archived_date), i.archived_by || "\u672A\u8BB0\u5F55"])
+      ));
+    }
+    const l = pkg.leads;
+    c.appendChild(el2("div", "audit-sub", "\u8868\u5355\u7EBF\u7D22"));
+    c.appendChild(el2("div", "audit-line", l.total ? "\u6536\u5230 " + l.total + " \u6761\uFF1A\u5DF2\u8F6C\u8BE2\u76D8 " + l.converted + " \xB7 \u5DF2\u5FFD\u7565 " + l.ignored + " \xB7 \u5F85\u5904\u7406 " + l.new : "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u6536\u5230\u8868\u5355\u7EBF\u7D22\uFF08\u6CA1\u63A5\u5165\u72EC\u7ACB\u7AD9\u8868\u5355\u65F6\u8FD9\u91CC\u4E00\u76F4\u662F\u7A7A\u7684\uFF09\u3002"));
+    const ignored = l.items.filter((x) => x.state === "ignored");
+    if (ignored.length) c.appendChild(table(["\u65E5\u671F", "\u5FFD\u7565\u539F\u56E0", "\u5173\u952E\u8BCD", "\u7CFB\u5217", "\u843D\u5730\u9875"], ignored.map((x) => [md2(x.received_date), x.ignore_reason, x.keyword, x.campaign, x.landing_page && shortUrl2(x.landing_page)])));
+    root.appendChild(c);
+  }
+  function renderSop(root) {
+    const c = card("SOP \u6267\u884C", "\u7B97\u5230 " + pkg.sop.counted_to);
+    const rows2 = pkg.sop.items.filter((s) => s.expected != null);
+    if (!rows2.length) c.appendChild(empty("\u6CA1\u6709\u914D\u7F6E\u65E5 / \u5468 SOP\u3002"));
+    else c.appendChild(table(
+      ["SOP", { label: "\u90E8\u95E8", cls: "ctr" }, { label: "\u5DF2\u505A / \u5E94\u505A", cls: "num" }, "\u6F0F\u4E86\u54EA\u51E0\u5929"],
+      rows2.map((s) => [s.title, s.dept, s.done + " / " + s.expected, (s.missed_days || []).map(md2).join("\u3001")])
+    ));
+    root.appendChild(c);
+  }
+  function renderFixesTests(root) {
+    const c = card("\u6574\u6539\u4E0E\u6D4B\u8BD5");
+    c.appendChild(el2("div", "audit-sub", "\u6574\u6539\uFF08\u672C\u671F\u5230\u671F\u6216\u672C\u671F\u767B\u8BB0\uFF09"));
+    c.appendChild(pkg.fixes.length ? table(
+      ["\u95EE\u9898", { label: "\u8D1F\u8D23\u4EBA", cls: "ctr" }, { label: "\u622A\u6B62", cls: "num" }, { label: "\u7ED3\u679C", cls: "ctr" }, "\u4F9D\u636E", { label: "\u65E5\u8BA1\u5212", cls: "ctr" }],
+      pkg.fixes.map((f) => [f.title, f.owner || f.dept, md2(f.due_date), f.status, f.evidence, f.planned ? f.planned_done ? "\u5DF2\u505A\u5B8C" : "\u5DF2\u6392\u5165" : "\u6CA1\u4EBA\u63A5"])
+    ) : empty("\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u5230\u671F\u6216\u65B0\u767B\u8BB0\u7684\u6574\u6539\u3002"));
+    c.appendChild(el2("div", "audit-sub", "\u6D4B\u8BD5\uFF08\u672C\u671F\u65B0\u767B\u8BB0\uFF0C\u4EE5\u53CA\u8FD8\u6CA1\u5199\u7ED3\u8BBA\u7684\uFF09"));
+    c.appendChild(pkg.tests.length ? table(
+      ["\u6D4B\u8BD5", { label: "\u90E8\u95E8", cls: "ctr" }, "\u5047\u8BBE", "\u53D8\u91CF", "\u8D77\u6B62", "\u7ED3\u8BBA"],
+      pkg.tests.map((t) => [t.content, t.dept, t.hypothesis, t.variable, t.period, t.conclusion || "\uFF08\u8FD8\u6CA1\u6709\u7ED3\u8BBA\uFF09"])
+    ) : empty("\u6CA1\u6709\u5728\u8DD1\u7684\u6D4B\u8BD5\uFF0C\u8FD9\u6BB5\u65F6\u95F4\u4E5F\u6CA1\u6709\u65B0\u767B\u8BB0\u3002"));
+    root.appendChild(c);
+  }
+  function renderSpendKpi(root) {
+    const c = card("\u82B1\u8D39", "\u90E8\u95E8\u53E3\u5F84");
+    c.appendChild(table(
+      ["\u53BB\u5411", "\u91D1\u989D\uFF08\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0\uFF09", { label: "\u7B14\u6570", cls: "num" }],
+      [
+        ...pkg.spend.groups.map((g) => [g.label, amounts(g.amounts) || (g.key === "ads" ? "\u6CA1\u6709\u6570\u636E" : "\u672C\u671F\u6CA1\u6709"), g.count == null ? "" : g.count]),
+        ["\u5408\u8BA1", amounts(pkg.spend.totals) || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55", ""]
+      ]
+    ));
+    const gone = pkg.spend.deleted_items || [];
+    if (gone.length) {
+      c.appendChild(el2("div", "audit-sub", "\u672C\u671F\u88AB\u5220\u9664\u7684\u82B1\u8D39\u8BB0\u5F55 " + gone.length + " \u7B14\uFF08\u5DF2\u4E0D\u8BA1\u5165\u4E0A\u9762\u7684\u5408\u8BA1\uFF09"));
+      c.appendChild(table(
+        ["\u53F0\u8D26", "\u82B1\u8D39\u65E5\u671F", "\u5185\u5BB9", "\u91D1\u989D", "\u8D1F\u8D23\u4EBA", "\u5220\u9664\u65E5", "\u5220\u9664\u4EBA"],
+        gone.map((d) => [d.kind === "backlink" ? "\u5916\u94FE" : "\u5176\u5B83\u652F\u51FA", d.date || "\u672A\u586B", d.what || "", (CURRENCY_LABEL[d.currency] || d.currency || "") + " " + num2(d.amount), d.owner || "", d.deleted_date, d.deleted_by || "\u672A\u8BB0\u5F55"])
+      ));
+    }
+    root.appendChild(c);
+    const k = pkg.kpi;
+    const kc = card("KPI\uFF08\u6708\u5EA6\u8003\u6838\u53E3\u5F84 \xB7 \u672C\u6708\u81F3\u4ECA\uFF09", k.scope_label + " \xB7 " + k.range.start_date + " ~ " + k.range.end_date);
+    kc.appendChild(el2("div", "audit-line", k.gradable ? "\u5F97\u5206 " + num2(k.score) + (k.band ? " \xB7 " + k.band : "") : "\u53C2\u8003\u5206 " + num2(k.provisional_score) + "\uFF08" + k.status_label + "\uFF0C\u672A\u51FA\u6B63\u5F0F\u5206\uFF09"));
+    kc.appendChild(table(
+      ["\u6307\u6807", { label: "\u6743\u91CD", cls: "num" }, { label: "\u5B9E\u9645", cls: "num" }, { label: "\u76EE\u6807", cls: "num" }, { label: "\u72B6\u6001", cls: "ctr" }, { label: "\u5F97\u5206", cls: "num" }],
+      k.metrics.map((m) => [m.label, m.weight, num2(m.actual), num2(m.target), m.status_label, num2(m.score)])
+    ));
+    root.appendChild(kc);
+  }
+  function renderReports(root) {
+    if (!pkg.weekly_reports.length) return;
+    const c = card("\u4ED6\u4EEC\u81EA\u5DF1\u5199\u7684\u5468\u62A5");
+    pkg.weekly_reports.forEach((w) => {
+      c.appendChild(el2("div", "audit-sub", w.dept + " \xB7 " + w.week_key + " \u90A3\u4E00\u5468"));
+      [["\u672C\u5468\u5DE5\u4F5C\u603B\u7ED3", w.summary], ["\u9047\u5230\u7684\u95EE\u9898", w.problems], ["\u5206\u6790", w.analysis], ["\u4E0B\u5468\u8BA1\u5212", w.next_plan]].forEach(([label, items]) => {
+        c.appendChild(el2("div", "audit-line", label + "\uFF1A" + ((items || []).length ? items.join("\uFF1B") : "\uFF08\u6CA1\u5199\uFF09")));
+      });
+    });
+    root.appendChild(c);
+  }
+  var ref = (o) => o && o.task_id != null ? "\u4EFB\u52A1 #" + o.task_id + "\uFF1A" : "";
+  function aiList(box, title, items, fmt2) {
+    if (!Array.isArray(items) || !items.length) return;
+    box.appendChild(el2("div", "audit-ai-h", title));
+    const ul = el2("ul", "audit-ai-list");
+    items.forEach((i) => ul.appendChild(el2("li", "", typeof i === "string" ? i : fmt2(i))));
+    box.appendChild(ul);
+  }
+  function renderAi(item) {
+    const box = $5("audit-ai");
+    box.textContent = "";
+    if (!item) return;
+    const c = card("AI \u5BA1\u6838\u610F\u89C1", "\u751F\u6210\u4E8E " + String(item.updated_at || "").replace("T", " ").slice(0, 16) + " UTC" + (item.history ? " \xB7 \u4E4B\u524D\u8FD8\u8DD1\u8FC7 " + item.history + " \u6B21" : ""));
+    c.appendChild(el2("div", "audit-ai-note", "AI \u53EA\u8BFB\u4E0A\u9762\u8FD9\u4EFD\u6570\u636E\u5199\u610F\u89C1\uFF0C\u7ED3\u8BBA\u540E\u9762\u7684\u4EFB\u52A1\u7F16\u53F7\u53EF\u4EE5\u56DE\u5230\u4EFB\u52A1\u8868\u91CC\u6838\u5BF9\u3002\u5B83\u662F\u53C2\u8003\uFF0C\u4E0D\u662F\u88C1\u51B3\u3002"));
+    const p = item.parsed;
+    if (!p) {
+      c.appendChild(el2("div", "audit-missing", "AI \u8FD9\u6B21\u6CA1\u6709\u6309\u7EA6\u5B9A\u7684\u7ED3\u6784\u8FD4\u56DE\uFF0C\u4E0B\u9762\u662F\u5B83\u7684\u539F\u6587\uFF1A"));
+      c.appendChild(el2("pre", "audit-ai-raw", item.text));
+      box.appendChild(c);
+      return;
+    }
+    if (p.overview) c.appendChild(el2("div", "audit-ai-overview", p.overview));
+    (p.people || []).forEach((who) => {
+      const b = el2("div", "audit-ai-person");
+      b.appendChild(el2("div", "audit-person-name", who.person || ""));
+      aiList(b, "\u505A\u4E86\u4EC0\u4E48", who.did, (x) => ref(x) + (x.what || ""));
+      aiList(b, "\u6709\u6570\u636E\u652F\u6301\u7684\u53D8\u5316", who.verified_changes, (x) => ref(x) + (x.evidence || "") + (x.confidence ? "\uFF08\u628A\u63E1\uFF1A" + x.confidence + "\uFF09" : ""));
+      aiList(b, "\u8FD8\u4E0D\u80FD\u7B97\u6570\u7684", who.unverified, (x) => ref(x) + (x.why || ""));
+      if (who.time) {
+        b.appendChild(el2("div", "audit-ai-h", "\u5DE5\u65F6"));
+        b.appendChild(el2("div", "audit-line", who.time));
+      }
+      if (who.quality) {
+        b.appendChild(el2("div", "audit-ai-h", "\u8D28\u91CF"));
+        b.appendChild(el2("div", "audit-line", who.quality));
+      }
+      aiList(b, "\u9700\u8981\u5F53\u9762\u95EE\u7684\u95EE\u9898", who.questions, (x) => x);
+      c.appendChild(b);
+    });
+    const sec = (title, o) => {
+      if (!o) return;
+      const b = el2("div", "audit-ai-person");
+      b.appendChild(el2("div", "audit-person-name", title));
+      if (o.finding) b.appendChild(el2("div", "audit-line", o.finding));
+      aiList(b, "\u5783\u573E\u8BE2\u76D8\u53EF\u80FD\u7684\u6765\u6E90", o.junk_causes, (x) => x);
+      aiList(b, "\u5EFA\u8BAE\u52A8\u4F5C", o.actions, (x) => x);
+      c.appendChild(b);
+    };
+    sec("\u8BE2\u76D8", p.inquiries);
+    sec("\u82B1\u8D39", p.spend);
+    if (Array.isArray(p.next_week) && p.next_week.length) {
+      c.appendChild(el2("div", "audit-ai-h", "\u4E0B\u5468\u5EFA\u8BAE"));
+      c.appendChild(table(["\u52A8\u4F5C", { label: "\u8C01", cls: "ctr" }, "\u7528\u54EA\u4E2A\u6570\u9A8C\u8BC1", "\u4F9D\u636E"], p.next_week.map((x) => [x.action, x.owner, x.metric, x.based_on])));
+    }
+    aiList(c, "\u56E0\u4E3A\u7F3A\u6570\u636E\u800C\u4E0B\u4E0D\u4E86\u7ED3\u8BBA\u7684\u5730\u65B9", p.data_gaps, (x) => x);
+    box.appendChild(c);
+  }
+  function render6() {
+    const root = $5("audit-body");
+    root.textContent = "";
+    renderSummary2(root);
+    renderTasks(root);
+    renderSop(root);
+    renderData(root);
+    renderInquiries(root);
+    renderFixesTests(root);
+    renderSpendKpi(root);
+    renderReports(root);
+  }
+  async function loadAudit() {
+    bind();
+    if (!range) range = weekOf(formatLocalDate(/* @__PURE__ */ new Date()));
+    $5("audit-start").value = range.start_date;
+    $5("audit-end").value = range.end_date;
+    $5("audit-person").value = person;
+    const my = ++seq3;
+    const root = $5("audit-body");
+    root.textContent = "";
+    root.appendChild(empty("\u6B63\u5728\u53D6\u8FD9\u6BB5\u65F6\u95F4\u7684\u8BB0\u5F55\u2026"));
+    $5("audit-ai").textContent = "";
+    try {
+      const [data3, ai] = await Promise.all([API.get("/api/audit/weekly?" + query()), API.get("/api/audit/weekly/ai?" + query()).catch(() => ({ item: null }))]);
+      if (my !== seq3) return;
+      pkg = data3;
+      render6();
+      renderAi(ai.item);
+    } catch (e) {
+      if (my !== seq3 || e && e.message === "unauthorized") return;
+      root.textContent = "";
+      root.appendChild(el2("div", "audit-missing", "\u5BA1\u6838\u6570\u636E\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText3(e) + " "));
+      const retry = el2("button", "btn-mini", "\u91CD\u8BD5");
+      retry.type = "button";
+      retry.addEventListener("click", loadAudit);
+      root.appendChild(retry);
+    }
+  }
+  async function runAuditAi(btn) {
+    if (!range) return;
+    const body = { start_date: range.start_date, end_date: range.end_date, person, today: formatLocalDate(/* @__PURE__ */ new Date()) };
+    const labelEl = $5("audit-ai-label");
+    const label = labelEl.textContent;
+    if (btn) btn.disabled = true;
+    labelEl.textContent = "AI \u5BA1\u6838\u4E2D\uFF0C\u7EA6\u9700\u4E00\u5206\u949F\u2026";
+    try {
+      const { item } = await API.post("/api/audit/weekly/ai", body);
+      renderAi(item);
+      $5("audit-ai").scrollIntoView({ behavior: "smooth", block: "start" });
+      toast2("AI \u5BA1\u6838\u610F\u89C1\u5DF2\u751F\u6210");
+    } catch (e) {
+      toast2("AI \u5BA1\u6838\u6CA1\u6709\u8DD1\u6210\uFF1A" + failText3(e));
+    } finally {
+      if (btn) btn.disabled = false;
+      labelEl.textContent = label;
+    }
+  }
+  function exportAudit(format) {
+    if (!range) return;
+    let url = "/api/audit/weekly/export?" + query() + "&format=" + format;
+    if (format === "csv") {
+      const section = $5("audit-csv-section").value;
+      if (!section) {
+        toast2("\u5148\u9009\u8981\u5BFC\u51FA\u54EA\u4E00\u5F20\u8868");
+        return;
+      }
+      url += "&section=" + section;
+    }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  function bind() {
+    if (bound2) return;
+    const panel = $5("panel-audit");
+    if (!panel) return;
+    bound2 = true;
+    panel.addEventListener("click", (e) => {
+      const step = e.target.closest("[data-audit-week]");
+      if (step) {
+        const n = Number(step.dataset.auditWeek);
+        range = n ? weekOf(addDays2(range.start_date, 7 * n)) : weekOf(formatLocalDate(/* @__PURE__ */ new Date()));
+        loadAudit();
+      }
+    });
+    const onDate = () => {
+      const s = $5("audit-start").value;
+      const en = $5("audit-end").value;
+      if (!s || !en) return;
+      if (s > en) {
+        toast2("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
+        return;
+      }
+      range = { start_date: s, end_date: en };
+      loadAudit();
+    };
+    $5("audit-start").addEventListener("change", onDate);
+    $5("audit-end").addEventListener("change", onDate);
+    $5("audit-person").addEventListener("change", (e) => {
+      person = e.target.value;
+      loadAudit();
+    });
+  }
+
+  // public/src/geo.js
+  var $6 = (id) => document.getElementById(id);
+  var seq4 = 0;
+  function el3(tag, cls, text2) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text2 != null) n.textContent = String(text2);
+    return n;
+  }
+  var num3 = (v) => Number(v).toLocaleString("en-US", { maximumFractionDigits: 1 });
+  function deltaText(cur, prev) {
+    if (prev == null) return "\u4E0A\u671F\u6CA1\u6709\u6570\u636E\uFF0C\u65E0\u6CD5\u5BF9\u6BD4";
+    const d = cur - prev;
+    if (!prev) return d ? "\u4E0A\u671F\u4E3A 0\uFF0C\u672C\u671F " + num3(cur) : "\u4E0E\u4E0A\u671F\u6301\u5E73";
+    return "\u8F83\u4E0A\u671F " + (d > 0 ? "+" : "") + num3(d) + "\uFF08" + (d > 0 ? "+" : "") + Math.round(d / prev * 100) + "%\uFF09";
+  }
+  function render7(data3) {
+    const body = $6("geo-body");
+    body.textContent = "";
+    const sub = $6("geo-range");
+    if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data3.range);
+    if (data3.status === "NOT_SYNCED") {
+      body.appendChild(el3("div", "geo-empty", "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u6D41\u91CF\u3002\u8BF7\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GA4 \u6D41\u91CF\u300D\u786E\u8BA4\u540C\u6B65\u72B6\u6001\u3002"));
+      body.appendChild(citationLine(data3));
+      return;
+    }
+    const t = data3.totals;
+    const grid = el3("div", "geo-grid");
+    const head = el3("div", "geo-block");
+    head.appendChild(el3("div", "geo-label", "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BBF\u95EE"));
+    head.appendChild(el3("div", "geo-big", num3(t.sessions)));
+    head.appendChild(el3("div", "geo-sub", "\u5360\u5168\u7AD9 " + (t.share == null ? "\u2014" : (t.share * 100).toFixed(1) + "%") + "\uFF08\u5168\u7AD9 " + num3(t.site_sessions) + " \u6B21\uFF09"));
+    head.appendChild(el3("div", "geo-sub", deltaText(t.sessions, t.prev_sessions)));
+    if (data3.data_days) head.appendChild(el3("div", "geo-sub", "\u533A\u95F4\u5185 GA4 \u6709 " + data3.data_days + " \u5929\u6570\u636E \xB7 \u5173\u952E\u4E8B\u4EF6 " + num3(t.key_events)));
+    grid.appendChild(head);
+    const list = el3("div", "geo-block");
+    list.appendChild(el3("div", "geo-label", "\u6309\u5F15\u64CE"));
+    if (!data3.engines.length) {
+      list.appendChild(el3("div", "geo-sub", "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u4EFB\u4F55\u6765\u81EA AI \u5F15\u64CE\u7684\u8BBF\u95EE\u3002"));
+    } else {
+      const max = Math.max(...data3.engines.map((e) => e.sessions), 1);
+      for (const e of data3.engines) {
+        const row = el3("div", "geo-row");
+        row.title = e.sources.length ? "GA4 \u6765\u6E90\u503C\uFF1A" + e.sources.join("\u3001") : "\u672C\u671F\u6CA1\u6709\u8BBF\u95EE";
+        row.appendChild(el3("span", "geo-name", e.label));
+        const track = el3("span", "geo-track");
+        const bar = el3("span", "geo-bar");
+        bar.style.width = Math.round(e.sessions / max * 100) + "%";
+        track.appendChild(bar);
+        row.appendChild(track);
+        row.appendChild(el3("span", "geo-val", num3(e.sessions) + (e.prevSessions == null ? "" : " \xB7 \u4E0A\u671F " + num3(e.prevSessions))));
+        list.appendChild(row);
+      }
+    }
+    grid.appendChild(list);
+    const inq = el3("div", "geo-block");
+    inq.appendChild(el3("div", "geo-label", "AI \u5F15\u64CE\u5E26\u6765\u7684\u8BE2\u76D8"));
+    inq.appendChild(el3("div", "geo-big", data3.inquiries.total));
+    inq.appendChild(el3("div", "geo-sub", "A " + data3.inquiries.a + " \xB7 B " + data3.inquiries.b + " \xB7 C " + data3.inquiries.c));
+    inq.appendChild(el3("div", "geo-sub", "\u8868\u5355\u7EBF\u7D22 " + data3.leads.total + " \u6761" + (data3.leads.ignored ? "\uFF08\u5176\u4E2D " + data3.leads.ignored + " \u6761\u88AB\u5FFD\u7565\uFF09" : "")));
+    inq.appendChild(el3("div", "geo-sub", "\u53EA\u6570\u72EC\u7ACB\u7AD9\u8868\u5355\u5E26\u56DE\u6765\u8DEF\u7684\u8BE2\u76D8\uFF1B\u4EBA\u5DE5\u5F55\u5165\u7684\u8BE2\u76D8\u6CA1\u6709\u53EF\u4FE1\u7684\u6765\u8DEF\uFF0C\u4E0D\u8BA1\u3002"));
+    grid.appendChild(inq);
+    body.appendChild(grid);
+    if ((data3.unclassified || []).length) {
+      body.appendChild(el3("div", "geo-warn", "\u53EF\u80FD\u6F0F\u5F52\u7C7B\u7684\u6765\u6E90\uFF08\u770B\u8D77\u6765\u50CF AI \u5F15\u64CE\uFF0C\u4F46\u6CA1\u88AB\u8BA4\u51FA\u6765\uFF0C\u6CA1\u6709\u8BA1\u5165\u4E0A\u9762\u7684\u6570\uFF09\uFF1A" + data3.unclassified.map((u) => u.source + "\uFF08" + num3(u.sessions) + " \u6B21\u4F1A\u8BDD\uFF09").join("\u3001") + "\u3002\u5982\u679C\u5176\u4E2D\u786E\u5B9E\u6709 AI \u5F15\u64CE\uFF0C\u8BF7\u628A\u8FD9\u4E00\u884C\u53D1\u7ED9\u5F00\u53D1\uFF0C\u8865\u8FDB\u8BC6\u522B\u8868\u3002"));
+    }
+    body.appendChild(citationLine(data3));
+    body.appendChild(el3("div", "geo-note", "\u4E0A\u9762\u7684\u8BBF\u95EE\u6570\u53EA\u6709\u300C\u4ECE AI \u56DE\u7B54\u91CC\u70B9\u94FE\u63A5\u8FDB\u7AD9\u300D\u7684\u90A3\u90E8\u5206\u3002AI \u63D0\u5230\u4E86\u6211\u4EEC\u4F46\u7528\u6237\u6CA1\u70B9\u94FE\u63A5\u7684\uFF0C\u6D41\u91CF\u6570\u636E\u91CC\u770B\u4E0D\u5230\uFF0C\u6240\u4EE5\u5B9E\u9645\u5F71\u54CD\u53EA\u4F1A\u6BD4\u8FD9\u91CC\u591A\uFF1B\u90A3\u90E8\u5206\u770B\u4E0B\u9762\u7684\u4EBA\u5DE5\u62BD\u67E5\u3002\u8BC6\u522B\u7684\u5F15\u64CE\uFF1A" + data3.known_engines.join("\u3001") + "\u3002"));
+  }
+  function citationLine(data3) {
+    const box = el3("div", "geo-cite");
+    const c = data3.citations;
+    if (!c) {
+      box.appendChild(el3("span", "", "\u5F15\u7528\u62BD\u67E5\uFF1A\u8FD9\u4E2A\u65F6\u95F4\u8303\u56F4\u4E4B\u524D\u8FD8\u6CA1\u6709\u505A\u8FC7\u3002\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GEO \u62BD\u67E5\u300D\u5EFA\u9898\u5E93\u5E76\u67E5\u7B2C\u4E00\u8F6E\u3002"));
+      return box;
+    }
+    const t = c.totals;
+    box.appendChild(el3("b", "", "\u5F15\u7528\u62BD\u67E5 " + c.round_date));
+    box.appendChild(el3("span", "", "\u5DF2\u67E5 " + t.checked + "/" + t.expected + " \u683C \xB7 \u63D0\u5230\u6211\u4EEC " + t.mentioned + " \xB7 \u5F15\u7528\u6211\u4EEC\u7684\u9875\u9762 " + t.cited));
+    const p = data3.citations_previous;
+    if (p && p.totals.checked) box.appendChild(el3("span", "geo-cite-prev", "\u4E0A\u4E00\u8F6E " + p.round_date + "\uFF1A\u63D0\u5230 " + p.totals.mentioned + "/" + p.totals.checked + " \xB7 \u5F15\u7528 " + p.totals.cited + "/" + p.totals.checked));
+    if (c.expected_note) box.appendChild(el3("span", "geo-cite-warn", c.expected_note));
+    if (t.no_screenshot) box.appendChild(el3("span", "geo-cite-warn", t.no_screenshot + " \u6761\u6CA1\u6709\u622A\u56FE"));
+    return box;
+  }
+  async function loadGeo() {
+    const body = $6("geo-body");
+    if (!body) return;
+    const range2 = getCurrentRange("dashboard");
+    if (!range2 || !range2.start_date) return;
+    const my = ++seq4;
+    try {
+      const data3 = await API.get(withSite(withRange2("/api/geo/summary", range2)));
+      if (my === seq4) render7(data3);
+    } catch (e) {
+      if (my !== seq4 || e && e.message === "unauthorized") return;
+      body.textContent = "";
+      body.appendChild(el3("div", "geo-empty", "GEO \u6570\u636E\u52A0\u8F7D\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25") + " "));
+      const retry = el3("button", "btn-mini", "\u91CD\u8BD5");
+      retry.type = "button";
+      retry.addEventListener("click", loadGeo);
+      body.appendChild(retry);
+    }
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("timerange", (e) => {
+      if (e.detail && e.detail.scope === "dashboard") loadGeo();
+    });
+  }
+
+  // public/src/geo-checks.js
+  var $7 = (id) => document.getElementById(id);
+  var failText4 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  function el4(tag, cls, text2) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text2 != null) n.textContent = String(text2);
+    return n;
+  }
+  var bound3 = false;
+  var round = "";
+  var questions = [];
+  var data = null;
+  var seq5 = 0;
+  var editing4 = null;
+  var checkOf = (qid, engine) => data ? data.items.find((c) => c.question_id === qid && c.engine === engine) : null;
+  function engineLine(e, prev) {
+    if (!e.checked) return e.label + "\uFF1A\u8FD8\u6CA1\u67E5\uFF08\u5E94\u67E5 " + e.expected + " \u9898\uFF09";
+    let s = e.label + "\uFF1A\u5DF2\u67E5 " + e.checked + "/" + e.expected + " \xB7 \u63D0\u5230 " + e.mentioned + " \xB7 \u5F15\u7528 " + e.cited;
+    if (prev && prev.checked) s += "\uFF08\u4E0A\u4E00\u8F6E \u63D0\u5230 " + prev.mentioned + "/" + prev.checked + " \xB7 \u5F15\u7528 " + prev.cited + "/" + prev.checked + "\uFF09";
+    if (e.no_screenshot) s += " \xB7 " + e.no_screenshot + " \u6761\u6CA1\u622A\u56FE";
+    return s;
+  }
+  function renderSummary3() {
+    const box = $7("geochk-summary");
+    box.textContent = "";
+    const t = data.summary.totals;
+    const head = el4("div", "geochk-total");
+    head.appendChild(el4("b", "", round + " \u8FD9\u4E00\u8F6E"));
+    head.appendChild(el4("span", "", t.checked ? "\u5DF2\u67E5 " + t.checked + "/" + t.expected + " \u683C \xB7 \u63D0\u5230 " + t.mentioned + " \xB7 \u5F15\u7528 " + t.cited : "\u8FD8\u6CA1\u6709\u8BB0\u5F55"));
+    if (t.checked < t.expected && t.checked) head.appendChild(el4("span", "geochk-warn", "\u8FD8\u6709 " + (t.expected - t.checked) + " \u683C\u6CA1\u67E5\uFF08\u6CA1\u67E5\u7684\u4E0D\u7B97\u6CA1\u63D0\u5230\uFF09"));
+    if (data.summary.expected_note) head.appendChild(el4("span", "geochk-warn", data.summary.expected_note));
+    if (t.no_screenshot) head.appendChild(el4("span", "geochk-warn", t.no_screenshot + " \u6761\u6CA1\u6709\u622A\u56FE\uFF08\u6CA1\u622A\u56FE\u7684\u53EA\u662F\u4E00\u53E5\u8BDD\uFF09"));
+    box.appendChild(head);
+    for (const e of data.summary.engines) {
+      const prev = data.previous && data.previous.engines.find((x) => x.key === e.key);
+      box.appendChild(el4("div", "geochk-line", engineLine(e, prev)));
+    }
+    box.appendChild(el4("div", "geochk-line dim", data.previous ? "\u4E0A\u4E00\u8F6E\uFF1A" + data.previous.round_date + "\u3002\u5EFA\u8BAE\u6BCF " + data.interval_days + " \u5929\u67E5\u4E00\u8F6E\uFF0C\u9898\u76EE\u548C\u5F15\u64CE\u90FD\u4E0D\u53D8\uFF0C\u524D\u540E\u624D\u80FD\u6BD4\u3002" : "\u8FD9\u662F\u7B2C\u4E00\u8F6E\uFF0C\u8FD8\u6CA1\u6709\u53EF\u6BD4\u7684\u4E0A\u4E00\u8F6E\u3002\u5EFA\u8BAE\u6BCF " + data.interval_days + " \u5929\u67E5\u4E00\u8F6E\uFF0C\u9898\u76EE\u548C\u5F15\u64CE\u90FD\u4E0D\u53D8\u3002"));
+  }
+  function cellButton(q, engine) {
+    const c = checkOf(q.id, engine.key);
+    const btn = el4("button", "geochk-cell");
+    btn.type = "button";
+    btn.dataset.geoQuestion = q.id;
+    btn.dataset.geoEngine = engine.key;
+    if (!c) {
+      btn.classList.add("is-empty");
+      btn.textContent = "\u672A\u67E5";
+      return btn;
+    }
+    btn.classList.add(c.cited ? "is-cited" : c.mentioned ? "is-mentioned" : "is-none");
+    btn.textContent = c.cited ? c.mentioned ? "\u63D0\u5230 + \u5F15\u7528" : "\u5F15\u7528" : c.mentioned ? "\u63D0\u5230" : "\u6CA1\u63D0\u5230";
+    if (!c.evidence_images.length) btn.appendChild(el4("span", "geochk-noshot", "\u65E0\u622A\u56FE"));
+    return btn;
+  }
+  function renderMatrix() {
+    const head = $7("geochk-head");
+    const body = $7("geochk-body");
+    head.textContent = "";
+    body.textContent = "";
+    const hr = el4("tr");
+    hr.appendChild(el4("th", "", "\u56FA\u5B9A\u95EE\u9898"));
+    data.engines.forEach((e) => hr.appendChild(el4("th", "ctr", e.label)));
+    hr.appendChild(el4("th", "ctr", ""));
+    head.appendChild(hr);
+    const showOff = $7("geochk-show-off").checked;
+    const rows2 = questions.filter((q) => q.active || showOff || data.items.some((c) => c.question_id === q.id));
+    if (!rows2.length) {
+      const tr2 = el4("tr");
+      const td2 = el4("td", "dim geochk-empty", "\u9898\u5E93\u8FD8\u662F\u7A7A\u7684\u3002\u5148\u5728\u4E0A\u9762\u52A0\u51E0\u4E2A\u5BA2\u6237\u771F\u4F1A\u62FF\u53BB\u95EE AI \u7684\u95EE\u9898\uFF08\u4F8B\u5982\u300Cbest gate valve manufacturer in China\u300D\uFF09\u3002");
+      td2.colSpan = data.engines.length + 2;
+      tr2.appendChild(td2);
+      body.appendChild(tr2);
+      return;
+    }
+    for (const q of rows2) {
+      const tr2 = el4("tr", q.active ? "" : "is-off");
+      const qt = el4("td", "geochk-q", q.question);
+      if (!q.active) qt.appendChild(el4("span", "badge b-gray", "\u5DF2\u505C\u7528"));
+      tr2.appendChild(qt);
+      data.engines.forEach((e) => {
+        const td2 = el4("td", "ctr");
+        td2.appendChild(cellButton(q, e));
+        tr2.appendChild(td2);
+      });
+      const ops = el4("td", "ctr");
+      const toggle = el4("button", "btn-mini", q.active ? "\u505C\u7528" : "\u542F\u7528");
+      toggle.type = "button";
+      toggle.dataset.geoToggle = q.id;
+      toggle.dataset.active = q.active ? "0" : "1";
+      ops.appendChild(toggle);
+      tr2.appendChild(ops);
+      body.appendChild(tr2);
+    }
+  }
+  async function loadGeoChecks() {
+    bind2();
+    if (!round) round = formatLocalDate(/* @__PURE__ */ new Date());
+    $7("geochk-date").value = round;
+    const my = ++seq5;
+    try {
+      const [qs2, checks2] = await Promise.all([API.get("/api/geo/questions"), API.get("/api/geo/checks?round_date=" + round)]);
+      if (my !== seq5) return;
+      questions = qs2.items || [];
+      data = checks2;
+      const sel = $7("geochk-rounds");
+      sel.textContent = "";
+      const first = el4("option", "", data.rounds.length ? "\u5386\u53F2\u8F6E\u6B21\u2026" : "\u8FD8\u6CA1\u6709\u5386\u53F2\u8F6E\u6B21");
+      first.value = "";
+      sel.appendChild(first);
+      data.rounds.forEach((r) => {
+        const o = el4("option", "", r.round_date + "\uFF08" + r.n + " \u683C\uFF09");
+        o.value = r.round_date;
+        sel.appendChild(o);
+      });
+      renderSummary3();
+      renderMatrix();
+    } catch (e) {
+      if (my !== seq5 || e && e.message === "unauthorized") return;
+      const box = $7("geochk-summary");
+      box.textContent = "";
+      box.appendChild(el4("div", "task-done-error", "GEO \u62BD\u67E5\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText4(e) + " "));
+      const retry = el4("button", "btn-mini", "\u91CD\u8BD5");
+      retry.type = "button";
+      retry.addEventListener("click", loadGeoChecks);
+      box.appendChild(retry);
+    }
+  }
+  function renderShots() {
+    const box = $7("geochk-thumbs");
+    const c = editing4 && editing4.check;
+    box.innerHTML = c ? thumbsHtml(c.evidence_images, { deletable: true }) : "";
+    $7("geochk-shot-btn").disabled = !c;
+    $7("geochk-shot-tip").textContent = c ? "" : "\u5148\u4FDD\u5B58\u8FD9\u4E00\u683C\uFF0C\u518D\u4E0A\u4F20\u622A\u56FE";
+  }
+  function openCell(qid, engineKey) {
+    const question = questions.find((q) => q.id === qid);
+    const engine = data.engines.find((e) => e.key === engineKey);
+    if (!question || !engine) return;
+    const check = checkOf(qid, engineKey) || null;
+    editing4 = { question, engine, check };
+    $7("geochk-title").textContent = engine.label + " \xB7 " + round;
+    $7("geochk-question").textContent = question.question;
+    $7("geochk-mentioned").checked = !!(check && check.mentioned);
+    $7("geochk-cited").checked = !!(check && check.cited);
+    $7("geochk-url").value = check && check.cited_url || "";
+    $7("geochk-note").value = check && check.note || "";
+    $7("geochk-error").textContent = "";
+    $7("geochk-del").classList.toggle("is-hidden", !check);
+    renderShots();
+    openModal("geoCheckMask");
+  }
+  async function submitGeoCheck(btn) {
+    const e = editing4;
+    if (!e) return;
+    const body = {
+      question_id: e.question.id,
+      engine: e.engine.key,
+      round_date: round,
+      mentioned: $7("geochk-mentioned").checked,
+      cited: $7("geochk-cited").checked,
+      cited_url: $7("geochk-url").value.trim(),
+      note: $7("geochk-note").value
+    };
+    if (btn) btn.disabled = true;
+    try {
+      const { item } = await API.put("/api/geo/checks", body);
+      e.check = item;
+      $7("geochk-error").textContent = "";
+      $7("geochk-del").classList.remove("is-hidden");
+      renderShots();
+      toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93" + (item.evidence_images.length ? "" : "\uFF0C\u8BF7\u8865\u4E0A\u622A\u56FE"));
+      loadGeoChecks();
+    } catch (err) {
+      $7("geochk-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText4(err);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  async function pickGeoShot() {
+    const e = editing4;
+    if (!e || !e.check) return;
+    const added = await pickAndUpload("geo_check", e.check.id);
+    if (!added.length) return;
+    e.check.evidence_images = (e.check.evidence_images || []).concat(added);
+    if (editing4 === e) renderShots();
+    loadGeoChecks();
+  }
+  function bind2() {
+    if (bound3) return;
+    const panel = $7("sub-data-geo");
+    if (!panel) return;
+    bound3 = true;
+    panel.addEventListener("click", async (e) => {
+      const cell3 = e.target.closest("[data-geo-question]");
+      if (cell3) {
+        openCell(Number(cell3.dataset.geoQuestion), cell3.dataset.geoEngine);
+        return;
+      }
+      const toggle = e.target.closest("[data-geo-toggle]");
+      if (toggle) {
+        try {
+          await API.patch("/api/geo/questions/" + toggle.dataset.geoToggle, { active: toggle.dataset.active === "1" });
+          loadGeoChecks();
+        } catch (err) {
+          toast2("\u672A\u5165\u5E93\uFF1A" + failText4(err));
+        }
+        return;
+      }
+      if (e.target.closest("#geochk-add")) {
+        const input = $7("geochk-new");
+        const question = input.value.trim();
+        if (!question) {
+          toast2("\u5148\u5199\u4E0B\u8981\u95EE AI \u7684\u95EE\u9898");
+          return;
+        }
+        try {
+          await API.post("/api/geo/questions", { question });
+          input.value = "";
+          toast2("\u5DF2\u52A0\u5165\u9898\u5E93");
+          loadGeoChecks();
+        } catch (err) {
+          toast2("\u672A\u5165\u5E93\uFF1A" + failText4(err));
+        }
+        return;
+      }
+      if (e.target.closest("#geochk-today")) {
+        round = formatLocalDate(/* @__PURE__ */ new Date());
+        loadGeoChecks();
+      }
+    });
+    $7("geochk-date").addEventListener("change", (e) => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) {
+        round = e.target.value;
+        loadGeoChecks();
+      }
+    });
+    $7("geochk-show-off").addEventListener("change", () => {
+      if (data) renderMatrix();
+    });
+    $7("geochk-rounds").addEventListener("change", (e) => {
+      if (e.target.value) {
+        round = e.target.value;
+        loadGeoChecks();
+      }
+    });
+    $7("geochk-new").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        $7("geochk-add").click();
+      }
+    });
+    const mask = $7("geoCheckMask");
+    mask.addEventListener("click", async (e) => {
+      const delShot = e.target.closest("[data-att-del]");
+      if (delShot && editing4 && editing4.check) {
+        if (!inlineConfirm(delShot, "\u5220\u9664")) return;
+        const cur = editing4;
+        try {
+          await deleteImage(delShot.dataset.attDel);
+          cur.check.evidence_images = cur.check.evidence_images.filter((im) => String(im.id) !== String(delShot.dataset.attDel));
+          if (editing4 === cur) renderShots();
+          loadGeoChecks();
+        } catch (err) {
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText4(err));
+        }
+        return;
+      }
+      const del = e.target.closest("#geochk-del");
+      if (del && editing4 && editing4.check) {
+        if (!inlineConfirm(del, "\u786E\u8BA4\u5220\u9664\u8FD9\u4E00\u683C")) return;
+        try {
+          await API.del("/api/geo/checks/" + editing4.check.id);
+          closeModal("geoCheckMask");
+          editing4 = null;
+          toast2("\u5DF2\u5220\u9664\u8FD9\u4E00\u683C\u7684\u8BB0\u5F55");
+          loadGeoChecks();
+        } catch (err) {
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText4(err));
+        }
+      }
+    });
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("click", (e) => {
+      if (e.target.closest('.subtab[data-sub="data-geo"]')) loadGeoChecks();
+    });
+  }
+
+  // public/src/sites.js
+  var $8 = (id) => document.getElementById(id);
+  var PROVIDER_LABEL = { gsc: "GSC", ga4: "GA4" };
+  var BACKFILL_DAYS = 90;
+  function h(tag, cls, text2) {
+    const el5 = document.createElement(tag);
+    if (cls) el5.className = cls;
+    if (text2 != null) el5.textContent = String(text2);
+    return el5;
+  }
+  var failText5 = (e) => e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var canManage = () => ["manager", "boss"].includes(window.ME && window.ME.role);
+  var data2 = null;
+  var found = null;
+  var editing5 = null;
+  var bound4 = false;
+  async function loadSites() {
+    const box = $8("sites-box");
+    if (!box) return;
+    if (!bound4) {
+      box.addEventListener("click", onClick);
+      box.addEventListener("submit", onSubmit);
+      bound4 = true;
+    }
+    try {
+      data2 = await window.API.get("/api/google/projects");
+    } catch (e) {
+      box.textContent = "";
+      box.appendChild(h("div", "sites-error", "\u7AD9\u70B9\u5217\u8868\u8BFB\u53D6\u5931\u8D25\uFF1A" + failText5(e)));
+      return;
+    }
+    render8();
+  }
+  function localTime2(utc) {
+    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
+    if (Number.isNaN(d.getTime())) return "";
+    const p = (n) => String(n).padStart(2, "0");
+    return p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  function runText(provider, site) {
+    const label = PROVIDER_LABEL[provider];
+    if (provider === "gsc" ? !site.gsc_site_url : !site.ga4_property_id) return { text: label + "\uFF1A\u6CA1\u6709\u914D\u7F6E", cls: "sites-run dim" };
+    const run = site.runs && site.runs[provider];
+    if (!run) return { text: label + "\uFF1A\u8FD8\u6CA1\u540C\u6B65\u8FC7", cls: "sites-run warn" };
+    const at = localTime2(run.finished_at || run.started_at);
+    if (run.status === "success") return { text: label + "\uFF1A" + at + " \u540C\u6B65\u6210\u529F \xB7 " + (run.rows_written || 0) + " \u884C\uFF08" + run.date_start + " ~ " + run.date_end + "\uFF09", cls: "sites-run ok" };
+    if (run.status === "failed") return { text: label + "\uFF1A" + at + " \u540C\u6B65\u5931\u8D25 \u2014\u2014 " + (run.error || "\u539F\u56E0\u672A\u77E5"), cls: "sites-run bad" };
+    return { text: label + "\uFF1A" + at + " \u5F00\u59CB\u540C\u6B65\uFF0C\u8FD8\u6CA1\u7ED3\u675F", cls: "sites-run dim" };
+  }
+  function actionBtn(action, id, text2, cls, title) {
+    const b = h("button", cls || "btn-ghost", text2);
+    b.type = "button";
+    b.dataset.siteAction = action;
+    b.dataset.id = String(id);
+    if (title) b.title = title;
+    return b;
+  }
+  function siteRow(site) {
+    const row = h("div", "sites-row");
+    const main = h("div", "sites-main");
+    const head = h("div", "sites-name");
+    head.appendChild(h("b", "", site.name));
+    if (site.is_default) head.appendChild(h("span", "badge b-blue", "\u9ED8\u8BA4"));
+    if (site.company) head.appendChild(h("span", "badge b-gray", site.company));
+    main.appendChild(head);
+    main.appendChild(h("div", "sites-meta", [
+      site.domain || "\u57DF\u540D\u672A\u586B",
+      site.gsc_site_url ? "Search Console\uFF1A" + site.gsc_site_url : "\u6CA1\u6709 Search Console \u8D44\u6E90",
+      site.ga4_property_id ? "GA4\uFF1A" + site.ga4_property_id : "\u6CA1\u6709 GA4 \u5A92\u4F53\u8D44\u6E90"
+    ].join(" \xB7 ")));
+    for (const provider of ["gsc", "ga4"]) {
+      const r = runText(provider, site);
+      main.appendChild(h("div", r.cls, r.text));
+    }
+    row.appendChild(main);
+    const acts = h("div", "sites-acts");
+    if (site.gsc_site_url || site.ga4_property_id) {
+      acts.appendChild(actionBtn("sync", site.id, "\u7ACB\u5373\u540C\u6B65", "btn-primary", "\u540C\u6B65\u6700\u8FD1 7 \u5929"));
+      acts.appendChild(actionBtn("backfill", site.id, "\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2", "btn-ghost", "\u65B0\u52A0\u7684\u7AD9\u70B9\u3001\u6216\u56FE\u8868\u524D\u6BB5\u662F\u7A7A\u7684\u65F6\u5019\u7528\u3002\u5206\u6BB5\u53D6\uFF0C\u53EF\u80FD\u8981\u4E00\u4E24\u5206\u949F"));
+    }
+    if (canManage()) {
+      acts.appendChild(actionBtn("edit", site.id, "\u7F16\u8F91"));
+      if (!site.is_default) {
+        acts.appendChild(actionBtn("default", site.id, "\u8BBE\u4E3A\u9ED8\u8BA4", "btn-ghost", "\u770B\u677F\u5728\u6CA1\u6709\u9009\u7AD9\u70B9\u65F6\u663E\u793A\u9ED8\u8BA4\u7AD9\u70B9\u7684\u6570\u636E"));
+        acts.appendChild(actionBtn("disable", site.id, "\u505C\u7528", "btn-ghost", "\u4E0D\u518D\u540C\u6B65\u3001\u4E0D\u518D\u51FA\u73B0\u5728\u9009\u62E9\u91CC\uFF1B\u5DF2\u540C\u6B65\u7684\u6570\u636E\u4FDD\u7559"));
+      }
+    }
+    row.appendChild(acts);
+    return row;
+  }
+  function render8() {
+    const box = $8("sites-box");
+    box.textContent = "";
+    const sites2 = data2.sites || [];
+    if (data2.env_site) {
+      const e = data2.env_site;
+      box.appendChild(h(
+        "div",
+        "sites-tip",
+        "\u8FD8\u6CA1\u6709\u767B\u8BB0\u7AD9\u70B9\u3002\u540E\u53F0\u73B0\u5728\u7528\u7684\u662F\u670D\u52A1\u5668\u914D\u7F6E\u91CC\u7684\u8FD9\u4E00\u4E2A\uFF1A" + (e.domain || e.gsc_site_url || "GA4 " + e.ga4_property_id) + "\u3002\u6DFB\u52A0\u7B2C\u4E8C\u4E2A\u7AD9\u70B9\u65F6\uFF0C\u5B83\u4F1A\u81EA\u52A8\u767B\u8BB0\u6210\u9ED8\u8BA4\u7AD9\u70B9\uFF0C\u73B0\u6709\u6570\u636E\u548C\u770B\u677F\u90FD\u4E0D\u53D7\u5F71\u54CD\u3002"
+      ));
+    } else if (!sites2.length) {
+      box.appendChild(h("div", "sites-tip", "\u8FD8\u6CA1\u6709\u767B\u8BB0\u7AD9\u70B9\uFF0C\u670D\u52A1\u5668\u4E0A\u4E5F\u6CA1\u6709\u914D\u7F6E\u9ED8\u8BA4\u7AD9\u70B9\u3002"));
+    }
+    for (const site of sites2) {
+      box.appendChild(editing5 === site.id ? formEl(site) : siteRow(site));
+    }
+    if (editing5 === "new") box.appendChild(formEl(null));
+    else if (canManage()) {
+      const add = actionBtn("new", 0, "\uFF0B \u6DFB\u52A0\u7AD9\u70B9", "btn-ghost sites-add");
+      box.appendChild(add);
+    } else if (!sites2.length) {
+      box.appendChild(h("div", "sites-tip dim", "\u6DFB\u52A0\u7AD9\u70B9\u9700\u8981\u7ECF\u7406\u6216\u8001\u677F\u8D26\u53F7\u3002"));
+    }
+  }
+  function field2(labelText, input, hint) {
+    const wrap = h("label", "sites-field");
+    wrap.appendChild(h("span", "sites-label", labelText));
+    wrap.appendChild(input);
+    if (hint) wrap.appendChild(h("span", "sites-hint", hint));
+    return wrap;
+  }
+  function textInput(name, value, placeholder, listId) {
+    const i = h("input", "input");
+    i.type = "text";
+    i.name = name;
+    i.value = value || "";
+    i.placeholder = placeholder || "";
+    i.autocomplete = "off";
+    if (listId) i.setAttribute("list", listId);
+    return i;
+  }
+  function datalist(id, items) {
+    const dl = h("datalist");
+    dl.id = id;
+    for (const it of items) {
+      const o = h("option");
+      o.value = it.value;
+      o.label = it.label;
+      dl.appendChild(o);
+    }
+    return dl;
+  }
+  function formEl(site) {
+    const form = h("form", "sites-form");
+    form.dataset.id = site ? String(site.id) : "";
+    form.appendChild(h("div", "sites-form-title", site ? "\u7F16\u8F91\u7AD9\u70B9\uFF1A" + site.name : "\u6DFB\u52A0\u7AD9\u70B9"));
+    const gscItems = (found && found.gsc.items || []).map((i) => ({ value: i.site_url, label: i.kind + (i.used_by ? " \xB7 \u5DF2\u767B\u8BB0\u5728\u300C" + i.used_by + "\u300D" : "") }));
+    const ga4Items = (found && found.ga4.items || []).map((i) => ({ value: i.property_id, label: i.name + (i.account ? " \xB7 " + i.account : "") + (i.used_by ? " \xB7 \u5DF2\u767B\u8BB0\u5728\u300C" + i.used_by + "\u300D" : "") }));
+    form.appendChild(datalist("sites-gsc-options", gscItems));
+    form.appendChild(datalist("sites-ga4-options", ga4Items));
+    const grid = h("div", "sites-grid");
+    grid.appendChild(field2("\u7AD9\u70B9\u540D\u79F0", textInput("name", site && site.name, "\u6BD4\u5982\uFF1A\u8D1D\u5B5A\u7279-\u7BA1\u4EF6")));
+    const company2 = h("select", "input");
+    company2.name = "company";
+    const blank = h("option", "", "\u672A\u6807\u6CE8");
+    blank.value = "";
+    company2.appendChild(blank);
+    for (const c of data2.companies || []) {
+      const o = h("option", "", c);
+      o.value = c;
+      company2.appendChild(o);
+    }
+    company2.value = site && site.company || "";
+    grid.appendChild(field2("\u6240\u5C5E\u516C\u53F8", company2));
+    grid.appendChild(field2(
+      "Search Console \u8D44\u6E90",
+      textInput("gsc_site_url", site && site.gsc_site_url, "sc-domain:example.com", "sites-gsc-options"),
+      found ? found.gsc.error ? "\u8D26\u53F7\u91CC\u7684\u8D44\u6E90\u5217\u4E0D\u51FA\u6765\uFF1A" + found.gsc.error + "\u3002\u53EF\u4EE5\u624B\u586B" : "\u70B9\u8F93\u5165\u6846\u53EF\u4EE5\u4ECE\u8D26\u53F7\u91CC\u7684 " + gscItems.length + " \u4E2A\u8D44\u6E90\u91CC\u9009" : "\u6B63\u5728\u8BFB\u53D6\u8D26\u53F7\u91CC\u7684\u8D44\u6E90\u2026"
+    ));
+    grid.appendChild(field2(
+      "GA4 \u5A92\u4F53\u8D44\u6E90\u7F16\u53F7",
+      textInput("ga4_property_id", site && site.ga4_property_id, "\u4E00\u4E32\u6570\u5B57\uFF0C\u6BD4\u5982 508026067", "sites-ga4-options"),
+      found ? found.ga4.error ? "\u8D26\u53F7\u91CC\u7684\u5A92\u4F53\u8D44\u6E90\u5217\u4E0D\u51FA\u6765\uFF1A" + found.ga4.error + "\u3002\u53EF\u4EE5\u624B\u586B \u2014\u2014 GA4 \u7684\u5A92\u4F53\u8D44\u6E90\u5217\u8868\u91CC\uFF0C\u540D\u5B57\u4E0B\u9762\u90A3\u4E32\u6570\u5B57" : "\u70B9\u8F93\u5165\u6846\u53EF\u4EE5\u4ECE\u8D26\u53F7\u91CC\u7684 " + ga4Items.length + " \u4E2A\u5A92\u4F53\u8D44\u6E90\u91CC\u9009" : "\u6B63\u5728\u8BFB\u53D6\u8D26\u53F7\u91CC\u7684\u5A92\u4F53\u8D44\u6E90\u2026"
+    ));
+    grid.appendChild(field2("\u57DF\u540D", textInput("domain", site && site.domain, "\u7559\u7A7A = \u6309 Search Console \u8D44\u6E90\u81EA\u52A8\u5E26\u51FA"), "\u7528\u6765\u8BA4\u300C\u8FD9\u6761\u8BE2\u76D8\u3001\u8FD9\u4E2A\u7F51\u5740\u662F\u54EA\u4E2A\u7AD9\u7684\u300D"));
+    form.appendChild(grid);
+    form.appendChild(h("div", "sites-form-error"));
+    const foot = h("div", "sites-form-foot");
+    const save2 = h("button", "btn-primary", site ? "\u4FDD\u5B58" : "\u6DFB\u52A0");
+    save2.type = "submit";
+    foot.appendChild(save2);
+    foot.appendChild(actionBtn("cancel", 0, "\u53D6\u6D88"));
+    foot.appendChild(h("span", "sites-hint", "\u5E7F\u544A\u8D26\u6237\u51E0\u4E2A\u7AD9\u5171\u7528\uFF0C\u4E0D\u7528\u5728\u8FD9\u91CC\u586B\uFF1B\u6DFB\u52A0\u540E\u8BB0\u5F97\u70B9\u4E00\u6B21\u300C\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2\u300D\u3002"));
+    form.appendChild(foot);
+    return form;
+  }
+  async function openForm(target) {
+    editing5 = target;
+    render8();
+    if (found) return;
+    try {
+      found = await window.API.get("/api/google/discover");
+    } catch (e) {
+      found = { gsc: { items: [], error: failText5(e) }, ga4: { items: [], error: failText5(e) } };
+    }
+    const typed = readForm($8("sites-box").querySelector(".sites-form"));
+    if (editing5 !== target) return;
+    render8();
+    const form = $8("sites-box").querySelector(".sites-form");
+    if (form && typed) for (const [k, v] of Object.entries(typed)) form.elements[k].value = v;
+  }
+  function readForm(form) {
+    if (!form) return null;
+    const out = {};
+    for (const name of ["name", "company", "gsc_site_url", "ga4_property_id", "domain"]) out[name] = form.elements[name].value.trim();
+    return out;
+  }
+  async function onSubmit(ev) {
+    const form = ev.target.closest(".sites-form");
+    if (!form) return;
+    ev.preventDefault();
+    const body = readForm(form);
+    const errEl = form.querySelector(".sites-form-error");
+    const btn = form.querySelector('button[type="submit"]');
+    errEl.textContent = "";
+    btn.disabled = true;
+    try {
+      if (form.dataset.id) await window.API.patch("/api/google/projects/" + form.dataset.id, body);
+      else await window.API.post("/api/google/projects", body);
+      toast2(form.dataset.id ? "\u5DF2\u4FDD\u5B58" : "\u7AD9\u70B9\u5DF2\u6DFB\u52A0\u3002\u70B9\u300C\u8865 " + BACKFILL_DAYS + " \u5929\u5386\u53F2\u300D\u628A\u5B83\u7684\u6570\u636E\u53D6\u8FDB\u6765");
+      editing5 = null;
+      found = null;
+      document.dispatchEvent(new CustomEvent("siteschanged"));
+      await loadSites();
+    } catch (e) {
+      errEl.textContent = "\u6CA1\u6709\u4FDD\u5B58\uFF1A" + failText5(e);
+      btn.disabled = false;
+    }
+  }
+  function syncSummary(results) {
+    return results.map((r) => {
+      const label = PROVIDER_LABEL[r.provider] || r.provider;
+      if (r.status === "not_configured") return label + " \u6CA1\u6709\u914D\u7F6E";
+      if (r.status === "ok") return label + " \u5199\u5165 " + r.rows + " \u884C" + (r.truncated ? "\uFF08\u6709\u4E00\u6BB5\u6CA1\u53D6\u5168\uFF0C\u8BF7\u7F29\u77ED\u5929\u6570\u91CD\u53D6\uFF09" : "");
+      return label + " \u5931\u8D25\uFF1A" + r.error + (r.chunks > 1 ? "\uFF08" + r.chunks + " \u6BB5\u91CC\u5B8C\u6210\u4E86 " + r.chunks_done + " \u6BB5\uFF0C\u5DF2\u53D6\u5230\u7684\u4FDD\u7559\uFF09" : "");
+    }).join("\uFF1B");
+  }
+  async function runSync(btn, id, days) {
+    const old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = days ? "\u8865\u5386\u53F2\u4E2D\u2026" : "\u540C\u6B65\u4E2D\u2026";
+    try {
+      const r = await window.API.post("/api/google/projects/" + id + "/sync", days ? { days } : {}, { timeoutMs: 6e5 });
+      toast2(syncSummary(r.results));
+      document.dispatchEvent(new CustomEvent("sitesynced", { detail: { id: Number(id) } }));
+    } catch (e) {
+      toast2("\u540C\u6B65\u6CA1\u6709\u5B8C\u6210\uFF1A" + failText5(e));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = old;
+      await loadSites();
+    }
+  }
+  async function onClick(ev) {
+    const btn = ev.target.closest("[data-site-action]");
+    if (!btn) return;
+    const action = btn.dataset.siteAction;
+    const id = btn.dataset.id;
+    if (action === "new") return openForm("new");
+    if (action === "edit") return openForm(Number(id));
+    if (action === "cancel") {
+      editing5 = null;
+      return render8();
+    }
+    if (action === "sync") return runSync(btn, id, null);
+    if (action === "backfill") return runSync(btn, id, BACKFILL_DAYS);
+    if (action === "default" || action === "disable") {
+      if (!inlineConfirm(btn, action === "default" ? "\u786E\u8BA4\u8BBE\u4E3A\u9ED8\u8BA4" : "\u786E\u8BA4\u505C\u7528")) return;
+      try {
+        if (action === "default") await window.API.patch("/api/google/projects/" + id, { is_default: true });
+        else await window.API.del("/api/google/projects/" + id);
+        toast2(action === "default" ? "\u5DF2\u8BBE\u4E3A\u9ED8\u8BA4\u7AD9\u70B9" : "\u5DF2\u505C\u7528");
+        found = null;
+        document.dispatchEvent(new CustomEvent("siteschanged"));
+      } catch (e) {
+        toast2("\u6CA1\u6709\u5B8C\u6210\uFF1A" + failText5(e));
+      }
+      await loadSites();
+    }
+  }
+
+  // public/src/site-returns.js
+  var $9 = (id) => document.getElementById(id);
+  function h2(tag, cls, text2) {
+    const el5 = document.createElement(tag);
+    if (cls) el5.className = cls;
+    if (text2 != null) el5.textContent = String(text2);
+    return el5;
+  }
+  var money3 = (micros) => (Number(micros) / 1e6).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var failText6 = (e) => e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  var canManage2 = () => ["manager", "boss"].includes(window.ME && window.ME.role);
+  var COST_REASON = {
+    no_campaigns: "\u6CA1\u6709\u5F52\u5230\u8FD9\u4E2A\u7AD9\u7684\u7CFB\u5217",
+    spent_no_effective: "\u82B1\u4E86\u94B1\uFF0C\u4F46\u6CA1\u6709\u6807\u5230\u8FD9\u4E2A\u7AD9\u7684 SEM \u6709\u6548\u8BE2\u76D8",
+    no_spend: "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u82B1\u8D39"
+  };
+  var seq6 = 0;
+  var bound5 = false;
+  function tr(cells, cls) {
+    const row = h2("tr", cls);
+    for (const c of cells) {
+      const td2 = h2("td", c && c.cls ? c.cls : "");
+      if (c && c.node) td2.appendChild(c.node);
+      else td2.textContent = c && c.text != null ? c.text : c == null ? "" : String(c);
+      if (c && c.title) td2.title = c.title;
+      row.appendChild(td2);
+    }
+    return row;
+  }
+  function render9(data3) {
+    const card2 = $9("siteReturnsCard");
+    const body = $9("siteReturnsBody");
+    const anyMapped = data3.campaigns.some((c) => c.site_id != null);
+    card2.classList.toggle("is-hidden", data3.sites.length < 2 && !anyMapped);
+    body.textContent = "";
+    if (!data3.synced) body.appendChild(h2("div", "sret-note", "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u540C\u6B65\u5230\u5E7F\u544A\u6570\u636E\uFF0C\u4E0B\u9762\u7684\u82B1\u8D39\u662F\u300C\u6CA1\u6709\u6570\u636E\u300D\uFF0C\u4E0D\u662F 0\u3002"));
+    const table2 = h2("table", "dt sret-table");
+    const head = h2("tr");
+    for (const [t, cls] of [["\u7AD9\u70B9", ""], ["\u5F52\u5230\u5B83\u7684\u7CFB\u5217", "num"], ["\u5E7F\u544A\u82B1\u8D39\uFF08\u8D26\u6237\u5E01\u79CD\uFF09", "num"], ["\u8BE2\u76D8", "num"], ["\u5176\u4E2D A/B", "num"], ["SEM \u6E20\u9053\u7684 A/B", "num"], ["\u6BCF\u6761 SEM \u6709\u6548\u8BE2\u76D8\u7684\u82B1\u8D39", "num"]]) head.appendChild(h2("th", cls, t));
+    const thead = h2("thead");
+    thead.appendChild(head);
+    table2.appendChild(thead);
+    const tbody = h2("tbody");
+    for (const s of data3.sites) {
+      tbody.appendChild(tr([
+        { text: s.name },
+        { text: s.campaigns || "\u2014", cls: "num" },
+        { text: s.costMicros == null ? "\u2014" : money3(s.costMicros), cls: "num", title: s.costMicros == null ? "\u6CA1\u6709\u5F52\u5230\u8FD9\u4E2A\u7AD9\u7684\u7CFB\u5217\uFF0C\u6240\u4EE5\u6CA1\u6709\u82B1\u8D39\u53E3\u5F84\uFF08\u4E0D\u662F 0 \u5143\uFF09" : "" },
+        { text: s.inquiries, cls: "num" },
+        { text: s.effective, cls: "num" },
+        { text: s.sem_effective, cls: "num" },
+        s.cost_per_sem_effective != null ? { text: money3(s.cost_per_sem_effective), cls: "num" } : { text: "\u7B97\u4E0D\u51FA", cls: "num dim", title: COST_REASON[s.cost_reason] || "" }
+      ]));
+    }
+    if (data3.unassigned.campaigns) {
+      tbody.appendChild(tr([
+        { text: "\u672A\u5F52\u5C5E\u7684\u7CFB\u5217", title: "\u8FD9\u4E9B\u7CFB\u5217\u8FD8\u6CA1\u6709\u6307\u5B9A\u7AD9\u70B9\uFF0C\u82B1\u8D39\u4E0D\u644A\u7ED9\u4EFB\u4F55\u4E00\u4E2A\u7AD9" },
+        { text: data3.unassigned.campaigns, cls: "num" },
+        { text: money3(data3.unassigned.costMicros), cls: "num" },
+        { text: "", cls: "num" },
+        { text: "", cls: "num" },
+        { text: "", cls: "num" },
+        { text: "", cls: "num" }
+      ], "sret-rest"));
+    }
+    if (data3.unlabeled.inquiries) {
+      tbody.appendChild(tr([
+        { text: "\u6CA1\u6807\u7AD9\u70B9\u7684\u8BE2\u76D8", title: "\u624B\u5DE5\u5F55\u5165\u65F6\u6CA1\u9009\u7AD9\u70B9\u7684\u8BE2\u76D8\uFF08\u8001\u8BE2\u76D8\u90FD\u6CA1\u6807\uFF09\u3002\u4E0D\u6309\u516C\u53F8\u53BB\u731C\u5B83\u4EEC\u662F\u54EA\u4E2A\u7AD9\u7684" },
+        { text: "", cls: "num" },
+        { text: "", cls: "num" },
+        { text: data3.unlabeled.inquiries, cls: "num" },
+        { text: data3.unlabeled.effective, cls: "num" },
+        { text: data3.unlabeled.sem_effective, cls: "num" },
+        { text: "", cls: "num" }
+      ], "sret-rest"));
+    }
+    table2.appendChild(tbody);
+    body.appendChild(table2);
+    body.appendChild(h2("div", "sret-note", "\u82B1\u8D39\u6309\u300C\u7CFB\u5217\u5F52\u5C5E\u300D\u843D\u5230\u7AD9\u70B9\uFF1B\u8BE2\u76D8\u53EA\u6570\u6807\u4E86\u7AD9\u70B9\u7684\uFF08\u8868\u5355\u5E26\u56DE\u7684\u81EA\u52A8\u6807\uFF0C\u624B\u5DE5\u5F55\u5165\u7684\u8981\u81EA\u5DF1\u9009\uFF09\u3002\u6E20\u9053\u548C\u7B49\u7EA7\u591A\u6570\u662F\u4EBA\u586B\u7684\uFF0C\u8FD9\u5F20\u8868\u662F\u53C2\u8003\uFF0C\u4E0D\u8FDB\u8003\u6838\u3002"));
+    const box = h2("div", "sret-campaigns");
+    box.appendChild(h2("div", "sret-sub", "\u7CFB\u5217\u5F52\u5C5E\uFF08\u6BCF\u4E2A\u5E7F\u544A\u7CFB\u5217\u6295\u7684\u662F\u54EA\u4E2A\u7AD9\uFF09"));
+    if (!data3.campaigns.length) box.appendChild(h2("div", "dim", "\u8FD9\u6BB5\u65F6\u95F4\u6CA1\u6709\u540C\u6B65\u5230\u5E7F\u544A\u7CFB\u5217\u3002"));
+    const sites2 = allSites();
+    for (const c of data3.campaigns) {
+      const row = h2("div", "sret-campaign");
+      row.appendChild(h2("span", "sret-cname", c.name));
+      row.appendChild(h2("span", "sret-ccost", money3(c.costMicros)));
+      if (canManage2()) {
+        const sel = h2("select", "sret-select");
+        sel.dataset.campaign = c.id;
+        const none = h2("option", "", "\u672A\u5F52\u5C5E");
+        none.value = "";
+        sel.appendChild(none);
+        for (const s of sites2) {
+          const o = h2("option", "", s.name);
+          o.value = String(s.id);
+          sel.appendChild(o);
+        }
+        if (c.site_id != null && !sites2.some((s) => s.id === c.site_id)) {
+          const o = h2("option", "", c.site_name);
+          o.value = String(c.site_id);
+          sel.appendChild(o);
+        }
+        sel.value = c.site_id != null ? String(c.site_id) : "";
+        row.appendChild(sel);
+      } else {
+        row.appendChild(h2("span", c.site_name ? "badge b-gray" : "dim", c.site_name || "\u672A\u5F52\u5C5E"));
+      }
+      if (c.suggestion) row.appendChild(h2("span", "sret-hint", "\u8868\u5355\u7EBF\u7D22\u663E\u793A\u5B83\u843D\u5728\u300C" + c.suggestion.site_name + "\u300D\uFF08" + c.suggestion.leads + " \u6761\uFF09"));
+      else if (c.conflicting_evidence) row.appendChild(h2("span", "sret-hint", "\u8868\u5355\u7EBF\u7D22\u91CC\u5B83\u843D\u5728\u4E0D\u6B62\u4E00\u4E2A\u7AD9\uFF0C\u8BF7\u4EBA\u5DE5\u5224\u65AD"));
+      box.appendChild(row);
+    }
+    if (data3.campaigns.length && !canManage2()) box.appendChild(h2("div", "sret-note", "\u6307\u5B9A\u5F52\u5C5E\u9700\u8981\u7ECF\u7406\u6216\u8001\u677F\u8D26\u53F7\u3002"));
+    body.appendChild(box);
+  }
+  async function loadSiteReturns() {
+    const card2 = $9("siteReturnsCard");
+    if (!card2) return;
+    if (!bound5) {
+      $9("siteReturnsBody").addEventListener("change", async (e) => {
+        const sel = e.target.closest(".sret-select");
+        if (!sel) return;
+        sel.disabled = true;
+        try {
+          await window.API.put("/api/sites/campaigns/" + encodeURIComponent(sel.dataset.campaign), { site_id: sel.value ? Number(sel.value) : null });
+          toast2("\u5DF2\u4FDD\u5B58\u5F52\u5C5E");
+        } catch (err) {
+          toast2("\u6CA1\u6709\u4FDD\u5B58\uFF1A" + failText6(err));
+        }
+        loadSiteReturns();
+      });
+      bound5 = true;
+    }
+    const mine = ++seq6;
+    const revision = getRangeRevision("data");
+    let data3;
+    try {
+      data3 = await window.API.get(withRange2("/api/sites/returns", "data"));
+    } catch (e) {
+      if (mine !== seq6) return;
+      card2.classList.remove("is-hidden");
+      $9("siteReturnsBody").textContent = "\u6309\u7AD9\u70B9\u7684\u82B1\u8D39\u4E0E\u8BE2\u76D8\u8BFB\u53D6\u5931\u8D25\uFF1A" + failText6(e);
+      return;
+    }
+    if (mine !== seq6 || revision !== getRangeRevision("data")) return;
+    render9(data3);
+  }
+  document.addEventListener("timerange", (e) => {
+    if (e.detail && e.detail.scope === "data") loadSiteReturns();
+  });
+  document.addEventListener("siteschanged", () => {
+    loadSiteReturns();
+  });
+
+  // public/src/spend.js
+  var $10 = (id) => document.getElementById(id);
+  var isHttp4 = (u) => /^https?:\/\//i.test(String(u || ""));
+  function h3(tag, cls, text2) {
+    const el5 = document.createElement(tag);
+    if (cls) el5.className = cls;
+    if (text2 != null) el5.textContent = String(text2);
+    return el5;
+  }
+  var money4 = (n) => Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var CURRENCY_LABEL2 = { ADS_ACCOUNT: "Ads \u8D26\u6237\u5E01\u79CD" };
+  function amountsText(amounts2) {
+    return Object.entries(amounts2 || {}).map(([cur, v]) => (CURRENCY_LABEL2[cur] || cur) + " " + money4(v)).join(" \uFF5C ");
+  }
+  function linkEl2(url, text2, cls) {
+    if (!isHttp4(url)) return h3("span", cls, text2 || url || "");
+    const a = h3("a", cls, text2 || url);
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.title = url;
+    return a;
+  }
+  function shortUrl3(u) {
+    try {
+      const x = new URL(u);
+      const s = x.host.replace(/^www\./i, "") + (x.pathname === "/" ? "" : x.pathname);
+      return s.length > 48 ? s.slice(0, 47) + "\u2026" : s;
+    } catch (e) {
+      return u || "";
+    }
+  }
+  var bound6 = false;
+  var month = "";
+  var options = null;
+  var loadSeq = 0;
+  var backlinkRows = [];
+  var expenseRows = [];
+  var editing6 = { backlink: null, expense: null };
+  function monthRange(ym) {
+    const [y, m] = ym.split("-").map(Number);
+    const last = new Date(y, m, 0).getDate();
+    return { start_date: `${ym}-01`, end_date: `${ym}-${String(last).padStart(2, "0")}` };
+  }
+  function shiftMonth(ym, delta) {
+    const [y, m] = ym.split("-").map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  }
+  var qs = (range2) => "?start_date=" + range2.start_date + "&end_date=" + range2.end_date;
+  var failText7 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
+  function adsSourceText(g) {
+    if (g.source === "google_ads") return "Ads \u540C\u6B65\u6570\u636E \xB7 \u8D26\u6237\u5E01\u79CD";
+    if (g.source === "sem_weeks") return "\u4EBA\u5DE5\u5468\u62A5\uFF08Ads \u672C\u671F\u65E0\u540C\u6B65\u6570\u636E\uFF09\xB7 \u4EBA\u6C11\u5E01";
+    return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
+  }
+  function renderSummary4(data3) {
+    const box = $10("spend-summary");
+    if (!box) return;
+    box.textContent = "";
+    const row = h3("div", "spend-groups");
+    for (const g of data3.groups) {
+      const card2 = h3("div", "spend-group" + (g.key === "ads" ? " is-ads" : ""));
+      card2.appendChild(h3("div", "spend-group-label", g.label));
+      const text2 = amountsText(g.amounts);
+      card2.appendChild(h3("div", "spend-group-amount" + (text2 ? "" : " is-empty"), text2 || (g.key === "ads" ? "\u6CA1\u6709\u6570\u636E" : "\u672C\u6708\u6CA1\u6709")));
+      const sub = g.key === "ads" ? adsSourceText(g) : g.count ? g.count + " \u7B14" : "";
+      if (sub) card2.appendChild(h3("div", "spend-group-sub", sub));
+      row.appendChild(card2);
+    }
+    box.appendChild(row);
+    const total = amountsText(data3.totals);
+    const line3 = h3("div", "spend-total");
+    line3.appendChild(h3("b", "", "\u672C\u6708\u5408\u8BA1"));
+    line3.appendChild(h3("span", "", total || "\u6CA1\u6709\u4EFB\u4F55\u652F\u51FA\u8BB0\u5F55"));
+    if (Object.keys(data3.totals || {}).length > 1) line3.appendChild(h3("span", "spend-total-note", "\u4E0D\u540C\u5E01\u79CD\u4E0D\u76F8\u52A0"));
+    box.appendChild(line3);
+  }
+  function renderSummaryError(e) {
+    const box = $10("spend-summary");
+    if (!box) return;
+    box.textContent = "";
+    const line3 = h3("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText7(e) + " ");
+    const btn = h3("button", "btn-mini", "\u91CD\u8BD5");
+    btn.type = "button";
+    btn.addEventListener("click", loadSpend);
+    line3.appendChild(btn);
+    box.appendChild(line3);
+  }
+  function sideText(label, s) {
+    if (!s.count) return label + " 0 \u6761";
+    const parts = [label + " " + s.count + " \u6761", "\u6709\u6548 " + s.live + " / \u5931\u6548 " + s.dead + (s.pending ? " / \u5F85\u4E0A\u7EBF " + s.pending : ""), "dofollow " + s.dofollow];
+    parts.push(s.avg_dr == null ? "DR \u5747\u672A\u5F55\u5165" : "\u5E73\u5747 DR " + s.avg_dr + "\uFF08" + s.count + " \u6761\u91CC " + s.dr_known + " \u6761\u6709\u8BFB\u6570\uFF09");
+    if (s.never_checked) parts.push(s.never_checked + " \u6761\u4ECE\u672A\u6838\u67E5");
+    if (s.auto_lost) parts.push(s.auto_lost + " \u6761\u4E0A\u6B21\u8FD8\u5728\u3001\u8FD9\u6B21\u6CA1\u627E\u5230");
+    return parts.join(" \xB7 ");
+  }
+  function renderLinkStats(stats) {
+    const box = $10("spend-link-stats");
+    if (!box) return;
+    box.textContent = "";
+    if (!stats || !stats.total) return;
+    box.appendChild(h3("div", "spend-stat", "\u5171 " + stats.total + " \u6761 \xB7 \u6765\u81EA " + stats.domains + " \u4E2A\u7AD9"));
+    const paid = h3("div", "spend-stat is-paid", sideText("\u4ED8\u8D39", stats.paid));
+    const cost = amountsText(stats.paid.cost);
+    if (cost) paid.appendChild(h3("b", "", "  \u82B1\u8D39 " + cost));
+    box.appendChild(paid);
+    box.appendChild(h3("div", "spend-stat", sideText("\u514D\u8D39", stats.free)));
+  }
+  var STATUS_BADGE = { \u6709\u6548: "b-green", \u5931\u6548: "b-red", \u5F85\u4E0A\u7EBF: "b-amber" };
+  var AUTO_LABEL = { found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728", not_found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u6CA1\u627E\u5230", unreachable: "\u81EA\u52A8\u6838\u67E5\uFF1A\u9875\u9762\u6CA1\u53D6\u5230" };
+  function rowActions(kind, id) {
+    const td2 = h3("td", "ctr spend-ops");
+    const edit = h3("button", "btn-mini", "\u7F16\u8F91");
+    edit.type = "button";
+    edit.dataset.spendEdit = kind;
+    edit.dataset.id = id;
+    const del = h3("button", "btn-mini", "\u5220\u9664");
+    del.type = "button";
+    del.dataset.spendDel = kind;
+    del.dataset.id = id;
+    td2.append(edit, document.createTextNode(" "), del);
+    return td2;
+  }
+  function emptyRow(tb, cols, text2) {
+    const tr2 = h3("tr");
+    const td2 = h3("td", "dim spend-empty", text2);
+    td2.colSpan = cols;
+    tr2.appendChild(td2);
+    tb.appendChild(tr2);
+  }
+  function errorRow(tb, cols, label, e) {
+    tb.textContent = "";
+    const tr2 = h3("tr");
+    const td2 = h3("td", "dim spend-empty", label + "\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText7(e) + " ");
+    td2.colSpan = cols;
+    const btn = h3("button", "btn-mini", "\u91CD\u8BD5");
+    btn.type = "button";
+    btn.addEventListener("click", loadSpend);
+    td2.appendChild(btn);
+    tr2.appendChild(td2);
+    tb.appendChild(tr2);
+  }
+  function renderBacklinks() {
+    const tb = $10("tb-backlinks");
+    if (!tb) return;
+    tb.textContent = "";
+    if (!backlinkRows.length) {
+      emptyRow(tb, 11, $10("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      return;
+    }
+    for (const b of backlinkRows) {
+      const tr2 = h3("tr");
+      tr2.appendChild(h3("td", "num", b.acquired_date || "\u672A\u586B"));
+      const src = h3("td", "spend-url");
+      src.appendChild(linkEl2(b.source_url, shortUrl3(b.source_url)));
+      if (b.vendor) src.appendChild(h3("div", "dim", "\u5356\u5BB6\uFF1A" + b.vendor));
+      if (b.quality_note) src.appendChild(h3("div", "dim", b.quality_note));
+      tr2.appendChild(src);
+      const tgt = h3("td", "spend-url");
+      if (b.target_url) tgt.appendChild(linkEl2(b.target_url, shortUrl3(b.target_url)));
+      if (b.anchor) tgt.appendChild(h3("div", "dim", "\u951A\u6587\u672C\uFF1A" + b.anchor));
+      if (b.target_url && b.acquired_date) {
+        const fx = h3("button", "btn-mini spend-effect", "\u6570\u636E\u53D8\u5316");
+        fx.type = "button";
+        fx.dataset.backlinkEffect = b.id;
+        tgt.appendChild(fx);
+      }
+      tr2.appendChild(tgt);
+      tr2.appendChild(h3("td", "ctr", b.method || ""));
+      tr2.appendChild(h3("td", "ctr", b.rel || ""));
+      tr2.appendChild(h3("td", "num", b.dr == null ? "" : b.dr));
+      tr2.appendChild(h3("td", "num", b.traffic == null ? "" : Number(b.traffic).toLocaleString("en-US")));
+      tr2.appendChild(h3("td", "num" + (Number(b.cost) > 0 ? " spend-paid" : " dim"), Number(b.cost) > 0 ? b.currency + " " + money4(b.cost) : "\u514D\u8D39"));
+      const st2 = h3("td", "ctr");
+      if (b.status) st2.appendChild(h3("span", "badge " + (STATUS_BADGE[b.status] || "b-gray"), b.status));
+      st2.appendChild(h3("div", "dim", b.checked_date ? "\u6838\u67E5 " + b.checked_date.slice(5) : "\u672A\u6838\u67E5"));
+      if (b.auto_status) {
+        const relDiffers = b.auto_status === "found" && b.rel && b.auto_rel && b.rel !== b.auto_rel;
+        const lost = b.auto_status === "not_found" && b.auto_lost_at;
+        const auto = h3(
+          "div",
+          "spend-auto is-" + (relDiffers ? "mismatch" : b.auto_status) + (lost ? " is-lost" : ""),
+          relDiffers ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728\uFF0C\u4F46\u9875\u9762\u4E0A\u662F " + b.auto_rel : lost ? "\u81EA\u52A8\u6838\u67E5\uFF1A\u4E0A\u6B21\u8FD8\u5728\uFF0C\u8FD9\u6B21\u6CA1\u627E\u5230" : AUTO_LABEL[b.auto_status] || b.auto_status
+        );
+        auto.title = (b.auto_detail || "") + (b.auto_anchor ? "\n\u9875\u9762\u4E0A\u7684\u951A\u6587\u672C\uFF1A" + b.auto_anchor : "") + (b.auto_checked_at ? "\n\u6838\u67E5\u4E8E " + String(b.auto_checked_at).slice(0, 16) + "\uFF08UTC\uFF09" : "");
+        st2.appendChild(auto);
+      }
+      if (b.target_url) {
+        const chk3 = h3("button", "btn-mini spend-check", "\u81EA\u52A8\u6838\u67E5");
+        chk3.type = "button";
+        chk3.dataset.spendCheck = b.id;
+        chk3.title = "\u8BA9\u670D\u52A1\u5668\u53BB\u8FD9\u4E2A\u9875\u9762\u4E0A\u627E\u4E00\u6B21\u6307\u5411\u6211\u4EEC\u7684\u94FE\u63A5";
+        st2.appendChild(chk3);
+      }
+      tr2.appendChild(st2);
+      tr2.appendChild(h3("td", "spend-task", b.task_content || ""));
+      tr2.appendChild(rowActions("backlink", b.id));
+      tb.appendChild(tr2);
+    }
+  }
+  function renderExpenses() {
+    const tb = $10("tb-expenses");
+    if (!tb) return;
+    tb.textContent = "";
+    if (!expenseRows.length) {
+      emptyRow(tb, 9, "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5176\u5B83\u652F\u51FA");
+      return;
+    }
+    for (const e of expenseRows) {
+      const tr2 = h3("tr");
+      tr2.appendChild(h3("td", "num", e.spend_date));
+      const cat = h3("td", "ctr");
+      cat.appendChild(h3("span", "badge b-gray", e.category));
+      tr2.appendChild(cat);
+      const purpose = h3("td", "spend-url", e.purpose);
+      if (e.note) purpose.appendChild(h3("div", "dim", e.note));
+      tr2.appendChild(purpose);
+      tr2.appendChild(h3("td", "", e.vendor || ""));
+      tr2.appendChild(h3("td", "num spend-paid", e.currency + " " + money4(e.amount)));
+      tr2.appendChild(h3("td", "ctr", e.owner || ""));
+      tr2.appendChild(h3("td", "spend-task", e.task_content || ""));
+      const ev = h3("td", "spend-url");
+      if (e.evidence) ev.appendChild(linkEl2(e.evidence, "\u67E5\u770B\u51ED\u8BC1"));
+      else ev.appendChild(h3("span", "spend-noev", "\u65E0\u51ED\u8BC1"));
+      tr2.appendChild(ev);
+      tr2.appendChild(rowActions("expense", e.id));
+      tb.appendChild(tr2);
+    }
+  }
+  async function loadSpend() {
+    bind3();
+    if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
+    const input = $10("spend-month");
+    if (input) input.value = month;
+    const range2 = monthRange(month);
+    const seq7 = ++loadSeq;
+    const allLinks = $10("spend-links-all") && $10("spend-links-all").checked;
+    const [sum, links, exps] = await Promise.allSettled([
+      API.get("/api/spend/summary" + qs(range2)),
+      API.get("/api/backlinks" + (allLinks ? "" : qs(range2))),
+      API.get("/api/expenses" + qs(range2))
+    ]);
+    if (seq7 !== loadSeq) return;
+    if (sum.status === "fulfilled") renderSummary4(sum.value);
+    else renderSummaryError(sum.reason);
+    if (links.status === "fulfilled") {
+      backlinkRows = links.value.items || [];
+      renderLinkStats(links.value.stats);
+      renderBacklinks();
+    } else {
+      backlinkRows = [];
+      renderLinkStats(null);
+      errorRow($10("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+    }
+    if (exps.status === "fulfilled") {
+      expenseRows = exps.value.items || [];
+      renderExpenses();
+    } else {
+      expenseRows = [];
+      errorRow($10("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+    }
+  }
+  var BACKLINK_FIELDS = [
+    ["bl-source", "source_url"],
+    ["bl-target", "target_url"],
+    ["bl-anchor", "anchor"],
+    ["bl-method", "method"],
+    ["bl-rel", "rel"],
+    ["bl-cost", "cost"],
+    ["bl-currency", "currency"],
+    ["bl-vendor", "vendor"],
+    ["bl-dr", "dr"],
+    ["bl-traffic", "traffic"],
+    ["bl-status", "status"],
+    ["bl-date", "acquired_date"],
+    ["bl-checked", "checked_date"],
+    ["bl-quality", "quality_note"],
+    ["bl-task", "task_id"],
+    ["bl-owner", "owner"],
+    ["bl-note", "note"]
+  ];
+  var EXPENSE_FIELDS = [
+    ["ex-date", "spend_date"],
+    ["ex-category", "category"],
+    ["ex-amount", "amount"],
+    ["ex-currency", "currency"],
+    ["ex-purpose", "purpose"],
+    ["ex-vendor", "vendor"],
+    ["ex-owner", "owner"],
+    ["ex-task", "task_id"],
+    ["ex-evidence", "evidence"],
+    ["ex-note", "note"]
+  ];
+  var FORMS = {
+    backlink: { fields: BACKLINK_FIELDS, mask: "backlinkMask", verb: "bl-verb", api: "/api/backlinks", rows: () => backlinkRows, name: "\u5916\u94FE" },
+    expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
+  };
+  function fillSelect2(id, values, placeholder, labelOf) {
+    const sel = $10(id);
+    if (!sel) return;
+    const keep = sel.value;
+    sel.textContent = "";
+    if (placeholder != null) {
+      const o = h3("option", "", placeholder);
+      o.value = "";
+      sel.appendChild(o);
+    }
+    for (const v of values) {
+      const o = h3("option", "", labelOf ? labelOf(v) : v);
+      o.value = labelOf ? v.id : v;
+      sel.appendChild(o);
+    }
+    sel.value = keep;
+  }
+  async function ensureOptions() {
+    options = await API.get("/api/spend/options");
+    fillSelect2("bl-method", options.backlink_methods, "\u672A\u9009");
+    fillSelect2("bl-rel", options.backlink_rels, "\u672A\u9009");
+    fillSelect2("bl-status", options.backlink_statuses, "\u672A\u9009");
+    fillSelect2("bl-currency", options.currencies, "\u672A\u9009");
+    fillSelect2("ex-category", options.expense_categories, "\u8BF7\u9009\u62E9");
+    fillSelect2("ex-currency", options.currencies, "\u8BF7\u9009\u62E9");
+    const taskLabel = (t) => "#" + t.id + " " + (t.owner || t.dept || "") + " \xB7 " + String(t.content || "").slice(0, 40);
+    fillSelect2("bl-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
+    fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
+  }
+  function ensureTaskOption(selectId, row) {
+    const sel = $10(selectId);
+    if (!sel || !row || row.task_id == null) return;
+    if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
+    const o = h3("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
+    o.value = String(row.task_id);
+    sel.appendChild(o);
+  }
+  async function openForm2(kind, row) {
+    const form = FORMS[kind];
+    try {
+      await ensureOptions();
+    } catch (e) {
+      toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText7(e));
+      return;
+    }
+    editing6[kind] = row || null;
+    $10(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
+    for (const [id, key] of form.fields) {
+      const el5 = $10(id);
+      if (!el5) continue;
+      el5.value = row && row[key] != null ? row[key] : "";
+    }
+    if (!row) {
+      const today3 = formatLocalDate(/* @__PURE__ */ new Date());
+      const me = (window.ME || {}).name || "";
+      if (kind === "backlink") {
+        $10("bl-date").value = today3;
+        $10("bl-owner").value = me;
+      } else {
+        $10("ex-date").value = today3;
+        $10("ex-currency").value = "CNY";
+        $10("ex-owner").value = me;
+      }
+    }
+    $10(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    openModal(form.mask);
+  }
+  var openBacklink = () => openForm2("backlink", null);
+  var openExpense = () => openForm2("expense", null);
+  async function submitForm(kind, btn) {
+    const form = FORMS[kind];
+    const body = {};
+    for (const [id, key] of form.fields) {
+      const el5 = $10(id);
+      if (el5) body[key] = el5.value;
+    }
+    const errEl = $10(kind === "backlink" ? "bl-error" : "ex-error");
+    const row = editing6[kind];
+    if (btn) btn.disabled = true;
+    try {
+      if (row) await API.patch(form.api + "/" + row.id, body);
+      else await API.post(form.api, body);
+      closeModal(form.mask);
+      editing6[kind] = null;
+      toast2((row ? "\u5DF2\u66F4\u65B0" : "\u5DF2\u767B\u8BB0") + form.name + " \xB7 \u5DF2\u5165\u5E93");
+      loadSpend();
+    } catch (e) {
+      errEl.textContent = "\u672A\u5165\u5E93\uFF1A" + failText7(e);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  var submitBacklink = (btn) => submitForm("backlink", btn);
+  var submitExpense = (btn) => submitForm("expense", btn);
+  function bind3() {
+    if (bound6) return;
+    const panel = $10("panel-spend");
+    if (!panel) return;
+    bound6 = true;
+    panel.addEventListener("click", async (e) => {
+      const step = e.target.closest("[data-spend-month]");
+      if (step) {
+        month = shiftMonth(month, Number(step.dataset.spendMonth));
+        loadSpend();
+        return;
+      }
+      if (e.target.closest("#spend-month-now")) {
+        month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
+        loadSpend();
+        return;
+      }
+      const chk3 = e.target.closest("[data-spend-check]");
+      if (chk3) {
+        chk3.disabled = true;
+        chk3.textContent = "\u6838\u67E5\u4E2D\u2026";
+        try {
+          const { item } = await API.post("/api/backlinks/" + chk3.dataset.spendCheck + "/check", {});
+          toast2((AUTO_LABEL[item.auto_status] || "\u5DF2\u6838\u67E5") + (item.auto_detail ? " \xB7 " + item.auto_detail : ""));
+          loadSpend();
+        } catch (err) {
+          chk3.disabled = false;
+          chk3.textContent = "\u81EA\u52A8\u6838\u67E5";
+          toast2("\u6838\u67E5\u5931\u8D25\uFF1A" + failText7(err));
+        }
+        return;
+      }
+      const edit = e.target.closest("[data-spend-edit]");
+      if (edit) {
+        const kind = edit.dataset.spendEdit;
+        const row = FORMS[kind].rows().find((r) => String(r.id) === edit.dataset.id);
+        if (row) openForm2(kind, row);
+        return;
+      }
+      const del = e.target.closest("[data-spend-del]");
+      if (del) {
+        if (!inlineConfirm(del, "\u786E\u8BA4\u5220\u9664")) return;
+        const form = FORMS[del.dataset.spendDel];
+        try {
+          await API.del(form.api + "/" + del.dataset.id);
+          toast2("\u5DF2\u5220\u9664" + form.name + "\u8BB0\u5F55");
+          loadSpend();
+        } catch (err) {
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + failText7(err));
+        }
+      }
+    });
+    $10("spend-month").addEventListener("change", (e) => {
+      if (/^\d{4}-\d{2}$/.test(e.target.value)) {
+        month = e.target.value;
+        loadSpend();
+      }
+    });
+    $10("spend-links-all").addEventListener("change", loadSpend);
+  }
+
+  // public/src/app.js
   var STATIC_UI_ACTIONS = {
     "toggle-theme": () => toggleTheme(),
-    go: (el) => go2(el.dataset.tab),
-    ai: (el) => runAiAnalysis(el, el.dataset.aiPrompt, el.dataset.aiTitle || "AI \u5206\u6790", false),
-    "ai-box": (el) => aiBox(el, el.dataset.aiPrompt),
-    "ai-ask": (el) => runAiAnalysis(el, el.dataset.aiPrompt, el.dataset.aiTitle, false),
+    go: (el5) => go2(el5.dataset.tab),
+    ai: (el5) => runAiAnalysis(el5, el5.dataset.aiPrompt, el5.dataset.aiTitle || "AI \u5206\u6790", false),
+    "ai-box": (el5) => aiBox(el5, el5.dataset.aiPrompt),
+    "ai-ask": (el5) => runAiAnalysis(el5, el5.dataset.aiPrompt, el5.dataset.aiTitle, false),
     "open-inquiry": () => openInquiry(),
-    "add-plan": (el) => addPlanRow(el.dataset.dept),
-    "add-test": (el) => addTestRow(el.dataset.dept),
+    "add-plan": (el5) => addPlanRow(el5.dataset.dept),
+    "add-test": (el5) => addTestRow(el5.dataset.dept),
     "snapshot-ranks": () => snapshotRanks(),
     "reload-ga4": () => loadGa42(),
     "add-fix": () => addFixRow(),
-    "add-keyword": (el) => addKeyword(el.dataset.keywordType),
+    "add-keyword": (el5) => addKeyword(el5.dataset.keywordType),
     "add-neg": () => addNeg(),
     "add-ad": () => addAd(),
     "add-content": () => addContent(),
-    "refresh-brain": (el) => refreshBrain(el),
+    "refresh-brain": (el5) => refreshBrain(el5),
     "create-hermes-daily-learning": () => createHermesDailyLearning(),
     "load-hermes-memories": () => loadHermesMemories(true),
     "reset-hermes-memory-form": () => resetHermesMemoryForm(),
@@ -9469,16 +12565,16 @@
     "reset-hermes-feedback-form": () => resetHermesFeedbackForm(),
     "save-hermes-feedback": () => saveHermesFeedback(),
     "add-deposit": () => addDepositRow(),
-    "open-task": (el) => openTaskModal(el.dataset.dept),
+    "open-task": (el5) => openTaskModal(el5.dataset.dept),
     "open-password": () => openPwd(),
     logout: () => API.logout(),
     "open-sop": () => openSopModal(),
     "open-hermes-panel": () => openHermesPanel(),
-    toast: (el) => toast2(el.dataset.message),
+    toast: (el5) => toast2(el5.dataset.message),
     "close-hermes-panel": () => closeHermesPanel(),
     "toggle-hermes-maximize": () => toggleHermesMaximize(),
     "load-hermes-morning-brief": () => loadHermesMorningBrief(),
-    "ask-hermes-starter": (el) => askHermesStarter(el.dataset.prompt),
+    "ask-hermes-starter": (el5) => askHermesStarter(el5.dataset.prompt),
     "sync-hermes-page-detail": () => syncHermesPageDetail(true),
     "toggle-hermes-deep-thinking": () => toggleHermesDeepThinking(),
     "send-hermes-prompt": () => sendHermesPrompt(),
@@ -9489,7 +12585,7 @@
     "archive-hermes-conversation": () => archiveHermesConversation(),
     "refresh-hermes-status": () => refreshHermesStatus(true),
     "reset-hermes-window": () => resetHermesWindow(),
-    "close-modal": (el) => closeModal(el.dataset.modal),
+    "close-modal": (el5) => closeModal(el5.dataset.modal),
     "submit-inquiry": () => submitInquiry(),
     "submit-custom-range": () => submitCustomRange(),
     "submit-track": () => submitTrack(),
@@ -9500,15 +12596,29 @@
     "submit-password": () => submitPwd(),
     "submit-task": () => submitTask(),
     "submit-subtask": () => submitSubtask(),
+    "task-link-add": () => addTaskLink(),
+    "pick-task-evidence": () => pickTaskEvidence(),
+    "submit-task-done": (el5) => submitTaskDone(el5),
+    "open-leads": () => openLeads(),
+    "audit-ai": (el5) => runAuditAi(el5),
+    "audit-export": (el5) => exportAudit(el5.dataset.format),
+    "submit-geo-check": (el5) => submitGeoCheck(el5),
+    "pick-geo-shot": () => pickGeoShot(),
+    "submit-inq-source": (el5) => submitInquirySource(el5),
+    "submit-attr-edit": (el5) => submitAttrEdit(el5),
+    "open-backlink": () => openBacklink(),
+    "open-expense": () => openExpense(),
+    "submit-backlink": (el5) => submitBacklink(el5),
+    "submit-expense": (el5) => submitExpense(el5),
     "submit-sop": () => submitSop(),
     "submit-soplog": () => submitSopLog(),
     "adopt-ai": () => adoptAi()
   };
   document.addEventListener("click", (e) => {
-    const el = e.target.closest && e.target.closest("[data-ui-action]");
-    if (!el) return;
-    const action = STATIC_UI_ACTIONS[el.dataset.uiAction];
-    if (action) action(el);
+    const el5 = e.target.closest && e.target.closest("[data-ui-action]");
+    if (!el5) return;
+    const action = STATIC_UI_ACTIONS[el5.dataset.uiAction];
+    if (action) action(el5);
   });
   var semCampFilter = document.getElementById("semCampFilter");
   if (semCampFilter) semCampFilter.addEventListener("change", (e) => onSemCampaignChange(e.target.value));
@@ -9641,12 +12751,33 @@
       } catch (e) {
       }
     }
-    if (tab === "inquiry") setTimeout(() => {
+    if (tab === "dashboard") {
       try {
-        renderGlobe();
+        loadGeo();
       } catch (e) {
       }
-    }, 80);
+    }
+    if (tab === "inquiry") {
+      setTimeout(() => {
+        try {
+          renderGlobe();
+        } catch (e) {
+        }
+      }, 80);
+      refreshLeadBadge();
+    }
+    if (tab === "audit") {
+      try {
+        loadAudit();
+      } catch (e) {
+      }
+    }
+    if (tab === "spend") {
+      try {
+        loadSpend();
+      } catch (e) {
+      }
+    }
     if (tab === "archive") {
       try {
         loadArchive2();
@@ -9798,31 +12929,44 @@
     await loadAdCreatives();
     await loadRankSnapshots();
   }
-  var LOOP = [["\u2460 \u8BA1\u5212", "plan"], ["\u2461 \u6D4B\u8BD5", "test"], ["\u2462 \u6570\u636E", "data"], ["\u2463 \u6574\u6539", "fix"], ["\u2464 \u590D\u76D8", "review"]];
-  function renderLoopbars() {
-    document.querySelectorAll(".loopbar").forEach((bar) => {
-      const cur = +bar.dataset.step;
-      bar.innerHTML = LOOP.map((x, i) => {
-        const n = i + 1;
-        const cls = n === cur ? "active" : n < cur ? "done" : "";
-        return `<span class="loopstep ${cls}" data-loop-tab="${esc2(x[1])}">${x[0]}</span>` + (n < LOOP.length ? '<span class="loopsep"></span>' : "");
-      }).join("");
-      bar.onclick = (e) => {
-        const step = e.target.closest("[data-loop-tab]");
-        if (step && bar.contains(step)) go2(step.dataset.loopTab);
-      };
-    });
+  var taskChanged = (card2) => document.dispatchEvent(new CustomEvent("taskchanged", { detail: { card: card2 } }));
+  function taskDoneApplied(el5, c) {
+    el5.classList.add("on");
+    el5.innerHTML = '<i class="ti ti-check"></i>';
+    c.classList.add("done", "nofold");
+    taskChanged(c);
+    refreshTaskCols();
+    if (c.classList.contains("cotask")) {
+      API.post("/api/loop-items/" + c.dataset.id + "/archive", { archive_kind: "company" }).then(() => {
+        toast2("\u5927\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5F52\u6863\uFF08\u542B\u5B50\u4EFB\u52A1\uFF09");
+        c.remove();
+        refreshTaskCols();
+        loadUrgent();
+        updateSopCounts();
+      }).catch((e) => toast2("\u5DF2\u5B8C\u6210\u5E76\u5165\u5E93\uFF0C\u4F46\u5F52\u6863\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25")));
+      return;
+    }
+    const fx = c._item && c._item.fix_id;
+    toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el5));
+    loadUrgent();
   }
-  renderLoopbars();
-  function chk2(el) {
-    el.classList.toggle("on");
-    const c = el.closest(".tcard");
-    const on = el.classList.contains("on");
+  function chk2(el5) {
+    const c = el5.closest(".tcard");
+    if (c && c.dataset.id && !el5.classList.contains("on")) {
+      if (!c._item) {
+        toast2("\u4EFB\u52A1\u6570\u636E\u672A\u5C31\u7EEA\uFF0C\u8BF7\u5237\u65B0\u540E\u518D\u8BD5");
+        return;
+      }
+      openTaskDone(c._item, { onDone: () => taskDoneApplied(el5, c) });
+      return;
+    }
+    el5.classList.toggle("on");
+    const on = el5.classList.contains("on");
     if (on) {
-      el.innerHTML = '<i class="ti ti-check"></i>';
+      el5.innerHTML = '<i class="ti ti-check"></i>';
       c.classList.add("done");
     } else {
-      el.innerHTML = "";
+      el5.innerHTML = "";
       c.classList.remove("done");
     }
     if (c) {
@@ -9835,34 +12979,22 @@
       if (typeof refreshTaskCols === "function") refreshTaskCols();
     };
     const rollback = () => {
-      el.classList.toggle("on");
+      el5.classList.toggle("on");
       if (on) {
-        el.innerHTML = "";
+        el5.innerHTML = "";
         c.classList.remove("done");
       } else {
-        el.innerHTML = '<i class="ti ti-check"></i>';
+        el5.innerHTML = '<i class="ti ti-check"></i>';
         c.classList.add("done");
       }
       recount();
     };
     if (id) {
-      if (on && c.classList.contains("cotask")) {
-        API.post("/api/loop-items/" + id + "/archive", { archive_kind: "company" }).then(() => {
-          toast2("\u5927\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5F52\u6863\uFF08\u542B\u5B50\u4EFB\u52A1\uFF09");
-          c.remove();
-          recount();
-          loadUrgent();
-          if (typeof updateSopCounts === "function") updateSopCounts();
-        }).catch((e) => {
-          rollback();
-          toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D");
-        });
-        return;
-      }
-      API.patch("/api/loop-items/" + id, { state: on ? "done" : "todo", status: on ? "done" : "\u5F85\u529E" }).then(() => {
+      API.patch("/api/loop-items/" + id, { state: "todo", status: "\u5F85\u529E" }).then(({ item }) => {
+        if (c._item && item) Object.assign(c._item, item);
+        taskChanged(c);
         const fx = c._item && c._item.fix_id;
-        if (on) toastUndo("\u4EFB\u52A1\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u5DF2\u6807\u300C\u5DF2\u6539\u300D" : ""), () => chk2(el));
-        else toast2("\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u56DE\u5230\u300C\u8FDB\u884C\u4E2D\u300D" : ""));
+        toast2("\u64A4\u9500\u5B8C\u6210 \xB7 \u5DF2\u5165\u5E93" + (fx ? " \xB7 \u6574\u6539\u56DE\u5230\u300C\u8FDB\u884C\u4E2D\u300D" : ""));
         loadUrgent();
       }).catch((e) => {
         rollback();
@@ -9901,9 +13033,11 @@
     charts();
     bindSettings();
     renderSparklines();
-    await hydrate();
+    await loadSiteScope();
     loadDashboardInq();
+    await hydrate();
     loadDashboardBoards();
+    loadGeo();
     await loadKeywords();
     await loadClosedLoop();
     await loadAiAnalyses();
@@ -9917,10 +13051,12 @@
     loadSemBoardAds();
     loadSemBoardFull();
     loadAttribution();
+    loadSiteReturns();
     loadDiagnostics();
     loadDataFreshness();
     await loadDataSourcesStatus();
     await loadIntegrations();
+    loadSites();
     await loadMarket();
     if (typeof loadHermesMemories === "function") await loadHermesMemories(false);
     await loadBrain();
@@ -9937,9 +13073,9 @@
     const pu = document.getElementById("prof-user");
     if (pu) pu.textContent = me.username || "\u2014";
     if (!can("kpiTarget")) {
-      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el) => {
-        el.removeAttribute("contenteditable");
-        el.style.opacity = ".7";
+      document.querySelectorAll("#panel-settings [data-kpi]").forEach((el5) => {
+        el5.removeAttribute("contenteditable");
+        el5.style.opacity = ".7";
       });
     }
     if (!can("inquiry")) {

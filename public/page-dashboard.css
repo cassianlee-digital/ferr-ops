@@ -352,3 +352,27 @@ body.dark .panel.active .card-head {
 #panel-dashboard .grid2 > .card > div[style*="grid-template-columns:repeat(3,1fr)"] .metric-lbl {
   margin-top: 7px !important;
 }
+
+/* ================= GEO 卡（2026-10-10）：AI 引擎带来的访问与询盘。渲染在 src/geo.js ================= */
+#panel-dashboard .geo-card { margin-bottom: 14px; }
+#panel-dashboard .geo-grid { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 20px; }
+#panel-dashboard .geo-block { min-width: 0; }
+#panel-dashboard .geo-label { font-size: 12px; font-weight: 600; color: var(--text3); margin-bottom: 4px; }
+#panel-dashboard .geo-big { font-size: 26px; font-weight: 600; line-height: 1.3; color: var(--text1); font-variant-numeric: tabular-nums; }
+#panel-dashboard .geo-sub { font-size: 12px; line-height: 1.7; color: var(--text2); overflow-wrap: anywhere; }
+#panel-dashboard .geo-row { display: flex; align-items: center; gap: 8px; height: 26px; font-size: 12px; }
+#panel-dashboard .geo-name { flex: none; width: 84px; color: var(--text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#panel-dashboard .geo-track { flex: 1 1 auto; min-width: 0; height: 8px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+#panel-dashboard .geo-bar { display: block; height: 100%; background: var(--blue); }
+#panel-dashboard .geo-val { flex: none; color: var(--text2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#panel-dashboard .geo-note {
+  margin-top: 12px; padding: 6px 10px; border-left: 3px solid var(--amber); background: var(--amber-soft);
+  font-size: 12px; line-height: 1.6; color: var(--text1);
+}
+#panel-dashboard .geo-empty { padding: 14px 0; font-size: 13px; color: var(--text3); }
+@media (max-width: 900px) { #panel-dashboard .geo-grid { grid-template-columns: 1fr; } }
+#panel-dashboard .geo-cite { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; line-height: 1.6; color: var(--text2); }
+#panel-dashboard .geo-cite b { color: var(--text1); font-weight: 600; }
+#panel-dashboard .geo-cite-prev { color: var(--text3); }
+#panel-dashboard .geo-cite-warn { color: var(--danger); font-weight: 600; }
+#panel-dashboard .geo-warn { margin-top: 10px; padding: 6px 10px; border-left: 2px solid var(--amber); background: var(--amber-soft); font-size: 12px; line-height: 1.7; color: var(--text2); overflow-wrap: anywhere; }

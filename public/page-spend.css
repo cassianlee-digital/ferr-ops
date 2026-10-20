@@ -1,0 +1,111 @@
+/* ================= 投入台账（2026-10-10）=================
+   钱花在哪：广告 / 外链 / 其它支出。渲染在 src/spend.js，全部 createElement，没有行内 style
+   （本站 CSP 是 style-src-attr 'none'，行内 style 属性会被浏览器直接丢掉）。 */
+
+/* —— 月份条 —— */
+#panel-spend .spend-month {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+#panel-spend .spend-month input[type="month"] {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  color: var(--text1);
+  font-size: 13px;
+  font-family: var(--font);
+}
+
+/* —— 顶部：本月钱花在哪 —— */
+#panel-spend .spend-summary { margin-bottom: 14px; }
+#panel-spend .spend-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+#panel-spend .spend-group {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  min-width: 0;
+}
+#panel-spend .spend-group.is-ads { border-left: 3px solid var(--blue); }
+#panel-spend .spend-group-label { font-size: 12px; font-weight: 600; color: var(--text3); }
+#panel-spend .spend-group-amount {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text1);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+/* 「没有数据 / 本月没有」不是金额，不能长得像一个数 */
+#panel-spend .spend-group-amount.is-empty { font-size: 13px; font-weight: 500; color: var(--text3); }
+#panel-spend .spend-group-sub { margin-top: 2px; font-size: 11px; line-height: 1.5; color: var(--text3); }
+#panel-spend .spend-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg3);
+  font-size: 13px;
+  color: var(--text1);
+  font-variant-numeric: tabular-nums;
+}
+#panel-spend .spend-total b { font-weight: 600; }
+#panel-spend .spend-total-note { font-size: 11px; color: var(--text3); }
+#panel-spend .spend-total.is-error { color: var(--danger); }
+
+/* —— 工具条 / 外链质量对比 —— */
+#panel-spend .spend-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+#panel-spend .spend-all { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); cursor: pointer; }
+#panel-spend .spend-stats { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+#panel-spend .spend-stats:empty { display: none; }
+#panel-spend .spend-stat {
+  padding: 6px 12px;
+  border-left: 3px solid var(--border2);
+  background: var(--bg3);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text2);
+}
+#panel-spend .spend-stat.is-paid { border-left-color: var(--amber); }
+#panel-spend .spend-stat b { color: var(--text1); font-weight: 600; }
+
+/* —— 两张台账表 —— */
+#panel-spend .spend-card { overflow-x: auto; }
+#panel-spend .spend-table td { vertical-align: top; font-size: 12px; line-height: 1.6; }
+#panel-spend .spend-table td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+#panel-spend .spend-url { min-width: 160px; max-width: 280px; overflow-wrap: anywhere; }
+#panel-spend .spend-url a { color: var(--blue); }
+#panel-spend .spend-url a:hover { text-decoration: underline; }
+#panel-spend .spend-task { max-width: 200px; overflow-wrap: anywhere; color: var(--text2); }
+#panel-spend .spend-paid { font-weight: 600; color: var(--text1); }
+#panel-spend .spend-noev { color: var(--danger); }
+#panel-spend .spend-ops { white-space: nowrap; }
+#panel-spend .spend-empty { padding: 28px 12px; text-align: center; }
+#panel-spend .spend-effect { margin-top: 4px; }
+#panel-spend .spend-auto { margin-top: 3px; font-size: 11px; line-height: 1.5; cursor: help; }
+#panel-spend .spend-auto.is-found { color: var(--green); }
+#panel-spend .spend-auto.is-not_found { color: var(--danger); }
+#panel-spend .spend-auto.is-unreachable { color: var(--text3); }
+#panel-spend .spend-check { margin-top: 4px; }
+#panel-spend .spend-auto.is-mismatch { color: var(--amber); font-weight: 600; }
+#panel-spend .spend-auto.is-lost { font-weight: 600; }

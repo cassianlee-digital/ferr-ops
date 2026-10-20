@@ -1,3 +1,4 @@
+// Google 同步的数据访问层：项目与授权令牌、GSC / GA4 / Ads 事实表的写入，以及看板和诊断用的查询。
 import crypto from 'node:crypto';
 import { db } from '../connection.js';
 import { encrypt, decryptSafe } from '../../services/crypto.js';
@@ -144,6 +145,8 @@ function parseProject(row) {
     gsc_site_url: row.gsc_site_url || '',
     ga4_property_id: row.ga4_property_id || '',
     ads_customer_id: row.ads_customer_id || '',
+    domain: row.domain || '',
+    company: row.company || null,
     is_default: !!row.is_default,
     active: !!row.active,
     created_at: row.created_at,
@@ -174,13 +177,15 @@ export function createProject(input) {
     if (isDefault) db.prepare('UPDATE google_projects SET is_default = 0').run();
     const info = db.prepare(
       `INSERT INTO google_projects
-       (name, gsc_site_url, ga4_property_id, ads_customer_id, is_default, active, updated_at)
-       VALUES (@name, @gsc_site_url, @ga4_property_id, @ads_customer_id, @is_default, 1, datetime('now'))`
+       (name, gsc_site_url, ga4_property_id, ads_customer_id, domain, company, is_default, active, updated_at)
+       VALUES (@name, @gsc_site_url, @ga4_property_id, @ads_customer_id, @domain, @company, @is_default, 1, datetime('now'))`
     ).run({
       name: String(input.name || '').trim(),
       gsc_site_url: String(input.gsc_site_url || '').trim(),
       ga4_property_id: String(input.ga4_property_id || '').trim(),
       ads_customer_id: String(input.ads_customer_id || '').replace(/-/g, '').trim(),
+      domain: String(input.domain || '').trim() || null,
+      company: input.company || null,
       is_default: isDefault,
     });
     if (!isDefault && db.prepare('SELECT COUNT(*) count FROM google_projects WHERE active = 1').get().count === 1) {
@@ -200,6 +205,8 @@ export function updateProject(id, input) {
     gsc_site_url: input.gsc_site_url !== undefined ? String(input.gsc_site_url || '').trim() : cur.gsc_site_url,
     ga4_property_id: input.ga4_property_id !== undefined ? String(input.ga4_property_id || '').trim() : cur.ga4_property_id,
     ads_customer_id: input.ads_customer_id !== undefined ? String(input.ads_customer_id || '').replace(/-/g, '').trim() : cur.ads_customer_id,
+    domain: input.domain !== undefined ? (String(input.domain || '').trim() || null) : (cur.domain || null),
+    company: input.company !== undefined ? (input.company || null) : cur.company,
     is_default: input.is_default !== undefined ? (input.is_default ? 1 : 0) : (cur.is_default ? 1 : 0),
   };
   db.transaction(() => {
@@ -207,7 +214,7 @@ export function updateProject(id, input) {
     db.prepare(
       `UPDATE google_projects
        SET name=@name, gsc_site_url=@gsc_site_url, ga4_property_id=@ga4_property_id,
-           ads_customer_id=@ads_customer_id, is_default=@is_default, updated_at=datetime('now')
+           ads_customer_id=@ads_customer_id, domain=@domain, company=@company, is_default=@is_default, updated_at=datetime('now')
        WHERE id=@id`
     ).run(next);
   })();
@@ -216,6 +223,21 @@ export function updateProject(id, input) {
 
 export function deleteProject(id) {
   db.prepare('UPDATE google_projects SET active = 0, is_default = 0, updated_at=datetime(\'now\') WHERE id = ?').run(id);
+}
+
+// 启用中的站点里，有没有另一个已经用了这个域名 / Search Console 资源 / GA4 媒体资源（同一份数据不能记在两个站名下）
+export function findProjectClash(fields, exceptId = null) {
+  for (const col of ['domain', 'gsc_site_url', 'ga4_property_id']) {
+    if (!fields[col]) continue;
+    const row = db.prepare(`SELECT id, name FROM google_projects WHERE active = 1 AND ${col} = ? AND id IS NOT ?`).get(fields[col], exceptId);
+    if (row) return { field: col, id: row.id, name: row.name };
+  }
+  return null;
+}
+
+// 把没有归属的同步记录（登记站点之前留下的）归到一个站点名下
+export function adoptUnassignedRuns(projectId) {
+  db.prepare('UPDATE google_sync_runs SET project_id = ? WHERE project_id IS NULL').run(projectId);
 }
 
 export function latestProjectRuns(projectId) {
@@ -546,6 +568,21 @@ export function gscOpportunities(range, { minImpr = 10, limit = 50 } = {}) {
        ORDER BY impressions DESC LIMIT @limit`
     )
     .all(params);
+}
+
+// 首页上（排名 < 10.5）曝光够多的「查询词 × 页面」。点击率偏低规则（services/ctrAnomaly.js）拿它既算基准也找异常。
+export function gscFirstPageRows(range, { minImpr = 50, maxPosition = 10 } = {}) {
+  return db
+    .prepare(
+      `SELECT * FROM (
+         SELECT query, page, SUM(clicks) clicks, SUM(impressions) impressions,
+                CASE WHEN SUM(impressions) > 0 THEN SUM(position*impressions)/SUM(impressions) ELSE NULL END position
+         FROM gsc_query_daily
+         WHERE date BETWEEN @start AND @end AND (@siteUrl IS NULL OR site_url = @siteUrl)
+         GROUP BY query, page
+       ) WHERE impressions >= @minImpr AND position < @maxPos`
+    )
+    .all({ start: range.start_date, end: range.end_date, siteUrl: range.gsc_site_url || null, minImpr, maxPos: maxPosition + 0.5 });
 }
 
 // 蚕食：同一 query 在区间内被 >=2 个有意义曝光的页面分散排名。返回每组的页面清单。

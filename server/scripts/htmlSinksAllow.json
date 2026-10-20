@@ -1,0 +1,16 @@
+{
+  "@reviewed": {
+    "public/src/ui-kit.js:mdToHtml": "先整体 esc()，再只生成 p/br/strong/ul/li 这几个白名单标签",
+    "public/src/timerange.js:ymd": "只放行 YYYY-MM-DD，其余返回空串",
+    "public/src/inquiry-globe.js:inqMapEsc": "与 esc() 等价的本地转义函数（& < > \" ' 五个字符）",
+    "public/src/keywords.js:clsOf": "返回 OPT 常量表里的样式名，找不到返回字面量 b-gray",
+    "public/hermes.js:renderMarkdown": "每一行都先过 inline()，inline 先 escapeText 再只加 <strong>",
+    "public/hermes.js:inline": "先 escapeText()，再只把 **x** 换成 <strong>"
+  },
+  "public/src/ga4-view.js|cell.html": "fillTable 的调用方自己拼好的格子 HTML；全文件只有「转化事件」那一处在传，里面的两个值都过了 esc()",
+  "public/src/google-projects.js|btn.innerHTML": "按钮自己原来的内容：点之前先存下来，请求结束再放回去，没有外来数据",
+  "public/src/keywords.js|btn.dataset.old": "同上：就地确认按钮把自己原来的 innerHTML 存进 dataset，取消或完成后放回去",
+  "public/src/sop.js|l": "buildSopOverdueList() 返回的每一行都是 esc(部门)-日期-esc(频率)：esc(标题) 拼出来的",
+  "public/src/ui-kit.js|line": "mdToHtml 内部：line 取自 esc(t).split('\n')，原始 HTML 在第一步就已经变成文本",
+  "public/src/ui-kit.js|m[1]": "mdToHtml 内部：从已转义的 line 上用正则取出的分组"
+}

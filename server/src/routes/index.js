@@ -25,11 +25,16 @@ import { dailyPlanRoutes } from './dailyPlan.js';
 import { googleRoutes } from './google.js';
 import { diagnosticsRoutes } from './diagnostics.js';
 import { attributionRoutes } from './attribution.js';
+import { siteReturnsRoutes } from './siteReturns.js';
 import { hermesRoutes } from './hermes.js';
 import { dataFreshnessRoutes } from './dataFreshness.js';
 import { hermesActionsRoutes } from './hermesActions.js';
 import { risksRoutes } from './risks.js';
 import { attachmentsRoutes } from './attachments.js';
+import { spendRoutes } from './spend.js';
+import { inquiryLeadsRoutes } from './inquiryLeads.js';
+import { geoRoutes } from './geo.js';
+import { auditRoutes } from './audit.js';
 
 export async function registerRoutes(app) {
   await app.register(inquiriesRoutes);
@@ -58,9 +63,14 @@ export async function registerRoutes(app) {
   await app.register(googleRoutes);
   await app.register(diagnosticsRoutes);
   await app.register(attributionRoutes);
+  await app.register(siteReturnsRoutes);
   await app.register(hermesRoutes);
   await app.register(dataFreshnessRoutes);
   await app.register(hermesActionsRoutes);
   await app.register(risksRoutes);
   await app.register(attachmentsRoutes);
+  await app.register(spendRoutes);
+  await app.register(inquiryLeadsRoutes);
+  await app.register(geoRoutes);
+  await app.register(auditRoutes);
 }

@@ -155,9 +155,9 @@ function tooltipHtml(group){
   `).join('');
   const more = group.rows.length > 4 ? `<div class="inq-map-tip-more">还有 ${group.rows.length - 4} 条询盘</div>` : '';
   return `
-    <div class="inq-map-tip-title">${inqMapEsc(group.country)} · ${group.total} 条询盘</div>
+    <div class="inq-map-tip-title">${inqMapEsc(group.country)} · ${inqMapEsc(group.total)} 条询盘</div>
     <div class="inq-map-tip-stats">
-      <span>A级 ${group.A || 0}</span><span>B级 ${group.B || 0}</span><span>C级 ${group.C || 0}</span><span>A级占比 ${aRatio}%</span>
+      <span>A级 ${inqMapEsc(group.A || 0)}</span><span>B级 ${inqMapEsc(group.B || 0)}</span><span>C级 ${inqMapEsc(group.C || 0)}</span><span>A级占比 ${aRatio}%</span>
     </div>
     <div class="inq-map-tip-meta">主询产品：${inqMapEsc(modeOf(group.products))} · 主要渠道：${inqMapEsc(modeOf(group.channels))}</div>
     ${rows}${more}
@@ -190,16 +190,16 @@ async function ensureWorldMap(){
 
 function topCountriesHtml(groups){
   return groups.slice(0, 4).map(g => `
-    <div><span>${inqMapEsc(g.country)}</span><b>${g.total}</b></div>
+    <div><span>${inqMapEsc(g.country)}</span><b>${inqMapEsc(g.total)}</b></div>
   `).join('') || '<div><span>暂无国家分布</span><b>—</b></div>';
 }
 
 function unmappedNoteHtml(unmappedList, unmappedTotal){
   if (!unmappedTotal) return '';
-  const names = unmappedList.map(u => `${inqMapEsc(u.country)}${u.count > 1 ? ` ×${u.count}` : ''}`).join('、');
+  const names = unmappedList.map(u => `${inqMapEsc(u.country)}${u.count > 1 ? ` ×${inqMapEsc(u.count)}` : ''}`).join('、');
   return `
     <div class="inq-map-note">
-      有 ${unmappedTotal} 条询盘因国家暂无地图坐标未画上飞线:${names}。数据没丢,只是地图缺该国坐标,请补充坐标表。
+      有 ${inqMapEsc(unmappedTotal)} 条询盘因国家暂无地图坐标未画上飞线:${names}。数据没丢,只是地图缺该国坐标,请补充坐标表。
     </div>
   `;
 }
@@ -266,7 +266,12 @@ export async function renderGlobe(){
   const chartEl = el.querySelector('.inq-echarts-map');
   if (!chartEl || !window.echarts) return;
 
-  inqGlobeChart = window.echarts.init(chartEl, null, { renderer:'svg' });
+  /* 用 canvas 渲染，不用 svg（2026-10-10 改）。ECharts 的 svg 渲染器是用 setAttribute('style', …) 给
+     <svg> 和每个 <text> 写样式的，而本站 CSP 是 style-src-attr 'none' —— 浏览器把这些样式整条丢掉：
+     标签上配的字号 / 字重（下面 label 里的 fontSize:14、fontWeight:800）根本没生效，
+     控制台每画一次地图还报两条 CSP 违规。canvas 渲染器只走 CSSOM，不受影响；
+     全站其它图表本来就都是 canvas。飞线拖尾（effect.trailLength）和光晕（shadowBlur）也只有 canvas 画得全。 */
+  inqGlobeChart = window.echarts.init(chartEl, null, { renderer:'canvas' });
   bindResize();
 
   const lineData = groups.map(group => ({

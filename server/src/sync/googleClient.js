@@ -1,3 +1,4 @@
+// Google 接口的公共部分：OAuth 授权与令牌刷新、项目配置解析、带鉴权的请求、日期区间归一。
 import { config } from '../config.js';
 import * as repo from '../db/repositories/googleSync.js';
 
@@ -30,6 +31,18 @@ export function resolveProject(input = {}) {
     is_default: true,
     active: true,
   };
+}
+
+/* 读数据时，「这个站点」对应的过滤条件。
+   查询里的写法是「没给资源 = 不过滤」。只有一个站的时候这没问题；有了多个站点之后，
+   一个没配 GA4 的站点会把**所有站点**的 GA4 加在一起显示成它自己的 —— 数是真的，但不是这个站的。
+   所以登记过的站点（有 id）：没配的资源 = 没有数据，用一个不会和任何真实资源相等的值去过滤。
+   没登记站点、用服务器配置的那种老情况（id 为 null）保持原样。 */
+export const NO_DATA_SCOPE = '(not-configured)';
+export function readScope(project) {
+  const strict = project && project.id != null;
+  const pick = (v) => v || (strict ? NO_DATA_SCOPE : '');
+  return { gsc_site_url: pick(project?.gsc_site_url), ga4_property_id: pick(project?.ga4_property_id) };
 }
 
 export function projectProviderConfig(provider, project) {

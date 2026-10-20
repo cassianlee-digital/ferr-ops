@@ -8,6 +8,7 @@ import { placeCaretEnd } from './editable.js';
 import { loadSops, loadUrgent, updateSopCounts } from './sop.js';
 import { formatLocalDate, ymd } from './timerange.js';
 import { prioFlagHtml, prioOf, normPrio, openPrioPop, openDatePop, hourToMin, fmtHour, TIME_OPTS, bindPrioChip, setPrioChip } from './task-pickers.js';
+import { auditBadgesHtml, auditBlockHtml, fillTaskAuditFields, openTaskDone, readTaskAuditFields } from './task-audit.js';
 
 /* ================= CLOSED-LOOP ENGINE ================= */
 const _2=n=>String(n).padStart(2,'0');
@@ -37,7 +38,7 @@ function scopeDept(btn,txt){
 export function clip(s,n){ return s.length>n?s.slice(0,n)+'…':s; }
 
 export function addDeposit(s,text,act){const ac=act==='采纳'?'b-green':'b-teal';
-  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${s.c}">${esc(s.dept)}诊断</span></td><td>${esc(text)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);}
+  prepend('tb-dep',`<td class="num">${today()}</td><td class="ctr"><span class="badge ${esc(s.c)}">${esc(s.dept)}诊断</span></td><td>${esc(text)}</td><td class="dim csp-s-33ee298127"></td><td class="ctr"><span class="badge ${ac}">${esc(act)}</span></td>`);}
 /* 整改行：问题/所属/依据/动作/负责人/截止/结果，全部可编辑或可选；绑定 id 后失焦即存 */
 function fixRowHtml(f){
   const dept=f.dept==='SEM'?'SEM':'SEO'; const c=dept==='SEM'?'b-purple':'b-blue';
@@ -73,6 +74,7 @@ document.addEventListener('click',async e=>{
     else if(kind==='task-prio')taskPrioPop(action);
     else if(kind==='task-date-pop')taskDatePop(action);
     else if(kind==='task-push')taskPush(action);
+    else if(kind==='task-result')taskResult(action);
     else if(kind==='deposit-delete')depDel(action);
     else if(kind==='content-delete')contentDel(action);
     else if(kind==='ai-action')aiAct(action,action.dataset.kind);
@@ -157,7 +159,7 @@ function renderTaskMeta(card){
   if(!box)return;
   const isCo=card.classList.contains('cotask'), g=taskGroupOf(it);
   // 个人任务在各自列里，dept 徽章冗余 → 只公司大任务保留「公司」徽章
-  const deptBadge=isCo?`<span class="badge ${s.c||'b-gray'}">${esc(s.dept||'')}</span>`:'';
+  const deptBadge=isCo?`<span class="badge ${esc(s.c||'b-gray')}">${esc(s.dept||'')}</span>`:'';
   // 出身标：这条是从整改清单排下来的，点它回去看依据数据（任务能追溯到证据，才不是拍脑袋）
   const srcBadge=it.fix_id?`<span class="badge b-amber src-fix" title="来自整改清单 · 点击查看依据">整改</span>`:'';
   // 备注并入 meta 行（备注居左、日期/操作居右同一行），消掉单独的备注行与空白
@@ -178,10 +180,28 @@ function renderTaskMeta(card){
   const split=isCo?`<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> 分发</button>`:'';
   // 右侧已有东西时删除键只留间距；只有它自己时才吃 auto 靠右
   const del=it.id?`<button type="button" class="btn-mini csp-task-delete ${(isCo||ops||push)?'csp-task-delete-spaced':'csp-task-delete-pushed'}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
-  box.innerHTML=deptBadge+srcBadge+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
+  box.innerHTML=deptBadge+srcBadge+auditBadgesHtml(it)+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
   // 思考框架块挂在卡尾，独占一行（flex:1 0 100%），不影响 meta 行布局
   let lb=card.querySelector('.tloop'); if(lb)lb.remove();
   if(loopBlock){ const tmp=document.createElement('div'); tmp.innerHTML=loopBlock; card.appendChild(tmp.firstChild); }
+  // 审计信息块（关联 / 结果 / 动作 / 证据 / 工时）：同样挂卡尾，有内容才出现
+  const ab=card.querySelector(':scope > .taudit'); if(ab)ab.remove();
+  const auditHtml=auditBlockHtml(it,{editable:true});
+  if(auditHtml){ const tmp=document.createElement('div'); tmp.innerHTML=auditHtml; card.appendChild(tmp.firstChild); }
+}
+/* 完成 / 撤销之后把那张卡按最新数据重画（结果、证据、「改」入口都跟着变）。
+   由 app.js 的 chk() 派发 taskchanged 事件触发，而不是让它 import 一个新函数：
+   chk 与本模块之间本来就有环（见 docs/modules/frontend-architecture.md），事件是既定的拆环方向，也不必再加宽本模块的导出面。
+   子任务卡是另一套单行排版，没有 meta 行，不参与。 */
+document.addEventListener('taskchanged',e=>{
+  const card=e.detail&&e.detail.card;
+  if(card&&card._item&&!card.classList.contains('subtask'))renderTaskMeta(card);
+});
+/* 已完成任务的「补结果 / 改」：复用完成弹框的编辑模式（只改记录，不动完成状态）。 */
+function taskResult(btn){
+  const card=btn.closest('.tcard'); const it=card&&card._item; if(!it||!it.id)return;
+  const redraw=()=>renderTaskMeta(card);
+  openTaskDone(it,{edit:true,onDone:()=>{ redraw(); toast('完成记录已更新 · 已入库'); },onImages:redraw});
 }
 /* 日期胶囊：跨天显示「开始 ~ 截止」（同年省年份省宽度，完整日期放 title），单日照旧；点它改期。
    没填日期也给一个「设日期」入口——AI 生成/复盘回流的任务本来就没日期，否则永远没法补。 */
@@ -243,7 +263,7 @@ function taskAgeHtml(it,g){
   if(g==='doing'&&it.start_date&&it.task_date){
     const total=dayDiff(it.start_date,it.task_date)+1, cur=dayDiff(it.start_date,t)+1;
     const ck=taskCheckin(it.id);
-    const pushed=ck.days?` · 已推进 ${ck.days} 天`:'';
+    const pushed=ck.days?` · 已推进 ${esc(ck.days)} 天`:'';
     // 停滞：既没打今天的卡，上次推进也在 2 天前（或压根没推进过）→ 标黄，别让它安静地烂在进行中
     const idle=!ck.today&&(ck.last?dayDiff(ck.last,t)>=2:dayDiff(it.start_date,t)>=2);
     return `<span class="tage${idle?' tage-idle':''}">第 ${cur}/${total} 天${pushed}</span>`;
@@ -428,6 +448,7 @@ function addSubTaskCard(parentCard,it){
   if(!box){ box=document.createElement('div'); box.className='subtasks'; parentCard.appendChild(box); }
   const done=!!(it&&(it.state==='done'||it.status==='done'));
   const card=document.createElement('div'); card.className='tcard subtask'+(done?' done':''); if(it&&it.id)card.dataset.id=it.id;
+  card._item=it; // 勾完成时完成弹框要读它（标题、是否重要、已有的结果）
   const owner=(it&&it.owner)||'李'; const oc=subOwnerBadge(owner);
   const del=(it&&it.id)?`<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
   const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
@@ -503,6 +524,7 @@ export function openTaskModal(dept){
   const role=(window.ME||{}).role; const canUrgent=(role==='manager'||role==='boss')&&dept==='公司';
   const uf=document.getElementById('task-urgent-fld'); if(uf)uf.classList.toggle('is-hidden',!canUrgent);
   const uc=document.getElementById('task-urgent'); if(uc)uc.checked=false;
+  fillTaskAuditFields(null);
   openModal('taskMask'); if(tc)tc.focus();
 }
 /* 改期/改内容：点卡上的日期胶囊进来，复用同一个弹窗，提交走 PATCH。
@@ -526,6 +548,7 @@ function openTaskEdit(el){
   const tvd=document.getElementById('task-verify-date'); if(tvd)tvd.value=it.task_verify_date||'';
   const tvh=document.getElementById('task-verify-how'); if(tvh)tvh.value=it.task_verify_how||'';
   const uf=document.getElementById('task-urgent-fld'); if(uf)uf.classList.add('is-hidden'); // 紧急标记只在派发时设
+  fillTaskAuditFields(it);
   openModal('taskMask'); if(tc)tc.focus();
 }
 export async function submitTask(){
@@ -544,11 +567,12 @@ export async function submitTask(){
   const task_done_when=(document.getElementById('task-done-when')&&document.getElementById('task-done-when').value||'').trim();
   const task_verify_date=(document.getElementById('task-verify-date')&&document.getElementById('task-verify-date').value)||'';
   const task_verify_how=(document.getElementById('task-verify-how')&&document.getElementById('task-verify-how').value||'').trim();
+  const audit=readTaskAuditFields(); if(!audit)return; // 产品/项目、预估工时、重要、关联对象
   const ucEl=document.getElementById('task-urgent'); const urgent=(ucEl&&ucEl.checked&&!document.getElementById('task-urgent-fld').classList.contains('is-hidden'))?1:undefined;
   if(_taskEditing){
     const card=_taskEditing, it=card._item||{};
     try{
-      const {item}=await API.patch('/api/loop-items/'+it.id,{content,task_date,start_date,task_hour,task_priority,note,task_why,task_done_when,task_verify_date,task_verify_how});
+      const {item}=await API.patch('/api/loop-items/'+it.id,{content,task_date,start_date,task_hour,task_priority,note,task_why,task_done_when,task_verify_date,task_verify_how,...audit});
       Object.assign(it,item||{content,task_date,start_date,task_hour,task_priority,note,task_why,task_done_when,task_verify_date,task_verify_how});
       const t=card.querySelector('.ttitle'); // 只换标题文本，别动前面的勾选框
       if(t){ [...t.childNodes].forEach(n=>{ if(n.nodeType===3)n.remove(); }); t.appendChild(document.createTextNode(it.content||'')); }
@@ -559,7 +583,7 @@ export async function submitTask(){
     return;
   }
   try{
-    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,start_date,task_hour,task_priority,note,task_why,task_done_when,task_verify_date,task_verify_how};
+    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,start_date,task_hour,task_priority,note,task_why,task_done_when,task_verify_date,task_verify_how,...audit};
     if(urgent)body.urgent=1;
     const {item}=await API.post('/api/loop-items',body);
     addTaskCard(s,item.content,item); refreshTaskCols();
@@ -649,7 +673,7 @@ export async function createEvidenceFix(dept,title,detail,evidence,source='诊�
 }
 // 全站最常用的失败文案（11 处复用：ai/charts/closed-loop/weekly-review）。403 有专属文案；
 // 其余必须带上后端给的原因（api.js 已把 400 的 detail 放进 e.message，如「字段 due_date 需要字符串」），
-// 否则用户只看到「保存失败」，违背 CLAUDE.md「API 失败必须显示失败原因」。
+// 否则用户只看到「保存失败」，违背 AGENTS.md 的硬规矩「API 失败必须把失败原因显示给用户」。
 export function persistFailMsg(e){return e&&e.status===403?'无权操作，未入库':'保存失败，未入库：'+((e&&e.message)||'请求失败');}
 let aiDone={沉淀:new Set(),采纳:new Set(),测试:new Set()};
 let closedLoopLoadVersion=0;

@@ -6,19 +6,9 @@ import { esc, toast, toastGo } from './ui-kit.js';
 import { formatLocalDate, getCurrentRange, getRangeRevision, rangeText, withRange } from './timerange.js';
 import { createEvidenceFix, persistFailMsg } from './closed-loop.js';
 import { runAiAnalysis } from './ai.js';
+import { fetchInquiries } from './inquiry-data.js';
+import { withSite } from './site-scope.js';
 
-/* ===== 1a: DEMO_MODE —— 真实模式(false)禁止任何硬编码示例数据；仅 true 时展示下方 fixture ===== */
-window.DEMO_MODE = window.DEMO_MODE || false;
-const DEMO = {
-  inqTrend: { a:[2,1,2,1,2,1,2,1], total:[6,5,7,8,6,7,8,8] },
-  seoMini:  [95,98,92,100,104,99,108,112],
-  semMini:  [2.8,2.9,3.0,2.95,3.1,3.0,3.15,3.2],
-  inqDonut: { a:7, b:5, c:43, rate:'22%' },
-  chanDonut:{ seo:42, sem:33, direct:17, other:8 },
-  seoSeries:{ labels:Array.from({length:14},(_,i)=>5+'/'+(4+i*2)),
-              clicks:[95,98,92,100,104,99,108,112,109,115,118,114,120,124],
-              impr:[120,128,124,132,140,134,145,150,148,155,160,156,165,170] },
-};
 function loadFailureText(label,error){
   const reason=error&&error.message&&error.message!=='unauthorized'?error.message:'登录状态已失效或服务不可用';
   return label+'加载失败：'+reason;
@@ -35,7 +25,6 @@ function chartEmpty(id,detail,title){
   box.querySelector('.ce-sub').textContent=detail||'请录入数据或完成同步';
 }
 function setDonutLegend(map){ Object.keys(map).forEach(id=>{ const e=document.getElementById(id); if(e)e.textContent=map[id]; }); }
-function fillDonutLegendDemo(){ setDonutLegend({lgInqA:DEMO.inqDonut.a,lgInqB:DEMO.inqDonut.b,lgInqC:DEMO.inqDonut.c,lgInqRate:DEMO.inqDonut.rate,lgChSeo:DEMO.chanDonut.seo+'%',lgChSem:DEMO.chanDonut.sem+'%',lgChDirect:DEMO.chanDonut.direct+'%',lgChOther:DEMO.chanDonut.other+'%'}); }
 function blankDonutLegend(){ setDonutLegend({lgInqA:'—',lgInqB:'—',lgInqC:'—',lgInqRate:'—',lgChSeo:'—',lgChSem:'—',lgChDirect:'—',lgChOther:'—'}); }
 /* BUG-6：KPI 页两个 donut 用真实询盘聚合，无数据→诚实空状态。
    2026-08-26：不再读询盘页的 _inqCache —— 时间范围分页面独立后，那会出现「KPI 页写着近30天、
@@ -46,7 +35,7 @@ let kpiInqRequestSequence=0;
 export async function loadKpiInqDonuts(){
   const requestId=++kpiInqRequestSequence, revision=getRangeRevision('kpi');
   try{
-    const {items}=await API.get(withRange('/api/inquiries','kpi'));
+    const {items}=await fetchInquiries('kpi');
     if(requestId!==kpiInqRequestSequence||revision!==getRangeRevision('kpi'))return false;
     window._inqKpiCache=items||[];
   }catch(e){
@@ -58,7 +47,6 @@ export async function loadKpiInqDonuts(){
 }
 let _inqDonutChart=null,_chanDonutChart=null;
 export function renderInqDonuts(){
-  if(window.DEMO_MODE)return; // DEMO_MODE 仍走 charts() 示例
   const rows=window._inqKpiCache||[];
   const cv1=document.getElementById('inqDonut'), cv2=document.getElementById('chanDonut');
   if(_inqDonutChart){ try{_inqDonutChart.destroy();}catch(e){} _inqDonutChart=null; }
@@ -86,7 +74,7 @@ export function renderInqDonuts(){
 
 let seoChart=null, seoFull=null;
 function seoSeriesFromWeeks(){
-  // 优先用当前区间视图；真实模式下无数据返回 null(显示空状态),仅 DEMO_MODE 用示例
+  // 优先用当前区间视图；没有数据返回 null（显示空状态）
   let w=(window._seoWeeksView!==undefined)?window._seoWeeksView:window._seoWeeks;
   if(w&&w.length){
     if(window._gran==='month'){ // C-2a：按月汇总(对真实周行求和)。SEO 无日数据，故只支持 周/月，不提供「天」。
@@ -96,7 +84,7 @@ function seoSeriesFromWeeks(){
     }
     return {labels:w.map(x=>x.date), clicks:w.map(x=>x.clicks), impr:w.map(x=>Math.round(x.impr/20))};
   }
-  return window.DEMO_MODE ? DEMO.seoSeries : null;
+  return null;
 }
 function buildSeoData(s){return {labels:s.labels,datasets:[{label:'点击',data:s.clicks,borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},{label:'展现÷20',data:s.impr,borderColor:'#9aa1ae',borderDash:[4,3],tension:.4,pointRadius:0,borderWidth:1.5}]};}
 function updateSeoChart(range){
@@ -143,9 +131,9 @@ function _shiftRange(r){
 export async function loadSeoBoardGsc(){
   const cur=getCurrentRange('data');
   let data=null, prev=null;
-  try{ data=await API.get(withRange('/api/google/gsc/summary','data')); }
+  try{ data=await API.get(withSite(withRange('/api/google/gsc/summary','data'))); }
   catch(e){ window._gscBoard={error:e}; renderSeoBoard(); return; }
-  if(cur){ try{ prev=await API.get(withRange('/api/google/gsc/summary', _shiftRange(cur))); }catch(e){ prev=null; } }
+  if(cur){ try{ prev=await API.get(withSite(withRange('/api/google/gsc/summary', _shiftRange(cur)))); }catch(e){ prev=null; } }
   window._gscBoard={data,prev};
   renderSeoBoard();
 }
@@ -174,8 +162,8 @@ function renderSeoBoard(){
   const error=board&&board.error;
   const t=(data&&data.totals)||null;
   const _t=(id,v)=>{ const e=document.getElementById(id); if(e)e.textContent=v; };
-  // 顶部卡
-  if(t){
+  // 顶部卡。区间里一天同步数据都没有（比如刚登记、还没补历史的站点）：写「—」，不写 0 —— 没有数据不等于零点击
+  if(t&&(data.byDate||[]).length){
     _t('sb-clicks',(t.clicks||0).toLocaleString());
     _t('sb-impr',(t.impressions||0).toLocaleString());
     _t('sb-pos',t.position!=null?Number(t.position).toFixed(1):'—');
@@ -185,6 +173,8 @@ function renderSeoBoard(){
     _seoDelta('sb-impr-d',   t.impressions, pt?pt.impressions:null, false, 'pct');
     _seoDelta('sb-pos-d',    t.position, pt?pt.position:null, true, 'abs');
     _seoDelta('sb-cov-d',    data.queryCount, prev?prev.queryCount:null, false, 'abs');
+    // 上一个等长区间一天数据都没有（刚登记、只同步了最近几天的站点）：写明「上期没有数据」，不留一片空白让人猜为什么没有对比
+    if(!(prev&&(prev.byDate||[]).length)) ['sb-clicks-d','sb-impr-d','sb-pos-d','sb-cov-d'].forEach(id=>{ const e=document.getElementById(id); if(e){ e.textContent='上期没有数据'; e.className='metric-delta'; } });
   } else {
     ['sb-clicks','sb-impr','sb-pos','sb-cov'].forEach(id=>_t(id,'—'));
     ['sb-clicks-d','sb-impr-d','sb-pos-d','sb-cov-d'].forEach(id=>{ const e=document.getElementById(id); if(e){e.textContent='';e.className='metric-delta';} });
@@ -228,7 +218,7 @@ function renderSeoBoard(){
         const pos=p.position!=null?Number(p.position).toFixed(1):'—';
         const q='分析页面 '+path+' 的SEO表现：点击'+(p.clicks||0)+'、展现'+(p.impressions||0)+'、CTR'+ctr+'、均排名'+pos+'。给出最该先改的3个动作。';
         const title=path+' 诊断';
-        return '<tr><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+pos+'</td><td class="num dim">—</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,title)+'><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
+        return '<tr><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num">'+Number(p.clicks||0).toLocaleString()+'</td><td class="num">'+Number(p.impressions||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+pos+'</td><td class="num dim">—</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,title)+'><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
       }).join('');
     }
   }
@@ -253,7 +243,7 @@ function _deltaHtml(cur,prev,lowerBetter,fmt){
 }
 export async function loadSeoBoardFull(){
   let d=null;
-  try{ d=await API.get(withRange('/api/google/seo/board','data')); }catch(e){ d={error:e}; }
+  try{ d=await API.get(withSite(withRange('/api/google/seo/board','data'))); }catch(e){ d={error:e}; }
   renderSeoHighlights(d); renderSeoDeltaTables(d); renderSeoScatter(d); renderSeoSources(d);
 }
 function renderSeoHighlights(d){
@@ -262,7 +252,7 @@ function renderSeoHighlights(d){
   const hs=(d&&d.highlights)||[];
   if(!hs.length){ box.classList.add('is-hidden'); box.innerHTML=''; return; }
   box.classList.remove('is-hidden');
-  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':'bad')+'">'+esc(h.text)+'</span>').join('');
+  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':(h.tone==='muted'?'muted':'bad'))+'">'+esc(h.text)+'</span>').join('');
 }
 function renderSeoDeltaTables(d){
   const error=d&&d.error;
@@ -272,7 +262,7 @@ function renderSeoDeltaTables(d){
     pt.innerHTML=error?loadFailureRow(5,'SEO 看板',error):pages.length?pages.map(p=>{
       const path=_seoPath(p.page);
       const q='分析落地页 '+path+' 的SEO表现：本期点击'+(p.clicks||0)+'(上期'+(p.clicksPrev||0)+')、展现'+(p.impressions||0)+'。给出最该先改的3个动作。';
-      return '<tr><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num">'+(p.clicks||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(p.clicks,p.clicksPrev,false,'pct')+'</td><td class="num">'+(p.impressions||0).toLocaleString()+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'落地页诊断')+'><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
+      return '<tr><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num">'+Number(p.clicks||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(p.clicks,p.clicksPrev,false,'pct')+'</td><td class="num">'+Number(p.impressions||0).toLocaleString()+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'落地页诊断')+'><i class="ti ti-bulb"></i> 诊断</button></td></tr>';
     }).join(''):'<tr><td colspan="5" class="dim csp-s-45c174bbec">暂无数据 · 完成 GSC 同步</td></tr>';
   }
   const qt=document.getElementById('seoQueriesDelta');
@@ -280,7 +270,7 @@ function renderSeoDeltaTables(d){
     const qs=(d&&d.queries)||[];
     qt.innerHTML=error?loadFailureRow(6,'SEO 看板',error):qs.length?qs.map(q=>{
       const pos=q.position!=null?Number(q.position).toFixed(1):'—';
-      return '<tr><td>'+esc(q.query)+'</td><td class="num">'+(q.impressions||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(q.impressions,q.imprPrev,false,'pct')+'</td><td class="num">'+(q.clicks||0).toLocaleString()+'</td><td class="num">'+pos+'</td><td class="num">'+_deltaHtml(q.position,q.positionPrev,true,'abs1')+'</td></tr>';
+      return '<tr><td>'+esc(q.query)+'</td><td class="num">'+Number(q.impressions||0).toLocaleString()+'</td><td class="num">'+_deltaHtml(q.impressions,q.imprPrev,false,'pct')+'</td><td class="num">'+Number(q.clicks||0).toLocaleString()+'</td><td class="num">'+pos+'</td><td class="num">'+_deltaHtml(q.position,q.positionPrev,true,'abs1')+'</td></tr>';
     }).join(''):'<tr><td colspan="6" class="dim csp-s-45c174bbec">暂无数据 · 完成 GSC 同步</td></tr>';
   }
 }
@@ -292,7 +282,7 @@ function renderSeoScatterTargets(list){
     const path=_seoPath(p.page), b=Math.round((p.bounceRate||0)*100), dur=Math.round(p.avgDuration||0);
     const q='落地页 '+path+' 会话'+p.sessions+'、跳出率'+b+'%、均时长'+dur+'s，流量不小但跳出偏高。给出降低跳出、提升留存与转化的具体优化动作（首屏/内容匹配/CTA/加载速度）。';
     const ti='降跳出：'+path, de='落地页 '+path+' 高流量('+p.sessions+'会话)高跳出('+b+'%)，优化首屏/内容匹配/CTA 降低跳出、提升转化。', ev='GA4 会话'+p.sessions+' 跳出'+b+'% 时长'+dur+'s';
-    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(path)+'</span><span class="st-meta dim">'+p.sessions.toLocaleString()+' 会话 · 跳出 <b class="csp-s-371de31267">'+b+'%</b> · '+dur+'s</span></div><div class="st-acts"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'降跳出诊断')+'><i class="ti ti-bulb"></i> 诊断</button><button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
+    return '<div class="st-row"><div class="st-main"><span class="st-path">'+esc(path)+'</span><span class="st-meta dim">'+Number(p.sessions).toLocaleString()+' 会话 · 跳出 <b class="csp-s-371de31267">'+b+'%</b> · '+dur+'s</span></div><div class="st-acts"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'降跳出诊断')+'><i class="ti ti-bulb"></i> 诊断</button><button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></div></div>';
   }).join('')+'</div>';
 }
 function renderSeoScatter(d){
@@ -317,7 +307,7 @@ function renderSeoScatter(d){
       grid:{left:52,right:120,top:16,bottom:44},
       xAxis:{type:'log',name:'会话',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
       yAxis:{type:'value',name:'跳出率%',min:0,max:100,nameGap:30,axisLabel:{fontSize:10}},
-      tooltip:{formatter:o=>esc(o.value[2])+'<br/>会话 '+o.value[0].toLocaleString()+' · 跳出率 '+o.value[1]+'% · 均时长 '+Math.round(o.value[3])+'s'},
+      tooltip:{formatter:o=>esc(o.value[2])+'<br/>会话 '+Number(o.value[0]).toLocaleString()+' · 跳出率 '+esc(o.value[1])+'% · 均时长 '+Math.round(o.value[3])+'s'},
       series:[{type:'scatter',symbolSize:v=>Math.min(32,8+Math.sqrt(v[0]||0)),data,
         markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:true,fontSize:9,color:'#9aa1ae',formatter:o=>o.dataType==='max'?'':'中位'},data:[{xAxis:medS},{yAxis:medB}]},
         markArea:{silent:true,itemStyle:{color:'rgba(229,72,77,.07)'},label:{show:true,position:['85%','6%'],color:'#e5484d',fontSize:11,fontWeight:'bold',formatter:'重点优化对象'},data:[[{xAxis:medS,yAxis:medB},{xAxis:maxS,yAxis:100}]]}}]
@@ -338,7 +328,7 @@ function renderSeoScatter(d){
     grid:{left:52,right:24,top:16,bottom:44},
     xAxis:{type:'log',name:'展现',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
     yAxis:{type:'value',name:'排名(越低越好)',inverse:true,min:1,nameGap:30,axisLabel:{fontSize:10}},
-    tooltip:{formatter:o=>esc(o.data[3])+'<br/>展现 '+o.data[0].toLocaleString()+' · 排名 '+o.data[1].toFixed(1)+' · 点击 '+o.data[2]},
+    tooltip:{formatter:o=>esc(o.data[3])+'<br/>展现 '+Number(o.data[0]).toLocaleString()+' · 排名 '+o.data[1].toFixed(1)+' · 点击 '+esc(o.data[2])},
     series:[{type:'scatter',symbolSize:v=>Math.min(30,7+Math.sqrt(v[2]||0)*2.2),data,itemStyle:{color:'#2f72e8',opacity:.68},
       markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:false},data:[{xAxis:medImpr},{yAxis:medPos}]}}]
   });
@@ -473,8 +463,8 @@ function renderAttribution(d){
   // 精简为 3 项：真实有效询盘 / A级询盘 / 真实每有效询盘成本(对比 Ads 自报)
   body.innerHTML=
     '<div class="attr-report-grid">'+
-      '<div class="attr-box"><div class="attr-num">'+((sem.inquiriesEffective)||0)+'<span class="dim csp-s-a49cca52be">/'+((sem.inquiriesTotal)||0)+'</span></div><div class="attr-lbl">真实有效询盘 (A/B)</div></div>'+
-      '<div class="attr-box"><div class="attr-num">'+((sem.inquiriesA)||0)+'</div><div class="attr-lbl">A 级询盘数量</div></div>'+
+      '<div class="attr-box"><div class="attr-num">'+esc((sem.inquiriesEffective)||0)+'<span class="dim csp-s-a49cca52be">/'+esc((sem.inquiriesTotal)||0)+'</span></div><div class="attr-lbl">真实有效询盘 (A/B)</div></div>'+
+      '<div class="attr-box"><div class="attr-num">'+esc((sem.inquiriesA)||0)+'</div><div class="attr-lbl">A 级询盘数量</div></div>'+
       '<div class="attr-box"><div class="attr-num">'+real+'</div><div class="attr-lbl">真实每有效询盘成本 · Ads 自报 '+adsCpa+'</div></div>'+
     '</div>'+
     (gap&&gap>=1.3?'<div class="attr-warn"><i class="ti ti-alert-triangle"></i> 真实每询盘成本约为 Ads 自报的 '+gap.toFixed(1)+' 倍——Ads 转化统计可能虚高，别只看 Ads 后台数字。</div>':'')+
@@ -493,7 +483,7 @@ function renderSemHighlights(d){
   const hs=(d&&d.highlights)||[];
   if(!hs.length){ box.classList.add('is-hidden'); box.innerHTML=''; return; }
   box.classList.remove('is-hidden');
-  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':'bad')+'">'+esc(h.text)+'</span>').join('');
+  box.innerHTML='<span class="seo-hl-t"><i class="ti ti-flame"></i> 本周要点</span>'+hs.map(h=>'<span class="seo-hl-chip '+(h.tone==='good'?'good':(h.tone==='muted'?'muted':'bad'))+'">'+esc(h.text)+'</span>').join('');
 }
 function renderSemDeltaTables(d){
   const error=d&&d.error;
@@ -505,7 +495,7 @@ function renderSemDeltaTables(d){
     ct.innerHTML=error?loadFailureRow(10,'SEM 看板',error):cs.length?cs.map(c=>{
       const ctr=rate(c.clicks,c.impressions), cvr=rate(Number(c.conversions||0),c.clicks);
       const cpcCost=(c.clicks&&c.clicks>0)?_money(c.costMicros/c.clicks):'—';
-      return '<tr><td>'+esc(c.name||'(未命名)')+'</td><td class="num">'+(c.impressions||0).toLocaleString()+'</td><td class="num">'+(c.clicks||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+_money(c.costMicros)+'</td><td class="num">'+cpcCost+'</td><td class="num">'+_conv(c.conversions)+'</td><td class="num">'+cvr+'</td><td class="num">'+cpc(c.costMicros,c.conversions)+'</td><td class="ctr">'+_adsBadge(c.costMicros,c.conversions)+'</td></tr>';
+      return '<tr><td>'+esc(c.name||'(未命名)')+'</td><td class="num">'+Number(c.impressions||0).toLocaleString()+'</td><td class="num">'+Number(c.clicks||0).toLocaleString()+'</td><td class="num">'+ctr+'</td><td class="num">'+_money(c.costMicros)+'</td><td class="num">'+cpcCost+'</td><td class="num">'+_conv(c.conversions)+'</td><td class="num">'+cvr+'</td><td class="num">'+cpc(c.costMicros,c.conversions)+'</td><td class="ctr">'+_adsBadge(c.costMicros,c.conversions)+'</td></tr>';
     }).join(''):'<tr><td colspan="10" class="dim csp-s-45c174bbec">暂无数据 · 完成 Ads 同步</td></tr>';
   }
   // 关键词 · 花费/转化 环比
@@ -547,7 +537,7 @@ function renderSemScatter(d){
       grid:{left:56,right:120,top:16,bottom:44},
       xAxis:{type:'log',name:'花费',nameLocation:'middle',nameGap:26,axisLabel:{fontSize:10}},
       yAxis:{type:'log',name:'每转化成本',nameGap:8,axisLabel:{fontSize:10}},
-      tooltip:{formatter:o=>esc(o.value[2])+'<br/>花费 '+o.value[0]+' · 每转化成本 '+o.value[1]+' · 转化 '+o.value[3]},
+      tooltip:{formatter:o=>esc(o.value[2])+'<br/>花费 '+esc(o.value[0])+' · 每转化成本 '+esc(o.value[1])+' · 转化 '+esc(o.value[3])},
       series:[{type:'scatter',symbolSize:v=>Math.min(30,8+Math.sqrt(v[0]||0)/3),data,
         markLine:{silent:true,symbol:'none',lineStyle:{type:'dashed',color:'#c2c7d0'},label:{show:true,fontSize:9,color:'#9aa1ae',formatter:'中位每转化'},data:[{yAxis:medCpa}]},
         markArea:{silent:true,itemStyle:{color:'rgba(229,72,77,.07)'},label:{show:true,position:['50%','8%'],color:'#e5484d',fontSize:11,fontWeight:'bold',formatter:'每转化偏贵'},data:[[{yAxis:medCpa},{yAxis:'max'}]]}}]
@@ -648,8 +638,8 @@ async function adoptFinding(btn,dept,title,detail,evidence){
 /* 阶段5：数据新鲜度条——三源实际有数据天数 / 区间总天数 + 最后同步时间 + 连接态 */
 export async function loadDataFreshness(){
   const el=document.getElementById('dataFreshness'); if(!el)return;
-  let d=null; try{ d=await API.get(withRange('/api/data-freshness','data')); }catch(e){ el.innerHTML='<span class="dim">'+esc(loadFailureText('数据新鲜度',e))+'</span>'; return; }
-  const fmt=v=>{ if(!v)return '从未'; const s=String(v).replace(' ','T'); const t=new Date(/Z|[+-]\d{2}/.test(s)?s:s+'Z'); if(isNaN(t))return String(v).slice(5,16);
+  let d=null; try{ d=await API.get(withSite(withRange('/api/data-freshness','data'))); }catch(e){ el.innerHTML='<span class="dim">'+esc(loadFailureText('数据新鲜度',e))+'</span>'; return; }
+  const fmt=v=>{ if(!v)return '从未'; const s=String(v).replace(' ','T'); const t=new Date(/Z|[+-]\d{2}/.test(s)?s:s+'Z'); if(isNaN(t))return esc(String(v).slice(5,16));
     const p=n=>String(n).padStart(2,'0'); const dif=Math.floor((Date.now()-t.getTime())/60000);
     if(dif<60)return dif+' 分钟前'; if(dif<1440)return Math.floor(dif/60)+' 小时前';
     return (t.getMonth()+1)+'/'+t.getDate()+' '+p(t.getHours())+':'+p(t.getMinutes()); };
@@ -657,7 +647,7 @@ export async function loadDataFreshness(){
     if(!s.connected)return '<span class="fresh-chip gray"><b>'+name+'</b> 未接入</span>';
     const cov=s.days>0?Math.round(s.daysWithData/s.days*100):0;
     const tone=s.daysWithData===0?'bad':(cov<70?'warn':'good');
-    return '<span class="fresh-chip '+tone+'"><b>'+name+'</b> 有数据 '+s.daysWithData+'/'+s.days+' 天<span class="dim"> · '+fmt(s.lastSync)+(s.status==='failed'?' <b class="csp-s-b0e08465c2">失败</b>':'')+'</span></span>';
+    return '<span class="fresh-chip '+tone+'"><b>'+name+'</b> 有数据 '+esc(s.daysWithData)+'/'+esc(s.days)+' 天<span class="dim"> · '+fmt(s.lastSync)+(s.status==='failed'?' <b class="csp-s-b0e08465c2">失败</b>':'')+'</span></span>';
   };
   el.innerHTML='<i class="ti ti-database"></i> '+chip('GSC',d.gsc)+chip('GA4',d.ga4)+chip('Ads',d.ads)
     +'<span class="dim fresh-help">区间实际有数据天数 / 所选总天数 · 时间范围影响：询盘、SEO(GSC)、SEM(Ads)、GA4</span>';
@@ -674,11 +664,10 @@ function _ovSpark(id, rows, valFn, color, emptyDetail){
 }
 let dashboardBoardsRequestSequence=0;
 export async function loadDashboardBoards(){
-  if(window.DEMO_MODE)return;
   const requestId=++dashboardBoardsRequestSequence, revision=getRangeRevision('dashboard'), r=getCurrentRange('dashboard');
   const _t=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const [gscResult,adsResult]=await Promise.allSettled([
-    API.get(withRange('/api/google/gsc/summary',r)),
+    API.get(withSite(withRange('/api/google/gsc/summary',r))),
     API.get(withRange('/api/google/ads/board',r))
   ]);
   if(requestId!==dashboardBoardsRequestSequence||revision!==getRangeRevision('dashboard'))return false;
@@ -702,7 +691,7 @@ export async function loadDashboardBoards(){
 }
 export async function loadDiagnostics(){
   let d=null;
-  try{ d=await API.get(withRange('/api/diagnostics','data')); }catch(e){ d={error:e}; }
+  try{ d=await API.get(withSite(withRange('/api/diagnostics','data'))); }catch(e){ d={error:e}; }
   renderDiagnostics(d);
 }
 function renderDiagnostics(d){
@@ -716,7 +705,7 @@ function renderDiagnostics(d){
       const path=_seoPath(o.page), pos=o.position!=null?Number(o.position).toFixed(1):'—';
       const q='关键词「'+o.query+'」当前排名'+pos+'、页面'+path+'、区间曝光'+(o.impressions||0)+'，给出冲进Top10的具体优化清单（标题/内容/内链/外链）。';
       const ti='机会词冲首页：'+o.query, de='关键词「'+o.query+'」当前排名'+pos+'（页面'+path+'），区间曝光'+(o.impressions||0)+'。优化标题/内容/内链冲进 Top10。', ev='GSC机会词 排名'+pos+' 展现'+(o.impressions||0)+' 点击'+(o.clicks||0);
-      return '<tr><td>'+esc(o.query)+'</td><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num"><span class="badge b-amber">'+pos+'</span></td><td class="num">'+(o.impressions||0).toLocaleString()+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'机会词诊断')+'><i class="ti ti-bulb"></i> 怎么冲首页</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
+      return '<tr><td>'+esc(o.query)+'</td><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num"><span class="badge b-amber">'+pos+'</span></td><td class="num">'+Number(o.impressions||0).toLocaleString()+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'机会词诊断')+'><i class="ti ti-bulb"></i> 怎么冲首页</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="dim csp-s-45c174bbec">暂无机会词 · 完成 GSC 同步后按规则自动识别</td></tr>';
   }
   // 流量衰退
@@ -727,7 +716,7 @@ function renderDiagnostics(d){
       const posChg=(p.positionPrev!=null&&p.positionCur!=null)?(Number(p.positionPrev).toFixed(1)+'→'+Number(p.positionCur).toFixed(1)):'—';
       const q=path+' 点击近一窗跌'+p.dropPct+'%（'+p.clicksPrev+'→'+p.clicksCur+'），排名'+posChg+'。给出排查与止损步骤。';
       const ti='衰退止损：'+path, de='页面'+path+' 点击环比跌'+p.dropPct+'%（'+p.clicksPrev+'→'+p.clicksCur+'），排名'+posChg+'。排查原因并止损。', ev='GSC环比 点击↓'+p.dropPct+'% 排名'+posChg;
-      return '<tr><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num csp-s-b0e08465c2">▼'+p.dropPct+'%</td><td class="num">'+esc(posChg)+'</td><td class="ctr"><span class="badge b-gray">需排查</span></td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'衰退止损')+'><i class="ti ti-bulb"></i> 止损方案</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
+      return '<tr><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num csp-s-b0e08465c2">▼'+esc(p.dropPct)+'%</td><td class="num">'+esc(posChg)+'</td><td class="ctr"><span class="badge b-gray">需排查</span></td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'衰退止损')+'><i class="ti ti-bulb"></i> 止损方案</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="dim csp-s-45c174bbec">暂无明显衰退页 · 需≥2 个等长窗口数据才能比较</td></tr>';
   }
   // 关键词蚕食
@@ -741,6 +730,21 @@ function renderDiagnostics(d){
       const ti='蚕食合并：'+g.query, de='关键词「'+g.query+'」被'+g.pages.length+'个URL竞争：'+detail+'。合并/差异化意图、调整内链。', ev='GSC '+g.pages.length+'页分散排名 '+ranks;
       return '<tr><td>'+esc(g.query)+'</td><td class="dim csp-s-33ee298127">'+urls+'</td><td class="num"><span class="badge b-red">'+esc(ranks)+'</span></td><td class="ctr"><span class="badge b-amber">'+g.pages.length+'页抢1意图</span></td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'蚕食合并建议')+'><i class="ti ti-git-merge"></i> AI 合并建议</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
     }).join('') : '<tr><td colspan="5" class="dim csp-s-45c174bbec">暂无蚕食组 · 完成 GSC 同步后按规则自动识别</td></tr>';
+  }
+  // 点击率偏低：首页词里，点击率不到本站同位次中位数一半的
+  const ctr=seo.ctr||{}, low=ctr.items||[];
+  _badgeCount('diag-ctr-n',low.length);
+  const t4=document.getElementById('diagCtrRows');
+  if(t4){
+    const pct=v=>(Number(v)*100).toFixed(1)+'%';
+    // 一条都没报有两种意思，要分开说：比过了没发现 / 可比的词太少根本比不了
+    const none=(ctr.baselines||[]).length?'暂无点击率明显偏低的词（与本站同位次的词相比）':'首页上曝光够多的词太少，建立不了对比基准 · 这不代表点击率没问题';
+    t4.innerHTML = error ? loadFailureRow(7,'SEO 点击率诊断',error) : low.length ? low.map(c=>{
+      const path=_seoPath(c.page), pos=Number(c.position).toFixed(1), mine=pct(c.ctr), peers=pct(c.expectedCtr);
+      const q='关键词「'+c.query+'」排名'+pos+'、区间曝光'+c.impressions+'、点击率'+mine+'，而本站同位次的词点击率中位数是'+peers+'。页面是'+path+'。分析它的标题和描述为什么不吸引人点，给出 3 组改写方案（标题 + 描述）。';
+      const ti='点击率偏低：'+c.query, de='关键词「'+c.query+'」排名'+pos+'（页面'+path+'），曝光'+c.impressions+'，点击率只有'+mine+'，本站同位次中位数'+peers+'。改写标题和描述。', ev='GSC 排名'+pos+' 曝光'+c.impressions+' 点击率'+mine+'（本站同位次中位 '+peers+'）';
+      return '<tr><td>'+esc(c.query)+'</td><td class="dim csp-s-33ee298127">'+esc(path)+'</td><td class="num">'+esc(pos)+'</td><td class="num">'+Number(c.impressions||0).toLocaleString()+'</td><td class="num"><span class="badge b-red">'+esc(mine)+'</span> <span class="dim">同位次 '+esc(peers)+'</span></td><td class="num">'+esc(c.missedClicks)+'</td><td class="ctr"><button type="button" class="btn-mini"'+_aiActionAttrs(q,'点击率诊断')+'><i class="ti ti-bulb"></i> 怎么改标题</button> <button type="button" class="btn-mini"'+_adoptActionAttrs('SEO',ti,de,ev)+'><i class="ti ti-clipboard-check"></i> 采纳</button></td></tr>';
+    }).join('') : '<tr><td colspan="7" class="dim csp-s-45c174bbec">'+none+'</td></tr>';
   }
 }
 
@@ -762,7 +766,7 @@ let dashboardInqRequestSequence=0;
 export async function loadDashboardInq(){
   const requestId=++dashboardInqRequestSequence, revision=getRangeRevision('dashboard');
   try{
-    const {items}=await API.get(withRange('/api/inquiries','dashboard'));
+    const {items}=await fetchInquiries('dashboard');
     if(requestId!==dashboardInqRequestSequence||revision!==getRangeRevision('dashboard'))return false;
     window._inqDashboardCache=items||[]; _inqDashboardError=null;
   }catch(e){
@@ -773,7 +777,7 @@ export async function loadDashboardInq(){
   return true;
 }
 function renderInqTrend(){
-  const cv=document.getElementById('inqTrend'); if(!cv||window.DEMO_MODE)return;
+  const cv=document.getElementById('inqTrend'); if(!cv)return;
   const rows=window._inqDashboardCache||[], gran=window._gran||'day', r=getCurrentRange('dashboard');
   const sub=document.getElementById('inqTrendSub'); if(sub){
     const granLabel={day:'按天',week:'按周',month:'按月'}[gran]||gran;
@@ -798,23 +802,11 @@ function renderInqTrend(){
 }
 export function charts(){
   Chart.defaults.color='#9aa1ae';Chart.defaults.borderColor='rgba(128,128,128,.12)';Chart.defaults.font.size=10;
-  const wk=['W1','W2','W3','W4','W5','W6','W7','W8'];
-  const sp={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}};
-  if(window.DEMO_MODE){
-    // 仅 DEMO_MODE：用集中 fixture 画示例图(便于演示/截图，绝不在真实模式触发)
-    new Chart(inqTrend,{type:'line',data:{labels:wk,datasets:[{data:DEMO.inqTrend.a,borderColor:'#15a85a',backgroundColor:'rgba(21,168,90,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2},{data:DEMO.inqTrend.total,borderColor:'#9aa1ae',backgroundColor:'rgba(154,161,174,.06)',fill:true,tension:.4,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-    new Chart(seoMini,{type:'line',data:{labels:wk,datasets:[{data:DEMO.seoMini,borderColor:'#2f72e8',backgroundColor:'rgba(47,114,232,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:sp});
-    new Chart(semMini,{type:'line',data:{labels:wk,datasets:[{data:DEMO.semMini,borderColor:'#7b54e0',backgroundColor:'rgba(123,84,224,.1)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:sp});
-    new Chart(inqDonut,{type:'doughnut',data:{labels:['A','B','C'],datasets:[{data:[DEMO.inqDonut.a,DEMO.inqDonut.b,DEMO.inqDonut.c],backgroundColor:['#15a85a','#2f72e8','#dfe2e8'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
-    new Chart(chanDonut,{type:'doughnut',data:{labels:['SEO','SEM','直接','其他'],datasets:[{data:[DEMO.chanDonut.seo,DEMO.chanDonut.sem,DEMO.chanDonut.direct,DEMO.chanDonut.other],backgroundColor:['#2f72e8','#7b54e0','#0b9d8f','#ef9514'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'66%'}});
-    fillDonutLegendDemo();
-  }else{
-    // 真实模式：询盘趋势由 loadDashboardInq 重绘，KPI 两个 donut 由 loadInquiries 重绘。
-    ['seoMini','semMini'].forEach(chartEmpty);
-    // 首屏先占位(诚实空状态)，待 hydrate→loadInquiries 末尾真实重绘，避免 _inqCache 未就绪闪烁
-    chartEmpty('inqTrend'); chartEmpty('inqDonut'); chartEmpty('chanDonut'); blankDonutLegend();
-  }
-  // SEO 看板：有真实周数据则画(DEMO_MODE 下用 fixture)，否则空状态
+  // 询盘趋势由 loadDashboardInq 重绘，KPI 两个 donut 由 loadInquiries 重绘。
+  ['seoMini','semMini'].forEach(chartEmpty);
+  // 首屏先占位(诚实空状态)，待 hydrate→loadInquiries 末尾真实重绘，避免 _inqCache 未就绪闪烁
+  chartEmpty('inqTrend'); chartEmpty('inqDonut'); chartEmpty('chanDonut'); blankDonutLegend();
+  // SEO 看板：有真实周数据则画，否则空状态
   seoFull=seoSeriesFromWeeks();
   const so={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:7}}}};
   if(document.getElementById('seoBoard')){

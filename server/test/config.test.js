@@ -1,3 +1,4 @@
+// 配置：生产环境拒绝缺失 / 默认 / 过短的 JWT 密钥，开发环境保留本地兜底。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveJwtSecret } from '../src/config.js';

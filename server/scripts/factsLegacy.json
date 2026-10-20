@@ -1,0 +1,19 @@
+{
+  "说明": "这些文件开头没有一句说明注释，在 docs/FACTS.md 里是空白。它们是这条规矩立下之前就有的老文件，暂时豁免。名单只许变短：给某个文件补上第一行注释后，把它从这里删掉（测试会提醒）。新文件不许加进来。",
+  "noDescription": [
+    "server/src/routes/hermes.js",
+    "server/src/routes/hermesActions.js",
+    "server/src/services/hermesActions.js",
+    "server/src/services/hermesEvidence.js",
+    "server/src/services/hermesMemoryPolicy.js",
+    "server/src/services/hermesPrompt.js",
+    "server/src/services/hermesStatus.js",
+    "server/src/db/repositories/hermesActions.js",
+    "server/src/db/repositories/hermesConversations.js",
+    "server/src/db/repositories/hermesMemories.js",
+    "server/test/hermesEvidence.test.js",
+    "server/test/hermesMemoryPolicy.test.js",
+    "server/test/hermesPrompt.test.js",
+    "server/test/hermesStatus.test.js"
+  ]
+}

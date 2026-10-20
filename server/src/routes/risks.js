@@ -1,3 +1,4 @@
+// 风险清单 API（只读）：当前配置检查与最近一次生产验收的合并结果。
 import { requireAuth } from '../auth/middleware.js';
 import { buildRiskRegister } from '../services/riskRegister.js';
 

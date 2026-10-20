@@ -9,14 +9,22 @@
    显式 import 的模块调用 —— 那是下一刀要收的方向。 */
 import { adoptAi, aiBox, loadAiAnalyses, runAiAnalysis } from './ai.js';
 import { loadArchive } from './archive.js';
+import { exportAudit, loadAudit, runAuditAi } from './audit.js';
 import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, resizeScatters, toggleHier } from './charts.js';
 import { addContent, addDepositRow, addFixRow, addPlanRow, addTestRow, loadClosedLoop, loadContent, openTaskModal, prepend, refreshTaskCols, submitSubtask, submitTask } from './closed-loop.js';
 import { loadGa4 } from './ga4-view.js';
+import { loadGeo } from './geo.js';
+import { pickGeoShot, submitGeoCheck } from './geo-checks.js';
 import { loadDataSourcesStatus, loadIntegrations } from './google-projects.js';
+import { loadSites } from './sites.js';
+import { loadSiteScope } from './site-scope.js';
+import { loadSiteReturns } from './site-returns.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
 import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
 import { pickSalesImages, submitSalesNote } from './inquiry-sales.js';
+import { openLeads, refreshLeadBadge, submitInquirySource } from './inquiry-source.js';
+import { submitAttrEdit } from './inquiry-attribution.js';
 import { addKeyword, filterKwByCat, loadKeywords, renderSparklines } from './keywords.js';
 import { loadOverview, renderKPI } from './kpi-view.js';
 import { loadMetrics, loadWeeks, submitSemWeek, submitSeoWeek } from './kpi.js';
@@ -25,8 +33,10 @@ import { adRowHtml, addAd, addNeg, negRowHtml } from './neg-ads.js';
 import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
 import { loadRisks } from './risks.js';
 import { bindSettings, openPwd, submitPwd } from './settings.js';
+import { loadSpend, openBacklink, openExpense, submitBacklink, submitExpense } from './spend.js';
 import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, submitSopLog, updateSopCounts } from './sop.js';
 import { getRangeRevision, submitCustomRange, syncRangeUi, withRange } from './timerange.js';
+import { addTaskLink, openTaskDone, pickTaskEvidence, submitTaskDone } from './task-audit.js';
 import { closeModal, esc, tableLoadState, toast, toastUndo } from './ui-kit.js';
 import { renderMonthReview, renderReview } from './weekly-review.js';
 
@@ -111,6 +121,20 @@ const STATIC_UI_ACTIONS={
   'submit-password':()=>submitPwd(),
   'submit-task':()=>submitTask(),
   'submit-subtask':()=>submitSubtask(),
+  'task-link-add':()=>addTaskLink(),
+  'pick-task-evidence':()=>pickTaskEvidence(),
+  'submit-task-done':el=>submitTaskDone(el),
+  'open-leads':()=>openLeads(),
+  'audit-ai':el=>runAuditAi(el),
+  'audit-export':el=>exportAudit(el.dataset.format),
+  'submit-geo-check':el=>submitGeoCheck(el),
+  'pick-geo-shot':()=>pickGeoShot(),
+  'submit-inq-source':el=>submitInquirySource(el),
+  'submit-attr-edit':el=>submitAttrEdit(el),
+  'open-backlink':()=>openBacklink(),
+  'open-expense':()=>openExpense(),
+  'submit-backlink':el=>submitBacklink(el),
+  'submit-expense':el=>submitExpense(el),
   'submit-sop':()=>submitSop(),
   'submit-soplog':()=>submitSopLog(),
   'adopt-ai':()=>adoptAi()
@@ -161,7 +185,10 @@ function mountGa4IntoData(){
 }
 export function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n){n.classList.add('active');if(window.matchMedia('(max-width:760px)').matches)n.scrollIntoView({block:'nearest',inline:'center'});} document.querySelector('.main').scrollTo({top:0}); window.scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
   if(tab==='risks'){try{loadRisks();}catch(e){}}
-  if(tab==='inquiry')setTimeout(()=>{try{renderGlobe();}catch(e){}},80);
+  if(tab==='dashboard'){try{loadGeo();}catch(e){}} // GEO 卡含人工抽查结果，别的页刚录完回来要是新的
+  if(tab==='inquiry'){ setTimeout(()=>{try{renderGlobe();}catch(e){}},80); refreshLeadBadge(); } // 线索随时会进来，每次进页都重数一遍待处理数
+  if(tab==='audit'){try{loadAudit();}catch(e){}} // 周度审核：每次进入重拉（任务、询盘随时在变）
+  if(tab==='spend'){try{loadSpend();}catch(e){}} // 投入台账：每次进入重拉（任务完成、周报录入都会改变汇总）
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
   if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结
   // 2026-08-26：时间范围分页面独立 → 右上角日期与顶栏 KPI 三个 pill 跟随「当前所在页面」的区间。
@@ -261,18 +288,38 @@ async function hydrate(){
   await loadRankSnapshots();
 }
 
-/* ⓪ 闭环步骤条渲染 */
-const LOOP=[['① 计划','plan'],['② 测试','test'],['③ 数据','data'],['④ 整改','fix'],['⑤ 复盘','review']];
-function renderLoopbars(){ document.querySelectorAll('.loopbar').forEach(bar=>{ const cur=+bar.dataset.step;
-  bar.innerHTML=LOOP.map((x,i)=>{const n=i+1;const cls=n===cur?'active':(n<cur?'done':'');return `<span class="loopstep ${cls}" data-loop-tab="${esc(x[1])}">${x[0]}</span>`+(n<LOOP.length?'<span class="loopsep"></span>':'');}).join('');
-  bar.onclick=e=>{ const step=e.target.closest('[data-loop-tab]'); if(step&&bar.contains(step))go(step.dataset.loopTab); };
-}); }
-renderLoopbars();
-
 /* ---------- task check ---------- */
 /* BUG-23 / SOP-B：动态任务卡(loop_items id) PATCH state；SOP 卡(sopId+freq) POST/DELETE sop completions */
+// 任务卡的数据变了（完成 / 撤销）→ 通知 closed-loop 重画那张卡。用事件而不是 import，原因见 closed-loop.js 的监听处。
+const taskChanged=card=>document.dispatchEvent(new CustomEvent('taskchanged',{detail:{card}}));
+/* 任务完成已入库之后的界面收尾：标勾、重画卡片；公司大任务接着归档（连同子任务）。 */
+function taskDoneApplied(el,c){
+  el.classList.add('on'); el.innerHTML='<i class="ti ti-check"></i>';
+  c.classList.add('done','nofold'); // nofold：刚勾的卡本次会话不被「已完成」折叠条收走
+  taskChanged(c); refreshTaskCols();
+  // 公司大任务完成 → 归档自己 + 级联名下子任务，一起从日计划消失（留痕在归档页，结果与证据跟着走）
+  if(c.classList.contains('cotask')){
+    API.post('/api/loop-items/'+c.dataset.id+'/archive',{archive_kind:'company'})
+      .then(()=>{ toast('大任务完成 · 已归档（含子任务）'); c.remove(); refreshTaskCols(); loadUrgent(); updateSopCounts(); })
+      // 完成本身已经入库，别回滚成未完成；只是没归档，卡留在原地，下次加载会再试
+      .catch(e=>toast('已完成并入库，但归档失败：'+((e&&e.message)||'请求失败')));
+    return;
+  }
+  const fx=c._item&&c._item.fix_id;
+  // 出身于整改项的任务：后端会把那条整改回写成「已改」，这里得说出来，否则用户不知道另一张表也动了
+  toastUndo('任务完成 · 已入库'+(fx?' · 整改已标「已改」':''),()=>chk(el));
+  loadUrgent(); // Step C：完成 urgent 任务 → banner 自动消失
+}
 export function chk(el){
-  el.classList.toggle('on'); const c=el.closest('.tcard');
+  const c=el.closest('.tcard');
+  /* 任务勾完成不再是「点一下就算」：先过完成弹框写结果（重要任务还要证据），
+     入库成功后才把卡标成完成。取消弹框 = 什么都没发生，所以这里不需要回滚。 */
+  if(c&&c.dataset.id&&!el.classList.contains('on')){
+    if(!c._item){ toast('任务数据未就绪，请刷新后再试'); return; }
+    openTaskDone(c._item,{onDone:()=>taskDoneApplied(el,c)});
+    return;
+  }
+  el.classList.toggle('on');
   const on=el.classList.contains('on');
   if(on){el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');}
   else  {el.innerHTML='';                            c.classList.remove('done');}
@@ -284,17 +331,10 @@ export function chk(el){
   const recount=()=>{ if(typeof refreshTaskCols==='function')refreshTaskCols(); };
   const rollback=()=>{ el.classList.toggle('on'); if(on){el.innerHTML='';c.classList.remove('done');} else {el.innerHTML='<i class="ti ti-check"></i>';c.classList.add('done');} recount(); };
   if(id){
-    // 公司大任务完成 → 归档自己 + 级联名下子任务，一起从日计划消失（留痕在归档页；子任务勾完不消失，只有大任务完成才连带清掉）
-    if(on && c.classList.contains('cotask')){
-      API.post('/api/loop-items/'+id+'/archive',{archive_kind:'company'})
-        .then(()=>{ toast('大任务完成 · 已归档（含子任务）'); c.remove(); recount(); loadUrgent(); if(typeof updateSopCounts==='function')updateSopCounts(); })
-        .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
-      return;
-    }
-    // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看
-    API.patch('/api/loop-items/'+id,{state:on?'done':'todo',status:on?'done':'待办'})
-      // 出身于整改项的任务：后端会把那条整改回写成「已改」，这里得说出来，否则用户不知道另一张表也动了
-      .then(()=>{ const fx=c._item&&c._item.fix_id; if(on)toastUndo('任务完成 · 已入库'+(fx?' · 整改已标「已改」':''),()=>chk(el)); else toast('撤销完成 · 已入库'+(fx?' · 整改回到「进行中」':'')); loadUrgent(); }) // Step C：完成 urgent 任务 → banner 自动消失
+    // 走到这里只可能是「撤销完成」（勾完成在函数开头进了完成弹框）。
+    // 归档③：用 state 字段（与归档状态机一致）；同步写 status 以兼容旧前端/外部查看。结果与证据保留，不随撤销清空。
+    API.patch('/api/loop-items/'+id,{state:'todo',status:'待办'})
+      .then(({item})=>{ if(c._item&&item)Object.assign(c._item,item); taskChanged(c); const fx=c._item&&c._item.fix_id; toast('撤销完成 · 已入库'+(fx?' · 整改回到「进行中」':'')); loadUrgent(); })
       .catch(e=>{ rollback(); toast(e&&e.status===403?'无权操作，未入库':'保存失败，已恢复'); });
   } else if(sopId){
     // SOP-B：完成→POST /api/sop/completions；撤销→DELETE。period_key 按当前频率算
@@ -363,9 +403,11 @@ window.addEventListener('load',async()=>{
   charts();
   bindSettings();              // 设置页目标值回写
   renderSparklines();
+  await loadSiteScope();       // 多站点：先定下「当前看哪个站点」，后面按站点算的取数才带得上它
+  loadDashboardInq();          // 总览询盘趋势按当前时间范围重算。排在 hydrate 前面发出：与询盘列表同范围时共用一次请求
   await hydrate();             // 询盘/否词/广告/排名快照
-  loadDashboardInq();          // 总览询盘趋势按当前时间范围重算
   loadDashboardBoards();       // 总览 SEO/SEM 两卡按当前时间范围重算
+  loadGeo();                   // 总览 GEO 卡：AI 引擎带来的访问与询盘（之后随时间范围自己重拉）
   await loadKeywords();        // 关键词库 4 类
   await loadClosedLoop();      // 整改清单 + 闭环条目 + 沉淀表
   await loadAiAnalyses();      // AI 分析记录：恢复“已分析”状态和历史文档
@@ -379,10 +421,12 @@ window.addEventListener('load',async()=>{
   loadSemBoardAds();           // SEM 看板：真实 Google Ads 同步数据（顶部卡片）
   loadSemBoardFull();          // SEM 富看板：本周要点 + Δ表 + 花费×转化散点 + 系列甜甜圈/日趋势
   loadAttribution();           // 询盘归因：Ads 花费 ÷ 真实 SEM 有效询盘
+  loadSiteReturns();           // 多站点：每个站的广告花费与询盘（之后随数据看板的时间范围自己重拉）
   loadDiagnostics();           // 诊断引擎：机会词/衰退/蚕食 真实识别 + 角标计数
   loadDataFreshness();         // 阶段5：数据新鲜度条（三源实际有数据天数 + 最后同步）
   await loadDataSourcesStatus(); // 设置页 数据源状态卡(只读真实状态)
   await loadIntegrations();    // 设置页 API 接入状态
+  loadSites();                 // 设置页 站点管理（多站点）
   await loadMarket();          // 市场分析问卷表
   if (typeof loadHermesMemories === 'function') await loadHermesMemories(false); // AI 记忆
   await loadBrain();           // AI 记忆体状态 + 摘要

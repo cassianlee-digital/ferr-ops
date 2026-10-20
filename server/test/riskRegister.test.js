@@ -1,3 +1,4 @@
+// 风险清单：生产实测结果脱敏后原子保存；合并时以当前配置的失败为准。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';

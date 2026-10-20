@@ -6,6 +6,7 @@ import * as semRepo from '../db/repositories/semWeeks.js';
 import * as kwRepo from '../db/repositories/keywords.js';
 import * as googleRepo from '../db/repositories/googleSync.js';
 import { resolveProject } from '../sync/googleClient.js';
+import { CTR_RULE, findCtrAnomalies, ctrContextLine } from './ctrAnomaly.js';
 
 // 最近 N 天窗口（GSC 有 ~2 天延迟，end 取昨天）+ 上一等长窗口（供环比/衰退）。
 function localIsoDate(offsetDays = 0) {
@@ -156,6 +157,10 @@ function appendSyncedContext(lines) {
     if (can.length) lines.push('【关键词蚕食】' + can.map((c) => `${c.query}(${c.pages.length}页)`).join('；'));
     const dec = googleRepo.gscDecayPages({ ...w.cur, gsc_site_url: project.gsc_site_url }, w.prev, { limit: 8 });
     if (dec.length) lines.push('【流量衰退页】' + dec.map((d) => `${d.page}(↓${d.dropPct}%)`).join('；'));
+    // 点击率偏低：与诊断面板用同一条规则、同一份数据（首页一个够格的词都没有 = GSC 没数据，那就什么都不说）
+    const firstPage = googleRepo.gscFirstPageRows({ ...w.cur, gsc_site_url: project.gsc_site_url }, { minImpr: CTR_RULE.minImpressions, maxPosition: CTR_RULE.maxPosition });
+    const ctrLine = firstPage.length ? ctrContextLine(findCtrAnomalies(firstPage)) : null;
+    if (ctrLine) lines.push(ctrLine);
     const adsRange = { ...w.cur, ads_customer_id: project.ads_customer_id };
     const searchTermCoverage = googleRepo.adsSearchTermSummary(adsRange);
     const waste = googleRepo.adsWasteSearchTerms(adsRange, { limit: 12 });

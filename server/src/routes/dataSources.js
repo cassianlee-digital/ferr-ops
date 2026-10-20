@@ -1,3 +1,4 @@
+// 数据源状态 API：各数据来源（人工录入 / Google 同步 / AI）现在接没接上、最近一次数据是什么时候。
 import { requireAuth } from '../auth/middleware.js';
 import * as inqRepo from '../db/repositories/inquiries.js';
 import * as seoRepo from '../db/repositories/seoWeeks.js';

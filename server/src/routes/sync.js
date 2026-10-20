@@ -1,3 +1,4 @@
+// 手动触发 Google 同步的 API（GSC / GA4 / Ads）与同步运行记录。
 import { requireAuth, editor } from '../auth/middleware.js';
 import { syncGsc } from '../sync/gsc.js';
 import { syncGa4 } from '../sync/ga4.js';

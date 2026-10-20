@@ -1,8 +1,17 @@
 // updateById：7 个仓库共用的「按白名单部分更新」helper。白名单是防越权写 / 列名注入的闸门，必须守住。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { db } from '../src/db/connection.js';
-import { updateById } from '../src/db/updateHelper.js';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+// 以前这里直接静态 import connection.js —— 打开的是默认的 data/ferr.sqlite，也就是真实的开发库
+// （只建临时表，没写坏过数据，但测试不该碰它）。现在和别的测试一样用临时库。
+const tmpDir = mkdtempSync(join(tmpdir(), 'ferr-update-helper-'));
+process.env.DB_FILE = join(tmpDir, 'test.sqlite');
+const { db } = await import('../src/db/connection.js');
+const { updateById } = await import('../src/db/updateHelper.js');
+test.after(() => { db.close(); rmSync(tmpDir, { recursive: true, force: true }); });
 
 test('updateById: 只更新白名单字段，未授权字段被忽略(不越权写、不注入列名)', () => {
   db.exec('CREATE TEMP TABLE t_upd (id INTEGER PRIMARY KEY, a TEXT, b TEXT, secret TEXT)');

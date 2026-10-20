@@ -2,6 +2,7 @@
    区分「分析区间」(顶部时间筛选，实时) 与「考核周期」(SEO 季度 / SEM 月度，结算后冻结)。
    历史读快照、绝不实时重算——改目标不动历史（§29）。写操作 /api/kpi/settle 仅管理员。 */
 import { loadMetrics } from './kpi.js';
+import { esc } from './ui-kit.js';
 
 const OWNERS = [
   { owner: 'company', label: '公司', type: 'quarter' },
@@ -20,24 +21,24 @@ const pct = (c) => Math.round((Number(c) || 0) * 100);
 // scope 分数文案：正式分 / 参考分 / 待评估
 function scopeText(s) {
   if (!s) return '待评估';
-  if (s.score != null) return '<b class="kpi-tone-green">' + s.score + '</b> 分';
-  if (s.provisionalScore != null) return '参考 <b>' + s.provisionalScore + '</b>（覆盖率 ' + pct(s.coverage) + '%，未足以正式评分）';
+  if (s.score != null) return '<b class="kpi-tone-green">' + esc(s.score) + '</b> 分';
+  if (s.provisionalScore != null) return '参考 <b>' + esc(s.provisionalScore) + '</b>（覆盖率 ' + pct(s.coverage) + '%，未足以正式评分）';
   return '待评估';
 }
 function snapText(r) {
-  if (r.score != null) return '<b class="kpi-tone-green">' + r.score + '</b> 分';
-  if (r.provisional_score != null) return '参考 ' + r.provisional_score + '（覆盖率 ' + pct(r.coverage) + '%）';
-  return '待评估（' + (r.status || '') + '）';
+  if (r.score != null) return '<b class="kpi-tone-green">' + esc(r.score) + '</b> 分';
+  if (r.provisional_score != null) return '参考 ' + esc(r.provisional_score) + '（覆盖率 ' + pct(r.coverage) + '%）';
+  return '待评估（' + esc(r.status || '') + '）';
 }
 
 function currentRowHtml(o) {
   const key = curKey(o.type);
   const s = o._preview;
   return '<div class="kpip-cur">'
-    + '<span class="kpip-owner">' + o.label + '</span>'
+    + '<span class="kpip-owner">' + esc(o.label) + '</span>'
     + '<span class="kpip-period">' + PERIOD_LABEL[o.type] + ' ' + key + '（进行中）</span>'
     + '<span class="kpip-score">' + (s ? scopeText(s) : '…') + '</span>'
-    + '<button class="exec-btn exec-btn-primary" data-settle-owner="' + o.owner + '" data-settle-type="' + o.type + '" data-settle-key="' + key + '">结算本期并冻结</button>'
+    + '<button class="exec-btn exec-btn-primary" data-settle-owner="' + esc(o.owner) + '" data-settle-type="' + esc(o.type) + '" data-settle-key="' + esc(key) + '">结算本期并冻结</button>'
     + '</div>';
 }
 
@@ -46,7 +47,7 @@ function historyHtml(items) {
   return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>考核期</th><th>对象</th><th>成绩</th><th>覆盖率</th><th>状态</th><th>结算时间</th></tr></thead><tbody>'
     + items.map((r) => '<tr>'
       + '<td>' + esc(r.period_key) + '</td>'
-      + '<td>' + (OWNER_LABEL[r.owner] || r.owner) + '</td>'
+      + '<td>' + esc(OWNER_LABEL[r.owner] || r.owner) + '</td>'
       + '<td>' + snapText(r) + '</td>'
       + '<td>' + pct(r.coverage) + '%</td>'
       + '<td>' + esc(r.status || '') + '</td>'

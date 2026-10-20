@@ -1,3 +1,4 @@
+// 带证据核验的 AI 回答：结论引不出证据就降级为待验证，只做一次有界的纠偏重试。
 import { callAnthropic } from './anthropic.js';
 import { publicAiError } from './aiProvider.js';
 import {

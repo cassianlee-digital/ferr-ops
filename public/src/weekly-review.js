@@ -118,7 +118,7 @@ function sortMonthKeys(keys) {
 }
 
 function rvItemHtml(text, acts) {
-  const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === '采纳' ? 'adopt' : 'test'}" data-review-action="act" data-kind="${esc(a)}">${a}</button>`).join('');
+  const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === '采纳' ? 'adopt' : 'test'}" data-review-action="act" data-kind="${esc(a)}">${esc(a)}</button>`).join('');
   return `<div class="rv-item"><span class="txt" contenteditable>${esc(text)}</span>${btns}<span class="rv-del" data-review-action="delete" title="删除"><i class="ti ti-x"></i></span></div>`;
 }
 
@@ -139,7 +139,7 @@ function rvColHtml(dept, rec, key, prevPlan, sections = RV_SECTIONS) {
   let h = `<div class="rv-col ${dept === 'SEM' ? 'sem' : 'seo'}"><div class="rv-owner">${name}</div>`;
   sections.forEach(([field, title, acts]) => {
     const items = (rec && rec[field]) || [];
-    h += `<div class="rv-sec" data-field="${field}" data-dept="${dept}" data-week="${key}"><h5>${title}</h5>`;
+    h += `<div class="rv-sec" data-field="${esc(field)}" data-dept="${esc(dept)}" data-week="${esc(key)}"><h5>${esc(title)}</h5>`;
     if (field === 'summary' && !items.length && prevPlan && prevPlan.length) {
       h += `<div class="rv-prev">上期计划：${prevPlan.map((x) => esc(x)).join('；')}</div>`;
     }
@@ -201,7 +201,7 @@ export async function renderReview() {
     const isCurrent = week === cur;
     const collapsed = isCurrent ? !currentWeekShouldOpen() : true;
     return `<div class="acc-week${collapsed ? ' collapsed' : ''}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)} ${isCurrent ? '<span class="badge b-green csp-s-4b17347c23">本周</span>' : ''}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(weekLabel(week))} ${isCurrent ? '<span class="badge b-green csp-s-4b17347c23">本周</span>' : ''}</div>
       <div class="acc-body">${sopRateShell(week)}${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
     </div>`;
   }).join('');
@@ -213,11 +213,11 @@ export async function renderReview() {
   }).map((monthKey) => {
     const inner = sortWeekKeys(oldGroups[monthKey]).map((week) => `
       <div class="acc-week collapsed">
-        <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${weekLabel(week)}</div>
+        <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(weekLabel(week))}</div>
         <div class="acc-body">${sopRateShell(week)}${rvColHtml('SEO', byWeek[week].SEO, week, prevPlanOf(keys, byWeek, week, 'SEO'))}${rvColHtml('SEM', byWeek[week].SEM, week, prevPlanOf(keys, byWeek, week, 'SEM'))}</div>
       </div>`).join('');
     return `<div class="acc-month collapsed">
-      <div class="acc-month-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthGroupLabel(monthKey)}</div>
+      <div class="acc-month-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthGroupLabel(monthKey))}</div>
       <div class="acc-month-body">${inner}</div>
     </div>`;
   }).join('');
@@ -250,7 +250,7 @@ export async function renderMonthReview() {
   acc.innerHTML = keys.map((key) => {
     const collapsed = key !== cur;
     return `<div class="acc-week${collapsed ? ' collapsed' : ''}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${monthLabel(key)} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">本月</span>' : ''}</div>
+      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(key))} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">本月</span>' : ''}</div>
       <div class="acc-body">${rvColHtml('SEO', byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml('SEM', byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
     </div>`;
   }).join('');

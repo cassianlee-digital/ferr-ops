@@ -1,5 +1,7 @@
 # SEO/SEM 周报自动聚合方案(待实施)
 
+> 状态：proposed
+
 > 背景:GSC / GA4 / Google Ads 三个真实数据同步已经打通(2026-06-26 完成,见 `google_sync_runs` 有真实记录)。
 > 但 SEO 看板 / SEM 看板读取的是 `seo_weeks` / `sem_weeks` 两张表,这两张表目前**只能靠后台"录入本周数据"按钮人工填**,
 > 不会因为 GSC/GA4/Ads 同步成功而自动更新。本方案是把"人工录入"换成"从已同步的明细表自动按周聚合"。
@@ -16,7 +18,7 @@
   - `seo_weeks(week_date, clicks, impressions, avg_position, top10_ratio, coverage, indexed_pages, bounce_rate, dwell_seconds)`
   - `sem_weeks(week_date, cost, impressions, clicks, conversions, roas, quality_score, cpc, ctr, cost_per_conv)`
 - 手动录入入口:`server/src/routes/dataSources.js` 里 `seo_weeks`/`sem_weeks` 标记为 `manualSource('人工周报', ...)`,前端按钮"录入本周GSC数据"。
-- 已知遗留问题(`CLAUDE.md`):前端时间筛选只停留在 `window._timeRange`,没有真正传后端重算 —— 这次顺手验证一下聚合接口是否支持 `start_date`/`end_date`,但不强制本次解决。
+- 已知遗留问题(写这份方案时的记录,后来已改成每个页面各存各的时间范围):前端时间筛选只停留在 `window._timeRange`,没有真正传后端重算 —— 这次顺手验证一下聚合接口是否支持 `start_date`/`end_date`,但不强制本次解决。
 
 ## 目标
 

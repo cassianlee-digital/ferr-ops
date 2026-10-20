@@ -3,6 +3,7 @@
    loadGa4 由 main.js 挂到 window，供 tab 初始化和时间筛选调用。 */
 
 import { esc } from './ui-kit.js';
+import { withSite } from './site-scope.js';
 let devicesChart = null;
 let requestSequence = 0;
 
@@ -56,7 +57,7 @@ function fillTable(tableId, emptyId, rows, renderCells, emptyText) {
   const items = Array.isArray(rows) ? rows : [];
   body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell) => {
     const value = cell.html == null ? esc(cell.value ?? '') : cell.html;
-    return `<td class="${cell.cls || ''}">${value}</td>`;
+    return `<td class="${esc(cell.cls || '')}">${value}</td>`;
   }).join('')}</tr>`).join('');
   if (empty) {
     empty.textContent = emptyText || '暂无数据';
@@ -186,7 +187,7 @@ export async function loadGa4() {
   const retry = document.getElementById('ga4-retry');
   if (retry) retry.disabled = true;
   try {
-    const data = await API.get(withRange('/api/ga4/overview','data')); // GA4 已嵌进数据看板，跟数据看板同一个时间条
+    const data = await API.get(withSite(withRange('/api/ga4/overview','data'))); // GA4 已嵌进数据看板，跟数据看板同一个时间条
     if (requestId !== requestSequence) return;
     renderGa4(data || { connected: false });
   } catch (error) {

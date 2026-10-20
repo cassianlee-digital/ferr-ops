@@ -1,3 +1,4 @@
+// GA4 同步：重复同步不产生重复行、某个报表失败时保留旧数据、概览返回看得懂的标签。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
