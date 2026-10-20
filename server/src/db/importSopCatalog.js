@@ -39,7 +39,22 @@ export function importSopCatalog({ dryRun = false, catalogPath } = {}) {
       WHERE id = @id`
   );
 
-  const report = { inserted: [], updated: [], unchanged: [], total: items.length };
+  const report = { inserted: [], updated: [], unchanged: [], orphaned: [], total: items.length };
+
+  /* 清单里被删掉、库里还留着的条目（例如 SEO 的 S9 并进社媒之后）。
+     **只报不删**：库里那条可能已经有执行流水，自动停用等于替人做决定；
+     但一声不吭更糟 —— 执行人会继续看到一条已经作废的 SOP，还当它该做。 */
+  const sources = [...new Set(items.map((i) => i.source).filter(Boolean))];
+  if (sources.length) {
+    const known = new Set(items.map((i) => `${i.source}|${i.track}|${i.title}`));
+    const ph = sources.map(() => '?').join(',');
+    for (const row of db.prepare(
+      `SELECT id, source, track, code, title, active FROM sop_definitions WHERE source IN (${ph})`
+    ).all(...sources)) {
+      if (known.has(`${row.source}|${row.track}|${row.title}`)) continue;
+      report.orphaned.push(`${row.track} ${row.code || ''} ${row.title}（id=${row.id}${row.active ? '，仍启用' : '，已停用'}）`);
+    }
+  }
   const run = db.transaction(() => {
     for (const it of items) {
       const row = { time_hint: null, ...it };
@@ -71,4 +86,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   console.log(`[sop-catalog]${dryRun ? ' (dry-run)' : ''} 共 ${r.total} 条：新增 ${r.inserted.length} / 更新 ${r.updated.length} / 无变化 ${r.unchanged.length}`);
   r.inserted.forEach((x) => console.log('  + ' + x));
   r.updated.forEach((x) => console.log('  ~ ' + x));
+  if (r.orphaned.length) {
+    console.log(`\n⚠ 库里有 ${r.orphaned.length} 条已经不在清单里了（本脚本不会动它们，要停用请在 设置 → SOP 里手动停用）：`);
+    r.orphaned.forEach((x) => console.log('  ? ' + x));
+  }
 }

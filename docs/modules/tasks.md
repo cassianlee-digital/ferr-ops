@@ -99,7 +99,7 @@
     在 `PATCH /api/loop-items/:id` 里戳时刻(`stampDone`),撤销清空;**老数据留 NULL,不补假值**。
   - 老库一次性回填 `start_date=创建日`(migrate 的 `backfillTaskStartDates`,`meta.backfill_task_start_date` 打标只跑一次)。
 - **SOP 引擎 v2:从「一个勾」改成「一条流水」**(2026-10-20)。老板那两份 SOP 文档
-  (`sem sop.xlsx` 的 SEM/社媒、`SEO_GEO每周SOP_月度模板` 的 SEO/GEO)已原样接进来,**共 60 条**。
+  (`sem sop.xlsx` 的 SEM/社媒、`SEO_GEO每周SOP_月度模板` 的 SEO/GEO)已接进来,**共 59 条**(原文 60 条,SEO S9 与社媒发布合并成一条)。
   - **为什么改**:`sop_completions` 一个周期只能记一个勾,答不了两件事 ——
     ①「今天的 SOP 和昨天的区别」(同一条「社媒发布」,昨天 FERR 技术选型、今天 BAFAW 连接方式,勾长得一模一样);
     ②「一周 5 篇发了几篇」(文档 D 列「周目标」+ E 列「单位」是数量,布尔勾装不下 3/5)。
@@ -114,9 +114,16 @@
     服务端 `POST /api/sop/logs` 的必填判据同样是 **`subject_label` 不是 `target_qty`**。
   - **周目标 / 日目标两种**:`freq='weekly'` 的 `target_qty` 是周目标,`freq='daily'` 的是日目标。
     文档里确实有「2 条/天」(SEO S9 社媒发布),折成周目标会丢掉「每天都要发」——周五一口气补 10 条照样满分。
-  - **偏离文档原文的条目必须就地写 `_override`**(理由 + 拍板时间),不要静默改数。
-    目前只有一条:**S9「社媒发布」** 文档 D 列写「周目标 2」、E 列写「条/天」,两列口径冲突,
-    2026-10-20 老板拍板按**每日 2 条**,故它是 `freq='daily'` + `target_qty=2`。
+  - **\u504f\u79bb\u6587\u6863\u539f\u6587\u7684\u6761\u76ee\u5fc5\u987b\u5c31\u5730\u5199 `_override`**(\u7406\u7531 + \u62cd\u677f\u65f6\u95f4),\u4e0d\u8981\u9759\u9ed8\u6539\u6570\u3002
+    **\u76ee\u524d\u53ea\u6709\u4e00\u6761,\u5355\u6d4b\u76ef\u6b7b\u4e86\u4e0d\u8bb8\u591a**(`sopEngine.test.js`)\u2014\u2014
+    \u793e\u5a92 P1\u300cLinkedIn / Facebook \u9002\u914d\u53d1\u5e03\u300d:\u539f\u6587\u662f\u300c5 \u4e2a\u4e3b\u9898/\u5468\u300d,\u9002\u914d\u4e24\u4e2a\u5e73\u53f0\u5373 **10 \u6761/\u5468**;
+    SEO \u8868 S9\u300c\u793e\u5a92\u53d1\u5e03\u300d\u5199\u7684\u662f\u300c2 \u6761/\u5929\u300d(D/E \u4e24\u5217\u539f\u672c\u5c31\u6253\u67b6),\u00d7 5 \u4e2a\u5de5\u4f5c\u65e5\u4e5f\u662f **10 \u6761/\u5468** \u2014\u2014
+    **\u4e24\u4efd\u6587\u6863\u8bf4\u7684\u662f\u540c\u4e00\u6279\u5e16\u5b50**\u30022026-10-20 \u786e\u8ba4:\u5408\u6210\u4e00\u6761\u653e\u5728**\u793e\u5a92\u8d5b\u9053**,\u6309 `freq='daily'` + `target_qty=2`
+    (\u6bcf\u5929\u5f00\u4e00\u683c,\u903c\u7740\u5747\u5300\u53d1,\u800c\u4e0d\u662f\u5468\u4e94\u8865\u9f50);S9 \u72ec\u6709\u7684\u300c\u6bcf\u6761\u5e26\u5b98\u7f51\u5bf9\u5e94\u9875\u9762\u94fe\u63a5\u300d\u5e76\u8fdb\u5b83\u7684\u600e\u4e48\u505a/\u5b8c\u6210\u6807\u51c6\u3002
+    **SEO \u8d5b\u9053\u4e0d\u518d\u6709\u53d1\u5e16\u914d\u989d**\u2014\u2014\u540c\u4e00\u6279\u5e16\u5b50\u8ba9\u9648\u548c\u674e\u5404\u8bb0\u4e00\u904d,\u662f\u628a\u4e00\u4efd\u5de5\u4f5c\u7b97\u6210\u4e24\u4efd\u3002
+  - **\u6e05\u5355\u91cc\u5220\u6389\u3001\u5e93\u91cc\u8fd8\u7559\u7740\u7684\u6761\u76ee**(\u6bd4\u5982\u5df2\u7ecf\u5bfc\u8fc7\u65e7\u6e05\u5355\u7684\u5e93\u91cc\u90a3\u6761 S9):
+    \u5bfc\u5165\u811a\u672c**\u53ea\u62a5\u4e0d\u5220**\u2014\u2014\u5e93\u91cc\u90a3\u6761\u53ef\u80fd\u5df2\u7ecf\u6709\u6267\u884c\u6d41\u6c34,\u81ea\u52a8\u505c\u7528\u7b49\u4e8e\u66ff\u4eba\u505a\u51b3\u5b9a;
+    \u4f46\u4e00\u58f0\u4e0d\u541e\u66f4\u7cdf,\u6267\u884c\u4eba\u4f1a\u7ee7\u7eed\u770b\u5230\u4e00\u6761\u5df2\u7ecf\u4f5c\u5e9f\u7684 SOP\u3002\u8981\u505c\u7528\u53bb \u8bbe\u7f6e \u2192 SOP \u624b\u52a8\u505c\u3002
   - 导入:`server/src/db/sopCatalog.json`(由两份 xlsx 生成,正常**勿手改**)+ `npm run import:sop`(幂等,
     键 = `(source, track, title)`;**`active` 永不回写**,停用过的条目重导不会被悄悄打开)。
     **刻意不挂在 migrate 里自动跑** —— 这 60 条是业务内容不是表结构,一次重启往线上塞 60 条清单会让人以为系统疯了。

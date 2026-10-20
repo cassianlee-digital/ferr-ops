@@ -144,12 +144,28 @@ test('周目标与日目标可以同时存在，各算各的再相加', () => {
   assert.equal(r.done, 5 + 2, '周目标那条满了；日目标只有 10-20 这一天发了');
 });
 
-test('导入清单里 SEO S9「社媒发布」已按每日 2 条落账（老板 2026-10-20 拍板，带 _override 说明）', async () => {
+test('社媒发布只有一条，落在社媒赛道、按每天 2 条考（S9 已并入，不在 SEO 侧重复记）', async () => {
   const { default: catalog } = await import('../src/db/sopCatalog.json', { with: { type: 'json' } });
-  const s9 = catalog.items.find((i) => i.code === 'S9' && i.title === '社媒发布');
-  assert.equal(s9.freq, 'daily');
-  assert.equal(s9.target_qty, 2);
-  assert.ok(s9._override && s9._override.length > 10, '偏离原文的条目必须就地写明理由，不能静默改数');
+  const posting = catalog.items.filter((i) => i.freq !== 'monthly'
+    && (/社媒发布/.test(i.title) || /适配发布/.test(i.title)));
+  assert.equal(posting.length, 1, '发布量只该有一个记账口，否则同一批帖子会被记两遍');
+  const [p] = posting;
+  assert.equal(p.track, '社媒');
+  assert.equal(p.freq, 'daily');
+  assert.equal(p.target_qty, 2);
+  assert.ok(p._override && p._override.length > 10, '偏离原文的条目必须就地写明理由，不能静默改数');
+  // SEO 赛道不该再有任何「发帖数量」类的配额条目
+  assert.deepEqual(
+    catalog.items.filter((i) => i.track === 'SEO' && /社媒|发帖/.test(i.title)).map((i) => i.title),
+    [],
+  );
+});
+
+test('偏离原文的条目一律要有 _override，且不能偷偷多出来', async () => {
+  const { default: catalog } = await import('../src/db/sopCatalog.json', { with: { type: 'json' } });
+  const overridden = catalog.items.filter((i) => i._override).map((i) => `${i.track} ${i.code} ${i.title}`);
+  // 清单是从老板的 xlsx 生成的；每多一条人工改动都该是一次明确的决定，不是随手改
+  assert.deepEqual(overridden, ['社媒 P1 LinkedIn / Facebook 适配发布']);
 });
 
 /* ===================== 路由：执行流水 ===================== */
