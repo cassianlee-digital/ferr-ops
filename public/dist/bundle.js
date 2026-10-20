@@ -4970,6 +4970,7 @@
   __export(sop_exports, {
     buildSopOverdueList: () => buildSopOverdueList,
     doneQty: () => doneQty,
+    dupText: () => dupText,
     hasQuota: () => hasQuota,
     isLogged: () => isLogged,
     isOverduePeriodFirstDay: () => isOverduePeriodFirstDay,
@@ -5426,6 +5427,11 @@
       }
     }
   });
+  function dupText(d) {
+    const who = (d.code ? d.code + " " : "") + (d.title || "\u53E6\u4E00\u6761 SOP");
+    const when = (d.day_key || "").slice(5);
+    return d.same_sop ? "\u8FD9\u6761\u94FE\u63A5 " + when + " \u5728\u672C\u6761 SOP \u5DF2\u7ECF\u8BB0\u8FC7\u4E00\u6B21" : "\u8FD9\u6761\u94FE\u63A5 " + when + " \u5DF2\u88AB\u300A" + who + "\u300B\u8BB0\u8FC7\uFF0C\u786E\u8BA4\u4E0D\u662F\u540C\u4E00\u4EFD\u5DE5\u4F5C\u8BB0\u4E24\u904D";
+  }
   var _sopLogging = null;
   function openSopLogModal(s) {
     _sopLogging = s;
@@ -5470,7 +5476,7 @@
       return;
     }
     try {
-      await API.post("/api/sop/logs", {
+      const res = await API.post("/api/sop/logs", {
         sop_id: s.id,
         period_key: sopPeriodKey(s.freq),
         day_key: formatLocalDate(/* @__PURE__ */ new Date()),
@@ -5483,7 +5489,9 @@
       closeModal("sopLogMask");
       await loadSops();
       const left = hasQuota(s) ? Math.max(0, Number(s.target_qty) - doneQty(s)) : 0;
-      toast2(left > 0 ? "\u5DF2\u8BB0\u4E00\u6761 \xB7 \u672C\u5468\u671F\u8FD8\u5DEE " + fmtQty(left) + (s.unit ? " " + s.unit : "") : "\u5DF2\u8BB0\u4E00\u6761 \xB7 \u672C\u5468\u671F\u5DF2\u8FBE\u6807");
+      const ok = left > 0 ? "\u5DF2\u8BB0\u4E00\u6761 \xB7 \u672C\u5468\u671F\u8FD8\u5DEE " + fmtQty(left) + (s.unit ? " " + s.unit : "") : "\u5DF2\u8BB0\u4E00\u6761 \xB7 \u672C\u5468\u671F\u5DF2\u8FBE\u6807";
+      const dup = res && res.duplicate;
+      toast2(dup ? ok + "\u3000\u26A0 " + dupText(dup) : ok);
     } catch (err) {
       if (err && err.status === 400) toast2("\u8FD9\u6761 SOP \u8981\u6C42\u5199\u6E05\u505A\u7684\u662F\u54EA\u4E00\u4E2A");
       else toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));

@@ -127,7 +127,14 @@
   - 导入:`server/src/db/sopCatalog.json`(由两份 xlsx 生成,正常**勿手改**)+ `npm run import:sop`(幂等,
     键 = `(source, track, title)`;**`active` 永不回写**,停用过的条目重导不会被悄悄打开)。
     **刻意不挂在 migrate 里自动跑** —— 这 60 条是业务内容不是表结构,一次重启往线上塞 60 条清单会让人以为系统疯了。
-  - 单测 `server/test/sopEngine.test.js`(17 例)焊死配额口径 + 任务优先级/时刻的边界校验。
+  - **「同一条证据被记了两次」软提醒**(`server/src/services/sopDuplicate.js`):记流水时拿 `evidence_url`
+    去比最近 **60 天**的流水,撞上了就在回执里带 `duplicate`,前端 toast 出黄字——**只提醒不拦**。
+    不拦是因为有合理的重叠:李写完集群文章、陈把它排进内容日历再推一轮,同一个链接两边都该算;
+    机器分不清协同和重复记账,分得清的只有人。**报的时候「别的 SOP 记过」排在「本条 SOP 记过」之前**
+    (前者是一份工作算两份,后者是往自己配额里灌水,两边该做的事不一样)。
+    比对前先 `canonicalUrl()` 规范化:去 www / 末尾斜杠 / 锚点 / 跟踪参数(utm_*、fbclid…)、查询参数排序——
+    SOP 自己就要求帖子链接打 UTM,逐字比等于白比。
+  - 单测 `server/test/sopEngine.test.js`(28 例)焊死配额口径、查重口径 + 任务优先级/时刻的边界校验。
 - **SOP 执行率已沉淀进周报**(2026-08-13):`GET /api/sop/stats?from=&to=&today=`(`routes/sop.js`)+ 前端
   `public/src/sop-rate.js`(新模块,`mountSopRate` 被经典脚本 `weekly-review.js` 调用)。周报每个周卡片顶部横跨两列
   显示三方(李/陈/公司)的 `done/expected · %` + **漏了哪条哪几天**。分母三条诚实规则:**未来的日子不算**(`today` 由前端传,

@@ -48,7 +48,7 @@
 | `taskCheckins.js` | 跨天任务每日推进打卡 API。 |
 | `weeklyReports.js` | 复盘周报 API。 |
 
-## 后端服务（规则与业务逻辑）（43）
+## 后端服务（规则与业务逻辑）（44）
 
 `server/src/services/`
 
@@ -90,6 +90,7 @@
 | `riskRegister.js` | 风险清单的组装：把当前的静态检查和最近一次生产实测合成一份带严重程度与下一步的清单。 |
 | `siteReturns.js` | 按站点看「花了多少广告费、带来几条询盘」（纯函数，不碰数据库）。 |
 | `sites.js` | 站点的规则（纯函数，不碰数据库）。 |
+| `sopDuplicate.js` | SOP 执行流水的「同一条证据被记了两次」软提醒。 |
 | `sopStats.js` | SOP 执行率的统计。 |
 | `spend.js` | 投入台账的规则（纯函数，不碰数据库）：外链与其它支出的字段校验，以及「钱花在哪」的汇总。 |
 | `taskAudit.js` | 可审计任务的规则（纯函数，不碰数据库 —— 可被 node --test 直接 import）。 |

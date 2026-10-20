@@ -414,6 +414,16 @@ document.addEventListener('click',async e=>{
   }
 });
 
+/* 「这条链接已经被记过」的提示语。两种情形分开说，因为该做的事不一样：
+   - 别的 SOP 记过 → 可能把一份工作算成了两份，要确认是不是协同（李写文章、陈再推一轮是合理的）
+   - 同一条 SOP 记过 → 那是往自己的配额里灌水，基本没有正当理由 */
+export function dupText(d){
+  const who=(d.code?d.code+' ':'')+(d.title||'另一条 SOP');
+  const when=(d.day_key||'').slice(5);
+  return d.same_sop
+    ? ('这条链接 '+when+' 在本条 SOP 已经记过一次')
+    : ('这条链接 '+when+' 已被《'+who+'》记过，确认不是同一份工作记两遍');
+}
 let _sopLogging=null;
 export function openSopLogModal(s){
   _sopLogging=s;
@@ -443,7 +453,7 @@ export async function submitSopLog(){
   const qty=Number(val('soplog-qty'))||1;
   if(!(qty>0)){ toast('数量要大于 0'); return; }
   try{
-    await API.post('/api/sop/logs',{
+    const res=await API.post('/api/sop/logs',{
       sop_id:s.id,
       period_key:sopPeriodKey(s.freq),
       day_key:formatLocalDate(new Date()), // 执行日按本地日期，与 task_checkins / completions 同口径
@@ -454,7 +464,10 @@ export async function submitSopLog(){
     closeModal('sopLogMask');
     await loadSops();
     const left=hasQuota(s)?Math.max(0,Number(s.target_qty)-doneQty(s)):0;
-    toast(left>0?('已记一条 · 本周期还差 '+fmtQty(left)+(s.unit?' '+s.unit:'')):'已记一条 · 本周期已达标');
+    const ok=left>0?('已记一条 · 本周期还差 '+fmtQty(left)+(s.unit?' '+s.unit:'')):'已记一条 · 本周期已达标';
+    // 撞上同一条链接：记是记下了（不拦），但要让人当场看见，自己判断是协同还是重复记账
+    const dup=res&&res.duplicate;
+    toast(dup?(ok+'　⚠ '+dupText(dup)):ok);
   }catch(err){
     if(err&&err.status===400)toast('这条 SOP 要求写清做的是哪一个');
     else toast(err&&err.status===403?'无权操作':'保存失败：'+(err.message||'请求失败'));

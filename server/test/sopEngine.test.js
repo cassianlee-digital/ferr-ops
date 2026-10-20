@@ -15,6 +15,7 @@ process.env.DB_FILE = join(tmpDir, 'test.sqlite');
 
 const { buildApp } = await import('../src/index.js');
 const { sopQuotaProgress } = await import('../src/services/kpiReview.js');
+const { canonicalUrl, findDuplicate } = await import('../src/services/sopDuplicate.js');
 const app = await buildApp();
 
 test.after(async () => {
@@ -250,6 +251,71 @@ test('PATCH 定义只改传进来的字段，没传的不被清空', async () =>
   assert.equal(after.why, '原因', 'PATCH 只传标题不该把「为什么做」清空');
   assert.equal(after.how, '步骤');
   assert.equal(after.target_qty, 3);
+});
+
+/* ===================== 同一条证据被记两次的软提醒 ===================== */
+
+test('链接规范化：去 www / 末尾斜杠 / 锚点 / 跟踪参数，查询参数排序后比', () => {
+  const same = [
+    'https://www.ferrcasting.com/blog/d400/',
+    'http://ferrcasting.com/blog/d400',
+    'https://ferrcasting.com/blog/d400?utm_source=linkedin&utm_medium=social',
+    'ferrcasting.com/blog/d400#section-2',
+    'https://FerrCasting.com/blog/d400?fbclid=abc',
+  ].map(canonicalUrl);
+  assert.equal(new Set(same).size, 1, `同一条帖子被算成了 ${new Set(same).size} 个：${[...new Set(same)].join(' | ')}`);
+  // 真正不同的页面不能被压成一个
+  assert.notEqual(canonicalUrl('https://ferrcasting.com/blog/d400'), canonicalUrl('https://ferrcasting.com/blog/c250'));
+  // 非跟踪类的查询参数是身份的一部分，不能丢
+  assert.notEqual(canonicalUrl('https://x.com/p?id=1'), canonicalUrl('https://x.com/p?id=2'));
+  assert.equal(canonicalUrl(''), null);
+  assert.equal(canonicalUrl(null), null);
+});
+
+test('别的 SOP 记过排在同一条 SOP 之前：一份工作算两份比自己灌水更该先说', () => {
+  const rows = [
+    { id: 1, sop_id: 7, day_key: '2026-10-18', evidence_url: 'https://a.com/p', title: '社媒发布', code: 'P1' },
+    { id: 2, sop_id: 9, day_key: '2026-10-19', evidence_url: 'https://a.com/p?utm_source=li', title: '收录巡检', code: 'S1' },
+  ];
+  const d = findDuplicate(rows, 'https://www.a.com/p/', 7);
+  assert.equal(d.sop_id, 9, '应该先报别的 SOP（id=9），而不是自己那条');
+  assert.equal(d.same_sop, false);
+  // 只有自己记过时照样报
+  const self = findDuplicate([rows[0]], 'https://a.com/p', 7);
+  assert.equal(self.same_sop, true);
+  assert.equal(findDuplicate(rows, 'https://b.com/other', 7), null);
+});
+
+test('记流水时撞上同一条链接 → 照样记下（不拦），但回执带 duplicate', async () => {
+  const a = await makeSop({ target_qty: 5, unit: '条', subject_label: '哪一条' });
+  const b = await makeSop({ target_qty: 5, unit: '条', subject_label: '哪一条' });
+  const url = 'https://ferrcasting.com/blog/manhole-steps';
+  const first = await call('POST', '/api/sop/logs', {
+    sop_id: a.id, period_key: '2026-W46', day_key: '2026-11-10', subject: '首发', evidence_url: url,
+  });
+  assert.equal(first.statusCode, 201);
+  assert.equal(first.json().duplicate, null, '第一次记不该报重复');
+
+  const second = await call('POST', '/api/sop/logs', {
+    sop_id: b.id, period_key: '2026-W46', day_key: '2026-11-11', subject: '转推',
+    evidence_url: url + '/?utm_source=linkedin',   // 带 UTM、带末尾斜杠，仍该认出是同一条
+  });
+  assert.equal(second.statusCode, 201, '是提醒不是拦截，必须照样写进去');
+  const dup = second.json().duplicate;
+  assert.equal(dup.sop_id, a.id);
+  assert.equal(dup.same_sop, false);
+  assert.equal(dup.day_key, '2026-11-10');
+  // 真的落库了，没有因为重复而丢掉
+  const prog = await call('GET', '/api/sop/progress?weekly=2026-W46');
+  assert.equal(prog.json().items.find((x) => x.sop_id === b.id).done_qty, 1);
+});
+
+test('没填链接就不比对，回执的 duplicate 是 null', async () => {
+  const sop = await makeSop({ target_qty: 3, unit: '条', subject_label: '哪一条' });
+  const r = await call('POST', '/api/sop/logs', {
+    sop_id: sop.id, period_key: '2026-W47', day_key: '2026-11-17', subject: '没链接',
+  });
+  assert.equal(r.json().duplicate, null);
 });
 
 /* ===================== 路由：任务优先级 / 时刻 ===================== */

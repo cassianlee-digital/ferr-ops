@@ -1,7 +1,17 @@
 // SOP 引擎 API（Step A）：定义增删改查 + 完成记录读写。
 // 权限：定义的写入仅 manager+boss；完成记录任意登录运营都可写（共担文化）。
 import * as repo from '../db/repositories/sop.js';
+import { findDuplicate } from '../services/sopDuplicate.js';
 import { requireAuth, editor, onlyManagerBoss } from '../auth/middleware.js';
+
+// 查重回看多远。60 天 ≈ 两个月的发帖量，够覆盖「上个月发过、这个月又记一遍」，
+// 又不会让这条每天都走的路径去扫整张表。
+const DUP_WINDOW_DAYS = 60;
+const daysAgo = (dayKey, n) => {
+  const d = new Date(dayKey + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+};
 import { sopStats } from '../services/sopStats.js';
 
 const FREQS = ['daily', 'weekly', 'monthly'];
@@ -178,14 +188,24 @@ export async function sopRoutes(app) {
     // 判据用 subject_label 不用 target_qty：「周一看数」周目标也是 1 次，但它没有"对象"可填。
     const subject = s(b.subject, 200);
     if (def.subject_label && !subject) return reply.code(400).send({ error: 'subject_required' });
+    const evidenceUrl = s(b.evidence_url, 500);
+    // 软提醒：同一条证据链接是不是已经被记过（优先报「被别的 SOP 记过」）。
+    // 要在插入之前查，否则会匹配到自己刚写进去的这一行。
+    const duplicate = evidenceUrl
+      ? findDuplicate(repo.logsWithEvidenceSince(daysAgo(dayKey, DUP_WINDOW_DAYS)), evidenceUrl, sopId)
+      : null;
     const item = repo.addLog({
       sop_id: sopId, period_key: periodKey, day_key: dayKey, qty,
-      subject, detail: s(b.detail, 1000), evidence_url: s(b.evidence_url, 500),
+      subject, detail: s(b.detail, 1000), evidence_url: evidenceUrl,
       logged_by: request.user?.username,
     });
     repo.markComplete(sopId, periodKey, request.user?.username);
     reply.code(201);
-    return { item, done_qty: repo.progress({ k: periodKey }).find((r) => r.sop_id === sopId)?.done_qty ?? qty };
+    return {
+      item,
+      done_qty: repo.progress({ k: periodKey }).find((r) => r.sop_id === sopId)?.done_qty ?? qty,
+      duplicate, // null = 没撞上；有值时前端出黄条提醒，**不拦**
+    };
   });
 
   // 撤销一条流水。本周期还剩别的流水就只删这一条——做过就是做过，勾不跟着消失。

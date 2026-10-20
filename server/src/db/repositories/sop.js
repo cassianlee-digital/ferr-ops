@@ -164,3 +164,16 @@ export function countLogs(sopId, periodKey) {
     .get(sopId, periodKey);
   return r ? r.n : 0;
 }
+
+// 近 N 天里带证据链接的流水（含它挂在哪条 SOP 上）。给「同一条链接记了两次」的软提醒用。
+// 只取有链接的行：没链接就没法比，拉回来是白费。
+export function logsWithEvidenceSince(sinceDay) {
+  return db.prepare(
+    `SELECT l.id, l.sop_id, l.day_key, l.evidence_url, l.logged_by,
+            d.title AS title, d.code AS code, d.track AS track
+       FROM sop_logs l
+       JOIN sop_definitions d ON d.id = l.sop_id
+      WHERE l.evidence_url IS NOT NULL AND l.evidence_url <> '' AND l.day_key >= ?
+      ORDER BY l.day_key DESC, l.id DESC`
+  ).all(sinceDay);
+}
