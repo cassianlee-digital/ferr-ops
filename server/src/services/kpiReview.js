@@ -240,7 +240,7 @@ export function computeReview(input, cfg = DEFAULT_REVIEW_CONFIG) {
     // SOP 周配额：老板两份 SOP 文档里「周目标 × 单位」那一列的兑现率。
     // 分母是区间内**完整 ISO 周**的周目标之和，单周超额不替其它周补课（见 sopQuotaProgress）。
     rateMetric('sop_quota', 'SOP 周配额完成率', w.sop_quota, proc.sop?.done ?? 0, proc.sop?.total ?? 0,
-      '按 SOP 周目标数量累计 · 只算区间内完整的 ISO 周、SOP 创建之前的周不算、单周超额不补他周 · 数据来源 sop_logs'),
+      '按 SOP 的周/日目标数量累计 · 周目标只算完整的 ISO 周、日目标一天一格 · SOP 创建之前的不算 · 单周/单日超额不补他期 · 数据来源 sop_logs'),
   ];
 
   // 打分 + 权重归一
@@ -370,7 +370,7 @@ const addDays = (ymd, n) => {
   return d.toISOString().slice(0, 10);
 };
 export function sopQuotaProgress(defs, logs, range, dept, today) {
-  const empty = { done: 0, total: 0, weeks: 0 };
+  const empty = { done: 0, total: 0, weeks: 0, days: 0 };
   if (!range || !range.start_date || !range.end_date) return empty;
   const end = today && today < range.end_date ? today : range.end_date;
   if (end < range.start_date) return empty;
@@ -379,10 +379,13 @@ export function sopQuotaProgress(defs, logs, range, dept, today) {
     if (!byDef.has(l.sop_id)) byDef.set(l.sop_id, []);
     byDef.get(l.sop_id).push(l);
   }
-  let done = 0, total = 0, weeks = 0;
+  let done = 0, total = 0, weeks = 0, days = 0;
   for (const d of defs || []) {
     if (d.active === 0) continue;
-    if (d.freq !== 'weekly') continue;                 // 月度 / 每日不进周配额口径
+    // 月度条目不进这项（和 /api/sop/stats 一样：月度放进周/日口径里算没意义）。
+    // 每日条目要算 —— 文档里确实有「2 条/天」这种（SEO S9），
+    // 把它折成周目标会丢掉「每天都要发」这层要求：周五一口气补 10 条照样满分。
+    if (d.freq !== 'weekly' && d.freq !== 'daily') continue;
     const target = Number(d.target_qty);
     if (!(target > 0)) continue;                       // 没有数量目标的条目不在这项里考
     if (dept && String(d.dept || '').toUpperCase() !== dept) continue;
@@ -390,19 +393,29 @@ export function sopQuotaProgress(defs, logs, range, dept, today) {
     const start = created && created > range.start_date ? created : range.start_date;
     if (start > end) continue;
     const mine = byDef.get(d.id) || [];
+    const sum = (from, to) => mine
+      .filter((l) => l.day_key >= from && l.day_key <= to)
+      .reduce((s, l) => s + (Number(l.qty) || 0), 0);
+    if (d.freq === 'daily') {
+      // 日度：一天一格，当天超额不替别的天补课。区间端点不用像周那样切半——
+      // 「天」本来就是完整的，start/end 之间每一天都该做。
+      for (let day = start; day <= end; day = addDays(day, 1)) {
+        days++;
+        total += target;
+        done += Math.min(sum(day, day), target);
+      }
+      continue;
+    }
     for (let m = mondayOf(start); m <= end; m = addDays(m, 7)) {
       if (m < start) continue;                         // 起点那周不完整
       const sunday = addDays(m, 6);
       if (sunday > end) break;                         // 终点那周不完整
       weeks++;
       total += target;
-      const got = mine
-        .filter((l) => l.day_key >= m && l.day_key <= sunday)
-        .reduce((s, l) => s + (Number(l.qty) || 0), 0);
-      done += Math.min(got, target);
+      done += Math.min(sum(m, sunday), target);
     }
   }
-  return { done: r4(done), total: r4(total), weeks };
+  return { done: r4(done), total: r4(total), weeks, days };
 }
 
 // 周报：分母 = 区间内的周数 ×(部门视角 2 个部门 / 个人视角 1 个)；分子 = 真正写了东西的期数。

@@ -1,5 +1,5 @@
 {
- "_note": "由老板的两份 SOP 文档导出，勿手改：改了再导会被覆盖。源文件见 generated_from。",
+ "_note": "由老板的两份 SOP 文档导出。正常情况勿手改（改了重新生成会被覆盖），源文件见 generated_from；确因文档本身口径冲突而偏离原文的条目，必须就地写 _override 说明理由和拍板时间，不要静默改数。",
  "generated_from": [
   "E:网站资料sem sop.xlsx",
   "D:桌面文件SEO_GEO每周SOP_月度模板-10.13-1.xlsx"
@@ -730,19 +730,20 @@
    "source": "seo-geo-sop",
    "dept": "SEO",
    "track": "SEO",
-   "freq": "weekly",
+   "freq": "daily",
    "code": "S9",
    "title": "社媒发布",
    "metric": "权重",
    "target_qty": 2,
    "time_hint": null,
-   "unit": "条/天",
+   "unit": "条",
    "effort_h": 1,
    "why": "持续的站外露出会带来品牌词搜索和引荐访问，但对 SEO 的作用在所有动作里最弱，所以排在最后，时间不够时第一个砍。",
    "how": "LinkedIn 公司页、YouTube 等，选目标客户在用的平台。内容用本周的工厂实拍、新上线的集群文章，每条附对应页面链接。 前提：LinkedIn 账号已完成验证。",
    "done_when": "内容有信息量、带官网对应页面链接；记下帖子链接。",
-   "subject_label": "哪个平台 + 帖子主题",
-   "sort_order": 11
+   "subject_label": "哪个平台 + 哪篇集群文章 / 哪组工厂实拍",
+   "sort_order": 11,
+   "_override": "文档 D 列「周目标」写 2、E 列「单位」写「条/天」，两列口径冲突。2026-10-20 老板拍板按「2 条/天」，故这条从每周改成每日、周目标 2 改成日目标 2。其余字段与原文一致。"
   },
   {
    "source": "seo-geo-sop",

@@ -93,9 +93,63 @@ test('没有周目标 / 月度 / 停用 / 别的部门的条目都不进这项',
 test('区间整个落在未来 / 倒挂时回零，不抛异常', () => {
   assert.deepEqual(
     sopQuotaProgress([def()], [], { start_date: '2027-01-04', end_date: '2027-01-10' }, null, '2026-10-20'),
-    { done: 0, total: 0, weeks: 0 },
+    { done: 0, total: 0, weeks: 0, days: 0 },
   );
-  assert.deepEqual(sopQuotaProgress([def()], [], null, null, '2026-10-20'), { done: 0, total: 0, weeks: 0 });
+  assert.deepEqual(sopQuotaProgress([def()], [], null, null, '2026-10-20'), { done: 0, total: 0, weeks: 0, days: 0 });
+});
+
+/* ---- 日目标（文档里确实有「2 条/天」：SEO S9 社媒发布，2026-10-20 老板拍板按每天算）---- */
+
+const daily = (over = {}) => def({ freq: 'daily', target_qty: 2, ...over });
+
+test('日目标一天一格：区间多少天就是多少格，不折成周', () => {
+  // 10-19(周一) ~ 10-23(周五)，5 天 × 2 = 10
+  const r = sopQuotaProgress([daily()], [], { start_date: '2026-10-19', end_date: '2026-10-23' }, null, '2026-10-31');
+  assert.equal(r.days, 5);
+  assert.equal(r.weeks, 0, '日目标不走周口径');
+  assert.equal(r.total, 10);
+});
+
+test('日目标：当天超额不替别的天补课', () => {
+  const logs = [log('2026-10-19', 10)]; // 周一一口气发 10 条
+  const r = sopQuotaProgress([daily()], logs, { start_date: '2026-10-19', end_date: '2026-10-23' }, null, '2026-10-31');
+  assert.equal(r.total, 10);
+  assert.equal(r.done, 2, '周一封顶 2，其余四天 0 —— 这正是「每天都要发」和「一周发够就行」的区别');
+});
+
+test('日目标：端点那天是完整的，不像周那样切掉', () => {
+  const r = sopQuotaProgress([daily()], [], { start_date: '2026-10-21', end_date: '2026-10-21' }, null, '2026-10-31');
+  assert.equal(r.days, 1);
+  assert.equal(r.total, 2);
+});
+
+test('日目标同样遵守「创建前不算」「未来不算」', () => {
+  const range = { start_date: '2026-10-19', end_date: '2026-10-23' };
+  const created = sopQuotaProgress([daily({ created_at: '2026-10-22 10:00:00' })], [], range, null, '2026-10-31');
+  assert.equal(created.days, 2, '10-22、10-23 两天');
+  const future = sopQuotaProgress([daily()], [], range, null, '2026-10-20');
+  assert.equal(future.days, 2, 'today=10-20 → 只算 10-19、10-20');
+});
+
+test('周目标与日目标可以同时存在，各算各的再相加', () => {
+  const range = { start_date: '2026-10-19', end_date: '2026-10-25' }; // 完整一周
+  const r = sopQuotaProgress(
+    [def({ id: 1 }), daily({ id: 2 })], // 周 5 + 日 2×7
+    [log('2026-10-20', 5, 1), log('2026-10-20', 2, 2)],
+    range, null, '2026-10-31',
+  );
+  assert.equal(r.weeks, 1);
+  assert.equal(r.days, 7);
+  assert.equal(r.total, 5 + 14);
+  assert.equal(r.done, 5 + 2, '周目标那条满了；日目标只有 10-20 这一天发了');
+});
+
+test('导入清单里 SEO S9「社媒发布」已按每日 2 条落账（老板 2026-10-20 拍板，带 _override 说明）', async () => {
+  const { default: catalog } = await import('../src/db/sopCatalog.json', { with: { type: 'json' } });
+  const s9 = catalog.items.find((i) => i.code === 'S9' && i.title === '社媒发布');
+  assert.equal(s9.freq, 'daily');
+  assert.equal(s9.target_qty, 2);
+  assert.ok(s9._override && s9._override.length > 10, '偏离原文的条目必须就地写明理由，不能静默改数');
 });
 
 /* ===================== 路由：执行流水 ===================== */

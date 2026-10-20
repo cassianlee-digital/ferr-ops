@@ -112,7 +112,12 @@
   - **两个判据别混用**(`public/src/sop.js`):`isLogged`=有 `subject_label` → 走「记一条」,
     `hasQuota`=isLogged 且 `target_qty>0` → 画进度条。「周一看数」周目标也写着 1 次但没有对象可填,维持原来的勾。
     服务端 `POST /api/sop/logs` 的必填判据同样是 **`subject_label` 不是 `target_qty`**。
-  - 导入:`server/src/db/sopCatalog.json`(由两份 xlsx 生成,**勿手改**)+ `npm run import:sop`(幂等,
+  - **周目标 / 日目标两种**:`freq='weekly'` 的 `target_qty` 是周目标,`freq='daily'` 的是日目标。
+    文档里确实有「2 条/天」(SEO S9 社媒发布),折成周目标会丢掉「每天都要发」——周五一口气补 10 条照样满分。
+  - **偏离文档原文的条目必须就地写 `_override`**(理由 + 拍板时间),不要静默改数。
+    目前只有一条:**S9「社媒发布」** 文档 D 列写「周目标 2」、E 列写「条/天」,两列口径冲突,
+    2026-10-20 老板拍板按**每日 2 条**,故它是 `freq='daily'` + `target_qty=2`。
+  - 导入:`server/src/db/sopCatalog.json`(由两份 xlsx 生成,正常**勿手改**)+ `npm run import:sop`(幂等,
     键 = `(source, track, title)`;**`active` 永不回写**,停用过的条目重导不会被悄悄打开)。
     **刻意不挂在 migrate 里自动跑** —— 这 60 条是业务内容不是表结构,一次重启往线上塞 60 条清单会让人以为系统疯了。
   - 单测 `server/test/sopEngine.test.js`(17 例)焊死配额口径 + 任务优先级/时刻的边界校验。
