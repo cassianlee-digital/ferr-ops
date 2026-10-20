@@ -137,8 +137,6 @@
 :not(#_csp_inline_override).csp-s-fec2a1b122{font-size:11px;color:var(--text3);padding:8px 0}
 
 :not(#_csp_inline_override).csp-task-delete{color:var(--primary)}
-:not(#_csp_inline_override).csp-task-delete-spaced{margin-left:8px}
-:not(#_csp_inline_override).csp-task-delete-pushed{margin-left:auto}
 :not(#_csp_inline_override).is-hidden{display:none}
 :not(#_csp_inline_override).csp-scatter-empty{text-align:center;padding:18px}
 .sem-attr-scope{color:var(--amber)}

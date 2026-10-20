@@ -46,6 +46,7 @@ function defFields(b) {
     how: s(b.how, 2000),
     done_when: s(b.done_when, 1000),
     subject_label: s(b.subject_label, 40),
+    tag: s(b.tag, 24),
     sort_order: num(b.sort_order),
     source: s(b.source, 40),
   };

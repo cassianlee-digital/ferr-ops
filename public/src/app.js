@@ -12,6 +12,7 @@ import { loadArchive } from './archive.js';
 import { exportAudit, loadAudit, runAuditAi } from './audit.js';
 import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, resizeScatters, toggleHier } from './charts.js';
 import { addContent, addDepositRow, addFixRow, addPlanRow, addTestRow, loadClosedLoop, loadContent, openTaskModal, prepend, refreshTaskCols, submitSubtask, submitTask } from './closed-loop.js';
+import { initPlanTabs } from './plan-tabs.js';
 import { loadGa4 } from './ga4-view.js';
 import { loadGeo } from './geo.js';
 import { pickGeoShot, submitGeoCheck } from './geo-checks.js';
@@ -414,6 +415,7 @@ window.addEventListener('load',async()=>{
   await loadArchive();         // 归档②：资产库归档页（三 subtab）
   await loadSops();            // SOP-B：动态 SOP 卡 + 设置页 SOP 列表
   await loadUrgent();          // SOP-C：公司新派 urgent banner + 侧栏红点
+  initPlanTabs();              // 日计划赛道 Tab：默认按登录角色落在自己那栏（上一次选的优先）
   await loadContent();         // 内容资产
   await loadGa4();             // GA4 看板（骨架/空状态）
   loadSeoBoardGsc();           // SEO 看板：真实 GSC 同步数据（趋势/卡片）

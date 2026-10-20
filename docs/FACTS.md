@@ -158,7 +158,7 @@
 | `scheduler.js` | 谷歌数据定时自动同步（进程内调度）。 |
 | `syncSites.js` | 多站点同步的编排：每天把所有启用的站点都同步一遍； |
 
-## 前端 ES 模块（打包进 dist/bundle.js）（49）
+## 前端 ES 模块（打包进 dist/bundle.js）（50）
 
 `public/src/`
 
@@ -197,6 +197,7 @@
 | `market-brain.js` | 市场分析（表格化）+ AI 记忆体联动（ES 模块 · esbuild 打包为 IIFE）。 |
 | `neg-ads.js` | 否词库 / 广告创意库 录入（ES 模块 · esbuild 打包为 IIFE）。 |
 | `plan-history.js` | 日计划回放（ES 模块 · esbuild 打包为 IIFE）。 |
+| `plan-tabs.js` | 日计划的赛道切换（ES 模块 · esbuild 打包为 IIFE）。 |
 | `rank-snapshots.js` | SEO opportunity keyword rank snapshots and first-to-latest trend display. |
 | `risks.js` | 风险清单页：把后端返回的检查结果画出来（全部走 DOM 文本节点，不拼 HTML）。 |
 | `settings.js` | Settings page: persisted KPI targets and account password changes. |

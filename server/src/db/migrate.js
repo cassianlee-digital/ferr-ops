@@ -968,6 +968,9 @@ export function migrate() {
     ['done_when', 'TEXT'],      // 完成标准（做到才算完成）
     ['subject_label', 'TEXT'],  // 打卡时「这次做的是哪个对象」的提示词，空=不强制填
     ['sort_order', 'INTEGER'],  // 文档里的行序；老板的表是按优先级排的，顺序本身是信息
+    // 一眼认出这条是干啥的短标签，如「社媒 · 领英」「SEO · 文章」。
+    // 和 track 分开：track 是归谁管（算配额用），tag 是做什么（认人眼用），一个赛道下有好几种活。
+    ['tag', 'TEXT'],
     ['source', 'TEXT'],         // 来源文档标识，配合 code+track 做幂等导入
   ]);
   // 幂等导入的键取 (source, track, title)，不取 code：文档里「固定」在同一赛道出现两次

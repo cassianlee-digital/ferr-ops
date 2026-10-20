@@ -702,7 +702,7 @@
       </div>
 
       <div class="panel" id="panel-tasks">
-        <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">每列上=SOP 固定清单(日/周/月合并一条一行)、下=每日新增 · 陈=SEM、李=SEO、公司任务在左</div></div>
+        <div class="page-head"><div><div class="page-title">日计划</div><div class="page-sub">上方切赛道 · 左=SOP 固定清单(日/周/月)、右=每日新增 · 陈=SEM 与社媒、李=SEO 与 GEO</div></div>
           <button class="btn-ghost btn-mini co-add-task-btn" id="co-add-task-hdr" data-ui-action="open-task" data-dept="公司" title="派发公司任务"><i class="ti ti-building"></i> 派发公司任务</button>
           <button class="btn-primary" data-ui-action="ai" data-ai-prompt="根据本周数据和整改清单，生成本周任务分给李和陈，按优先级排序" data-ai-title="AI 分析"><i class="ti ti-sparkles"></i> AI 生成任务</button></div>
         <!-- Step C：未做 SOP 提示 banner（周期首日 08:00 后才显示）+ 公司新派 banner（urgent=1 未完成；硬编码 Bafaw banner 已移除）-->
@@ -717,9 +717,16 @@
           <span class="planday-hint" id="planday-hint"></span>
         </div>
         <div class="is-hidden" id="plan-history"></div>
+        <!-- 赛道 Tab：切人看，不再三列并排。选中的那块吃整屏宽，内部左右分栏（SOP 40% / 每日新增 60%）。
+             公司任务只有真有未完成的才出现这个 Tab（沿用原来「公司列有活才显示」的语义）。 -->
+        <div class="plan-tabs">
+          <button type="button" class="plan-tab" data-tab="sem"><span class="badge b-purple">陈</span> SEM &amp; 社媒任务</button>
+          <button type="button" class="plan-tab" data-tab="seo"><span class="badge b-blue">李</span> SEO &amp; GEO 任务</button>
+          <button type="button" class="plan-tab is-hidden" data-tab="co"><span class="badge b-red">公司</span> 公司任务</button>
+        </div>
         <div class="tboard">
           <!-- 公司任务（前） -->
-          <div class="pblock co-block" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span><span class="kcount" id="kcount-company">SOP 0 · 派发 0</span></div>
+          <div class="pblock co-block" data-plan-tab="co" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span><span class="kcount" id="kcount-company">SOP 0 · 派发 0</span></div>
             <div class="sopnew">
               <div id="sop-company"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
                 <div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>
@@ -730,7 +737,7 @@
             </div>
           </div>
           <!-- SEM 任务（中 · 陈） -->
-          <div class="pblock"><div class="pblock-head"><span class="badge b-purple">陈</span><span class="pn">SEM 任务</span><span class="kcount" id="kcount-sem">SOP 0 · 新增 0</span></div>
+          <div class="pblock" data-plan-tab="sem"><div class="pblock-head"><span class="badge b-purple">陈</span><span class="pn">SEM 任务</span><span class="kcount" id="kcount-sem">SOP 0 · 新增 0</span></div>
             <div class="sopnew">
               <div id="sop-sem"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
                 <div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>
@@ -741,7 +748,7 @@
             </div>
           </div>
           <!-- SEO 任务（后 · 李） -->
-          <div class="pblock"><div class="pblock-head"><span class="badge b-blue">李</span><span class="pn">SEO 任务</span><span class="kcount" id="kcount-seo">SOP 0 · 新增 0</span></div>
+          <div class="pblock" data-plan-tab="seo"><div class="pblock-head"><span class="badge b-blue">李</span><span class="pn">SEO 任务</span><span class="kcount" id="kcount-seo">SOP 0 · 新增 0</span></div>
             <div class="sopnew">
               <div id="sop-seo"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
                 <div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>
@@ -881,7 +888,7 @@
           <div class="card"><div class="card-head"><span class="card-title">SOP 设置</span><span class="card-sub">每日 / 每周 / 每月固定任务 · 设置后自动出现在任务看板对应板块 · 仅经理 / 老板可改</span>
             <button class="btn-primary csp-s-ca6fc035af" id="sop-add-btn" data-ui-action="open-sop"><i class="ti ti-plus"></i> 新增 SOP</button>
           </div>
-            <table class="dt"><thead><tr><th class="csp-s-91269935bd">部门</th><th class="csp-s-91269935bd">赛道</th><th class="csp-s-f47e3b970d">频率</th><th class="csp-s-91269935bd">编号</th><th>标题</th><th class="csp-s-f47e3b970d">周目标</th><th class="csp-s-f47e3b970d">工时h</th><th>完成标准</th><th class="csp-s-6d2a18baae">时间提示</th><th class="ctr csp-s-91269935bd">操作</th></tr></thead><tbody id="tb-sop"></tbody></table>
+            <table class="dt"><thead><tr><th class="csp-s-91269935bd">部门</th><th class="csp-s-91269935bd">赛道</th><th class="csp-s-91269935bd">标签</th><th class="csp-s-f47e3b970d">频率</th><th class="csp-s-91269935bd">编号</th><th>标题</th><th class="csp-s-f47e3b970d">周目标</th><th class="csp-s-f47e3b970d">工时h</th><th>完成标准</th><th class="csp-s-6d2a18baae">时间提示</th><th class="ctr csp-s-91269935bd">操作</th></tr></thead><tbody id="tb-sop"></tbody></table>
             <div class="csp-s-2ef32a3eca" id="sop-empty"><i class="ti ti-pin-off csp-s-fd53510ab7"></i>暂无 SOP，点上方「新增 SOP」开始</div>
           </div>
         </div></div></div>
@@ -1369,6 +1376,10 @@
       <div class="fld-row">
         <div class="fld"><label>赛道</label><select id="sop-track"><option value="">跟部门</option><option>SEM</option><option>社媒</option><option>SEO</option><option>GEO</option><option>公司</option></select></div>
         <div class="fld"><label>编号（可选）</label><input id="sop-code" placeholder="如：P1 / S3 / G1 / M4"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>标签（可选）</label><input id="sop-tag" placeholder="一眼认出是干啥的，如：社媒 · 领英 / SEO · 文章"></div>
+        <div class="fld"><label>&nbsp;</label><div class="dim csp-s-25b23d2157">留空就显示赛道名</div></div>
       </div>
       <div class="fld"><label>标题</label><input id="sop-title" placeholder="如：查看 Google Ads 花费与转化"></div>
       <div class="fld-row">

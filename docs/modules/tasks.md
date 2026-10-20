@@ -68,7 +68,21 @@
   状态为「放弃」或已归档的整改不被任务牵着走。`GET /api/fixes` 每行带 `planned_task_id`/`planned_done`,
   整改清单一眼看出哪条还没人接。日计划卡上有「整改」出身标,点击跳回整改清单看依据。
   至此闭环为:**数据 → 诊断 → 整改 → 谁的今日 → 打卡推进 → 完成回写**。
-- **日计划(`#panel-tasks`)已改版**(2026-08-13):三列(公司/陈-SEM/李-SEO),每列上=SOP 固定清单、下=每日新增。
+- **日计划布局再改版**(2026-10-20,`public/src/plan-tabs.js` 新模块):**三列并排 → 上方 Tab 切赛道**
+  (陈 SEM & 社媒 / 李 SEO & GEO / 公司任务),选中那块吃整屏宽,**内部左右分栏:SOP 固定 40% / 每日新增 60%**
+  (新增那栏的卡更长——目的/完成标准/结果/证据都在里面——所以拿大头)。1100px 以下退回上下排布。
+  - 三列并排时每格只剩三分之一屏宽,SOP 标题一行放不下、任务卡的内容块挤成竖条,这是改版的直接原因。
+  - **公司 Tab 沿用「有活才出现」的老语义**(原 `syncCompanyColVisibility`,现由 `syncPlanTabs` 统一管:
+    它还要处理「正停在公司 Tab 上而它没了」的退场,两处各管各的会打架)。
+  - 默认落哪个 Tab:上次选的(localStorage `ferr:planTab`)> 按登录角色(陈→SEM、李→SEO)> 第一个。
+  - ⚠ **`#panel-tasks .sop-list .sop-row` 的 `flex-wrap: wrap` 是承重的**:
+    `#panel-tasks .sop-list .tcard { flex-wrap: nowrap }` 特异性更高,只写 `.sop-row` 会被压掉;
+    一旦压掉,`flex: 1 0 100%` 的进度条和展开区会跟标题挤在同一行,**标题被压到 min-width、竖排一行一个字**。
+- **任务卡 meta 行固定两组**(2026-10-20):`.tmeta-info`(左:徽章/备注/时间段/优先级/天数)+
+  `.tmeta-ops`(右:推进/顺延/分发/编辑/删除,`margin-left:auto` 贴右)。
+  以前是一长串元素平铺,删除键按「右边还有没有别的东西」在两个 class 间切 `margin-left:auto`,
+  同一列里两张卡的时间段徽章一张居左一张居右,眼睛每行都要重新找它在哪。
+- **日计划(`#panel-tasks`)原三列版**(2026-08-13):三列(公司/陈-SEM/李-SEO),每列上=SOP 固定清单、下=每日新增。
   - SOP 日/周/月**合并成一个清单框**,一条一行,频率是行尾标签(`src/sop.js renderSopCards/sopCardEl`)。
   - 任务卡单行、无彩色边条;三列各自 `max-height:64vh` 滚动(1280px 断点下撤销,见 `page-tasks.css` 注释)。
   - `loop_items` 加 **`start_date`**(开始日),`task_date` 语义=**截止日**。两者构成跨天任务:
@@ -127,6 +141,9 @@
   - 导入:`server/src/db/sopCatalog.json`(由两份 xlsx 生成,正常**勿手改**)+ `npm run import:sop`(幂等,
     键 = `(source, track, title)`;**`active` 永不回写**,停用过的条目重导不会被悄悄打开)。
     **刻意不挂在 migrate 里自动跑** —— 这 60 条是业务内容不是表结构,一次重启往线上塞 60 条清单会让人以为系统疯了。
+  - **每条 SOP 带一个浅色小标签**(`sop_definitions.tag`,如「社媒 · 领英+脸书」「SEO · 文章」):
+    **和 track 分开** —— track 是归谁管(算配额用)、tag 是做什么(认人眼用),一个赛道下有好几种活。
+    清单里 59 条已全部打好;老条目没填就退回显示赛道名,在 设置 → SOP 里可改。
   - **「同一条证据被记了两次」软提醒**(`server/src/services/sopDuplicate.js`):记流水时拿 `evidence_url`
     去比最近 **60 天**的流水,撞上了就在回执里带 `duplicate`,前端 toast 出黄字——**只提醒不拦**。
     不拦是因为有合理的重叠:李写完集群文章、陈把它排进内容日历再推一轮,同一个链接两边都该算;

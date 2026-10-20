@@ -78,14 +78,20 @@ function host() {
   }, true);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePop(); });
   window.addEventListener('resize', () => closePop());
-  // 看板三列各自滚动：锚点滚走了弹层还浮在原地 = 它指着一张已经不在那儿的卡。
-  // 捕获阶段监听才收得到列内滚动（scroll 不冒泡）。
-  // 250ms 静默期：点按钮前的惯性滚动/scrollIntoView 的余波会在弹层刚开时补一个 scroll，
-  // 不留这个窗口的话弹层会"一开就关"。
-  document.addEventListener('scroll', () => {
+  /* 看板各列自己滚动：锚点滚走了弹层还浮在原地 = 它指着一张已经不在那儿的卡，所以要关。
+     捕获阶段监听才收得到列内滚动（scroll 不冒泡）。
+     ⚠ 但捕获也会收到**弹层自己内部**的滚动 —— 月历和时刻列表都是可滚区。
+     不排除掉的话：鼠标在月历里滚一下，弹层当场自己关掉，日期根本选不了。
+     250ms 静默期另外挡的是：点按钮前的惯性滚动 / scrollIntoView 的余波。 */
+  document.addEventListener('scroll', (e) => {
+    if (!_host || _host.hidden) return;
+    const t = e.target;
+    if (t === _host || (t && t.nodeType === 1 && t.closest && t.closest('.tpop'))) return;
     if (Date.now() - _openedAt < 250) return;
-    if (_host && !_host.hidden) closePop();
+    closePop();
   }, true);
+  // 滚轮落在弹层里时直接吞掉冒泡，连带挡住某些浏览器把滚动链传给祖先容器（滚到底继续滚父级）
+  _host.addEventListener('wheel', (e) => { e.stopPropagation(); }, { passive: true });
   return _host;
 }
 export function closePop() {

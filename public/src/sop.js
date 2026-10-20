@@ -161,8 +161,12 @@ export function sopCardEl(s){
   const logBtn=logged
     ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> 记一条</button>`
     : '';
+  // 一眼认出这条是干啥的浅色小标签（社媒 · 领英+脸书 / SEO · 文章 …）。
+  // 老条目没填 tag 就退回赛道名——总比什么都没有强，填了就按填的显示（设置页可改）。
+  const tagText=s.tag||trackOf(s)||'';
+  const tag=tagText?`<span class="sop-tag">${esc(tagText)}</span>`:'';
   row.innerHTML=left
-    +`<span class="sop-text">${code}${esc(s.title)}</span>`
+    +`<span class="sop-text">${code}${esc(s.title)}${tag}</span>`
     +`<span class="sop-right">${hint}${logBtn}`
     +`<button type="button" class="btn-mini sop-info-btn" title="为什么做 / 怎么做 / 完成标准"><i class="ti ti-info-circle"></i></button></span>`;
   if(quota){
@@ -255,7 +259,7 @@ export function renderSopSettingsTable(){
       ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>`
       : '<span class="dim csp-s-33ee298127">只读</span>';
     const target=hasQuota(s)?fmtQty(s.target_qty)+(s.unit?' '+s.unit:''):'—';
-    tr.innerHTML=`<td>${esc(s.dept)}</td><td>${esc(trackOf(s)||'')}</td><td>${esc(FREQ_LABEL[s.freq]||s.freq)}</td>`
+    tr.innerHTML=`<td>${esc(s.dept)}</td><td>${esc(trackOf(s)||'')}</td><td>${esc(s.tag||'')}</td><td>${esc(FREQ_LABEL[s.freq]||s.freq)}</td>`
       +`<td>${esc(s.code||'')}</td><td>${esc(s.title)}</td><td>${esc(target)}</td>`
       +`<td>${s.effort_h==null?'':esc(fmtQty(s.effort_h))}</td>`
       +`<td class="dim csp-s-33ee298127">${esc(s.done_when||s.content||'')}</td>`
@@ -277,6 +281,7 @@ export function openSopModal(sop){
   set('sop-code',sop?sop.code:'');
   set('sop-target',sop?sop.target_qty:'');
   set('sop-unit',sop?sop.unit:'');
+  set('sop-tag',sop?sop.tag:'');
   set('sop-subject-label',sop?sop.subject_label:'');
   set('sop-why',sop?sop.why:'');
   set('sop-how',sop?sop.how:'');
@@ -299,7 +304,7 @@ export async function submitSop(){
   const body={dept,freq,title,content,time_hint,
     track:v('sop-track')||null, code:v('sop-code')||null,
     target_qty:n('sop-target'), unit:v('sop-unit')||null,
-    subject_label:v('sop-subject-label')||null,
+    tag:v('sop-tag')||null, subject_label:v('sop-subject-label')||null,
     why:v('sop-why')||null, how:v('sop-how')||null, done_when:v('sop-done-when')||null,
     metric:v('sop-metric')||null, effort_h:n('sop-effort')};
   try{

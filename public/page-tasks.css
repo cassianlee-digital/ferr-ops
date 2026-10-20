@@ -1200,12 +1200,7 @@ body.dark .tpop { box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
 /* 窄列（三列布局下每列约 1/3 屏）里 SOP 行的伸缩：
    .sop-right 原本 flex:none，带上「记一条」后比列还宽，会把 .sop-text 挤成 0 宽、
    标题竖着一行一个字。给标题一个 55% 的 flex-basis 兜底，右侧组允许整组换行到下一行。 */
-#panel-tasks .sop-row .sop-text {
-  flex: 1 1 55%;
-  /* 给个下限，否则它是行内唯一可收缩的项，会一路缩到 0 宽（标题竖排一行一个字），
-     右侧组永远不会换行。有了下限，放不下时整组 .sop-right 落到第二行。 */
-  min-width: 7em;
-}
+
 #panel-tasks .sop-row .sop-right {
   flex: 0 1 auto;
   margin-left: auto;
@@ -1351,3 +1346,156 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
 /* 任务被改过几次：点开看改动记录（弹框与询盘的改动流水共用） */
 .taudit-changes { padding: 0 5px; border: 0; border-radius: var(--radius); background: var(--amber-soft); color: var(--amber); font-size: 10px; font-weight: 600; line-height: 16px; cursor: pointer; }
 .taudit-changes:hover { background: var(--amber); color: #fff; }
+
+/* ===================== 日计划改版（2026-10-20）=====================
+   三列并排 → 上方 Tab 切赛道 + 选中那块吃整屏宽、内部左右分栏。
+   动机：三列并排时每格只有三分之一屏宽，SOP 标题一行放不下、任务卡的
+   目的/完成标准/结果/证据挤成竖条。 */
+
+#panel-tasks .plan-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+#panel-tasks .plan-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--text2);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+#panel-tasks .plan-tab:hover { color: var(--text1); background: var(--bg3); }
+#panel-tasks .plan-tab.on {
+  border-bottom-color: var(--primary);
+  color: var(--text1);
+  font-weight: 600;
+}
+
+/* 看板不再是网格：一次只显示一块，宽度拉满 */
+#panel-tasks .tboard {
+  display: block;
+  grid-template-columns: none;
+  gap: 0;
+}
+#panel-tasks .tboard .pblock { display: none; }
+#panel-tasks .tboard .pblock.is-active { display: flex; }
+
+/* 块内左右分栏：SOP 固定 40% / 每日新增 60%。
+   新增那栏的卡更长（目的/完成标准/结果/证据都在里面），所以它拿大头。 */
+#panel-tasks .sopnew {
+  display: grid;
+  grid-template-columns: 40fr 60fr;
+  gap: 0 18px;
+  align-items: start;
+}
+/* 覆盖老的「上下两段用横线分隔」—— 现在是左右分栏，分隔线改成竖的 */
+#panel-tasks .sopnew > div + div {
+  margin-top: 0;
+  padding-top: 0;
+  padding-left: 18px;
+  border-top: 0;
+  border-left: 1px solid var(--border);
+}
+/* 两栏各自滚动：SOP 条数固定、新增条数不定，共用一个滚动条会互相牵着走 */
+#panel-tasks .sopnew > div {
+  max-height: 68vh;
+  overflow: auto;
+  padding-bottom: 12px;
+}
+
+/* 窄屏退回上下排布：左右分栏在 1100px 以下每栏不足 420px，还不如竖着放 */
+@media (max-width: 1100px) {
+  #panel-tasks .sopnew {
+    display: block;
+  }
+  #panel-tasks .sopnew > div {
+    max-height: none;
+    overflow: visible;
+  }
+  #panel-tasks .sopnew > div + div {
+    margin-top: 2px;
+    padding-top: 12px;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+}
+
+/* ---- meta 行：左信息 / 右操作，位置固定不漂移 ----
+   以前是一长串元素平铺，删除键按「右边还有没有别的」在两个 class 间切 margin-left:auto，
+   结果同一列里两张卡的时间段徽章一张居左、一张居右，眼睛每行都要重新找。 */
+#panel-tasks .tmeta {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+#panel-tasks .tmeta .tmeta-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#panel-tasks .tmeta .tmeta-ops {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+/* 操作按钮平时压到很淡，鼠标移到卡上才浮出来：一屏几十张卡，按钮全亮会盖过内容 */
+#panel-tasks .tmeta .tmeta-ops .btn-mini { opacity: .45; transition: opacity .12s; }
+#panel-tasks .tcard:hover .tmeta-ops .btn-mini { opacity: 1; }
+
+/* ---- SOP 行：收窄 + 浅色小标签 ----
+   改版后 SOP 栏只占 40%，行本来就窄了；再把行高压一压、标签压到很淡，
+   让「这条是干啥的」一眼可辨又不抢标题。 */
+#panel-tasks .sop-list .sop-row {
+  padding: 7px 10px;
+  gap: 8px;
+  /* 必须在这个选择器上写（.sop-list .sop-row），不能只写 `.sop-row`：
+     `#panel-tasks .sop-list .tcard { flex-wrap: nowrap }` 特异性更高，会把它压掉。
+     压掉的后果不是"不换行"这么轻 —— 进度条和展开区是 `flex: 1 0 100%`，
+     nowrap 之下它们和标题挤在同一行，标题被压到 min-width，于是竖排一行一个字。 */
+  flex-wrap: wrap;
+}
+#panel-tasks .sop-row .sop-text {
+  /* 行内唯一可收缩的项。上面那条 flex-wrap:wrap 保证进度条/展开区各占一行之后，
+     这里就能吃满剩余宽度；min-width 只是保险，真挤不下时让右侧那组换行而不是把标题压扁。 */
+  flex: 1 1 auto;
+  min-width: 8em;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+#panel-tasks .sop-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: var(--radius);
+  background: var(--bg4);
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 15px;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+#panel-tasks .sop-row.done .sop-tag { opacity: .5; }
+/* 记一条 / ⓘ 平时压淡，鼠标到行上才浮出来——一栏二十来行，按钮全亮就成了按钮墙 */
+#panel-tasks .sop-row .sop-right .btn-mini { opacity: .5; transition: opacity .12s; }
+#panel-tasks .sop-row:hover .sop-right .btn-mini { opacity: 1; }
+#panel-tasks .sop-row .sop-bar { margin-top: 5px; }
+/* 赛道段头收紧：40% 栏里原来的间距显得松垮 */
+#panel-tasks .sop-track-cap { margin: 8px 0 5px; font-size: 11.5px; }
+#panel-tasks .sop-freq-cap { margin: 6px 0 4px; }

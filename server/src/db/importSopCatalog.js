@@ -22,7 +22,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 // 文档侧字段：重导时以 catalog 为准。title/track/source 是键，不在这里。
 const SYNC_COLS = ['dept', 'freq', 'code', 'target_qty', 'unit', 'effort_h', 'metric',
-  'why', 'how', 'done_when', 'subject_label', 'sort_order', 'time_hint'];
+  'why', 'how', 'done_when', 'subject_label', 'sort_order', 'time_hint', 'tag'];
 
 export function importSopCatalog({ dryRun = false, catalogPath } = {}) {
   const raw = JSON.parse(readFileSync(catalogPath || join(here, 'sopCatalog.json'), 'utf8'));
@@ -30,9 +30,9 @@ export function importSopCatalog({ dryRun = false, catalogPath } = {}) {
   const find = db.prepare('SELECT * FROM sop_definitions WHERE source = ? AND track = ? AND title = ?');
   const ins = db.prepare(
     `INSERT INTO sop_definitions (source, track, title, dept, freq, code, target_qty, unit, effort_h,
-                                  metric, why, how, done_when, subject_label, sort_order, time_hint, active)
+                                  metric, why, how, done_when, subject_label, sort_order, time_hint, tag, active)
      VALUES (@source, @track, @title, @dept, @freq, @code, @target_qty, @unit, @effort_h,
-             @metric, @why, @how, @done_when, @subject_label, @sort_order, @time_hint, 1)`
+             @metric, @why, @how, @done_when, @subject_label, @sort_order, @time_hint, @tag, 1)`
   );
   const upd = db.prepare(
     `UPDATE sop_definitions SET ${SYNC_COLS.map((c) => `${c} = @${c}`).join(', ')}
@@ -57,7 +57,7 @@ export function importSopCatalog({ dryRun = false, catalogPath } = {}) {
   }
   const run = db.transaction(() => {
     for (const it of items) {
-      const row = { time_hint: null, ...it };
+      const row = { time_hint: null, tag: null, ...it };
       const cur = find.get(row.source, row.track, row.title);
       if (!cur) {
         if (!dryRun) ins.run(row);

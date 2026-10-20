@@ -7,6 +7,7 @@ import { inlineConfirm } from './keywords.js';
 import { placeCaretEnd } from './editable.js';
 import { loadSops, loadUrgent, updateSopCounts } from './sop.js';
 import { formatLocalDate, ymd } from './timerange.js';
+import { hasCompanyTasks, syncPlanTabs } from './plan-tabs.js';
 import { prioFlagHtml, prioOf, normPrio, openPrioPop, openDatePop, hourToMin, fmtHour, TIME_OPTS, bindPrioChip, setPrioChip } from './task-pickers.js';
 import { auditBadgesHtml, auditBlockHtml, fillTaskAuditFields, openTaskDone, readTaskAuditFields } from './task-audit.js';
 
@@ -178,9 +179,15 @@ function renderTaskMeta(card){
     : '';
   const push=taskPushHtml(it,g);
   const split=isCo?`<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> 分发</button>`:'';
-  // 右侧已有东西时删除键只留间距；只有它自己时才吃 auto 靠右
-  const del=it.id?`<button type="button" class="btn-mini csp-task-delete ${(isCo||ops||push)?'csp-task-delete-spaced':'csp-task-delete-pushed'}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
-  box.innerHTML=deptBadge+srcBadge+auditBadgesHtml(it)+note+taskDueHtml(it)+taskAgeHtml(it,g)+push+ops+split+del;
+  const del=it.id?`<button type="button" class="btn-mini csp-task-delete" data-loop-action="task-delete" title="删除"><i class="ti ti-trash"></i></button>`:'';
+  const pen=it.id?`<button type="button" class="btn-mini task-edit-pen" data-loop-action="task-edit" title="编辑任务"><i class="ti ti-pencil"></i></button>`:'';
+  /* meta 行固定两组，位置不随内容多少漂移：
+       .tmeta-info —— 左边，信息（徽章 / 备注 / 时间段 / 优先级 / 天数），从左往右排、放不下就换行；
+       .tmeta-ops  —— 右边，操作按钮，永远贴右边缘。
+     以前是一长串元素平铺 + 删除键按「右边还有没有别的东西」在两个 class 之间切 margin-left:auto，
+     结果同一列里两张卡的时间段徽章会一张居左、一张居右 —— 眼睛每行都要重新找它在哪。 */
+  box.innerHTML=`<span class="tmeta-info">${deptBadge+srcBadge+auditBadgesHtml(it)+note+taskDueHtml(it)+taskAgeHtml(it,g)}</span>`
+    +`<span class="tmeta-ops">${push+ops+split+pen+del}</span>`;
   // 思考框架块挂在卡尾，独占一行（flex:1 0 100%），不影响 meta 行布局
   let lb=card.querySelector('.tloop'); if(lb)lb.remove();
   if(loopBlock){ const tmp=document.createElement('div'); tmp.innerHTML=loopBlock; card.appendChild(tmp.firstChild); }
@@ -217,9 +224,9 @@ function taskDueHtml(it){
   // 以前胶囊直接开整张弹窗，顺延一天要填四个框，这是①落地后最常被绕过的一步。
   const cls='tdue'+(empty?' tdue-none':'')+' task-date-pop';
   const attrs=` data-loop-action="task-date-pop" title="${span?esc(st+' ~ '+due)+' · ':''}点击改期 / 设时刻"`;
+  // 铅笔不在这里出 —— 它是操作按钮，归 .tmeta-ops 那一组统一靠右（见 renderTaskMeta）
   return `<span class="${cls}"${attrs}><i class="ti ${empty?'ti-calendar-plus':'ti-clock'}"></i> ${empty?'设日期':esc(txt)+esc(time)}</span>`
-    +prioFlagHtml(it.task_priority)
-    +`<button type="button" class="btn-mini task-edit-pen" data-loop-action="task-edit" title="编辑任务"><i class="ti ti-pencil"></i></button>`;
+    +prioFlagHtml(it.task_priority);
 }
 /* 卡上的轻量改期 / 改优先级：都走 PATCH，改完就地重排，不重拉整列。
    重拉会把「刚勾完还没折叠」的卡和滚动位置一起冲掉。 */
@@ -352,18 +359,13 @@ function taskDrop(btn){
 function addTaskCards(s,items){ (items||[]).forEach(t=>addTaskCard(s,t)); } // 兼容复盘回流 loopBack
 
 /* 公司列有没有活跃任务（不含完成态）：有则显列，无则隐藏列并在页头显示小按钮 */
+/* 「公司任务有活才出现」这条老语义没变，只是载体从一整列换成了一个 Tab（见 plan-tabs.js）。
+   显示/隐藏交给 syncPlanTabs 统一做：它还要负责「正停在公司 Tab 上而它没了」的退场，
+   这里再各管各的会和它打架。 */
 function syncCompanyColVisibility(){
-  const col=document.getElementById('newtask-company');
-  const coBlock=document.getElementById('cocol-tasks');
   const hdrBtn=document.getElementById('co-add-task-hdr');
-  if(!col||!coBlock)return;
-  // 任何非 .done 的顶层任务卡 = 有活跃公司任务
-  const hasActive=!!col.querySelector('.tcard:not(.done):not(.subtask)');
-  coBlock.style.display=hasActive?'':'none';
-  // 公司列隐藏时给 tboard 加 co-hidden，CSS 切换成两列均分
-  const board=document.querySelector('#panel-tasks > .tboard');
-  if(board)board.classList.toggle('co-hidden',!hasActive);
-  if(hdrBtn)hdrBtn.style.display=hasActive?'none':'';
+  syncPlanTabs();
+  if(hdrBtn)hdrBtn.style.display=hasCompanyTasks()?'none':'';
 }
 /* 排序：先优先级（1 最高在前，未设=4 在后），同优先级再按 task_hour，无 hour 的排最后。
    优先级排在时刻前面是有意的——「优先级1 但没写时刻」应该比「优先级4 排了 09:00」更靠前，
@@ -432,7 +434,7 @@ function annotateTaskTimes(todayGroup){
     // 不把入口挂到徽章上，排了时刻的今日任务就再也点不开日期弹层了。
     if(it.id){ badge.dataset.loopAction='task-date-pop'; badge.classList.add('task-date-pop'); badge.title='点击改期 / 改时刻'; }
     // 插入 meta 行，跟日期时间戳并排；同时隐藏单独的时间胶囊（已含在徽章里）
-    const metaBox=card.querySelector('.tmeta');
+    const metaBox=card.querySelector('.tmeta .tmeta-info')||card.querySelector('.tmeta');
     if(metaBox) metaBox.prepend(badge); else card.appendChild(badge);
     const duePill=metaBox&&metaBox.querySelector('.tdue');
     if(duePill) duePill.style.display='none';

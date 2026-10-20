@@ -5125,7 +5125,9 @@
     const hint = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
     const left = quota ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>` : logged ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}</span>` : `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span>`;
     const logBtn = logged ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> \u8BB0\u4E00\u6761</button>` : "";
-    row.innerHTML = left + `<span class="sop-text">${code}${esc(s.title)}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u5B8C\u6210\u6807\u51C6"><i class="ti ti-info-circle"></i></button></span>`;
+    const tagText = s.tag || trackOf(s) || "";
+    const tag = tagText ? `<span class="sop-tag">${esc(tagText)}</span>` : "";
+    row.innerHTML = left + `<span class="sop-text">${code}${esc(s.title)}${tag}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u5B8C\u6210\u6807\u51C6"><i class="ti ti-info-circle"></i></button></span>`;
     if (quota) {
       const bar = document.createElement("div");
       bar.className = "sop-bar";
@@ -5219,7 +5221,7 @@
       tr2.dataset.sopId = s.id;
       const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>` : '<span class="dim csp-s-33ee298127">\u53EA\u8BFB</span>';
       const target = hasQuota(s) ? fmtQty(s.target_qty) + (s.unit ? " " + s.unit : "") : "\u2014";
-      tr2.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(trackOf(s) || "")}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.code || "")}</td><td>${esc(s.title)}</td><td>${esc(target)}</td><td>${s.effort_h == null ? "" : esc(fmtQty(s.effort_h))}</td><td class="dim csp-s-33ee298127">${esc(s.done_when || s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
+      tr2.innerHTML = `<td>${esc(s.dept)}</td><td>${esc(trackOf(s) || "")}</td><td>${esc(s.tag || "")}</td><td>${esc(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc(s.code || "")}</td><td>${esc(s.title)}</td><td>${esc(target)}</td><td>${s.effort_h == null ? "" : esc(fmtQty(s.effort_h))}</td><td class="dim csp-s-33ee298127">${esc(s.done_when || s.content || "")}</td><td>${esc(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
       tb.appendChild(tr2);
     });
   }
@@ -5242,6 +5244,7 @@
     set("sop-code", sop ? sop.code : "");
     set("sop-target", sop ? sop.target_qty : "");
     set("sop-unit", sop ? sop.unit : "");
+    set("sop-tag", sop ? sop.tag : "");
     set("sop-subject-label", sop ? sop.subject_label : "");
     set("sop-why", sop ? sop.why : "");
     set("sop-how", sop ? sop.how : "");
@@ -5278,6 +5281,7 @@
       code: v("sop-code") || null,
       target_qty: n("sop-target"),
       unit: v("sop-unit") || null,
+      tag: v("sop-tag") || null,
       subject_label: v("sop-subject-label") || null,
       why: v("sop-why") || null,
       how: v("sop-how") || null,
@@ -5498,6 +5502,75 @@
     }
   }
 
+  // public/src/plan-tabs.js
+  var KEY = "ferr:planTab";
+  var TABS = ["sem", "seo", "co"];
+  var blocks = () => [...document.querySelectorAll("#panel-tasks .tboard .pblock")];
+  var tabBtns = () => [...document.querySelectorAll("#panel-tasks .plan-tabs [data-tab]")];
+  function blockOf(key) {
+    return document.querySelector(`#panel-tasks .tboard .pblock[data-plan-tab="${key}"]`);
+  }
+  function hasCompanyTasks() {
+    const col = document.getElementById("newtask-company");
+    return !!(col && col.querySelector(".tcard:not(.done):not(.subtask)"));
+  }
+  function availableTabs() {
+    return TABS.filter((k) => k === "co" ? hasCompanyTasks() : !!blockOf(k));
+  }
+  function defaultTab() {
+    const saved = (() => {
+      try {
+        return localStorage.getItem(KEY);
+      } catch (e) {
+        return null;
+      }
+    })();
+    const ok = availableTabs();
+    if (saved && ok.includes(saved)) return saved;
+    const role = (window.ME || {}).role;
+    if (role === "seo" && ok.includes("seo")) return "seo";
+    if (role === "sem" && ok.includes("sem")) return "sem";
+    return ok[0] || "sem";
+  }
+  function currentTab() {
+    const on = document.querySelector("#panel-tasks .tboard .pblock.is-active");
+    return on ? on.dataset.planTab : null;
+  }
+  function setPlanTab(key, { remember = true } = {}) {
+    const ok = availableTabs();
+    const next = ok.includes(key) ? key : ok[0] || null;
+    if (!next) return;
+    blocks().forEach((b) => b.classList.toggle("is-active", b.dataset.planTab === next));
+    tabBtns().forEach((b) => b.classList.toggle("on", b.dataset.tab === next));
+    if (remember) {
+      try {
+        localStorage.setItem(KEY, next);
+      } catch (e) {
+      }
+    }
+  }
+  function syncPlanTabs() {
+    const ok = availableTabs();
+    tabBtns().forEach((b) => b.classList.toggle("is-hidden", !ok.includes(b.dataset.tab)));
+    const bar = document.querySelector("#panel-tasks .plan-tabs");
+    if (bar) bar.classList.toggle("is-hidden", ok.length < 2);
+    const cur = currentTab();
+    if (!cur || !ok.includes(cur)) setPlanTab(defaultTab(), { remember: false });
+  }
+  var _bound = false;
+  function initPlanTabs() {
+    if (!_bound) {
+      _bound = true;
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("#panel-tasks .plan-tabs [data-tab]");
+        if (!btn) return;
+        setPlanTab(btn.dataset.tab);
+      });
+    }
+    syncPlanTabs();
+    setPlanTab(defaultTab(), { remember: false });
+  }
+
   // public/src/task-pickers.js
   var PRIOS = [
     { v: 1, label: "\u4F18\u5148\u7EA71", cls: "tprio-1" },
@@ -5554,10 +5627,16 @@
       if (e.key === "Escape") closePop();
     });
     window.addEventListener("resize", () => closePop());
-    document.addEventListener("scroll", () => {
+    document.addEventListener("scroll", (e) => {
+      if (!_host || _host.hidden) return;
+      const t = e.target;
+      if (t === _host || t && t.nodeType === 1 && t.closest && t.closest(".tpop")) return;
       if (Date.now() - _openedAt < 250) return;
-      if (_host && !_host.hidden) closePop();
+      closePop();
     }, true);
+    _host.addEventListener("wheel", (e) => {
+      e.stopPropagation();
+    }, { passive: true });
     return _host;
   }
   function closePop() {
@@ -6459,8 +6538,9 @@
     const ops = g === "overdue" && it.id ? `<button type="button" class="btn-mini task-defer" data-loop-action="task-defer" title="\u987A\u5EF6\u5230\u4ECA\u5929"><i class="ti ti-calendar-plus"></i></button><button type="button" class="btn-mini task-drop" data-loop-action="task-drop" title="\u653E\u5F03\u5E76\u5F52\u6863"><i class="ti ti-archive"></i></button>` : "";
     const push = taskPushHtml(it, g);
     const split = isCo ? `<button type="button" class="btn-mini cotask-split" data-loop-action="task-split"><i class="ti ti-git-branch"></i> \u5206\u53D1</button>` : "";
-    const del = it.id ? `<button type="button" class="btn-mini csp-task-delete ${isCo || ops || push ? "csp-task-delete-spaced" : "csp-task-delete-pushed"}" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
-    box.innerHTML = deptBadge + srcBadge + auditBadgesHtml(it) + note + taskDueHtml(it) + taskAgeHtml(it, g) + push + ops + split + del;
+    const del = it.id ? `<button type="button" class="btn-mini csp-task-delete" data-loop-action="task-delete" title="\u5220\u9664"><i class="ti ti-trash"></i></button>` : "";
+    const pen = it.id ? `<button type="button" class="btn-mini task-edit-pen" data-loop-action="task-edit" title="\u7F16\u8F91\u4EFB\u52A1"><i class="ti ti-pencil"></i></button>` : "";
+    box.innerHTML = `<span class="tmeta-info">${deptBadge + srcBadge + auditBadgesHtml(it) + note + taskDueHtml(it) + taskAgeHtml(it, g)}</span><span class="tmeta-ops">${push + ops + split + pen + del}</span>`;
     let lb = card2.querySelector(".tloop");
     if (lb) lb.remove();
     if (loopBlock) {
@@ -6501,7 +6581,7 @@
     if (!it.id) return empty2 ? "" : `<span class="tdue"><i class="ti ti-clock"></i> ${esc(txt) + esc(time)}</span>`;
     const cls = "tdue" + (empty2 ? " tdue-none" : "") + " task-date-pop";
     const attrs = ` data-loop-action="task-date-pop" title="${span ? esc(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F / \u8BBE\u65F6\u523B"`;
-    return `<span class="${cls}"${attrs}><i class="ti ${empty2 ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty2 ? "\u8BBE\u65E5\u671F" : esc(txt) + esc(time)}</span>` + prioFlagHtml(it.task_priority) + `<button type="button" class="btn-mini task-edit-pen" data-loop-action="task-edit" title="\u7F16\u8F91\u4EFB\u52A1"><i class="ti ti-pencil"></i></button>`;
+    return `<span class="${cls}"${attrs}><i class="ti ${empty2 ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty2 ? "\u8BBE\u65E5\u671F" : esc(txt) + esc(time)}</span>` + prioFlagHtml(it.task_priority);
   }
   function taskCardCtx(el5) {
     const card2 = el5.closest(".tcard");
@@ -6648,15 +6728,9 @@
     }).catch((e) => toast2(persistFailMsg(e)));
   }
   function syncCompanyColVisibility() {
-    const col = document.getElementById("newtask-company");
-    const coBlock = document.getElementById("cocol-tasks");
     const hdrBtn = document.getElementById("co-add-task-hdr");
-    if (!col || !coBlock) return;
-    const hasActive = !!col.querySelector(".tcard:not(.done):not(.subtask)");
-    coBlock.style.display = hasActive ? "" : "none";
-    const board = document.querySelector("#panel-tasks > .tboard");
-    if (board) board.classList.toggle("co-hidden", !hasActive);
-    if (hdrBtn) hdrBtn.style.display = hasActive ? "none" : "";
+    syncPlanTabs();
+    if (hdrBtn) hdrBtn.style.display = hasCompanyTasks() ? "none" : "";
   }
   function sortTaskCardsByTime(col) {
     if (!col) return;
@@ -6715,7 +6789,7 @@
         badge3.classList.add("task-date-pop");
         badge3.title = "\u70B9\u51FB\u6539\u671F / \u6539\u65F6\u523B";
       }
-      const metaBox = card2.querySelector(".tmeta");
+      const metaBox = card2.querySelector(".tmeta .tmeta-info") || card2.querySelector(".tmeta");
       if (metaBox) metaBox.prepend(badge3);
       else card2.appendChild(badge3);
       const duePill = metaBox && metaBox.querySelector(".tdue");
@@ -13052,6 +13126,7 @@
     await loadArchive2();
     await loadSops();
     await loadUrgent();
+    initPlanTabs();
     await loadContent();
     await loadGa42();
     loadSeoBoardGsc();
