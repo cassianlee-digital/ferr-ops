@@ -33,15 +33,15 @@ export function list(kind, opts = {}) {
 // 调用方少给的补 null、多给的丢掉，新增列不再逼着每个调用方同步改。
 const CREATE_COLS = ['kind', 'dept', 'content', 'owner', 'status',
   'task_date', 'start_date', 'task_hour', 'note', 'urgent', 'parent_id', 'fix_id',
-  'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how'];
+  'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how', 'task_priority'];
 
 export function create(rec) {
   const row = {};
   for (const c of CREATE_COLS) row[c] = rec?.[c] ?? null;
   const info = db
     .prepare(
-      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, start_date, task_hour, note, urgent, parent_id, fix_id, task_why, task_done_when, task_verify_date, task_verify_how)
-       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@start_date,@task_hour,@note,@urgent,@parent_id,@fix_id,@task_why,@task_done_when,@task_verify_date,@task_verify_how)`
+      `INSERT INTO loop_items (kind, dept, content, owner, status, task_date, start_date, task_hour, note, urgent, parent_id, fix_id, task_why, task_done_when, task_verify_date, task_verify_how, task_priority)
+       VALUES (@kind,@dept,@content,@owner,@status,@task_date,@start_date,@task_hour,@note,@urgent,@parent_id,@fix_id,@task_why,@task_done_when,@task_verify_date,@task_verify_how,@task_priority)`
     )
     .run(row);
   return db.prepare('SELECT * FROM loop_items WHERE id = ?').get(info.lastInsertRowid);
@@ -52,7 +52,7 @@ export function update(id, fields) {
     'hypothesis', 'metric', 'due_or_budget', 'variable', 'period', 'conclusion', 'analysis',
     'task_date', 'start_date', 'task_hour', 'note',
     'state', 'archived_at', 'deleted_at', 'archive_kind',
-    'urgent', 'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how'];
+    'urgent', 'task_why', 'task_done_when', 'task_verify_date', 'task_verify_how', 'task_priority'];
   updateById('loop_items', id, fields, allowed);
   return get(id);
 }

@@ -17,6 +17,7 @@ const OWNERS = ['seo', 'sem', 'company'];
 const REVIEW_CONFIG_KEYS = [
   'review_weight_a', 'review_weight_b', 'review_weight_cost_a', 'review_weight_cost_ab',
   'review_weight_a_ratio', 'review_weight_weekly', 'review_weight_fix', 'review_weight_test',
+  'review_weight_sop_quota',
   'review_metric_cap', 'review_min_coverage', 'review_budget_tolerance',
 ];
 const PERIOD_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;

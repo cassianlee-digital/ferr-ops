@@ -7,6 +7,7 @@ import { inlineConfirm } from './keywords.js';
 import { placeCaretEnd } from './editable.js';
 import { loadSops, loadUrgent, updateSopCounts } from './sop.js';
 import { formatLocalDate, ymd } from './timerange.js';
+import { prioFlagHtml, prioOf, normPrio, openPrioPop, openDatePop, hourToMin, fmtHour, TIME_OPTS, bindPrioChip, setPrioChip } from './task-pickers.js';
 
 /* ================= CLOSED-LOOP ENGINE ================= */
 const _2=n=>String(n).padStart(2,'0');
@@ -69,6 +70,8 @@ document.addEventListener('click',async e=>{
     else if(kind==='task-split')openSubtaskModal(action);
     else if(kind==='task-delete')taskDel(action);
     else if(kind==='task-edit')openTaskEdit(action);
+    else if(kind==='task-prio')taskPrioPop(action);
+    else if(kind==='task-date-pop')taskDatePop(action);
     else if(kind==='task-push')taskPush(action);
     else if(kind==='deposit-delete')depDel(action);
     else if(kind==='content-delete')contentDel(action);
@@ -187,12 +190,48 @@ function taskDueHtml(it){
   const span=st&&due&&st<due;
   const short=d=>(st.slice(0,4)===due.slice(0,4)?d.slice(5):d);
   const txt=span?(short(st)+' ~ '+short(due)):due;
-  const time=hr?((txt?' ':'')+hr+':00'):'';
+  const time=hr?((txt?' ':'')+fmtHour(hr)):'';
   const empty=!txt&&!time;
-  if(empty&&!it.id)return ''; // 还没入库的卡没法改期，也就不给入口
-  const cls='tdue'+(empty?' tdue-none':'')+(it.id?' task-edit':'');
-  const attrs=it.id?` data-loop-action="task-edit" title="${span?esc(st+' ~ '+due)+' · ':''}点击改期"`:'';
-  return `<span class="${cls}"${attrs}><i class="ti ${empty?'ti-calendar-plus':'ti-clock'}"></i> ${empty?'设日期':esc(txt)+esc(time)}</span>`;
+  if(!it.id)return empty?'':`<span class="tdue"><i class="ti ti-clock"></i> ${esc(txt)+esc(time)}</span>`; // 还没入库的卡没法改期
+  // 日期胶囊 → 轻弹层（改期/改时刻，90% 的场景）；铅笔 → 整张编辑弹窗（改内容/跨天/思考框架）。
+  // 以前胶囊直接开整张弹窗，顺延一天要填四个框，这是①落地后最常被绕过的一步。
+  const cls='tdue'+(empty?' tdue-none':'')+' task-date-pop';
+  const attrs=` data-loop-action="task-date-pop" title="${span?esc(st+' ~ '+due)+' · ':''}点击改期 / 设时刻"`;
+  return `<span class="${cls}"${attrs}><i class="ti ${empty?'ti-calendar-plus':'ti-clock'}"></i> ${empty?'设日期':esc(txt)+esc(time)}</span>`
+    +prioFlagHtml(it.task_priority)
+    +`<button type="button" class="btn-mini task-edit-pen" data-loop-action="task-edit" title="编辑任务"><i class="ti ti-pencil"></i></button>`;
+}
+/* 卡上的轻量改期 / 改优先级：都走 PATCH，改完就地重排，不重拉整列。
+   重拉会把「刚勾完还没折叠」的卡和滚动位置一起冲掉。 */
+function taskCardCtx(el){
+  const card=el.closest('.tcard'); const it=card&&card._item;
+  if(!it||!it.id)return null;
+  return { card, it, dept:(card._scope&&card._scope.dept)||'公司' };
+}
+async function patchTaskCard(ctx, fields){
+  const { card, it, dept }=ctx;
+  try{
+    const {item}=await API.patch('/api/loop-items/'+it.id, fields);
+    Object.assign(it, item||fields);
+    renderTaskMeta(card); placeTaskCard(card); refreshTaskCols();
+    const col=taskColFor(dept); if(col)sortTaskCardsByTime(col);
+  }catch(e){ toast(persistFailMsg(e)); }
+}
+function taskPrioPop(el){
+  const ctx=taskCardCtx(el); if(!ctx)return;
+  openPrioPop(el, ctx.it.task_priority, (v)=>patchTaskCard(ctx,{task_priority:normPrio(v)}));
+}
+function taskDatePop(el){
+  const ctx=taskCardCtx(el); if(!ctx)return;
+  const it=ctx.it;
+  openDatePop(el, {date:it.task_date||'', hour:it.task_hour||''}, ({date,hour})=>{
+    const fields={task_date:date, task_hour:hour};
+    // 截止日被提到开始日之前 = 跨天区间倒挂，日计划会把它同时算进「进行中」和「逾期」。
+    // 把开始日一起拉过来，而不是悄悄拒绝用户的操作。
+    if(date&&it.start_date&&it.start_date>date)fields.start_date=date;
+    if(!date)fields.start_date=''; // 清日期就整条清掉，别留个孤零零的开始日
+    patchTaskCard(ctx,fields);
+  });
 }
 /* 天数：跨天任务显示「第 N/M 天 · 已推进 K 天」，逾期显示「逾期 N 天」。
    跨天任务能在「进行中」挂一整周，光看"它还在"看不出有没有人动它；
@@ -306,11 +345,16 @@ function syncCompanyColVisibility(){
   if(board)board.classList.toggle('co-hidden',!hasActive);
   if(hdrBtn)hdrBtn.style.display=hasActive?'none':'';
 }
-/* 按 task_hour 给分组内的卡排序（公司列平铺也一起排），无 hour 的排最后。
+/* 排序：先优先级（1 最高在前，未设=4 在后），同优先级再按 task_hour，无 hour 的排最后。
+   优先级排在时刻前面是有意的——「优先级1 但没写时刻」应该比「优先级4 排了 09:00」更靠前，
+   否则设了优先级跟没设一样，这块就白做了。
    排完后对「今日」分组内的卡标序号，并计算每张卡的时间段（开始-结束·耗时）。 */
 function sortTaskCardsByTime(col){
   if(!col)return;
   const cmpHour=(a,b)=>{
+    const pa=prioOf(a._item), pb=prioOf(b._item);
+    if(pa!==pb)return pa-pb;
+    // 'HH' 与 'HH:MM' 混存时字符串比较仍然成立（'09' < '09:30' < '10'）；'99' 兜底排最后
     const ha=(a._item&&a._item.task_hour)||'99', hb=(b._item&&b._item.task_hour)||'99';
     return ha<hb?-1:ha>hb?1:0;
   };
@@ -352,9 +396,8 @@ function annotateTaskTimes(todayGroup){
     const ttitle=card.querySelector('.ttitle'); if(ttitle)ttitle.prepend(seqEl);
     // 时间段：只给有 task_hour 且未完成的卡
     const it=card._item||{};
-    const hr=it.task_hour;
-    if(!hr)return; // 没填预计完成时刻，跳过时间段计算
-    const endMin=Number(hr)*60;
+    const endMin=hourToMin(it.task_hour);
+    if(endMin==null)return; // 没填预计完成时刻（或值脏了），跳过时间段计算
     const startMin=cursor;
     // 实际耗时（分钟），扣掉可能的午休
     let workMins=endMin-startMin;
@@ -365,6 +408,9 @@ function annotateTaskTimes(todayGroup){
     const dateStr=it.task_date?' · '+it.task_date.slice(5):''; // MM-DD
     const badge=document.createElement('span'); badge.className='ttime-badge';
     badge.textContent=minToHhmm(startMin)+' - '+minToHhmm(endMin)+' · 预计耗时 '+hrsStr+dateStr;
+    // 这枚徽章下面会把 .tdue 胶囊藏起来（信息重复）——但胶囊正是改期入口。
+    // 不把入口挂到徽章上，排了时刻的今日任务就再也点不开日期弹层了。
+    if(it.id){ badge.dataset.loopAction='task-date-pop'; badge.classList.add('task-date-pop'); badge.title='点击改期 / 改时刻'; }
     // 插入 meta 行，跟日期时间戳并排；同时隐藏单独的时间胶囊（已含在徽章里）
     const metaBox=card.querySelector('.tmeta');
     if(metaBox) metaBox.prepend(badge); else card.appendChild(badge);
@@ -385,7 +431,7 @@ function addSubTaskCard(parentCard,it){
   const owner=(it&&it.owner)||'李'; const oc=subOwnerBadge(owner);
   const del=(it&&it.id)?`<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>`:'';
   const dt=(it&&it.task_date)||'', hr=(it&&it.task_hour)||'';
-  const due=(dt||hr)?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr?(dt?' ':'')+esc(hr)+':00':''}</span>`:'';
+  const due=(dt||hr)?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(dt)}${hr?(dt?' ':'')+esc(fmtHour(hr)):''}</span>`:'';
   // 单行紧凑：勾选 + 内容 + 右侧组(完成时间 + 负责人徽章 + 删除)，一行放下，避免堆叠把父卡撑高
   card.innerHTML=`<div class="ttitle"><span class="tcheck${done?' on':''}" data-loop-action="check">${done?'<i class="ti ti-check"></i>':''}</span><span class="sub-text">${esc((it&&it.content)||'')}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc(owner)}</span>${del}</span></div>`;
   box.appendChild(card); return card;
@@ -398,8 +444,8 @@ function openSubtaskModal(btn){
   const t=document.getElementById('subtask-content'); if(t)t.value='';
   const o=document.getElementById('subtask-owner'); if(o)o.value='李';
   const hs=document.getElementById('subtask-hour');
-  if(hs&&hs.options.length<=1){ for(let h=0;h<24;h++){ const op=document.createElement('option'); const hh=String(h).padStart(2,'0'); op.value=hh; op.textContent=hh+':00'; hs.appendChild(op); } }
-  if(hs)hs.value=''; const de=document.getElementById('subtask-date'); if(de)de.value='';
+  fillHourSelect(hs);
+  setHourSelect(hs,''); const de=document.getElementById('subtask-date'); if(de)de.value='';
   const ti=document.getElementById('subtask-parent-title'); if(ti){ const tt=card.querySelector('.ttitle'); ti.textContent=tt?tt.innerText.trim():''; }
   openModal('subtaskMask'); if(t)setTimeout(()=>t.focus(),50);
 }
@@ -418,6 +464,21 @@ export async function submitSubtask(){
     toast('已分发子任务给'+owner+' · 已入库');
   }catch(e){ toast(persistFailMsg(e)); }
 }
+/* 预计完成时刻下拉：15 分钟一档（Todoist 同粒度）。幂等——已填过就不重填。
+   老数据是整点 'HH'，回填时会在选项里找不到对应 value；fillHourSelect 之后由 setHourSelect 兜底补一项，
+   否则「09」这类老值一打开编辑弹窗就被静默重置成「未定」，保存一次就丢了。 */
+function fillHourSelect(hs){
+  if(!hs||hs.options.length>1)return;
+  TIME_OPTS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; hs.appendChild(o); });
+}
+function setHourSelect(hs,val){
+  if(!hs)return;
+  const v=val?fmtHour(val):'';
+  if(v&&![...hs.options].some(o=>o.value===v)){
+    const o=document.createElement('option'); o.value=v; o.textContent=v; hs.appendChild(o);
+  }
+  hs.value=v;
+}
 let _taskScope=null;
 let _taskEditing=null; // 非空 = 弹窗处于「改这张卡」模式，提交走 PATCH
 export function openTaskModal(dept){
@@ -426,12 +487,13 @@ export function openTaskModal(dept){
   _taskScope=dept==='公司'?coScope():sFromDept(dept);
   const lbl=document.getElementById('task-deptlabel'); if(lbl)lbl.textContent=dept;
   const hs=document.getElementById('task-hour');
-  if(hs&&hs.options.length<=1){ for(let h=0;h<24;h++){ const o=document.createElement('option'); const hh=String(h).padStart(2,'0'); o.value=hh; o.textContent=hh+':00'; hs.appendChild(o); } }
+  fillHourSelect(hs);
   // 默认开始=截止=今天（普通当天任务）；把截止往后挪就变成跨天任务
   const today=formatLocalDate(new Date());
   const de=document.getElementById('task-date'); if(de)de.value=today;
   const ds=document.getElementById('task-start'); if(ds)ds.value=today;
-  if(hs)hs.value=''; const tc=document.getElementById('task-content'); if(tc)tc.value='';
+  setHourSelect(hs,''); const pc=document.getElementById('task-prio'); bindPrioChip(pc); setPrioChip(pc,4);
+  const tc=document.getElementById('task-content'); if(tc)tc.value='';
   const tn=document.getElementById('task-note'); if(tn)tn.value='';
   const tw=document.getElementById('task-why'); if(tw)tw.value='';
   const tdw=document.getElementById('task-done-when'); if(tdw)tdw.value='';
@@ -452,10 +514,11 @@ function openTaskEdit(el){
   const verb=document.getElementById('task-mod-verb'); if(verb)verb.textContent='编辑';
   const lbl=document.getElementById('task-deptlabel'); if(lbl)lbl.textContent=_taskScope.dept||'';
   const hs=document.getElementById('task-hour');
-  if(hs&&hs.options.length<=1){ for(let h=0;h<24;h++){ const o=document.createElement('option'); const hh=String(h).padStart(2,'0'); o.value=hh; o.textContent=hh+':00'; hs.appendChild(o); } }
+  fillHourSelect(hs);
   const de=document.getElementById('task-date'); if(de)de.value=it.task_date||'';
   const ds=document.getElementById('task-start'); if(ds)ds.value=it.start_date||'';
-  if(hs)hs.value=it.task_hour||'';
+  setHourSelect(hs,it.task_hour);
+  const pc=document.getElementById('task-prio'); bindPrioChip(pc); setPrioChip(pc,it.task_priority);
   const tc=document.getElementById('task-content'); if(tc)tc.value=it.content||'';
   const tn=document.getElementById('task-note'); if(tn)tn.value=it.note||'';
   const tw=document.getElementById('task-why'); if(tw)tw.value=it.task_why||'';
@@ -474,6 +537,8 @@ export async function submitTask(){
   const start_date=(startEl&&startEl.value)||'';
   if(start_date&&task_date&&start_date>task_date){ toast('开始日期不能晚于截止日期'); return; }
   const task_hour=document.getElementById('task-hour').value||'';
+  const prioChip=document.getElementById('task-prio');
+  const task_priority=normPrio(prioChip&&prioChip.dataset.v);
   const note=(document.getElementById('task-note').value||'').trim();
   const task_why=(document.getElementById('task-why')&&document.getElementById('task-why').value||'').trim();
   const task_done_when=(document.getElementById('task-done-when')&&document.getElementById('task-done-when').value||'').trim();
@@ -483,8 +548,8 @@ export async function submitTask(){
   if(_taskEditing){
     const card=_taskEditing, it=card._item||{};
     try{
-      const {item}=await API.patch('/api/loop-items/'+it.id,{content,task_date,start_date,task_hour,note,task_why,task_done_when,task_verify_date,task_verify_how});
-      Object.assign(it,item||{content,task_date,start_date,task_hour,note,task_why,task_done_when,task_verify_date,task_verify_how});
+      const {item}=await API.patch('/api/loop-items/'+it.id,{content,task_date,start_date,task_hour,task_priority,note,task_why,task_done_when,task_verify_date,task_verify_how});
+      Object.assign(it,item||{content,task_date,start_date,task_hour,task_priority,note,task_why,task_done_when,task_verify_date,task_verify_how});
       const t=card.querySelector('.ttitle'); // 只换标题文本，别动前面的勾选框
       if(t){ [...t.childNodes].forEach(n=>{ if(n.nodeType===3)n.remove(); }); t.appendChild(document.createTextNode(it.content||'')); }
       renderTaskMeta(card); placeTaskCard(card); refreshTaskCols();
@@ -494,7 +559,7 @@ export async function submitTask(){
     return;
   }
   try{
-    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,start_date,task_hour,note,task_why,task_done_when,task_verify_date,task_verify_how};
+    const body={kind:'task',dept:s.dept,content,owner:s.owner,status:'待办',task_date,start_date,task_hour,task_priority,note,task_why,task_done_when,task_verify_date,task_verify_how};
     if(urgent)body.urgent=1;
     const {item}=await API.post('/api/loop-items',body);
     addTaskCard(s,item.content,item); refreshTaskCols();

@@ -6,6 +6,19 @@ import { requireAuth, editor } from '../auth/middleware.js';
 const KINDS = ['plan', 'test', 'deposit', 'task'];
 const ARCHIVE_KINDS = ['sem', 'seo', 'company'];
 const s = (v, n = 400) => (v == null ? null : String(v).slice(0, n));
+// 优先级只接受 1-4（1 最高 / 4 普通）。越界或非数字一律回 null = 普通，不猜用户意思。
+const prio = (v) => {
+  if (v === null || v === '' || v === undefined) return null;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 1 && n <= 4 ? n : null;
+};
+// 预计完成时刻：'HH' 或 'HH:MM'，分钟只收 00/15/30/45。不合法回 null，别把脏值写进库——
+// 前端的日程推算（annotateTaskTimes）直接拿它算分钟，脏值会让整列时间段错位。
+const HOUR_RE = /^([01]\d|2[0-3])(:(00|15|30|45))?$/;
+const hhmm = (v) => {
+  const t = s(v, 5);
+  return t && HOUR_RE.test(t) ? t : null;
+};
 
 function resolveView(q) {
   if (q?.archived === '1' || q?.view === 'archived') return 'archived';
@@ -33,7 +46,8 @@ export async function loopItemsRoutes(app) {
       status: s(b.status, 20) || '',
       task_date: s(b.task_date, 20),
       start_date: s(b.start_date, 20),
-      task_hour: s(b.task_hour, 10),
+      task_hour: hhmm(b.task_hour),
+      task_priority: prio(b.task_priority),
       note: s(b.note, 400),
       urgent: b.urgent === 1 || b.urgent === '1' || b.urgent === true ? 1 : null,
       parent_id: Number.isFinite(Number(b.parent_id)) && Number(b.parent_id) > 0 ? Number(b.parent_id) : null,
@@ -50,7 +64,10 @@ export async function loopItemsRoutes(app) {
   // 闭环的最后一步；靠人去整改清单里手动改状态，那条状态就永远是脏的。
   app.patch('/api/loop-items/:id', editor, async (request) => {
     const id = Number(request.params.id);
-    const body = request.body || {};
+    const body = { ...(request.body || {}) };
+    // 这两列有格式约束，PATCH 不能像其余字段那样原样落库（update 的白名单只管「能不能改」，不管「值对不对」）
+    if ('task_priority' in body) body.task_priority = prio(body.task_priority);
+    if ('task_hour' in body) body.task_hour = hhmm(body.task_hour);
     let item = repo.update(id, body);
     if (item && ('state' in body || 'status' in body)) {
       const done = item.state === 'done' || item.status === 'done';

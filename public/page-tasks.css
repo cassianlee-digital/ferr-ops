@@ -952,3 +952,263 @@ body.dark #panel-tasks .ttime-badge {
   border: 1px dashed var(--border2);
   color: var(--text2);
 }
+
+/* ===== 任务优先级小旗 + 日期/时刻轻弹层（参照 Todoist）=====
+   色序与 tagselect 的 priority 一致：红 / 橙 / 蓝 / 灰，不另起一套配色。 */
+.tprio-1 { color: var(--danger); }
+.tprio-2 { color: var(--amber); }
+.tprio-3 { color: var(--blue); }
+.tprio-4 { color: var(--text3); }
+
+#panel-tasks .tprio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+}
+#panel-tasks .tprio:hover { background: var(--bg4); }
+/* 优先级 4 = 没设：平时淡到几乎看不见，鼠标移到卡上才浮出来，避免一列全是灰旗 */
+#panel-tasks .tprio-none { opacity: 0; transition: opacity .12s; }
+#panel-tasks .tcard:hover .tprio-none { opacity: .55; }
+
+#panel-tasks .task-edit-pen {
+  opacity: 0;
+  transition: opacity .12s;
+  padding: 0 4px;
+}
+#panel-tasks .tcard:hover .task-edit-pen { opacity: .7; }
+#panel-tasks .task-date-pop { cursor: pointer; }
+
+/* 弹窗里的优先级胶囊 */
+.tprio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: var(--ui-control-h);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.tprio-chip:hover { border-color: var(--primary); }
+
+/* ---- 弹层本体 ---- */
+.tpop {
+  position: fixed;
+  z-index: 3000;
+  min-width: 232px;
+  max-width: 280px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .14);
+  font-size: 13px;
+  color: var(--text1);
+}
+body.dark .tpop { box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+.tpop[hidden] { display: none; }
+.tpop-title {
+  padding: 6px 8px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text2);
+  font-weight: 500;
+}
+.tpop-list { padding: 4px 0; }
+.tpop-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.tpop-opt:hover { background: var(--bg4); }
+.tpop-opt.on { background: var(--primary-soft); }
+.tpop-opt span { flex: 1; }
+.tpop-opt em { color: var(--text3); font-style: normal; font-size: 12px; }
+.tpop-tick { color: var(--danger); }
+
+.tpop-cal {
+  max-height: 268px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+  padding: 6px 2px;
+}
+.tpop-mcap { padding: 6px 6px 4px; color: var(--text2); font-weight: 500; }
+.tpop-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.tpop-grid b, .tpop-grid i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  border-radius: var(--radius);
+  font-weight: 400;
+  font-style: normal;
+}
+.tpop-grid b { cursor: pointer; }
+.tpop-grid b:hover { background: var(--bg4); }
+.tpop-grid b.td { color: var(--danger); font-weight: 600; }
+.tpop-grid b.on { background: var(--primary); color: #fff; }
+
+.tpop-foot, .tpop-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  color: var(--text1);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tpop-foot:hover { background: var(--bg4); }
+.tpop-foot em { margin-left: auto; color: var(--text3); font-style: normal; }
+.tpop-head { border-top: 0; border-bottom: 1px solid var(--line); cursor: default; }
+.tpop-back, .tpop-clear {
+  border: 0;
+  background: none;
+  color: var(--text2);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tpop-clear { margin-left: auto; color: var(--danger); }
+.tpop-times { max-height: 300px; overflow: auto; padding: 4px 0; }
+.tpop-times .tpop-opt { justify-content: center; }
+
+/* ===== SOP v2：赛道分段 + 配额进度 + 执行流水 ===== */
+#panel-tasks .sop-track { margin-bottom: 10px; }
+#panel-tasks .sop-track-cap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text1);
+  font-size: 12px;
+  font-weight: 600;
+}
+#panel-tasks .sop-track-cap em {
+  margin-left: auto;
+  color: var(--text3);
+  font-style: normal;
+  font-weight: 400;
+}
+#panel-tasks .sop-track-cap em.ok { color: var(--green); }
+
+#panel-tasks .sop-row { flex-wrap: wrap; }
+#panel-tasks .sop-code { color: var(--text3); font-weight: 600; }
+/* 进度数字替代勾选框：位置和 .tcheck 对齐，一列扫下来左边缘不跳 */
+#panel-tasks .sop-qty {
+  flex: none;
+  min-width: 34px;
+  color: var(--text2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+#panel-tasks .sop-qty i { color: var(--text3); font-style: normal; }
+#panel-tasks .sop-qty.ok { color: var(--green); font-weight: 600; }
+
+#panel-tasks .sop-bar {
+  flex: 1 0 100%;
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--bg4);
+  overflow: hidden;
+}
+#panel-tasks .sop-bar i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  transition: width .2s;
+}
+#panel-tasks .sop-bar i.ok { background: var(--green); }
+
+#panel-tasks .sop-detail {
+  flex: 1 0 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 12px;
+}
+#panel-tasks .sop-field { display: flex; gap: 6px; margin-bottom: 6px; }
+#panel-tasks .sop-field > b {
+  flex: none;
+  width: 56px;
+  color: var(--text3);
+  font-weight: 400;
+}
+#panel-tasks .sop-field > span { flex: 1; color: var(--text2); line-height: 1.6; }
+#panel-tasks .sop-logs { flex: 1; }
+#panel-tasks .sop-log {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  color: var(--text2);
+}
+#panel-tasks .sop-log em { flex: none; color: var(--text3); font-style: normal; }
+#panel-tasks .sop-log > span {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#panel-tasks .sop-log b { color: var(--primary); }
+#panel-tasks .sop-log-del { opacity: 0; transition: opacity .12s; }
+#panel-tasks .sop-log:hover .sop-log-del { opacity: .7; }
+
+/* 记一条弹框：完成标准摆在填写框上方，判据不在眼前就还是一句空话 */
+.soplog-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.soplog-head em { margin-left: auto; color: var(--text3); font-style: normal; font-size: 12px; }
+.soplog-standard {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--primary);
+  background: var(--bg3);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.soplog-standard b { flex: none; color: var(--text3); font-weight: 400; }
+.soplog-standard span { color: var(--text2); }
+
+/* 窄列（三列布局下每列约 1/3 屏）里 SOP 行的伸缩：
+   .sop-right 原本 flex:none，带上「记一条」后比列还宽，会把 .sop-text 挤成 0 宽、
+   标题竖着一行一个字。给标题一个 55% 的 flex-basis 兜底，右侧组允许整组换行到下一行。 */
+#panel-tasks .sop-row .sop-text {
+  flex: 1 1 55%;
+  /* 给个下限，否则它是行内唯一可收缩的项，会一路缩到 0 宽（标题竖排一行一个字），
+     右侧组永远不会换行。有了下限，放不下时整组 .sop-right 落到第二行。 */
+  min-width: 7em;
+}
+#panel-tasks .sop-row .sop-right {
+  flex: 0 1 auto;
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+#panel-tasks .sop-log-btn, #panel-tasks .sop-info-btn { flex: none; white-space: nowrap; }

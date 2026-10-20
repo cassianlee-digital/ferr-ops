@@ -24,6 +24,7 @@ import * as loopRepo from '../db/repositories/loopItems.js';
 import * as weeklyRepo from '../db/repositories/weeklyReports.js';
 import * as kpiRepo from '../db/repositories/kpi.js';
 import * as targetRepo from '../db/repositories/kpiReviewTargets.js';
+import * as sopRepo from '../db/repositories/sop.js';
 import { resolveSemSpend } from './kpiLedger.js';
 import { classify } from './attribution.js';
 
@@ -49,7 +50,10 @@ const money = (n) => (n == null || !Number.isFinite(n) ? null : Math.round(n * 1
 const num = (v, d) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 
 export const DEFAULT_REVIEW_CONFIG = {
-  weights: { a: 40, b: 20, cost_a: 10, cost_ab: 10, a_ratio: 5, weekly: 5, fix: 5, test: 5 },
+  // sop_quota 默认 0：老板那张表的 8 项权重合计正好 100，是他亲定的口径。
+  // SOP 周配额完成率的算法、覆盖率和诚实口径都已就位，但给不给分、给几分由老板在设置页决定；
+  // 这里先挂 0 —— 代码就位、分数一分不动，是唯一不越权的接法。
+  weights: { a: 40, b: 20, cost_a: 10, cost_ab: 10, a_ratio: 5, weekly: 5, fix: 5, test: 5, sop_quota: 0 },
   metricCap: 1.2,
   minCoverage: 0.6,
   budgetTolerance: 0.1,
@@ -79,6 +83,7 @@ export function getReviewConfig(raw = {}) {
       cost_a: num(raw.review_weight_cost_a, 10), cost_ab: num(raw.review_weight_cost_ab, 10),
       a_ratio: num(raw.review_weight_a_ratio, 5), weekly: num(raw.review_weight_weekly, 5),
       fix: num(raw.review_weight_fix, 5), test: num(raw.review_weight_test, 5),
+      sop_quota: num(raw.review_weight_sop_quota, 0),
     },
     metricCap: num(raw.review_metric_cap, 1.2),
     minCoverage: num(raw.review_min_coverage, 0.6),
@@ -232,6 +237,10 @@ export function computeReview(input, cfg = DEFAULT_REVIEW_CONFIG) {
       '整改台账中状态已推到「已改」的占比（「放弃」不计入分母）· 数据来源 fixes'),
     rateMetric('test', '实验测试完成率', w.test, proc.test?.done ?? 0, proc.test?.total ?? 0,
       '测试登记中状态「已完成」的占比 · 数据来源 loop_items(kind=test)'),
+    // SOP 周配额：老板两份 SOP 文档里「周目标 × 单位」那一列的兑现率。
+    // 分母是区间内**完整 ISO 周**的周目标之和，单周超额不替其它周补课（见 sopQuotaProgress）。
+    rateMetric('sop_quota', 'SOP 周配额完成率', w.sop_quota, proc.sop?.done ?? 0, proc.sop?.total ?? 0,
+      '按 SOP 周目标数量累计 · 只算区间内完整的 ISO 周、SOP 创建之前的周不算、单周超额不补他周 · 数据来源 sop_logs'),
   ];
 
   // 打分 + 权重归一
@@ -342,6 +351,60 @@ export function testProgress(rows, range, dept) {
   return { done: scoped.filter((r) => r.status === TEST_DONE).length, total: scoped.length };
 }
 
+/* SOP 周配额：两份 SOP 文档里「周目标 × 单位」那一列的兑现率。
+   三条诚实规则，和 /api/sop/stats 同向，不另立一套：
+     ① 只算**完整的 ISO 周**（周一到周日都落在区间内）—— 区间头尾那半周要求全额配额，
+        等于凭空给人记一笔漏；不完整的周直接不进分母。
+     ② SOP 创建之前的周不算 —— 这周才建的 SOP，上个月不是它漏的。
+     ③ 未来的日子不算 —— today 由调用方传，区间末尾超过今天的部分截掉。
+   再加一条本项特有的：**单周超额不替其它周补课**（每周取 min(实际, 周目标)）。
+   否则「某一周发 10 篇、其余三周挂零」会算成 100%，而文档要的是稳定输出。 */
+const mondayOf = (ymd) => {
+  const d = new Date(ymd + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+};
+const addDays = (ymd, n) => {
+  const d = new Date(ymd + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+export function sopQuotaProgress(defs, logs, range, dept, today) {
+  const empty = { done: 0, total: 0, weeks: 0 };
+  if (!range || !range.start_date || !range.end_date) return empty;
+  const end = today && today < range.end_date ? today : range.end_date;
+  if (end < range.start_date) return empty;
+  const byDef = new Map();
+  for (const l of logs || []) {
+    if (!byDef.has(l.sop_id)) byDef.set(l.sop_id, []);
+    byDef.get(l.sop_id).push(l);
+  }
+  let done = 0, total = 0, weeks = 0;
+  for (const d of defs || []) {
+    if (d.active === 0) continue;
+    if (d.freq !== 'weekly') continue;                 // 月度 / 每日不进周配额口径
+    const target = Number(d.target_qty);
+    if (!(target > 0)) continue;                       // 没有数量目标的条目不在这项里考
+    if (dept && String(d.dept || '').toUpperCase() !== dept) continue;
+    const created = String(d.created_at || '').slice(0, 10);
+    const start = created && created > range.start_date ? created : range.start_date;
+    if (start > end) continue;
+    const mine = byDef.get(d.id) || [];
+    for (let m = mondayOf(start); m <= end; m = addDays(m, 7)) {
+      if (m < start) continue;                         // 起点那周不完整
+      const sunday = addDays(m, 6);
+      if (sunday > end) break;                         // 终点那周不完整
+      weeks++;
+      total += target;
+      const got = mine
+        .filter((l) => l.day_key >= m && l.day_key <= sunday)
+        .reduce((s, l) => s + (Number(l.qty) || 0), 0);
+      done += Math.min(got, target);
+    }
+  }
+  return { done: r4(done), total: r4(total), weeks };
+}
+
 // 周报：分母 = 区间内的周数 ×(部门视角 2 个部门 / 个人视角 1 个)；分子 = 真正写了东西的期数。
 export function weeklyProgress(rows, range, dept) {
   const weeks = mondayCount(range);
@@ -392,6 +455,13 @@ export function buildReview(range, scope = 'department') {
     weekly: weeklyProgress(weeklyRepo.list(), range, dept),
     fix: fixProgress(fixRepo.list({ view: 'all' }), range, dept),
     test: testProgress(loopRepo.list('test', { view: 'all' }), range, dept),
+    // today 用服务器本地日期：这个口径只用来把「还没到的日子」截掉，
+    // 差一个时区最多少算半天，比让未来的周进分母要诚实得多。
+    sop: range
+      ? sopQuotaProgress(sopRepo.listDefs({ activeOnly: true }),
+          sopRepo.logsBetween(range.start_date, range.end_date), range, dept,
+          new Date().toLocaleDateString('sv-SE'))
+      : { done: 0, total: 0, weeks: 0 },
   };
 
   const result = computeReview({ scope, leads, spend, process, targets }, cfg);

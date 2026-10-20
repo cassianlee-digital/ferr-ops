@@ -4242,10 +4242,14 @@
   var sop_exports = {};
   __export(sop_exports, {
     buildSopOverdueList: () => buildSopOverdueList,
+    doneQty: () => doneQty,
+    hasQuota: () => hasQuota,
+    isLogged: () => isLogged,
     isOverduePeriodFirstDay: () => isOverduePeriodFirstDay,
     isSopWritable: () => isSopWritable,
     loadSops: () => loadSops,
     loadUrgent: () => loadUrgent,
+    openSopLogModal: () => openSopLogModal,
     openSopModal: () => openSopModal,
     refreshNavTaskDot: () => refreshNavTaskDot,
     renderSopCards: () => renderSopCards,
@@ -4253,8 +4257,10 @@
     renderSopSettingsTable: () => renderSopSettingsTable,
     renderUrgentBanner: () => renderUrgentBanner,
     sopCardEl: () => sopCardEl,
+    sopDone: () => sopDone,
     sopPeriodKey: () => sopPeriodKey,
     submitSop: () => submitSop,
+    submitSopLog: () => submitSopLog,
     updateSopCounts: () => updateSopCounts
   });
   function sopPeriodKey(freq) {
@@ -4276,6 +4282,23 @@
   window._sops = [];
   window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
   var FREQ_LABEL = { daily: "\u6BCF\u65E5\u5FC5\u505A", weekly: "\u6BCF\u5468\u5FC5\u505A", monthly: "\u6BCF\u6708\u5FC5\u505A" };
+  var DEPT_TRACKS = { SEM: ["SEM", "\u793E\u5A92"], SEO: ["SEO", "GEO"], \u516C\u53F8: ["\u516C\u53F8"] };
+  window._sopProg = /* @__PURE__ */ new Map();
+  window._sopLogs = /* @__PURE__ */ new Map();
+  function periodQuery() {
+    return "daily=" + encodeURIComponent(sopPeriodKey("daily")) + "&weekly=" + encodeURIComponent(sopPeriodKey("weekly")) + "&monthly=" + encodeURIComponent(sopPeriodKey("monthly"));
+  }
+  var trackOf = (s) => s.track || s.dept;
+  var isLogged = (s) => !!s.subject_label;
+  var hasQuota = (s) => isLogged(s) && Number(s.target_qty) > 0;
+  function doneQty(s) {
+    const r = window._sopProg && window._sopProg.get(s.id);
+    return r ? Number(r.done_qty) || 0 : 0;
+  }
+  function sopDone(s) {
+    if (isLogged(s)) return doneQty(s) >= (Number(s.target_qty) > 0 ? Number(s.target_qty) : 1);
+    return !!(window._sopDone[s.freq] && window._sopDone[s.freq].has(s.id));
+  }
   async function loadSops() {
     try {
       const { items } = await API.get("/api/sop");
@@ -4295,6 +4318,22 @@
       });
     } catch (e) {
     }
+    try {
+      const q = periodQuery();
+      const [prog, logs] = await Promise.all([
+        API.get("/api/sop/progress?" + q).catch(() => ({ items: [] })),
+        API.get("/api/sop/logs?" + q).catch(() => ({ items: [] }))
+      ]);
+      window._sopProg = new Map((prog.items || []).map((r) => [r.sop_id, r]));
+      window._sopLogs = /* @__PURE__ */ new Map();
+      (logs.items || []).forEach((l) => {
+        if (!window._sopLogs.has(l.sop_id)) window._sopLogs.set(l.sop_id, []);
+        window._sopLogs.get(l.sop_id).push(l);
+      });
+    } catch (e) {
+      window._sopProg = /* @__PURE__ */ new Map();
+      window._sopLogs = /* @__PURE__ */ new Map();
+    }
     renderSopCards();
     renderSopSettingsTable();
     updateSopCounts();
@@ -4307,53 +4346,125 @@
       if (!anchor) return;
       const list = window._sops.filter((s) => s.dept === dept);
       anchor.innerHTML = '<div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>';
-      const grid = document.createElement("div");
-      grid.className = "sop-grid";
-      grid.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:12px;";
-      ["daily", "weekly", "monthly"].forEach((freq) => {
-        const col = document.createElement("div");
-        col.className = "sop-freq-col";
-        const freqCap = document.createElement("div");
-        freqCap.className = "sop-freq-cap";
-        freqCap.style.cssText = "margin-bottom:8px;color:var(--text3);font-size:12px;font-weight:500;";
-        freqCap.textContent = FREQ_LABEL[freq];
-        col.appendChild(freqCap);
-        const items = list.filter((s) => s.freq === freq);
-        if (!items.length) {
-          const empty = document.createElement("div");
-          empty.className = "sop-empty-hint";
-          empty.textContent = "\u6682\u65E0\u4EFB\u52A1";
-          col.appendChild(empty);
-        } else {
-          const box = document.createElement("div");
-          box.className = "sop-list";
-          items.forEach((s) => box.appendChild(sopCardEl(s)));
-          col.appendChild(box);
-        }
-        grid.appendChild(col);
+      if (!list.length) {
+        const empty = document.createElement("div");
+        empty.className = "sop-empty-hint";
+        empty.textContent = "\u6682\u65E0 SOP";
+        anchor.appendChild(empty);
+        return;
+      }
+      const known = DEPT_TRACKS[dept] || [dept];
+      const extra = [...new Set(list.map(trackOf))].filter((t) => !known.includes(t));
+      [...known, ...extra].forEach((track) => {
+        const inTrack = list.filter((s) => trackOf(s) === track);
+        if (!inTrack.length) return;
+        anchor.appendChild(trackBlockEl(track, inTrack));
       });
-      anchor.appendChild(grid);
     });
   }
+  function trackBlockEl(track, items) {
+    const box = document.createElement("div");
+    box.className = "sop-track";
+    const weekly = items.filter((s) => s.freq !== "monthly");
+    const hit = weekly.filter(sopDone).length;
+    const cap = document.createElement("div");
+    cap.className = "sop-track-cap";
+    cap.innerHTML = `<span>${esc2(track)}</span>` + (weekly.length ? `<em class="${hit === weekly.length ? "ok" : ""}">\u672C\u5468\u671F ${hit}/${weekly.length} \u8FBE\u6807</em>` : "");
+    box.appendChild(cap);
+    ["daily", "weekly", "monthly"].forEach((freq) => {
+      const rows2 = items.filter((s) => s.freq === freq);
+      if (!rows2.length) return;
+      const fc = document.createElement("div");
+      fc.className = "sop-freq-cap";
+      fc.textContent = FREQ_LABEL[freq];
+      box.appendChild(fc);
+      const listBox = document.createElement("div");
+      listBox.className = "sop-list";
+      rows2.forEach((s) => listBox.appendChild(sopCardEl(s)));
+      box.appendChild(listBox);
+    });
+    return box;
+  }
   function sopCardEl(s) {
-    const done = window._sopDone[s.freq] && window._sopDone[s.freq].has(s.id);
+    const quota = hasQuota(s);
+    const logged = isLogged(s);
+    const done = sopDone(s);
     const row = document.createElement("div");
-    row.className = "tcard" + (done ? " done" : "");
+    row.className = "tcard sop-row" + (done ? " done" : "");
     row.dataset.sopId = s.id;
     row.dataset.sopFreq = s.freq;
-    const due = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(s.time_hint)}</span>` : "";
-    row.innerHTML = `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sop-text">${esc2(s.title)}</span><span class="sop-right">${due}</span>`;
-    row.querySelector(".tcheck").addEventListener("click", (e) => window.chk(e.currentTarget));
+    const code = s.code ? `<b class="sop-code">${esc2(s.code)}</b> ` : "";
+    const hint = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(s.time_hint)}</span>` : "";
+    const left = quota ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>` : logged ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}</span>` : `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span>`;
+    const logBtn = logged ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> \u8BB0\u4E00\u6761</button>` : "";
+    row.innerHTML = left + `<span class="sop-text">${code}${esc2(s.title)}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u5B8C\u6210\u6807\u51C6"><i class="ti ti-info-circle"></i></button></span>`;
+    if (quota) {
+      const bar = document.createElement("div");
+      bar.className = "sop-bar";
+      const fill = document.createElement("i");
+      const pct5 = Math.min(100, Math.round(doneQty(s) / Number(s.target_qty) * 100));
+      fill.style.width = pct5 + "%";
+      if (done) fill.classList.add("ok");
+      bar.appendChild(fill);
+      row.appendChild(bar);
+    }
+    const detail = document.createElement("div");
+    detail.className = "sop-detail is-hidden";
+    detail.appendChild(detailEl(s));
+    row.appendChild(detail);
+    const tick = row.querySelector(".tcheck");
+    if (tick) tick.addEventListener("click", (e) => window.chk(e.currentTarget));
     return row;
+  }
+  var fmtQty = (n) => {
+    const v = Number(n) || 0;
+    return Number.isInteger(v) ? String(v) : v.toFixed(1);
+  };
+  function fieldEl(label, text2) {
+    const d = document.createElement("div");
+    d.className = "sop-field";
+    d.innerHTML = `<b>${esc2(label)}</b><span>${esc2(text2)}</span>`;
+    return d;
+  }
+  function detailEl(s) {
+    const wrap = document.createElement("div");
+    if (s.why) wrap.appendChild(fieldEl("\u4E3A\u4EC0\u4E48\u505A", s.why));
+    if (s.how) wrap.appendChild(fieldEl("\u600E\u4E48\u505A", s.how));
+    if (s.done_when) wrap.appendChild(fieldEl("\u5B8C\u6210\u6807\u51C6", s.done_when));
+    if (s.content && !s.why && !s.how) wrap.appendChild(fieldEl("\u8BF4\u660E", s.content));
+    const meta = [];
+    if (s.metric) meta.push("\u63D0\u5347\uFF1A" + s.metric);
+    if (s.effort_h != null) meta.push("\u5DE5\u65F6 " + fmtQty(s.effort_h) + "h");
+    if (hasQuota(s)) meta.push("\u5468\u76EE\u6807 " + fmtQty(s.target_qty) + (s.unit ? " " + s.unit : ""));
+    if (meta.length) wrap.appendChild(fieldEl("\u53E3\u5F84", meta.join(" \xB7 ")));
+    const logs = window._sopLogs && window._sopLogs.get(s.id) || [];
+    const box = document.createElement("div");
+    box.className = "sop-logs";
+    if (!logs.length) {
+      box.innerHTML = '<div class="dim">\u672C\u5468\u671F\u8FD8\u6CA1\u6709\u6267\u884C\u8BB0\u5F55\u3002</div>';
+    } else {
+      logs.forEach((l) => {
+        const li = document.createElement("div");
+        li.className = "sop-log";
+        li.dataset.logId = l.id;
+        const link = l.evidence_url ? `<a href="${esc2(l.evidence_url)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i></a>` : "";
+        li.innerHTML = `<em>${esc2((l.day_key || "").slice(5))}</em><span>${esc2(l.subject || l.detail || "\uFF08\u672A\u586B\u5BF9\u8C61\uFF09")}</span>` + (Number(l.qty) !== 1 ? `<b>\xD7${fmtQty(l.qty)}</b>` : "") + link + `<button type="button" class="btn-mini sop-log-del" title="\u64A4\u9500\u8FD9\u6761"><i class="ti ti-trash"></i></button>`;
+        box.appendChild(li);
+      });
+    }
+    wrap.appendChild(fieldEl("\u672C\u5468\u671F\u5DF2\u8BB0", ""));
+    wrap.lastChild.querySelector("span").replaceWith(box);
+    return wrap;
   }
   function updateSopCounts() {
     [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
       const el = document.getElementById("kcount-" + key);
       if (!el) return;
-      const sopN = window._sops.filter((s) => s.dept === dept).length;
+      const cur = window._sops.filter((s) => s.dept === dept && s.freq !== "monthly");
+      const hit = cur.filter(sopDone).length;
       const addCol = document.getElementById("newtask-" + key);
       const addN = addCol ? addCol.querySelectorAll(".tcard:not(.subtask)").length : 0;
-      el.textContent = "SOP " + sopN + " \xB7 " + verb + " " + addN;
+      el.textContent = "SOP " + hit + "/" + cur.length + " \xB7 " + verb + " " + addN;
     });
   }
   function isSopWritable() {
@@ -4379,7 +4490,8 @@
       const tr = document.createElement("tr");
       tr.dataset.sopId = s.id;
       const ops = writable ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>` : '<span class="dim csp-s-33ee298127">\u53EA\u8BFB</span>';
-      tr.innerHTML = `<td>${esc2(s.dept)}</td><td>${esc2(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc2(s.title)}</td><td class="dim csp-s-33ee298127">${esc2(s.content || "")}</td><td>${esc2(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
+      const target = hasQuota(s) ? fmtQty(s.target_qty) + (s.unit ? " " + s.unit : "") : "\u2014";
+      tr.innerHTML = `<td>${esc2(s.dept)}</td><td>${esc2(trackOf(s) || "")}</td><td>${esc2(FREQ_LABEL[s.freq] || s.freq)}</td><td>${esc2(s.code || "")}</td><td>${esc2(s.title)}</td><td>${esc2(target)}</td><td>${s.effort_h == null ? "" : esc2(fmtQty(s.effort_h))}</td><td class="dim csp-s-33ee298127">${esc2(s.done_when || s.content || "")}</td><td>${esc2(s.time_hint || "")}</td><td class="ctr">${ops}</td>`;
       tb.appendChild(tr);
     });
   }
@@ -4393,9 +4505,23 @@
     document.getElementById("sop-mod-title").textContent = sop ? "\u7F16\u8F91 SOP" : "\u65B0\u589E SOP";
     document.getElementById("sop-dept").value = sop ? sop.dept : "SEM";
     document.getElementById("sop-freq").value = sop ? sop.freq : "daily";
-    document.getElementById("sop-title").value = sop ? sop.title : "";
-    document.getElementById("sop-content").value = sop ? sop.content || "" : "";
-    document.getElementById("sop-time").value = sop ? sop.time_hint || "" : "";
+    const set = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.value = v == null ? "" : v;
+    };
+    set("sop-title", sop ? sop.title : "");
+    set("sop-track", sop ? sop.track || "" : "");
+    set("sop-code", sop ? sop.code : "");
+    set("sop-target", sop ? sop.target_qty : "");
+    set("sop-unit", sop ? sop.unit : "");
+    set("sop-subject-label", sop ? sop.subject_label : "");
+    set("sop-why", sop ? sop.why : "");
+    set("sop-how", sop ? sop.how : "");
+    set("sop-done-when", sop ? sop.done_when : "");
+    set("sop-metric", sop ? sop.metric : "");
+    set("sop-effort", sop ? sop.effort_h : "");
+    set("sop-content", sop ? sop.content : "");
+    set("sop-time", sop ? sop.time_hint : "");
     openModal("sopMask");
     setTimeout(() => document.getElementById("sop-title").focus(), 50);
   }
@@ -4409,12 +4535,34 @@
       toast2("\u8BF7\u586B\u5199\u6807\u9898");
       return;
     }
+    const v = (id) => ((document.getElementById(id) || {}).value || "").trim();
+    const n = (id) => {
+      const t = v(id);
+      return t === "" ? null : Number(t);
+    };
+    const body = {
+      dept,
+      freq,
+      title,
+      content,
+      time_hint,
+      track: v("sop-track") || null,
+      code: v("sop-code") || null,
+      target_qty: n("sop-target"),
+      unit: v("sop-unit") || null,
+      subject_label: v("sop-subject-label") || null,
+      why: v("sop-why") || null,
+      how: v("sop-how") || null,
+      done_when: v("sop-done-when") || null,
+      metric: v("sop-metric") || null,
+      effort_h: n("sop-effort")
+    };
     try {
       if (_sopEditing) {
-        await API.patch("/api/sop/" + _sopEditing.id, { dept, freq, title, content, time_hint });
+        await API.patch("/api/sop/" + _sopEditing.id, body);
         toast2("\u5DF2\u66F4\u65B0 SOP");
       } else {
-        await API.post("/api/sop", { dept, freq, title, content, time_hint });
+        await API.post("/api/sop", body);
         toast2("\u5DF2\u65B0\u589E SOP");
       }
       closeModal("sopMask");
@@ -4462,9 +4610,9 @@
       if (!isOverduePeriodFirstDay(freq)) return;
       (window._sops || []).forEach((s) => {
         if (s.freq !== freq) return;
-        const done = window._sopDone[freq] && window._sopDone[freq].has(s.id);
-        if (done) return;
-        lines.push(esc2(s.dept) + "-" + today3 + "-" + esc2(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc2(s.title) + " \u4EFB\u52A1\u672A\u505A\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
+        if (sopDone(s)) return;
+        const gap = hasQuota(s) ? "\uFF0C\u8FD8\u5DEE " + fmtQty(Number(s.target_qty) - doneQty(s)) + (s.unit ? " " + s.unit : "") : "";
+        lines.push(esc2(trackOf(s)) + "-" + today3 + "-" + esc2(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc2(s.title) + " \u672A\u8FBE\u6807" + esc2(gap) + "\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
       });
     });
     return lines;
@@ -4519,6 +4667,326 @@
     const overdue = buildSopOverdueList().length > 0;
     const urgent = (window._urgentTasks || []).length > 0;
     dot.classList.toggle("is-hidden", !(overdue || urgent));
+  }
+  document.addEventListener("click", async (e) => {
+    const info = e.target.closest(".sop-info-btn");
+    if (info) {
+      const row = info.closest(".sop-row");
+      const d = row && row.querySelector(".sop-detail");
+      if (d) d.classList.toggle("is-hidden");
+      return;
+    }
+    const add = e.target.closest(".sop-log-btn");
+    if (add) {
+      const row = add.closest(".sop-row");
+      const id = row && row.dataset.sopId;
+      const s = (window._sops || []).find((x) => String(x.id) === String(id));
+      if (s) openSopLogModal(s);
+      return;
+    }
+    const del = e.target.closest(".sop-log-del");
+    if (del) {
+      const li = del.closest(".sop-log");
+      const id = li && li.dataset.logId;
+      if (!id) return;
+      if (!inlineConfirm(del, "\u64A4\u9500\u8FD9\u6761")) return;
+      try {
+        await API.del("/api/sop/logs/" + id);
+        toast2("\u5DF2\u64A4\u9500");
+        await loadSops();
+      } catch (err) {
+        toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u64A4\u9500\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+      }
+    }
+  });
+  var _sopLogging = null;
+  function openSopLogModal(s) {
+    _sopLogging = s;
+    const set = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.value = v;
+    };
+    const txt = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v;
+    };
+    txt("soplog-title", (s.code ? s.code + " \xB7 " : "") + s.title);
+    txt("soplog-standard", s.done_when || s.content || "");
+    const std = document.getElementById("soplog-standard-box");
+    if (std) std.classList.toggle("is-hidden", !(s.done_when || s.content));
+    const subjEl = document.getElementById("soplog-subject");
+    if (subjEl) subjEl.placeholder = s.subject_label || "\u8FD9\u6B21\u505A\u7684\u662F\u54EA\u4E00\u4E2A\u2026";
+    const lbl = document.getElementById("soplog-subject-label");
+    if (lbl) lbl.textContent = s.subject_label ? "\u505A\u4E86\u54EA\u4E2A \xB7 " + s.subject_label : "\u505A\u4E86\u54EA\u4E2A\uFF08\u53EF\u9009\uFF09";
+    txt("soplog-progress", hasQuota(s) ? "\u672C\u5468\u671F " + fmtQty(doneQty(s)) + "/" + fmtQty(s.target_qty) + (s.unit ? " " + s.unit : "") : "");
+    set("soplog-subject", "");
+    set("soplog-url", "");
+    set("soplog-detail", "");
+    set("soplog-qty", "1");
+    openModal("sopLogMask");
+    setTimeout(() => {
+      if (subjEl) subjEl.focus();
+    }, 50);
+  }
+  async function submitSopLog() {
+    const s = _sopLogging;
+    if (!s) return;
+    const val = (id) => ((document.getElementById(id) || {}).value || "").trim();
+    const subject = val("soplog-subject");
+    if (s.subject_label && !subject) {
+      toast2("\u8BF7\u5199\u6E05\u8FD9\u6B21\u505A\u7684\u662F\u54EA\u4E00\u4E2A\uFF1A" + s.subject_label);
+      return;
+    }
+    const qty = Number(val("soplog-qty")) || 1;
+    if (!(qty > 0)) {
+      toast2("\u6570\u91CF\u8981\u5927\u4E8E 0");
+      return;
+    }
+    try {
+      await API.post("/api/sop/logs", {
+        sop_id: s.id,
+        period_key: sopPeriodKey(s.freq),
+        day_key: formatLocalDate(/* @__PURE__ */ new Date()),
+        // 执行日按本地日期，与 task_checkins / completions 同口径
+        qty,
+        subject,
+        evidence_url: val("soplog-url"),
+        detail: val("soplog-detail")
+      });
+      closeModal("sopLogMask");
+      await loadSops();
+      const left = hasQuota(s) ? Math.max(0, Number(s.target_qty) - doneQty(s)) : 0;
+      toast2(left > 0 ? "\u5DF2\u8BB0\u4E00\u6761 \xB7 \u672C\u5468\u671F\u8FD8\u5DEE " + fmtQty(left) + (s.unit ? " " + s.unit : "") : "\u5DF2\u8BB0\u4E00\u6761 \xB7 \u672C\u5468\u671F\u5DF2\u8FBE\u6807");
+    } catch (err) {
+      if (err && err.status === 400) toast2("\u8FD9\u6761 SOP \u8981\u6C42\u5199\u6E05\u505A\u7684\u662F\u54EA\u4E00\u4E2A");
+      else toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  }
+
+  // public/src/task-pickers.js
+  var PRIOS = [
+    { v: 1, label: "\u4F18\u5148\u7EA71", cls: "tprio-1" },
+    { v: 2, label: "\u4F18\u5148\u7EA72", cls: "tprio-2" },
+    { v: 3, label: "\u4F18\u5148\u7EA73", cls: "tprio-3" },
+    { v: 4, label: "\u4F18\u5148\u7EA74", cls: "tprio-4" }
+  ];
+  var normPrio = (p) => {
+    const n = Number(p);
+    return Number.isInteger(n) && n >= 1 && n <= 4 ? n : 4;
+  };
+  var prioOf = (it) => normPrio(it && it.task_priority);
+  function prioFlagHtml(p, { action = "task-prio", title = "\u8BBE\u4F18\u5148\u7EA7" } = {}) {
+    const v = normPrio(p);
+    const meta = PRIOS[v - 1];
+    return `<span class="tprio ${meta.cls}${v === 4 ? " tprio-none" : ""}" data-loop-action="${action}" data-v="${v}" title="${esc2(title)}\uFF1A${meta.label}"><i class="ti ti-flag${v === 4 ? "" : "-filled"}"></i></span>`;
+  }
+  function hourToMin(h) {
+    const t = String(h || "").trim();
+    if (!t) return null;
+    const m = t.match(/^(\d{1,2})(?::(\d{2}))?$/);
+    if (!m) return null;
+    const hh = Number(m[1]);
+    const mm = m[2] ? Number(m[2]) : 0;
+    if (!(hh >= 0 && hh <= 23) || !(mm >= 0 && mm <= 59)) return null;
+    return hh * 60 + mm;
+  }
+  function fmtHour(h) {
+    const min = hourToMin(h);
+    if (min == null) return "";
+    return String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0");
+  }
+  var TIME_OPTS = (() => {
+    const out = [];
+    for (let m = 0; m < 24 * 60; m += 15) out.push(fmtHour(Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0")));
+    return out;
+  })();
+  var WD = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"];
+  var _host = null;
+  var _onClose = null;
+  var _openedAt = 0;
+  function host() {
+    if (_host) return _host;
+    _host = document.createElement("div");
+    _host.className = "tpop";
+    _host.hidden = true;
+    document.body.appendChild(_host);
+    document.addEventListener("mousedown", (e) => {
+      if (_host.hidden) return;
+      if (e.target.closest(".tpop")) return;
+      closePop();
+    }, true);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closePop();
+    });
+    window.addEventListener("resize", () => closePop());
+    document.addEventListener("scroll", () => {
+      if (Date.now() - _openedAt < 250) return;
+      if (_host && !_host.hidden) closePop();
+    }, true);
+    return _host;
+  }
+  function closePop() {
+    if (!_host || _host.hidden) return;
+    _host.hidden = true;
+    _host.innerHTML = "";
+    const cb = _onClose;
+    _onClose = null;
+    if (cb) cb();
+  }
+  function openPop(anchor, html, onClick, onClose) {
+    const h = host();
+    _onClose = onClose || null;
+    _openedAt = Date.now();
+    h.innerHTML = html;
+    h.style.left = "0px";
+    h.style.top = "0px";
+    h.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    const w = h.offsetWidth, ht = h.offsetHeight;
+    let left = r.left;
+    if (left + w > window.innerWidth - 8) left = window.innerWidth - w - 8;
+    let top = r.bottom + 6;
+    if (top + ht > window.innerHeight - 8) top = r.top - ht - 6;
+    const fit = (v, size, max) => Math.min(Math.max(8, v), Math.max(8, max - size - 8));
+    h.style.left = fit(left, w, window.innerWidth) + "px";
+    h.style.top = fit(top, ht, window.innerHeight) + "px";
+    h.onclick = (e) => {
+      const hit = e.target.closest("[data-pop]");
+      if (!hit) return;
+      e.stopPropagation();
+      onClick(hit.dataset.pop, hit.dataset.v || "", hit);
+    };
+    return h;
+  }
+  function openPrioPop(anchor, cur, onPick) {
+    const v = normPrio(cur);
+    const rows2 = PRIOS.map((p) => `<div class="tpop-opt${p.v === v ? " on" : ""}" data-pop="prio" data-v="${p.v}"><i class="ti ti-flag${p.v === 4 ? "" : "-filled"} ${p.cls}"></i><span>${p.label}</span>` + (p.v === v ? '<i class="ti ti-check tpop-tick"></i>' : "") + "</div>").join("");
+    openPop(anchor, `<div class="tpop-list">${rows2}</div>`, (kind, val) => {
+      if (kind !== "prio") return;
+      closePop();
+      onPick(Number(val));
+    });
+  }
+  var addDays = (d, n) => {
+    const x = new Date(d);
+    x.setDate(x.getDate() + n);
+    return x;
+  };
+  var parseYmd = (s) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  };
+  var cnDate = (d) => d.getMonth() + 1 + "\u6708" + d.getDate() + "\u65E5";
+  function quickRows(today3) {
+    const dow = today3.getDay();
+    const out = [];
+    const tm = addDays(today3, 1);
+    out.push({ k: "d", v: formatLocalDate(tm), icon: "ti-sun", label: "\u660E\u5929", hint: WD[tm.getDay()] });
+    if (dow >= 1 && dow <= 2) {
+      const thu = addDays(today3, 4 - dow);
+      out.push({ k: "d", v: formatLocalDate(thu), icon: "ti-calendar", label: "\u672C\u5468\u7A0D\u540E", hint: WD[4] });
+    }
+    if (dow >= 1 && dow <= 5) {
+      const sat = addDays(today3, 6 - dow);
+      out.push({ k: "d", v: formatLocalDate(sat), icon: "ti-sofa", label: "\u672C\u5468\u5468\u672B", hint: WD[6] });
+    }
+    const nextMon = addDays(today3, (8 - (dow || 7)) % 7 || 7);
+    out.push({ k: "d", v: formatLocalDate(nextMon), icon: "ti-arrow-right", label: "\u4E0B\u5468", hint: WD[1] + " " + cnDate(nextMon) });
+    out.push({ k: "clear", v: "", icon: "ti-ban", label: "\u6CA1\u6709\u65E5\u671F", hint: "" });
+    return out;
+  }
+  function monthHtml(base, sel, today3) {
+    const y = base.getFullYear(), m = base.getMonth();
+    const first = new Date(y, m, 1);
+    const lead = (first.getDay() + 6) % 7;
+    const days = new Date(y, m + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < lead; i++) cells.push("<i></i>");
+    for (let d = 1; d <= days; d++) {
+      const ds = formatLocalDate(new Date(y, m, d));
+      const isSel = ds === sel, isToday = ds === formatLocalDate(today3);
+      cells.push(`<b class="${isSel ? "on" : ""}${isToday && !isSel ? " td" : ""}" data-pop="d" data-v="${ds}">${d}</b>`);
+    }
+    return `<div class="tpop-mcap">${y}\u5E74${m + 1}\u6708</div><div class="tpop-grid">${cells.join("")}</div>`;
+  }
+  function openDatePop(anchor, state2, onApply) {
+    const today3 = /* @__PURE__ */ new Date();
+    today3.setHours(0, 0, 0, 0);
+    let date = state2.date || "";
+    let hour = state2.hour || "";
+    let mode = "date";
+    const render5 = () => {
+      if (mode === "time") {
+        const opts = TIME_OPTS.map((t) => `<div class="tpop-opt${t === fmtHour(hour) ? " on" : ""}" data-pop="h" data-v="${t}">${t}</div>`).join("");
+        return `<div class="tpop-head"><button type="button" class="tpop-back" data-pop="back"><i class="ti ti-chevron-left"></i> \u8FD4\u56DE</button><button type="button" class="tpop-clear" data-pop="hclear">\u6E05\u9664\u65F6\u523B</button></div><div class="tpop-times">${opts}</div>`;
+      }
+      const sel = parseYmd(date);
+      const title = date ? cnDate(sel) + " " + WD[sel.getDay()] : "\u672A\u8BBE\u65E5\u671F";
+      const quick = quickRows(today3).map((q) => `<div class="tpop-opt" data-pop="${q.k}" data-v="${q.v}"><i class="ti ${q.icon}"></i><span>${q.label}</span><em>${esc2(q.hint)}</em></div>`).join("");
+      const m1 = monthHtml(sel || today3, date, today3);
+      const m2 = monthHtml(new Date((sel || today3).getFullYear(), (sel || today3).getMonth() + 1, 1), date, today3);
+      return `<div class="tpop-title">${esc2(title)}</div><div class="tpop-list">${quick}</div><div class="tpop-cal">${m1}${m2}</div><button type="button" class="tpop-foot" data-pop="time"><i class="ti ti-clock"></i> \u5B8C\u6210\u65F6\u523B<em>${hour ? esc2(fmtHour(hour)) : "\u672A\u5B9A"}</em></button>`;
+    };
+    const paint = () => {
+      const h = host();
+      h.innerHTML = render5();
+      const times = h.querySelector(".tpop-times");
+      if (times) {
+        const target = times.querySelector(".tpop-opt.on") || times.querySelector('[data-v="09:00"]');
+        if (target) times.scrollTop = Math.max(0, target.offsetTop - times.clientHeight / 2 + target.offsetHeight / 2);
+      }
+    };
+    openPop(anchor, render5(), (kind, val) => {
+      if (kind === "d") {
+        date = val;
+        onApply({ date, hour });
+        closePop();
+        return;
+      }
+      if (kind === "clear") {
+        date = "";
+        hour = "";
+        onApply({ date, hour });
+        closePop();
+        return;
+      }
+      if (kind === "time") {
+        mode = "time";
+        paint();
+        return;
+      }
+      if (kind === "back") {
+        mode = "date";
+        paint();
+        return;
+      }
+      if (kind === "hclear") {
+        hour = "";
+        onApply({ date, hour });
+        closePop();
+        return;
+      }
+      if (kind === "h") {
+        hour = val;
+        onApply({ date, hour });
+        closePop();
+      }
+    });
+  }
+  function bindPrioChip(chip) {
+    if (!chip || chip._bound) return;
+    chip._bound = true;
+    chip.addEventListener("click", () => {
+      openPrioPop(chip, chip.dataset.v, (v) => setPrioChip(chip, v));
+    });
+  }
+  function setPrioChip(chip, v) {
+    if (!chip) return;
+    const p = normPrio(v);
+    const meta = PRIOS[p - 1];
+    chip.dataset.v = String(p);
+    chip.className = "tprio-chip " + meta.cls + (p === 4 ? " tprio-none" : "");
+    chip.innerHTML = `<i class="ti ti-flag${p === 4 ? "" : "-filled"}"></i> ${meta.label}`;
   }
 
   // public/src/closed-loop.js
@@ -4616,6 +5084,8 @@
       else if (kind === "task-split") openSubtaskModal(action);
       else if (kind === "task-delete") taskDel(action);
       else if (kind === "task-edit") openTaskEdit(action);
+      else if (kind === "task-prio") taskPrioPop(action);
+      else if (kind === "task-date-pop") taskDatePop(action);
       else if (kind === "task-push") taskPush(action);
       else if (kind === "deposit-delete") depDel(action);
       else if (kind === "content-delete") contentDel(action);
@@ -4763,12 +5233,48 @@
     const span = st2 && due && st2 < due;
     const short = (d) => st2.slice(0, 4) === due.slice(0, 4) ? d.slice(5) : d;
     const txt = span ? short(st2) + " ~ " + short(due) : due;
-    const time = hr ? (txt ? " " : "") + hr + ":00" : "";
+    const time = hr ? (txt ? " " : "") + fmtHour(hr) : "";
     const empty = !txt && !time;
-    if (empty && !it.id) return "";
-    const cls = "tdue" + (empty ? " tdue-none" : "") + (it.id ? " task-edit" : "");
-    const attrs = it.id ? ` data-loop-action="task-edit" title="${span ? esc2(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F"` : "";
-    return `<span class="${cls}"${attrs}><i class="ti ${empty ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty ? "\u8BBE\u65E5\u671F" : esc2(txt) + esc2(time)}</span>`;
+    if (!it.id) return empty ? "" : `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(txt) + esc2(time)}</span>`;
+    const cls = "tdue" + (empty ? " tdue-none" : "") + " task-date-pop";
+    const attrs = ` data-loop-action="task-date-pop" title="${span ? esc2(st2 + " ~ " + due) + " \xB7 " : ""}\u70B9\u51FB\u6539\u671F / \u8BBE\u65F6\u523B"`;
+    return `<span class="${cls}"${attrs}><i class="ti ${empty ? "ti-calendar-plus" : "ti-clock"}"></i> ${empty ? "\u8BBE\u65E5\u671F" : esc2(txt) + esc2(time)}</span>` + prioFlagHtml(it.task_priority) + `<button type="button" class="btn-mini task-edit-pen" data-loop-action="task-edit" title="\u7F16\u8F91\u4EFB\u52A1"><i class="ti ti-pencil"></i></button>`;
+  }
+  function taskCardCtx(el) {
+    const card = el.closest(".tcard");
+    const it = card && card._item;
+    if (!it || !it.id) return null;
+    return { card, it, dept: card._scope && card._scope.dept || "\u516C\u53F8" };
+  }
+  async function patchTaskCard(ctx, fields) {
+    const { card, it, dept } = ctx;
+    try {
+      const { item } = await API.patch("/api/loop-items/" + it.id, fields);
+      Object.assign(it, item || fields);
+      renderTaskMeta(card);
+      placeTaskCard(card);
+      refreshTaskCols();
+      const col = taskColFor(dept);
+      if (col) sortTaskCardsByTime(col);
+    } catch (e) {
+      toast2(persistFailMsg(e));
+    }
+  }
+  function taskPrioPop(el) {
+    const ctx = taskCardCtx(el);
+    if (!ctx) return;
+    openPrioPop(el, ctx.it.task_priority, (v) => patchTaskCard(ctx, { task_priority: normPrio(v) }));
+  }
+  function taskDatePop(el) {
+    const ctx = taskCardCtx(el);
+    if (!ctx) return;
+    const it = ctx.it;
+    openDatePop(el, { date: it.task_date || "", hour: it.task_hour || "" }, ({ date, hour }) => {
+      const fields = { task_date: date, task_hour: hour };
+      if (date && it.start_date && it.start_date > date) fields.start_date = date;
+      if (!date) fields.start_date = "";
+      patchTaskCard(ctx, fields);
+    });
   }
   var dayDiff = (a, b) => Math.round((Date.parse(b + "T00:00:00") - Date.parse(a + "T00:00:00")) / 864e5);
   function taskAgeHtml(it, g) {
@@ -4892,6 +5398,8 @@
   function sortTaskCardsByTime(col) {
     if (!col) return;
     const cmpHour = (a, b) => {
+      const pa = prioOf(a._item), pb = prioOf(b._item);
+      if (pa !== pb) return pa - pb;
       const ha = a._item && a._item.task_hour || "99", hb = b._item && b._item.task_hour || "99";
       return ha < hb ? -1 : ha > hb ? 1 : 0;
     };
@@ -4927,9 +5435,8 @@
       const ttitle = card.querySelector(".ttitle");
       if (ttitle) ttitle.prepend(seqEl);
       const it = card._item || {};
-      const hr = it.task_hour;
-      if (!hr) return;
-      const endMin = Number(hr) * 60;
+      const endMin = hourToMin(it.task_hour);
+      if (endMin == null) return;
       const startMin = cursor;
       let workMins = endMin - startMin;
       if (startMin < LUNCH_START_MIN && endMin > LUNCH_START_MIN) workMins -= LUNCH_END_MIN - LUNCH_START_MIN;
@@ -4940,6 +5447,11 @@
       const badge3 = document.createElement("span");
       badge3.className = "ttime-badge";
       badge3.textContent = minToHhmm(startMin) + " - " + minToHhmm(endMin) + " \xB7 \u9884\u8BA1\u8017\u65F6 " + hrsStr + dateStr;
+      if (it.id) {
+        badge3.dataset.loopAction = "task-date-pop";
+        badge3.classList.add("task-date-pop");
+        badge3.title = "\u70B9\u51FB\u6539\u671F / \u6539\u65F6\u523B";
+      }
       const metaBox = card.querySelector(".tmeta");
       if (metaBox) metaBox.prepend(badge3);
       else card.appendChild(badge3);
@@ -4967,7 +5479,7 @@
     const oc = subOwnerBadge(owner);
     const del = it && it.id ? `<button type="button" class="btn-mini" data-loop-action="task-delete"><i class="ti ti-trash"></i></button>` : "";
     const dt = it && it.task_date || "", hr = it && it.task_hour || "";
-    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(dt)}${hr ? (dt ? " " : "") + esc2(hr) + ":00" : ""}</span>` : "";
+    const due = dt || hr ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc2(dt)}${hr ? (dt ? " " : "") + esc2(fmtHour(hr)) : ""}</span>` : "";
     card.innerHTML = `<div class="ttitle"><span class="tcheck${done ? " on" : ""}" data-loop-action="check">${done ? '<i class="ti ti-check"></i>' : ""}</span><span class="sub-text">${esc2(it && it.content || "")}</span><span class="sub-right">${due}<span class="badge ${oc}">${esc2(owner)}</span>${del}</span></div>`;
     box.appendChild(card);
     return card;
@@ -4986,16 +5498,8 @@
     const o = document.getElementById("subtask-owner");
     if (o) o.value = "\u674E";
     const hs = document.getElementById("subtask-hour");
-    if (hs && hs.options.length <= 1) {
-      for (let h = 0; h < 24; h++) {
-        const op = document.createElement("option");
-        const hh = String(h).padStart(2, "0");
-        op.value = hh;
-        op.textContent = hh + ":00";
-        hs.appendChild(op);
-      }
-    }
-    if (hs) hs.value = "";
+    fillHourSelect(hs);
+    setHourSelect(hs, "");
     const de = document.getElementById("subtask-date");
     if (de) de.value = "";
     const ti = document.getElementById("subtask-parent-title");
@@ -5027,6 +5531,26 @@
       toast2(persistFailMsg(e));
     }
   }
+  function fillHourSelect(hs) {
+    if (!hs || hs.options.length > 1) return;
+    TIME_OPTS.forEach((t) => {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = t;
+      hs.appendChild(o);
+    });
+  }
+  function setHourSelect(hs, val) {
+    if (!hs) return;
+    const v = val ? fmtHour(val) : "";
+    if (v && ![...hs.options].some((o) => o.value === v)) {
+      const o = document.createElement("option");
+      o.value = v;
+      o.textContent = v;
+      hs.appendChild(o);
+    }
+    hs.value = v;
+  }
   var _taskScope = null;
   var _taskEditing = null;
   function openTaskModal(dept) {
@@ -5037,21 +5561,16 @@
     const lbl = document.getElementById("task-deptlabel");
     if (lbl) lbl.textContent = dept;
     const hs = document.getElementById("task-hour");
-    if (hs && hs.options.length <= 1) {
-      for (let h = 0; h < 24; h++) {
-        const o = document.createElement("option");
-        const hh = String(h).padStart(2, "0");
-        o.value = hh;
-        o.textContent = hh + ":00";
-        hs.appendChild(o);
-      }
-    }
+    fillHourSelect(hs);
     const today3 = formatLocalDate(/* @__PURE__ */ new Date());
     const de = document.getElementById("task-date");
     if (de) de.value = today3;
     const ds = document.getElementById("task-start");
     if (ds) ds.value = today3;
-    if (hs) hs.value = "";
+    setHourSelect(hs, "");
+    const pc = document.getElementById("task-prio");
+    bindPrioChip(pc);
+    setPrioChip(pc, 4);
     const tc = document.getElementById("task-content");
     if (tc) tc.value = "";
     const tn = document.getElementById("task-note");
@@ -5084,20 +5603,15 @@
     const lbl = document.getElementById("task-deptlabel");
     if (lbl) lbl.textContent = _taskScope.dept || "";
     const hs = document.getElementById("task-hour");
-    if (hs && hs.options.length <= 1) {
-      for (let h = 0; h < 24; h++) {
-        const o = document.createElement("option");
-        const hh = String(h).padStart(2, "0");
-        o.value = hh;
-        o.textContent = hh + ":00";
-        hs.appendChild(o);
-      }
-    }
+    fillHourSelect(hs);
     const de = document.getElementById("task-date");
     if (de) de.value = it.task_date || "";
     const ds = document.getElementById("task-start");
     if (ds) ds.value = it.start_date || "";
-    if (hs) hs.value = it.task_hour || "";
+    setHourSelect(hs, it.task_hour);
+    const pc = document.getElementById("task-prio");
+    bindPrioChip(pc);
+    setPrioChip(pc, it.task_priority);
     const tc = document.getElementById("task-content");
     if (tc) tc.value = it.content || "";
     const tn = document.getElementById("task-note");
@@ -5131,6 +5645,8 @@
       return;
     }
     const task_hour = document.getElementById("task-hour").value || "";
+    const prioChip = document.getElementById("task-prio");
+    const task_priority = normPrio(prioChip && prioChip.dataset.v);
     const note = (document.getElementById("task-note").value || "").trim();
     const task_why = (document.getElementById("task-why") && document.getElementById("task-why").value || "").trim();
     const task_done_when = (document.getElementById("task-done-when") && document.getElementById("task-done-when").value || "").trim();
@@ -5141,8 +5657,8 @@
     if (_taskEditing) {
       const card = _taskEditing, it = card._item || {};
       try {
-        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how });
-        Object.assign(it, item || { content, task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how });
+        const { item } = await API.patch("/api/loop-items/" + it.id, { content, task_date, start_date, task_hour, task_priority, note, task_why, task_done_when, task_verify_date, task_verify_how });
+        Object.assign(it, item || { content, task_date, start_date, task_hour, task_priority, note, task_why, task_done_when, task_verify_date, task_verify_how });
         const t = card.querySelector(".ttitle");
         if (t) {
           [...t.childNodes].forEach((n) => {
@@ -5164,7 +5680,7 @@
       return;
     }
     try {
-      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, note, task_why, task_done_when, task_verify_date, task_verify_how };
+      const body = { kind: "task", dept: s.dept, content, owner: s.owner, status: "\u5F85\u529E", task_date, start_date, task_hour, task_priority, note, task_why, task_done_when, task_verify_date, task_verify_how };
       if (urgent) body.urgent = 1;
       const { item } = await API.post("/api/loop-items", body);
       addTaskCard(s, item.content, item);
@@ -7777,7 +8293,7 @@
     box.innerHTML = '<div class="tboard">' + DEPTS.map((d) => {
       const sops = (data.sops || []).filter((s) => s.dept === d.key);
       const tasks = (data.tasks || []).filter((t) => (t.dept || "SEO") === d.key);
-      const sopDone = sops.filter((s) => s.done).length;
+      const sopDone2 = sops.filter((s) => s.done).length;
       const spoken = tasks.filter((t) => (t.done_at || "").slice(0, 10) === day || pushed.has(t.id)).length;
       const sopHtml = sops.length ? '<div class="sop-list">' + sops.map((s) => `<div class="hcard hsop${s.done ? " on" : ""}">
           <div class="hrow"><span class="hcheck">${s.done ? '<i class="ti ti-check"></i>' : ""}</span>
@@ -7790,7 +8306,7 @@
       }).join("") : '<div class="hempty">\u90A3\u5929\u8FD9\u4E00\u5217\u6CA1\u6709\u4EFB\u52A1</div>';
       return `<div class="pblock">
       <div class="pblock-head"><span class="badge ${d.badge}">${esc2(d.key)}</span><span class="pn">${esc2(d.label)}</span>
-        <span class="kcount">SOP ${sopDone}/${sops.length} \xB7 \u4EFB\u52A1 ${tasks.length} \xB7 \u6709\u4EA4\u4EE3 ${spoken}</span></div>
+        <span class="kcount">SOP ${sopDone2}/${sops.length} \xB7 \u4EFB\u52A1 ${tasks.length} \xB7 \u6709\u4EA4\u4EE3 ${spoken}</span></div>
       <div class="sopnew">
         <div><div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>${sopHtml}</div>
         <div><div class="colcap"><i class="ti ti-list-check"></i> \u5F53\u5929\u5728\u76D8\u5B50\u91CC\u7684\u4EFB\u52A1</div>${taskHtml}</div>
@@ -8538,7 +9054,9 @@
     ["review_weight_a_ratio", "A \u7EA7\u8BE2\u4EF7\u5360\u6BD4", "\u8D28\u91CF\u6307\u6807\uFF1AA \xF7 (A+B)"],
     ["review_weight_weekly", "\u5468\u590D\u76D8 / \u6570\u636E\u5206\u6790\u5B8C\u6210\u7387", "\u6570\u636E\u6765\u6E90 weekly_reports"],
     ["review_weight_fix", "\u95EE\u9898\u6574\u6539\u95ED\u73AF\u7387", "\u6570\u636E\u6765\u6E90 fixes\uFF08\u6574\u6539\u53F0\u8D26\uFF09"],
-    ["review_weight_test", "\u5B9E\u9A8C\u6D4B\u8BD5\u5B8C\u6210\u7387", "\u6570\u636E\u6765\u6E90 loop_items(kind=test)"]
+    ["review_weight_test", "\u5B9E\u9A8C\u6D4B\u8BD5\u5B8C\u6210\u7387", "\u6570\u636E\u6765\u6E90 loop_items(kind=test)"],
+    // 默认 0 = 不计分。老板那 8 项合计正好 100，加进来就得从别处挪——挪多少是他的决定，不是代码的。
+    ["review_weight_sop_quota", "SOP \u5468\u914D\u989D\u5B8C\u6210\u7387", "\u4E24\u4EFD SOP \u6587\u6863\u300C\u5468\u76EE\u6807 \xD7 \u5355\u4F4D\u300D\u7684\u5151\u73B0\u7387 \xB7 \u9ED8\u8BA4 0 = \u4E0D\u8BA1\u5206\uFF0C\u8981\u8003\u6838\u5C31\u5728\u8FD9\u91CC\u7ED9\u5206\u5E76\u4ECE\u522B\u9879\u632A\u51FA\u540C\u6837\u7684\u5206"]
   ];
   var SCALAR_FIELDS = [
     ["review_metric_cap", "\u5355\u6307\u6807\u8FBE\u6210\u7387\u4E0A\u9650", "\u8001\u677F\u8868\uFF1A\u6700\u9AD8\u6309 120% \u8BA1\u5206 \u2192 \u586B 1.2", 0.01],
@@ -8733,21 +9251,21 @@
     tr.appendChild(ops);
     return tr;
   }
-  function syncWeightSum(host) {
-    const cellEl = host.querySelector(".kra-weight-sum");
+  function syncWeightSum(host2) {
+    const cellEl = host2.querySelector(".kra-weight-sum");
     if (!cellEl) return;
     let sum = 0;
     for (const [key] of WEIGHT_FIELDS) {
-      const input = host.querySelector(`[data-kra-field="${key}"]`);
+      const input = host2.querySelector(`[data-kra-field="${key}"]`);
       const n = Number(input && input.value);
       if (Number.isFinite(n)) sum += n;
     }
     cellEl.textContent = String(Math.round(sum * 100) / 100);
     cellEl.classList.toggle("kra-sum-off", Math.abs(sum - 100) > 1e-3);
   }
-  function render4(host, cfg) {
+  function render4(host2, cfg) {
     loaded = cfg;
-    host.textContent = "";
+    host2.textContent = "";
     const wrap = make4("div", "kra");
     if (!canEdit()) {
       wrap.appendChild(make4(
@@ -8768,31 +9286,31 @@
     foot.appendChild(save2);
     foot.appendChild(make4("span", "kra-hint", "\u4FDD\u5B58\u540E KPI \u9875\u7684\u300C\u6708\u5EA6\u7EE9\u6548\u8003\u6838\u300D\u7ACB\u5373\u6309\u65B0\u65B9\u6848\u91CD\u7B97\u3002\u5386\u53F2\u5DF2\u7ED3\u7B97\u7684\u8003\u6838\u671F\u4E0D\u53D7\u5F71\u54CD\u3002"));
     wrap.appendChild(foot);
-    host.appendChild(wrap);
-    if (!canEdit()) host.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el) => {
+    host2.appendChild(wrap);
+    if (!canEdit()) host2.querySelectorAll("input,button[data-kra-add-band],button[data-kra-add-period]").forEach((el) => {
       el.disabled = true;
     });
-    syncWeightSum(host);
+    syncWeightSum(host2);
   }
-  function renderError4(host, message) {
-    host.textContent = "";
+  function renderError4(host2, message) {
+    host2.textContent = "";
     const box = make4("div", "kra-error");
     box.appendChild(make4("div", "", "\u8003\u6838\u65B9\u6848\u52A0\u8F7D\u5931\u8D25\uFF1A" + (message || "\u672A\u77E5\u9519\u8BEF")));
     const btn = make4("button", "btn-ghost", "\u91CD\u8BD5");
     btn.type = "button";
     btn.setAttribute("data-kra-retry", "1");
     box.appendChild(btn);
-    host.appendChild(box);
+    host2.appendChild(box);
   }
   async function loadReviewConfig() {
-    const host = document.getElementById(HOST_ID);
-    if (!host) return false;
+    const host2 = document.getElementById(HOST_ID);
+    if (!host2) return false;
     try {
-      render4(host, await API.get("/api/kpi/review-config"));
+      render4(host2, await API.get("/api/kpi/review-config"));
       return true;
     } catch (e) {
       if (e && e.message === "unauthorized") return false;
-      renderError4(host, e && e.message);
+      renderError4(host2, e && e.message);
     }
     return false;
   }
@@ -8802,10 +9320,10 @@
     const n = Number(raw);
     return Number.isFinite(n) ? n : null;
   }
-  async function save(host) {
+  async function save(host2) {
     const config = {};
     for (const [key] of WEIGHT_FIELDS.concat(SCALAR_FIELDS.map((f) => [f[0]]))) {
-      const input = host.querySelector(`[data-kra-field="${key}"]`);
+      const input = host2.querySelector(`[data-kra-field="${key}"]`);
       if (!input) continue;
       const n = Number(input.value);
       if (!Number.isFinite(n) || n < 0) {
@@ -8815,7 +9333,7 @@
       }
       config[key] = n;
     }
-    const bands = [...host.querySelectorAll(".kra-band-row")].map((tr) => ({
+    const bands = [...host2.querySelectorAll(".kra-band-row")].map((tr) => ({
       min: Number(tr.querySelector(".kra-band-min").value),
       label: tr.querySelector(".kra-band-label").value.trim(),
       coef: Number(tr.querySelector(".kra-band-coef").value),
@@ -8830,18 +9348,18 @@
       toast2("\u5206\u6863\u91CC\u300C\u603B\u5206\u4E0B\u9650 / \u7B49\u7EA7\u540D\u79F0 / \u7EE9\u6548\u7CFB\u6570\u300D\u90FD\u8981\u586B \u2014\u2014 \u8FD9\u51B3\u5B9A\u53D1\u591A\u5C11\u94B1\uFF0C\u4E0D\u80FD\u7559\u7A7A");
       return;
     }
-    const targets = [...host.querySelectorAll(".kra-target-row")].map((tr) => {
+    const targets = [...host2.querySelectorAll(".kra-target-row")].map((tr) => {
       const out = { period_key: tr.dataset.kraPeriod };
       tr.querySelectorAll(".kra-target-input").forEach((input) => {
         out[input.dataset.kraField] = valueOrNull(input);
       });
       return out;
     });
-    const btn = host.querySelector("[data-kra-save]");
+    const btn = host2.querySelector("[data-kra-save]");
     if (btn) btn.disabled = true;
     try {
       const cfg = await API.put("/api/kpi/review-config", { config, bands, targets });
-      render4(host, cfg);
+      render4(host2, cfg);
       loadKpiReview(true);
       toast2("\u8003\u6838\u65B9\u6848\u5DF2\u4FDD\u5B58 \xB7 KPI \u9875\u5DF2\u6309\u65B0\u65B9\u6848\u91CD\u7B97");
     } catch (e) {
@@ -8850,30 +9368,30 @@
     }
   }
   document.addEventListener("input", (e) => {
-    const host = document.getElementById(HOST_ID);
-    if (!host || !host.contains(e.target)) return;
-    if (e.target.matches("[data-kra-field]")) syncWeightSum(host);
+    const host2 = document.getElementById(HOST_ID);
+    if (!host2 || !host2.contains(e.target)) return;
+    if (e.target.matches("[data-kra-field]")) syncWeightSum(host2);
   });
   document.addEventListener("click", async (e) => {
-    const host = document.getElementById(HOST_ID);
-    if (!host || !host.contains(e.target)) return;
+    const host2 = document.getElementById(HOST_ID);
+    if (!host2 || !host2.contains(e.target)) return;
     if (e.target.closest("[data-kra-retry]")) {
       loadReviewConfig();
       return;
     }
     if (e.target.closest("[data-kra-save]")) {
-      save(host);
+      save(host2);
       return;
     }
     const addBand = e.target.closest("[data-kra-add-band]");
     if (addBand) {
-      const body = host.querySelector(".kra-bands");
+      const body = host2.querySelector(".kra-bands");
       if (body) body.appendChild(bandRow({ min: 0, label: "", coef: 1, note: "" }));
       return;
     }
     const delBand = e.target.closest("[data-kra-del-band]");
     if (delBand) {
-      const rows2 = host.querySelectorAll(".kra-band-row");
+      const rows2 = host2.querySelectorAll(".kra-band-row");
       if (rows2.length <= 1) {
         toast2("\u81F3\u5C11\u8981\u7559\u4E00\u6863");
         return;
@@ -8883,17 +9401,17 @@
     }
     const addPeriod = e.target.closest("[data-kra-add-period]");
     if (addPeriod) {
-      const input = host.querySelector(".kra-new-period");
+      const input = host2.querySelector(".kra-new-period");
       const key = input && String(input.value).trim();
       if (!PERIOD_KEY_RE.test(key || "")) {
         toast2("\u5148\u9009\u4E00\u4E2A\u6708\u4EFD\uFF08YYYY-MM\uFF09");
         return;
       }
-      if (host.querySelector(`.kra-target-row[data-kra-period="${key}"]`)) {
+      if (host2.querySelector(`.kra-target-row[data-kra-period="${key}"]`)) {
         toast2(key + " \u5DF2\u7ECF\u5728\u8868\u91CC\u4E86");
         return;
       }
-      const body = host.querySelector(".kra-targets");
+      const body = host2.querySelector(".kra-targets");
       if (body) body.appendChild(targetRow({ period_key: key }));
       input.value = "";
       return;
@@ -8902,7 +9420,7 @@
     if (delPeriod) {
       const key = delPeriod.dataset.kraDelPeriod;
       try {
-        render4(host, await API.del("/api/kpi/review-targets/" + encodeURIComponent(key)));
+        render4(host2, await API.del("/api/kpi/review-targets/" + encodeURIComponent(key)));
         toast2("\u5DF2\u5220\u9664 " + key + " \u7684\u5355\u72EC\u76EE\u6807 \xB7 \u8BE5\u6708\u56DE\u843D\u5230\u901A\u7528\u515C\u5E95");
       } catch (err) {
         toast2(err && err.status === 403 ? "\u65E0\u6743\u4FEE\u6539\u8003\u6838\u65B9\u6848" : "\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || ""));
@@ -8983,6 +9501,7 @@
     "submit-task": () => submitTask(),
     "submit-subtask": () => submitSubtask(),
     "submit-sop": () => submitSop(),
+    "submit-soplog": () => submitSopLog(),
     "adopt-ai": () => adoptAi()
   };
   document.addEventListener("click", (e) => {
@@ -9049,12 +9568,12 @@
     }
   }
   function mountGa4IntoData() {
-    const host = document.getElementById("sub-data-ga4");
+    const host2 = document.getElementById("sub-data-ga4");
     const ga4 = document.getElementById("panel-ga4");
-    if (!host || !ga4) return;
+    if (!host2 || !ga4) return;
     ga4.classList.remove("panel", "active");
     ga4.classList.add("ga4-embedded");
-    if (ga4.parentElement !== host) host.appendChild(ga4);
+    if (ga4.parentElement !== host2) host2.appendChild(ga4);
   }
   function go2(tab) {
     if (tab === "ga4") {

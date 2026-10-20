@@ -13,7 +13,8 @@
     "seed": "node src/db/seed.js",
     "backup": "node src/db/backup.js",
     "verify:production": "node src/ops/productionReadiness.js",
-    "test": "node --test"
+    "test": "node --test",
+    "import:sop": "node src/db/importSopCatalog.js"
   },
   "dependencies": {
     "@fastify/cookie": "11.0.2",

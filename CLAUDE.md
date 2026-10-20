@@ -14,7 +14,7 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
 
 - **后端不是单文件**:Fastify,模块化良好。
   - `server/src/routes/`(**32 个路由文件**,2026-09-20 实测:`ls server/src/routes/*.js | wc -l`)、`server/src/db/migrate.js`(迁移/建表)、`server/src/db/repositories/`(数据访问层)、`server/src/services/`(业务/AI/加密)、`server/src/sync/`(第三方同步,见下方真实状态)。
-- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1094 行 / 111KB**(2026-09-20 实测;ES 模块 **36 个**),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
+- **前端已不再是单文件,别再按「都挤在 index.html」描述**(2026-07-15 实测):`public/index.html` **1143 行**(2026-10-20 实测;ES 模块 **37 个** —— 新增 `task-pickers.js`),**内联 `<style>` 已清零**(CSS 拆为 `base.css`/`styles.css`/`components.css`/`page-*.css`,见 `css-rewrite-plan`)。JS 分两层:**经典脚本只剩 3 个**(`hermes.js`/`api.js`/`login.js` —— 2026-08-26 复测 `ls public/*.js`;charts/inquiries/kpi/ai/closed-loop/weekly-review **以及 `app.js` 本身都已迁进 `public/src/`,别再按老清单找文件**)+ **ES 模块**(`public/src/*.js` → esbuild 打 IIFE 成 `dist/bundle.js`)+ index.html 内联 `<script>`。**两套模块系统并存 = 绞杀式迁移的中间态,加载序是承重的,别随意调 `<script>` 顺序。**
 - **已有真实表 + CRUD 的模块**:询盘、KPI、关键词、否词、广告创意、整改(fixes)、复盘(weekly_reports/loop_items)、内容资产(content_assets)、seo_weeks、sem_weeks 等。
 - `server/src/routes/overview.js` 已聚合**真实** KPI(月度快照 + 环比)。
 - `server/src/services/aiContext.js` 会拼接数据库中的 **KPI、询盘、SEO/SEM 周报、关键词**等真实上下文喂给 AI。
@@ -152,7 +152,18 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - `loop_items` 加 **`start_date`**(开始日),`task_date` 语义=**截止日**。两者构成跨天任务:
     `逾期(截止<今天) / 今日(截止=今天或无日期) / 进行中(已开始未到截止) / 稍后`,**分组只在 SEM/SEO 列**,公司列平铺。
     跨天卡显示「第 N/M 天」、逾期卡显示「逾期 N 天」+ 两个出口(顺延到今天 / 放弃并归档)。
-  - 日期胶囊可点 → 复用任务弹窗的**编辑模式**(`openTaskEdit` + `submitTask` 的 `_taskEditing` 分支)走 PATCH。
+  - **日期胶囊改成 Todoist 式轻弹层**(2026-10-20,`public/src/task-pickers.js` 新模块):点胶囊(或已排时刻的卡上那枚
+    `.ttime-badge`——它会把胶囊藏掉,不挂入口就再也点不开)出**快捷日期(明天/本周稍后/本周周末/下周/没有日期)
+    + 双月月历 + 时刻二级面板**,直接 PATCH,不再开整张弹窗;整张编辑弹窗挪到卡上新增的铅笔按钮。
+    弹层**无条件夹进视口**(三列各自滚动,锚点常在可视区边缘)、滚动即关(留 250ms 静默期,否则惯性滚动让它一开就关)。
+  - **任务优先级**`loop_items.task_priority`(INTEGER 1-4,1 最高、NULL=4 普通,**老数据不回填**):
+    卡上小旗(红/橙/蓝/灰,与 tagselect 的 priority 同色序)、弹窗里一颗胶囊。
+    **排序改成「先优先级后时刻」**(`sortTaskCardsByTime` 的 `cmpHour`)——否则设了优先级跟没设一样。
+  - **`task_hour` 从整点 'HH' 放宽到 'HH:MM'(15 分钟步进)**,两种格式并存:字符串比较仍成立(`'09' < '09:30' < '10'`),
+    但**解析必须走 `task-pickers.js` 的 `hourToMin()`**,`Number(hr)*60` 碰到 `'09:30'` 得 NaN,整列时间段跟着错位。
+    服务端 `routes/loopItems.js` 的 `hhmm()` 在 POST/PATCH 两处都卡格式,脏值落 null 不入库。
+    语义没变:它仍是**预计完成时刻**,开始时刻由 `annotateTaskTimes()` 按上一条的结束时刻顺推(08:30 起、扣午休);
+    故**不收「持续时长」**——那在本项目是推导值,收进来两套算法打架。
   - **跨天任务每日推进打卡**:表 `task_checkins`(与 `sop_completions` 同构,`UNIQUE(loop_item_id,day_key)`,day_key 由前端按本地日期传),
     路由 `server/src/routes/taskCheckins.js`(`/api/task-checkins` + `/summary`)。卡上「推进」按钮一天一勾,
     徽章显示「第 N/M 天 · 已推进 K 天」;**今天没打且上次推进≥2 天前 → 黄色停滞标**。这是跨天任务唯一的问责证据。
@@ -165,6 +176,27 @@ ferr-ops 是公司内部 **SEO / SEM 运营指挥中心**,目标是完成完整�
   - `loop_items` 加 **`done_at`**:以前只存 `state='done'`,"那天完成了什么"永远答不出来。
     在 `PATCH /api/loop-items/:id` 里戳时刻(`stampDone`),撤销清空;**老数据留 NULL,不补假值**。
   - 老库一次性回填 `start_date=创建日`(migrate 的 `backfillTaskStartDates`,`meta.backfill_task_start_date` 打标只跑一次)。
+- **SOP 引擎 v2:从「一个勾」改成「一条流水」**(2026-10-20)。老板那两份 SOP 文档
+  (`sem sop.xlsx` 的 SEM/社媒、`SEO_GEO每周SOP_月度模板` 的 SEO/GEO)已原样接进来,**共 60 条**。
+  - **为什么改**:`sop_completions` 一个周期只能记一个勾,答不了两件事 ——
+    ①「今天的 SOP 和昨天的区别」(同一条「社媒发布」,昨天 FERR 技术选型、今天 BAFAW 连接方式,勾长得一模一样);
+    ②「一周 5 篇发了几篇」(文档 D 列「周目标」+ E 列「单位」是数量,布尔勾装不下 3/5)。
+  - 新表 **`sop_logs`**(sop_id, period_key, day_key, qty, subject, detail, evidence_url, logged_by),一次执行一行。
+    **`sop_completions` 一行未改**,打一条流水的同时 upsert 一条 completion ——
+    周报执行率(`/api/sop/stats`)、日计划回放(`routes/dailyPlan.js`)那套老口径全部原样成立。
+  - `sop_definitions` 扩了 12 列:`track`(SEM/社媒/SEO/GEO/公司)、`code`、`target_qty`、`unit`、`effort_h`、
+    `metric`、`why`、`how`、`done_when`、`subject_label`、`sort_order`、`source`。
+    **日计划仍是三列**(公司/陈-SEM/李-SEO),赛道只在列内分段 —— 社媒归陈、GEO 归李,但配额各算各的。
+  - **两个判据别混用**(`public/src/sop.js`):`isLogged`=有 `subject_label` → 走「记一条」,
+    `hasQuota`=isLogged 且 `target_qty>0` → 画进度条。「周一看数」周目标也写着 1 次但没有对象可填,维持原来的勾。
+    服务端 `POST /api/sop/logs` 的必填判据同样是 **`subject_label` 不是 `target_qty`**。
+  - 导入:`server/src/db/sopCatalog.json`(由两份 xlsx 生成,**勿手改**)+ `npm run import:sop`(幂等,
+    键 = `(source, track, title)`;**`active` 永不回写**,停用过的条目重导不会被悄悄打开)。
+    **刻意不挂在 migrate 里自动跑** —— 这 60 条是业务内容不是表结构,一次重启往线上塞 60 条清单会让人以为系统疯了。
+  - **绩效**:`kpiReview` 新增第 9 项指标 `sop_quota`(SOP 周配额完成率),**默认权重 0 = 现有分数一分不动**。
+    口径四条:只算区间内**完整的 ISO 周**、SOP 创建之前的周不算、未来的日子不算、**单周超额不替其它周补课**
+    (每周取 `min(实际, 周目标)`)。要考核就在 设置 → 月度绩效考核 给它分,并从别项挪出同样的分 —— 老板那 8 项合计正好 100。
+  - 单测 `server/test/sopEngine.test.js`(17 例)焊死上述口径 + 任务优先级/时刻的边界校验。
 - **SOP 执行率已沉淀进周报**(2026-08-13):`GET /api/sop/stats?from=&to=&today=`(`routes/sop.js`)+ 前端
   `public/src/sop-rate.js`(新模块,`mountSopRate` 被经典脚本 `weekly-review.js` 调用)。周报每个周卡片顶部横跨两列
   显示三方(李/陈/公司)的 `done/expected · %` + **漏了哪条哪几天**。分母三条诚实规则:**未来的日子不算**(`today` 由前端传,

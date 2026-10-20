@@ -23,6 +23,8 @@ const WEIGHT_FIELDS = [
   ['review_weight_weekly', '周复盘 / 数据分析完成率', '数据来源 weekly_reports'],
   ['review_weight_fix', '问题整改闭环率', '数据来源 fixes（整改台账）'],
   ['review_weight_test', '实验测试完成率', '数据来源 loop_items(kind=test)'],
+  // 默认 0 = 不计分。老板那 8 项合计正好 100，加进来就得从别处挪——挪多少是他的决定，不是代码的。
+  ['review_weight_sop_quota', 'SOP 周配额完成率', '两份 SOP 文档「周目标 × 单位」的兑现率 · 默认 0 = 不计分，要考核就在这里给分并从别项挪出同样的分'],
 ];
 const SCALAR_FIELDS = [
   ['review_metric_cap', '单指标达成率上限', '老板表：最高按 120% 计分 → 填 1.2', 0.01],

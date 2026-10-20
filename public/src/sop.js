@@ -29,6 +29,35 @@ export function sopPeriodKey(freq){
 window._sops=[]; window._sopDone={daily:new Set(),weekly:new Set(),monthly:new Set()};
 const FREQ_LABEL={daily:'每日必做',weekly:'每周必做',monthly:'每月必做'};
 const FREQ_TAG={daily:'日',weekly:'周',monthly:'月'};
+/* 每个部门列里按赛道分组。老板那两份文档其实是四个角色：SEM / 社媒 / SEO / GEO。
+   日计划保持三列（公司 / 陈-SEM / 李-SEO）不动，赛道只在列内分段：
+   社媒是陈在做、GEO 是李在做，但配额各算各的 —— 把「本周领英发了几篇」和「搜索词报告查了没」
+   混进同一个完成率，考核就失真了。 */
+const DEPT_TRACKS={ SEM:['SEM','社媒'], SEO:['SEO','GEO'], 公司:['公司'] };
+window._sopProg=new Map(); window._sopLogs=new Map();
+function periodQuery(){
+  return 'daily='+encodeURIComponent(sopPeriodKey('daily'))
+    +'&weekly='+encodeURIComponent(sopPeriodKey('weekly'))
+    +'&monthly='+encodeURIComponent(sopPeriodKey('monthly'));
+}
+// 没导入过的老条目 track 是空的，按 dept 归位，别让它们从界面上消失
+const trackOf=s=>s.track||s.dept;
+/* 两个判据，别混用：
+   - logged：这条要不要走「记一条」流水。判据是 subject_label —— 它就是「这次做的是哪一个」，
+     有对象可填才值得一条条记。「周一看数」周目标也写着 1 次，但它没有对象，维持原来的一个勾。
+   - hasQuota：要不要画进度数字和进度条。只有真能数的条目才画。 */
+export const isLogged=s=>!!s.subject_label;
+export const hasQuota=s=>isLogged(s)&&Number(s.target_qty)>0;
+export function doneQty(s){
+  const r=window._sopProg&&window._sopProg.get(s.id);
+  return r?Number(r.done_qty)||0:0;
+}
+// 一条 SOP 这周期算不算完成：有配额的看数量够不够，没配额的看勾打了没。
+// 两套判据必须分开——「周目标 5 篇」打了 1 个勾就算完成，正是老板要的数量考核做不出来的原因。
+export function sopDone(s){
+  if(isLogged(s))return doneQty(s)>=(Number(s.target_qty)>0?Number(s.target_qty):1);
+  return !!(window._sopDone[s.freq]&&window._sopDone[s.freq].has(s.id));
+}
 export async function loadSops(){
   try{ const {items}=await API.get('/api/sop'); window._sops=items||[]; }
   catch(e){ window._sops=[]; if(e&&e.message!=='unauthorized')toast('SOP 加载失败：'+(e.message||'')); }
@@ -41,6 +70,21 @@ export async function loadSops(){
     const keyToFreq={[sopPeriodKey('daily')]:'daily',[sopPeriodKey('weekly')]:'weekly',[sopPeriodKey('monthly')]:'monthly'};
     (items||[]).forEach(c=>{ const f=keyToFreq[c.period_key]; if(f)window._sopDone[f].add(c.sop_id); });
   }catch(e){}
+  // v2：本周期执行流水 + 配额进度。两个接口分开拿——进度是聚合（画进度条），
+  // 流水是明细（「这周都发了哪几条」），前端不自己从明细求和，免得和服务端 SUM 口径分叉。
+  try{
+    const q=periodQuery();
+    const [prog,logs]=await Promise.all([
+      API.get('/api/sop/progress?'+q).catch(()=>({items:[]})),
+      API.get('/api/sop/logs?'+q).catch(()=>({items:[]})),
+    ]);
+    window._sopProg=new Map((prog.items||[]).map(r=>[r.sop_id,r]));
+    window._sopLogs=new Map();
+    (logs.items||[]).forEach(l=>{
+      if(!window._sopLogs.has(l.sop_id))window._sopLogs.set(l.sop_id,[]);
+      window._sopLogs.get(l.sop_id).push(l);
+    });
+  }catch(e){ window._sopProg=new Map(); window._sopLogs=new Map(); }
   renderSopCards();
   renderSopSettingsTable();
   updateSopCounts();
@@ -52,67 +96,145 @@ export function renderSopCards(){
     const anchor=document.getElementById(dept==='公司'?'sop-company':('sop-'+dept.toLowerCase()));
     if(!anchor)return;
     const list=window._sops.filter(s=>s.dept===dept);
-    // 三栏统一：公司块也带「SOP 固定任务」colcap
     anchor.innerHTML='<div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>';
-
-    // 按日/周/月分三列显示
-    const grid=document.createElement('div');
-    grid.className='sop-grid';
-    grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;';
-
-    ['daily','weekly','monthly'].forEach(freq=>{
-      const col=document.createElement('div');
-      col.className='sop-freq-col';
-
-      // 频率标题
-      const freqCap=document.createElement('div');
-      freqCap.className='sop-freq-cap';
-      freqCap.style.cssText='margin-bottom:8px;color:var(--text3);font-size:12px;font-weight:500;';
-      freqCap.textContent=FREQ_LABEL[freq];
-      col.appendChild(freqCap);
-
-      const items=list.filter(s=>s.freq===freq);
-      if(!items.length){
-        const empty=document.createElement('div');
-        empty.className='sop-empty-hint';
-        empty.textContent='暂无任务';
-        col.appendChild(empty);
-      } else {
-        const box=document.createElement('div');
-        box.className='sop-list';
-        items.forEach(s=>box.appendChild(sopCardEl(s)));
-        col.appendChild(box);
-      }
-
-      grid.appendChild(col);
+    if(!list.length){
+      const empty=document.createElement('div');
+      empty.className='sop-empty-hint'; empty.textContent='暂无 SOP';
+      anchor.appendChild(empty); return;
+    }
+    // 赛道顺序按 DEPT_TRACKS；库里出现的其它赛道（自己加的 SOP）排在后面，不丢
+    const known=DEPT_TRACKS[dept]||[dept];
+    const extra=[...new Set(list.map(trackOf))].filter(t=>!known.includes(t));
+    [...known,...extra].forEach(track=>{
+      const inTrack=list.filter(s=>trackOf(s)===track);
+      if(!inTrack.length)return;
+      anchor.appendChild(trackBlockEl(track,inTrack));
     });
-
-    anchor.appendChild(grid);
   });
 }
-// 单行清单项：勾选 + 标题 + (时间提示)。频率标签不再需要（已由列标题表明）
-// 部门徽章去掉：每列本就只有一个部门，徽章冗余。
+/* 一个赛道一段：段头给「本周 3/8 条达标」，下面按日/周/月分节一条一行。
+   段头的分母只数本周期该做的（daily+weekly），月度条目不进周口径——
+   和 /api/sop/stats 的三条诚实规则同向，别在界面上另立一套算法。 */
+function trackBlockEl(track,items){
+  const box=document.createElement('div');
+  box.className='sop-track';
+  const weekly=items.filter(s=>s.freq!=='monthly');
+  const hit=weekly.filter(sopDone).length;
+  const cap=document.createElement('div');
+  cap.className='sop-track-cap';
+  cap.innerHTML=`<span>${esc(track)}</span>`
+    +(weekly.length?`<em class="${hit===weekly.length?'ok':''}">本周期 ${hit}/${weekly.length} 达标</em>`:'');
+  box.appendChild(cap);
+  ['daily','weekly','monthly'].forEach(freq=>{
+    const rows=items.filter(s=>s.freq===freq);
+    if(!rows.length)return;
+    const fc=document.createElement('div');
+    fc.className='sop-freq-cap'; fc.textContent=FREQ_LABEL[freq];
+    box.appendChild(fc);
+    const listBox=document.createElement('div');
+    listBox.className='sop-list';
+    rows.forEach(s=>listBox.appendChild(sopCardEl(s)));
+    box.appendChild(listBox);
+  });
+  return box;
+}
+/* 单行清单项。两种形态：
+   - 有周目标的（subject_label 非空 / target_qty 有值）→ 左边是进度数字，右边是「记一条」，
+     点一下要写清这次做的是哪个对象，否则「今天发了哪个产品」永远答不出来；
+   - 没周目标的（周一看数、月度复盘这类）→ 维持原来的勾，一个周期一次。
+   每行都带 ⓘ 展开：为什么做 / 怎么做 / 完成标准 —— 这三栏是老板文档里就有的，
+   以前只存了 content 一段话，执行人看不到判据，SOP 就退化成"点一下完事"。 */
 export function sopCardEl(s){
-  const done=window._sopDone[s.freq]&&window._sopDone[s.freq].has(s.id);
+  const quota=hasQuota(s);
+  const logged=isLogged(s);
+  const done=sopDone(s);
   const row=document.createElement('div');
-  row.className='tcard'+(done?' done':'');
+  row.className='tcard sop-row'+(done?' done':'');
   row.dataset.sopId=s.id; row.dataset.sopFreq=s.freq;
-  const due=s.time_hint?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:'';
-  row.innerHTML=`<span class="tcheck${done?' on':''}">${done?'<i class="ti ti-check"></i>':''}</span>`
-    +`<span class="sop-text">${esc(s.title)}</span>`
-    +`<span class="sop-right">${due}</span>`;
-  row.querySelector('.tcheck').addEventListener('click',e=>window.chk(e.currentTarget));
+  const code=s.code?`<b class="sop-code">${esc(s.code)}</b> `:'';
+  const hint=s.time_hint?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:'';
+  const left=quota
+    ? `<span class="sop-qty${done?' ok':''}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>`
+    : logged
+      ? `<span class="sop-qty${done?' ok':''}">${fmtQty(doneQty(s))}</span>`
+      : `<span class="tcheck${done?' on':''}">${done?'<i class="ti ti-check"></i>':''}</span>`;
+  const logBtn=logged
+    ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> 记一条</button>`
+    : '';
+  row.innerHTML=left
+    +`<span class="sop-text">${code}${esc(s.title)}</span>`
+    +`<span class="sop-right">${hint}${logBtn}`
+    +`<button type="button" class="btn-mini sop-info-btn" title="为什么做 / 怎么做 / 完成标准"><i class="ti ti-info-circle"></i></button></span>`;
+  if(quota){
+    // 进度条宽度只能用 JS 设（CSSOM 不受 CSP 限制）：HTML 字符串里写内联样式属性会被
+    // style-src 拦掉，而且 frontendXss.test.js 焊死了「首方前端源码零内联样式属性」。
+    const bar=document.createElement('div'); bar.className='sop-bar';
+    const fill=document.createElement('i');
+    const pct=Math.min(100,Math.round(doneQty(s)/Number(s.target_qty)*100));
+    fill.style.width=pct+'%';
+    if(done)fill.classList.add('ok');
+    bar.appendChild(fill); row.appendChild(bar);
+  }
+  const detail=document.createElement('div');
+  detail.className='sop-detail is-hidden';
+  detail.appendChild(detailEl(s));
+  row.appendChild(detail);
+  const tick=row.querySelector('.tcheck');
+  if(tick)tick.addEventListener('click',e=>window.chk(e.currentTarget));
   return row;
 }
+const fmtQty=n=>{ const v=Number(n)||0; return Number.isInteger(v)?String(v):v.toFixed(1); };
+function fieldEl(label,text){
+  const d=document.createElement('div'); d.className='sop-field';
+  d.innerHTML=`<b>${esc(label)}</b><span>${esc(text)}</span>`;
+  return d;
+}
+/* 展开区：文档四栏 + 本周期已经记了哪几条。
+   「本周期做了什么」就在这里回答——同一条「社媒发布」，昨天 FERR 技术选型、今天 BAFAW 连接方式，
+   在这张列表里一眼能分开，在勾里永远分不开。 */
+function detailEl(s){
+  const wrap=document.createElement('div');
+  if(s.why)wrap.appendChild(fieldEl('为什么做',s.why));
+  if(s.how)wrap.appendChild(fieldEl('怎么做',s.how));
+  if(s.done_when)wrap.appendChild(fieldEl('完成标准',s.done_when));
+  if(s.content&&!s.why&&!s.how)wrap.appendChild(fieldEl('说明',s.content));
+  const meta=[];
+  if(s.metric)meta.push('提升：'+s.metric);
+  if(s.effort_h!=null)meta.push('工时 '+fmtQty(s.effort_h)+'h');
+  if(hasQuota(s))meta.push('周目标 '+fmtQty(s.target_qty)+(s.unit?' '+s.unit:''));
+  if(meta.length)wrap.appendChild(fieldEl('口径',meta.join(' · ')));
+  const logs=(window._sopLogs&&window._sopLogs.get(s.id))||[];
+  const box=document.createElement('div'); box.className='sop-logs';
+  if(!logs.length){
+    box.innerHTML='<div class="dim">本周期还没有执行记录。</div>';
+  }else{
+    logs.forEach(l=>{
+      const li=document.createElement('div'); li.className='sop-log'; li.dataset.logId=l.id;
+      const link=l.evidence_url?`<a href="${esc(l.evidence_url)}" target="_blank" rel="noopener"><i class="ti ti-external-link"></i></a>`:'';
+      li.innerHTML=`<em>${esc((l.day_key||'').slice(5))}</em>`
+        +`<span>${esc(l.subject||l.detail||'（未填对象）')}</span>`
+        +(Number(l.qty)!==1?`<b>×${fmtQty(l.qty)}</b>`:'')
+        +link
+        +`<button type="button" class="btn-mini sop-log-del" title="撤销这条"><i class="ti ti-trash"></i></button>`;
+      box.appendChild(li);
+    });
+  }
+  wrap.appendChild(fieldEl('本周期已记', ''));
+  wrap.lastChild.querySelector('span').replaceWith(box);
+  return wrap;
+}
+
 export function updateSopCounts(){
   // SEM/SEO：SOP N · 新增 M；公司：SOP N · 派发 M（容器 id 用 newtask-company / kcount-company）
   [['SEM','sem','新增'],['SEO','seo','新增'],['公司','company','派发']].forEach(([dept,key,verb])=>{
     const el=document.getElementById('kcount-'+key); if(!el)return;
-    const sopN=window._sops.filter(s=>s.dept===dept).length;
+    // 分母只算本周期该做的（daily+weekly）；月度条目不进周口径，和 /api/sop/stats 同向。
+    const cur=window._sops.filter(s=>s.dept===dept&&s.freq!=='monthly');
+    const hit=cur.filter(sopDone).length;
     const addCol=document.getElementById('newtask-'+key);
     // 只数顶层任务卡，公司大任务下的子卡（.subtask）不计入「派发 N」
     const addN=addCol?addCol.querySelectorAll('.tcard:not(.subtask)').length:0;
-    el.textContent='SOP '+sopN+' · '+verb+' '+addN;
+    el.textContent='SOP '+hit+'/'+cur.length+' · '+verb+' '+addN;
   });
 }
 
@@ -132,7 +254,12 @@ export function renderSopSettingsTable(){
     const ops=writable
       ? `<button class="btn-mini sop-edit"><i class="ti ti-edit"></i></button> <button class="btn-mini sop-del csp-s-b0e08465c2"><i class="ti ti-trash"></i></button>`
       : '<span class="dim csp-s-33ee298127">只读</span>';
-    tr.innerHTML=`<td>${esc(s.dept)}</td><td>${esc(FREQ_LABEL[s.freq]||s.freq)}</td><td>${esc(s.title)}</td><td class="dim csp-s-33ee298127">${esc(s.content||'')}</td><td>${esc(s.time_hint||'')}</td><td class="ctr">${ops}</td>`;
+    const target=hasQuota(s)?fmtQty(s.target_qty)+(s.unit?' '+s.unit:''):'—';
+    tr.innerHTML=`<td>${esc(s.dept)}</td><td>${esc(trackOf(s)||'')}</td><td>${esc(FREQ_LABEL[s.freq]||s.freq)}</td>`
+      +`<td>${esc(s.code||'')}</td><td>${esc(s.title)}</td><td>${esc(target)}</td>`
+      +`<td>${s.effort_h==null?'':esc(fmtQty(s.effort_h))}</td>`
+      +`<td class="dim csp-s-33ee298127">${esc(s.done_when||s.content||'')}</td>`
+      +`<td>${esc(s.time_hint||'')}</td><td class="ctr">${ops}</td>`;
     tb.appendChild(tr);
   });
 }
@@ -143,9 +270,21 @@ export function openSopModal(sop){
   document.getElementById('sop-mod-title').textContent=sop?'编辑 SOP':'新增 SOP';
   document.getElementById('sop-dept').value=sop?sop.dept:'SEM';
   document.getElementById('sop-freq').value=sop?sop.freq:'daily';
-  document.getElementById('sop-title').value=sop?sop.title:'';
-  document.getElementById('sop-content').value=sop?(sop.content||''):'';
-  document.getElementById('sop-time').value=sop?(sop.time_hint||''):'';
+  // v2 字段一起回填；null/undefined 一律落成空串，别把 "null" 写进输入框
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el)el.value=v==null?'':v; };
+  set('sop-title',sop?sop.title:'');
+  set('sop-track',sop?(sop.track||''):'');
+  set('sop-code',sop?sop.code:'');
+  set('sop-target',sop?sop.target_qty:'');
+  set('sop-unit',sop?sop.unit:'');
+  set('sop-subject-label',sop?sop.subject_label:'');
+  set('sop-why',sop?sop.why:'');
+  set('sop-how',sop?sop.how:'');
+  set('sop-done-when',sop?sop.done_when:'');
+  set('sop-metric',sop?sop.metric:'');
+  set('sop-effort',sop?sop.effort_h:'');
+  set('sop-content',sop?sop.content:'');
+  set('sop-time',sop?sop.time_hint:'');
   openModal('sopMask'); setTimeout(()=>document.getElementById('sop-title').focus(),50);
 }
 export async function submitSop(){
@@ -155,9 +294,17 @@ export async function submitSop(){
   const content=document.getElementById('sop-content').value.trim();
   const time_hint=document.getElementById('sop-time').value.trim();
   if(!title){ toast('请填写标题'); return; }
+  const v=id=>((document.getElementById(id)||{}).value||'').trim();
+  const n=id=>{ const t=v(id); return t===''?null:Number(t); };
+  const body={dept,freq,title,content,time_hint,
+    track:v('sop-track')||null, code:v('sop-code')||null,
+    target_qty:n('sop-target'), unit:v('sop-unit')||null,
+    subject_label:v('sop-subject-label')||null,
+    why:v('sop-why')||null, how:v('sop-how')||null, done_when:v('sop-done-when')||null,
+    metric:v('sop-metric')||null, effort_h:n('sop-effort')};
   try{
-    if(_sopEditing){ await API.patch('/api/sop/'+_sopEditing.id,{dept,freq,title,content,time_hint}); toast('已更新 SOP'); }
-    else { await API.post('/api/sop',{dept,freq,title,content,time_hint}); toast('已新增 SOP'); }
+    if(_sopEditing){ await API.patch('/api/sop/'+_sopEditing.id,body); toast('已更新 SOP'); }
+    else { await API.post('/api/sop',body); toast('已新增 SOP'); }
     closeModal('sopMask'); await loadSops();
   }catch(e){ toast(e&&e.status===403?'无权操作（仅经理/老板）':'保存失败：'+(e.message||'')); }
 }
@@ -190,9 +337,12 @@ export function buildSopOverdueList(){
     if(!isOverduePeriodFirstDay(freq))return;
     (window._sops||[]).forEach(s=>{
       if(s.freq!==freq)return;
-      const done=window._sopDone[freq]&&window._sopDone[freq].has(s.id);
-      if(done)return;
-      lines.push(esc(s.dept)+'-'+today+'-'+esc(FREQ_LABEL[freq]||freq)+'：'+esc(s.title)+' 任务未做，请及时处理。');
+      if(sopDone(s))return;
+      // 有配额的条目报「还差几条」，不是笼统一句"未做"——差 1 条和一条没做，处理的紧迫度不一样
+      const gap=hasQuota(s)
+        ? '，还差 '+fmtQty(Number(s.target_qty)-doneQty(s))+(s.unit?' '+s.unit:'')
+        : '';
+      lines.push(esc(trackOf(s))+'-'+today+'-'+esc(FREQ_LABEL[freq]||freq)+'：'+esc(s.title)+' 未达标'+esc(gap)+'，请及时处理。');
     });
   });
   return lines;
@@ -237,4 +387,76 @@ export function refreshNavTaskDot(){
   const overdue=buildSopOverdueList().length>0;
   const urgent=(window._urgentTasks||[]).length>0;
   dot.classList.toggle('is-hidden',!(overdue||urgent));
+}
+
+/* ===== v2：执行流水的三个交互（展开详情 / 记一条 / 撤销一条）=====
+   用事件委托，零内联 handler（全站 onclick 已清零，别开倒车）。 */
+document.addEventListener('click',async e=>{
+  const info=e.target.closest('.sop-info-btn');
+  if(info){
+    const row=info.closest('.sop-row'); const d=row&&row.querySelector('.sop-detail');
+    if(d)d.classList.toggle('is-hidden');
+    return;
+  }
+  const add=e.target.closest('.sop-log-btn');
+  if(add){
+    const row=add.closest('.sop-row'); const id=row&&row.dataset.sopId;
+    const s=(window._sops||[]).find(x=>String(x.id)===String(id));
+    if(s)openSopLogModal(s);
+    return;
+  }
+  const del=e.target.closest('.sop-log-del');
+  if(del){
+    const li=del.closest('.sop-log'); const id=li&&li.dataset.logId; if(!id)return;
+    if(!inlineConfirm(del,'撤销这条'))return;
+    try{ await API.del('/api/sop/logs/'+id); toast('已撤销'); await loadSops(); }
+    catch(err){ toast(err&&err.status===403?'无权操作':'撤销失败：'+(err.message||'请求失败')); }
+  }
+});
+
+let _sopLogging=null;
+export function openSopLogModal(s){
+  _sopLogging=s;
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el)el.value=v; };
+  const txt=(id,v)=>{ const el=document.getElementById(id); if(el)el.textContent=v; };
+  txt('soplog-title',(s.code?s.code+' · ':'')+s.title);
+  // 完成标准直接摆在填写框上方：判据不在眼前，「做到什么算完成」就还是一句空话
+  txt('soplog-standard',s.done_when||s.content||'');
+  const std=document.getElementById('soplog-standard-box');
+  if(std)std.classList.toggle('is-hidden',!(s.done_when||s.content));
+  const subjEl=document.getElementById('soplog-subject');
+  if(subjEl)subjEl.placeholder=s.subject_label||'这次做的是哪一个…';
+  const lbl=document.getElementById('soplog-subject-label');
+  if(lbl)lbl.textContent=s.subject_label?('做了哪个 · '+s.subject_label):'做了哪个（可选）';
+  txt('soplog-progress',hasQuota(s)
+    ? '本周期 '+fmtQty(doneQty(s))+'/'+fmtQty(s.target_qty)+(s.unit?' '+s.unit:'')
+    : '');
+  set('soplog-subject',''); set('soplog-url',''); set('soplog-detail',''); set('soplog-qty','1');
+  openModal('sopLogMask');
+  setTimeout(()=>{ if(subjEl)subjEl.focus(); },50);
+}
+export async function submitSopLog(){
+  const s=_sopLogging; if(!s)return;
+  const val=id=>((document.getElementById(id)||{}).value||'').trim();
+  const subject=val('soplog-subject');
+  if(s.subject_label&&!subject){ toast('请写清这次做的是哪一个：'+s.subject_label); return; }
+  const qty=Number(val('soplog-qty'))||1;
+  if(!(qty>0)){ toast('数量要大于 0'); return; }
+  try{
+    await API.post('/api/sop/logs',{
+      sop_id:s.id,
+      period_key:sopPeriodKey(s.freq),
+      day_key:formatLocalDate(new Date()), // 执行日按本地日期，与 task_checkins / completions 同口径
+      qty, subject,
+      evidence_url:val('soplog-url'),
+      detail:val('soplog-detail'),
+    });
+    closeModal('sopLogMask');
+    await loadSops();
+    const left=hasQuota(s)?Math.max(0,Number(s.target_qty)-doneQty(s)):0;
+    toast(left>0?('已记一条 · 本周期还差 '+fmtQty(left)+(s.unit?' '+s.unit:'')):'已记一条 · 本周期已达标');
+  }catch(err){
+    if(err&&err.status===400)toast('这条 SOP 要求写清做的是哪一个');
+    else toast(err&&err.status===403?'无权操作':'保存失败：'+(err.message||'请求失败'));
+  }
 }

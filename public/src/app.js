@@ -25,7 +25,7 @@ import { adRowHtml, addAd, addNeg, negRowHtml } from './neg-ads.js';
 import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
 import { loadRisks } from './risks.js';
 import { bindSettings, openPwd, submitPwd } from './settings.js';
-import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, updateSopCounts } from './sop.js';
+import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, submitSopLog, updateSopCounts } from './sop.js';
 import { getRangeRevision, submitCustomRange, syncRangeUi, withRange } from './timerange.js';
 import { closeModal, esc, tableLoadState, toast, toastUndo } from './ui-kit.js';
 import { renderMonthReview, renderReview } from './weekly-review.js';
@@ -112,6 +112,7 @@ const STATIC_UI_ACTIONS={
   'submit-task':()=>submitTask(),
   'submit-subtask':()=>submitSubtask(),
   'submit-sop':()=>submitSop(),
+  'submit-soplog':()=>submitSopLog(),
   'adopt-ai':()=>adoptAi()
 };
 document.addEventListener('click',e=>{

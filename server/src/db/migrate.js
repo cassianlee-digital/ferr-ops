@@ -238,7 +238,9 @@ CREATE TABLE IF NOT EXISTS loop_items (
   analysis      TEXT,   -- 沉淀：对该动作的分析
   task_date     TEXT,   -- 任务：截止日（可选）
   start_date    TEXT,   -- 任务：开始日（可选）。与 task_date 一起表达跨天任务：start<=今天<截止 即「进行中」
-  task_hour     TEXT,   -- 任务：今日完成时间（小时 00-23）
+  task_hour     TEXT,   -- 任务：预计完成时刻。老数据是 'HH'（整点），新数据是 'HH:MM'（15 分钟步进）；
+                        --      两种都按字符串排序即可（'09' < '09:30' < '10'），解析见前端 hourToMin()
+  task_priority INTEGER,-- 任务：优先级 1=最高 2=高 3=中 4=普通。NULL 视为 4，不补假值
   note          TEXT,   -- 任务：备注
   parent_id     INTEGER,-- 公司大任务拆解：子任务指向父 loop_item.id；NULL=顶层任务
   -- 归档地基（第①步）：state 显式状态机 + 软删 + 归档时间 + 归档分桶
@@ -591,6 +593,28 @@ CREATE TABLE IF NOT EXISTS sop_completions (
 );
 CREATE INDEX IF NOT EXISTS idx_sop_comp_period ON sop_completions(period_key);
 
+-- SOP 执行流水（2026-10-20）。sop_completions 一个周期只能记一个勾，答得了「做没做」，
+-- 答不了老板那两张表真正要的两件事：
+--   ①「今天的 SOP 和昨天的区别」—— 同一条「社媒发布」，昨天发的 FERR 技术选型、今天发的 BAFAW 连接方式，
+--     勾在 completions 里长得一模一样；
+--   ②「一周 5 篇发了几篇」—— 周目标是数量（文档里 D 列「周目标」+ E 列「单位」），一个布尔勾装不下 3/5。
+-- 所以执行记录改成一次一行：subject 记对象、evidence_url 记证据、qty 记这次算几个。
+-- completions 保留不动（周报执行率、日计划回放全按它的口径），打一条流水的同时 upsert 一条 completion。
+CREATE TABLE IF NOT EXISTS sop_logs (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  sop_id        INTEGER NOT NULL REFERENCES sop_definitions(id),
+  period_key    TEXT NOT NULL,                              -- 与 freq 对应：daily=YYYY-MM-DD / weekly=YYYY-Www / monthly=YYYY-MM
+  day_key       TEXT NOT NULL,                              -- 实际执行日 YYYY-MM-DD，由前端按本地日期传
+  qty           REAL NOT NULL DEFAULT 1,                    -- 这一条算几个（发 1 篇=1；一次补录 3 篇=3）
+  subject       TEXT,                                       -- 做了哪个对象：哪个品牌/平台/页面/主题/关键词
+  detail        TEXT,                                       -- 补充说明
+  evidence_url  TEXT,                                       -- 帖子链接 / 页面 URL / 截图地址
+  logged_by     TEXT,                                       -- username
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_sop_logs_sop_period ON sop_logs(sop_id, period_key);
+CREATE INDEX IF NOT EXISTS idx_sop_logs_day ON sop_logs(day_key);
+
 -- 跨天任务的每日推进打卡。跨天任务（start_date~task_date）在日计划上会连续挂好几天，
 -- 没有这张表就只能看到"它还在"，看不到"这几天推进了没有"——每天一条记录才是可复盘的证据。
 -- 与 sop_completions 同构：day_key 按客户端本地日期算，UNIQUE 防重、撤销即删。
@@ -692,7 +716,29 @@ export function migrate() {
     // 思考框架：为什么做 / 完成标准 / 验证日期 / 怎么验证（老板要求每条任务必须能回答这四问）
     ['task_why', 'TEXT'], ['task_done_when', 'TEXT'],
     ['task_verify_date', 'TEXT'], ['task_verify_how', 'TEXT'],
+    // 优先级 1-4（Todoist 口径：1 最高、4 普通）。老数据留 NULL = 普通，不回填。
+    ['task_priority', 'INTEGER'],
   ]);
+  // SOP 引擎 v2（2026-10-20）：老板那两张 SOP 表（SEM+社媒、SEO+GEO）的列原样接进来。
+  // 以前一条 SOP 只有 title + content 一段话，执行人看不到「为什么做 / 怎么做 / 做到什么算完成」，
+  // 点一下勾就完事 —— 和每日任务那套「四问」比，SOP 反而是最糊的一块。
+  ensureColumns('sop_definitions', [
+    ['track', 'TEXT'],          // SEM / 社媒 / SEO / GEO / 公司。老数据 NULL = 跟 dept 同值
+    ['code', 'TEXT'],           // 文档里的编号：固定 / P1 / S3 / G1 / M4 / F5
+    ['target_qty', 'REAL'],     // 周目标数量。NULL = 无配额，一勾即完成（「固定」那两条就是）
+    ['unit', 'TEXT'],           // 条 / 篇 / 页 / 个站 / 个主题 / 次
+    ['effort_h', 'REAL'],       // 工时 h
+    ['metric', 'TEXT'],         // 主要提升（排名 / 权重 / A|B 询盘 …）
+    ['why', 'TEXT'],            // 为什么做
+    ['how', 'TEXT'],            // 怎么做
+    ['done_when', 'TEXT'],      // 完成标准（做到才算完成）
+    ['subject_label', 'TEXT'],  // 打卡时「这次做的是哪个对象」的提示词，空=不强制填
+    ['sort_order', 'INTEGER'],  // 文档里的行序；老板的表是按优先级排的，顺序本身是信息
+    ['source', 'TEXT'],         // 来源文档标识，配合 code+track 做幂等导入
+  ]);
+  // 幂等导入的键取 (source, track, title)，不取 code：文档里「固定」在同一赛道出现两次
+  // （周一看数 / 周五复盘），code 不唯一；动作名才是老板真正写下的那个身份。
+  try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_sop_def_src ON sop_definitions(source, track, title) WHERE source IS NOT NULL'); } catch (e) {}
   ensureColumns('fixes', [
     ['evidence', 'TEXT'],
     ['state', 'TEXT'], ['archived_at', 'TEXT'], ['deleted_at', 'TEXT'], ['archive_kind', 'TEXT'],

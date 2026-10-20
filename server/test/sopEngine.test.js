@@ -1,0 +1,210 @@
+// SOP 引擎 v2：执行流水（一次执行一行）+ 周配额口径。
+//
+// 存在理由：这块改的是「打卡」这条每天都走的路径，而且新加的配额口径有四条容易被想当然写错的规则
+// （完整周、创建日、未来日、单周超额不补他周）。纯函数那半边用单测焊死，路由那半边走真实 app。
+//
+// 隔离：connection.js 在 import 期就打开 config.dbFile → DB_FILE 必须在动态 import 之前设好。
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+const tmpDir = mkdtempSync(join(tmpdir(), 'ferr-sop-'));
+process.env.DB_FILE = join(tmpDir, 'test.sqlite');
+
+const { buildApp } = await import('../src/index.js');
+const { sopQuotaProgress } = await import('../src/services/kpiReview.js');
+const app = await buildApp();
+
+test.after(async () => {
+  await app.close();
+  const { db } = await import('../src/db/connection.js');
+  db.close();
+  rmSync(tmpDir, { recursive: true, force: true });
+});
+
+const auth = (role = 'manager') => ({ cookie: `ferr_token=${app.jwt.sign({ id: 1, username: 't', name: 't', role })}` });
+const call = (method, url, payload, role) =>
+  app.inject({ method, url, headers: auth(role), ...(payload ? { payload } : {}) });
+
+/* ===================== 纯函数：周配额口径 ===================== */
+
+// 2026-10 的周一：10-05 / 10-12 / 10-19 / 10-26
+const def = (over = {}) => ({
+  id: 1, dept: 'SEO', freq: 'weekly', target_qty: 5, active: 1,
+  created_at: '2026-09-01 00:00:00', ...over,
+});
+const log = (day, qty = 1, sopId = 1) => ({ sop_id: sopId, day_key: day, qty });
+
+test('周配额只算完整的 ISO 周：区间头尾的半周不进分母', () => {
+  // 10-07(周三) ~ 10-25(周日)：完整周只有 10-12~10-18 和 10-19~10-25 两周
+  const r = sopQuotaProgress([def()], [], { start_date: '2026-10-07', end_date: '2026-10-25' }, null, '2026-10-31');
+  assert.equal(r.weeks, 2);
+  assert.equal(r.total, 10);
+  assert.equal(r.done, 0);
+});
+
+test('SOP 创建之前的周不算：本月才建的 SOP，上半月不是它漏的', () => {
+  const r = sopQuotaProgress(
+    [def({ created_at: '2026-10-14 09:00:00' })],
+    [], { start_date: '2026-10-05', end_date: '2026-10-25' }, null, '2026-10-31',
+  );
+  // 起点推到 10-14（周三）→ 它所在的那周不完整，只剩 10-19~10-25 一周
+  assert.equal(r.weeks, 1);
+  assert.equal(r.total, 5);
+});
+
+test('未来的日子不算：today 之后的周不进分母', () => {
+  const r = sopQuotaProgress([def()], [], { start_date: '2026-10-05', end_date: '2026-10-31' }, null, '2026-10-15');
+  // today=10-15 → 只有 10-05~10-11 这一周是完整且已过去的
+  assert.equal(r.weeks, 1);
+  assert.equal(r.total, 5);
+});
+
+test('单周超额不替其它周补课：一周发 10 篇 + 一周挂零 ≠ 达标', () => {
+  const logs = [log('2026-10-06', 10)]; // 第一周一次性记 10
+  const r = sopQuotaProgress([def()], logs, { start_date: '2026-10-05', end_date: '2026-10-18' }, null, '2026-10-31');
+  assert.equal(r.weeks, 2);
+  assert.equal(r.total, 10);
+  assert.equal(r.done, 5, '第一周封顶 5，第二周 0 → 总共 5，不是 10');
+});
+
+test('qty 按求和不按条数：一次补录 3 篇算 3', () => {
+  const r = sopQuotaProgress([def()], [log('2026-10-06', 3)], { start_date: '2026-10-05', end_date: '2026-10-11' }, null, '2026-10-31');
+  assert.equal(r.done, 3);
+});
+
+test('没有周目标 / 月度 / 停用 / 别的部门的条目都不进这项', () => {
+  const range = { start_date: '2026-10-05', end_date: '2026-10-11' };
+  const cases = [
+    def({ target_qty: null }),
+    def({ freq: 'monthly' }),
+    def({ active: 0 }),
+  ];
+  for (const d of cases) {
+    assert.equal(sopQuotaProgress([d], [], range, null, '2026-10-31').total, 0);
+  }
+  // dept 过滤：按 SEM 口径看，SEO 的条目不算
+  assert.equal(sopQuotaProgress([def()], [], range, 'SEM', '2026-10-31').total, 0);
+  assert.equal(sopQuotaProgress([def()], [], range, 'SEO', '2026-10-31').total, 5);
+});
+
+test('区间整个落在未来 / 倒挂时回零，不抛异常', () => {
+  assert.deepEqual(
+    sopQuotaProgress([def()], [], { start_date: '2027-01-04', end_date: '2027-01-10' }, null, '2026-10-20'),
+    { done: 0, total: 0, weeks: 0 },
+  );
+  assert.deepEqual(sopQuotaProgress([def()], [], null, null, '2026-10-20'), { done: 0, total: 0, weeks: 0 });
+});
+
+/* ===================== 路由：执行流水 ===================== */
+
+async function makeSop(over = {}) {
+  const res = await call('POST', '/api/sop', {
+    dept: 'SEO', freq: 'weekly', title: '测试条目 ' + Math.random().toString(36).slice(2, 8), ...over,
+  });
+  assert.equal(res.statusCode, 201, res.body);
+  return res.json().item;
+}
+
+test('带 subject_label 的 SOP 必须写清做了哪个对象，否则 400', async () => {
+  const sop = await makeSop({ target_qty: 5, unit: '篇', subject_label: '哪篇文章' });
+  const bad = await call('POST', '/api/sop/logs', { sop_id: sop.id, period_key: '2026-W43', day_key: '2026-10-20' });
+  assert.equal(bad.statusCode, 400);
+  assert.equal(bad.json().error, 'subject_required');
+
+  const ok = await call('POST', '/api/sop/logs', {
+    sop_id: sop.id, period_key: '2026-W43', day_key: '2026-10-20', subject: 'manhole-steps 选型指南',
+  });
+  assert.equal(ok.statusCode, 201, ok.body);
+  assert.equal(ok.json().item.subject, 'manhole-steps 选型指南');
+});
+
+test('没有 subject_label 的 SOP 可以直接记一条（周一看数那类）', async () => {
+  const sop = await makeSop({ time_hint: '周一' });
+  const res = await call('POST', '/api/sop/logs', { sop_id: sop.id, period_key: '2026-W43', day_key: '2026-10-20' });
+  assert.equal(res.statusCode, 201, res.body);
+});
+
+test('进度按 SUM(qty) 聚合，不按条数', async () => {
+  const sop = await makeSop({ target_qty: 5, unit: '条', subject_label: '哪一条' });
+  for (const [subject, qty] of [['a', 2], ['b', 1]]) {
+    const r = await call('POST', '/api/sop/logs', { sop_id: sop.id, period_key: '2026-W44', day_key: '2026-10-27', subject, qty });
+    assert.equal(r.statusCode, 201, r.body);
+  }
+  const prog = await call('GET', '/api/sop/progress?weekly=2026-W44');
+  const row = prog.json().items.find((x) => x.sop_id === sop.id);
+  assert.equal(row.done_qty, 3, '2 + 1 = 3，不是 2 条记录');
+  assert.equal(row.log_count, 2);
+});
+
+test('period_key 格式不合法一律拒绝：影子周期会让配额永远追不平', async () => {
+  const sop = await makeSop();
+  for (const pk of ['2026-W4', 'W43', '2026/10/20', '']) {
+    const r = await call('POST', '/api/sop/logs', { sop_id: sop.id, period_key: pk, day_key: '2026-10-20' });
+    assert.equal(r.statusCode, 400, `period_key=${pk} 应被拒绝`);
+  }
+});
+
+test('撤销流水：还剩别的记录时完成勾不跟着消失，删到零才撤销', async () => {
+  const sop = await makeSop({ target_qty: 2, unit: '条', subject_label: '哪一条' });
+  const pk = '2026-W45';
+  const ids = [];
+  for (const subject of ['x', 'y']) {
+    const r = await call('POST', '/api/sop/logs', { sop_id: sop.id, period_key: pk, day_key: '2026-11-03', subject });
+    ids.push(r.json().item.id);
+  }
+  const doneNow = async () => (await call('GET', `/api/sop/completions?weekly=${pk}`)).json()
+    .items.some((c) => c.sop_id === sop.id);
+  assert.equal(await doneNow(), true, '记了流水就该有完成勾');
+
+  await call('DELETE', `/api/sop/logs/${ids[0]}`);
+  assert.equal(await doneNow(), true, '还剩一条流水 → 做过就是做过，勾不能消失');
+
+  await call('DELETE', `/api/sop/logs/${ids[1]}`);
+  assert.equal(await doneNow(), false, '流水删光 → 完成勾一并撤销');
+});
+
+test('不存在的 SOP 记流水回 404，不写脏数据', async () => {
+  const r = await call('POST', '/api/sop/logs', { sop_id: 999999, period_key: '2026-W43', day_key: '2026-10-20' });
+  assert.equal(r.statusCode, 404);
+});
+
+test('PATCH 定义只改传进来的字段，没传的不被清空', async () => {
+  const sop = await makeSop({ why: '原因', how: '步骤', done_when: '判据', target_qty: 3 });
+  const r = await call('PATCH', `/api/sop/${sop.id}`, { title: '改了标题' });
+  assert.equal(r.statusCode, 200, r.body);
+  const after = r.json().item;
+  assert.equal(after.title, '改了标题');
+  assert.equal(after.why, '原因', 'PATCH 只传标题不该把「为什么做」清空');
+  assert.equal(after.how, '步骤');
+  assert.equal(after.target_qty, 3);
+});
+
+/* ===================== 路由：任务优先级 / 时刻 ===================== */
+
+test('任务优先级只收 1-4，越界与脏值一律落 null（= 普通）', async () => {
+  for (const [input, expect] of [[1, 1], [4, 4], [0, null], [5, null], ['high', null], ['2', 2]]) {
+    const r = await call('POST', '/api/loop-items', { kind: 'task', dept: 'SEO', content: 'p', task_priority: input });
+    assert.equal(r.statusCode, 201, r.body);
+    assert.equal(r.json().item.task_priority, expect, `task_priority=${input}`);
+  }
+});
+
+test('预计完成时刻只收 HH 或 HH:MM（15 分钟步进），脏值不入库', async () => {
+  const cases = [['09', '09'], ['09:30', '09:30'], ['23:45', '23:45'], ['09:07', null], ['24:00', null], ['9', null], ['abc', null]];
+  for (const [input, expect] of cases) {
+    const r = await call('POST', '/api/loop-items', { kind: 'task', dept: 'SEO', content: 'h', task_hour: input });
+    assert.equal(r.json().item.task_hour, expect, `task_hour=${input}`);
+  }
+});
+
+test('PATCH 任务也走同一套校验，不能绕过', async () => {
+  const created = await call('POST', '/api/loop-items', { kind: 'task', dept: 'SEO', content: 'x', task_hour: '10:00', task_priority: 2 });
+  const id = created.json().item.id;
+  const r = await call('PATCH', `/api/loop-items/${id}`, { task_hour: '10:07', task_priority: 9 });
+  const after = r.json().item;
+  assert.equal(after.task_hour, null, '脏时刻会让日程推算整列错位，必须在边界挡掉');
+  assert.equal(after.task_priority, null);
+});
