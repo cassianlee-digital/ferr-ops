@@ -165,10 +165,16 @@ export function sopCardEl(s){
   // 老条目没填 tag 就退回赛道名——总比什么都没有强，填了就按填的显示（设置页可改）。
   const tagText=s.tag||trackOf(s)||'';
   const tag=tagText?`<span class="sop-tag">${esc(tagText)}</span>`:'';
+  const metrics=metricsLine(s);
+  const metricsHtml=metrics?`<div class="sop-metrics">${esc(metrics)}</div>`:'';
   row.innerHTML=left
     +`<span class="sop-text">${code}${esc(s.title)}${tag}</span>`
     +`<span class="sop-right">${hint}${logBtn}`
-    +`<button type="button" class="btn-mini sop-info-btn" title="为什么做 / 怎么做 / 完成标准"><i class="ti ti-info-circle"></i></button></span>`;
+    +`<button type="button" class="btn-mini sop-info-btn" title="为什么做 / 怎么做 / 本周期做了哪几条"><i class="ti ti-info-circle"></i></button></span>`
+    +metricsHtml;
+  // 完成标准放 title：它是一两句话，59 条每条都平铺会把这一栏撑废；
+  // 挂成原生提示，鼠标停一下就能看见，不用先点开 ⓘ。
+  if(s.done_when)row.title='完成标准：'+s.done_when;
   if(quota){
     // 进度条宽度只能用 JS 设（CSSOM 不受 CSP 限制）：HTML 字符串里写内联样式属性会被
     // style-src 拦掉，而且 frontendXss.test.js 焊死了「首方前端源码零内联样式属性」。
@@ -188,6 +194,23 @@ export function sopCardEl(s){
   return row;
 }
 const fmtQty=n=>{ const v=Number(n)||0; return Number.isInteger(v)?String(v):v.toFixed(1); };
+/* 老板两份 SOP 文档里，每条动作带的那几列指标：主要提升 / 周目标 / 单位 / 工时（月度那块是「什么时候」）。
+   以前这些全藏在 ⓘ 后面，执行人看到的只有一个标题 —— 「这条要做几个、该花多久、提升什么」
+   每次都得点开才知道，等于没写。现在平铺在标题下面一行。
+   完成标准不进这行：它是一两句话，59 条每条都铺会把这一栏撑废，改挂在行的 title 上（见 sopCardEl）。 */
+export function metricsLine(s){
+  const bits=[];
+  const q=Number(s.target_qty);
+  if(q>0){
+    const label=s.freq==='daily'?'日目标':s.freq==='weekly'?'周目标':'目标';
+    bits.push(label+' '+fmtQty(q)+(s.unit?' '+s.unit:''));
+  }
+  // 月度动作在文档里给的是「什么时候」而不是数量——但那已经在行右边的时间提示里显示了，
+  // 这里再铺一遍就是同一句话出现两次（实测「首月第 1 周 │ 首月第 1 周 · 工时 2h」）。
+  if(s.effort_h!=null&&s.effort_h!=='')bits.push('工时 '+fmtQty(s.effort_h)+'h');
+  if(s.metric&&s.metric!=='—')bits.push('提升 '+s.metric);
+  return bits.join(' · ');
+}
 function fieldEl(label,text){
   const d=document.createElement('div'); d.className='sop-field';
   d.innerHTML=`<b>${esc(label)}</b><span>${esc(text)}</span>`;

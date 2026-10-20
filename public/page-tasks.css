@@ -1499,3 +1499,19 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
 /* 赛道段头收紧：40% 栏里原来的间距显得松垮 */
 #panel-tasks .sop-track-cap { margin: 8px 0 5px; font-size: 11.5px; }
 #panel-tasks .sop-freq-cap { margin: 6px 0 4px; }
+
+/* SOP 行里的指标行：文档的 主要提升 / 周目标+单位 / 工时 原样铺在标题下面。
+   独占一行（flex:1 0 100%），压得比标题淡一档——它是参数不是内容，不该抢标题。 */
+#panel-tasks .sop-metrics {
+  flex: 1 0 100%;
+  margin-top: 3px;
+  padding-left: 42px;          /* 和标题左边缘对齐（让过左侧的进度数字 / 勾选框） */
+  color: var(--text3);
+  font-size: 11px;
+  line-height: 1.5;
+}
+#panel-tasks .sop-row.done .sop-metrics { opacity: .6; }
+
+/* 两栏各自带滚动条，内容贴到右边缘会被滚动条压住（实测「本周期 0/10 达标」被切）。
+   留出滚动条的宽度。 */
+#panel-tasks .sopnew > div { padding-right: 10px; }

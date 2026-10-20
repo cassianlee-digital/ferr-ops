@@ -4977,6 +4977,7 @@
     isSopWritable: () => isSopWritable,
     loadSops: () => loadSops,
     loadUrgent: () => loadUrgent,
+    metricsLine: () => metricsLine,
     openSopLogModal: () => openSopLogModal,
     openSopModal: () => openSopModal,
     refreshNavTaskDot: () => refreshNavTaskDot,
@@ -5127,7 +5128,10 @@
     const logBtn = logged ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> \u8BB0\u4E00\u6761</button>` : "";
     const tagText = s.tag || trackOf(s) || "";
     const tag = tagText ? `<span class="sop-tag">${esc(tagText)}</span>` : "";
-    row.innerHTML = left + `<span class="sop-text">${code}${esc(s.title)}${tag}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u5B8C\u6210\u6807\u51C6"><i class="ti ti-info-circle"></i></button></span>`;
+    const metrics = metricsLine(s);
+    const metricsHtml = metrics ? `<div class="sop-metrics">${esc(metrics)}</div>` : "";
+    row.innerHTML = left + `<span class="sop-text">${code}${esc(s.title)}${tag}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u672C\u5468\u671F\u505A\u4E86\u54EA\u51E0\u6761"><i class="ti ti-info-circle"></i></button></span>` + metricsHtml;
+    if (s.done_when) row.title = "\u5B8C\u6210\u6807\u51C6\uFF1A" + s.done_when;
     if (quota) {
       const bar = document.createElement("div");
       bar.className = "sop-bar";
@@ -5150,6 +5154,17 @@
     const v = Number(n) || 0;
     return Number.isInteger(v) ? String(v) : v.toFixed(1);
   };
+  function metricsLine(s) {
+    const bits = [];
+    const q = Number(s.target_qty);
+    if (q > 0) {
+      const label = s.freq === "daily" ? "\u65E5\u76EE\u6807" : s.freq === "weekly" ? "\u5468\u76EE\u6807" : "\u76EE\u6807";
+      bits.push(label + " " + fmtQty(q) + (s.unit ? " " + s.unit : ""));
+    }
+    if (s.effort_h != null && s.effort_h !== "") bits.push("\u5DE5\u65F6 " + fmtQty(s.effort_h) + "h");
+    if (s.metric && s.metric !== "\u2014") bits.push("\u63D0\u5347 " + s.metric);
+    return bits.join(" \xB7 ");
+  }
   function fieldEl(label, text2) {
     const d = document.createElement("div");
     d.className = "sop-field";
