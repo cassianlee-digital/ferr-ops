@@ -1,6 +1,7 @@
 // SOP 的排序 / 月度触发周 / 优先级推导。纯函数，直接 import 前端模块（它不碰 DOM，刻意的）。
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   weekdayOrder, monthWeekOf, weekOfMonth, dueThisWeek, sopPriority, compareSops,
 } from '../../public/src/sop-schedule.js';
@@ -123,4 +124,33 @@ test('月列按第几周排，第 1 周在第 4 周之前（跨赛道也是）',
     [...rows].sort(compareSops).map((r) => r.title),
     ['SEM-M1', '社媒M1', '社媒M4', 'SEM-M4', '没写周次'],
   );
+});
+
+test('每日那列：先按优先级，同优先级内再按时间点（09:00 → 16:30 → 17:00）', () => {
+  const d = (title, hint, prio) => ({ title, freq: 'daily', time_hint: hint, priority: prio, sort_order: 1 });
+  const rows = [
+    d('收工 16:30', '16:30', 2),
+    d('机动 17:00', '17:00', 2),
+    d('巡检 09:00', '09:00', 1),
+    d('询盘登记 随时', null, 1),
+  ];
+  assert.deepEqual(
+    [...rows].sort(compareSops).map((r) => r.title),
+    ['巡检 09:00', '询盘登记 随时', '收工 16:30', '机动 17:00'],
+    '优先级在时间点之前：没写时刻但要紧的事要排在 16:30 的收工动作前面',
+  );
+});
+
+test('导入清单里确实有每日必做，且「人工补的」那两条标了 proposed', () => {
+  const daily = JSON.parse(readFileSync(new URL('../../server/src/db/sopDailyBaseline.json', import.meta.url), 'utf8'));
+  const items = daily.items;
+  assert.ok(items.length >= 6, '每日基线不该是空的');
+  assert.ok(items.every((i) => i.freq === 'daily'), '这份清单只放每日条目');
+  assert.ok(items.every((i) => i.source === 'daily-baseline'),
+    'source 必须和老板那份 xlsx 清单分开，否则重新生成文档清单时会被冲掉');
+  assert.ok(items.every((i) => typeof i._basis === 'string' && i._basis.length > 8),
+    '每条都要写清依据：doc（文档里有）还是 proposed（人工提的）');
+  const proposed = items.filter((i) => i._basis.startsWith('proposed')).map((i) => i.title);
+  assert.deepEqual(proposed, ['看一眼 Ads 花费与账户状态', '看一眼 GSC / GA4 有没有异常'],
+    '文档里没有依据的条目只有这两条；再加别的要先问人，不要自己往里塞');
 });

@@ -82,8 +82,17 @@ export function compareSops(a, b) {
   const ka = sortKey(a), kb = sortKey(b);
   if (ka.time !== kb.time) return ka.time - kb.time;
   if (ka.prio !== kb.prio) return ka.prio - kb.prio;
+  // 同优先级内按时间点（每日那列的「09:00 / 16:30 / 17:00」）。
+  // 优先级排在时间点前面：没写时刻但要紧的事（当天询盘登记、私信回应）得排在
+  // 写了 16:30 的收工动作前面，否则「重要」这层标记在这一列里就白标了。
+  if (ka.clock !== kb.clock) return ka.clock - kb.clock;
   if (ka.order !== kb.order) return ka.order - kb.order;
   return (a.id || 0) - (b.id || 0);
+}
+/** 'HH:MM' / 'HH' → 分钟数；不是时刻就回 9999（排在写了时刻的后面）。 */
+function clockOf(timeHint) {
+  const m = /^\s*([01]?\d|2[0-3])(?::([0-5]\d))?\s*$/.exec(String(timeHint || ''));
+  return m ? Number(m[1]) * 60 + Number(m[2] || 0) : 9999;
 }
 /* ⚠ 周几（1..7）和「本月第几周」（1..4）绝不能共用一个数字空间：
    月度条目被并进周列时，「每月第 3 周」会当成「周三」排到周一和周五中间（实测踩过）。
@@ -93,5 +102,5 @@ function sortKey(s) {
   const time = s.freq === 'monthly'
     ? MONTHLY_BASE + (monthWeekOf(s.time_hint) ?? 99)
     : weekdayOrder(s.time_hint);
-  return { time, prio: sopPriority(s), order: s.sort_order ?? 9999 };
+  return { time, prio: sopPriority(s), clock: clockOf(s.time_hint), order: s.sort_order ?? 9999 };
 }

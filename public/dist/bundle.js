@@ -5042,13 +5042,18 @@
     const ka = sortKey(a), kb = sortKey(b);
     if (ka.time !== kb.time) return ka.time - kb.time;
     if (ka.prio !== kb.prio) return ka.prio - kb.prio;
+    if (ka.clock !== kb.clock) return ka.clock - kb.clock;
     if (ka.order !== kb.order) return ka.order - kb.order;
     return (a.id || 0) - (b.id || 0);
+  }
+  function clockOf(timeHint) {
+    const m = /^\s*([01]?\d|2[0-3])(?::([0-5]\d))?\s*$/.exec(String(timeHint || ""));
+    return m ? Number(m[1]) * 60 + Number(m[2] || 0) : 9999;
   }
   var MONTHLY_BASE = 100;
   function sortKey(s) {
     const time = s.freq === "monthly" ? MONTHLY_BASE + (monthWeekOf(s.time_hint) ?? 99) : weekdayOrder(s.time_hint);
-    return { time, prio: sopPriority(s), order: s.sort_order ?? 9999 };
+    return { time, prio: sopPriority(s), clock: clockOf(s.time_hint), order: s.sort_order ?? 9999 };
   }
 
   // public/src/sop.js
@@ -5427,18 +5432,28 @@
     return false;
   }
   function buildSopOverdueList() {
-    const today3 = formatLocalDate(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^\d{4}\./, "");
-    const lines = [];
+    const today3 = formatLocalDate(/* @__PURE__ */ new Date()).replace(/-/g, ".").replace(/^d{4}./, "");
+    const NAME_LIMIT = 3;
+    const groups = /* @__PURE__ */ new Map();
     ["daily", "weekly", "monthly"].forEach((freq) => {
       if (!isOverduePeriodFirstDay(freq)) return;
       (window._sops || []).forEach((s) => {
         if (s.freq !== freq) return;
         if (sopDone(s)) return;
-        const gap = hasQuota(s) ? "\uFF0C\u8FD8\u5DEE " + fmtQty(Number(s.target_qty) - doneQty(s)) + (s.unit ? " " + s.unit : "") : "";
-        lines.push(esc(trackOf(s)) + "-" + today3 + "-" + esc(FREQ_LABEL[freq] || freq) + "\uFF1A" + esc(s.title) + " \u672A\u8FBE\u6807" + esc(gap) + "\uFF0C\u8BF7\u53CA\u65F6\u5904\u7406\u3002");
+        const key = s.dept + "|" + freq;
+        if (!groups.has(key)) groups.set(key, { dept: s.dept, freq, names: [], total: 0 });
+        const g = groups.get(key);
+        g.total++;
+        if (g.names.length < NAME_LIMIT) {
+          const gap = hasQuota(s) ? "\uFF08\u8FD8\u5DEE " + fmtQty(Number(s.target_qty) - doneQty(s)) + (s.unit ? " " + s.unit : "") + "\uFF09" : "";
+          g.names.push(s.title + gap);
+        }
       });
     });
-    return lines;
+    return [...groups.values()].map((g) => {
+      const more = g.total > g.names.length ? "\uFF0C\u5171 " + g.total + " \u6761" : "";
+      return esc(g.dept) + "-" + today3 + "-" + esc(FREQ_LABEL[g.freq] || g.freq) + " \u8FD8\u6709 " + g.total + " \u6761\u672A\u8FBE\u6807\uFF1A" + esc(g.names.join("\u3001")) + esc(more) + "\u3002";
+    });
   }
   function renderSopOverdueBanner() {
     const box = document.getElementById("sop-overdue-banner");

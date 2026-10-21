@@ -1,11 +1,15 @@
-/* 把老板那两份 SOP 文档导入 sop_definitions（幂等）。
+/* 把 SOP 清单导入 sop_definitions（幂等）。
  *
  *   node src/db/importSopCatalog.js            # 导入 / 更新
  *   node src/db/importSopCatalog.js --dry-run  # 只看会改什么，不写库
  *
- * 为什么不挂在 migrate 里自动跑：这 60 条是**业务内容**不是表结构。
- * 自动跑意味着一次重启就往线上库塞 60 条清单，执行人第二天打开日计划会以为系统疯了。
- * 文档更新后重新生成 sopCatalog.json，再跑一次这个脚本即可。
+ * 两份清单，source 不同、互不干扰：
+ *   sopCatalog.json       —— 老板两份 xlsx **原样导出**，重新生成会整体覆盖，正常不要手改。
+ *   sopDailyBaseline.json —— 人工拟的「每日必做」基线（文档是按周排的，几乎没有每天的条目）。
+ * 分开放是为了重新生成文档清单时不会把人工补的那几条冲掉。
+ *
+ * 为什么不挂在 migrate 里自动跑：这些是**业务内容**不是表结构。
+ * 自动跑意味着一次重启就往线上库塞几十条清单，执行人第二天打开日计划会以为系统疯了。
  *
  * 幂等键 = (source, track, title)：
  *   - 已存在 → 更新文档侧字段（周目标、工时、为什么做、怎么做、完成标准…）
@@ -20,13 +24,16 @@ import { db } from './connection.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+// 按顺序导入；每份自带 source，键是 (source, track, title)，所以两份之间不会互相覆盖
+const CATALOG_FILES = ['sopCatalog.json', 'sopDailyBaseline.json'];
+
 // 文档侧字段：重导时以 catalog 为准。title/track/source 是键，不在这里。
 const SYNC_COLS = ['dept', 'freq', 'code', 'target_qty', 'unit', 'effort_h', 'metric',
   'why', 'how', 'done_when', 'subject_label', 'sort_order', 'time_hint', 'tag', 'priority'];
 
-export function importSopCatalog({ dryRun = false, catalogPath } = {}) {
-  const raw = JSON.parse(readFileSync(catalogPath || join(here, 'sopCatalog.json'), 'utf8'));
-  const items = raw.items || [];
+export function importSopCatalog({ dryRun = false, catalogPath, catalogPaths } = {}) {
+  const files = catalogPaths || (catalogPath ? [catalogPath] : CATALOG_FILES.map((f) => join(here, f)));
+  const items = files.flatMap((f) => JSON.parse(readFileSync(f, 'utf8')).items || []);
   const find = db.prepare('SELECT * FROM sop_definitions WHERE source = ? AND track = ? AND title = ?');
   const ins = db.prepare(
     `INSERT INTO sop_definitions (source, track, title, dept, freq, code, target_qty, unit, effort_h,
@@ -57,6 +64,7 @@ export function importSopCatalog({ dryRun = false, catalogPath } = {}) {
   }
   const run = db.transaction(() => {
     for (const it of items) {
+      // _basis / _override 这类下划线开头的说明字段只存在于清单文件里，不进库 —— 它们是给读清单的人看的
       const row = { time_hint: null, tag: null, priority: null, ...it };
       const cur = find.get(row.source, row.track, row.title);
       if (!cur) {

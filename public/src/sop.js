@@ -383,22 +383,35 @@ export function isOverduePeriodFirstDay(freq){
   if(freq==='monthly')return now.getDate()===1; // 1 号
   return false;
 }
+/* 顶部「未完成提示」的内容：**一个部门一个频率一行**，不是一条 SOP 一行。
+   加完每日基线之后，一条一行会变成每天早上九行红字 —— 九行等于没有一行，人会直接略过。
+   每行最多点名 3 条，其余折成「等 N 条」；带配额的仍然报「还差几条」，差 1 条和一条没做不是一回事。 */
 export function buildSopOverdueList(){
-  const today=formatLocalDate(new Date()).replace(/-/g,'.').replace(/^\d{4}\./,''); // MM.DD
-  const lines=[];
+  const today=formatLocalDate(new Date()).replace(/-/g,'.').replace(/^d{4}./,''); // MM.DD
+  const NAME_LIMIT=3;
+  const groups=new Map(); // "部门|频率" -> { dept, freq, names[], total }
   ['daily','weekly','monthly'].forEach(freq=>{
     if(!isOverduePeriodFirstDay(freq))return;
     (window._sops||[]).forEach(s=>{
       if(s.freq!==freq)return;
       if(sopDone(s))return;
-      // 有配额的条目报「还差几条」，不是笼统一句"未做"——差 1 条和一条没做，处理的紧迫度不一样
-      const gap=hasQuota(s)
-        ? '，还差 '+fmtQty(Number(s.target_qty)-doneQty(s))+(s.unit?' '+s.unit:'')
-        : '';
-      lines.push(esc(trackOf(s))+'-'+today+'-'+esc(FREQ_LABEL[freq]||freq)+'：'+esc(s.title)+' 未达标'+esc(gap)+'，请及时处理。');
+      const key=s.dept+'|'+freq;
+      if(!groups.has(key))groups.set(key,{dept:s.dept,freq,names:[],total:0});
+      const g=groups.get(key);
+      g.total++;
+      if(g.names.length<NAME_LIMIT){
+        const gap=hasQuota(s)
+          ? '（还差 '+fmtQty(Number(s.target_qty)-doneQty(s))+(s.unit?' '+s.unit:'')+'）'
+          : '';
+        g.names.push(s.title+gap);
+      }
     });
   });
-  return lines;
+  return [...groups.values()].map(g=>{
+    const more=g.total>g.names.length?'，共 '+g.total+' 条':'';
+    return esc(g.dept)+'-'+today+'-'+esc(FREQ_LABEL[g.freq]||g.freq)+' 还有 '+g.total+' 条未达标：'
+      +esc(g.names.join('、'))+esc(more)+'。';
+  });
 }
 export function renderSopOverdueBanner(){
   const box=document.getElementById('sop-overdue-banner');
