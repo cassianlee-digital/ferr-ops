@@ -39,6 +39,9 @@
     卡片重画走 `taskchanged` 事件(app.js 派发、closed-loop.js 订阅)—— 这就是 `docs/modules/frontend-architecture.md` 里说的「事件反转」的第一处落地,
     顺带没有加宽 closed-loop.js 的导出面。**公司大任务完成现在会先戳 `done_at` 再归档**(以前直接归档,完成时刻是空的)。
   - 证据截图复用 `attachments`(`owner_type='task'`)。归档页任务行带出结果/动作/证据/关联/工时。
+    建任务时填的也一并带出(2026-10-21,`task-audit.js` 的 `taskPlanHtml`):起止 / 预计完成时刻 / 优先级(4 不写)/
+    负责人 / 创建日(`created_at` 是 UTC,按本地日期显示)/ 目的 / 完成标准 / 检验 / 备注;选填项没填就不出那一行。
+    任务内容在归档页整句换行,不再单行截断。
   - 日计划按日期回放(`plan-history.js`)的任务行也带审计信息;**完成结果 / 动作 / 证据只在「那天或之前已完成」时显示** ——
     回放是那一天的视角,不把事后写的结论摆进更早的日子。
   - **测试登记的门槛**:`POST /api/loop-items/:id/archive` 对 `kind='test'` 要求 `conclusion` 非空,否则 `400 conclusion_required`
