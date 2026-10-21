@@ -23,7 +23,7 @@ import { loadSiteReturns } from './site-returns.js';
 import { loadHermesMemories, resetHermesFeedbackForm, resetHermesMemoryForm, saveHermesFeedback, saveHermesMemory } from './hermes-memory.js';
 import { loadInquiries, openInquiry, refreshInqStats, renderInqList, submitInquiry, submitTrack } from './inquiries.js';
 import { renderGlobe } from './inquiry-globe.js';
-import { pickSalesImages, submitSalesNote } from './inquiry-sales.js';
+import { pickSalesImages, pickSalesDocuments, submitSalesNote } from './inquiry-sales.js';
 import { openLeads, refreshLeadBadge, submitInquirySource } from './inquiry-source.js';
 import { submitAttrEdit } from './inquiry-attribution.js';
 import { addKeyword, filterKwByCat, loadKeywords, renderSparklines } from './keywords.js';
@@ -37,7 +37,7 @@ import { bindSettings, openPwd, submitPwd } from './settings.js';
 import { loadSpend, openBacklink, openExpense, submitBacklink, submitExpense } from './spend.js';
 import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, submitSopLog, updateSopCounts, importSopFromDocs } from './sop.js';
 import { getRangeRevision, submitCustomRange, syncRangeUi, withRange } from './timerange.js';
-import { addTaskLink, openTaskDone, pickTaskEvidence, submitTaskDone } from './task-audit.js';
+import { addTaskLink, openTaskDone, pickTaskEvidence, pickTaskDocuments, submitTaskDone } from './task-audit.js';
 import { closeModal, esc, tableLoadState, toast, toastUndo } from './ui-kit.js';
 import { renderMonthReview, renderReview } from './weekly-review.js';
 
@@ -117,6 +117,7 @@ const STATIC_UI_ACTIONS={
   'submit-track':()=>submitTrack(),
   'submit-sales-note':()=>submitSalesNote(),
   'pick-sales-images':()=>pickSalesImages(),
+  'pick-sales-documents':()=>pickSalesDocuments(),
   'submit-seo-week':()=>submitSeoWeek(),
   'submit-sem-week':()=>submitSemWeek(),
   'submit-password':()=>submitPwd(),
@@ -124,6 +125,7 @@ const STATIC_UI_ACTIONS={
   'submit-subtask':()=>submitSubtask(),
   'task-link-add':()=>addTaskLink(),
   'pick-task-evidence':()=>pickTaskEvidence(),
+  'pick-task-documents':()=>pickTaskDocuments(),
   'submit-task-done':el=>submitTaskDone(el),
   'open-leads':()=>openLeads(),
   'audit-ai':el=>runAuditAi(el),

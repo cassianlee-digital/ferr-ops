@@ -10,7 +10,8 @@
 import { esc, toast } from './ui-kit.js';
 
 export const MAX_EDGE = 1600;
-export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // 图片 4MB
+export const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024; // 文档 20MB
 const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif';
 const ACCEPT_DOCS = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
 
@@ -129,25 +130,63 @@ export async function uploadImage(ownerType, ownerId, file) {
   }
 }
 
+/* 上传文档文件（PDF、Word、Excel、PPT）。不压缩，直接转 base64 上传。 */
+export async function uploadDocument(ownerType, ownerId, file) {
+  return new Promise((resolve, reject) => {
+    if (file.size > MAX_DOCUMENT_BYTES) {
+      reject(new Error('文档太大（' + humanBytes(file.size) + '），超过 ' + humanBytes(MAX_DOCUMENT_BYTES) + ' 上限'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('读取文件失败'));
+    reader.onload = async () => {
+      try {
+        const { item } = await API.post('/api/attachments', {
+          owner_type: ownerType,
+          owner_id: ownerId,
+          name: file.name,
+          mime: file.type,
+          dataBase64: reader.result,
+        });
+        resolve(item);
+      } catch (e) {
+        reject(new Error(uploadErrorText(e)));
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function uploadErrorText(e) {
   const code = e && (e.body?.error || e.error);
   if (e && e.status === 403) return '无权上传';
-  if (code === 'unsupported_image_type') return '只支持 PNG / JPG / WEBP / GIF 图片';
-  if (code === 'image_too_large') return '图片太大，请先压缩';
-  if (code === 'too_many_attachments') return '这条记录的图片数量已达上限';
-  if (code === 'owner_quota_exceeded') return '这条记录的图片总量已达上限';
-  if (code === 'bad_image_data') return '这个文件不是有效图片';
+  if (code === 'unsupported_image_type' || code === 'unsupported_file_type') {
+    return '只支持 PNG / JPG / WEBP / GIF 图片和 PDF / Word / Excel / PPT 文档';
+  }
+  if (code === 'image_too_large' || code === 'file_too_large') return '文件太大，请压缩后再传';
+  if (code === 'too_many_attachments') return '这条记录的附件数量已达上限';
+  if (code === 'owner_quota_exceeded') return '这条记录的附件总量已达上限';
+  if (code === 'bad_image_data' || code === 'bad_file_data') return '这个文件无效或已损坏';
   return '上传失败：' + ((e && e.message) || '请求失败');
 }
 
-// 逐张上传，边传边回报进度。一张失败不影响其余（业务一次甩 5 张截图是常态）。
+// 逐个上传（图片或文档），边传边回报进度。一个失败不影响其余。
 export async function uploadAll(ownerType, ownerId, files, onProgress) {
   const done = [];
   const failed = [];
   for (let i = 0; i < files.length; i++) {
     if (onProgress) onProgress(i + 1, files.length);
-    try { done.push(await uploadImage(ownerType, ownerId, files[i])); }
-    catch (e) { failed.push({ name: files[i].name, reason: e.message }); }
+    const file = files[i];
+    try {
+      // 根据文件类型判断是图片还是文档
+      const isImage = file.type.startsWith('image/');
+      const item = isImage
+        ? await uploadImage(ownerType, ownerId, file)
+        : await uploadDocument(ownerType, ownerId, file);
+      done.push(item);
+    } catch (e) {
+      failed.push({ name: file.name, reason: e.message });
+    }
   }
   return { done, failed };
 }
@@ -156,20 +195,47 @@ export async function deleteImage(id) {
   await API.del('/api/attachments/' + encodeURIComponent(id));
 }
 
-/* 缩略图组的 HTML。data-att-view 让整组走事件委托打开大图；
-   deletable 时再给每张配一个删除角标。 */
-export function thumbsHtml(images, { deletable = false } = {}) {
-  const list = Array.isArray(images) ? images : [];
+/* 附件列表的 HTML（图片显示缩略图，文档显示图标和文件名）。
+   data-att-view 让整组走事件委托打开大图或下载文档；
+   deletable 时给每个配一个删除角标。 */
+export function thumbsHtml(items, { deletable = false } = {}) {
+  const list = Array.isArray(items) ? items : [];
   if (!list.length) return '';
   return '<span class="att-thumbs">' + list.map((im) => {
-    const label = esc((im.name || '图片') + (im.bytes ? ' · ' + humanBytes(im.bytes) : ''));
-    return '<span class="att-thumb-wrap">'
-      + `<img class="att-thumb" src="${esc(rawUrl(im.id))}" alt="${label}" title="${label}"`
-        + ` data-att-view="${esc(im.id)}" data-att-name="${esc(im.name || '图片')}"`
-        + ` data-att-bytes="${esc(im.bytes || 0)}" loading="lazy">`
-      + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc(im.id)}" title="删除这张图"><i class="ti ti-x"></i></button>` : '')
-      + '</span>';
+    const isImage = im.mime && im.mime.startsWith('image/');
+    const label = esc((im.name || (isImage ? '图片' : '文档')) + (im.bytes ? ' · ' + humanBytes(im.bytes) : ''));
+
+    if (isImage) {
+      // 图片：显示缩略图
+      return '<span class="att-thumb-wrap">'
+        + `<img class="att-thumb" src="${esc(rawUrl(im.id))}" alt="${label}" title="${label}"`
+          + ` data-att-view="${esc(im.id)}" data-att-name="${esc(im.name || '图片')}"`
+          + ` data-att-bytes="${esc(im.bytes || 0)}" loading="lazy">`
+        + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc(im.id)}" title="删除这张图"><i class="ti ti-x"></i></button>` : '')
+        + '</span>';
+    } else {
+      // 文档：显示文件图标和名称
+      const icon = getDocIcon(im.mime);
+      return '<span class="att-doc-wrap">'
+        + `<a href="${esc(rawUrl(im.id))}" download="${esc(im.name || '文档')}" class="att-doc" title="${label}">`
+          + `<i class="ti ti-${icon}"></i>`
+          + `<span class="att-doc-name">${esc(im.name || '文档')}</span>`
+          + `<span class="att-doc-size">${im.bytes ? humanBytes(im.bytes) : ''}</span>`
+        + '</a>'
+        + (deletable ? `<button type="button" class="att-doc-del" data-att-del="${esc(im.id)}" title="删除这个文件"><i class="ti ti-x"></i></button>` : '')
+        + '</span>';
+    }
   }).join('') + '</span>';
+}
+
+/* 根据 MIME 类型返回对应的 Tabler 图标名称 */
+function getDocIcon(mime) {
+  if (!mime) return 'file';
+  if (mime.includes('pdf')) return 'file-type-pdf';
+  if (mime.includes('word') || mime.includes('wordprocessing')) return 'file-type-doc';
+  if (mime.includes('excel') || mime.includes('spreadsheet')) return 'file-type-xls';
+  if (mime.includes('powerpoint') || mime.includes('presentation')) return 'file-type-ppt';
+  return 'file';
 }
 
 /* ===== 大图预览（懒建，模块求值期不碰 DOM）=====
@@ -248,3 +314,15 @@ export async function pickAndUpload(ownerType, ownerId, { multiple = true } = {}
   else toast('已上传 ' + done.length + ' 张图片 · 已入库');
   return done;
 }
+
+/* 选择文档 + 上传 + 提示的一站式封装。 */
+export async function pickAndUploadDocuments(ownerType, ownerId, { multiple = true } = {}) {
+  const files = await pickDocuments({ multiple });
+  if (!files.length) return [];
+  toast('正在上传 ' + files.length + ' 个文档…');
+  const { done, failed } = await uploadAll(ownerType, ownerId, files);
+  if (failed.length) toast('已上传 ' + done.length + ' 个，' + failed.length + ' 个失败：' + failed[0].reason);
+  else toast('已上传 ' + done.length + ' 个文档 · 已入库');
+  return done;
+}
+

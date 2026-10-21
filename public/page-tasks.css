@@ -1335,6 +1335,37 @@ body.dark .taudit-donewhen .taudit-label { background: #0f1f17; color: #4aab74; 
 .task-done-rule.is-important { border-left-color: var(--danger); background: var(--danger-soft); color: var(--text1); }
 .task-done-shots { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .task-done-shots .att-thumbs { margin-top: 0; }
+.task-done-docs-section { display: flex; flex-direction: column; gap: 8px; }
+.task-done-doc-list { display: flex; flex-direction: column; gap: 6px; }
+.task-doc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  font-size: 13px;
+}
+.task-doc-item .ti { flex: none; font-size: 18px; color: var(--text2); }
+.task-doc-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text1);
+}
+.task-doc-size { flex: none; font-size: 12px; color: var(--text2); }
+.task-doc-del {
+  flex: none;
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.task-doc-del:hover { color: var(--danger); }
 .task-done-error { min-height: 18px; font-size: 12px; line-height: 1.5; color: var(--danger); font-weight: 600; }
 
 /* —— 完成前后的数据变化（弹框） —— */

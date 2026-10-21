@@ -12,7 +12,7 @@
  * closed-loop / archive / app 来 import 它。模块求值期不碰 DOM，事件在第一次用到时才绑。
  */
 import { esc, openModal, closeModal, toast } from './ui-kit.js';
-import { deleteImage, pickAndUpload, thumbsHtml, getClipboardImages, uploadAll } from './attachments.js';
+import { deleteImage, pickAndUpload, thumbsHtml, getClipboardImages, uploadAll, pickDocuments, uploadDocument } from './attachments.js';
 import { inlineConfirm } from './keywords.js';
 import { PRODUCT_NAMES } from './catalog.js';
 import { openChangeLog } from './change-log.js';
@@ -297,9 +297,35 @@ function renderDoneThumbs() {
   box.innerHTML = thumbsHtml(doneCtx.item.evidence_images, { deletable: true }); // thumbsHtml 内部全部 esc 过
 }
 
+function renderDoneDocuments() {
+  const box = $('task-done-docs'); if (!box || !doneCtx) return;
+  const docs = doneCtx.item.evidence_documents || [];
+  if (!docs.length) { box.innerHTML = '<p class="text-muted">暂无文档</p>'; return; }
+  const items = docs.map((doc) => {
+    const name = esc(doc.filename || '文档');
+    const size = doc.size_bytes ? esc(' · ' + formatBytes(doc.size_bytes)) : '';
+    const time = doc.created_at ? esc(' · ' + formatLocalDate(doc.created_at, 'date-only')) : '';
+    return `<div class="doc-item">
+      <a href="${esc(doc.url)}" target="_blank" class="doc-link">${name}</a>${size}${time}
+      <button type="button" class="btn-icon" data-doc-del="${esc(doc.id)}" title="删除">
+        <svg width="16" height="16" fill="currentColor"><use href="#icon-trash"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+  box.innerHTML = items;
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+
 function bindDone() {
   if (doneBound) return;
   const box = $('task-done-thumbs'); if (!box) return;
+  const docsBox = $('task-done-docs');
   doneBound = true;
 
   // 删除截图
@@ -314,6 +340,21 @@ function bindDone() {
       if (ctx.onImages) ctx.onImages();
     } catch (err) { toast('删除失败：' + ((err && err.message) || '请求失败')); }
   });
+
+  // 删除文档
+  if (docsBox) {
+    docsBox.addEventListener('click', async (e) => {
+      const del = e.target.closest('[data-doc-del]'); if (!del || !doneCtx) return;
+      if (!inlineConfirm(del, '删除')) return;
+      const ctx = doneCtx;
+      try {
+        await API.delete('/api/attachments/' + del.dataset.docDel);
+        ctx.item.evidence_documents = (ctx.item.evidence_documents || []).filter((doc) => String(doc.id) !== String(del.dataset.docDel));
+        renderDoneDocuments();
+        if (ctx.onImages) ctx.onImages();
+      } catch (err) { toast('删除失败：' + ((err && err.message) || '请求失败')); }
+    });
+  }
 
   // 监听粘贴事件，支持直接 Ctrl+V 粘贴截图
   const modal = $('taskDoneMask');
@@ -358,6 +399,7 @@ export function openTaskDone(item, { edit = false, onDone = null, onImages = nul
   $('task-done-est').textContent = item.est_hours == null ? '' : '预估 ' + item.est_hours + ' 小时';
   doneError('');
   renderDoneThumbs();
+  renderDoneDocuments();
   openModal('taskDoneMask');
   setTimeout(() => $('task-done-result').focus(), 50);
 }
@@ -370,6 +412,33 @@ export async function pickTaskEvidence() {
   if (doneCtx === ctx) { renderDoneThumbs(); doneError(''); }
   if (ctx.onImages) ctx.onImages();
 }
+
+export async function pickTaskDocuments() {
+  const ctx = doneCtx; if (!ctx) return;
+  try {
+    const files = await pickDocuments();
+    if (!files.length) return;
+    toast('正在上传 ' + files.length + ' 个文档…');
+    const uploaded = [];
+    for (const file of files) {
+      try {
+        const doc = await uploadDocument('task', ctx.item.id, file);
+        uploaded.push(doc);
+      } catch (err) {
+        toast('上传失败：' + file.name + ' · ' + ((err && err.message) || '请求失败'));
+      }
+    }
+    if (uploaded.length) {
+      ctx.item.evidence_documents = (ctx.item.evidence_documents || []).concat(uploaded);
+      if (doneCtx === ctx) { renderDoneDocuments(); doneError(''); }
+      if (ctx.onImages) ctx.onImages();
+      toast('已上传 ' + uploaded.length + ' 个文档 · 已入库');
+    }
+  } catch (err) {
+    toast('上传失败：' + ((err && err.message) || '请求失败'));
+  }
+}
+
 
 export async function submitTaskDone(btn) {
   const ctx = doneCtx; if (!ctx) return;

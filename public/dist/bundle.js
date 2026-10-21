@@ -3006,7 +3006,9 @@
   // public/src/attachments.js
   var MAX_EDGE = 1600;
   var MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+  var MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
   var ACCEPT = "image/png,image/jpeg,image/webp,image/gif";
+  var ACCEPT_DOCS = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
   function rawUrl(id) {
     return "/api/attachments/" + encodeURIComponent(id) + "/raw";
   }
@@ -3022,6 +3024,22 @@
       const input = document.createElement("input");
       input.type = "file";
       input.accept = ACCEPT;
+      input.multiple = !!multiple;
+      input.className = "att-file-input";
+      input.addEventListener("change", () => {
+        const files = [...input.files || []];
+        input.remove();
+        resolve(files);
+      });
+      document.body.appendChild(input);
+      input.click();
+    });
+  }
+  function pickDocuments({ multiple = true } = {}) {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ACCEPT_DOCS;
       input.multiple = !!multiple;
       input.className = "att-file-input";
       input.addEventListener("change", () => {
@@ -3093,14 +3111,41 @@
       throw new Error(uploadErrorText(e));
     }
   }
+  async function uploadDocument(ownerType, ownerId, file) {
+    return new Promise((resolve, reject) => {
+      if (file.size > MAX_DOCUMENT_BYTES) {
+        reject(new Error("\u6587\u6863\u592A\u5927\uFF08" + humanBytes(file.size) + "\uFF09\uFF0C\u8D85\u8FC7 " + humanBytes(MAX_DOCUMENT_BYTES) + " \u4E0A\u9650"));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("\u8BFB\u53D6\u6587\u4EF6\u5931\u8D25"));
+      reader.onload = async () => {
+        try {
+          const { item } = await API.post("/api/attachments", {
+            owner_type: ownerType,
+            owner_id: ownerId,
+            name: file.name,
+            mime: file.type,
+            dataBase64: reader.result
+          });
+          resolve(item);
+        } catch (e) {
+          reject(new Error(uploadErrorText(e)));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
   function uploadErrorText(e) {
     const code = e && (e.body?.error || e.error);
     if (e && e.status === 403) return "\u65E0\u6743\u4E0A\u4F20";
-    if (code === "unsupported_image_type") return "\u53EA\u652F\u6301 PNG / JPG / WEBP / GIF \u56FE\u7247";
-    if (code === "image_too_large") return "\u56FE\u7247\u592A\u5927\uFF0C\u8BF7\u5148\u538B\u7F29";
-    if (code === "too_many_attachments") return "\u8FD9\u6761\u8BB0\u5F55\u7684\u56FE\u7247\u6570\u91CF\u5DF2\u8FBE\u4E0A\u9650";
-    if (code === "owner_quota_exceeded") return "\u8FD9\u6761\u8BB0\u5F55\u7684\u56FE\u7247\u603B\u91CF\u5DF2\u8FBE\u4E0A\u9650";
-    if (code === "bad_image_data") return "\u8FD9\u4E2A\u6587\u4EF6\u4E0D\u662F\u6709\u6548\u56FE\u7247";
+    if (code === "unsupported_image_type" || code === "unsupported_file_type") {
+      return "\u53EA\u652F\u6301 PNG / JPG / WEBP / GIF \u56FE\u7247\u548C PDF / Word / Excel / PPT \u6587\u6863";
+    }
+    if (code === "image_too_large" || code === "file_too_large") return "\u6587\u4EF6\u592A\u5927\uFF0C\u8BF7\u538B\u7F29\u540E\u518D\u4F20";
+    if (code === "too_many_attachments") return "\u8FD9\u6761\u8BB0\u5F55\u7684\u9644\u4EF6\u6570\u91CF\u5DF2\u8FBE\u4E0A\u9650";
+    if (code === "owner_quota_exceeded") return "\u8FD9\u6761\u8BB0\u5F55\u7684\u9644\u4EF6\u603B\u91CF\u5DF2\u8FBE\u4E0A\u9650";
+    if (code === "bad_image_data" || code === "bad_file_data") return "\u8FD9\u4E2A\u6587\u4EF6\u65E0\u6548\u6216\u5DF2\u635F\u574F";
     return "\u4E0A\u4F20\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25");
   }
   async function uploadAll(ownerType, ownerId, files, onProgress) {
@@ -3108,10 +3153,13 @@
     const failed = [];
     for (let i = 0; i < files.length; i++) {
       if (onProgress) onProgress(i + 1, files.length);
+      const file = files[i];
       try {
-        done.push(await uploadImage(ownerType, ownerId, files[i]));
+        const isImage = file.type.startsWith("image/");
+        const item = isImage ? await uploadImage(ownerType, ownerId, file) : await uploadDocument(ownerType, ownerId, file);
+        done.push(item);
       } catch (e) {
-        failed.push({ name: files[i].name, reason: e.message });
+        failed.push({ name: file.name, reason: e.message });
       }
     }
     return { done, failed };
@@ -3119,13 +3167,27 @@
   async function deleteImage(id) {
     await API.del("/api/attachments/" + encodeURIComponent(id));
   }
-  function thumbsHtml(images, { deletable = false } = {}) {
-    const list = Array.isArray(images) ? images : [];
+  function thumbsHtml(items, { deletable = false } = {}) {
+    const list = Array.isArray(items) ? items : [];
     if (!list.length) return "";
     return '<span class="att-thumbs">' + list.map((im) => {
-      const label = esc((im.name || "\u56FE\u7247") + (im.bytes ? " \xB7 " + humanBytes(im.bytes) : ""));
-      return `<span class="att-thumb-wrap"><img class="att-thumb" src="${esc(rawUrl(im.id))}" alt="${label}" title="${label}" data-att-view="${esc(im.id)}" data-att-name="${esc(im.name || "\u56FE\u7247")}" data-att-bytes="${esc(im.bytes || 0)}" loading="lazy">` + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc(im.id)}" title="\u5220\u9664\u8FD9\u5F20\u56FE"><i class="ti ti-x"></i></button>` : "") + "</span>";
+      const isImage = im.mime && im.mime.startsWith("image/");
+      const label = esc((im.name || (isImage ? "\u56FE\u7247" : "\u6587\u6863")) + (im.bytes ? " \xB7 " + humanBytes(im.bytes) : ""));
+      if (isImage) {
+        return `<span class="att-thumb-wrap"><img class="att-thumb" src="${esc(rawUrl(im.id))}" alt="${label}" title="${label}" data-att-view="${esc(im.id)}" data-att-name="${esc(im.name || "\u56FE\u7247")}" data-att-bytes="${esc(im.bytes || 0)}" loading="lazy">` + (deletable ? `<button type="button" class="att-thumb-del" data-att-del="${esc(im.id)}" title="\u5220\u9664\u8FD9\u5F20\u56FE"><i class="ti ti-x"></i></button>` : "") + "</span>";
+      } else {
+        const icon = getDocIcon(im.mime);
+        return `<span class="att-doc-wrap"><a href="${esc(rawUrl(im.id))}" download="${esc(im.name || "\u6587\u6863")}" class="att-doc" title="${label}"><i class="ti ti-${icon}"></i><span class="att-doc-name">${esc(im.name || "\u6587\u6863")}</span><span class="att-doc-size">${im.bytes ? humanBytes(im.bytes) : ""}</span></a>` + (deletable ? `<button type="button" class="att-doc-del" data-att-del="${esc(im.id)}" title="\u5220\u9664\u8FD9\u4E2A\u6587\u4EF6"><i class="ti ti-x"></i></button>` : "") + "</span>";
+      }
     }).join("") + "</span>";
+  }
+  function getDocIcon(mime) {
+    if (!mime) return "file";
+    if (mime.includes("pdf")) return "file-type-pdf";
+    if (mime.includes("word") || mime.includes("wordprocessing")) return "file-type-doc";
+    if (mime.includes("excel") || mime.includes("spreadsheet")) return "file-type-xls";
+    if (mime.includes("powerpoint") || mime.includes("presentation")) return "file-type-ppt";
+    return "file";
   }
   var lightbox = null;
   var lightboxSeq = 0;
@@ -3288,6 +3350,19 @@
   }
   async function pickSalesImages() {
     const files = await pickImages({ multiple: true });
+    if (!files.length) return;
+    pendingFiles = pendingFiles.concat(files);
+    renderPending();
+  }
+  async function pickSalesDocuments() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
+    input.click();
+    const files = await new Promise((resolve) => {
+      input.addEventListener("change", () => resolve(Array.from(input.files || [])));
+    });
     if (!files.length) return;
     pendingFiles = pendingFiles.concat(files);
     renderPending();
@@ -6233,10 +6308,37 @@
     if (!box || !doneCtx) return;
     box.innerHTML = thumbsHtml(doneCtx.item.evidence_images, { deletable: true });
   }
+  function renderDoneDocuments() {
+    const box = $4("task-done-docs");
+    if (!box || !doneCtx) return;
+    const docs = doneCtx.item.evidence_documents || [];
+    if (!docs.length) {
+      box.innerHTML = '<p class="text-muted">\u6682\u65E0\u6587\u6863</p>';
+      return;
+    }
+    const items = docs.map((doc) => {
+      const name = esc(doc.filename || "\u6587\u6863");
+      const size = doc.size_bytes ? esc(" \xB7 " + formatBytes(doc.size_bytes)) : "";
+      const time = doc.created_at ? esc(" \xB7 " + formatLocalDate(doc.created_at, "date-only")) : "";
+      return `<div class="doc-item">
+      <a href="${esc(doc.url)}" target="_blank" class="doc-link">${name}</a>${size}${time}
+      <button type="button" class="btn-icon" data-doc-del="${esc(doc.id)}" title="\u5220\u9664">
+        <svg width="16" height="16" fill="currentColor"><use href="#icon-trash"/></svg>
+      </button>
+    </div>`;
+    }).join("");
+    box.innerHTML = items;
+  }
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
   function bindDone() {
     if (doneBound) return;
     const box = $4("task-done-thumbs");
     if (!box) return;
+    const docsBox = $4("task-done-docs");
     doneBound = true;
     box.addEventListener("click", async (e) => {
       const del = e.target.closest("[data-att-del]");
@@ -6252,6 +6354,22 @@
         toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     });
+    if (docsBox) {
+      docsBox.addEventListener("click", async (e) => {
+        const del = e.target.closest("[data-doc-del]");
+        if (!del || !doneCtx) return;
+        if (!inlineConfirm(del, "\u5220\u9664")) return;
+        const ctx = doneCtx;
+        try {
+          await API.delete("/api/attachments/" + del.dataset.docDel);
+          ctx.item.evidence_documents = (ctx.item.evidence_documents || []).filter((doc) => String(doc.id) !== String(del.dataset.docDel));
+          renderDoneDocuments();
+          if (ctx.onImages) ctx.onImages();
+        } catch (err) {
+          toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
+        }
+      });
+    }
     const modal = $4("taskDoneMask");
     if (modal) {
       modal.addEventListener("paste", async (e) => {
@@ -6289,6 +6407,7 @@
     $4("task-done-est").textContent = item.est_hours == null ? "" : "\u9884\u4F30 " + item.est_hours + " \u5C0F\u65F6";
     doneError("");
     renderDoneThumbs();
+    renderDoneDocuments();
     openModal("taskDoneMask");
     setTimeout(() => $4("task-done-result").focus(), 50);
   }
@@ -6303,6 +6422,35 @@
       doneError("");
     }
     if (ctx.onImages) ctx.onImages();
+  }
+  async function pickTaskDocuments() {
+    const ctx = doneCtx;
+    if (!ctx) return;
+    try {
+      const files = await pickDocuments();
+      if (!files.length) return;
+      toast2("\u6B63\u5728\u4E0A\u4F20 " + files.length + " \u4E2A\u6587\u6863\u2026");
+      const uploaded = [];
+      for (const file of files) {
+        try {
+          const doc = await uploadDocument("task", ctx.item.id, file);
+          uploaded.push(doc);
+        } catch (err) {
+          toast2("\u4E0A\u4F20\u5931\u8D25\uFF1A" + file.name + " \xB7 " + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
+        }
+      }
+      if (uploaded.length) {
+        ctx.item.evidence_documents = (ctx.item.evidence_documents || []).concat(uploaded);
+        if (doneCtx === ctx) {
+          renderDoneDocuments();
+          doneError("");
+        }
+        if (ctx.onImages) ctx.onImages();
+        toast2("\u5DF2\u4E0A\u4F20 " + uploaded.length + " \u4E2A\u6587\u6863 \xB7 \u5DF2\u5165\u5E93");
+      }
+    } catch (err) {
+      toast2("\u4E0A\u4F20\u5931\u8D25\uFF1A" + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
   }
   async function submitTaskDone(btn) {
     const ctx = doneCtx;
@@ -12895,6 +13043,7 @@
     "submit-track": () => submitTrack(),
     "submit-sales-note": () => submitSalesNote(),
     "pick-sales-images": () => pickSalesImages(),
+    "pick-sales-documents": () => pickSalesDocuments(),
     "submit-seo-week": () => submitSeoWeek(),
     "submit-sem-week": () => submitSemWeek(),
     "submit-password": () => submitPwd(),
@@ -12902,6 +13051,7 @@
     "submit-subtask": () => submitSubtask(),
     "task-link-add": () => addTaskLink(),
     "pick-task-evidence": () => pickTaskEvidence(),
+    "pick-task-documents": () => pickTaskDocuments(),
     "submit-task-done": (el5) => submitTaskDone(el5),
     "open-leads": () => openLeads(),
     "audit-ai": (el5) => runAuditAi(el5),

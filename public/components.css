@@ -168,6 +168,61 @@ table.dt td.num{text-align:right}
 .att-thumb-del:hover{background:var(--danger)}
 .att-thumb-del.confirming{background:var(--danger);width:auto;padding:0 5px;border-radius:8px;font-size:10px}
 
+/* 文档附件：图标 + 文件名 + 大小，可点击下载 */
+.att-doc-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 8px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:var(--bg3);
+  max-width:200px;
+}
+.att-doc{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  text-decoration:none;
+  color:var(--text);
+  flex:1;
+  min-width:0;
+}
+.att-doc:hover{color:var(--primary)}
+.att-doc i{font-size:16px;flex-shrink:0}
+.att-doc-name{
+  font-size:13px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.att-doc-size{
+  font-size:11px;
+  color:var(--text2);
+  flex-shrink:0;
+}
+.att-doc-del{
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:16px;
+  height:16px;
+  padding:0;
+  border:0;
+  border-radius:999px;
+  background:rgba(15,23,42,.62);
+  color:#fff;
+  font-size:9px;
+  line-height:1;
+  cursor:pointer;
+}
+.att-doc-del:hover{background:var(--danger)}
+.att-doc-del.confirming{background:var(--danger);width:auto;padding:0 5px;border-radius:8px;font-size:10px}
+
 /* 大图预览：点背景 / ✕ / Esc 关闭；点卡片本身不关（要能选文字、点链接）。
    做成卡片而不是「一张图浮在全屏黑底上」—— 业务发来的截图尺寸参差不齐，
    小图在空旷黑底里会显得像坏了。卡片跟着内容走，底部说明栏交代文件名与真实像素尺寸。 */

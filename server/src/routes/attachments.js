@@ -1,11 +1,11 @@
-/* 通用图片附件 API。业务发回来的关键词截图 / 聊天记录截图等原始材料。
+/* 通用附件 API。业务发回来的关键词截图 / 聊天记录截图 / 数据报表等原始材料。
  *
- * 为什么不用 multipart：后端没装 @fastify/multipart，而这里要传的就是几张截图。
- * 前端在 canvas 里先把长边压到 1600px 再转 base64 JSON 发上来（bodyLimit 已是 16MB），
+ * 为什么不用 multipart：后端没装 @fastify/multipart，而这里要传的就是几张截图或文档。
+ * 前端把图片在 canvas 里先压到 1600px 再转 base64，文档直接转 base64，JSON 发上来（bodyLimit 已是 16MB），
  * 少一个依赖、少一条解析路径，也少一处上传中断留下半个文件的可能。
  *
  * 安全：只收白名单 MIME，且**不信任前端报的 MIME** —— 用文件头魔数复验，
- * 免得有人把 .html 改名 .png 传上来、再靠 /raw 当同源页面打开（存储型 XSS）。
+ * 免得有人把 .html 改名 .png 或 .pdf 传上来、再靠 /raw 当同源页面打开（存储型 XSS）。
  * 读取一律带 Content-Disposition: inline + nosniff，原图路径绝不回可执行内容类型。
  */
 import * as repo from '../db/repositories/attachments.js';
@@ -17,11 +17,22 @@ import { completionMissing, importance, isDone } from '../services/taskAudit.js'
 import { spendTaskIds } from '../services/taskAuditData.js';
 import { requireAuth, editor } from '../auth/middleware.js';
 
-export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;   // 单张 4MB（前端已压过，正常远小于此）
-export const MAX_PER_OWNER = 12;                  // 单条记录最多挂 12 张
-export const MAX_BYTES_PER_OWNER = 20 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;   // 单张图片 4MB（前端已压过，正常远小于此）
+export const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024; // 单个文档 20MB
+export const MAX_PER_OWNER = 20;                  // 单条记录最多挂 20 个附件（图片+文档）
+export const MAX_BYTES_PER_OWNER = 40 * 1024 * 1024; // 总计 40MB
 
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALLOWED_DOCUMENT_MIME = new Set([
+  'application/pdf',                                                      // PDF
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword',                                                   // .doc
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',   // .xlsx
+  'application/vnd.ms-excel',                                             // .xls
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+  'application/vnd.ms-powerpoint',                                        // .ppt
+]);
+const ALLOWED_MIME = new Set([...ALLOWED_IMAGE_MIME, ...ALLOWED_DOCUMENT_MIME]);
 
 // 宿主类型 → 存在性校验。加新宿主时必须在这里登记，否则 owner_id 可以指向任何东西。
 const OWNERS = {
@@ -58,6 +69,50 @@ export function sniffImageMime(buf) {
   return null;
 }
 
+export function sniffDocumentMime(buf) {
+  if (!buf || buf.length < 8) return null;
+  // PDF: %PDF-
+  if (buf.slice(0, 5).toString('latin1') === '%PDF-') return 'application/pdf';
+  // Office 2007+ (.docx, .xlsx, .pptx): ZIP 格式，开头是 PK
+  if (buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04) {
+    // 更精确的检查需要解压 ZIP 看 [Content_Types].xml，但魔数足够了
+    return 'application/vnd.openxmlformats-officedocument'; // 占位，调用方会用前端报的具体类型
+  }
+  // Office 97-2003 (.doc, .xls, .ppt): OLE2 格式
+  if (buf.slice(0, 8).toString('hex') === 'd0cf11e0a1b11ae1') {
+    return 'application/msword'; // 占位，调用方会用前端报的具体类型
+  }
+  return null;
+}
+
+export function sniffMime(buf, frontendMime) {
+  const image = sniffImageMime(buf);
+  if (image) return image;
+
+  const doc = sniffDocumentMime(buf);
+  if (doc) {
+    // Office 新格式的魔数都是 ZIP，需要用前端报的类型区分 docx/xlsx/pptx
+    if (doc === 'application/vnd.openxmlformats-officedocument' && frontendMime) {
+      if (ALLOWED_DOCUMENT_MIME.has(frontendMime) && frontendMime.includes('openxmlformats')) {
+        return frontendMime;
+      }
+    }
+    // Office 旧格式的魔数都是 OLE2，也需要用前端类型区分
+    if (doc === 'application/msword' && frontendMime) {
+      if (ALLOWED_DOCUMENT_MIME.has(frontendMime) && (
+        frontendMime === 'application/msword' ||
+        frontendMime === 'application/vnd.ms-excel' ||
+        frontendMime === 'application/vnd.ms-powerpoint'
+      )) {
+        return frontendMime;
+      }
+    }
+    return doc;
+  }
+
+  return null;
+}
+
 // data:URL 或裸 base64 → Buffer。解析不出来返回 null，由调用方回 400。
 export function decodeImagePayload(raw) {
   if (typeof raw !== 'string' || !raw) return null;
@@ -88,16 +143,33 @@ export async function attachmentsRoutes(app) {
     if (!check(ownerId)) return reply.code(404).send({ error: 'owner_not_found' });
 
     const buffer = decodeImagePayload(b.dataBase64 ?? b.data);
-    if (!buffer) return reply.code(400).send({ error: 'bad_image_data' });
-    if (buffer.length > MAX_IMAGE_BYTES) {
-      return reply.code(413).send({ error: 'image_too_large', limit: MAX_IMAGE_BYTES, size: buffer.length });
+    if (!buffer) return reply.code(400).send({ error: 'bad_file_data' });
+
+    // 前端报的 MIME 类型（用于区分 Office 格式）
+    const frontendMime = String(b.mime || '');
+
+    // 以字节为准，但 Office 文档需要前端类型辅助判断
+    const mime = sniffMime(buffer, frontendMime);
+    if (!mime || !ALLOWED_MIME.has(mime)) {
+      return reply.code(415).send({ error: 'unsupported_file_type' });
     }
-    // 以字节为准，不信前端报的 type
-    const mime = sniffImageMime(buffer);
-    if (!mime || !ALLOWED_MIME.has(mime)) return reply.code(415).send({ error: 'unsupported_image_type' });
+
+    // 根据类型选择大小限制
+    const isImage = ALLOWED_IMAGE_MIME.has(mime);
+    const maxSize = isImage ? MAX_IMAGE_BYTES : MAX_DOCUMENT_BYTES;
+    if (buffer.length > maxSize) {
+      return reply.code(413).send({
+        error: 'file_too_large',
+        limit: maxSize,
+        size: buffer.length,
+        type: isImage ? 'image' : 'document'
+      });
+    }
 
     const used = repo.bytesForOwner(ownerType, ownerId);
-    if (used.count >= MAX_PER_OWNER) return reply.code(409).send({ error: 'too_many_attachments', limit: MAX_PER_OWNER });
+    if (used.count >= MAX_PER_OWNER) {
+      return reply.code(409).send({ error: 'too_many_attachments', limit: MAX_PER_OWNER });
+    }
     if (used.bytes + buffer.length > MAX_BYTES_PER_OWNER) {
       return reply.code(413).send({ error: 'owner_quota_exceeded', limit: MAX_BYTES_PER_OWNER });
     }

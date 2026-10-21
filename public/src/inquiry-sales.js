@@ -149,6 +149,21 @@ export async function pickSalesImages() {
   renderPending();
 }
 
+// 选文档（暂存，点「添加」时才真上传）
+export async function pickSalesDocuments() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
+  input.click();
+  const files = await new Promise((resolve) => {
+    input.addEventListener('change', () => resolve(Array.from(input.files || [])));
+  });
+  if (!files.length) return;
+  pendingFiles = pendingFiles.concat(files);
+  renderPending();
+}
+
 /* ===== 事件委托 ===== */
 // 表格里点格子 → 开弹框
 document.addEventListener('click', (e) => {

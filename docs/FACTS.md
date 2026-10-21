@@ -12,7 +12,7 @@
 |---|---|
 | `adCreatives.js` | 广告创意库 API（FR-7）。 |
 | `ai.js` | AI 分析 API：发起分析、按 scope 存取历史、追问、采纳 / 归档、把结论拆成整改动作。 |
-| `attachments.js` | 通用图片附件 API。 |
+| `attachments.js` | 通用附件 API。 |
 | `attribution.js` | 询盘归因：把真实询盘(按渠道)与 Ads 花费打通，算「真实每有效询盘成本」+ 对比 Ads 自报转化。 |
 | `audit.js` | 周度审核 API：审核包（页面读它）、导出（JSON / XLSX / CSV）、AI 审核意见。 |
 | `contentAssets.js` | 内容资产 API。 |

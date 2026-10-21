@@ -1063,9 +1063,10 @@
       <div class="fld"><label>新增一条业务反馈</label><textarea id="sales-text" rows="4" placeholder="业务发过来的关键词、客户原话、需求要点…（只传图片也可以，这里可以留空）"></textarea></div>
       <div class="sales-pick-row">
         <button type="button" class="btn-ghost" data-ui-action="pick-sales-images"><i class="ti ti-photo-plus"></i> 选择图片</button>
+        <button type="button" class="btn-ghost" data-ui-action="pick-sales-documents"><i class="ti ti-file-plus"></i> 选择文档</button>
         <div class="sales-pending" id="sales-pending"></div>
       </div>
-      <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 支持 PNG / JPG / WEBP / GIF，上传前会自动压缩到长边 1600px；点缩略图看原图。文字和图片可以只有其一。</div>
+      <div class="sheet-tip csp-s-43a97fe494"><i class="ti ti-info-circle"></i> 支持 PNG / JPG / WEBP / GIF 图片和 PDF / Word / Excel / PPT 文档。图片上传前会自动压缩；点缩略图看原图，点文档名下载。文字和附件可以只有其一。</div>
     </div>
     <div class="modal-foot"><button class="btn-ghost" data-ui-action="close-modal" data-modal="salesMask">关闭</button><button class="btn-primary" data-ui-action="submit-sales-note"><i class="ti ti-plus"></i> 添加记录</button></div>
   </div>
@@ -1175,6 +1176,13 @@
           <span id="task-done-thumbs"></span>
           <button type="button" class="btn-mini" data-ui-action="pick-task-evidence"><i class="ti ti-photo-plus"></i> 上传截图</button>
           <span class="dim upload-hint">支持多选 · 可直接 Ctrl+V 粘贴</span>
+        </div>
+      </div>
+      <div class="fld"><label>证据文档</label>
+        <div class="task-done-docs-section">
+          <div id="task-done-docs" class="task-done-doc-list"></div>
+          <button type="button" class="btn-mini" data-ui-action="pick-task-documents"><i class="ti ti-file-plus"></i> 上传文档</button>
+          <span class="dim upload-hint">支持 PDF / Word / Excel / PPT，最大 20MB</span>
         </div>
       </div>
       <div class="fld-row">
