@@ -36,15 +36,26 @@ test('今天是本月第几周：按几号除以 7；月末第 5 周并进第 4 
   assert.equal(weekOfMonth(d('2026-10-31')), 4, '29–31 号不另开一周，「每月第 4 周」指的就是月末');
 });
 
-test('月度条目只在它该做的那一周算「本周要做」；非月度一律 false', () => {
+test('写了周次的月度条目只在那一周出现；非月度一律 false', () => {
   const m = (hint) => ({ freq: 'monthly', time_hint: hint });
   const d = (s) => new Date(s + 'T09:00:00');
   assert.equal(dueThisWeek(m('每月第 1 周'), d('2026-10-03')), true);
   assert.equal(dueThisWeek(m('每月第 1 周'), d('2026-10-21')), false);
   assert.equal(dueThisWeek(m('每月第 4 周'), d('2026-10-28')), true);
-  assert.equal(dueThisWeek(m('月初'), d('2026-10-03')), false, '认不出周次就不并入，别瞎猜');
   assert.equal(dueThisWeek({ freq: 'weekly', time_hint: '每月第 1 周' }, d('2026-10-03')), false);
   assert.equal(dueThisWeek(null, d('2026-10-03')), false);
+});
+
+test('没写周次的月度条目每周都出现 —— 日计划没有月列了，藏起来就是整月没人看见', () => {
+  const d = (s) => new Date(s + 'T09:00:00');
+  for (const hint of ['月初', '', null, '看情况']) {
+    for (const day of ['2026-10-03', '2026-10-14', '2026-10-28']) {
+      assert.equal(
+        dueThisWeek({ freq: 'monthly', time_hint: hint }, d(day)), true,
+        `time_hint=${JSON.stringify(hint)} 在 ${day} 应该出现：宁可每周吵一次，也不能整月不出现`,
+      );
+    }
+  }
 });
 
 test('优先级：显式字段优先；没有就按文档的优先级列 / 编号推', () => {

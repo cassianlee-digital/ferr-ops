@@ -98,22 +98,24 @@ export function renderSopCards(){
     const anchor=document.getElementById(dept==='公司'?'sop-company':('sop-'+dept.toLowerCase()));
     if(!anchor)return;
     const list=window._sops.filter(s=>s.dept===dept);
-    /* 月度条目按「本月第几周」并进周列：每月的频率最低，却和日/周平分三分之一版面，
-       大部分时候那一列里全是这个月早就做完或还没轮到的条目。
-       现在只有轮到的那一周才把它挪到「每周必做」里（带「月度」徽章），其余留在月列。 */
+    /* 只有「每日必做」「每周必做」两列 —— 月度不单独占一列（2026-10-21）。
+       月度条目轮到它那一周时并进周列（带橙色徽章），其余时候本就不用做，不显示。
+       没写周次的月度条目每周都并进来（见 sop-schedule.js dueThisWeek 的第②条），
+       所以这里不存在「某条 SOP 整月不出现在任何地方」。 */
     const rolled=list.filter(s=>dueThisWeek(s,now));
     const rolledIds=new Set(rolled.map(s=>s.id));
     const byFreq={
       daily:list.filter(s=>s.freq==='daily'),
       weekly:list.filter(s=>s.freq==='weekly').concat(rolled),
-      monthly:list.filter(s=>s.freq==='monthly'&&!rolledIds.has(s.id)),
     };
-    // 本周期该做的 = 日 + 周（含并进来的月度）；留在月列的本周不用做，不进分母
+    const parked=list.filter(s=>s.freq==='monthly'&&!rolledIds.has(s.id)).length;
     const cur=byFreq.daily.concat(byFreq.weekly);
     const hit=cur.filter(sopDone).length;
     const cap=document.createElement('div');
     cap.className='colcap';
+    // 本月还没轮到的月度条目说一声有几条：不占版面，但也别让人以为 SOP 少了几条
     cap.innerHTML='<i class="ti ti-pin"></i> SOP 固定任务'
+      +(parked?`<i class="sop-parked" title="月度 SOP 轮到它那一周才会出现在「每周必做」里">另有 ${parked} 条月度不在本周</i>`:'')
       +(cur.length?`<em class="colcap-stat${hit===cur.length?' ok':''}">本周期 ${hit}/${cur.length} 达标</em>`:'');
     anchor.innerHTML='';
     anchor.appendChild(cap);
@@ -124,18 +126,15 @@ export function renderSopCards(){
     }
     const grid=document.createElement('div');
     grid.className='sop-freqgrid';
-    ['daily','weekly','monthly'].forEach(freq=>{
+    ['daily','weekly'].forEach(freq=>{
       const col=document.createElement('div');
       col.className='sop-freqcol';
-      // 排序走 compareSops：先时间线（周一→周五 / 第1周→第4周），再优先级，最后文档行序。
-      // 不按赛道聚拢——那样 SEM 排到周五、社媒又从周一重新开始，一列看下来时间来回跳。
+      // 排序走 compareSops：先时间线（周一→周五，月度统一排在周内节奏之后），再优先级，最后文档行序。
       const rows=byFreq[freq].slice().sort(compareSops);
       const done=rows.filter(sopDone).length;
       const fc=document.createElement('div');
       fc.className='sop-freq-cap';
-      const note=freq==='monthly'&&rolled.length
-        ? `<i class="sop-cap-note">本周 ${rolled.length} 条已并入左列</i>` : '';
-      fc.innerHTML=`<span>${esc(FREQ_LABEL[freq])}</span>${note}`
+      fc.innerHTML=`<span>${esc(FREQ_LABEL[freq])}</span>`
         +(rows.length?`<em class="${done===rows.length?'ok':''}">${done}/${rows.length}</em>`:'');
       col.appendChild(fc);
       if(!rows.length){

@@ -1525,7 +1525,8 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
    现在横着切三等份，赛道靠每行的浅色标签认。 */
 #panel-tasks .sop-freqgrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* 两等份：每日 / 每周。月度不单独占一列——它轮到那一周会并进周列（2026-10-21） */
+  grid-template-columns: repeat(2, 1fr);
   gap: 0 10px;
   align-items: start;
 }
@@ -1630,4 +1631,13 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
     border-left: 0;
     border-top: 1px solid var(--line);
   }
+}
+
+/* 本月还没轮到的月度条目：在列头说一声有几条，不占版面也不静默消失 */
+#panel-tasks .colcap .sop-parked {
+  margin-left: 10px;
+  color: var(--text3);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 400;
 }

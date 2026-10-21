@@ -5014,7 +5014,8 @@
   function dueThisWeek(sop, date = /* @__PURE__ */ new Date()) {
     if (!sop || sop.freq !== "monthly") return false;
     const w = monthWeekOf(sop.time_hint);
-    return w != null && w === weekOfMonth(date);
+    if (w == null) return true;
+    return w === weekOfMonth(date);
   }
   var CODE_PRIORITY = {
     \u56FA\u5B9A: 1,
@@ -5137,14 +5138,14 @@
       const rolledIds = new Set(rolled.map((s) => s.id));
       const byFreq = {
         daily: list.filter((s) => s.freq === "daily"),
-        weekly: list.filter((s) => s.freq === "weekly").concat(rolled),
-        monthly: list.filter((s) => s.freq === "monthly" && !rolledIds.has(s.id))
+        weekly: list.filter((s) => s.freq === "weekly").concat(rolled)
       };
+      const parked = list.filter((s) => s.freq === "monthly" && !rolledIds.has(s.id)).length;
       const cur = byFreq.daily.concat(byFreq.weekly);
       const hit = cur.filter(sopDone).length;
       const cap = document.createElement("div");
       cap.className = "colcap";
-      cap.innerHTML = '<i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1' + (cur.length ? `<em class="colcap-stat${hit === cur.length ? " ok" : ""}">\u672C\u5468\u671F ${hit}/${cur.length} \u8FBE\u6807</em>` : "");
+      cap.innerHTML = '<i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1' + (parked ? `<i class="sop-parked" title="\u6708\u5EA6 SOP \u8F6E\u5230\u5B83\u90A3\u4E00\u5468\u624D\u4F1A\u51FA\u73B0\u5728\u300C\u6BCF\u5468\u5FC5\u505A\u300D\u91CC">\u53E6\u6709 ${parked} \u6761\u6708\u5EA6\u4E0D\u5728\u672C\u5468</i>` : "") + (cur.length ? `<em class="colcap-stat${hit === cur.length ? " ok" : ""}">\u672C\u5468\u671F ${hit}/${cur.length} \u8FBE\u6807</em>` : "");
       anchor.innerHTML = "";
       anchor.appendChild(cap);
       if (!list.length) {
@@ -5156,15 +5157,14 @@
       }
       const grid = document.createElement("div");
       grid.className = "sop-freqgrid";
-      ["daily", "weekly", "monthly"].forEach((freq) => {
+      ["daily", "weekly"].forEach((freq) => {
         const col = document.createElement("div");
         col.className = "sop-freqcol";
         const rows2 = byFreq[freq].slice().sort(compareSops);
         const done = rows2.filter(sopDone).length;
         const fc = document.createElement("div");
         fc.className = "sop-freq-cap";
-        const note = freq === "monthly" && rolled.length ? `<i class="sop-cap-note">\u672C\u5468 ${rolled.length} \u6761\u5DF2\u5E76\u5165\u5DE6\u5217</i>` : "";
-        fc.innerHTML = `<span>${esc(FREQ_LABEL[freq])}</span>${note}` + (rows2.length ? `<em class="${done === rows2.length ? "ok" : ""}">${done}/${rows2.length}</em>` : "");
+        fc.innerHTML = `<span>${esc(FREQ_LABEL[freq])}</span>` + (rows2.length ? `<em class="${done === rows2.length ? "ok" : ""}">${done}/${rows2.length}</em>` : "");
         col.appendChild(fc);
         if (!rows2.length) {
           const e = document.createElement("div");
