@@ -12,7 +12,7 @@
  * closed-loop / archive / app 来 import 它。模块求值期不碰 DOM，事件在第一次用到时才绑。
  */
 import { esc, openModal, closeModal, toast } from './ui-kit.js';
-import { deleteImage, pickAndUpload, thumbsHtml } from './attachments.js';
+import { deleteImage, pickAndUpload, thumbsHtml, getClipboardImages, uploadAll } from './attachments.js';
 import { inlineConfirm } from './keywords.js';
 import { PRODUCT_NAMES } from './catalog.js';
 import { openChangeLog } from './change-log.js';
@@ -301,6 +301,8 @@ function bindDone() {
   if (doneBound) return;
   const box = $('task-done-thumbs'); if (!box) return;
   doneBound = true;
+
+  // 删除截图
   box.addEventListener('click', async (e) => {
     const del = e.target.closest('[data-att-del]'); if (!del || !doneCtx) return;
     if (!inlineConfirm(del, '删除')) return;
@@ -312,6 +314,27 @@ function bindDone() {
       if (ctx.onImages) ctx.onImages();
     } catch (err) { toast('删除失败：' + ((err && err.message) || '请求失败')); }
   });
+
+  // 监听粘贴事件，支持直接 Ctrl+V 粘贴截图
+  const modal = $('taskDoneMask');
+  if (modal) {
+    modal.addEventListener('paste', async (e) => {
+      if (!doneCtx) return;
+      const images = getClipboardImages(e);
+      if (!images.length) return;
+      e.preventDefault(); // 阻止默认粘贴行为
+      const ctx = doneCtx;
+      toast('正在上传 ' + images.length + ' 张图片…');
+      const { done, failed } = await uploadAll('task', ctx.item.id, images);
+      if (failed.length) toast('已上传 ' + done.length + ' 张，' + failed.length + ' 张失败：' + failed[0].reason);
+      else toast('已上传 ' + done.length + ' 张图片 · 已入库');
+      if (done.length && doneCtx === ctx) {
+        ctx.item.evidence_images = (ctx.item.evidence_images || []).concat(done);
+        renderDoneThumbs();
+        if (ctx.onImages) ctx.onImages();
+      }
+    });
+  }
 }
 
 /* 打开完成弹框。edit=false：勾完成（提交时一并把状态置为完成）；edit=true：改已完成任务的记录。

@@ -3033,6 +3033,18 @@
       input.click();
     });
   }
+  function getClipboardImages(pasteEvent) {
+    const items = (pasteEvent.clipboardData || pasteEvent.originalEvent?.clipboardData)?.items;
+    if (!items) return [];
+    const files = [];
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) files.push(file);
+      }
+    }
+    return files;
+  }
   function compressImage(file, maxEdge = MAX_EDGE) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -6240,6 +6252,25 @@
         toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (err && err.message || "\u8BF7\u6C42\u5931\u8D25"));
       }
     });
+    const modal = $4("taskDoneMask");
+    if (modal) {
+      modal.addEventListener("paste", async (e) => {
+        if (!doneCtx) return;
+        const images = getClipboardImages(e);
+        if (!images.length) return;
+        e.preventDefault();
+        const ctx = doneCtx;
+        toast2("\u6B63\u5728\u4E0A\u4F20 " + images.length + " \u5F20\u56FE\u7247\u2026");
+        const { done, failed } = await uploadAll("task", ctx.item.id, images);
+        if (failed.length) toast2("\u5DF2\u4E0A\u4F20 " + done.length + " \u5F20\uFF0C" + failed.length + " \u5F20\u5931\u8D25\uFF1A" + failed[0].reason);
+        else toast2("\u5DF2\u4E0A\u4F20 " + done.length + " \u5F20\u56FE\u7247 \xB7 \u5DF2\u5165\u5E93");
+        if (done.length && doneCtx === ctx) {
+          ctx.item.evidence_images = (ctx.item.evidence_images || []).concat(done);
+          renderDoneThumbs();
+          if (ctx.onImages) ctx.onImages();
+        }
+      });
+    }
   }
   function openTaskDone(item, { edit = false, onDone = null, onImages = null } = {}) {
     if (!item || !item.id) return;

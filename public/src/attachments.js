@@ -12,6 +12,7 @@ import { esc, toast } from './ui-kit.js';
 export const MAX_EDGE = 1600;
 export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif';
+const ACCEPT_DOCS = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
 
 export function rawUrl(id) { return '/api/attachments/' + encodeURIComponent(id) + '/raw'; }
 
@@ -42,6 +43,38 @@ export function pickImages({ multiple = true } = {}) {
     document.body.appendChild(input);
     input.click();
   });
+}
+
+/* 选择文档文件（PDF、Word、Excel、PPT）。 */
+export function pickDocuments({ multiple = true } = {}) {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = ACCEPT_DOCS;
+    input.multiple = !!multiple;
+    input.className = 'att-file-input';
+    input.addEventListener('change', () => {
+      const files = [...(input.files || [])];
+      input.remove();
+      resolve(files);
+    });
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
+/* 从剪贴板读取图片（支持 Ctrl+V 粘贴截图）。 */
+export function getClipboardImages(pasteEvent) {
+  const items = (pasteEvent.clipboardData || pasteEvent.originalEvent?.clipboardData)?.items;
+  if (!items) return [];
+  const files = [];
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) files.push(file);
+    }
+  }
+  return files;
 }
 
 // File → dataURL（压缩后）。任何一步失败都回退成「原图的 dataURL」，绝不返回空。

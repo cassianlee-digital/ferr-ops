@@ -1171,7 +1171,11 @@
       <div class="fld"><label>具体动作（可选）</label><textarea id="task-done-actions" rows="2" maxlength="2000" placeholder="实际做了哪几件事，一行一件…"></textarea></div>
       <div class="fld"><label>证据链接（一行一个，http/https 开头）</label><textarea id="task-done-evidence" rows="2" placeholder="上线后的页面 / 后台改动记录 / 文档链接…"></textarea></div>
       <div class="fld"><label>证据截图</label>
-        <div class="task-done-shots"><span id="task-done-thumbs"></span><button type="button" class="btn-mini" data-ui-action="pick-task-evidence"><i class="ti ti-photo-plus"></i> 上传截图</button></div>
+        <div class="task-done-shots">
+          <span id="task-done-thumbs"></span>
+          <button type="button" class="btn-mini" data-ui-action="pick-task-evidence"><i class="ti ti-photo-plus"></i> 上传截图</button>
+          <span class="dim upload-hint">支持多选 · 可直接 Ctrl+V 粘贴</span>
+        </div>
       </div>
       <div class="fld-row">
         <div class="fld"><label>实际用时（小时，可选）</label><input type="number" id="task-done-hours" min="0" step="0.5" placeholder="例如 1.5"></div>
