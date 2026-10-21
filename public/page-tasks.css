@@ -1641,3 +1641,29 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
   font-size: 11px;
   font-weight: 400;
 }
+
+/* 周/日两列里的 SOP 条目改成「一条一张卡」，彼此留间距。
+   原来 .sop-list 是一个大边框盒、内部靠 .tcard + .tcard 的一条细线分隔 ——
+   那是条目只有一行标题时的样子；现在每条有标题 + 标签 + 指标行三层，
+   挨在一起就糊成一片，看不出哪几行是同一条。 */
+#panel-tasks .sop-freqcol .sop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+#panel-tasks .sop-freqcol .sop-list .sop-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+#panel-tasks .sop-freqcol .sop-list .sop-row + .sop-row { border-top: 1px solid var(--border); }
+#panel-tasks .sop-freqcol .sop-list .sop-row.done { background: var(--bg3); }
+#panel-tasks .sop-freqcol .sop-list .sop-row.sop-rolled { background: var(--amber-soft); }
+body.dark #panel-tasks .sop-freqcol .sop-list .sop-row {
+  background: #10151d;
+  border-color: #202838;
+}
