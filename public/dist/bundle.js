@@ -4993,6 +4993,64 @@
     submitSopLog: () => submitSopLog,
     updateSopCounts: () => updateSopCounts
   });
+
+  // public/src/sop-schedule.js
+  var CN_NUM = { \u4E00: 1, \u4E8C: 2, \u4E09: 3, \u56DB: 4, \u4E94: 5, \u516D: 6, \u4E03: 7, \u516B: 8, \u4E5D: 9, \u5341: 10, \u65E5: 7, \u5929: 7 };
+  function weekdayOrder(timeHint) {
+    const m = /周([一二三四五六日天])/.exec(String(timeHint || ""));
+    return m ? CN_NUM[m[1]] || 99 : 99;
+  }
+  function monthWeekOf(timeHint) {
+    const t = String(timeHint || "");
+    const m = /第\s*([0-9０-９一二三四五六七八九十]+)/.exec(t);
+    if (!m) return null;
+    const raw = m[1].replace(/[０-９]/g, (d) => String("\uFF10\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17\uFF18\uFF19".indexOf(d)));
+    const n = /^\d+$/.test(raw) ? Number(raw) : CN_NUM[raw];
+    return n >= 1 && n <= 5 ? Math.min(4, n) : null;
+  }
+  function weekOfMonth(date = /* @__PURE__ */ new Date()) {
+    return Math.min(4, Math.ceil(date.getDate() / 7));
+  }
+  function dueThisWeek(sop, date = /* @__PURE__ */ new Date()) {
+    if (!sop || sop.freq !== "monthly") return false;
+    const w = monthWeekOf(sop.time_hint);
+    return w != null && w === weekOfMonth(date);
+  }
+  var CODE_PRIORITY = {
+    \u56FA\u5B9A: 1,
+    // 周一看数 / 周五复盘：每周的锚点，时间再紧也不能砍
+    P1: 1,
+    P2: 2,
+    P3: 3
+  };
+  function sopPriority(sop) {
+    const explicit = Number(sop && sop.priority);
+    if (Number.isInteger(explicit) && explicit >= 1 && explicit <= 4) return explicit;
+    const code = String(sop && sop.code || "").trim();
+    if (CODE_PRIORITY[code]) return CODE_PRIORITY[code];
+    const s = /^S(\d+)$/.exec(code);
+    if (s) {
+      const n = Number(s[1]);
+      return n <= 3 ? 1 : n <= 6 ? 2 : 3;
+    }
+    const g = /^G(\d+)$/.exec(code);
+    if (g) return Math.min(3, Math.max(1, Number(g[1])));
+    return 4;
+  }
+  function compareSops(a, b) {
+    const ka = sortKey(a), kb = sortKey(b);
+    if (ka.time !== kb.time) return ka.time - kb.time;
+    if (ka.prio !== kb.prio) return ka.prio - kb.prio;
+    if (ka.order !== kb.order) return ka.order - kb.order;
+    return (a.id || 0) - (b.id || 0);
+  }
+  var MONTHLY_BASE = 100;
+  function sortKey(s) {
+    const time = s.freq === "monthly" ? MONTHLY_BASE + (monthWeekOf(s.time_hint) ?? 99) : weekdayOrder(s.time_hint);
+    return { time, prio: sopPriority(s), order: s.sort_order ?? 9999 };
+  }
+
+  // public/src/sop.js
   function sopPeriodKey(freq) {
     const d = /* @__PURE__ */ new Date();
     d.setHours(0, 0, 0, 0);
@@ -5070,11 +5128,19 @@
     refreshNavTaskDot();
   }
   function renderSopCards() {
+    const now = /* @__PURE__ */ new Date();
     ["SEM", "SEO", "\u516C\u53F8"].forEach((dept) => {
       const anchor = document.getElementById(dept === "\u516C\u53F8" ? "sop-company" : "sop-" + dept.toLowerCase());
       if (!anchor) return;
       const list = window._sops.filter((s) => s.dept === dept);
-      const cur = list.filter((s) => s.freq !== "monthly");
+      const rolled = list.filter((s) => dueThisWeek(s, now));
+      const rolledIds = new Set(rolled.map((s) => s.id));
+      const byFreq = {
+        daily: list.filter((s) => s.freq === "daily"),
+        weekly: list.filter((s) => s.freq === "weekly").concat(rolled),
+        monthly: list.filter((s) => s.freq === "monthly" && !rolledIds.has(s.id))
+      };
+      const cur = byFreq.daily.concat(byFreq.weekly);
       const hit = cur.filter(sopDone).length;
       const cap = document.createElement("div");
       cap.className = "colcap";
@@ -5093,15 +5159,12 @@
       ["daily", "weekly", "monthly"].forEach((freq) => {
         const col = document.createElement("div");
         col.className = "sop-freqcol";
-        const rows2 = list.filter((s) => s.freq === freq).sort((a, b) => {
-          const ta = trackOf(a) || "", tb = trackOf(b) || "";
-          if (ta !== tb) return ta < tb ? -1 : 1;
-          return (a.sort_order ?? 9999) - (b.sort_order ?? 9999) || (a.id || 0) - (b.id || 0);
-        });
+        const rows2 = byFreq[freq].slice().sort(compareSops);
         const done = rows2.filter(sopDone).length;
         const fc = document.createElement("div");
         fc.className = "sop-freq-cap";
-        fc.innerHTML = `<span>${esc(FREQ_LABEL[freq])}</span>` + (rows2.length ? `<em class="${done === rows2.length ? "ok" : ""}">${done}/${rows2.length}</em>` : "");
+        const note = freq === "monthly" && rolled.length ? `<i class="sop-cap-note">\u672C\u5468 ${rolled.length} \u6761\u5DF2\u5E76\u5165\u5DE6\u5217</i>` : "";
+        fc.innerHTML = `<span>${esc(FREQ_LABEL[freq])}</span>${note}` + (rows2.length ? `<em class="${done === rows2.length ? "ok" : ""}">${done}/${rows2.length}</em>` : "");
         col.appendChild(fc);
         if (!rows2.length) {
           const e = document.createElement("div");
@@ -5111,7 +5174,7 @@
         } else {
           const listBox = document.createElement("div");
           listBox.className = "sop-list";
-          rows2.forEach((s) => listBox.appendChild(sopCardEl(s)));
+          rows2.forEach((s) => listBox.appendChild(sopCardEl(s, { rolled: rolledIds.has(s.id) })));
           col.appendChild(listBox);
         }
         grid.appendChild(col);
@@ -5119,7 +5182,7 @@
       anchor.appendChild(grid);
     });
   }
-  function sopCardEl(s) {
+  function sopCardEl(s, opts) {
     const quota = hasQuota(s);
     const logged = isLogged(s);
     const done = sopDone(s);
@@ -5127,15 +5190,19 @@
     row.className = "tcard sop-row" + (done ? " done" : "");
     row.dataset.sopId = s.id;
     row.dataset.sopFreq = s.freq;
+    if (opts && opts.rolled) row.classList.add("sop-rolled");
     const code = s.code ? `<b class="sop-code">${esc(s.code)}</b> ` : "";
-    const hint = s.time_hint ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
+    const p = Number(sopPriority(s));
+    const flag = `<i class="ti ti-flag${p === 4 ? "" : "-filled"} sop-prio tprio-${p}" title="\u4F18\u5148\u7EA7${p}"></i>`;
+    const rolledTag = opts && opts.rolled ? `<span class="sop-rolled-tag">\u6708\u5EA6${s.time_hint ? " \xB7 " + esc(s.time_hint) : ""}</span>` : "";
+    const hint = s.time_hint && !(opts && opts.rolled) ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
     const left = quota ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>` : logged ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}</span>` : `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span>`;
     const logBtn = logged ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> \u8BB0\u4E00\u6761</button>` : "";
     const tagText = s.tag || trackOf(s) || "";
     const tag = tagText ? `<span class="sop-tag">${esc(tagText)}</span>` : "";
     const metrics = metricsLine(s);
     const metricsHtml = metrics ? `<div class="sop-metrics">${esc(metrics)}</div>` : "";
-    row.innerHTML = left + `<span class="sop-text">${code}${esc(s.title)}${tag}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u672C\u5468\u671F\u505A\u4E86\u54EA\u51E0\u6761"><i class="ti ti-info-circle"></i></button></span>` + metricsHtml;
+    row.innerHTML = left + `<span class="sop-text">${flag}${code}${esc(s.title)}${tag}${rolledTag}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u672C\u5468\u671F\u505A\u4E86\u54EA\u51E0\u6761"><i class="ti ti-info-circle"></i></button></span>` + metricsHtml;
     if (s.done_when) row.title = "\u5B8C\u6210\u6807\u51C6\uFF1A" + s.done_when;
     if (quota) {
       const bar = document.createElement("div");
@@ -5267,6 +5334,7 @@
     set("sop-target", sop ? sop.target_qty : "");
     set("sop-unit", sop ? sop.unit : "");
     set("sop-tag", sop ? sop.tag : "");
+    set("sop-priority", sop && sop.priority ? String(sop.priority) : "");
     set("sop-subject-label", sop ? sop.subject_label : "");
     set("sop-why", sop ? sop.why : "");
     set("sop-how", sop ? sop.how : "");
@@ -5304,6 +5372,7 @@
       target_qty: n("sop-target"),
       unit: v("sop-unit") || null,
       tag: v("sop-tag") || null,
+      priority: n("sop-priority"),
       subject_label: v("sop-subject-label") || null,
       why: v("sop-why") || null,
       how: v("sop-how") || null,

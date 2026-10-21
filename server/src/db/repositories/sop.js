@@ -21,7 +21,7 @@ export function getDef(id) {
 // v2 新增列按清单归一：调用方少给的补 null，INSERT 的具名参数才不会缺。
 const DEF_COLS = ['dept', 'freq', 'title', 'content', 'time_hint',
   'track', 'code', 'target_qty', 'unit', 'effort_h', 'metric', 'why', 'how', 'done_when',
-  'subject_label', 'sort_order', 'source', 'tag'];
+  'subject_label', 'sort_order', 'source', 'tag', 'priority'];
 
 export function createDef(rec) {
   const row = {};

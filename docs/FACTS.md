@@ -158,7 +158,7 @@
 | `scheduler.js` | 谷歌数据定时自动同步（进程内调度）。 |
 | `syncSites.js` | 多站点同步的编排：每天把所有启用的站点都同步一遍； |
 
-## 前端 ES 模块（打包进 dist/bundle.js）（50）
+## 前端 ES 模块（打包进 dist/bundle.js）（51）
 
 `public/src/`
 
@@ -205,6 +205,7 @@
 | `site-scope.js` | 当前看的是哪个站点（多站点第 2 步）。 |
 | `sites.js` | 站点管理（设置 → API 接入）：一个谷歌账号下的每个网站各登记一次。 |
 | `sop-rate.js` | SOP 执行率（ES 模块 · esbuild 打包为 IIFE）。 |
+| `sop-schedule.js` | SOP 的「什么时候做」与「有多重要」——一组纯函数，不碰 DOM。 |
 | `sop.js` | SOP 引擎（ES 模块 · esbuild 打包为 IIFE）。 |
 | `spend.js` | 投入台账（2026-10-10）：钱花在哪 —— 广告 / 外链 / 其它支出。 |
 | `table-editor.js` | Shared persistence and keyboard behavior for data-field table cells. |
@@ -290,7 +291,7 @@
 | `users` | 账号与角色（seo / sem / manager / boss）。 |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（56）
+## 测试（57）
 
 `server/test/`
 
@@ -342,6 +343,7 @@
 | `siteReturns.test.js` | 按站点看「花了多少广告费、带来几条询盘」。 |
 | `sites.test.js` | 多站点：一个谷歌账号下的几个网站各是一个「站点」。 |
 | `sopEngine.test.js` | SOP 引擎 v2：执行流水（一次执行一行）+ 周配额口径。 |
+| `sopSchedule.test.js` | SOP 的排序 / 月度触发周 / 优先级推导。 |
 | `spend.test.js` | 投入台账：外链 / 其它支出 / 「钱花在哪」汇总。 |
 | `taskAudit.test.js` | 可审计任务的规则：重要性判定、完成门槛、证据与关联键的合法性。 |
 | `taskAuditRoutes.test.js` | 可审计任务 · 路由层：完成门槛、关联键、重要标记、证据截图。 |

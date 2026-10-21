@@ -11,6 +11,7 @@
 import { esc, openModal, closeModal, toast } from './ui-kit.js';
 import { formatLocalDate } from './timerange.js';
 import { inlineConfirm } from './keywords.js';
+import { compareSops, dueThisWeek, sopPriority } from './sop-schedule.js';
 
 /* ===== SOP 引擎 Step B：周期 key / 加载 / 渲染 / 设置页 CRUD ===== */
 // period_key 按本地时间算，daily=YYYY-MM-DD / weekly=YYYY-Www / monthly=YYYY-MM
@@ -92,12 +93,23 @@ export async function loadSops(){
   refreshNavTaskDot();      // Step C：侧栏红感叹号
 }
 export function renderSopCards(){
+  const now=new Date();
   ['SEM','SEO','公司'].forEach(dept=>{
     const anchor=document.getElementById(dept==='公司'?'sop-company':('sop-'+dept.toLowerCase()));
     if(!anchor)return;
     const list=window._sops.filter(s=>s.dept===dept);
-    // 本周期该做的（日+周）里达标了几条；月度不进周口径，和 /api/sop/stats 同向
-    const cur=list.filter(s=>s.freq!=='monthly');
+    /* 月度条目按「本月第几周」并进周列：每月的频率最低，却和日/周平分三分之一版面，
+       大部分时候那一列里全是这个月早就做完或还没轮到的条目。
+       现在只有轮到的那一周才把它挪到「每周必做」里（带「月度」徽章），其余留在月列。 */
+    const rolled=list.filter(s=>dueThisWeek(s,now));
+    const rolledIds=new Set(rolled.map(s=>s.id));
+    const byFreq={
+      daily:list.filter(s=>s.freq==='daily'),
+      weekly:list.filter(s=>s.freq==='weekly').concat(rolled),
+      monthly:list.filter(s=>s.freq==='monthly'&&!rolledIds.has(s.id)),
+    };
+    // 本周期该做的 = 日 + 周（含并进来的月度）；留在月列的本周不用做，不进分母
+    const cur=byFreq.daily.concat(byFreq.weekly);
     const hit=cur.filter(sopDone).length;
     const cap=document.createElement('div');
     cap.className='colcap';
@@ -110,25 +122,20 @@ export function renderSopCards(){
       empty.className='sop-empty-hint'; empty.textContent='暂无 SOP';
       anchor.appendChild(empty); return;
     }
-    /* 日 / 周 / 月 三等份并排，各自列出自己的条目。
-       以前是「赛道分段 → 段内再按日周月分节」两层嵌套，一个 tab 下有两个赛道（SEM+社媒、SEO+GEO），
-       于是同一个「每周必做」标题会出现两次，整栏看下来全是小标题，条目反而被埋了。
-       赛道现在靠每行的浅色标签认（标签本身就带赛道前缀，如「社媒 · 领英+脸书」），不再单独分段。 */
     const grid=document.createElement('div');
     grid.className='sop-freqgrid';
     ['daily','weekly','monthly'].forEach(freq=>{
       const col=document.createElement('div');
       col.className='sop-freqcol';
-      // 列内先按赛道聚拢，再按文档行序 —— 同一个赛道的条目挨在一起，顺序还是老板表里的优先级顺序
-      const rows=list.filter(s=>s.freq===freq).sort((a,b)=>{
-        const ta=trackOf(a)||'', tb=trackOf(b)||'';
-        if(ta!==tb)return ta<tb?-1:1;
-        return (a.sort_order??9999)-(b.sort_order??9999)||((a.id||0)-(b.id||0));
-      });
+      // 排序走 compareSops：先时间线（周一→周五 / 第1周→第4周），再优先级，最后文档行序。
+      // 不按赛道聚拢——那样 SEM 排到周五、社媒又从周一重新开始，一列看下来时间来回跳。
+      const rows=byFreq[freq].slice().sort(compareSops);
       const done=rows.filter(sopDone).length;
       const fc=document.createElement('div');
       fc.className='sop-freq-cap';
-      fc.innerHTML=`<span>${esc(FREQ_LABEL[freq])}</span>`
+      const note=freq==='monthly'&&rolled.length
+        ? `<i class="sop-cap-note">本周 ${rolled.length} 条已并入左列</i>` : '';
+      fc.innerHTML=`<span>${esc(FREQ_LABEL[freq])}</span>${note}`
         +(rows.length?`<em class="${done===rows.length?'ok':''}">${done}/${rows.length}</em>`:'');
       col.appendChild(fc);
       if(!rows.length){
@@ -138,7 +145,7 @@ export function renderSopCards(){
       }else{
         const listBox=document.createElement('div');
         listBox.className='sop-list';
-        rows.forEach(s=>listBox.appendChild(sopCardEl(s)));
+        rows.forEach(s=>listBox.appendChild(sopCardEl(s,{rolled:rolledIds.has(s.id)})));
         col.appendChild(listBox);
       }
       grid.appendChild(col);
@@ -153,15 +160,22 @@ export function renderSopCards(){
    - 没周目标的（周一看数、月度复盘这类）→ 维持原来的勾，一个周期一次。
    每行都带 ⓘ 展开：为什么做 / 怎么做 / 完成标准 —— 这三栏是老板文档里就有的，
    以前只存了 content 一段话，执行人看不到判据，SOP 就退化成"点一下完事"。 */
-export function sopCardEl(s){
+export function sopCardEl(s,opts){
   const quota=hasQuota(s);
   const logged=isLogged(s);
   const done=sopDone(s);
   const row=document.createElement('div');
   row.className='tcard sop-row'+(done?' done':'');
   row.dataset.sopId=s.id; row.dataset.sopFreq=s.freq;
+  if(opts&&opts.rolled)row.classList.add('sop-rolled');
   const code=s.code?`<b class="sop-code">${esc(s.code)}</b> `:'';
-  const hint=s.time_hint?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:'';
+  // 优先级小旗：和任务卡同一套颜色（红/橙/蓝/灰）。优先级 4 不画实心旗，免得一列全是旗子。
+  const p=Number(sopPriority(s));
+  const flag=`<i class="ti ti-flag${p===4?'':'-filled'} sop-prio tprio-${p}" title="优先级${p}"></i>`;
+  // 从月列并过来的：标一下出身，否则在「每周必做」里看见一条月度动作会以为排错了
+  const rolledTag=(opts&&opts.rolled)?`<span class="sop-rolled-tag">月度${s.time_hint?' · '+esc(s.time_hint):''}</span>`:'';
+  // 并进周列的条目，时间提示已经写在「月度 · 每月第 1 周」徽章里了，右边不再重复一遍
+  const hint=(s.time_hint&&!(opts&&opts.rolled))?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:'';
   const left=quota
     ? `<span class="sop-qty${done?' ok':''}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>`
     : logged
@@ -177,7 +191,7 @@ export function sopCardEl(s){
   const metrics=metricsLine(s);
   const metricsHtml=metrics?`<div class="sop-metrics">${esc(metrics)}</div>`:'';
   row.innerHTML=left
-    +`<span class="sop-text">${code}${esc(s.title)}${tag}</span>`
+    +`<span class="sop-text">${flag}${code}${esc(s.title)}${tag}${rolledTag}</span>`
     +`<span class="sop-right">${hint}${logBtn}`
     +`<button type="button" class="btn-mini sop-info-btn" title="为什么做 / 怎么做 / 本周期做了哪几条"><i class="ti ti-info-circle"></i></button></span>`
     +metricsHtml;
@@ -316,6 +330,7 @@ export function openSopModal(sop){
   set('sop-target',sop?sop.target_qty:'');
   set('sop-unit',sop?sop.unit:'');
   set('sop-tag',sop?sop.tag:'');
+  set('sop-priority',sop&&sop.priority?String(sop.priority):'');
   set('sop-subject-label',sop?sop.subject_label:'');
   set('sop-why',sop?sop.why:'');
   set('sop-how',sop?sop.how:'');
@@ -338,7 +353,7 @@ export async function submitSop(){
   const body={dept,freq,title,content,time_hint,
     track:v('sop-track')||null, code:v('sop-code')||null,
     target_qty:n('sop-target'), unit:v('sop-unit')||null,
-    tag:v('sop-tag')||null, subject_label:v('sop-subject-label')||null,
+    tag:v('sop-tag')||null, priority:n('sop-priority'), subject_label:v('sop-subject-label')||null,
     why:v('sop-why')||null, how:v('sop-how')||null, done_when:v('sop-done-when')||null,
     metric:v('sop-metric')||null, effort_h:n('sop-effort')};
   try{

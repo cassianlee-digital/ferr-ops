@@ -971,6 +971,10 @@ export function migrate() {
     // 一眼认出这条是干啥的短标签，如「社媒 · 领英」「SEO · 文章」。
     // 和 track 分开：track 是归谁管（算配额用），tag 是做什么（认人眼用），一个赛道下有好几种活。
     ['tag', 'TEXT'],
+    // 优先级 1-4（1 最高），与任务卡那套旗子同口径。
+    // 留空时前端按文档的优先级列 / 编号推（见 public/src/sop-schedule.js sopPriority），
+    // 所以老条目不回填 —— 推出来的和填进去的是同一个结果，填了反而挡住以后改推导规则。
+    ['priority', 'INTEGER'],
     ['source', 'TEXT'],         // 来源文档标识，配合 code+track 做幂等导入
   ]);
   // 幂等导入的键取 (source, track, title)，不取 code：文档里「固定」在同一赛道出现两次

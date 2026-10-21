@@ -48,6 +48,7 @@ function defFields(b) {
     done_when: s(b.done_when, 1000),
     subject_label: s(b.subject_label, 40),
     tag: s(b.tag, 24),
+    priority: (() => { const v = Number(b.priority); return Number.isInteger(v) && v >= 1 && v <= 4 ? v : null; })(),
     sort_order: num(b.sort_order),
     source: s(b.source, 40),
   };
