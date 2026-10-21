@@ -408,28 +408,53 @@ function addWorkMins(fromMin, durMin){
 function minToHhmm(m){ const h=Math.floor(m/60), mm=m%60; return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
 function annotateTaskTimes(todayGroup){
   const cards=[...todayGroup.querySelectorAll(':scope > .tcard:not(.done)')];
-  let cursor=WORK_START_MIN; // 当前「前一个任务结束时间」
-  cards.forEach((card,i)=>{
+  // 第一步：收集所有有 task_hour 的任务，按完成时刻排序（早→晚）
+  const tasksWithTime=[];
+  cards.forEach(card=>{
+    const it=card._item||{};
+    const endMin=hourToMin(it.task_hour);
+    if(endMin!=null) tasksWithTime.push({card, it, endMin});
+  });
+  tasksWithTime.sort((a,b)=>a.endMin-b.endMin);
+
+  let prevEndMin=WORK_START_MIN; // 上一个任务的结束时间
+  tasksWithTime.forEach((task,i)=>{
+    const {card, it, endMin}=task;
     // 移除旧的徽章
     let old=card.querySelector('.tseq-badge'); if(old)old.remove();
     old=card.querySelector('.ttime-badge'); if(old)old.remove();
-    // 序号徽章
+    // 序号徽章：按完成时刻排序后的序号
     const seqEl=document.createElement('span'); seqEl.className='tseq-badge'; seqEl.textContent=String(i+1);
     const ttitle=card.querySelector('.ttitle'); if(ttitle)ttitle.prepend(seqEl);
-    // 时间段：只给有 task_hour 且未完成的卡
-    const it=card._item||{};
-    const endMin=hourToMin(it.task_hour);
-    if(endMin==null)return; // 没填预计完成时刻（或值脏了），跳过时间段计算
-    const startMin=cursor;
-    // 实际耗时（分钟），扣掉可能的午休
-    let workMins=endMin-startMin;
-    if(startMin<LUNCH_START_MIN && endMin>LUNCH_START_MIN) workMins-=(LUNCH_END_MIN-LUNCH_START_MIN);
-    workMins=Math.max(0,workMins);
+
+    // 检测时间重叠：当前任务的完成时刻 ≤ 上一个任务的完成时刻
+    const hasOverlap=endMin<=prevEndMin;
+    let startMin, workMins;
+
+    if(hasOverlap){
+      // 时间重叠：从完成时刻倒推，假设默认30分钟工时
+      // 这样至少能让时间显示合理，不会出现"11:00 → 09:30"这种倒流
+      const DEFAULT_WORK_MINS=30;
+      workMins=DEFAULT_WORK_MINS;
+      startMin=endMin-DEFAULT_WORK_MINS;
+      // 保证不早于工作开始时间
+      if(startMin<WORK_START_MIN) startMin=WORK_START_MIN;
+    }else{
+      // 正常串行：从上一个任务结束时间开始
+      startMin=prevEndMin;
+      // 实际耗时（分钟），扣掉可能的午休
+      workMins=endMin-startMin;
+      if(startMin<LUNCH_START_MIN && endMin>LUNCH_START_MIN) workMins-=(LUNCH_END_MIN-LUNCH_START_MIN);
+      workMins=Math.max(0,workMins);
+    }
+
     const hrs=workMins/60;
     const hrsStr=hrs===Math.floor(hrs)?String(hrs)+'h':hrs.toFixed(1)+'h';
     const dateStr=it.task_date?' · '+it.task_date.slice(5):''; // MM-DD
-    const badge=document.createElement('span'); badge.className='ttime-badge';
-    badge.textContent=minToHhmm(startMin)+' - '+minToHhmm(endMin)+' · 预计耗时 '+hrsStr+dateStr;
+    const overlapTag=hasOverlap?' ⚠ 重叠':''; // 标记时间重叠
+    const badge=document.createElement('span');
+    badge.className='ttime-badge'+(hasOverlap?' ttime-overlap':'');
+    badge.textContent=minToHhmm(startMin)+' - '+minToHhmm(endMin)+' · 预计耗时 '+hrsStr+dateStr+overlapTag;
     // 这枚徽章下面会把 .tdue 胶囊藏起来（信息重复）——但胶囊正是改期入口。
     // 不把入口挂到徽章上，排了时刻的今日任务就再也点不开日期弹层了。
     if(it.id){ badge.dataset.loopAction='task-date-pop'; badge.classList.add('task-date-pop'); badge.title='点击改期 / 改时刻'; }
@@ -438,7 +463,15 @@ function annotateTaskTimes(todayGroup){
     if(metaBox) metaBox.prepend(badge); else card.appendChild(badge);
     const duePill=metaBox&&metaBox.querySelector('.tdue');
     if(duePill) duePill.style.display='none';
-    cursor=endMin; // 下一个任务从这个结束时间开始
+
+    prevEndMin=endMin; // 更新为当前任务的结束时间
+  });
+
+  // 第二步：处理没有 task_hour 的任务卡（只加序号徽章）
+  cards.forEach((card,i)=>{
+    if(card.querySelector('.tseq-badge'))return; // 已处理过
+    const seqEl=document.createElement('span'); seqEl.className='tseq-badge'; seqEl.textContent=String(i+1);
+    const ttitle=card.querySelector('.ttitle'); if(ttitle)ttitle.prepend(seqEl);
   });
 }
 

@@ -936,8 +936,18 @@ body.dark #panel-tasks .tloop-done .tloop-label { background: #0f1f17; color: #4
   font-size: 11px;
   white-space: nowrap;
 }
+/* 时间重叠的任务：用警告色标记 */
+#panel-tasks .ttime-badge.ttime-overlap {
+  background: #fff7e8;
+  color: #b76a00;
+}
 body.dark #panel-tasks .ttime-badge {
   background: #141c2e;
+}
+body.dark #panel-tasks .ttime-badge.ttime-overlap {
+  background: #2a2113;
+  color: #d4a247;
+}
 }
 
 /* 页头「派发公司任务」小按钮：公司列隐藏时才显示，默认隐藏 */
@@ -1590,11 +1600,10 @@ body.dark .taudit-donewhen .taudit-label { background: #0f1f17; color: #4aab74; 
 #panel-tasks .sop-freqcol .sop-row .sop-qty,
 #panel-tasks .sop-freqcol .sop-row > .tcheck { align-self: flex-start; }
 
-/* 「今日」任务卡原本写死两列（1fr 1fr）。SOP 栏改成三等份、新增栏收到 40% 之后，
-   两列塞不下：实测 scrollWidth 570 > clientWidth 503，整栏横向溢出、出了一条滚动条。
-   改成按可用宽度自适应：放得下两列就两列，放不下就一列（单卡反而更宽、更好读）。 */
+/* 「今日」任务卡固定两列（用户要求 2026-10-21）：
+   auto-fit 会在宽度够时自动变成三列，但三列太挤、信息密度过高。 */
 #panel-tasks .tgroup[data-g="today"] {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr 1fr;
 }
 #panel-tasks .tgroup[data-g="today"] > .tcard { min-width: 0; }
 

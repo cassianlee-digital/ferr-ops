@@ -5741,7 +5741,8 @@
   }
   var TIME_OPTS = (() => {
     const out = [];
-    for (let m = 0; m < 24 * 60; m += 15) out.push(fmtHour(Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0")));
+    const startMin = 8 * 60 + 30;
+    for (let m = startMin; m < 24 * 60; m += 15) out.push(fmtHour(Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0")));
     return out;
   })();
   var WD = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"];
@@ -6926,8 +6927,16 @@
   }
   function annotateTaskTimes(todayGroup) {
     const cards = [...todayGroup.querySelectorAll(":scope > .tcard:not(.done)")];
-    let cursor = WORK_START_MIN;
-    cards.forEach((card2, i) => {
+    const tasksWithTime = [];
+    cards.forEach((card2) => {
+      const it = card2._item || {};
+      const endMin = hourToMin(it.task_hour);
+      if (endMin != null) tasksWithTime.push({ card: card2, it, endMin });
+    });
+    tasksWithTime.sort((a, b) => a.endMin - b.endMin);
+    let prevEndMin = WORK_START_MIN;
+    tasksWithTime.forEach((task, i) => {
+      const { card: card2, it, endMin } = task;
       let old = card2.querySelector(".tseq-badge");
       if (old) old.remove();
       old = card2.querySelector(".ttime-badge");
@@ -6937,19 +6946,26 @@
       seqEl.textContent = String(i + 1);
       const ttitle = card2.querySelector(".ttitle");
       if (ttitle) ttitle.prepend(seqEl);
-      const it = card2._item || {};
-      const endMin = hourToMin(it.task_hour);
-      if (endMin == null) return;
-      const startMin = cursor;
-      let workMins = endMin - startMin;
-      if (startMin < LUNCH_START_MIN && endMin > LUNCH_START_MIN) workMins -= LUNCH_END_MIN - LUNCH_START_MIN;
-      workMins = Math.max(0, workMins);
+      const hasOverlap = endMin <= prevEndMin;
+      let startMin, workMins;
+      if (hasOverlap) {
+        const DEFAULT_WORK_MINS = 30;
+        workMins = DEFAULT_WORK_MINS;
+        startMin = endMin - DEFAULT_WORK_MINS;
+        if (startMin < WORK_START_MIN) startMin = WORK_START_MIN;
+      } else {
+        startMin = prevEndMin;
+        workMins = endMin - startMin;
+        if (startMin < LUNCH_START_MIN && endMin > LUNCH_START_MIN) workMins -= LUNCH_END_MIN - LUNCH_START_MIN;
+        workMins = Math.max(0, workMins);
+      }
       const hrs = workMins / 60;
       const hrsStr = hrs === Math.floor(hrs) ? String(hrs) + "h" : hrs.toFixed(1) + "h";
       const dateStr = it.task_date ? " \xB7 " + it.task_date.slice(5) : "";
+      const overlapTag = hasOverlap ? " \u26A0 \u91CD\u53E0" : "";
       const badge3 = document.createElement("span");
-      badge3.className = "ttime-badge";
-      badge3.textContent = minToHhmm(startMin) + " - " + minToHhmm(endMin) + " \xB7 \u9884\u8BA1\u8017\u65F6 " + hrsStr + dateStr;
+      badge3.className = "ttime-badge" + (hasOverlap ? " ttime-overlap" : "");
+      badge3.textContent = minToHhmm(startMin) + " - " + minToHhmm(endMin) + " \xB7 \u9884\u8BA1\u8017\u65F6 " + hrsStr + dateStr + overlapTag;
       if (it.id) {
         badge3.dataset.loopAction = "task-date-pop";
         badge3.classList.add("task-date-pop");
@@ -6960,7 +6976,15 @@
       else card2.appendChild(badge3);
       const duePill = metaBox && metaBox.querySelector(".tdue");
       if (duePill) duePill.style.display = "none";
-      cursor = endMin;
+      prevEndMin = endMin;
+    });
+    cards.forEach((card2, i) => {
+      if (card2.querySelector(".tseq-badge")) return;
+      const seqEl = document.createElement("span");
+      seqEl.className = "tseq-badge";
+      seqEl.textContent = String(i + 1);
+      const ttitle = card2.querySelector(".ttitle");
+      if (ttitle) ttitle.prepend(seqEl);
     });
   }
   function subOwnerBadge(owner) {

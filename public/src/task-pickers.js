@@ -51,10 +51,11 @@ export function fmtHour(h) {
   if (min == null) return '';
   return String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0');
 }
-/* 15 分钟一档，00:00–23:45。Todoist 同款粒度；再细没人真的用得上。 */
+/* 15 分钟一档，08:30–23:45（上班时间开始）。Todoist 同款粒度；再细没人真的用得上。 */
 export const TIME_OPTS = (() => {
   const out = [];
-  for (let m = 0; m < 24 * 60; m += 15) out.push(fmtHour(Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0')));
+  const startMin = 8 * 60 + 30; // 08:30 开始
+  for (let m = startMin; m < 24 * 60; m += 15) out.push(fmtHour(Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0')));
   return out;
 })();
 
