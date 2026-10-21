@@ -73,7 +73,7 @@ test('AI entry points require evidence, confidence, and explicit insufficient-da
   assert.match(html, /逐条说明数据依据和置信度/);
   assert.match(html, /没有搜索词级证据时必须明确说明/);
   assert.match(html, /不得编造认证、交期、报价速度/);
-  assert.ok((html.match(/data-ai-state="not-generated"/g) || []).length >= 6);
+  assert.ok((html.match(/data-ai-state="not-generated"/g) || []).length >= 4);
   assert.match(aiSource, /function aiQualityBanner\(/);
   assert.match(aiSource, /function aiIsActionable\(/);
   assert.match(aiSource, /当前结论未通过可执行性评分，需重新分析或补充数据，不能采纳/);

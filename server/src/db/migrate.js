@@ -615,6 +615,7 @@ CREATE TABLE IF NOT EXISTS sop_completions (
   period_key    TEXT NOT NULL,                              -- daily=YYYY-MM-DD / weekly=YYYY-Www / monthly=YYYY-MM
   completed_at  TEXT NOT NULL DEFAULT (datetime('now')),
   completed_by  TEXT,                                       -- username
+  note          TEXT,                                       -- 固定周 SOP 的本周目标 / 一句话复盘
   UNIQUE(sop_id, period_key)
 );
 CREATE INDEX IF NOT EXISTS idx_sop_comp_period ON sop_completions(period_key);
@@ -976,6 +977,9 @@ export function migrate() {
     // 所以老条目不回填 —— 推出来的和填进去的是同一个结果，填了反而挡住以后改推导规则。
     ['priority', 'INTEGER'],
     ['source', 'TEXT'],         // 来源文档标识，配合 code+track 做幂等导入
+  ]);
+  ensureColumns('sop_completions', [
+    ['note', 'TEXT'],           // 固定周 SOP 的一句话内容；老记录保持 NULL，不补造
   ]);
   // 幂等导入的键取 (source, track, title)，不取 code：文档里「固定」在同一赛道出现两次
   // （周一看数 / 周五复盘），code 不唯一；动作名才是老板真正写下的那个身份。

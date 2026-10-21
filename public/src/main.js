@@ -44,7 +44,7 @@ import { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek,
 // 已迁移（批次10）：charts（时间筛选改为事件契约；模块消费者显式 import；仅 app.js 入口挂 window）。
 import { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadKpiInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters } from './charts.js';
 // 已迁移（批次11）：closed-loop（模块消费者显式 import；经典 app.js / hermes.js 仅保留必要入口）。
-import { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent } from './closed-loop.js';
+import { prepend, refreshTaskCols, addFixRow, addDepositRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent } from './closed-loop.js';
 // 已迁移（批次12）：ai（状态收回模块；keywords / charts 显式 import；仅 app.js 的动作分发和初始化保留兼容入口）。
 import { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi } from './ai.js';
 // 已迁移（批次13）：通用可编辑工具 + 设置/账户逻辑。
@@ -75,7 +75,7 @@ bindTableEditor();
 const inquiryCompatibility={openInquiry,submitInquiry,submitTrack,renderInqList,refreshInqStats};
 const kpiCompatibility={TOTAL,SEO,SEM,applyKpiServer,loadMetrics,loadWeeks,submitSeoWeek,submitSemWeek};
 const chartCompatibility={charts,loadDashboardInq,loadDashboardBoards,renderInqDonuts,loadKpiInqDonuts,loadSeoBoardGsc,loadSeoBoardFull,loadSemBoardAds,loadSemBoardFull,loadAttribution,loadDiagnostics,loadDataFreshness,onSemCampaignChange,onSemAdGroupChange,resizeScatters};
-const closedLoopCompatibility={prepend,refreshTaskCols,addFixRow,addDepositRow,addPlanRow,addTestRow,addContent,openTaskModal,submitTask,submitSubtask,loadClosedLoop,loadContent};
+const closedLoopCompatibility={prepend,refreshTaskCols,addFixRow,addDepositRow,addTestRow,addContent,openTaskModal,submitTask,submitSubtask,loadClosedLoop,loadContent};
 const aiCompatibility={runAiAnalysis,aiBox,loadAiAnalyses,adoptAi};
 const settingsCompatibility={bindSettings,openPwd,submitPwd};
 const rankSnapshotCompatibility={loadRankSnapshots,snapshotRanks};

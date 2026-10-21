@@ -48,7 +48,7 @@
 | `taskCheckins.js` | 跨天任务每日推进打卡 API。 |
 | `weeklyReports.js` | 复盘周报 API。 |
 
-## 后端服务（规则与业务逻辑）（44）
+## 后端服务（规则与业务逻辑）（45）
 
 `server/src/services/`
 
@@ -92,6 +92,7 @@
 | `sites.js` | 站点的规则（纯函数，不碰数据库）。 |
 | `sopDuplicate.js` | SOP 执行流水的「同一条证据被记了两次」软提醒。 |
 | `sopStats.js` | SOP 执行率的统计。 |
+| `sopWeeklyNotes.js` | 识别四个赛道中需要填写「本周目标 / 一句话复盘」的 8 条固定周 SOP。 |
 | `spend.js` | 投入台账的规则（纯函数，不碰数据库）：外链与其它支出的字段校验，以及「钱花在哪」的汇总。 |
 | `taskAudit.js` | 可审计任务的规则（纯函数，不碰数据库 —— 可被 node --test 直接 import）。 |
 | `taskAuditData.js` | 可审计任务的数据组装：给任务行补上关联键、证据截图、是否重要。 |
@@ -158,7 +159,7 @@
 | `scheduler.js` | 谷歌数据定时自动同步（进程内调度）。 |
 | `syncSites.js` | 多站点同步的编排：每天把所有启用的站点都同步一遍； |
 
-## 前端 ES 模块（打包进 dist/bundle.js）（51）
+## 前端 ES 模块（打包进 dist/bundle.js）（52）
 
 `public/src/`
 
@@ -214,7 +215,8 @@
 | `task-pickers.js` | 任务的优先级 / 日期 / 时刻选择器（ES 模块 · esbuild 打包为 IIFE）。 |
 | `timerange.js` | 时间范围筛选（ES 模块 · esbuild 打包为 IIFE）。 |
 | `ui-kit.js` | 全站 UI 基础工具（ES 模块 · esbuild 打包为 IIFE）—— 转义 / 弹窗 / toast 的**唯一实现**。 |
-| `weekly-review.js` | Weekly/monthly review workspace. |
+| `week-key.js` | 日计划与 SOP 共用的本地 ISO 周工具，负责跨月、跨年时的周次切换。 |
+| `weekly-review.js` | Weekly review workspace. |
 
 ## 前端经典脚本（不经打包，直接加载）（3）
 
@@ -291,7 +293,7 @@
 | `users` | 账号与角色（seo / sem / manager / boss）。 |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（57）
+## 测试（58）
 
 `server/test/`
 
@@ -353,6 +355,7 @@
 | `timeRangeIntegration.test.js` | 时间范围端到端契约：KPI、总览、询盘必须消费同一日期口径，且只读查询不能污染共享快照。 |
 | `updateHelper.test.js` | updateById：7 个仓库共用的「按白名单部分更新」helper。 |
 | `verifiedAiAnswer.test.js` | AI 回答的证据核验：没有证据的数据结论降级为待验证； |
+| `weekKey.test.js` | 验证前端 ISO 周工具在跨月、跨年边界仍能正确找到上周。 |
 | `weeklyReportKey.test.js` | 周报的周 / 月标识会原样出现在所有人的周报页上，所以只收固定的几种写法。 |
 
 ## 工具脚本（3）

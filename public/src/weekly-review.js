@@ -1,4 +1,4 @@
-/* Weekly/monthly review workspace.
+/* Weekly review workspace.
    Keeps the existing weekly_reports API and separates week keys from month keys. */
 
 import { esc, toast, toastGo } from './ui-kit.js';
@@ -10,13 +10,6 @@ const RV_SECTIONS = [
   ['problems', '② 遇到的问题', ['测试', '采纳']],
   ['analysis', '③ 分析', ['采纳']],
   ['next_plan', '④ 下周工作计划', []]
-];
-
-const RV_MONTH_SECTIONS = [
-  ['summary', '① 本月工作总结', []],
-  ['problems', '② 遇到的问题', ['测试', '采纳']],
-  ['analysis', '③ 分析', ['采纳']],
-  ['next_plan', '④ 下月工作计划', []]
 ];
 
 function rvPad2(n) { return String(n).padStart(2, '0'); }
@@ -47,11 +40,6 @@ function keyFromWeekStart(start) {
 
 function curWeekKey() {
   return keyFromWeekStart(reportWeekStart());
-}
-
-function curMonthKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth() + 1}-month`;
 }
 
 function parseWeekKey(key) {
@@ -94,11 +82,6 @@ function canonicalWeekKey(key) {
   return mon ? keyFromWeekStart(mon) : key;
 }
 
-function monthLabel(key) {
-  const p = parseMonthKey(key) || parseWeekKey(key);
-  return p ? `${p.year}年${p.month}月月报` : key;
-}
-
 function monthGroupLabel(monthKey) {
   const [year, month] = String(monthKey || '').split('-');
   return `${year}年${Number(month)}月周报`;
@@ -107,14 +90,6 @@ function monthGroupLabel(monthKey) {
 function sortWeekKeys(keys) {
   // 日期键 YYYY-MM-DD 按字符串倒序即为按时间倒序。
   return [...keys].sort((a, b) => String(b).localeCompare(String(a)));
-}
-
-function sortMonthKeys(keys) {
-  return [...keys].sort((a, b) => {
-    const pa = parseMonthKey(a) || { year: 0, month: 0 };
-    const pb = parseMonthKey(b) || { year: 0, month: 0 };
-    return (pb.year - pa.year) || (pb.month - pa.month);
-  });
 }
 
 function rvItemHtml(text, acts) {
@@ -230,33 +205,6 @@ export async function renderReview() {
   });
 }
 
-export async function renderMonthReview() {
-  const cur = curMonthKey();
-  let items = [];
-  try {
-    const r = await API.get('/api/weekly-reports?current=' + encodeURIComponent(cur));
-    items = r.items || [];
-  } catch (e) {}
-
-  const byMonth = {};
-  items.filter((it) => parseMonthKey(it.week_key)).forEach((it) => {
-    (byMonth[it.week_key] = byMonth[it.week_key] || {})[it.dept] = it;
-  });
-  if (!byMonth[cur]) byMonth[cur] = {};
-
-  const keys = sortMonthKeys(Object.keys(byMonth));
-  const acc = document.getElementById('month-review-acc');
-  if (!acc) return;
-  acc.innerHTML = keys.map((key) => {
-    const collapsed = key !== cur;
-    return `<div class="acc-week${collapsed ? ' collapsed' : ''}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel(key))} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">本月</span>' : ''}</div>
-      <div class="acc-body">${rvColHtml('SEO', byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml('SEM', byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
-    </div>`;
-  }).join('');
-  bindReviewActions(acc);
-}
-
 function rvSectionSave(sec) {
   if (!sec) return;
   const field = sec.dataset.field;
@@ -269,9 +217,7 @@ function rvSectionSave(sec) {
 function rvAdd(el) {
   const sec = el.closest('.rv-sec');
   const list = sec.querySelector('.rv-list');
-  const isMonth = !!parseMonthKey(sec.dataset.week);
-  const sections = isMonth ? RV_MONTH_SECTIONS : RV_SECTIONS;
-  const acts = (sections.find((s) => s[0] === sec.dataset.field) || [])[2] || [];
+  const acts = (RV_SECTIONS.find((s) => s[0] === sec.dataset.field) || [])[2] || [];
   const tmp = document.createElement('div');
   tmp.innerHTML = rvItemHtml('', acts);
   const node = tmp.firstChild;
@@ -311,7 +257,7 @@ async function rvAct(el, kind) {
 }
 
 document.addEventListener('focusout', (e) => {
-  const t = e.target.closest && e.target.closest('#review-acc .rv-list .txt, #month-review-acc .rv-list .txt');
+  const t = e.target.closest && e.target.closest('#review-acc .rv-list .txt');
   if (!t) return;
   rvSectionSave(t.closest('.rv-sec'));
 });

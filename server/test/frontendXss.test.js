@@ -152,7 +152,7 @@ test('weekly review is bundled with a narrow global compatibility surface', () =
   const exportedFunctions = [...weeklyReviewSource.matchAll(/export async function ([A-Za-z_$][\w$]*)/g)]
     .map((match) => match[1])
     .sort();
-  assert.deepEqual(exportedFunctions, ['renderMonthReview', 'renderReview']);
+  assert.deepEqual(exportedFunctions, ['renderReview']);
   assert.doesNotMatch(weeklyReviewSource, /export\s+(?:const|let|var|class|\{)/);
 });
 
@@ -296,7 +296,6 @@ test('closed-loop is bundled with explicit module dependencies and a narrow comp
     'addContent',
     'addDepositRow',
     'addFixRow',
-    'addPlanRow',
     'addTestRow',
     'loadClosedLoop',
     'loadContent',

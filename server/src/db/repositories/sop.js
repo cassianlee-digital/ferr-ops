@@ -73,14 +73,22 @@ export function completionsBetween(from, to) {
 }
 
 // 标记完成；UNIQUE(sop_id, period_key) 防重；冲突时返回已有记录（幂等）
-export function markComplete(sopId, periodKey, username) {
+export function markComplete(sopId, periodKey, username, note) {
   const exists = db.prepare(
     'SELECT * FROM sop_completions WHERE sop_id = ? AND period_key = ?'
   ).get(sopId, periodKey);
-  if (exists) return exists;
+  if (exists) {
+    if (note !== undefined) {
+      db.prepare(
+        'UPDATE sop_completions SET note = ?, completed_by = ? WHERE id = ?'
+      ).run(note, username || null, exists.id);
+      return db.prepare('SELECT * FROM sop_completions WHERE id = ?').get(exists.id);
+    }
+    return exists;
+  }
   const info = db.prepare(
-    `INSERT INTO sop_completions (sop_id, period_key, completed_by) VALUES (?, ?, ?)`
-  ).run(sopId, periodKey, username || null);
+    `INSERT INTO sop_completions (sop_id, period_key, completed_by, note) VALUES (?, ?, ?, ?)`
+  ).run(sopId, periodKey, username || null, note ?? null);
   return db.prepare('SELECT * FROM sop_completions WHERE id = ?').get(info.lastInsertRowid);
 }
 

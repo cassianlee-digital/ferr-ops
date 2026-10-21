@@ -199,7 +199,15 @@
     (前者是一份工作算两份,后者是往自己配额里灌水,两边该做的事不一样)。
     比对前先 `canonicalUrl()` 规范化:去 www / 末尾斜杠 / 锚点 / 跟踪参数(utm_*、fbclid…)、查询参数排序——
     SOP 自己就要求帖子链接打 UTM,逐字比等于白比。
-  - 单测 `server/test/sopEngine.test.js`(28 例)焊死配额口径、查重口径 + 任务优先级/时刻的边界校验。
+  - 单测 `server/test/sopEngine.test.js` 焊死配额口径、查重口径 + 任务优先级/时刻的边界校验。
+- **固定周目标 / 复盘已接到日计划顶部**(2026-10-21):SEM、社媒、SEO、GEO 的周一固定项必须填写本周目标，
+  周五固定项必须填写一句话复盘；保存文字才完成 SOP，不能再从普通流水接口绕过必填。
+  - 唯一数据源是 `sop_completions.note`，沿用 `(sop_id, period_key)` 唯一约束；顶部快捷填写、SOP 卡片填写和修改旧复盘都改同一行，
+    没有第二份目标表。老完成记录保持 `NULL`，界面如实显示「未填写」，不补造文字。
+  - 日计划顶部跟随人员 Tab：只展示当前人员负责的赛道。本周目标可直接编辑；上周复盘读取上一 ISO 周，只读展示并可进入原 SOP 补写或修改。
+    日期回放时隐藏这块，避免看历史日计划却误改当前周。
+  - `services/sopWeeklyNotes.js` 是哪些固定项要求文字的后端唯一判据，`GET /api/sop` 返回 `note_kind/note_prompt` 给前端照着显示。
+    周次计算统一走 `public/src/week-key.js`，跨月、跨年边界由 `server/test/weekKey.test.js` 锁住。
 - **SOP 执行率已沉淀进周报**(2026-08-13):`GET /api/sop/stats?from=&to=&today=`(`routes/sop.js`)+ 前端
   `public/src/sop-rate.js`(新模块,`mountSopRate` 被经典脚本 `weekly-review.js` 调用)。周报每个周卡片顶部横跨两列
   显示三方(李/陈/公司)的 `done/expected · %` + **漏了哪条哪几天**。分母三条诚实规则:**未来的日子不算**(`today` 由前端传,

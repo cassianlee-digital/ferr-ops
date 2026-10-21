@@ -12,19 +12,14 @@ import { esc, openModal, closeModal, toast } from './ui-kit.js';
 import { formatLocalDate } from './timerange.js';
 import { inlineConfirm } from './keywords.js';
 import { compareSops, dueThisWeek, sopPriority } from './sop-schedule.js';
+import { isoWeekKey, shiftIsoWeekKey } from './week-key.js';
 
 /* ===== SOP 引擎 Step B：周期 key / 加载 / 渲染 / 设置页 CRUD ===== */
 // period_key 按本地时间算，daily=YYYY-MM-DD / weekly=YYYY-Www / monthly=YYYY-MM
 export function sopPeriodKey(freq){
   const d=new Date(); d.setHours(0,0,0,0);
   if(freq==='monthly'){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'); return y+'-'+m; }
-  if(freq==='weekly'){
-    // ISO 周：周四确定年份；周一为本周起点
-    const tmp=new Date(d); tmp.setDate(tmp.getDate()+4-(tmp.getDay()||7));
-    const yearStart=new Date(tmp.getFullYear(),0,1);
-    const week=Math.ceil((((tmp-yearStart)/86400000)+1)/7);
-    return tmp.getFullYear()+'-W'+String(week).padStart(2,'0');
-  }
+  if(freq==='weekly')return isoWeekKey(d);
   return formatLocalDate(d);
 }
 window._sops=[]; window._sopDone={daily:new Set(),weekly:new Set(),monthly:new Set()};
@@ -36,6 +31,8 @@ const FREQ_TAG={daily:'日',weekly:'周',monthly:'月'};
    混进同一个完成率，考核就失真了。 */
 const DEPT_TRACKS={ SEM:['SEM','社媒'], SEO:['SEO','GEO'], 公司:['公司'] };
 window._sopProg=new Map(); window._sopLogs=new Map();
+window._sopCompletions=new Map(); window._sopPrevCompletions=new Map();
+let _sopCompletionError='';
 function periodQuery(){
   return 'daily='+encodeURIComponent(sopPeriodKey('daily'))
     +'&weekly='+encodeURIComponent(sopPeriodKey('weekly'))
@@ -43,6 +40,8 @@ function periodQuery(){
 }
 // 没导入过的老条目 track 是空的，按 dept 归位，别让它们从界面上消失
 const trackOf=s=>s.track||s.dept;
+const isWeeklyNote=s=>s&&s.freq==='weekly'&&(s.note_kind==='goal'||s.note_kind==='review');
+const completionFor=(s,previous=false)=>(previous?window._sopPrevCompletions:window._sopCompletions).get(s.id)||null;
 /* 两个判据，别混用：
    - logged：这条要不要走「记一条」流水。判据是 subject_label —— 它就是「这次做的是哪一个」，
      有对象可填才值得一条条记。「周一看数」周目标也写着 1 次，但它没有对象，维持原来的一个勾。
@@ -56,6 +55,7 @@ export function doneQty(s){
 // 一条 SOP 这周期算不算完成：有配额的看数量够不够，没配额的看勾打了没。
 // 两套判据必须分开——「周目标 5 篇」打了 1 个勾就算完成，正是老板要的数量考核做不出来的原因。
 export function sopDone(s){
+  if(isWeeklyNote(s))return !!completionFor(s)?.note;
   if(isLogged(s))return doneQty(s)>=(Number(s.target_qty)>0?Number(s.target_qty):1);
   return !!(window._sopDone[s.freq]&&window._sopDone[s.freq].has(s.id));
 }
@@ -66,11 +66,23 @@ export async function loadSops(){
     const q='daily='+encodeURIComponent(sopPeriodKey('daily'))
       +'&weekly='+encodeURIComponent(sopPeriodKey('weekly'))
       +'&monthly='+encodeURIComponent(sopPeriodKey('monthly'));
-    const {items}=await API.get('/api/sop/completions?'+q);
+    const previousWeek=shiftIsoWeekKey(sopPeriodKey('weekly'),-1);
+    const [current,previous]=await Promise.all([
+      API.get('/api/sop/completions?'+q),
+      API.get('/api/sop/completions?weekly='+encodeURIComponent(previousWeek)),
+    ]);
+    const items=current.items||[];
     window._sopDone={daily:new Set(),weekly:new Set(),monthly:new Set()};
+    window._sopCompletions=new Map(items.map(c=>[c.sop_id,c]));
+    window._sopPrevCompletions=new Map((previous.items||[]).map(c=>[c.sop_id,c]));
+    _sopCompletionError='';
     const keyToFreq={[sopPeriodKey('daily')]:'daily',[sopPeriodKey('weekly')]:'weekly',[sopPeriodKey('monthly')]:'monthly'};
     (items||[]).forEach(c=>{ const f=keyToFreq[c.period_key]; if(f)window._sopDone[f].add(c.sop_id); });
-  }catch(e){}
+  }catch(e){
+    window._sopDone={daily:new Set(),weekly:new Set(),monthly:new Set()};
+    window._sopCompletions=new Map(); window._sopPrevCompletions=new Map();
+    _sopCompletionError=(e&&e.message)||'请求失败';
+  }
   // v2：本周期执行流水 + 配额进度。两个接口分开拿——进度是聚合（画进度条），
   // 流水是明细（「这周都发了哪几条」），前端不自己从明细求和，免得和服务端 SUM 口径分叉。
   try{
@@ -87,6 +99,7 @@ export async function loadSops(){
     });
   }catch(e){ window._sopProg=new Map(); window._sopLogs=new Map(); }
   renderSopCards();
+  renderWeeklyFocus();
   renderSopSettingsTable();
   updateSopCounts();
   renderSopOverdueBanner(); // Step C：SOP 未做提示
@@ -162,6 +175,8 @@ export function renderSopCards(){
 export function sopCardEl(s,opts){
   const quota=hasQuota(s);
   const logged=isLogged(s);
+  const noted=isWeeklyNote(s);
+  const noteValue=noted?(completionFor(s)?.note||''):'';
   const done=sopDone(s);
   const row=document.createElement('div');
   row.className='tcard sop-row'+(done?' done':'');
@@ -175,13 +190,18 @@ export function sopCardEl(s,opts){
   const rolledTag=(opts&&opts.rolled)?`<span class="sop-rolled-tag">月度${s.time_hint?' · '+esc(s.time_hint):''}</span>`:'';
   // 并进周列的条目，时间提示已经写在「月度 · 每月第 1 周」徽章里了，右边不再重复一遍
   const hint=(s.time_hint&&!(opts&&opts.rolled))?`<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>`:'';
-  const left=quota
+  const left=noted
+    ? `<span class="sop-note-state${done?' ok':''}" title="${done?'已填写':'待填写'}"><i class="ti ti-${done?'check':'pencil'}"></i></span>`
+    : quota
     ? `<span class="sop-qty${done?' ok':''}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>`
     : logged
       ? `<span class="sop-qty${done?' ok':''}">${fmtQty(doneQty(s))}</span>`
       : `<span class="tcheck${done?' on':''}">${done?'<i class="ti ti-check"></i>':''}</span>`;
   const logBtn=logged
     ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> 记一条</button>`
+    : '';
+  const noteBtn=noted
+    ? `<button type="button" class="btn-mini sop-note-btn"><i class="ti ti-pencil"></i> ${noteValue?'修改':'填写'}</button>`
     : '';
   // 一眼认出这条是干啥的浅色小标签（社媒 · 领英+脸书 / SEO · 文章 …）。
   // 老条目没填 tag 就退回赛道名——总比什么都没有强，填了就按填的显示（设置页可改）。
@@ -191,9 +211,15 @@ export function sopCardEl(s,opts){
   const metricsHtml=metrics?`<div class="sop-metrics">${esc(metrics)}</div>`:'';
   row.innerHTML=left
     +`<span class="sop-text">${flag}${code}${esc(s.title)}${tag}${rolledTag}</span>`
-    +`<span class="sop-right">${hint}${logBtn}`
+    +`<span class="sop-right">${hint}${noteBtn}${logBtn}`
     +`<button type="button" class="btn-mini sop-info-btn" title="为什么做 / 怎么做 / 本周期做了哪几条"><i class="ti ti-info-circle"></i></button></span>`
     +metricsHtml;
+  if(noted){
+    const preview=document.createElement('div');
+    preview.className='sop-note-preview'+(noteValue?'':' is-empty');
+    preview.textContent=noteValue||('待填写：'+s.note_prompt);
+    row.appendChild(preview);
+  }
   // 完成标准放 title：它是一两句话，59 条每条都平铺会把这一栏撑废；
   // 挂成原生提示，鼠标停一下就能看见，不用先点开 ⓘ。
   if(s.done_when)row.title='完成标准：'+s.done_when;
@@ -252,6 +278,7 @@ function detailEl(s){
   if(s.effort_h!=null)meta.push('工时 '+fmtQty(s.effort_h)+'h');
   if(hasQuota(s))meta.push('周目标 '+fmtQty(s.target_qty)+(s.unit?' '+s.unit:''));
   if(meta.length)wrap.appendChild(fieldEl('口径',meta.join(' · ')));
+  if(isWeeklyNote(s))wrap.appendChild(fieldEl(s.note_prompt,completionFor(s)?.note||'未填写'));
   const logs=(window._sopLogs&&window._sopLogs.get(s.id))||[];
   const box=document.createElement('div'); box.className='sop-logs';
   if(!logs.length){
@@ -272,6 +299,113 @@ function detailEl(s){
   wrap.lastChild.querySelector('span').replaceWith(box);
   return wrap;
 }
+
+/* ===== 本周目标 / 上周复盘 =====
+   顶部只是同一条 SOP 完成记录的快捷入口，不另存一份：
+   周一目标写当前 ISO 周；周五复盘在下一周读取上一 ISO 周。 */
+const FOCUS_TRACKS={sem:['SEM','社媒'],seo:['SEO','GEO']};
+function weeklyNoteDef(track,kind){
+  return (window._sops||[]).find(s=>s.track===track&&s.note_kind===kind&&s.freq==='weekly')||null;
+}
+function focusRow(track,kind,periodKey){
+  const s=weeklyNoteDef(track,kind);
+  const row=document.createElement('div'); row.className='weekly-focus-row';
+  const label=document.createElement('b'); label.textContent=track; row.appendChild(label);
+  if(!s){
+    const missing=document.createElement('span'); missing.className='weekly-focus-missing';
+    missing.textContent='未配置对应的固定周 SOP'; row.appendChild(missing); return row;
+  }
+  const previous=kind==='review';
+  const completion=completionFor(s,previous);
+  if(kind==='goal'){
+    const input=document.createElement('textarea');
+    input.rows=1; input.maxLength=500; input.value=completion?.note||'';
+    input.setAttribute('aria-label',track+' 本周目标');
+    input.placeholder='写下这周最重要、可验证的目标…'; input.dataset.weeklyNoteInput=String(s.id);
+    const save=document.createElement('button'); save.type='button'; save.className='btn-primary btn-mini weekly-note-save';
+    save.dataset.sopId=String(s.id); save.dataset.periodKey=periodKey;
+    save.innerHTML='<i class="ti ti-device-floppy"></i> '+(completion?.note?'更新':'保存');
+    row.append(input,save);
+  }else{
+    const text=document.createElement('span'); text.className='weekly-focus-review'+(completion?.note?'':' is-empty');
+    text.textContent=completion?.note||'上周未填写复盘'; row.appendChild(text);
+    const edit=document.createElement('button'); edit.type='button'; edit.className='btn-mini weekly-note-edit';
+    edit.dataset.sopId=String(s.id); edit.dataset.periodKey=periodKey;
+    edit.textContent=completion?.note?'去修改':'去补写'; row.appendChild(edit);
+  }
+  return row;
+}
+function focusSection(title,subtitle,tracks,kind,periodKey){
+  const section=document.createElement('section'); section.className='weekly-focus-section weekly-focus-'+kind;
+  const head=document.createElement('div'); head.className='weekly-focus-section-head';
+  const h=document.createElement('strong'); h.textContent=title;
+  const sub=document.createElement('span'); sub.textContent=subtitle;
+  head.append(h,sub); section.appendChild(head);
+  tracks.forEach(track=>section.appendChild(focusRow(track,kind,periodKey)));
+  return section;
+}
+export function renderWeeklyFocus(){
+  const box=document.getElementById('weekly-focus'); if(!box)return;
+  const planDay=document.getElementById('planday-input')?.value;
+  if(planDay&&planDay!==formatLocalDate(new Date())){
+    box.innerHTML=''; box.classList.add('is-hidden'); return;
+  }
+  const active=document.querySelector('#panel-tasks .tboard .pblock.is-active');
+  const tab=active&&active.dataset.planTab;
+  const tracks=FOCUS_TRACKS[tab];
+  box.innerHTML='';
+  if(!tracks){ box.classList.add('is-hidden'); return; }
+  box.classList.remove('is-hidden');
+  const current=sopPeriodKey('weekly');
+  const previous=shiftIsoWeekKey(current,-1);
+  const head=document.createElement('div'); head.className='weekly-focus-head';
+  const title=document.createElement('strong'); title.textContent='每周目标与反馈';
+  const period=document.createElement('span'); period.textContent=current+' · 保存目标后自动完成对应周一 SOP';
+  head.append(title,period); box.appendChild(head);
+  if(_sopCompletionError){
+    const error=document.createElement('div'); error.className='weekly-focus-error';
+    error.textContent='目标与复盘加载失败：'+_sopCompletionError; box.appendChild(error); return;
+  }
+  box.appendChild(focusSection('本周目标','本周周一确定',tracks,'goal',current));
+  box.appendChild(focusSection('上周复盘',previous+' · 只读展示',tracks,'review',previous));
+}
+
+let _sopNoteEditing=null;
+function openSopNoteModal(s,periodKey=sopPeriodKey('weekly')){
+  _sopNoteEditing={s,periodKey};
+  const completion=periodKey===sopPeriodKey('weekly')?completionFor(s):completionFor(s,true);
+  document.getElementById('sopnote-title').textContent=(s.track||s.dept)+' · '+s.note_prompt;
+  document.getElementById('sopnote-week').textContent=periodKey;
+  document.getElementById('sopnote-standard').textContent=s.done_when||s.content||'';
+  const standard=document.getElementById('sopnote-standard-box');
+  standard.classList.toggle('is-hidden',!(s.done_when||s.content));
+  const input=document.getElementById('sopnote-text');
+  input.value=completion?.note||'';
+  input.placeholder=s.note_kind==='goal'?'写下这周最重要、可验证的目标…':'用一句话总结本周情况和下周调整…';
+  openModal('sopNoteMask'); setTimeout(()=>input.focus(),50);
+}
+async function saveWeeklyNote(s,periodKey,note,button){
+  const value=String(note||'').trim();
+  if(!value){ toast('请填写'+s.note_prompt); return false; }
+  if(button)button.disabled=true;
+  try{
+    await API.post('/api/sop/completions',{sop_id:Number(s.id),period_key:periodKey,note:value});
+    await loadSops();
+    toast(s.note_prompt+'已保存 · 对应 SOP 已完成');
+    return true;
+  }catch(e){
+    toast(e&&e.status===403?'无权操作，未入库':'保存失败：'+((e&&e.message)||'请求失败'));
+    return false;
+  }finally{ if(button&&button.isConnected)button.disabled=false; }
+}
+async function submitSopNote(button){
+  if(!_sopNoteEditing)return;
+  const {s,periodKey}=_sopNoteEditing;
+  const ok=await saveWeeklyNote(s,periodKey,document.getElementById('sopnote-text').value,button);
+  if(ok){ _sopNoteEditing=null; closeModal('sopNoteMask'); }
+}
+
+document.addEventListener('plantabchange',renderWeeklyFocus);
 
 export function updateSopCounts(){
   // SEM/SEO：SOP N · 新增 M；公司：SOP N · 派发 M（容器 id 用 newtask-company / kcount-company）
@@ -458,6 +592,28 @@ export function refreshNavTaskDot(){
 /* ===== v2：执行流水的三个交互（展开详情 / 记一条 / 撤销一条）=====
    用事件委托，零内联 handler（全站 onclick 已清零，别开倒车）。 */
 document.addEventListener('click',async e=>{
+  const focusSave=e.target.closest('.weekly-note-save');
+  if(focusSave){
+    const s=(window._sops||[]).find(x=>String(x.id)===focusSave.dataset.sopId);
+    const input=document.querySelector(`[data-weekly-note-input="${focusSave.dataset.sopId}"]`);
+    if(s&&input)await saveWeeklyNote(s,focusSave.dataset.periodKey,input.value,focusSave);
+    return;
+  }
+  const focusEdit=e.target.closest('.weekly-note-edit');
+  if(focusEdit){
+    const s=(window._sops||[]).find(x=>String(x.id)===focusEdit.dataset.sopId);
+    if(s)openSopNoteModal(s,focusEdit.dataset.periodKey);
+    return;
+  }
+  const note=e.target.closest('.sop-note-btn');
+  if(note){
+    const row=note.closest('.sop-row'); const id=row&&row.dataset.sopId;
+    const s=(window._sops||[]).find(x=>String(x.id)===String(id));
+    if(s)openSopNoteModal(s);
+    return;
+  }
+  const noteSubmit=e.target.closest('.sop-note-submit');
+  if(noteSubmit){ await submitSopNote(noteSubmit); return; }
   const info=e.target.closest('.sop-info-btn');
   if(info){
     const row=info.closest('.sop-row'); const d=row&&row.querySelector('.sop-detail');

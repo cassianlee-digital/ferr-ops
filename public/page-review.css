@@ -104,15 +104,13 @@
   cursor: pointer;
 }
 
-#panel-review .acc-month,
-#panel-month-review .acc-month {
+#panel-review .acc-month {
   margin-bottom: 12px;
   border: 1px solid #e5e6eb;
   background: #ffffff;
 }
 
-#panel-review .acc-month-bar,
-#panel-month-review .acc-month-bar {
+#panel-review .acc-month-bar {
   display: flex;
   align-items: center;
   min-height: 42px;
@@ -125,35 +123,29 @@
   cursor: pointer;
 }
 
-#panel-review .acc-month-bar .hicon,
-#panel-month-review .acc-month-bar .hicon {
+#panel-review .acc-month-bar .hicon {
   margin-right: 8px;
   color: #86909c;
   transition: transform .18s ease;
 }
 
-#panel-review .acc-month.collapsed .acc-month-bar,
-#panel-month-review .acc-month.collapsed .acc-month-bar {
+#panel-review .acc-month.collapsed .acc-month-bar {
   border-bottom-color: transparent;
 }
 
-#panel-review .acc-month.collapsed .acc-month-body,
-#panel-month-review .acc-month.collapsed .acc-month-body {
+#panel-review .acc-month.collapsed .acc-month-body {
   display: none;
 }
 
-#panel-review .acc-month.collapsed .acc-month-bar .hicon,
-#panel-month-review .acc-month.collapsed .acc-month-bar .hicon {
+#panel-review .acc-month.collapsed .acc-month-bar .hicon {
   transform: rotate(-90deg);
 }
 
-#panel-review .acc-month-body,
-#panel-month-review .acc-month-body {
+#panel-review .acc-month-body {
   padding: 12px;
 }
 
-#panel-review .rv-owner,
-#panel-month-review .rv-owner {
+#panel-review .rv-owner {
   margin-bottom: 12px !important;
   color: #1f2329 !important;
   font-size: 14px;
@@ -161,24 +153,18 @@
 }
 
 body.dark .content.planning-composite .planning-shell,
-body.dark .content.planning-composite #panel-plan .page-head,
 body.dark .content.planning-composite #panel-tasks .page-head,
 body.dark .content.planning-composite #panel-review .page-head,
-body.dark .content.planning-composite #panel-month-review .page-head,
 body.dark #panel-review .acc-month,
-body.dark #panel-month-review .acc-month,
-body.dark #panel-review .acc-month-bar,
-body.dark #panel-month-review .acc-month-bar {
+body.dark #panel-review .acc-month-bar {
   border-color: #273142 !important;
 }
 
-body.dark #panel-review .acc-month,
-body.dark #panel-month-review .acc-month {
+body.dark #panel-review .acc-month {
   background: #111827;
 }
 
-body.dark #panel-review .acc-month-bar,
-body.dark #panel-month-review .acc-month-bar {
+body.dark #panel-review .acc-month-bar {
   background: #0f172a;
   color: #e5e7eb;
 }

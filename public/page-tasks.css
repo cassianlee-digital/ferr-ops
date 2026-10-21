@@ -1427,6 +1427,70 @@ body.dark .taudit-donewhen .taudit-label { background: #0f1f17; color: #4aab74; 
   font-weight: 600;
 }
 
+/* 当前人员的周目标与上周反馈。内容来自固定周 SOP 的完成记录，不另建一份状态。 */
+#panel-tasks .weekly-focus {
+  margin: 0 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  overflow: hidden;
+}
+#panel-tasks .weekly-focus-head,
+#panel-tasks .weekly-focus-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+#panel-tasks .weekly-focus-head {
+  min-height: 40px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+}
+#panel-tasks .weekly-focus-head strong { color: var(--text1); font-size: 14px; }
+#panel-tasks .weekly-focus-head span,
+#panel-tasks .weekly-focus-section-head span { color: var(--text3); font-size: 11px; }
+#panel-tasks .weekly-focus-section { padding: 10px 14px; }
+#panel-tasks .weekly-focus-section + .weekly-focus-section { border-top: 1px solid var(--border); }
+#panel-tasks .weekly-focus-section-head { margin-bottom: 7px; }
+#panel-tasks .weekly-focus-section-head strong { color: var(--text1); font-size: 12px; }
+#panel-tasks .weekly-focus-review .weekly-focus-section-head strong { color: var(--primary); }
+#panel-tasks .weekly-focus-row {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+}
+#panel-tasks .weekly-focus-row + .weekly-focus-row { margin-top: 6px; }
+#panel-tasks .weekly-focus-row > b { color: var(--text2); font-size: 12px; }
+#panel-tasks .weekly-focus-row textarea {
+  width: 100%;
+  min-height: 34px;
+  max-height: 88px;
+  padding: 7px 9px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  color: var(--text1);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+}
+#panel-tasks .weekly-focus-row textarea:focus { border-color: var(--primary); outline: none; }
+#panel-tasks .weekly-focus-review,
+#panel-tasks .weekly-focus-missing { color: var(--text2); font-size: 12px; line-height: 1.6; }
+#panel-tasks .weekly-focus-review.is-empty,
+#panel-tasks .weekly-focus-missing { color: var(--text3); }
+#panel-tasks .weekly-focus-error { padding: 12px 14px; color: var(--danger); font-size: 12px; }
+
+@media (max-width: 760px) {
+  #panel-tasks .weekly-focus-head { align-items: flex-start; flex-direction: column; gap: 2px; }
+  #panel-tasks .weekly-focus-row { grid-template-columns: 42px minmax(0, 1fr); }
+  #panel-tasks .weekly-focus-row > button { grid-column: 2; justify-self: start; }
+}
+
 /* 看板不再是网格：一次只显示一块，宽度拉满 */
 #panel-tasks .tboard {
   display: block;
@@ -1561,6 +1625,29 @@ body.dark .taudit-donewhen .taudit-label { background: #0f1f17; color: #4aab74; 
   line-height: 1.5;
 }
 #panel-tasks .sop-row.done .sop-metrics { opacity: .6; }
+#panel-tasks .sop-note-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text3);
+  font-size: 12px;
+}
+#panel-tasks .sop-note-state.ok { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+#panel-tasks .sop-note-preview {
+  flex: 1 0 100%;
+  padding: 6px 8px;
+  border-left: 2px solid var(--primary);
+  background: var(--bg3);
+  color: var(--text2);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+#panel-tasks .sop-note-preview.is-empty { border-left-color: var(--border); color: var(--text3); }
 
 /* 两栏各自带滚动条，内容贴到右边缘会被滚动条压住（实测「本周期 0/10 达标」被切）。
    留出滚动条的宽度。 */

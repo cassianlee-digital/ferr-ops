@@ -4659,14 +4659,6 @@
           }
         }
       }
-      if (ep === "/api/loop-items" && kind === "status" && value === "\u5DF2\u5B8C\u6210" && (tr2.querySelector('[data-field="content"]') || {}).innerText) {
-        const dept = tr2.querySelector('[data-kind="dept"]');
-        const isSem = tr2.closest("#tb-plan-sem") != null;
-        const ak = isSem ? "sem" : "seo";
-        await API.post(ep + "/" + id + "/archive", { archive_kind: ak });
-        tr2.remove();
-        toast2("\u5DF2\u5B8C\u6210 \xB7 \u5DF2\u81EA\u52A8\u5F52\u6863");
-      }
     } catch (err) {
       const code = err && err.body && err.body.error;
       toast2(code === "attribution_locked" || code === "reason_required" ? err.message : err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
@@ -5073,6 +5065,7 @@
     renderSopOverdueBanner: () => renderSopOverdueBanner,
     renderSopSettingsTable: () => renderSopSettingsTable,
     renderUrgentBanner: () => renderUrgentBanner,
+    renderWeeklyFocus: () => renderWeeklyFocus,
     sopCardEl: () => sopCardEl,
     sopDone: () => sopDone,
     sopPeriodKey: () => sopPeriodKey,
@@ -5143,6 +5136,30 @@
     return { time, prio: sopPriority(s), clock: clockOf(s.time_hint), order: s.sort_order ?? 9999 };
   }
 
+  // public/src/week-key.js
+  var WEEK_RE = /^(\d{4})-W(\d{2})$/;
+  function isoWeekKey(value = /* @__PURE__ */ new Date()) {
+    const day = new Date(value);
+    if (Number.isNaN(day.getTime())) return null;
+    day.setHours(0, 0, 0, 0);
+    const thursday = new Date(day);
+    thursday.setDate(thursday.getDate() + 4 - (thursday.getDay() || 7));
+    const yearStart = new Date(thursday.getFullYear(), 0, 1);
+    const week = Math.ceil(((thursday - yearStart) / 864e5 + 1) / 7);
+    return `${thursday.getFullYear()}-W${String(week).padStart(2, "0")}`;
+  }
+  function shiftIsoWeekKey(key, offset) {
+    const match = WEEK_RE.exec(String(key || ""));
+    if (!match || !Number.isInteger(offset)) return null;
+    const year = Number(match[1]);
+    const week = Number(match[2]);
+    if (week < 1 || week > 53) return null;
+    const jan4 = new Date(year, 0, 4);
+    const monday = new Date(jan4);
+    monday.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1 + (week - 1 + offset) * 7);
+    return isoWeekKey(monday);
+  }
+
   // public/src/sop.js
   function sopPeriodKey(freq) {
     const d = /* @__PURE__ */ new Date();
@@ -5151,13 +5168,7 @@
       const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0");
       return y + "-" + m;
     }
-    if (freq === "weekly") {
-      const tmp = new Date(d);
-      tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7));
-      const yearStart = new Date(tmp.getFullYear(), 0, 1);
-      const week = Math.ceil(((tmp - yearStart) / 864e5 + 1) / 7);
-      return tmp.getFullYear() + "-W" + String(week).padStart(2, "0");
-    }
+    if (freq === "weekly") return isoWeekKey(d);
     return formatLocalDate(d);
   }
   window._sops = [];
@@ -5165,10 +5176,15 @@
   var FREQ_LABEL = { daily: "\u6BCF\u65E5\u5FC5\u505A", weekly: "\u6BCF\u5468\u5FC5\u505A", monthly: "\u6BCF\u6708\u5FC5\u505A" };
   window._sopProg = /* @__PURE__ */ new Map();
   window._sopLogs = /* @__PURE__ */ new Map();
+  window._sopCompletions = /* @__PURE__ */ new Map();
+  window._sopPrevCompletions = /* @__PURE__ */ new Map();
+  var _sopCompletionError = "";
   function periodQuery() {
     return "daily=" + encodeURIComponent(sopPeriodKey("daily")) + "&weekly=" + encodeURIComponent(sopPeriodKey("weekly")) + "&monthly=" + encodeURIComponent(sopPeriodKey("monthly"));
   }
   var trackOf = (s) => s.track || s.dept;
+  var isWeeklyNote = (s) => s && s.freq === "weekly" && (s.note_kind === "goal" || s.note_kind === "review");
+  var completionFor = (s, previous = false) => (previous ? window._sopPrevCompletions : window._sopCompletions).get(s.id) || null;
   var isLogged = (s) => !!s.subject_label;
   var hasQuota = (s) => isLogged(s) && Number(s.target_qty) > 0;
   function doneQty(s) {
@@ -5176,6 +5192,7 @@
     return r ? Number(r.done_qty) || 0 : 0;
   }
   function sopDone(s) {
+    if (isWeeklyNote(s)) return !!completionFor(s)?.note;
     if (isLogged(s)) return doneQty(s) >= (Number(s.target_qty) > 0 ? Number(s.target_qty) : 1);
     return !!(window._sopDone[s.freq] && window._sopDone[s.freq].has(s.id));
   }
@@ -5189,14 +5206,26 @@
     }
     try {
       const q = "daily=" + encodeURIComponent(sopPeriodKey("daily")) + "&weekly=" + encodeURIComponent(sopPeriodKey("weekly")) + "&monthly=" + encodeURIComponent(sopPeriodKey("monthly"));
-      const { items } = await API.get("/api/sop/completions?" + q);
+      const previousWeek = shiftIsoWeekKey(sopPeriodKey("weekly"), -1);
+      const [current2, previous] = await Promise.all([
+        API.get("/api/sop/completions?" + q),
+        API.get("/api/sop/completions?weekly=" + encodeURIComponent(previousWeek))
+      ]);
+      const items = current2.items || [];
       window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
+      window._sopCompletions = new Map(items.map((c) => [c.sop_id, c]));
+      window._sopPrevCompletions = new Map((previous.items || []).map((c) => [c.sop_id, c]));
+      _sopCompletionError = "";
       const keyToFreq = { [sopPeriodKey("daily")]: "daily", [sopPeriodKey("weekly")]: "weekly", [sopPeriodKey("monthly")]: "monthly" };
       (items || []).forEach((c) => {
         const f = keyToFreq[c.period_key];
         if (f) window._sopDone[f].add(c.sop_id);
       });
     } catch (e) {
+      window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
+      window._sopCompletions = /* @__PURE__ */ new Map();
+      window._sopPrevCompletions = /* @__PURE__ */ new Map();
+      _sopCompletionError = e && e.message || "\u8BF7\u6C42\u5931\u8D25";
     }
     try {
       const q = periodQuery();
@@ -5215,6 +5244,7 @@
       window._sopLogs = /* @__PURE__ */ new Map();
     }
     renderSopCards();
+    renderWeeklyFocus();
     renderSopSettingsTable();
     updateSopCounts();
     renderSopOverdueBanner();
@@ -5277,6 +5307,8 @@
   function sopCardEl(s, opts) {
     const quota = hasQuota(s);
     const logged = isLogged(s);
+    const noted = isWeeklyNote(s);
+    const noteValue = noted ? completionFor(s)?.note || "" : "";
     const done = sopDone(s);
     const row = document.createElement("div");
     row.className = "tcard sop-row" + (done ? " done" : "");
@@ -5288,13 +5320,20 @@
     const flag = `<i class="ti ti-flag${p === 4 ? "" : "-filled"} sop-prio tprio-${p}" title="\u4F18\u5148\u7EA7${p}"></i>`;
     const rolledTag = opts && opts.rolled ? `<span class="sop-rolled-tag">\u6708\u5EA6${s.time_hint ? " \xB7 " + esc(s.time_hint) : ""}</span>` : "";
     const hint = s.time_hint && !(opts && opts.rolled) ? `<span class="tdue"><i class="ti ti-clock"></i> ${esc(s.time_hint)}</span>` : "";
-    const left = quota ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>` : logged ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}</span>` : `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span>`;
+    const left = noted ? `<span class="sop-note-state${done ? " ok" : ""}" title="${done ? "\u5DF2\u586B\u5199" : "\u5F85\u586B\u5199"}"><i class="ti ti-${done ? "check" : "pencil"}"></i></span>` : quota ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}<i>/${fmtQty(s.target_qty)}</i></span>` : logged ? `<span class="sop-qty${done ? " ok" : ""}">${fmtQty(doneQty(s))}</span>` : `<span class="tcheck${done ? " on" : ""}">${done ? '<i class="ti ti-check"></i>' : ""}</span>`;
     const logBtn = logged ? `<button type="button" class="btn-mini sop-log-btn"><i class="ti ti-plus"></i> \u8BB0\u4E00\u6761</button>` : "";
+    const noteBtn = noted ? `<button type="button" class="btn-mini sop-note-btn"><i class="ti ti-pencil"></i> ${noteValue ? "\u4FEE\u6539" : "\u586B\u5199"}</button>` : "";
     const tagText = s.tag || trackOf(s) || "";
     const tag = tagText ? `<span class="sop-tag">${esc(tagText)}</span>` : "";
     const metrics = metricsLine(s);
     const metricsHtml = metrics ? `<div class="sop-metrics">${esc(metrics)}</div>` : "";
-    row.innerHTML = left + `<span class="sop-text">${flag}${code}${esc(s.title)}${tag}${rolledTag}</span><span class="sop-right">${hint}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u672C\u5468\u671F\u505A\u4E86\u54EA\u51E0\u6761"><i class="ti ti-info-circle"></i></button></span>` + metricsHtml;
+    row.innerHTML = left + `<span class="sop-text">${flag}${code}${esc(s.title)}${tag}${rolledTag}</span><span class="sop-right">${hint}${noteBtn}${logBtn}<button type="button" class="btn-mini sop-info-btn" title="\u4E3A\u4EC0\u4E48\u505A / \u600E\u4E48\u505A / \u672C\u5468\u671F\u505A\u4E86\u54EA\u51E0\u6761"><i class="ti ti-info-circle"></i></button></span>` + metricsHtml;
+    if (noted) {
+      const preview = document.createElement("div");
+      preview.className = "sop-note-preview" + (noteValue ? "" : " is-empty");
+      preview.textContent = noteValue || "\u5F85\u586B\u5199\uFF1A" + s.note_prompt;
+      row.appendChild(preview);
+    }
     if (s.done_when) row.title = "\u5B8C\u6210\u6807\u51C6\uFF1A" + s.done_when;
     if (quota) {
       const bar = document.createElement("div");
@@ -5346,6 +5385,7 @@
     if (s.effort_h != null) meta.push("\u5DE5\u65F6 " + fmtQty(s.effort_h) + "h");
     if (hasQuota(s)) meta.push("\u5468\u76EE\u6807 " + fmtQty(s.target_qty) + (s.unit ? " " + s.unit : ""));
     if (meta.length) wrap.appendChild(fieldEl("\u53E3\u5F84", meta.join(" \xB7 ")));
+    if (isWeeklyNote(s)) wrap.appendChild(fieldEl(s.note_prompt, completionFor(s)?.note || "\u672A\u586B\u5199"));
     const logs = window._sopLogs && window._sopLogs.get(s.id) || [];
     const box = document.createElement("div");
     box.className = "sop-logs";
@@ -5365,6 +5405,152 @@
     wrap.lastChild.querySelector("span").replaceWith(box);
     return wrap;
   }
+  var FOCUS_TRACKS = { sem: ["SEM", "\u793E\u5A92"], seo: ["SEO", "GEO"] };
+  function weeklyNoteDef(track, kind) {
+    return (window._sops || []).find((s) => s.track === track && s.note_kind === kind && s.freq === "weekly") || null;
+  }
+  function focusRow(track, kind, periodKey) {
+    const s = weeklyNoteDef(track, kind);
+    const row = document.createElement("div");
+    row.className = "weekly-focus-row";
+    const label = document.createElement("b");
+    label.textContent = track;
+    row.appendChild(label);
+    if (!s) {
+      const missing = document.createElement("span");
+      missing.className = "weekly-focus-missing";
+      missing.textContent = "\u672A\u914D\u7F6E\u5BF9\u5E94\u7684\u56FA\u5B9A\u5468 SOP";
+      row.appendChild(missing);
+      return row;
+    }
+    const previous = kind === "review";
+    const completion = completionFor(s, previous);
+    if (kind === "goal") {
+      const input = document.createElement("textarea");
+      input.rows = 1;
+      input.maxLength = 500;
+      input.value = completion?.note || "";
+      input.setAttribute("aria-label", track + " \u672C\u5468\u76EE\u6807");
+      input.placeholder = "\u5199\u4E0B\u8FD9\u5468\u6700\u91CD\u8981\u3001\u53EF\u9A8C\u8BC1\u7684\u76EE\u6807\u2026";
+      input.dataset.weeklyNoteInput = String(s.id);
+      const save2 = document.createElement("button");
+      save2.type = "button";
+      save2.className = "btn-primary btn-mini weekly-note-save";
+      save2.dataset.sopId = String(s.id);
+      save2.dataset.periodKey = periodKey;
+      save2.innerHTML = '<i class="ti ti-device-floppy"></i> ' + (completion?.note ? "\u66F4\u65B0" : "\u4FDD\u5B58");
+      row.append(input, save2);
+    } else {
+      const text2 = document.createElement("span");
+      text2.className = "weekly-focus-review" + (completion?.note ? "" : " is-empty");
+      text2.textContent = completion?.note || "\u4E0A\u5468\u672A\u586B\u5199\u590D\u76D8";
+      row.appendChild(text2);
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "btn-mini weekly-note-edit";
+      edit.dataset.sopId = String(s.id);
+      edit.dataset.periodKey = periodKey;
+      edit.textContent = completion?.note ? "\u53BB\u4FEE\u6539" : "\u53BB\u8865\u5199";
+      row.appendChild(edit);
+    }
+    return row;
+  }
+  function focusSection(title, subtitle, tracks, kind, periodKey) {
+    const section = document.createElement("section");
+    section.className = "weekly-focus-section weekly-focus-" + kind;
+    const head = document.createElement("div");
+    head.className = "weekly-focus-section-head";
+    const h4 = document.createElement("strong");
+    h4.textContent = title;
+    const sub = document.createElement("span");
+    sub.textContent = subtitle;
+    head.append(h4, sub);
+    section.appendChild(head);
+    tracks.forEach((track) => section.appendChild(focusRow(track, kind, periodKey)));
+    return section;
+  }
+  function renderWeeklyFocus() {
+    const box = document.getElementById("weekly-focus");
+    if (!box) return;
+    const planDay = document.getElementById("planday-input")?.value;
+    if (planDay && planDay !== formatLocalDate(/* @__PURE__ */ new Date())) {
+      box.innerHTML = "";
+      box.classList.add("is-hidden");
+      return;
+    }
+    const active = document.querySelector("#panel-tasks .tboard .pblock.is-active");
+    const tab = active && active.dataset.planTab;
+    const tracks = FOCUS_TRACKS[tab];
+    box.innerHTML = "";
+    if (!tracks) {
+      box.classList.add("is-hidden");
+      return;
+    }
+    box.classList.remove("is-hidden");
+    const current2 = sopPeriodKey("weekly");
+    const previous = shiftIsoWeekKey(current2, -1);
+    const head = document.createElement("div");
+    head.className = "weekly-focus-head";
+    const title = document.createElement("strong");
+    title.textContent = "\u6BCF\u5468\u76EE\u6807\u4E0E\u53CD\u9988";
+    const period = document.createElement("span");
+    period.textContent = current2 + " \xB7 \u4FDD\u5B58\u76EE\u6807\u540E\u81EA\u52A8\u5B8C\u6210\u5BF9\u5E94\u5468\u4E00 SOP";
+    head.append(title, period);
+    box.appendChild(head);
+    if (_sopCompletionError) {
+      const error = document.createElement("div");
+      error.className = "weekly-focus-error";
+      error.textContent = "\u76EE\u6807\u4E0E\u590D\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + _sopCompletionError;
+      box.appendChild(error);
+      return;
+    }
+    box.appendChild(focusSection("\u672C\u5468\u76EE\u6807", "\u672C\u5468\u5468\u4E00\u786E\u5B9A", tracks, "goal", current2));
+    box.appendChild(focusSection("\u4E0A\u5468\u590D\u76D8", previous + " \xB7 \u53EA\u8BFB\u5C55\u793A", tracks, "review", previous));
+  }
+  var _sopNoteEditing = null;
+  function openSopNoteModal(s, periodKey = sopPeriodKey("weekly")) {
+    _sopNoteEditing = { s, periodKey };
+    const completion = periodKey === sopPeriodKey("weekly") ? completionFor(s) : completionFor(s, true);
+    document.getElementById("sopnote-title").textContent = (s.track || s.dept) + " \xB7 " + s.note_prompt;
+    document.getElementById("sopnote-week").textContent = periodKey;
+    document.getElementById("sopnote-standard").textContent = s.done_when || s.content || "";
+    const standard = document.getElementById("sopnote-standard-box");
+    standard.classList.toggle("is-hidden", !(s.done_when || s.content));
+    const input = document.getElementById("sopnote-text");
+    input.value = completion?.note || "";
+    input.placeholder = s.note_kind === "goal" ? "\u5199\u4E0B\u8FD9\u5468\u6700\u91CD\u8981\u3001\u53EF\u9A8C\u8BC1\u7684\u76EE\u6807\u2026" : "\u7528\u4E00\u53E5\u8BDD\u603B\u7ED3\u672C\u5468\u60C5\u51B5\u548C\u4E0B\u5468\u8C03\u6574\u2026";
+    openModal("sopNoteMask");
+    setTimeout(() => input.focus(), 50);
+  }
+  async function saveWeeklyNote(s, periodKey, note, button) {
+    const value = String(note || "").trim();
+    if (!value) {
+      toast2("\u8BF7\u586B\u5199" + s.note_prompt);
+      return false;
+    }
+    if (button) button.disabled = true;
+    try {
+      await API.post("/api/sop/completions", { sop_id: Number(s.id), period_key: periodKey, note: value });
+      await loadSops();
+      toast2(s.note_prompt + "\u5DF2\u4FDD\u5B58 \xB7 \u5BF9\u5E94 SOP \u5DF2\u5B8C\u6210");
+      return true;
+    } catch (e) {
+      toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF0C\u672A\u5165\u5E93" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e && e.message || "\u8BF7\u6C42\u5931\u8D25"));
+      return false;
+    } finally {
+      if (button && button.isConnected) button.disabled = false;
+    }
+  }
+  async function submitSopNote(button) {
+    if (!_sopNoteEditing) return;
+    const { s, periodKey } = _sopNoteEditing;
+    const ok = await saveWeeklyNote(s, periodKey, document.getElementById("sopnote-text").value, button);
+    if (ok) {
+      _sopNoteEditing = null;
+      closeModal("sopNoteMask");
+    }
+  }
+  document.addEventListener("plantabchange", renderWeeklyFocus);
   function updateSopCounts() {
     [["SEM", "sem", "\u65B0\u589E"], ["SEO", "seo", "\u65B0\u589E"], ["\u516C\u53F8", "company", "\u6D3E\u53D1"]].forEach(([dept, key, verb]) => {
       const el5 = document.getElementById("kcount-" + key);
@@ -5594,6 +5780,32 @@
     dot.classList.toggle("is-hidden", !(overdue || urgent));
   }
   document.addEventListener("click", async (e) => {
+    const focusSave = e.target.closest(".weekly-note-save");
+    if (focusSave) {
+      const s = (window._sops || []).find((x) => String(x.id) === focusSave.dataset.sopId);
+      const input = document.querySelector(`[data-weekly-note-input="${focusSave.dataset.sopId}"]`);
+      if (s && input) await saveWeeklyNote(s, focusSave.dataset.periodKey, input.value, focusSave);
+      return;
+    }
+    const focusEdit = e.target.closest(".weekly-note-edit");
+    if (focusEdit) {
+      const s = (window._sops || []).find((x) => String(x.id) === focusEdit.dataset.sopId);
+      if (s) openSopNoteModal(s, focusEdit.dataset.periodKey);
+      return;
+    }
+    const note = e.target.closest(".sop-note-btn");
+    if (note) {
+      const row = note.closest(".sop-row");
+      const id = row && row.dataset.sopId;
+      const s = (window._sops || []).find((x) => String(x.id) === String(id));
+      if (s) openSopNoteModal(s);
+      return;
+    }
+    const noteSubmit = e.target.closest(".sop-note-submit");
+    if (noteSubmit) {
+      await submitSopNote(noteSubmit);
+      return;
+    }
     const info = e.target.closest(".sop-info-btn");
     if (info) {
       const row = info.closest(".sop-row");
@@ -5771,6 +5983,7 @@
       } catch (e) {
       }
     }
+    document.dispatchEvent(new CustomEvent("plantabchange", { detail: { tab: next } }));
   }
   function syncPlanTabs() {
     const ok = availableTabs();
@@ -6813,12 +7026,6 @@
     const id = s.dept === "SEM" ? "tb-test-sem" : "tb-test-seo";
     return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="variable">${esc(it.variable || "")}</td><td><input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[0])}"> ~ <input type="date" class="cell-date" data-field="period" value="${ymd((it.period || "").split("~")[1])}"></td><td class="editable" contenteditable data-field="conclusion">${esc(it.conclusion || "")}</td><td class="ctr"><button class="btn-mini row-dep" title="\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868"><i class="ti ti-database-heart"></i> \u6C89\u6DC0</button> <button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
   }
-  function addPlan(s, content, it) {
-    it = it || {};
-    const id = s.dept === "SEM" ? "tb-plan-sem" : "tb-plan-seo";
-    const status = it.status || "\u5F85\u5F00\u59CB";
-    return bindLoopRow(prepend(id, `<td class="editable" contenteditable data-field="content">${esc(content || it.content || "")}</td><td class="editable" contenteditable data-field="hypothesis">${esc(it.hypothesis || "")}</td><td class="editable" contenteditable data-field="metric">${esc(it.metric || "")}</td><td class="editable" contenteditable data-field="due_or_budget">${esc(it.due_or_budget || "")}</td><td class="ctr"><span class="tagselect b-gray" data-kind="status">${esc(status)}<i class="ti ti-chevron-down"></i></span></td><td class="ctr"><button class="btn-mini row-archive csp-s-b0e08465c2" title="\u5F52\u6863"><i class="ti ti-archive"></i></button></td>`), it);
-  }
   function coScope() {
     return { dept: "\u516C\u53F8", owner: "", c: "b-red" };
   }
@@ -7548,7 +7755,7 @@
     tb.appendChild(tr2);
   }
   function resetClosedLoopView() {
-    ["tb-fix", "tb-dep", "tb-test-sem", "tb-test-seo", "tb-plan-sem", "tb-plan-seo"].forEach((id) => {
+    ["tb-fix", "tb-dep", "tb-test-sem", "tb-test-seo"].forEach((id) => {
       const tb = document.getElementById(id);
       if (tb) tb.innerHTML = "";
     });
@@ -7562,7 +7769,7 @@
     if (depEmpty) depEmpty.style.display = "none";
   }
   function showLoopLoadFailure(e) {
-    [["tb-dep", 5, "\u6C89\u6DC0"], ["tb-test-sem", 6, "SEM \u6D4B\u8BD5"], ["tb-test-seo", 6, "SEO \u6D4B\u8BD5"], ["tb-plan-sem", 6, "SEM \u8BA1\u5212"], ["tb-plan-seo", 6, "SEO \u8BA1\u5212"]].forEach(([id, cols, label]) => showTableFailure(id, cols, label, e, loadClosedLoop));
+    [["tb-dep", 5, "\u6C89\u6DC0"], ["tb-test-sem", 6, "SEM \u6D4B\u8BD5"], ["tb-test-seo", 6, "SEO \u6D4B\u8BD5"]].forEach(([id, cols, label]) => showTableFailure(id, cols, label, e, loadClosedLoop));
     ["company", "sem", "seo"].forEach((key) => {
       const col = document.getElementById("newtask-" + key);
       if (!col) return;
@@ -7644,8 +7851,7 @@
         } else if (it.kind === "test") {
           addTest(s, it.content, it);
           aiDone.\u6D4B\u8BD5.add(aiFp(it.dept, it.content));
-        } else if (it.kind === "plan") addPlan(s, it.content, it);
-        else if (it.kind === "task") {
+        } else if (it.kind === "task") {
           if (it.parent_id) {
             _pendingSubtasks.push(it);
             return;
@@ -7727,21 +7933,6 @@
       const tb = document.getElementById("tb-dep");
       if (tb && !tb.children.length) document.getElementById("dep-empty").style.display = "block";
     }).catch((e) => toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25")));
-  }
-  async function addPlanRow(dept) {
-    const s = sFromDept(dept);
-    try {
-      const { item } = await persistLoop("plan", s, "\u65B0\u6708\u5EA6\u8BA1\u5212", "\u5F85\u5F00\u59CB");
-      const tr2 = addPlan(s, item.content, item);
-      const c = tr2 && tr2.querySelector('[data-field="content"]');
-      if (c) {
-        c.focus();
-        placeCaretEnd(c);
-      }
-      toast2("\u5DF2\u65B0\u589E" + dept + "\u8BA1\u5212 \xB7 \u5DF2\u5165\u5E93");
-    } catch (e) {
-      toast2(persistFailMsg(e));
-    }
   }
   async function addTestRow(dept) {
     const s = sFromDept(dept);
@@ -10045,11 +10236,16 @@
     _day = isToday ? null : day;
     const board = document.querySelector("#panel-tasks > .tboard");
     const hist = document.getElementById("plan-history");
+    const weeklyFocus = document.getElementById("weekly-focus");
     const hint = document.getElementById("planday-hint");
     const input = document.getElementById("planday-input");
     if (input) input.value = day || today2();
     if (board) board.style.display = isToday ? "" : "none";
     if (hist) hist.classList.toggle("is-hidden", isToday);
+    if (weeklyFocus) {
+      weeklyFocus.classList.toggle("is-hidden", !isToday);
+      if (isToday && typeof window.renderWeeklyFocus === "function") window.renderWeeklyFocus();
+    }
     if (hint) {
       hint.textContent = isToday ? "" : "\u56DE\u653E\u6A21\u5F0F \xB7 \u53EA\u8BFB";
       hint.className = "planday-hint" + (isToday ? "" : " on");
@@ -10084,7 +10280,6 @@
   // public/src/weekly-review.js
   var weekly_review_exports = {};
   __export(weekly_review_exports, {
-    renderMonthReview: () => renderMonthReview,
     renderReview: () => renderReview
   });
 
@@ -10150,12 +10345,6 @@
     ["analysis", "\u2462 \u5206\u6790", ["\u91C7\u7EB3"]],
     ["next_plan", "\u2463 \u4E0B\u5468\u5DE5\u4F5C\u8BA1\u5212", []]
   ];
-  var RV_MONTH_SECTIONS = [
-    ["summary", "\u2460 \u672C\u6708\u5DE5\u4F5C\u603B\u7ED3", []],
-    ["problems", "\u2461 \u9047\u5230\u7684\u95EE\u9898", ["\u6D4B\u8BD5", "\u91C7\u7EB3"]],
-    ["analysis", "\u2462 \u5206\u6790", ["\u91C7\u7EB3"]],
-    ["next_plan", "\u2463 \u4E0B\u6708\u5DE5\u4F5C\u8BA1\u5212", []]
-  ];
   function rvPad2(n) {
     return String(n).padStart(2, "0");
   }
@@ -10180,10 +10369,6 @@
   }
   function curWeekKey() {
     return keyFromWeekStart(reportWeekStart());
-  }
-  function curMonthKey() {
-    const d = /* @__PURE__ */ new Date();
-    return `${d.getFullYear()}-${d.getMonth() + 1}-month`;
   }
   function parseWeekKey(key) {
     const mon = mondayOf(key);
@@ -10219,23 +10404,12 @@
     const mon = mondayOf(key);
     return mon ? keyFromWeekStart(mon) : key;
   }
-  function monthLabel2(key) {
-    const p = parseMonthKey(key) || parseWeekKey(key);
-    return p ? `${p.year}\u5E74${p.month}\u6708\u6708\u62A5` : key;
-  }
   function monthGroupLabel(monthKey) {
     const [year, month2] = String(monthKey || "").split("-");
     return `${year}\u5E74${Number(month2)}\u6708\u5468\u62A5`;
   }
   function sortWeekKeys(keys) {
     return [...keys].sort((a, b) => String(b).localeCompare(String(a)));
-  }
-  function sortMonthKeys(keys) {
-    return [...keys].sort((a, b) => {
-      const pa = parseMonthKey(a) || { year: 0, month: 0 };
-      const pb = parseMonthKey(b) || { year: 0, month: 0 };
-      return pb.year - pa.year || pb.month - pa.month;
-    });
   }
   function rvItemHtml(text2, acts) {
     const btns = (acts || []).map((a) => `<button type="button" class="aibtn ${a === "\u91C7\u7EB3" ? "adopt" : "test"}" data-review-action="act" data-kind="${esc(a)}">${esc(a)}</button>`).join("");
@@ -10337,31 +10511,6 @@
       mountSopRate(el5);
     });
   }
-  async function renderMonthReview() {
-    const cur = curMonthKey();
-    let items = [];
-    try {
-      const r = await API.get("/api/weekly-reports?current=" + encodeURIComponent(cur));
-      items = r.items || [];
-    } catch (e) {
-    }
-    const byMonth = {};
-    items.filter((it) => parseMonthKey(it.week_key)).forEach((it) => {
-      (byMonth[it.week_key] = byMonth[it.week_key] || {})[it.dept] = it;
-    });
-    if (!byMonth[cur]) byMonth[cur] = {};
-    const keys = sortMonthKeys(Object.keys(byMonth));
-    const acc = document.getElementById("month-review-acc");
-    if (!acc) return;
-    acc.innerHTML = keys.map((key) => {
-      const collapsed = key !== cur;
-      return `<div class="acc-week${collapsed ? " collapsed" : ""}">
-      <div class="acc-bar" data-review-action="toggle"><i class="ti ti-chevron-down hicon"></i> ${esc(monthLabel2(key))} ${key === cur ? '<span class="badge b-green csp-s-4b17347c23">\u672C\u6708</span>' : ""}</div>
-      <div class="acc-body">${rvColHtml("SEO", byMonth[key].SEO, key, null, RV_MONTH_SECTIONS)}${rvColHtml("SEM", byMonth[key].SEM, key, null, RV_MONTH_SECTIONS)}</div>
-    </div>`;
-    }).join("");
-    bindReviewActions(acc);
-  }
   function rvSectionSave(sec) {
     if (!sec) return;
     const field3 = sec.dataset.field;
@@ -10373,9 +10522,7 @@
   function rvAdd(el5) {
     const sec = el5.closest(".rv-sec");
     const list = sec.querySelector(".rv-list");
-    const isMonth = !!parseMonthKey(sec.dataset.week);
-    const sections = isMonth ? RV_MONTH_SECTIONS : RV_SECTIONS;
-    const acts = (sections.find((s) => s[0] === sec.dataset.field) || [])[2] || [];
+    const acts = (RV_SECTIONS.find((s) => s[0] === sec.dataset.field) || [])[2] || [];
     const tmp = document.createElement("div");
     tmp.innerHTML = rvItemHtml("", acts);
     const node = tmp.firstChild;
@@ -10412,7 +10559,7 @@
     }
   }
   document.addEventListener("focusout", (e) => {
-    const t = e.target.closest && e.target.closest("#review-acc .rv-list .txt, #month-review-acc .rv-list .txt");
+    const t = e.target.closest && e.target.closest("#review-acc .rv-list .txt");
     if (!t) return;
     rvSectionSave(t.closest(".rv-sec"));
   });
@@ -13000,7 +13147,6 @@
     "ai-box": (el5) => aiBox(el5, el5.dataset.aiPrompt),
     "ai-ask": (el5) => runAiAnalysis(el5, el5.dataset.aiPrompt, el5.dataset.aiTitle, false),
     "open-inquiry": () => openInquiry(),
-    "add-plan": (el5) => addPlanRow(el5.dataset.dept),
     "add-test": (el5) => addTestRow(el5.dataset.dept),
     "snapshot-ranks": () => snapshotRanks(),
     "reload-ga4": () => loadGa42(),
@@ -13101,7 +13247,7 @@
   function setPlanningTab2(tab) {
     const content = document.querySelector(".content");
     if (!content) return;
-    const active = tab || "daily";
+    const active = tab === "week" ? "week" : "daily";
     content.dataset.planTab = active;
     document.querySelectorAll(".planning-tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.planTab === active));
     try {
@@ -13111,12 +13257,6 @@
     if (active === "week") {
       try {
         renderReview();
-      } catch (e) {
-      }
-    }
-    if (active === "month-summary") {
-      try {
-        renderMonthReview();
       } catch (e) {
       }
     }
@@ -13163,7 +13303,7 @@
     document.querySelectorAll(".panel").forEach((x) => x.classList.remove("active"));
     document.querySelectorAll(".nav-item").forEach((n2) => n2.classList.remove("active"));
     if (planCombo) {
-      ["tasks", "plan", "review", "month-review"].forEach((id) => {
+      ["tasks", "review"].forEach((id) => {
         const panel = document.getElementById("panel-" + id);
         if (panel) panel.classList.add("active");
       });
@@ -13552,7 +13692,7 @@
   var inquiryCompatibility = { openInquiry, submitInquiry, submitTrack, renderInqList, refreshInqStats };
   var kpiCompatibility = { TOTAL, SEO, SEM, applyKpiServer, loadMetrics, loadWeeks, submitSeoWeek, submitSemWeek };
   var chartCompatibility = { charts, loadDashboardInq, loadDashboardBoards, renderInqDonuts, loadKpiInqDonuts, loadSeoBoardGsc, loadSeoBoardFull, loadSemBoardAds, loadSemBoardFull, loadAttribution, loadDiagnostics, loadDataFreshness, onSemCampaignChange, onSemAdGroupChange, resizeScatters };
-  var closedLoopCompatibility = { prepend, refreshTaskCols, addFixRow, addDepositRow, addPlanRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent };
+  var closedLoopCompatibility = { prepend, refreshTaskCols, addFixRow, addDepositRow, addTestRow, addContent, openTaskModal, submitTask, submitSubtask, loadClosedLoop, loadContent };
   var aiCompatibility = { runAiAnalysis, aiBox, loadAiAnalyses, adoptAi };
   var settingsCompatibility = { bindSettings, openPwd, submitPwd };
   var rankSnapshotCompatibility = { loadRankSnapshots, snapshotRanks };

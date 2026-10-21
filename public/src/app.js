@@ -11,7 +11,7 @@ import { adoptAi, aiBox, loadAiAnalyses, runAiAnalysis } from './ai.js';
 import { loadArchive } from './archive.js';
 import { exportAudit, loadAudit, runAuditAi } from './audit.js';
 import { charts, loadAttribution, loadDashboardBoards, loadDashboardInq, loadDataFreshness, loadDiagnostics, loadSemBoardAds, loadSemBoardFull, loadSeoBoardFull, loadSeoBoardGsc, onSemAdGroupChange, onSemCampaignChange, resizeScatters, toggleHier } from './charts.js';
-import { addContent, addDepositRow, addFixRow, addPlanRow, addTestRow, loadClosedLoop, loadContent, openTaskModal, prepend, refreshTaskCols, submitSubtask, submitTask } from './closed-loop.js';
+import { addContent, addDepositRow, addFixRow, addTestRow, loadClosedLoop, loadContent, openTaskModal, prepend, refreshTaskCols, submitSubtask, submitTask } from './closed-loop.js';
 import { initPlanTabs } from './plan-tabs.js';
 import { loadGa4 } from './ga4-view.js';
 import { loadGeo } from './geo.js';
@@ -39,7 +39,7 @@ import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdue
 import { getRangeRevision, submitCustomRange, syncRangeUi, withRange } from './timerange.js';
 import { addTaskLink, openTaskDone, pickTaskEvidence, pickTaskDocuments, submitTaskDone } from './task-audit.js';
 import { closeModal, esc, tableLoadState, toast, toastUndo } from './ui-kit.js';
-import { renderMonthReview, renderReview } from './weekly-review.js';
+import { renderReview } from './weekly-review.js';
 
 /* ---------- helpers ---------- */
 /* ================= STORAGE LAYER (universal) =================
@@ -74,7 +74,6 @@ const STATIC_UI_ACTIONS={
   'ai-box':el=>aiBox(el,el.dataset.aiPrompt),
   'ai-ask':el=>runAiAnalysis(el,el.dataset.aiPrompt,el.dataset.aiTitle,false),
   'open-inquiry':()=>openInquiry(),
-  'add-plan':el=>addPlanRow(el.dataset.dept),
   'add-test':el=>addTestRow(el.dataset.dept),
   'snapshot-ranks':()=>snapshotRanks(),
   'reload-ga4':()=>loadGa4(),
@@ -164,12 +163,11 @@ function toggleTheme(){ document.body.classList.toggle('dark'); const dk=documen
 export function setPlanningTab(tab){
   const content=document.querySelector('.content');
   if(!content)return;
-  const active=tab||'daily';
+  const active=tab==='week'?'week':'daily';
   content.dataset.planTab=active;
   document.querySelectorAll('.planning-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.planTab===active));
   try{localStorage.setItem('ferr:planningTab',active);}catch(e){}
   if(active==='week'){try{renderReview();}catch(e){}}
-  if(active==='month-summary'){try{renderMonthReview();}catch(e){}}
 }
 export function setActionTab(tab){
   const content=document.querySelector('.content');
@@ -187,7 +185,7 @@ function mountGa4IntoData(){
   ga4.classList.add('ga4-embedded');
   if(ga4.parentElement!==host)host.appendChild(ga4);
 }
-export function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','plan','review','month-review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n){n.classList.add('active');if(window.matchMedia('(max-width:760px)').matches)n.scrollIntoView({block:'nearest',inline:'center'});} document.querySelector('.main').scrollTo({top:0}); window.scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
+export function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:data','data-ga4');}catch(e){} tab='data'; } mountGa4IntoData(); const planCombo=tab==='planning'; const actionCombo=tab==='action'; const p=planCombo?document.getElementById('panel-tasks'):(actionCombo?document.getElementById('panel-test'):document.getElementById('panel-'+tab)); if(!p)return; const content=document.querySelector('.content'); if(content){ content.classList.toggle('planning-composite',planCombo); content.classList.toggle('action-composite',actionCombo); if(!planCombo)delete content.dataset.planTab; if(!actionCombo)delete content.dataset.actionTab; } document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); if(planCombo){ ['tasks','review'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let planTab='daily'; try{ planTab=localStorage.getItem('ferr:planningTab')||'daily'; }catch(e){} setPlanningTab(planTab); } else if(actionCombo){ ['test','fix'].forEach(id=>{ const panel=document.getElementById('panel-'+id); if(panel)panel.classList.add('active'); }); let actionTab='test'; try{ actionTab=localStorage.getItem('ferr:actionTab')||'test'; }catch(e){} setActionTab(actionTab); } else { p.classList.add('active'); } const n=document.querySelector('.nav-item[data-tab="'+tab+'"]'); if(n){n.classList.add('active');if(window.matchMedia('(max-width:760px)').matches)n.scrollIntoView({block:'nearest',inline:'center'});} document.querySelector('.main').scrollTo({top:0}); window.scrollTo({top:0}); window._curTab=tab; try{localStorage.setItem('ferr:tab',tab);}catch(e){} if(tab==='data')resizeScatters();
   if(tab==='risks'){try{loadRisks();}catch(e){}}
   if(tab==='dashboard'){try{loadGeo();}catch(e){}} // GEO 卡含人工抽查结果，别的页刚录完回来要是新的
   if(tab==='inquiry'){ setTimeout(()=>{try{renderGlobe();}catch(e){}},80); refreshLeadBadge(); } // 线索随时会进来，每次进页都重数一遍待处理数
@@ -383,7 +381,7 @@ export function chk(el){
    — renderMarket / loadMarket / 市场单元格 focusout 保存 / loadBrain / refreshBrain */
 
 /* 复盘周报已迁移至 src/weekly-review.js（阶段4-A / 批次7）
-   — 周报工作区已迁入 src/weekly-review.js，仅 renderReview/renderMonthReview 保留全局兼容入口 */
+   — 周报工作区已迁入 src/weekly-review.js，仅 renderReview 保留全局兼容入口 */
 
 /* 通用单元格保存、日期回滚和表格键盘导航已迁移至 public/src/table-editor.js。 */
 

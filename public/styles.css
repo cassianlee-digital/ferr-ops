@@ -606,7 +606,6 @@ body.dark #integ-rows>.sheet-tip{
   mix-blend-mode: normal !important;
 }
 
-#panel-plan .ai-item,
 #panel-test .ai-item,
 #panel-fix .ai-item,
 #panel-data .ai-item,
@@ -615,7 +614,6 @@ body.dark #integ-rows>.sheet-tip{
   align-items: center !important;
 }
 
-#panel-plan .ai-item > i,
 #panel-test .ai-item > i,
 #panel-fix .ai-item > i,
 #panel-data .ai-item > i,
@@ -623,7 +621,6 @@ body.dark #integ-rows>.sheet-tip{
   grid-column: 1 !important;
 }
 
-#panel-plan .ai-item > .body,
 #panel-test .ai-item > .body,
 #panel-fix .ai-item > .body,
 #panel-data .ai-item > .body,
@@ -632,7 +629,6 @@ body.dark #integ-rows>.sheet-tip{
   min-width: 0 !important;
 }
 
-#panel-plan .ai-item > .ai-actions,
 #panel-test .ai-item > .ai-actions,
 #panel-fix .ai-item > .ai-actions,
 #panel-data .ai-item > .ai-actions,
@@ -648,7 +644,6 @@ body.dark #integ-rows>.sheet-tip{
   min-width: max-content !important;
 }
 
-#panel-plan .ai-actions .aibtn,
 #panel-test .ai-actions .aibtn,
 #panel-fix .ai-actions .aibtn,
 #panel-data .ai-actions .aibtn,
@@ -657,7 +652,6 @@ body.dark #integ-rows>.sheet-tip{
 }
 
 @media (max-width: 760px) {
-  #panel-plan .ai-item,
   #panel-test .ai-item,
   #panel-fix .ai-item,
   #panel-data .ai-item,
@@ -665,7 +659,6 @@ body.dark #integ-rows>.sheet-tip{
     grid-template-columns: 20px minmax(0, 1fr) !important;
   }
 
-  #panel-plan .ai-item > .ai-actions,
   #panel-test .ai-item > .ai-actions,
   #panel-fix .ai-item > .ai-actions,
   #panel-data .ai-item > .ai-actions,
@@ -1635,7 +1628,6 @@ table.dt tbody tr:nth-child(even):hover {
 
 /* ---- Aliyun workflow pages pass: tasks / plan / test / fixes / settings ---- */
 #panel-tasks,
-#panel-plan,
 #panel-test,
 #panel-fix,
 #panel-settings {
@@ -1643,7 +1635,6 @@ table.dt tbody tr:nth-child(even):hover {
 }
 
 #panel-tasks .page-head,
-#panel-plan .page-head,
 #panel-test .page-head,
 #panel-fix .page-head,
 #panel-settings .page-head {
@@ -1654,7 +1645,6 @@ table.dt tbody tr:nth-child(even):hover {
 }
 
 #panel-tasks .page-title,
-#panel-plan .page-title,
 #panel-test .page-title,
 #panel-fix .page-title,
 #panel-settings .page-title {
@@ -1663,7 +1653,6 @@ table.dt tbody tr:nth-child(even):hover {
 }
 
 #panel-tasks .page-sub,
-#panel-plan .page-sub,
 #panel-test .page-sub,
 #panel-fix .page-sub,
 #panel-settings .page-sub {
@@ -1672,7 +1661,6 @@ table.dt tbody tr:nth-child(even):hover {
   font-size: 12px;
 }
 
-#panel-plan .cols2,
 #panel-test .cols2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1680,7 +1668,6 @@ table.dt tbody tr:nth-child(even):hover {
   align-items: stretch;
 }
 
-#panel-plan .cols2 > .col,
 #panel-test .cols2 > .col {
   min-width: 0;
   padding: 16px;
@@ -1689,7 +1676,6 @@ table.dt tbody tr:nth-child(even):hover {
   background: #ffffff;
 }
 
-#panel-plan .col-cap,
 #panel-test .col-cap {
   min-height: 28px;
   margin: 0 0 12px;
@@ -1700,12 +1686,10 @@ table.dt tbody tr:nth-child(even):hover {
   font-weight: 500;
 }
 
-#panel-plan .sheet-toolbar,
 #panel-test .sheet-toolbar {
   margin-bottom: 12px;
 }
 
-#panel-plan .card,
 #panel-test .card,
 #panel-fix .card {
   margin-bottom: 12px !important;
@@ -1713,13 +1697,11 @@ table.dt tbody tr:nth-child(even):hover {
   overflow: hidden;
 }
 
-#panel-plan table.dt,
 #panel-test table.dt,
 #panel-fix table.dt {
   border-width: 0;
 }
 
-#panel-plan table.dt th,
 #panel-test table.dt th,
 #panel-fix table.dt th {
   height: 38px;
@@ -1727,7 +1709,6 @@ table.dt tbody tr:nth-child(even):hover {
   color: #4e5969;
 }
 
-#panel-plan table.dt td,
 #panel-test table.dt td,
 #panel-fix table.dt td {
   min-height: 44px;
@@ -1928,7 +1909,6 @@ table.dt td.editable:focus,
 }
 
 @media (max-width: 1180px) {
-  #panel-plan .cols2,
   #panel-test .cols2,
   #panel-tasks .tboard {
     grid-template-columns: 1fr;
@@ -1948,12 +1928,10 @@ table.dt td.editable:focus,
 }
 
 /* ---- Aliyun detail pass: empty states, control density, config lists ---- */
-#panel-plan .card:has(tbody:empty),
 #panel-test .card:has(tbody:empty) {
   position: relative;
 }
 
-#panel-plan .card:has(tbody:empty)::after,
 #panel-test .card:has(tbody:empty)::after {
   content: "暂无记录，点击上方新增";
   display: flex;
@@ -1966,7 +1944,6 @@ table.dt td.editable:focus,
   font-size: 13px;
 }
 
-#panel-plan .sheet-toolbar,
 #panel-test .sheet-toolbar,
 #panel-fix .page-head > div:last-child {
   display: flex;
@@ -1975,30 +1952,25 @@ table.dt td.editable:focus,
   gap: 8px;
 }
 
-#panel-plan .btn-primary,
 #panel-test .btn-primary,
 #panel-fix .btn-primary {
   height: 32px;
 }
 
-#panel-plan .ai-box,
 #panel-test .ai-box {
   min-height: 78px;
 }
 
-#panel-plan .ai-header,
 #panel-test .ai-header,
 #panel-fix .ai-header {
   margin-bottom: 4px;
 }
 
-#panel-plan .ai-actions,
 #panel-test .ai-actions,
 #panel-fix .ai-actions {
   gap: 6px;
 }
 
-#panel-plan .ai-item:last-child,
 #panel-test .ai-item:last-child,
 #panel-fix .ai-item:last-child {
   padding-bottom: 0;
@@ -2344,7 +2316,6 @@ table.dt td.editable:focus,
 }
 
 /* ---- Aliyun plan/test focus pass: disciplined workbench layout ---- */
-#panel-plan,
 #panel-test {
   --work-border: #e5e8ef;
   --work-soft: #f7f9fc;
@@ -2354,18 +2325,15 @@ table.dt td.editable:focus,
   --work-purple: #7b61ff;
 }
 
-#panel-plan .page-head,
 #panel-test .page-head {
   margin-bottom: 14px;
 }
 
-#panel-plan .cols2,
 #panel-test .cols2 {
   gap: 14px;
   align-items: start;
 }
 
-#panel-plan .cols2 > .col,
 #panel-test .cols2 > .col {
   position: relative;
   display: grid;
@@ -2379,7 +2347,6 @@ table.dt td.editable:focus,
   overflow: hidden;
 }
 
-#panel-plan .cols2 > .col::before,
 #panel-test .cols2 > .col::before {
   content: "";
   position: absolute;
@@ -2389,12 +2356,10 @@ table.dt td.editable:focus,
   background: var(--work-blue);
 }
 
-#panel-plan .cols2 > .col:has(#tb-plan-sem)::before,
 #panel-test .cols2 > .col:has(#tb-test-sem)::before {
   background: var(--work-purple);
 }
 
-#panel-plan .col-cap,
 #panel-test .col-cap {
   display: flex;
   align-items: center;
@@ -2409,7 +2374,6 @@ table.dt td.editable:focus,
   font-weight: 500;
 }
 
-#panel-plan .col-cap::after,
 #panel-test .col-cap::after {
   content: "待录入";
   margin-left: auto;
@@ -2422,14 +2386,12 @@ table.dt td.editable:focus,
   font-weight: 400;
 }
 
-#panel-plan .cols2 > .col:has(#tb-plan-sem) .col-cap::after,
 #panel-test .cols2 > .col:has(#tb-test-sem) .col-cap::after {
   border-color: #e4dcff;
   background: #fbfaff;
   color: var(--work-purple);
 }
 
-#panel-plan .col-cap .badge,
 #panel-test .col-cap .badge {
   min-width: 24px;
   height: 22px;
@@ -2439,7 +2401,6 @@ table.dt td.editable:focus,
   font-weight: 500;
 }
 
-#panel-plan .sheet-toolbar,
 #panel-test .sheet-toolbar {
   min-height: 45px;
   margin: 0;
@@ -2448,7 +2409,6 @@ table.dt td.editable:focus,
   background: var(--work-soft);
 }
 
-#panel-plan .btn-primary,
 #panel-test .btn-primary {
   height: 30px;
   padding: 0 12px;
@@ -2457,12 +2417,10 @@ table.dt td.editable:focus,
   font-weight: 400;
 }
 
-#panel-plan .btn-primary i,
 #panel-test .btn-primary i {
   font-size: 14px;
 }
 
-#panel-plan .card,
 #panel-test .card {
   min-height: 184px;
   margin: 0 !important;
@@ -2474,14 +2432,12 @@ table.dt td.editable:focus,
   overflow-x: auto;
 }
 
-#panel-plan table.dt,
 #panel-test table.dt {
   min-width: 760px;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
-#panel-plan table.dt thead th,
 #panel-test table.dt thead th {
   height: 40px;
   padding: 0 12px;
@@ -2493,7 +2449,6 @@ table.dt td.editable:focus,
   text-align: left;
 }
 
-#panel-plan table.dt tbody td,
 #panel-test table.dt tbody td {
   height: 46px;
   padding: 9px 12px;
@@ -2504,47 +2459,38 @@ table.dt td.editable:focus,
   vertical-align: middle;
 }
 
-#panel-plan table.dt tbody tr:hover td,
 #panel-test table.dt tbody tr:hover td {
   background: #f8fbff;
 }
 
-#panel-plan table.dt th:nth-child(1),
 #panel-test table.dt th:nth-child(1) {
   width: 22%;
 }
 
-#panel-plan table.dt th:nth-child(2),
 #panel-test table.dt th:nth-child(2) {
   width: 22%;
 }
 
-#panel-plan table.dt th:nth-child(3),
 #panel-test table.dt th:nth-child(3) {
   width: 20%;
 }
 
-#panel-plan table.dt th:nth-child(5),
-#panel-plan table.dt th:nth-child(6),
 #panel-test table.dt th:nth-child(6) {
   width: 88px;
 }
 
 
 
-#panel-plan table.dt td[contenteditable="true"],
 #panel-test table.dt td[contenteditable="true"] {
   outline: 0;
   transition: background .15s ease, box-shadow .15s ease;
 }
 
-#panel-plan table.dt td[contenteditable="true"]:focus,
 #panel-test table.dt td[contenteditable="true"]:focus {
   background: #ffffff;
   box-shadow: inset 0 0 0 1px var(--work-blue);
 }
 
-#panel-plan .card:has(tbody:empty)::after,
 #panel-test .card:has(tbody:empty)::after {
   min-height: 142px;
   border-top: 0;
@@ -2555,7 +2501,6 @@ table.dt td.editable:focus,
   font-size: 13px;
 }
 
-#panel-plan .ai-box,
 #panel-test .ai-box {
   min-height: 132px;
   margin: 0;
@@ -2566,7 +2511,6 @@ table.dt td.editable:focus,
   background: #ffffff;
 }
 
-#panel-plan .ai-box::before,
 #panel-test .ai-box::before {
   content: "智能建议";
   display: block;
@@ -2576,17 +2520,14 @@ table.dt td.editable:focus,
   font-weight: 400;
 }
 
-#panel-plan .ai-box.purple,
 #panel-test .ai-box.purple {
   background: linear-gradient(90deg, rgba(123, 97, 255, .045), #ffffff 54%);
 }
 
-#panel-plan .ai-box.blue,
 #panel-test .ai-box.blue {
   background: linear-gradient(90deg, rgba(22, 119, 255, .045), #ffffff 54%);
 }
 
-#panel-plan .ai-header,
 #panel-test .ai-header {
   min-height: 30px;
   margin-bottom: 8px;
@@ -2594,21 +2535,18 @@ table.dt td.editable:focus,
   border-bottom: 0;
 }
 
-#panel-plan .ai-dot,
 #panel-test .ai-dot {
   width: 6px;
   height: 6px;
   opacity: .85;
 }
 
-#panel-plan .ai-title,
 #panel-test .ai-title {
   color: var(--text1) !important;
   font-size: 13px;
   font-weight: 500;
 }
 
-#panel-plan .btn-ai,
 #panel-test .btn-ai {
   height: 28px;
   padding: 0 9px;
@@ -2620,13 +2558,11 @@ table.dt td.editable:focus,
   font-weight: 400;
 }
 
-#panel-plan .ai-box.purple .btn-ai,
 #panel-test .ai-box.purple .btn-ai {
   border-color: #e4dcff;
   color: var(--work-purple);
 }
 
-#panel-plan .ai-item,
 #panel-test .ai-item {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
@@ -2638,19 +2574,16 @@ table.dt td.editable:focus,
   line-height: 1.65;
 }
 
-#panel-plan .ai-item i,
 #panel-test .ai-item i {
   margin-top: 3px;
   color: var(--work-blue);
   font-size: 14px;
 }
 
-#panel-plan .ai-box.purple .ai-item i,
 #panel-test .ai-box.purple .ai-item i {
   color: var(--work-purple);
 }
 
-#panel-plan .ai-item .body strong,
 #panel-test .ai-item .body strong {
   margin-right: 4px;
   color: var(--text1);
@@ -2658,7 +2591,6 @@ table.dt td.editable:focus,
 }
 
 @media (max-width: 1320px) {
-  #panel-plan .cols2,
   #panel-test .cols2 {
     grid-template-columns: 1fr;
   }
@@ -5822,119 +5754,6 @@ body.dark .dim {
   }
 }
 
-/* Composite page: planning and summary */
-.content.planning-composite {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.content.planning-composite .panel {
-  animation: none;
-}
-
-.content.planning-composite #panel-plan {
-  order: 1;
-}
-
-.content.planning-composite #panel-tasks {
-  order: 2;
-}
-
-.content.planning-composite #panel-review {
-  order: 3;
-}
-
-.content.planning-composite #panel-plan,
-.content.planning-composite #panel-tasks,
-.content.planning-composite #panel-review {
-  margin: 0;
-  border: 1px solid var(--ui-line, #e5e6eb);
-  border-radius: var(--radius);
-  background: #ffffff !important;
-  overflow: hidden;
-}
-
-.content.planning-composite #panel-plan::before,
-.content.planning-composite #panel-review::before {
-  display: block;
-  min-height: 42px;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--ui-line, #e5e6eb);
-  background: #fbfcfe;
-  color: #1f2329;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 42px;
-}
-
-.content.planning-composite #panel-plan::before {
-  content: "计划";
-}
-
-.content.planning-composite #panel-review::before {
-  content: "总结";
-}
-
-.content.planning-composite #panel-plan .page-head,
-.content.planning-composite #panel-tasks .page-head,
-.content.planning-composite #panel-review .page-head {
-  margin: 0;
-  padding-top: 14px;
-  padding-bottom: 12px;
-}
-
-.content.planning-composite #panel-plan .page-title::after {
-  content: " · 月计划";
-  color: #86909c;
-  font-weight: 400;
-}
-
-.content.planning-composite #panel-tasks .page-title::after {
-  content: " · 日计划";
-  color: #86909c;
-  font-weight: 400;
-}
-
-.content.planning-composite #panel-review .page-title::after {
-  content: " · 周总结";
-  color: #86909c;
-  font-weight: 400;
-}
-
-.content.planning-composite #panel-plan .cols2,
-.content.planning-composite #panel-tasks .tboard,
-.content.planning-composite #panel-review #review-acc {
-  margin: 14px 18px 18px;
-}
-
-.content.planning-composite #panel-tasks {
-  border-top-color: #dbeafe;
-}
-
-.content.planning-composite #panel-review {
-  margin-top: 2px;
-}
-
-body.dark .content.planning-composite #panel-plan,
-body.dark .content.planning-composite #panel-tasks,
-body.dark .content.planning-composite #panel-review,
-body.dark .content.planning-composite #panel-plan::before,
-body.dark .content.planning-composite #panel-review::before {
-  border-color: #273142;
-  background: #111827 !important;
-  color: #e5e7eb;
-}
-
-@media (max-width: 760px) {
-  .content.planning-composite #panel-plan .cols2,
-  .content.planning-composite #panel-tasks .tboard,
-  .content.planning-composite #panel-review #review-acc {
-    margin-right: 12px;
-    margin-left: 12px;
-  }
-}
-
 /* Planning / summary tabs */
 .planning-shell {
   display: none;
@@ -6018,22 +5837,18 @@ body.dark .content.planning-composite #panel-review::before {
   background: var(--report-blue, #1677ff);
 }
 
-.content.planning-composite #panel-plan::before,
 .content.planning-composite #panel-review::before {
   display: none !important;
   content: none !important;
 }
 
-.content.planning-composite #panel-plan .page-title::after,
 .content.planning-composite #panel-tasks .page-title::after,
 .content.planning-composite #panel-review .page-title::after {
   content: "" !important;
 }
 
-.content.planning-composite #panel-plan,
 .content.planning-composite #panel-tasks,
-.content.planning-composite #panel-review,
-.content.planning-composite #panel-month-review {
+.content.planning-composite #panel-review {
   order: 1;
   display: none !important;
   margin: 0;
@@ -6045,25 +5860,19 @@ body.dark .content.planning-composite #panel-review::before {
 }
 
 .content.planning-composite[data-plan-tab="daily"] #panel-tasks,
-.content.planning-composite[data-plan-tab="month"] #panel-plan,
-.content.planning-composite[data-plan-tab="week"] #panel-review,
-.content.planning-composite[data-plan-tab="month-summary"] #panel-month-review {
+.content.planning-composite[data-plan-tab="week"] #panel-review {
   display: block !important;
 }
 
-.content.planning-composite #panel-plan .page-head,
 .content.planning-composite #panel-tasks .page-head,
-.content.planning-composite #panel-review .page-head,
-.content.planning-composite #panel-month-review .page-head {
+.content.planning-composite #panel-review .page-head {
   margin: 0;
   padding: 16px 18px 12px;
   border-bottom: 1px solid var(--ui-line, #e5e6eb);
 }
 
-.content.planning-composite #panel-plan .cols2,
 .content.planning-composite #panel-tasks .tboard,
-.content.planning-composite #panel-review #review-acc,
-.content.planning-composite #panel-month-review #month-review-acc {
+.content.planning-composite #panel-review #review-acc {
   margin: 16px 18px 18px;
 }
 
@@ -6076,147 +5885,21 @@ body.dark .content.planning-composite #panel-review::before {
   text-align: center;
 }
 
-#panel-month-review .acc-week {
-  margin: 0 0 12px;
-  border: 1px solid var(--report-border, #e5e6eb);
-  border-radius: var(--radius);
-  background: #ffffff;
-  box-shadow: none;
-  overflow: hidden;
-}
-
-#panel-month-review .acc-bar {
-  display: flex;
-  align-items: center;
-  min-height: 42px;
-  padding: 0 14px;
-  border-bottom: 1px solid var(--report-border, #e5e6eb);
-  background: var(--report-head, #f7f8fa);
-  color: #1f2329;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-#panel-month-review .acc-bar .hicon {
-  margin-right: 8px;
-  color: #86909c;
-  transition: transform .18s ease;
-}
-
-#panel-month-review .acc-week.collapsed .acc-bar {
-  border-bottom-color: transparent;
-}
-
-#panel-month-review .acc-body {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  background: #ffffff;
-}
-
-#panel-month-review .rv-col {
-  min-width: 0;
-  padding: 14px;
-  border: 0;
-  border-radius: 0;
-  background: #ffffff;
-  box-shadow: none;
-}
-
-#panel-month-review .rv-col + .rv-col {
-  border-left: 1px solid var(--report-border, #e5e6eb);
-}
-
-#panel-month-review .rv-col > div:first-child {
-  margin-bottom: 12px !important;
-  color: #1f2329 !important;
-  font-size: 14px;
-  font-weight: 600 !important;
-}
-
-#panel-month-review .rv-col.seo {
-  border-top: 2px solid var(--report-blue, #1677ff);
-}
-
-#panel-month-review .rv-col.sem {
-  border-top: 2px solid var(--report-purple, #7b61ff);
-}
-
-#panel-month-review .rv-sec {
-  margin: 0 0 12px;
-  padding: 0;
-  border: 1px solid #edf0f5;
-  border-radius: var(--radius);
-  background: #ffffff;
-}
-
-#panel-month-review .rv-sec h5 {
-  margin: 0;
-  padding: 9px 12px;
-  border-bottom: 1px solid #edf0f5;
-  background: #fbfcfe;
-  color: #4e5969;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-#panel-month-review .rv-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-#panel-month-review .rv-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
-  gap: 8px;
-  align-items: center;
-  min-height: 38px;
-  padding: 8px 10px 8px 12px;
-  border-bottom: 1px solid #f0f2f5;
-}
-
-#panel-month-review .rv-item:last-child {
-  border-bottom: 0;
-}
-
-#panel-month-review .rv-list .txt {
-  min-width: 0;
-  color: #1f2329;
-  font-size: 13px;
-  line-height: 1.6;
-  outline: 0;
-}
-
 body.dark .content.planning-composite .planning-shell,
-body.dark .content.planning-composite #panel-plan,
 body.dark .content.planning-composite #panel-tasks,
-body.dark .content.planning-composite #panel-review,
-body.dark .content.planning-composite #panel-month-review,
-body.dark #panel-month-review .acc-week,
-body.dark #panel-month-review .acc-body,
-body.dark #panel-month-review .rv-col,
-body.dark #panel-month-review .rv-sec {
+body.dark .content.planning-composite #panel-review {
   border-color: #273142;
   background: #111827 !important;
 }
 
 body.dark .planning-shell-head,
-body.dark .content.planning-composite #panel-plan .page-head,
 body.dark .content.planning-composite #panel-tasks .page-head,
-body.dark .content.planning-composite #panel-review .page-head,
-body.dark .content.planning-composite #panel-month-review .page-head,
-body.dark #panel-month-review .acc-bar,
-body.dark #panel-month-review .rv-sec h5 {
+body.dark .content.planning-composite #panel-review .page-head {
   border-color: #273142;
   background: #0f172a;
 }
 
-body.dark .planning-shell-title,
-body.dark #panel-month-review .acc-bar,
-body.dark #panel-month-review .rv-col > div:first-child,
-body.dark #panel-month-review .rv-list .txt {
+body.dark .planning-shell-title {
   color: #e5e7eb !important;
 }
 
@@ -6239,20 +5922,9 @@ body.dark .planning-tab.active {
     padding: 0 12px;
   }
 
-  .content.planning-composite #panel-plan .cols2,
   .content.planning-composite #panel-tasks .tboard,
-  .content.planning-composite #panel-review #review-acc,
-  .content.planning-composite #panel-month-review #month-review-acc {
+  .content.planning-composite #panel-review #review-acc {
     margin: 12px;
-  }
-
-  #panel-month-review .acc-body {
-    grid-template-columns: 1fr;
-  }
-
-  #panel-month-review .rv-col + .rv-col {
-    border-left: 0;
-    border-top: 1px solid var(--report-border, #e5e6eb);
   }
 }
 
@@ -8568,10 +8240,8 @@ body.dark .cache-tag {
   font-size: 13px !important;
 }
 
-.content.planning-composite #panel-plan,
 .content.planning-composite #panel-tasks,
-.content.planning-composite #panel-review,
-.content.planning-composite #panel-month-review {
+.content.planning-composite #panel-review {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -8579,33 +8249,27 @@ body.dark .cache-tag {
   overflow: visible !important;
 }
 
-.content.planning-composite #panel-plan .page-head,
 .content.planning-composite #panel-tasks .page-head,
-.content.planning-composite #panel-review .page-head,
-.content.planning-composite #panel-month-review .page-head {
+.content.planning-composite #panel-review .page-head {
   min-height: auto !important;
   margin: 0 0 12px !important;
   padding: 0 8px 12px !important;
   border-bottom: 1px solid #e5e6eb !important;
 }
 
-.content.planning-composite #panel-plan .cols2,
 .content.planning-composite #panel-tasks .tboard,
-.content.planning-composite #panel-review #review-acc,
-.content.planning-composite #panel-month-review #month-review-acc {
+.content.planning-composite #panel-review #review-acc {
   margin: 0 8px 20px !important;
 }
 
-.content.planning-composite #panel-tasks .pblock,
-.content.planning-composite #panel-plan .col > .card {
+.content.planning-composite #panel-tasks .pblock {
   border-color: #e5e6eb !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
 .content.planning-composite #panel-tasks .pblock-head,
-.content.planning-composite #panel-tasks .sopnew,
-.content.planning-composite #panel-plan .col-cap {
+.content.planning-composite #panel-tasks .sopnew {
   padding-right: 14px !important;
   padding-left: 14px !important;
 }
@@ -8633,8 +8297,7 @@ body.dark .cache-tag {
 
 
 
-#panel-review .rv-prev,
-#panel-month-review .rv-prev {
+#panel-review .rv-prev {
   padding: 8px 12px 0;
   color: #86909c;
   font-size: 12px;

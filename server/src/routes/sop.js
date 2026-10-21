@@ -2,6 +2,7 @@
 // 权限：定义的写入仅 manager+boss；完成记录任意登录运营都可写（共担文化）。
 import * as repo from '../db/repositories/sop.js';
 import { findDuplicate } from '../services/sopDuplicate.js';
+import { decorateWeeklyNote, weeklyNoteKind } from '../services/sopWeeklyNotes.js';
 import { importSopCatalog } from '../db/importSopCatalog.js';
 import { requireAuth, editor, onlyManagerBoss } from '../auth/middleware.js';
 
@@ -32,6 +33,11 @@ const num = (v) => {
 // 服务端不重算 ISO 周（全项目约定：ISO 周只在前端算一份），但格式要卡住，
 // 否则一个拼错的 key 会开出一个谁也查不到的影子周期，配额永远是 0/5。
 const PERIOD_RE = /^(\d{4}-\d{2}-\d{2}|\d{4}-W\d{2}|\d{4}-\d{2})$/;
+const PERIOD_BY_FREQ = {
+  daily: /^\d{4}-\d{2}-\d{2}$/,
+  weekly: /^\d{4}-W\d{2}$/,
+  monthly: /^\d{4}-\d{2}$/,
+};
 // 定义表里 v2 新增的那些列，POST/PATCH 共用一份清单
 function defFields(b) {
   return {
@@ -58,7 +64,7 @@ export async function sopRoutes(app) {
   // 列出 SOP 定义（默认只返启用的；管理员可加 ?all=1 看所有）
   app.get('/api/sop', { preHandler: requireAuth }, async (request) => {
     const all = request.query?.all === '1';
-    return { items: repo.listDefs({ activeOnly: !all }) };
+    return { items: repo.listDefs({ activeOnly: !all }).map(decorateWeeklyNote) };
   });
 
   // 新增 SOP 定义（仅经理/老板）
@@ -133,7 +139,13 @@ export async function sopRoutes(app) {
     const sopId = Number(b.sop_id);
     const periodKey = s(b.period_key, 20);
     if (!sopId || !periodKey) return reply.code(400).send({ error: 'sop_id_and_period_key_required' });
-    const item = repo.markComplete(sopId, periodKey, request.user?.username);
+    const def = repo.getDef(sopId);
+    if (!def) return reply.code(404).send({ error: 'sop_not_found' });
+    if (!PERIOD_BY_FREQ[def.freq]?.test(periodKey)) return reply.code(400).send({ error: 'bad_period_key' });
+    const noteKind = weeklyNoteKind(def);
+    const note = s(b.note, 500)?.trim() || null;
+    if (noteKind && !note) return reply.code(400).send({ error: 'note_required', note_kind: noteKind });
+    const item = repo.markComplete(sopId, periodKey, request.user?.username, noteKind ? note : undefined);
     reply.code(201);
     return { item };
   });
@@ -196,6 +208,7 @@ export async function sopRoutes(app) {
     if (!DAY_RE.test(dayKey || '')) return reply.code(400).send({ error: 'day_key_required' });
     const def = repo.getDef(sopId);
     if (!def) return reply.code(404).send({ error: 'sop_not_found' });
+    if (weeklyNoteKind(def)) return reply.code(400).send({ error: 'weekly_note_uses_completion' });
     // qty 只收正数且设上限：手滑输个 999 会把本周配额一次性"填平"，这种数比空着更有害
     const qty = Math.min(999, Math.max(0.5, num(b.qty) ?? 1));
     // 产出可数的条目（subject_label 非空）必须说清这次做的是哪个对象，否则流水退化成

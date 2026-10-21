@@ -16,6 +16,7 @@ process.env.DB_FILE = join(tmpDir, 'test.sqlite');
 const { buildApp } = await import('../src/index.js');
 const { sopQuotaProgress } = await import('../src/services/kpiReview.js');
 const { canonicalUrl, findDuplicate } = await import('../src/services/sopDuplicate.js');
+const { weeklyNoteKind } = await import('../src/services/sopWeeklyNotes.js');
 const app = await buildApp();
 
 test.after(async () => {
@@ -178,6 +179,66 @@ async function makeSop(over = {}) {
   assert.equal(res.statusCode, 201, res.body);
   return res.json().item;
 }
+
+test('清单中恰好 8 条固定周 SOP 要写目标或复盘', async () => {
+  const { default: catalog } = await import('../src/db/sopCatalog.json', { with: { type: 'json' } });
+  const notes = catalog.items.map((item) => ({ item, kind: weeklyNoteKind(item) })).filter((x) => x.kind);
+  assert.equal(notes.length, 8);
+  assert.deepEqual(
+    notes.reduce((out, x) => ({ ...out, [x.kind]: (out[x.kind] || 0) + 1 }), {}),
+    { goal: 4, review: 4 },
+  );
+  assert.deepEqual([...new Set(notes.map((x) => x.item.track))].sort(), ['GEO', 'SEM', 'SEO', '社媒'].sort());
+});
+
+test('固定周 SOP 必须写文案；重复保存更新同一条完成记录', async () => {
+  const sop = await makeSop({
+    dept: 'SEM', track: 'SEM', source: 'sem-social-sop', code: '固定',
+    title: '周一看数 + 定本周目标', time_hint: '周一',
+  });
+  const definitions = await call('GET', '/api/sop');
+  const decorated = definitions.json().items.find((item) => item.id === sop.id);
+  assert.equal(decorated.note_kind, 'goal');
+  assert.equal(decorated.note_prompt, '本周目标');
+
+  const missing = await call('POST', '/api/sop/completions', { sop_id: sop.id, period_key: '2026-W43' });
+  assert.equal(missing.statusCode, 400);
+  assert.equal(missing.json().error, 'note_required');
+
+  const first = await call('POST', '/api/sop/completions', {
+    sop_id: sop.id, period_key: '2026-W43', note: '把高花费无询盘词降价并复查。',
+  });
+  assert.equal(first.statusCode, 201, first.body);
+  const second = await call('POST', '/api/sop/completions', {
+    sop_id: sop.id, period_key: '2026-W43', note: '优先处理高花费无询盘词。',
+  });
+  assert.equal(second.statusCode, 201, second.body);
+  assert.equal(second.json().item.id, first.json().item.id, '同一 SOP / 周次只能有一份文案');
+
+  const list = await call('GET', '/api/sop/completions?weekly=2026-W43');
+  const rows = list.json().items.filter((x) => x.sop_id === sop.id);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].note, '优先处理高花费无询盘词。');
+});
+
+test('固定周 SOP 不能从流水接口绕过必填文案', async () => {
+  const sop = await makeSop({
+    dept: 'SEO', track: 'GEO', source: 'seo-geo-sop', code: '固定',
+    title: '周五填数 + 复盘', time_hint: '周五',
+  });
+  const res = await call('POST', '/api/sop/logs', {
+    sop_id: sop.id, period_key: '2026-W43', day_key: '2026-10-23', detail: '试图绕过',
+  });
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.json().error, 'weekly_note_uses_completion');
+});
+
+test('完成接口按 SOP 频率拒绝错误周期格式', async () => {
+  const sop = await makeSop();
+  const res = await call('POST', '/api/sop/completions', { sop_id: sop.id, period_key: '2026-10-21' });
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.json().error, 'bad_period_key');
+});
 
 test('带 subject_label 的 SOP 必须写清做了哪个对象，否则 400', async () => {
   const sop = await makeSop({ target_qty: 5, unit: '篇', subject_label: '哪篇文章' });

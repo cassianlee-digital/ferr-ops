@@ -57,6 +57,7 @@ export function setPlanTab(key, { remember = true } = {}) {
   blocks().forEach((b) => b.classList.toggle('is-active', b.dataset.planTab === next));
   tabBtns().forEach((b) => b.classList.toggle('on', b.dataset.tab === next));
   if (remember) { try { localStorage.setItem(KEY, next); } catch (e) { /* 隐私模式写不了，不影响用 */ } }
+  document.dispatchEvent(new CustomEvent('plantabchange', { detail: { tab: next } }));
 }
 
 /* 公司任务增删之后调一次：该出现的 Tab 出现、该消失的消失；

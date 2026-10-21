@@ -81,14 +81,6 @@ export async function persistTagChange(el,value){
         }
       }
     }
-    // 归档②：月度计划 status='已完成' → 自动归档（条目16）
-    if(ep==='/api/loop-items'&&kind==='status'&&value==='已完成'&&(tr.querySelector('[data-field="content"]')||{}).innerText){
-      const dept=tr.querySelector('[data-kind="dept"]'); // plan 行未必有 dept tag，无则按表 id 推
-      const isSem=tr.closest('#tb-plan-sem')!=null;
-      const ak=isSem?'sem':'seo';
-      await API.post(ep+'/'+id+'/archive',{archive_kind:ak});
-      tr.remove(); toast('已完成 · 已自动归档');
-    }
   }catch(err){
     // 渠道 / 等级已确认后李陈改不动（403 attribution_locked）；经理改要填原因（400 reason_required）。
     // 这两种后端都给了说得清的话，原样显示，别只说「无权修改」。
