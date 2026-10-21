@@ -6058,6 +6058,36 @@
     if (hours) lines.push(line2("\u5DE5\u65F6", esc(hours)));
     return lines.length ? `<div class="taudit">${lines.join("")}</div>` : "";
   }
+  function localDay(utc) {
+    const d = /* @__PURE__ */ new Date(String(utc || "").replace(" ", "T") + "Z");
+    return isNaN(d) ? "" : formatLocalDate(d);
+  }
+  function taskPlanHtml(it) {
+    const lines = [];
+    const when = [];
+    const start = it.start_date || "";
+    const due = it.task_date || "";
+    if (start && due && start !== due) when.push(esc(start) + " \u2192 " + esc(due) + "\uFF08\u8DE8\u5929\uFF09");
+    else if (due || start) when.push("\u622A\u6B62 " + esc(due || start));
+    const hour = fmtHour(it.task_hour);
+    if (hour) when.push("\u9884\u8BA1 " + esc(hour) + " \u5B8C\u6210");
+    const prio = normPrio(it.task_priority);
+    if (prio < 4) when.push(esc(PRIOS[prio - 1].label));
+    if (when.length) lines.push(line2("\u65F6\u95F4", when.join(" \xB7 ")));
+    const who = [];
+    if (it.owner) who.push("\u8D1F\u8D23\u4EBA " + esc(it.owner));
+    const created = localDay(it.created_at);
+    if (created) who.push("\u521B\u5EFA\u4E8E " + esc(created));
+    if (who.length) lines.push(line2("\u4EBA\u5458", who.join(" \xB7 ")));
+    if (it.task_why) lines.push(line2("\u76EE\u7684", esc(it.task_why), "taudit-why"));
+    if (it.task_done_when) lines.push(line2("\u5B8C\u6210\u6807\u51C6", esc(it.task_done_when), "taudit-donewhen"));
+    const verify = [];
+    if (it.task_verify_date) verify.push("\u9A8C\u8BC1\u65E5 " + esc(it.task_verify_date));
+    if (it.task_verify_how) verify.push(esc(it.task_verify_how));
+    if (verify.length) lines.push(line2("\u68C0\u9A8C", verify.join(" \xB7 ")));
+    if (it.note) lines.push(line2("\u5907\u6CE8", esc(it.note)));
+    return lines.length ? `<div class="taudit taudit-plan">${lines.join("")}</div>` : "";
+  }
   var doneCtx = null;
   var doneBound = false;
   function doneError(msg) {
@@ -9254,8 +9284,9 @@
     const fromBadge = '<span class="badge ' + (from === "fix" ? "b-amber" : "b-blue") + '">' + (from === "fix" ? "\u6574\u6539" : it.kind === "task" ? "\u4EFB\u52A1" : it.kind === "plan" ? "\u8BA1\u5212" : it.kind === "test" ? "\u6D4B\u8BD5" : it.kind === "deposit" ? "\u6C89\u6DC0" : "\u95ED\u73AF") + "</span>";
     const isBoss = (window.ME || {}).role === "boss";
     const ops = '<button class="btn-mini arch-restore" title="\u6062\u590D\u5230\u539F\u9875"><i class="ti ti-rotate"></i> \u6062\u590D</button>' + (isBoss ? ' <button class="btn-mini arch-hard csp-s-b0e08465c2" title="\u5F7B\u5E95\u5220\u9664\uFF08\u4E0D\u53EF\u6062\u590D\uFF09"><i class="ti ti-trash"></i> \u5F7B\u5E95\u5220\u9664</button>' : "");
-    const audit = from !== "fix" && it.kind === "task" ? auditBadgesHtml(it) + auditBlockHtml(it, { archived: true }) : "";
-    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text" title="${content}">${content}</span>${audit}</td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
+    const isTask = from !== "fix" && it.kind === "task";
+    const audit = isTask ? auditBadgesHtml(it) + taskPlanHtml(it) + auditBlockHtml(it, { archived: true }) : "";
+    return `<td class="archive-date num">${esc(date || "\u2014")}</td><td class="archive-source ctr">${fromBadge}</td><td class="archive-content"><span class="archive-text${isTask ? " archive-text-full" : ""}" title="${content}">${content}</span>${audit}</td><td class="archive-dept ctr">${esc(dept)}</td><td class="archive-actions ctr">${ops}</td>`;
   }
   function archInqRowHtml(it) {
     const date = (it.archived_at || "").slice(0, 10);

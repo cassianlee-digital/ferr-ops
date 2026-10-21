@@ -149,6 +149,12 @@
   font-weight: 500;
 }
 
+/* 任务行：内容整句显示（下面还挂着目的 / 完成标准 / 结果等，单行省略反而只剩半句标题） */
+#panel-archive .archive-text.archive-text-full {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 #panel-archive .archive-actions {
   text-align: right !important;
 }

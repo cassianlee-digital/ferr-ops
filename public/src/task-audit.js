@@ -8,7 +8,7 @@
  * 规则只有一份，在后端 services/taskAudit.js：谁算重要、缺什么不能完成，都由服务端判，
  * 这里只把服务端回的原因原样显示出来 —— 前端再抄一遍规则，两边迟早对不上。
  *
- * 依赖方向：只 import 基础设施（ui-kit / attachments / catalog / keywords 的 inlineConfirm），
+ * 依赖方向：只 import 基础设施（ui-kit / attachments / catalog / keywords 的 inlineConfirm / task-pickers / timerange），
  * closed-loop / archive / app 来 import 它。模块求值期不碰 DOM，事件在第一次用到时才绑。
  */
 import { esc, openModal, closeModal, toast } from './ui-kit.js';
@@ -16,6 +16,8 @@ import { deleteImage, pickAndUpload, thumbsHtml } from './attachments.js';
 import { inlineConfirm } from './keywords.js';
 import { PRODUCT_NAMES } from './catalog.js';
 import { openChangeLog } from './change-log.js';
+import { PRIOS, fmtHour, normPrio } from './task-pickers.js';
+import { formatLocalDate } from './timerange.js';
 
 const $ = (id) => document.getElementById(id);
 const LINK_LABEL = { page: '页面', campaign: '系列', keyword: '关键词', kpi: 'KPI' };
@@ -246,6 +248,42 @@ export function auditBlockHtml(it, { editable = false, archived = false } = {}) 
   const hours = hoursText(it);
   if (hours) lines.push(line('工时', esc(hours)));
   return lines.length ? `<div class="taudit">${lines.join('')}</div>` : '';
+}
+
+// created_at 是库里的 UTC（datetime('now')），直接截前 10 位在早上 8 点前建的任务会差一天
+function localDay(utc) {
+  const d = new Date(String(utc || '').replace(' ', 'T') + 'Z');
+  return isNaN(d) ? '' : formatLocalDate(d);
+}
+
+/* 建任务时填的那些：起止 / 预计完成时刻 / 优先级 / 负责人 / 目的 / 完成标准 / 检验 / 备注。
+   归档页用 —— 任务卡上它们散在 meta 行和 .tloop 块里，归档行以前只带完成之后的审计信息，
+   事后复盘看不到「当初为什么做、做到什么算完、打算怎么验」（2026-10-21 要求归档里全部能看见）。
+   这些本来就是选填项：没填就不出那一行，和「结果未记录」那种该有却没有的不同。 */
+export function taskPlanHtml(it) {
+  const lines = [];
+  const when = [];
+  const start = it.start_date || ''; const due = it.task_date || '';
+  if (start && due && start !== due) when.push(esc(start) + ' → ' + esc(due) + '（跨天）');
+  else if (due || start) when.push('截止 ' + esc(due || start));
+  const hour = fmtHour(it.task_hour);
+  if (hour) when.push('预计 ' + esc(hour) + ' 完成');
+  const prio = normPrio(it.task_priority);
+  if (prio < 4) when.push(esc(PRIOS[prio - 1].label)); // 4 = 普通，也是没设时的默认，写出来是噪音
+  if (when.length) lines.push(line('时间', when.join(' · ')));
+  const who = [];
+  if (it.owner) who.push('负责人 ' + esc(it.owner));
+  const created = localDay(it.created_at);
+  if (created) who.push('创建于 ' + esc(created));
+  if (who.length) lines.push(line('人员', who.join(' · ')));
+  if (it.task_why) lines.push(line('目的', esc(it.task_why), 'taudit-why'));
+  if (it.task_done_when) lines.push(line('完成标准', esc(it.task_done_when), 'taudit-donewhen'));
+  const verify = [];
+  if (it.task_verify_date) verify.push('验证日 ' + esc(it.task_verify_date));
+  if (it.task_verify_how) verify.push(esc(it.task_verify_how));
+  if (verify.length) lines.push(line('检验', verify.join(' · ')));
+  if (it.note) lines.push(line('备注', esc(it.note)));
+  return lines.length ? `<div class="taudit taudit-plan">${lines.join('')}</div>` : '';
 }
 
 /* ================= 完成弹框 ================= */
