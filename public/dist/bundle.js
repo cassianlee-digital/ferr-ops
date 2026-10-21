@@ -4972,6 +4972,7 @@
     doneQty: () => doneQty,
     dupText: () => dupText,
     hasQuota: () => hasQuota,
+    importSopFromDocs: () => importSopFromDocs,
     isLogged: () => isLogged,
     isOverduePeriodFirstDay: () => isOverduePeriodFirstDay,
     isSopWritable: () => isSopWritable,
@@ -5011,7 +5012,6 @@
   window._sops = [];
   window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
   var FREQ_LABEL = { daily: "\u6BCF\u65E5\u5FC5\u505A", weekly: "\u6BCF\u5468\u5FC5\u505A", monthly: "\u6BCF\u6708\u5FC5\u505A" };
-  var DEPT_TRACKS = { SEM: ["SEM", "\u793E\u5A92"], SEO: ["SEO", "GEO"], \u516C\u53F8: ["\u516C\u53F8"] };
   window._sopProg = /* @__PURE__ */ new Map();
   window._sopLogs = /* @__PURE__ */ new Map();
   function periodQuery() {
@@ -5074,7 +5074,13 @@
       const anchor = document.getElementById(dept === "\u516C\u53F8" ? "sop-company" : "sop-" + dept.toLowerCase());
       if (!anchor) return;
       const list = window._sops.filter((s) => s.dept === dept);
-      anchor.innerHTML = '<div class="colcap"><i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1</div>';
+      const cur = list.filter((s) => s.freq !== "monthly");
+      const hit = cur.filter(sopDone).length;
+      const cap = document.createElement("div");
+      cap.className = "colcap";
+      cap.innerHTML = '<i class="ti ti-pin"></i> SOP \u56FA\u5B9A\u4EFB\u52A1' + (cur.length ? `<em class="colcap-stat${hit === cur.length ? " ok" : ""}">\u672C\u5468\u671F ${hit}/${cur.length} \u8FBE\u6807</em>` : "");
+      anchor.innerHTML = "";
+      anchor.appendChild(cap);
       if (!list.length) {
         const empty2 = document.createElement("div");
         empty2.className = "sop-empty-hint";
@@ -5082,37 +5088,36 @@
         anchor.appendChild(empty2);
         return;
       }
-      const known = DEPT_TRACKS[dept] || [dept];
-      const extra = [...new Set(list.map(trackOf))].filter((t) => !known.includes(t));
-      [...known, ...extra].forEach((track) => {
-        const inTrack = list.filter((s) => trackOf(s) === track);
-        if (!inTrack.length) return;
-        anchor.appendChild(trackBlockEl(track, inTrack));
+      const grid = document.createElement("div");
+      grid.className = "sop-freqgrid";
+      ["daily", "weekly", "monthly"].forEach((freq) => {
+        const col = document.createElement("div");
+        col.className = "sop-freqcol";
+        const rows2 = list.filter((s) => s.freq === freq).sort((a, b) => {
+          const ta = trackOf(a) || "", tb = trackOf(b) || "";
+          if (ta !== tb) return ta < tb ? -1 : 1;
+          return (a.sort_order ?? 9999) - (b.sort_order ?? 9999) || (a.id || 0) - (b.id || 0);
+        });
+        const done = rows2.filter(sopDone).length;
+        const fc = document.createElement("div");
+        fc.className = "sop-freq-cap";
+        fc.innerHTML = `<span>${esc(FREQ_LABEL[freq])}</span>` + (rows2.length ? `<em class="${done === rows2.length ? "ok" : ""}">${done}/${rows2.length}</em>` : "");
+        col.appendChild(fc);
+        if (!rows2.length) {
+          const e = document.createElement("div");
+          e.className = "sop-freq-empty";
+          e.textContent = "\u65E0";
+          col.appendChild(e);
+        } else {
+          const listBox = document.createElement("div");
+          listBox.className = "sop-list";
+          rows2.forEach((s) => listBox.appendChild(sopCardEl(s)));
+          col.appendChild(listBox);
+        }
+        grid.appendChild(col);
       });
+      anchor.appendChild(grid);
     });
-  }
-  function trackBlockEl(track, items) {
-    const box = document.createElement("div");
-    box.className = "sop-track";
-    const weekly = items.filter((s) => s.freq !== "monthly");
-    const hit = weekly.filter(sopDone).length;
-    const cap = document.createElement("div");
-    cap.className = "sop-track-cap";
-    cap.innerHTML = `<span>${esc(track)}</span>` + (weekly.length ? `<em class="${hit === weekly.length ? "ok" : ""}">\u672C\u5468\u671F ${hit}/${weekly.length} \u8FBE\u6807</em>` : "");
-    box.appendChild(cap);
-    ["daily", "weekly", "monthly"].forEach((freq) => {
-      const rows2 = items.filter((s) => s.freq === freq);
-      if (!rows2.length) return;
-      const fc = document.createElement("div");
-      fc.className = "sop-freq-cap";
-      fc.textContent = FREQ_LABEL[freq];
-      box.appendChild(fc);
-      const listBox = document.createElement("div");
-      listBox.className = "sop-list";
-      rows2.forEach((s) => listBox.appendChild(sopCardEl(s)));
-      box.appendChild(listBox);
-    });
-    return box;
   }
   function sopCardEl(s) {
     const quota = hasQuota(s);
@@ -5222,6 +5227,8 @@
     const addBtn = document.getElementById("sop-add-btn");
     const writable = isSopWritable();
     if (addBtn) addBtn.style.display = writable ? "" : "none";
+    const impBtn = document.getElementById("sop-import-btn");
+    if (impBtn) impBtn.style.display = writable ? "" : "none";
     tb.innerHTML = "";
     const list = window._sops;
     if (!list.length) {
@@ -5514,6 +5521,36 @@
     } catch (err) {
       if (err && err.status === 400) toast2("\u8FD9\u6761 SOP \u8981\u6C42\u5199\u6E05\u505A\u7684\u662F\u54EA\u4E00\u4E2A");
       else toast2(err && err.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || "\u8BF7\u6C42\u5931\u8D25"));
+    }
+  }
+  async function importSopFromDocs() {
+    if (!isSopWritable()) {
+      toast2("\u4EC5\u7ECF\u7406 / \u8001\u677F\u53EF\u5BFC\u5165");
+      return;
+    }
+    let pre;
+    try {
+      pre = await API.post("/api/sop/import-catalog?dry_run=1", {});
+    } catch (e) {
+      toast2(e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u7ECF\u7406/\u8001\u677F\uFF09" : "\u9884\u89C8\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
+      return;
+    }
+    const add = (pre.inserted || []).length, upd = (pre.updated || []).length, same = (pre.unchanged || []).length;
+    const orphan = (pre.orphaned || []).length;
+    if (!add && !upd) {
+      toast2("\u6587\u6863\u91CC\u7684 " + (pre.total || 0) + " \u6761\u90FD\u5DF2\u7ECF\u5728\u5E93\u91CC\u4E86\uFF0C\u65E0\u9700\u5BFC\u5165");
+      return;
+    }
+    const lines = ["\u6587\u6863\u5171 " + (pre.total || 0) + " \u6761\uFF1A\u65B0\u589E " + add + " \u6761 / \u66F4\u65B0 " + upd + " \u6761 / \u65E0\u53D8\u5316 " + same + " \u6761\u3002"];
+    if (orphan) lines.push("\u53E6\u6709 " + orphan + " \u6761\u5E93\u91CC\u6709\u3001\u6587\u6863\u91CC\u5DF2\u7ECF\u6CA1\u6709\u4E86\u2014\u2014\u4E0D\u4F1A\u88AB\u5220\uFF0C\u8981\u505C\u7528\u8BF7\u5728\u4E0B\u65B9\u5217\u8868\u91CC\u505C\u3002");
+    lines.push("\u786E\u5B9A\u5BFC\u5165\u5417\uFF1F");
+    if (!window.confirm(lines.join("\n"))) return;
+    try {
+      const r = await API.post("/api/sop/import-catalog", {});
+      await loadSops();
+      toast2("\u5DF2\u5BFC\u5165\uFF1A\u65B0\u589E " + (r.inserted || []).length + " \u6761 / \u66F4\u65B0 " + (r.updated || []).length + " \u6761");
+    } catch (e) {
+      toast2("\u5BFC\u5165\u5931\u8D25\uFF1A" + (e.message || "\u8BF7\u6C42\u5931\u8D25"));
     }
   }
 
@@ -12709,6 +12746,7 @@
     "submit-expense": (el5) => submitExpense(el5),
     "submit-sop": () => submitSop(),
     "submit-soplog": () => submitSopLog(),
+    "import-sop": () => importSopFromDocs(),
     "adopt-ai": () => adoptAi()
   };
   document.addEventListener("click", (e) => {

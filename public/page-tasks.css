@@ -1390,10 +1390,13 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
 #panel-tasks .tboard .pblock.is-active { display: flex; }
 
 /* 块内左右分栏：SOP 固定 40% / 每日新增 60%。
-   新增那栏的卡更长（目的/完成标准/结果/证据都在里面），所以它拿大头。 */
+   比例 2026-10-21 调过：SOP 栏内部改成日/周/月三等份之后，40% 下每列只剩 153px，
+   条目全挤成竖条没法看；反过来给 SOP 60%，每列约 265px 能放下一行标题。
+   新增那栏拿 40%（约 500px）也不吃亏——它内部的卡本来就是两列网格，
+   窄了自动退成一列，单卡反而比原来 360px 更宽。 */
 #panel-tasks .sopnew {
   display: grid;
-  grid-template-columns: 40fr 60fr;
+  grid-template-columns: 60fr 40fr;
   gap: 0 18px;
   align-items: start;
 }
@@ -1515,3 +1518,75 @@ body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
 /* 两栏各自带滚动条，内容贴到右边缘会被滚动条压住（实测「本周期 0/10 达标」被切）。
    留出滚动条的宽度。 */
 #panel-tasks .sopnew > div { padding-right: 10px; }
+
+/* ===== SOP 固定任务：日 / 周 / 月 三等份并排（2026-10-21）=====
+   以前是「赛道分段 → 段内再按日周月分节」，一个 tab 下有两个赛道，
+   「每周必做」这种标题会重复出现，整栏看下来全是小标题、条目被埋了。
+   现在横着切三等份，赛道靠每行的浅色标签认。 */
+#panel-tasks .sop-freqgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0 10px;
+  align-items: start;
+}
+#panel-tasks .sop-freqgrid > .sop-freqcol + .sop-freqcol {
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+#panel-tasks .sop-freq-cap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 500;
+}
+#panel-tasks .sop-freq-cap em {
+  margin-left: auto;
+  color: var(--text3);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+#panel-tasks .sop-freq-cap em.ok { color: var(--green); font-weight: 600; }
+#panel-tasks .sop-freq-empty {
+  padding: 10px 0;
+  color: var(--text3);
+  font-size: 11px;
+  text-align: center;
+}
+/* 顶部「SOP 固定任务」右侧的整体达标数 */
+#panel-tasks .colcap .colcap-stat {
+  margin-left: auto;
+  color: var(--text3);
+  font-style: normal;
+  font-weight: 400;
+}
+#panel-tasks .colcap .colcap-stat.ok { color: var(--green); }
+
+/* 三等份之后每列很窄：行内元素改为纵向堆叠，别再挤同一行 */
+#panel-tasks .sop-freqcol .sop-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 7px 6px;
+}
+#panel-tasks .sop-freqcol .sop-row .sop-text { min-width: 0; font-size: 12px; }
+#panel-tasks .sop-freqcol .sop-row .sop-right {
+  margin-left: 0;
+  justify-content: flex-end;
+}
+#panel-tasks .sop-freqcol .sop-metrics { padding-left: 0; }
+/* 进度数字 / 勾选框移到标题上方一行的左侧，和右侧按钮同一行 */
+#panel-tasks .sop-freqcol .sop-row .sop-qty,
+#panel-tasks .sop-freqcol .sop-row > .tcheck { align-self: flex-start; }
+
+/* 「今日」任务卡原本写死两列（1fr 1fr）。SOP 栏改成三等份、新增栏收到 40% 之后，
+   两列塞不下：实测 scrollWidth 570 > clientWidth 503，整栏横向溢出、出了一条滚动条。
+   改成按可用宽度自适应：放得下两列就两列，放不下就一列（单卡反而更宽、更好读）。 */
+#panel-tasks .tgroup[data-g="today"] {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+#panel-tasks .tgroup[data-g="today"] > .tcard { min-width: 0; }
