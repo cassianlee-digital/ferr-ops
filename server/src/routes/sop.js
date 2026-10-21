@@ -2,6 +2,7 @@
 // 权限：定义的写入仅 manager+boss；完成记录任意登录运营都可写（共担文化）。
 import * as repo from '../db/repositories/sop.js';
 import { findDuplicate } from '../services/sopDuplicate.js';
+import { importSopCatalog } from '../db/importSopCatalog.js';
 import { requireAuth, editor, onlyManagerBoss } from '../auth/middleware.js';
 
 // 查重回看多远。60 天 ≈ 两个月的发帖量，够覆盖「上个月发过、这个月又记一遍」，
@@ -143,6 +144,18 @@ export async function sopRoutes(app) {
     if (!sopId || !periodKey) return reply.code(400).send({ error: 'sop_id_and_period_key_required' });
     repo.unmarkComplete(sopId, periodKey);
     return { ok: true };
+  });
+
+  /* 一键导入老板两份 SOP 文档（sopCatalog.json，59 条）。仅经理/老板。
+     为什么要有这个按钮：导入脚本得在服务器上开终端跑，实际结果是没人跑 ——
+     SOP 和它的周目标/工时/完成标准一直留在仓库里，后台看不到。
+     幂等：已存在的按 (source, track, title) 更新文档侧字段，**active 永不回写**
+     （有人停用过的条目不会被悄悄打开）；清单里没有、库里有的只报不删。
+     ?dry_run=1 先看会改什么。 */
+  app.post('/api/sop/import-catalog', onlyManagerBoss, async (request) => {
+    const dryRun = request.query?.dry_run === '1' || request.body?.dry_run === true;
+    const report = importSopCatalog({ dryRun });
+    return { dry_run: dryRun, ...report };
   });
 
   /* ===== 执行流水（v2）=====

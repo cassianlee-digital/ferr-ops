@@ -35,7 +35,7 @@ import { loadRankSnapshots, snapshotRanks } from './rank-snapshots.js';
 import { loadRisks } from './risks.js';
 import { bindSettings, openPwd, submitPwd } from './settings.js';
 import { loadSpend, openBacklink, openExpense, submitBacklink, submitExpense } from './spend.js';
-import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, submitSopLog, updateSopCounts } from './sop.js';
+import { loadSops, loadUrgent, openSopModal, refreshNavTaskDot, renderSopOverdueBanner, sopPeriodKey, submitSop, submitSopLog, updateSopCounts, importSopFromDocs } from './sop.js';
 import { getRangeRevision, submitCustomRange, syncRangeUi, withRange } from './timerange.js';
 import { addTaskLink, openTaskDone, pickTaskEvidence, submitTaskDone } from './task-audit.js';
 import { closeModal, esc, tableLoadState, toast, toastUndo } from './ui-kit.js';
@@ -138,6 +138,7 @@ const STATIC_UI_ACTIONS={
   'submit-expense':el=>submitExpense(el),
   'submit-sop':()=>submitSop(),
   'submit-soplog':()=>submitSopLog(),
+  'import-sop':()=>importSopFromDocs(),
   'adopt-ai':()=>adoptAi()
 };
 document.addEventListener('click',e=>{

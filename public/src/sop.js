@@ -96,48 +96,57 @@ export function renderSopCards(){
     const anchor=document.getElementById(dept==='公司'?'sop-company':('sop-'+dept.toLowerCase()));
     if(!anchor)return;
     const list=window._sops.filter(s=>s.dept===dept);
-    anchor.innerHTML='<div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>';
+    // 本周期该做的（日+周）里达标了几条；月度不进周口径，和 /api/sop/stats 同向
+    const cur=list.filter(s=>s.freq!=='monthly');
+    const hit=cur.filter(sopDone).length;
+    const cap=document.createElement('div');
+    cap.className='colcap';
+    cap.innerHTML='<i class="ti ti-pin"></i> SOP 固定任务'
+      +(cur.length?`<em class="colcap-stat${hit===cur.length?' ok':''}">本周期 ${hit}/${cur.length} 达标</em>`:'');
+    anchor.innerHTML='';
+    anchor.appendChild(cap);
     if(!list.length){
       const empty=document.createElement('div');
       empty.className='sop-empty-hint'; empty.textContent='暂无 SOP';
       anchor.appendChild(empty); return;
     }
-    // 赛道顺序按 DEPT_TRACKS；库里出现的其它赛道（自己加的 SOP）排在后面，不丢
-    const known=DEPT_TRACKS[dept]||[dept];
-    const extra=[...new Set(list.map(trackOf))].filter(t=>!known.includes(t));
-    [...known,...extra].forEach(track=>{
-      const inTrack=list.filter(s=>trackOf(s)===track);
-      if(!inTrack.length)return;
-      anchor.appendChild(trackBlockEl(track,inTrack));
+    /* 日 / 周 / 月 三等份并排，各自列出自己的条目。
+       以前是「赛道分段 → 段内再按日周月分节」两层嵌套，一个 tab 下有两个赛道（SEM+社媒、SEO+GEO），
+       于是同一个「每周必做」标题会出现两次，整栏看下来全是小标题，条目反而被埋了。
+       赛道现在靠每行的浅色标签认（标签本身就带赛道前缀，如「社媒 · 领英+脸书」），不再单独分段。 */
+    const grid=document.createElement('div');
+    grid.className='sop-freqgrid';
+    ['daily','weekly','monthly'].forEach(freq=>{
+      const col=document.createElement('div');
+      col.className='sop-freqcol';
+      // 列内先按赛道聚拢，再按文档行序 —— 同一个赛道的条目挨在一起，顺序还是老板表里的优先级顺序
+      const rows=list.filter(s=>s.freq===freq).sort((a,b)=>{
+        const ta=trackOf(a)||'', tb=trackOf(b)||'';
+        if(ta!==tb)return ta<tb?-1:1;
+        return (a.sort_order??9999)-(b.sort_order??9999)||((a.id||0)-(b.id||0));
+      });
+      const done=rows.filter(sopDone).length;
+      const fc=document.createElement('div');
+      fc.className='sop-freq-cap';
+      fc.innerHTML=`<span>${esc(FREQ_LABEL[freq])}</span>`
+        +(rows.length?`<em class="${done===rows.length?'ok':''}">${done}/${rows.length}</em>`:'');
+      col.appendChild(fc);
+      if(!rows.length){
+        const e=document.createElement('div');
+        e.className='sop-freq-empty'; e.textContent='无';
+        col.appendChild(e);
+      }else{
+        const listBox=document.createElement('div');
+        listBox.className='sop-list';
+        rows.forEach(s=>listBox.appendChild(sopCardEl(s)));
+        col.appendChild(listBox);
+      }
+      grid.appendChild(col);
     });
+    anchor.appendChild(grid);
   });
 }
-/* 一个赛道一段：段头给「本周 3/8 条达标」，下面按日/周/月分节一条一行。
-   段头的分母只数本周期该做的（daily+weekly），月度条目不进周口径——
-   和 /api/sop/stats 的三条诚实规则同向，别在界面上另立一套算法。 */
-function trackBlockEl(track,items){
-  const box=document.createElement('div');
-  box.className='sop-track';
-  const weekly=items.filter(s=>s.freq!=='monthly');
-  const hit=weekly.filter(sopDone).length;
-  const cap=document.createElement('div');
-  cap.className='sop-track-cap';
-  cap.innerHTML=`<span>${esc(track)}</span>`
-    +(weekly.length?`<em class="${hit===weekly.length?'ok':''}">本周期 ${hit}/${weekly.length} 达标</em>`:'');
-  box.appendChild(cap);
-  ['daily','weekly','monthly'].forEach(freq=>{
-    const rows=items.filter(s=>s.freq===freq);
-    if(!rows.length)return;
-    const fc=document.createElement('div');
-    fc.className='sop-freq-cap'; fc.textContent=FREQ_LABEL[freq];
-    box.appendChild(fc);
-    const listBox=document.createElement('div');
-    listBox.className='sop-list';
-    rows.forEach(s=>listBox.appendChild(sopCardEl(s)));
-    box.appendChild(listBox);
-  });
-  return box;
-}
+
 /* 单行清单项。两种形态：
    - 有周目标的（subject_label 非空 / target_qty 有值）→ 左边是进度数字，右边是「记一条」，
      点一下要写清这次做的是哪个对象，否则「今天发了哪个产品」永远答不出来；
@@ -272,6 +281,8 @@ export function renderSopSettingsTable(){
   const addBtn=document.getElementById('sop-add-btn');
   const writable=isSopWritable();
   if(addBtn)addBtn.style.display=writable?'':'none';
+  const impBtn=document.getElementById('sop-import-btn');
+  if(impBtn)impBtn.style.display=writable?'':'none';
   tb.innerHTML='';
   const list=window._sops;
   if(!list.length){ const e=document.getElementById('sop-empty'); if(e)e.style.display='block'; return; }
@@ -500,4 +511,26 @@ export async function submitSopLog(){
     if(err&&err.status===400)toast('这条 SOP 要求写清做的是哪一个');
     else toast(err&&err.status===403?'无权操作':'保存失败：'+(err.message||'请求失败'));
   }
+}
+
+/* 一键导入老板两份 SOP 文档（59 条）。先 dry-run 把「会新增几条、会更新几条、
+   库里有哪些清单里已经没有了」摆给人看，确认了再真导 —— 这是往每个人的日计划里
+   一次塞进几十条清单，不该点一下就发生。 */
+export async function importSopFromDocs(){
+  if(!isSopWritable()){ toast('仅经理 / 老板可导入'); return; }
+  let pre;
+  try{ pre=await API.post('/api/sop/import-catalog?dry_run=1',{}); }
+  catch(e){ toast(e&&e.status===403?'无权操作（仅经理/老板）':'预览失败：'+(e.message||'请求失败')); return; }
+  const add=(pre.inserted||[]).length, upd=(pre.updated||[]).length, same=(pre.unchanged||[]).length;
+  const orphan=(pre.orphaned||[]).length;
+  if(!add&&!upd){ toast('文档里的 '+(pre.total||0)+' 条都已经在库里了，无需导入'); return; }
+  const lines=['文档共 '+(pre.total||0)+' 条：新增 '+add+' 条 / 更新 '+upd+' 条 / 无变化 '+same+' 条。'];
+  if(orphan)lines.push('另有 '+orphan+' 条库里有、文档里已经没有了——不会被删，要停用请在下方列表里停。');
+  lines.push('确定导入吗？');
+  if(!window.confirm(lines.join('\n')))return;
+  try{
+    const r=await API.post('/api/sop/import-catalog',{});
+    await loadSops();
+    toast('已导入：新增 '+(r.inserted||[]).length+' 条 / 更新 '+(r.updated||[]).length+' 条');
+  }catch(e){ toast('导入失败：'+(e.message||'请求失败')); }
 }

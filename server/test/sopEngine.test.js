@@ -318,6 +318,43 @@ test('没填链接就不比对，回执的 duplicate 是 null', async () => {
   assert.equal(r.json().duplicate, null);
 });
 
+/* ===================== 一键导入文档清单 ===================== */
+
+test('dry-run 不写库；真导之后再导一次全是「无变化」（幂等）', async () => {
+  const dry = await call('POST', '/api/sop/import-catalog?dry_run=1', {});
+  assert.equal(dry.statusCode, 200, dry.body);
+  const d = dry.json();
+  assert.equal(d.dry_run, true);
+  assert.ok(d.total > 50, '清单应该有几十条');
+  const beforeCount = (await call('GET', '/api/sop?all=1')).json().items.length;
+
+  const run = await call('POST', '/api/sop/import-catalog', {});
+  assert.equal(run.statusCode, 200, run.body);
+  assert.equal(run.json().inserted.length, d.inserted.length, 'dry-run 预告的新增数应与真导一致');
+  const afterCount = (await call('GET', '/api/sop?all=1')).json().items.length;
+  assert.equal(afterCount, beforeCount + d.inserted.length);
+
+  const again = await call('POST', '/api/sop/import-catalog', {});
+  const a = again.json();
+  assert.equal(a.inserted.length, 0, '重导不该再新增');
+  assert.equal(a.updated.length, 0, '重导不该有改动');
+  assert.equal(a.unchanged.length, a.total);
+});
+
+test('停用过的条目重导不会被悄悄打开', async () => {
+  const list = (await call('GET', '/api/sop?all=1')).json().items;
+  const one = list.find((x) => x.source && x.active === 1);
+  assert.ok(one, '导入后应有带 source 的条目');
+  await call('DELETE', `/api/sop/${one.id}`);          // 软删 = active 0
+  await call('POST', '/api/sop/import-catalog', {});
+  const after = (await call('GET', '/api/sop?all=1')).json().items.find((x) => x.id === one.id);
+  assert.equal(after.active, 0, '有人停用过就是有意停的，重导不能替他打开');
+});
+
+test('导入是经理 / 老板的事，普通运营调不动', async () => {
+  const r = await call('POST', '/api/sop/import-catalog', {}, 'seo');
+  assert.equal(r.statusCode, 403);
+});
 /* ===================== 路由：任务优先级 / 时刻 ===================== */
 
 test('任务优先级只收 1-4，越界与脏值一律落 null（= 普通）', async () => {
