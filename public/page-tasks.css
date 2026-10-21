@@ -1247,6 +1247,10 @@ body.dark .tpop { box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
   overflow-wrap: anywhere;    /* 长链接不许把卡片撑破 */
 }
 .taudit-result .taudit-label { background: #edfaf3; color: #2e6b4a; }
+/* 归档行的「建任务时填的」那一块：目的 / 完成标准沿用任务卡 .tloop 的配色，一眼对得上 */
+.taudit-why .taudit-label { background: #fef9e7; color: #7d6b2e; }
+.taudit-donewhen .taudit-label { background: #edfaf3; color: #2e6b4a; }
+.taudit-plan + .taudit { margin-top: 4px; }
 .taudit-missing { color: var(--danger); font-weight: 600; }
 .taudit-link {
   display: inline-block;
@@ -1268,6 +1272,8 @@ a.taudit-ev:hover { text-decoration: underline; }
 #panel-archive .archive-content .taudit-proj { margin: 4px 4px 0 0; }
 body.dark .taudit { border-top-color: #202838; }
 body.dark .taudit-result .taudit-label { background: #0f1f17; color: #4aab74; }
+body.dark .taudit-why .taudit-label { background: #2a2113; color: #b89a3c; }
+body.dark .taudit-donewhen .taudit-label { background: #0f1f17; color: #4aab74; }
 
 /* —— 任务弹框：关联对象编辑器 —— */
 .tlink-add { display: flex; gap: 6px; align-items: center; }
