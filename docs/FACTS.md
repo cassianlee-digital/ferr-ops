@@ -159,7 +159,7 @@
 | `scheduler.js` | 谷歌数据定时自动同步（进程内调度）。 |
 | `syncSites.js` | 多站点同步的编排：每天把所有启用的站点都同步一遍； |
 
-## 前端 ES 模块（打包进 dist/bundle.js）（52）
+## 前端 ES 模块（打包进 dist/bundle.js）（53）
 
 `public/src/`
 
@@ -212,6 +212,7 @@
 | `table-editor.js` | Shared persistence and keyboard behavior for data-field table cells. |
 | `tagselect.js` | 彩色标签下拉 tag-select（ES 模块 · esbuild 打包为 IIFE）。 |
 | `task-audit.js` | 可审计任务（前端）。 |
+| `task-order.js` | 日计划任务的纯排序规则； |
 | `task-pickers.js` | 任务的优先级 / 日期 / 时刻选择器（ES 模块 · esbuild 打包为 IIFE）。 |
 | `timerange.js` | 时间范围筛选（ES 模块 · esbuild 打包为 IIFE）。 |
 | `ui-kit.js` | 全站 UI 基础工具（ES 模块 · esbuild 打包为 IIFE）—— 转义 / 弹窗 / toast 的**唯一实现**。 |
@@ -293,7 +294,7 @@
 | `users` | 账号与角色（seo / sem / manager / boss）。 |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（58）
+## 测试（59）
 
 `server/test/`
 
@@ -352,6 +353,7 @@
 | `taskChanges.test.js` | 任务的改动留痕与日期校验。 |
 | `taskEffect.test.js` | 任务完成前后的数据对比。 |
 | `taskEffectSites.test.js` | 多站点下的「任务完成前后数据对比」：关联的页面是哪个站的，就去哪个站的数据里找。 |
+| `taskOrder.test.js` | 日计划当天任务排序回归：卡片视觉顺序必须与时间序号一致。 |
 | `timeRangeIntegration.test.js` | 时间范围端到端契约：KPI、总览、询盘必须消费同一日期口径，且只读查询不能污染共享快照。 |
 | `updateHelper.test.js` | updateById：7 个仓库共用的「按白名单部分更新」helper。 |
 | `verifiedAiAnswer.test.js` | AI 回答的证据核验：没有证据的数据结论降级为待验证； |

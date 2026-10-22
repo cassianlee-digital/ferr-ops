@@ -2,7 +2,7 @@
    参照 Todoist 的轻弹层：日期胶囊点一下就能改期改时刻，不用开整张编辑弹窗——
    改期是日计划上最高频的动作，让它走四步弹窗是这块最先被骂的地方。
 
-   显式依赖：esc 来自 ./ui-kit.js、formatLocalDate 来自 ./timerange.js。
+   显式依赖：esc 来自 ./ui-kit.js、formatLocalDate 来自 ./timerange.js、hourToMin 来自 ./task-order.js。
    不挂 window：唯一消费者是 closed-loop.js，走显式 import（编译期可查）。
 
    ⚠ 时刻口径：task_hour 存的是**预计完成时刻**，不是开始时刻。开始时刻由 closed-loop.js
@@ -10,6 +10,8 @@
    时刻、不收「持续时长」——持续时长在本项目是推导值，收进来两套算法会打架。 */
 import { esc } from './ui-kit.js';
 import { formatLocalDate } from './timerange.js';
+import { hourToMin } from './task-order.js';
+export { hourToMin } from './task-order.js';
 
 /* ===== 优先级：1 最高 / 4 普通（Todoist 口径）。NULL 一律视作 4，不回填假值 ===== */
 export const PRIOS = [
@@ -36,16 +38,6 @@ export function prioFlagHtml(p, { action = 'task-prio', title = '设优先级' }
 /* ===== 时刻：'HH'（老数据，整点）或 'HH:MM'（15 分钟步进）=====
    两种格式按字符串排序即可：'09' < '09:30' < '10'。解析必须走 hourToMin()，
    别再写 Number(hr)*60 —— 那行碰到 '09:30' 会得到 NaN，整列时间段跟着错位。 */
-export function hourToMin(h) {
-  const t = String(h || '').trim();
-  if (!t) return null;
-  const m = t.match(/^(\d{1,2})(?::(\d{2}))?$/);
-  if (!m) return null;
-  const hh = Number(m[1]);
-  const mm = m[2] ? Number(m[2]) : 0;
-  if (!(hh >= 0 && hh <= 23) || !(mm >= 0 && mm <= 59)) return null;
-  return hh * 60 + mm;
-}
 export function fmtHour(h) {
   const min = hourToMin(h);
   if (min == null) return '';

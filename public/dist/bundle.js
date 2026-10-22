@@ -6026,6 +6026,30 @@
     setPlanTab(defaultTab(), { remember: false });
   }
 
+  // public/src/task-order.js
+  function hourToMin(h4) {
+    const t = String(h4 || "").trim();
+    if (!t) return null;
+    const m = t.match(/^(\d{1,2})(?::(\d{2}))?$/);
+    if (!m) return null;
+    const hh = Number(m[1]);
+    const mm = m[2] ? Number(m[2]) : 0;
+    if (!(hh >= 0 && hh <= 23) || !(mm >= 0 && mm <= 59)) return null;
+    return hh * 60 + mm;
+  }
+  var priorityOf = (task) => {
+    const value = Number(task && task.task_priority);
+    return Number.isInteger(value) && value >= 1 && value <= 4 ? value : 4;
+  };
+  function compareTodayTasks(a, b) {
+    const aMin = hourToMin(a && a.task_hour);
+    const bMin = hourToMin(b && b.task_hour);
+    if (aMin == null && bMin != null) return 1;
+    if (aMin != null && bMin == null) return -1;
+    if (aMin != null && bMin != null && aMin !== bMin) return aMin - bMin;
+    return priorityOf(a) - priorityOf(b);
+  }
+
   // public/src/task-pickers.js
   var PRIOS = [
     { v: 1, label: "\u4F18\u5148\u7EA71", cls: "tprio-1" },
@@ -6042,16 +6066,6 @@
     const v = normPrio(p);
     const meta = PRIOS[v - 1];
     return `<span class="tprio ${esc(meta.cls)}${v === 4 ? " tprio-none" : ""}" data-loop-action="${esc(action)}" data-v="${v}" title="${esc(title)}\uFF1A${esc(meta.label)}"><i class="ti ti-flag${v === 4 ? "" : "-filled"}"></i></span>`;
-  }
-  function hourToMin(h4) {
-    const t = String(h4 || "").trim();
-    if (!t) return null;
-    const m = t.match(/^(\d{1,2})(?::(\d{2}))?$/);
-    if (!m) return null;
-    const hh = Number(m[1]);
-    const mm = m[2] ? Number(m[2]) : 0;
-    if (!(hh >= 0 && hh <= 23) || !(mm >= 0 && mm <= 59)) return null;
-    return hh * 60 + mm;
   }
   function fmtHour(h4) {
     const min = hourToMin(h4);
@@ -7306,18 +7320,19 @@
   }
   function sortTaskCardsByTime(col) {
     if (!col) return;
-    const cmpHour = (a, b) => {
+    const comparePriorityThenTime = (a, b) => {
       const pa = prioOf(a._item), pb = prioOf(b._item);
       if (pa !== pb) return pa - pb;
       const ha = a._item && a._item.task_hour || "99", hb = b._item && b._item.task_hour || "99";
       return ha < hb ? -1 : ha > hb ? 1 : 0;
     };
     col.querySelectorAll(":scope > .tgroup").forEach((g) => {
-      const cards = [...g.querySelectorAll(":scope > .tcard")].sort(cmpHour);
+      const comparator = g.dataset.g === "today" ? (a, b) => compareTodayTasks(a._item, b._item) : comparePriorityThenTime;
+      const cards = [...g.querySelectorAll(":scope > .tcard")].sort(comparator);
       const anchor2 = g.querySelector(".donefold") || null;
       cards.forEach((c) => anchor2 ? g.insertBefore(c, anchor2) : g.appendChild(c));
     });
-    const flat = [...col.querySelectorAll(":scope > .tcard")].sort(cmpHour);
+    const flat = [...col.querySelectorAll(":scope > .tcard")].sort(comparePriorityThenTime);
     const anchor = col.querySelector(".donefold") || col.querySelector(".add-task");
     flat.forEach((c) => anchor ? col.insertBefore(c, anchor) : col.appendChild(c));
     const todayG = col.querySelector(':scope > .tgroup[data-g="today"]');
@@ -7338,7 +7353,6 @@
       const endMin = hourToMin(it.task_hour);
       if (endMin != null) tasksWithTime.push({ card: card2, it, endMin });
     });
-    tasksWithTime.sort((a, b) => a.endMin - b.endMin);
     let prevEndMin = WORK_START_MIN;
     tasksWithTime.forEach((task, i) => {
       const { card: card2, it, endMin } = task;

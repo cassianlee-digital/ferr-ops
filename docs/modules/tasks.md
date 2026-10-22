@@ -97,7 +97,8 @@
     弹层**无条件夹进视口**(三列各自滚动,锚点常在可视区边缘)、滚动即关(留 250ms 静默期,否则惯性滚动让它一开就关)。
   - **任务优先级**`loop_items.task_priority`(INTEGER 1-4,1 最高、NULL=4 普通,**老数据不回填**):
     卡上小旗(红/橙/蓝/灰,与 tagselect 的 priority 同色序)、弹窗里一颗胶囊。
-    **排序改成「先优先级后时刻」**(`sortTaskCardsByTime` 的 `cmpHour`)——否则设了优先级跟没设一样。
+    **今日分组按预计完成时刻排序**(`task-order.js` 的 `compareTodayTasks`),蓝色序号直接沿用同一 DOM 顺序；
+    同一时刻才比较优先级,未排时刻的任务放最后。其他分组仍「先优先级后时刻」,保留任务池的轻重缓急语义。
   - **`task_hour` 从整点 'HH' 放宽到 'HH:MM'(15 分钟步进)**,两种格式并存:字符串比较仍成立(`'09' < '09:30' < '10'`),
     但**解析必须走 `task-pickers.js` 的 `hourToMin()`**,`Number(hr)*60` 碰到 `'09:30'` 得 NaN,整列时间段跟着错位。
     服务端 `routes/loopItems.js` 的 `hhmm()` 在 POST/PATCH 两处都卡格式,脏值落 null 不入库。

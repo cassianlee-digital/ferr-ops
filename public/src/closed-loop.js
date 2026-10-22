@@ -9,6 +9,7 @@ import { loadSops, loadUrgent, updateSopCounts } from './sop.js';
 import { formatLocalDate, ymd } from './timerange.js';
 import { hasCompanyTasks, syncPlanTabs } from './plan-tabs.js';
 import { prioFlagHtml, prioOf, normPrio, openPrioPop, openDatePop, hourToMin, fmtHour, TIME_OPTS, bindPrioChip, setPrioChip } from './task-pickers.js';
+import { compareTodayTasks } from './task-order.js';
 import { auditBadgesHtml, auditBlockHtml, fillTaskAuditFields, openTaskDone, readTaskAuditFields } from './task-audit.js';
 
 /* ================= CLOSED-LOOP ENGINE ================= */
@@ -363,13 +364,12 @@ function syncCompanyColVisibility(){
   syncPlanTabs();
   if(hdrBtn)hdrBtn.style.display=hasCompanyTasks()?'none':'';
 }
-/* 排序：先优先级（1 最高在前，未设=4 在后），同优先级再按 task_hour，无 hour 的排最后。
-   优先级排在时刻前面是有意的——「优先级1 但没写时刻」应该比「优先级4 排了 09:00」更靠前，
-   否则设了优先级跟没设一样，这块就白做了。
+/* 排序：今日分组按预计完成时刻排，让卡片位置与蓝色执行序号保持一致；同一时刻才比较优先级，
+   未排时刻的任务放最后。其他分组仍先按优先级、再按时刻，保留任务池的轻重缓急语义。
    排完后对「今日」分组内的卡标序号，并计算每张卡的时间段（开始-结束·耗时）。 */
 function sortTaskCardsByTime(col){
   if(!col)return;
-  const cmpHour=(a,b)=>{
+  const comparePriorityThenTime=(a,b)=>{
     const pa=prioOf(a._item), pb=prioOf(b._item);
     if(pa!==pb)return pa-pb;
     // 'HH' 与 'HH:MM' 混存时字符串比较仍然成立（'09' < '09:30' < '10'）；'99' 兜底排最后
@@ -378,12 +378,15 @@ function sortTaskCardsByTime(col){
   };
   // 分组容器内的卡
   col.querySelectorAll(':scope > .tgroup').forEach(g=>{
-    const cards=[...g.querySelectorAll(':scope > .tcard')].sort(cmpHour);
+    const comparator=g.dataset.g==='today'
+      ? (a,b)=>compareTodayTasks(a._item,b._item)
+      : comparePriorityThenTime;
+    const cards=[...g.querySelectorAll(':scope > .tcard')].sort(comparator);
     const anchor=g.querySelector('.donefold')||null;
     cards.forEach(c=>anchor?g.insertBefore(c,anchor):g.appendChild(c));
   });
   // 公司列直接平铺的卡（无分组）
-  const flat=[...col.querySelectorAll(':scope > .tcard')].sort(cmpHour);
+  const flat=[...col.querySelectorAll(':scope > .tcard')].sort(comparePriorityThenTime);
   const anchor=col.querySelector('.donefold')||col.querySelector('.add-task');
   flat.forEach(c=>anchor?col.insertBefore(c,anchor):col.appendChild(c));
   // 今日分组：标序号 + 计算时间段
@@ -404,22 +407,20 @@ function addWorkMins(fromMin, durMin){
 function minToHhmm(m){ const h=Math.floor(m/60), mm=m%60; return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
 function annotateTaskTimes(todayGroup){
   const cards=[...todayGroup.querySelectorAll(':scope > .tcard:not(.done)')];
-  // 第一步：收集所有有 task_hour 的任务，按完成时刻排序（早→晚）
+  // 卡片已经按 compareTodayTasks 排好；序号直接沿用 DOM 顺序，避免再维护第二套排序。
   const tasksWithTime=[];
   cards.forEach(card=>{
     const it=card._item||{};
     const endMin=hourToMin(it.task_hour);
     if(endMin!=null) tasksWithTime.push({card, it, endMin});
   });
-  tasksWithTime.sort((a,b)=>a.endMin-b.endMin);
-
   let prevEndMin=WORK_START_MIN; // 上一个任务的结束时间
   tasksWithTime.forEach((task,i)=>{
     const {card, it, endMin}=task;
     // 移除旧的徽章
     let old=card.querySelector('.tseq-badge'); if(old)old.remove();
     old=card.querySelector('.ttime-badge'); if(old)old.remove();
-    // 序号徽章：按完成时刻排序后的序号
+    // 序号徽章：与卡片视觉顺序一致
     const seqEl=document.createElement('span'); seqEl.className='tseq-badge'; seqEl.textContent=String(i+1);
     const ttitle=card.querySelector('.ttitle'); if(ttitle)ttitle.prepend(seqEl);
 
