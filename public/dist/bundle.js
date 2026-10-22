@@ -6565,7 +6565,7 @@
     const items2 = docs.map((doc) => {
       const name = esc(doc.filename || "\u6587\u6863");
       const size = doc.size_bytes ? esc(" \xB7 " + formatBytes(doc.size_bytes)) : "";
-      const time = doc.created_at ? esc(" \xB7 " + formatLocalDate(doc.created_at, "date-only")) : "";
+      const time = doc.created_at ? esc(" \xB7 " + formatLocalDate(new Date(doc.created_at))) : "";
       return `<div class="doc-item">
       <a href="${esc(doc.url)}" target="_blank" class="doc-link">${name}</a>${size}${time}
       <button type="button" class="btn-icon" data-doc-del="${esc(doc.id)}" title="\u5220\u9664">

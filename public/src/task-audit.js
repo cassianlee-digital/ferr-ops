@@ -304,7 +304,7 @@ function renderDoneDocuments() {
   const items = docs.map((doc) => {
     const name = esc(doc.filename || '文档');
     const size = doc.size_bytes ? esc(' · ' + formatBytes(doc.size_bytes)) : '';
-    const time = doc.created_at ? esc(' · ' + formatLocalDate(doc.created_at, 'date-only')) : '';
+    const time = doc.created_at ? esc(' · ' + formatLocalDate(new Date(doc.created_at))) : '';
     return `<div class="doc-item">
       <a href="${esc(doc.url)}" target="_blank" class="doc-link">${name}</a>${size}${time}
       <button type="button" class="btn-icon" data-doc-del="${esc(doc.id)}" title="删除">
