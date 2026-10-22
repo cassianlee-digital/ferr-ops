@@ -41,7 +41,7 @@ function periodQuery(){
 // 没导入过的老条目 track 是空的，按 dept 归位，别让它们从界面上消失
 const trackOf=s=>s.track||s.dept;
 const isWeeklyNote=s=>s&&s.freq==='weekly'&&(s.note_kind==='goal'||s.note_kind==='review');
-const completionFor=(s,previous=false)=>(previous?window._sopPrevCompletions:window._sopCompletions).get(s.id)||null;
+const completionFor=(s,previous=false)=>(previous?window._sopPrevCompletions:window._sopCompletions).get(s?.id)||null;
 /* 两个判据，别混用：
    - logged：这条要不要走「记一条」流水。判据是 subject_label —— 它就是「这次做的是哪一个」，
      有对象可填才值得一条条记。「周一看数」周目标也写着 1 次，但它没有对象，维持原来的一个勾。
@@ -301,13 +301,13 @@ function detailEl(s){
 }
 
 /* ===== 本周目标 / 上周复盘 =====
-   顶部只是同一条 SOP 完成记录的快捷入口，不另存一份：
+   弹窗和右侧摘要使用同一条 SOP 完成记录，不另存一份：
    周一目标写当前 ISO 周；周五复盘在下一周读取上一 ISO 周。 */
 const FOCUS_TRACKS={sem:['SEM','社媒'],seo:['SEO','GEO']};
 function weeklyNoteDef(track,kind){
   return (window._sops||[]).find(s=>s.track===track&&s.note_kind===kind&&s.freq==='weekly')||null;
 }
-function focusRow(track,kind,periodKey){
+function focusRow(track,kind,periodKey,editable=false){
   const s=weeklyNoteDef(track,kind);
   const row=document.createElement('div'); row.className='weekly-focus-row';
   const label=document.createElement('b'); label.textContent=track; row.appendChild(label);
@@ -317,9 +317,9 @@ function focusRow(track,kind,periodKey){
   }
   const previous=kind==='review';
   const completion=completionFor(s,previous);
-  if(kind==='goal'){
+  if(editable){
     const input=document.createElement('textarea');
-    input.rows=1; input.maxLength=500; input.value=completion?.note||'';
+    input.rows=3; input.maxLength=500; input.value=completion?.note||'';
     input.setAttribute('aria-label',track+' 本周目标');
     input.placeholder='写下这周最重要、可验证的目标…'; input.dataset.weeklyNoteInput=String(s.id);
     const save=document.createElement('button'); save.type='button'; save.className='btn-primary btn-mini weekly-note-save';
@@ -327,47 +327,65 @@ function focusRow(track,kind,periodKey){
     save.innerHTML='<i class="ti ti-device-floppy"></i> '+(completion?.note?'更新':'保存');
     row.append(input,save);
   }else{
-    const text=document.createElement('span'); text.className='weekly-focus-review'+(completion?.note?'':' is-empty');
-    text.textContent=completion?.note||'上周未填写复盘'; row.appendChild(text);
+    const text=document.createElement('span'); text.className='weekly-focus-text'+(completion?.note?'':' is-empty');
+    text.textContent=completion?.note||(previous?'上周未填写复盘':'本周目标未填写'); row.appendChild(text);
     const edit=document.createElement('button'); edit.type='button'; edit.className='btn-mini weekly-note-edit';
     edit.dataset.sopId=String(s.id); edit.dataset.periodKey=periodKey;
     edit.textContent=completion?.note?'去修改':'去补写'; row.appendChild(edit);
   }
   return row;
 }
-function focusSection(title,subtitle,tracks,kind,periodKey){
+function focusSection(title,subtitle,tracks,kind,periodKey,editable=false){
   const section=document.createElement('section'); section.className='weekly-focus-section weekly-focus-'+kind;
   const head=document.createElement('div'); head.className='weekly-focus-section-head';
   const h=document.createElement('strong'); h.textContent=title;
   const sub=document.createElement('span'); sub.textContent=subtitle;
   head.append(h,sub); section.appendChild(head);
-  tracks.forEach(track=>section.appendChild(focusRow(track,kind,periodKey)));
+  tracks.forEach(track=>section.appendChild(focusRow(track,kind,periodKey,editable)));
   return section;
 }
 export function renderWeeklyFocus(){
-  const box=document.getElementById('weekly-focus'); if(!box)return;
   const planDay=document.getElementById('planday-input')?.value;
-  if(planDay&&planDay!==formatLocalDate(new Date())){
-    box.innerHTML=''; box.classList.add('is-hidden'); return;
-  }
-  const active=document.querySelector('#panel-tasks .tboard .pblock.is-active');
+  const isToday=!planDay||planDay===formatLocalDate(new Date());
+  const active=document.querySelector('#panel-tasks > .tboard > .pblock.is-active');
   const tab=active&&active.dataset.planTab;
-  const tracks=FOCUS_TRACKS[tab];
-  box.innerHTML='';
-  if(!tracks){ box.classList.add('is-hidden'); return; }
-  box.classList.remove('is-hidden');
+  const trigger=document.getElementById('weekly-goals-open');
+  if(trigger)trigger.classList.toggle('is-hidden',!isToday||!FOCUS_TRACKS[tab]);
   const current=sopPeriodKey('weekly');
   const previous=shiftIsoWeekKey(current,-1);
-  const head=document.createElement('div'); head.className='weekly-focus-head';
-  const title=document.createElement('strong'); title.textContent='每周目标与反馈';
-  const period=document.createElement('span'); period.textContent=current+' · 保存目标后自动完成对应周一 SOP';
-  head.append(title,period); box.appendChild(head);
+  Object.entries(FOCUS_TRACKS).forEach(([key,tracks])=>{
+    const box=document.getElementById('weekly-focus-'+key); if(!box)return;
+    box.replaceChildren(); box.classList.add('is-hidden');
+    if(!isToday)return;
+    if(_sopCompletionError){
+      const error=document.createElement('div'); error.className='weekly-focus-error';
+      error.textContent='目标与复盘加载失败：'+_sopCompletionError;
+      box.appendChild(error); box.classList.remove('is-hidden'); return;
+    }
+    const goals=tracks.filter(track=>completionFor(weeklyNoteDef(track,'goal'))?.note);
+    const hasReview=tracks.some(track=>completionFor(weeklyNoteDef(track,'review'),true)?.note);
+    if(!goals.length&&!hasReview)return;
+    box.classList.remove('is-hidden');
+    if(goals.length)box.appendChild(focusSection('本周目标',current,goals,'goal',current));
+    box.appendChild(focusSection('上周复盘',previous,tracks,'review',previous));
+  });
+}
+function openWeeklyGoals(){
+  const active=document.querySelector('#panel-tasks > .tboard > .pblock.is-active');
+  const tracks=FOCUS_TRACKS[active?.dataset.planTab];
+  const planDay=document.getElementById('planday-input')?.value;
+  if(!tracks||(planDay&&planDay!==formatLocalDate(new Date())))return;
+  const box=document.getElementById('weekly-goals-fields');
+  box.replaceChildren();
+  document.getElementById('weekly-goals-title').textContent='本周目标 · '+tracks.join(' / ');
   if(_sopCompletionError){
     const error=document.createElement('div'); error.className='weekly-focus-error';
-    error.textContent='目标与复盘加载失败：'+_sopCompletionError; box.appendChild(error); return;
+    error.textContent='目标加载失败：'+_sopCompletionError; box.appendChild(error);
+  }else{
+    box.appendChild(focusSection('填写本周目标',sopPeriodKey('weekly')+' · 各赛道分别保存',tracks,'goal',sopPeriodKey('weekly'),true));
   }
-  box.appendChild(focusSection('本周目标','本周周一确定',tracks,'goal',current));
-  box.appendChild(focusSection('上周复盘',previous+' · 只读展示',tracks,'review',previous));
+  openModal('weeklyGoalsMask');
+  box.querySelector('textarea')?.focus();
 }
 
 let _sopNoteEditing=null;
@@ -496,6 +514,7 @@ export async function submitSop(){
   }catch(e){ toast(e&&e.status===403?'无权操作（仅经理/老板）':'保存失败：'+(e.message||'')); }
 }
 document.addEventListener('click',async e=>{
+  if(e.target.closest('#weekly-goals-open')){ openWeeklyGoals(); return; }
   const edit=e.target.closest('.sop-edit'); const del=e.target.closest('.sop-del');
   if(!edit&&!del)return;
   const tr=(edit||del).closest('tr'); const id=tr&&tr.dataset.sopId; if(!id)return;
@@ -596,7 +615,10 @@ document.addEventListener('click',async e=>{
   if(focusSave){
     const s=(window._sops||[]).find(x=>String(x.id)===focusSave.dataset.sopId);
     const input=document.querySelector(`[data-weekly-note-input="${focusSave.dataset.sopId}"]`);
-    if(s&&input)await saveWeeklyNote(s,focusSave.dataset.periodKey,input.value,focusSave);
+    if(s&&input){
+      const saved=await saveWeeklyNote(s,focusSave.dataset.periodKey,input.value,focusSave);
+      if(saved)focusSave.textContent='已保存';
+    }
     return;
   }
   const focusEdit=e.target.closest('.weekly-note-edit');

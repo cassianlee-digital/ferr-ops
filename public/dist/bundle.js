@@ -5184,7 +5184,7 @@
   }
   var trackOf = (s) => s.track || s.dept;
   var isWeeklyNote = (s) => s && s.freq === "weekly" && (s.note_kind === "goal" || s.note_kind === "review");
-  var completionFor = (s, previous = false) => (previous ? window._sopPrevCompletions : window._sopCompletions).get(s.id) || null;
+  var completionFor = (s, previous = false) => (previous ? window._sopPrevCompletions : window._sopCompletions).get(s?.id) || null;
   var isLogged = (s) => !!s.subject_label;
   var hasQuota = (s) => isLogged(s) && Number(s.target_qty) > 0;
   function doneQty(s) {
@@ -5409,7 +5409,7 @@
   function weeklyNoteDef(track, kind) {
     return (window._sops || []).find((s) => s.track === track && s.note_kind === kind && s.freq === "weekly") || null;
   }
-  function focusRow(track, kind, periodKey) {
+  function focusRow(track, kind, periodKey, editable = false) {
     const s = weeklyNoteDef(track, kind);
     const row = document.createElement("div");
     row.className = "weekly-focus-row";
@@ -5425,9 +5425,9 @@
     }
     const previous = kind === "review";
     const completion = completionFor(s, previous);
-    if (kind === "goal") {
+    if (editable) {
       const input = document.createElement("textarea");
-      input.rows = 1;
+      input.rows = 3;
       input.maxLength = 500;
       input.value = completion?.note || "";
       input.setAttribute("aria-label", track + " \u672C\u5468\u76EE\u6807");
@@ -5442,8 +5442,8 @@
       row.append(input, save2);
     } else {
       const text2 = document.createElement("span");
-      text2.className = "weekly-focus-review" + (completion?.note ? "" : " is-empty");
-      text2.textContent = completion?.note || "\u4E0A\u5468\u672A\u586B\u5199\u590D\u76D8";
+      text2.className = "weekly-focus-text" + (completion?.note ? "" : " is-empty");
+      text2.textContent = completion?.note || (previous ? "\u4E0A\u5468\u672A\u586B\u5199\u590D\u76D8" : "\u672C\u5468\u76EE\u6807\u672A\u586B\u5199");
       row.appendChild(text2);
       const edit = document.createElement("button");
       edit.type = "button";
@@ -5455,7 +5455,7 @@
     }
     return row;
   }
-  function focusSection(title, subtitle, tracks, kind, periodKey) {
+  function focusSection(title, subtitle, tracks, kind, periodKey, editable = false) {
     const section = document.createElement("section");
     section.className = "weekly-focus-section weekly-focus-" + kind;
     const head = document.createElement("div");
@@ -5466,46 +5466,58 @@
     sub.textContent = subtitle;
     head.append(h4, sub);
     section.appendChild(head);
-    tracks.forEach((track) => section.appendChild(focusRow(track, kind, periodKey)));
+    tracks.forEach((track) => section.appendChild(focusRow(track, kind, periodKey, editable)));
     return section;
   }
   function renderWeeklyFocus() {
-    const box = document.getElementById("weekly-focus");
-    if (!box) return;
     const planDay = document.getElementById("planday-input")?.value;
-    if (planDay && planDay !== formatLocalDate(/* @__PURE__ */ new Date())) {
-      box.innerHTML = "";
-      box.classList.add("is-hidden");
-      return;
-    }
-    const active = document.querySelector("#panel-tasks .tboard .pblock.is-active");
+    const isToday = !planDay || planDay === formatLocalDate(/* @__PURE__ */ new Date());
+    const active = document.querySelector("#panel-tasks > .tboard > .pblock.is-active");
     const tab = active && active.dataset.planTab;
-    const tracks = FOCUS_TRACKS[tab];
-    box.innerHTML = "";
-    if (!tracks) {
-      box.classList.add("is-hidden");
-      return;
-    }
-    box.classList.remove("is-hidden");
+    const trigger = document.getElementById("weekly-goals-open");
+    if (trigger) trigger.classList.toggle("is-hidden", !isToday || !FOCUS_TRACKS[tab]);
     const current2 = sopPeriodKey("weekly");
     const previous = shiftIsoWeekKey(current2, -1);
-    const head = document.createElement("div");
-    head.className = "weekly-focus-head";
-    const title = document.createElement("strong");
-    title.textContent = "\u6BCF\u5468\u76EE\u6807\u4E0E\u53CD\u9988";
-    const period = document.createElement("span");
-    period.textContent = current2 + " \xB7 \u4FDD\u5B58\u76EE\u6807\u540E\u81EA\u52A8\u5B8C\u6210\u5BF9\u5E94\u5468\u4E00 SOP";
-    head.append(title, period);
-    box.appendChild(head);
+    Object.entries(FOCUS_TRACKS).forEach(([key, tracks]) => {
+      const box = document.getElementById("weekly-focus-" + key);
+      if (!box) return;
+      box.replaceChildren();
+      box.classList.add("is-hidden");
+      if (!isToday) return;
+      if (_sopCompletionError) {
+        const error = document.createElement("div");
+        error.className = "weekly-focus-error";
+        error.textContent = "\u76EE\u6807\u4E0E\u590D\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + _sopCompletionError;
+        box.appendChild(error);
+        box.classList.remove("is-hidden");
+        return;
+      }
+      const goals = tracks.filter((track) => completionFor(weeklyNoteDef(track, "goal"))?.note);
+      const hasReview = tracks.some((track) => completionFor(weeklyNoteDef(track, "review"), true)?.note);
+      if (!goals.length && !hasReview) return;
+      box.classList.remove("is-hidden");
+      if (goals.length) box.appendChild(focusSection("\u672C\u5468\u76EE\u6807", current2, goals, "goal", current2));
+      box.appendChild(focusSection("\u4E0A\u5468\u590D\u76D8", previous, tracks, "review", previous));
+    });
+  }
+  function openWeeklyGoals() {
+    const active = document.querySelector("#panel-tasks > .tboard > .pblock.is-active");
+    const tracks = FOCUS_TRACKS[active?.dataset.planTab];
+    const planDay = document.getElementById("planday-input")?.value;
+    if (!tracks || planDay && planDay !== formatLocalDate(/* @__PURE__ */ new Date())) return;
+    const box = document.getElementById("weekly-goals-fields");
+    box.replaceChildren();
+    document.getElementById("weekly-goals-title").textContent = "\u672C\u5468\u76EE\u6807 \xB7 " + tracks.join(" / ");
     if (_sopCompletionError) {
       const error = document.createElement("div");
       error.className = "weekly-focus-error";
-      error.textContent = "\u76EE\u6807\u4E0E\u590D\u76D8\u52A0\u8F7D\u5931\u8D25\uFF1A" + _sopCompletionError;
+      error.textContent = "\u76EE\u6807\u52A0\u8F7D\u5931\u8D25\uFF1A" + _sopCompletionError;
       box.appendChild(error);
-      return;
+    } else {
+      box.appendChild(focusSection("\u586B\u5199\u672C\u5468\u76EE\u6807", sopPeriodKey("weekly") + " \xB7 \u5404\u8D5B\u9053\u5206\u522B\u4FDD\u5B58", tracks, "goal", sopPeriodKey("weekly"), true));
     }
-    box.appendChild(focusSection("\u672C\u5468\u76EE\u6807", "\u672C\u5468\u5468\u4E00\u786E\u5B9A", tracks, "goal", current2));
-    box.appendChild(focusSection("\u4E0A\u5468\u590D\u76D8", previous + " \xB7 \u53EA\u8BFB\u5C55\u793A", tracks, "review", previous));
+    openModal("weeklyGoalsMask");
+    box.querySelector("textarea")?.focus();
   }
   var _sopNoteEditing = null;
   function openSopNoteModal(s, periodKey = sopPeriodKey("weekly")) {
@@ -5673,6 +5685,10 @@
     }
   }
   document.addEventListener("click", async (e) => {
+    if (e.target.closest("#weekly-goals-open")) {
+      openWeeklyGoals();
+      return;
+    }
     const edit = e.target.closest(".sop-edit");
     const del = e.target.closest(".sop-del");
     if (!edit && !del) return;
@@ -5784,7 +5800,10 @@
     if (focusSave) {
       const s = (window._sops || []).find((x) => String(x.id) === focusSave.dataset.sopId);
       const input = document.querySelector(`[data-weekly-note-input="${focusSave.dataset.sopId}"]`);
-      if (s && input) await saveWeeklyNote(s, focusSave.dataset.periodKey, input.value, focusSave);
+      if (s && input) {
+        const saved = await saveWeeklyNote(s, focusSave.dataset.periodKey, input.value, focusSave);
+        if (saved) focusSave.textContent = "\u5DF2\u4FDD\u5B58";
+      }
       return;
     }
     const focusEdit = e.target.closest(".weekly-note-edit");
@@ -10236,16 +10255,12 @@
     _day = isToday ? null : day;
     const board = document.querySelector("#panel-tasks > .tboard");
     const hist = document.getElementById("plan-history");
-    const weeklyFocus = document.getElementById("weekly-focus");
     const hint = document.getElementById("planday-hint");
     const input = document.getElementById("planday-input");
     if (input) input.value = day || today2();
     if (board) board.style.display = isToday ? "" : "none";
     if (hist) hist.classList.toggle("is-hidden", isToday);
-    if (weeklyFocus) {
-      weeklyFocus.classList.toggle("is-hidden", !isToday);
-      if (isToday && typeof window.renderWeeklyFocus === "function") window.renderWeeklyFocus();
-    }
+    if (typeof window.renderWeeklyFocus === "function") window.renderWeeklyFocus();
     if (hint) {
       hint.textContent = isToday ? "" : "\u56DE\u653E\u6A21\u5F0F \xB7 \u53EA\u8BFB";
       hint.className = "planday-hint" + (isToday ? "" : " on");

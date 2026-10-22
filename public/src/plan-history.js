@@ -134,16 +134,12 @@ export function setPlanDay(day) {
   // 用后代选择器会抓到它，于是"回到今天"永远把实时看板留在 display:none。
   const board = document.querySelector('#panel-tasks > .tboard');
   const hist = document.getElementById('plan-history');
-  const weeklyFocus = document.getElementById('weekly-focus');
   const hint = document.getElementById('planday-hint');
   const input = document.getElementById('planday-input');
   if (input) input.value = day || today();
   if (board) board.style.display = isToday ? '' : 'none';
   if (hist) hist.classList.toggle('is-hidden',isToday);
-  if (weeklyFocus) {
-    weeklyFocus.classList.toggle('is-hidden',!isToday);
-    if(isToday&&typeof window.renderWeeklyFocus==='function')window.renderWeeklyFocus();
-  }
+  if(typeof window.renderWeeklyFocus==='function')window.renderWeeklyFocus();
   if (hint) {
     hint.textContent = isToday ? '' : '回放模式 · 只读';
     hint.className = 'planday-hint' + (isToday ? '' : ' on');

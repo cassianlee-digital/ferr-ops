@@ -683,6 +683,7 @@
           <button class="btn-mini" data-planday="1" title="后一天"><i class="ti ti-chevron-right"></i></button>
           <button class="btn-mini" id="planday-today"><i class="ti ti-calendar-due"></i> 今天</button>
           <span class="planday-hint" id="planday-hint"></span>
+          <button type="button" class="btn-mini is-hidden" id="weekly-goals-open"><i class="ti ti-target"></i> 本周目标</button>
         </div>
         <div class="is-hidden" id="plan-history"></div>
         <!-- 赛道 Tab：切人看，不再三列并排。选中的那块吃整屏宽，内部左右分栏（SOP 40% / 每日新增 60%）。
@@ -692,7 +693,6 @@
           <button type="button" class="plan-tab" data-tab="seo"><span class="badge b-blue">李</span> SEO &amp; GEO 任务</button>
           <button type="button" class="plan-tab is-hidden" data-tab="co"><span class="badge b-red">公司</span> 公司任务</button>
         </div>
-        <div class="weekly-focus is-hidden" id="weekly-focus" aria-live="polite"></div>
         <div class="tboard">
           <!-- 公司任务（前） -->
           <div class="pblock co-block" data-plan-tab="co" id="cocol-tasks"><div class="pblock-head"><span class="badge b-red">公司</span><span class="pn">公司任务</span><span class="kcount" id="kcount-company">SOP 0 · 派发 0</span></div>
@@ -711,7 +711,7 @@
               <div id="sop-sem"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
                 <div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>
               </div>
-              <div id="newtask-sem"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
+              <div id="newtask-sem"><div class="weekly-focus is-hidden" id="weekly-focus-sem" aria-live="polite"></div><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
                 <button class="add-task" data-ui-action="open-task" data-dept="SEM"><i class="ti ti-plus"></i> 新增</button>
               </div>
             </div>
@@ -722,7 +722,7 @@
               <div id="sop-seo"><div class="colcap"><i class="ti ti-pin"></i> SOP 固定任务</div>
                 <div class="sop-empty-hint csp-s-fec2a1b122">暂无 SOP，去「设置 · SOP 设置」添加</div>
               </div>
-              <div id="newtask-seo"><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
+              <div id="newtask-seo"><div class="weekly-focus is-hidden" id="weekly-focus-seo" aria-live="polite"></div><div class="colcap"><i class="ti ti-plus"></i> 每日新增</div>
                 <button class="add-task" data-ui-action="open-task" data-dept="SEO"><i class="ti ti-plus"></i> 新增</button>
               </div>
             </div>
@@ -1403,7 +1403,16 @@
   </div>
 </div>
 
-<!-- 固定周 SOP 的一句话输入：与顶部本周目标 / 上周复盘共用 sop_completions.note。 -->
+<!-- 本周目标弹窗：按当前人员填写，对应固定周 SOP 的同一份记录。 -->
+<div class="modal-mask" id="weeklyGoalsMask">
+  <div class="modal csp-s-2f0b0e4ba0" role="dialog" aria-modal="true" aria-labelledby="weekly-goals-title">
+    <div class="modal-head"><i class="ti ti-target"></i> <span id="weekly-goals-title">本周目标</span><button type="button" class="x" aria-label="关闭" data-ui-action="close-modal" data-modal="weeklyGoalsMask"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body" id="weekly-goals-fields"></div>
+    <div class="modal-foot"><button type="button" class="btn-ghost" data-ui-action="close-modal" data-modal="weeklyGoalsMask">关闭</button></div>
+  </div>
+</div>
+
+<!-- 固定周 SOP 的一句话输入：与目标摘要 / 上周复盘共用 sop_completions.note。 -->
 <div class="modal-mask" id="sopNoteMask">
   <div class="modal csp-s-2f0b0e4ba0">
     <div class="modal-head"><i class="ti ti-pencil csp-s-b0e08465c2"></i> <span id="sopnote-title">填写周目标</span><span class="x" data-ui-action="close-modal" data-modal="sopNoteMask"><i class="ti ti-x"></i></span></div>
