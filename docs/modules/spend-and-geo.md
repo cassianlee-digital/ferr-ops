@@ -3,6 +3,9 @@
 > 状态：active
 > 守护它的测试：`server/test/spend.test.js`、`server/test/linkCheck.test.js`、`server/test/linkCheckBatch.test.js`、`server/test/geo.test.js`、`server/test/geoChecks.test.js`
 >
+
+- **外链运营记录（2026-10-22）与投入台账分开**：投入台账的 `backlinks` 服务于成本统计与存活核查；资产库「外链记录」服务于日常登记，按付费 / 免费分栏，支持添加日期与登记人 / 归属站点 / 分类筛选。新增 `link_records` 不回填旧台账，避免把旧的上线日误作添加日。
+  免费记录的账密使用 `SETTINGS_SECRET` 加密后存库；列表只返回是否登记，不返回密文或明文，用户点击查看或编辑时才走单条登录接口解密。该内容仍对已登录账号开放，不能把它当作个人密码保险箱。
 > 这里记的是**口径和踩过的坑** —— 代码里看不出来、忘了就会重犯的那些。「现在有哪些文件 / 表 / 接口」看 `docs/FACTS.md`（自动生成）。
 > 2026-10-11 从原来 438 行的 `CLAUDE.md` 里按模块拆出，原文搬运，只更正了几处已核实不成立的说法。
 

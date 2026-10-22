@@ -18,8 +18,8 @@ import { esc, openModal, closeModal, toast } from './ui-kit.js';
 
 /* ---------- per-page inline time filter ---------- */
 const RANGES = ['今天', '昨天', '近7天', '近30天', '近90天', '近一年', '自定义']; // C-2a 三框预设 + C组「可查看近一年」 + 6.23 文档 26「自定义」
-const SCOPES = ['dashboard', 'kpi', 'inquiry', 'data', 'fix'];
-const SCOPE_LABEL = { dashboard: '总览', kpi: 'KPI 考核', inquiry: '询盘评级', data: '数据看板', fix: '整改清单' };
+const SCOPES = ['dashboard', 'kpi', 'inquiry', 'data', 'fix', 'linkRecords'];
+const SCOPE_LABEL = { dashboard: '总览', kpi: 'KPI 考核', inquiry: '询盘评级', data: '数据看板', fix: '整改清单', linkRecords: '外链记录' };
 const DEFAULT_SCOPE = 'dashboard'; // 无时间条的页面（计划/关键词/归档…）顶栏日期跟这个
 const DEFAULT_LABEL = '近30天';
 const GRAN_LABEL = { day: '按天', week: '按周', month: '按月' };

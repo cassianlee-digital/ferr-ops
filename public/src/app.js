@@ -191,6 +191,7 @@ export function go(tab){ if(tab==='ga4'){ try{localStorage.setItem('ferr:sub:dat
   if(tab==='inquiry'){ setTimeout(()=>{try{renderGlobe();}catch(e){}},80); refreshLeadBadge(); } // 线索随时会进来，每次进页都重数一遍待处理数
   if(tab==='audit'){try{loadAudit();}catch(e){}} // 周度审核：每次进入重拉（任务、询盘随时在变）
   if(tab==='spend'){try{loadSpend();}catch(e){}} // 投入台账：每次进入重拉（任务完成、周报录入都会改变汇总）
+  if(tab==='backlink-records'){try{loadLinkRecords();}catch(e){}}
   if(tab==='archive'){try{loadArchive();}catch(e){}} // 归档②：进入归档页时重拉，反映最新归档动作
   if(tab==='tasks'||planCombo){try{loadUrgent();renderSopOverdueBanner();renderReview();}catch(e){}} // Step C：进入任务看板/计划总结时刷新 banner 与周总结
   // 2026-08-26：时间范围分页面独立 → 右上角日期与顶栏 KPI 三个 pill 跟随「当前所在页面」的区间。

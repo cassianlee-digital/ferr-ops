@@ -193,8 +193,8 @@
     ymd: () => ymd
   });
   var RANGES = ["\u4ECA\u5929", "\u6628\u5929", "\u8FD17\u5929", "\u8FD130\u5929", "\u8FD190\u5929", "\u8FD1\u4E00\u5E74", "\u81EA\u5B9A\u4E49"];
-  var SCOPES = ["dashboard", "kpi", "inquiry", "data", "fix"];
-  var SCOPE_LABEL = { dashboard: "\u603B\u89C8", kpi: "KPI \u8003\u6838", inquiry: "\u8BE2\u76D8\u8BC4\u7EA7", data: "\u6570\u636E\u770B\u677F", fix: "\u6574\u6539\u6E05\u5355" };
+  var SCOPES = ["dashboard", "kpi", "inquiry", "data", "fix", "linkRecords"];
+  var SCOPE_LABEL = { dashboard: "\u603B\u89C8", kpi: "KPI \u8003\u6838", inquiry: "\u8BE2\u76D8\u8BC4\u7EA7", data: "\u6570\u636E\u770B\u677F", fix: "\u6574\u6539\u6E05\u5355", linkRecords: "\u5916\u94FE\u8BB0\u5F55" };
   var DEFAULT_SCOPE = "dashboard";
   var DEFAULT_LABEL = "\u8FD130\u5929";
   var GRAN_LABEL = { day: "\u6309\u5929", week: "\u6309\u5468", month: "\u6309\u6708" };
@@ -502,17 +502,17 @@
       label.className = "site-select";
       const text2 = document.createElement("span");
       text2.textContent = "\u7AD9\u70B9";
-      const select = document.createElement("select");
-      select.className = "site-select-input";
+      const select2 = document.createElement("select");
+      select2.className = "site-select-input";
       for (const s of sites) {
         const o = document.createElement("option");
         o.value = String(s.id);
         o.textContent = s.name + (s.is_default ? "\uFF08\u9ED8\u8BA4\uFF09" : "");
-        select.appendChild(o);
+        select2.appendChild(o);
       }
-      select.value = String(current);
+      select2.value = String(current);
       label.appendChild(text2);
-      label.appendChild(select);
+      label.appendChild(select2);
       box.appendChild(label);
       if (box.dataset.siteNote) {
         const note = document.createElement("span");
@@ -536,8 +536,8 @@
   async function loadSiteScope() {
     if (!bound) {
       document.addEventListener("change", (e) => {
-        const select = e.target.closest && e.target.closest(".site-select-input");
-        if (select) choose(Number(select.value));
+        const select2 = e.target.closest && e.target.closest(".site-select-input");
+        if (select2) choose(Number(select2.value));
       });
       document.addEventListener("siteschanged", () => {
         loadSiteScope();
@@ -556,9 +556,9 @@
     current = sites.some((s) => s.id === want) ? want : defaultSite() ? defaultSite().id : null;
     render();
     const servedBefore = before != null ? before : defaultSite() ? defaultSite().id : null;
-    const changed3 = servedBefore !== current;
-    if (changed3) for (const scope of SCOPES_BY_SITE) refreshRangeConsumers(scope);
-    return changed3;
+    const changed4 = servedBefore !== current;
+    if (changed4) for (const scope of SCOPES_BY_SITE) refreshRangeConsumers(scope);
+    return changed4;
   }
 
   // public/src/ai.js
@@ -634,8 +634,8 @@
   }
   async function loadAiAnalyses() {
     try {
-      const { items } = await API.get("/api/ai/analyses");
-      aiAnalyses = new Map((items || []).filter((x) => x && x.scope_key).map((x) => [x.scope_key, x]));
+      const { items: items2 } = await API.get("/api/ai/analyses");
+      aiAnalyses = new Map((items2 || []).filter((x) => x && x.scope_key).map((x) => [x.scope_key, x]));
       applyAiAnalysisStates();
     } catch (e) {
       aiAnalyses = /* @__PURE__ */ new Map();
@@ -858,15 +858,15 @@
   async function sendAiChat() {
     const item = activeAi;
     if (!item) return;
-    const input = document.getElementById("aiChatInput");
-    const msg = (input && input.value || "").trim();
+    const input2 = document.getElementById("aiChatInput");
+    const msg = (input2 && input2.value || "").trim();
     if (!msg) {
       toast2("\u8BF7\u8F93\u5165\u8981\u7EE7\u7EED\u95EE AI \u7684\u5185\u5BB9");
       return;
     }
     const files = [...(document.getElementById("aiChatFiles") || {}).files || []].slice(0, 5).map((f) => ({ name: f.name, type: f.type, size: f.size }));
     const requestVersion = ++modalRequestVersion;
-    if (input) input.value = "";
+    if (input2) input2.value = "";
     document.getElementById("aiModalBody").insertAdjacentHTML("beforeend", '<div class="ai-chat-item user"><div class="bubble">' + esc(msg) + '</div></div><div class="ai-loading"><span class="spin"></span> AI \u6B63\u5728\u7EE7\u7EED\u5206\u6790...</div>');
     try {
       const { item: next } = await API.post("/api/ai/analyses/" + item.id + "/chat", { message: msg, attachments: files });
@@ -875,7 +875,7 @@
       renderAiItem(next);
     } catch (e) {
       if (requestVersion !== modalRequestVersion) return;
-      if (input) input.value = msg;
+      if (input2) input2.value = msg;
       renderAiBody();
       toast2("AI \u8FFD\u95EE\u5931\u8D25\uFF1A" + (e.message || "ai_failed"));
     }
@@ -997,9 +997,9 @@
   async function loadKpiInqDonuts() {
     const requestId = ++kpiInqRequestSequence, revision = getRangeRevision("kpi");
     try {
-      const { items } = await fetchInquiries("kpi");
+      const { items: items2 } = await fetchInquiries("kpi");
       if (requestId !== kpiInqRequestSequence || revision !== getRangeRevision("kpi")) return false;
-      window._inqKpiCache = items || [];
+      window._inqKpiCache = items2 || [];
     } catch (e) {
       if (requestId !== kpiInqRequestSequence || revision !== getRangeRevision("kpi")) return false;
       window._inqKpiCache = [];
@@ -1915,8 +1915,8 @@
             { label: "\u8F6C\u5316\xB7\u4E0A\u4E00\u533A\u95F4", data: prevConv, borderColor: "rgba(21,168,90,.5)", borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, tension: 0.3, fill: false, spanGaps: true, yAxisID: "y1" }
           );
         }
-        window._semTrend = new Chart(trendCv, { type: "line", data: { labels: aligned.labels, datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: hasPrev ? { callbacks: { footer: (items) => {
-          const i = items && items[0] && items[0].dataIndex;
+        window._semTrend = new Chart(trendCv, { type: "line", data: { labels: aligned.labels, datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: hasPrev ? { callbacks: { footer: (items2) => {
+          const i = items2 && items2[0] && items2[0].dataIndex;
           const pd = i != null ? prevDate[i] : null;
           return pd ? "\u5BF9\u5E94\u4E0A\u4E00\u533A\u95F4\uFF1A" + pd : "";
         } } } : {} }, scales: { x: { ticks: { maxTicksLimit: _xTickLimit(aligned.labels.length), font: { size: 10 } } }, y: { position: "left", beginAtZero: true }, y1: { position: "right", beginAtZero: true, grid: { drawOnChartArea: false } } } } });
@@ -2146,9 +2146,9 @@
   async function loadDashboardInq() {
     const requestId = ++dashboardInqRequestSequence, revision = getRangeRevision("dashboard");
     try {
-      const { items } = await fetchInquiries("dashboard");
+      const { items: items2 } = await fetchInquiries("dashboard");
       if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision("dashboard")) return false;
-      window._inqDashboardCache = items || [];
+      window._inqDashboardCache = items2 || [];
       _inqDashboardError = null;
     } catch (e) {
       if (requestId !== dashboardInqRequestSequence || revision !== getRangeRevision("dashboard")) return false;
@@ -2196,7 +2196,7 @@
       // 鼠标对到 x 轴某天，两条线同时高亮
       plugins: {
         legend: { display: false },
-        tooltip: { enabled: true, callbacks: { title: (items) => items[0] ? items[0].label : "", label: (ctx) => ctx.dataset.label + "\uFF1A" + ctx.parsed.y } }
+        tooltip: { enabled: true, callbacks: { title: (items2) => items2[0] ? items2[0].label : "", label: (ctx) => ctx.dataset.label + "\uFF1A" + ctx.parsed.y } }
         // 6.23 文档 2：悬停显示当日
       },
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
@@ -2838,15 +2838,15 @@
     cell3.removeAttribute("aria-busy");
   }
   function setDateInputsBusy(inputs, busy) {
-    inputs.forEach((input) => {
+    inputs.forEach((input2) => {
       if (busy) {
-        input._tableEditorWasDisabled = input.disabled;
-        input.disabled = true;
-        input.setAttribute("aria-busy", "true");
+        input2._tableEditorWasDisabled = input2.disabled;
+        input2.disabled = true;
+        input2.setAttribute("aria-busy", "true");
       } else {
-        input.disabled = Boolean(input._tableEditorWasDisabled);
-        delete input._tableEditorWasDisabled;
-        input.removeAttribute("aria-busy");
+        input2.disabled = Boolean(input2._tableEditorWasDisabled);
+        delete input2._tableEditorWasDisabled;
+        input2.removeAttribute("aria-busy");
       }
     });
   }
@@ -2859,29 +2859,29 @@
       cell3._old = cell3.innerText;
       return;
     }
-    const input = closest(event.target, DATE_INPUT);
-    if (input) input._oldValue = input.value;
+    const input2 = closest(event.target, DATE_INPUT);
+    if (input2) input2._oldValue = input2.value;
   }
   async function handleDateChange(event) {
-    const input = closest(event.target, DATE_INPUT);
-    if (!input) return;
-    const row = input.closest("tr");
+    const input2 = closest(event.target, DATE_INPUT);
+    if (!input2) return;
+    const row = input2.closest("tr");
     const endpoint = row && row.dataset.ep;
     const id = row && row.dataset.id;
     if (!endpoint || !id) return;
-    const container = input.closest("td");
+    const container = input2.closest("td");
     const inputs = [...container.querySelectorAll("input.cell-date")];
-    const oldValue = input._oldValue != null ? input._oldValue : input.defaultValue;
+    const oldValue = input2._oldValue != null ? input2._oldValue : input2.defaultValue;
     setDateInputsBusy(inputs, true);
     try {
-      await API.patch(endpoint + "/" + id, { [input.dataset.field]: dateFieldValue(inputs) });
+      await API.patch(endpoint + "/" + id, { [input2.dataset.field]: dateFieldValue(inputs) });
       inputs.forEach((item) => {
         item._oldValue = item.value;
         item.defaultValue = item.value;
       });
       toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93");
     } catch (error) {
-      input.value = oldValue || "";
+      input2.value = oldValue || "";
       toast2(error && error.status === 403 ? "\u65E0\u6743\u4FEE\u6539\uFF0C\u5DF2\u6062\u590D\u65E7\u503C" : "\u4FDD\u5B58\u5931\u8D25\uFF0C\u5DF2\u6062\u590D\u65E7\u503C");
     } finally {
       setDateInputsBusy(inputs, false);
@@ -3021,41 +3021,41 @@
   }
   function pickImages({ multiple = true } = {}) {
     return new Promise((resolve) => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = ACCEPT;
-      input.multiple = !!multiple;
-      input.className = "att-file-input";
-      input.addEventListener("change", () => {
-        const files = [...input.files || []];
-        input.remove();
+      const input2 = document.createElement("input");
+      input2.type = "file";
+      input2.accept = ACCEPT;
+      input2.multiple = !!multiple;
+      input2.className = "att-file-input";
+      input2.addEventListener("change", () => {
+        const files = [...input2.files || []];
+        input2.remove();
         resolve(files);
       });
-      document.body.appendChild(input);
-      input.click();
+      document.body.appendChild(input2);
+      input2.click();
     });
   }
   function pickDocuments({ multiple = true } = {}) {
     return new Promise((resolve) => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = ACCEPT_DOCS;
-      input.multiple = !!multiple;
-      input.className = "att-file-input";
-      input.addEventListener("change", () => {
-        const files = [...input.files || []];
-        input.remove();
+      const input2 = document.createElement("input");
+      input2.type = "file";
+      input2.accept = ACCEPT_DOCS;
+      input2.multiple = !!multiple;
+      input2.className = "att-file-input";
+      input2.addEventListener("change", () => {
+        const files = [...input2.files || []];
+        input2.remove();
         resolve(files);
       });
-      document.body.appendChild(input);
-      input.click();
+      document.body.appendChild(input2);
+      input2.click();
     });
   }
   function getClipboardImages(pasteEvent) {
-    const items = (pasteEvent.clipboardData || pasteEvent.originalEvent?.clipboardData)?.items;
-    if (!items) return [];
+    const items2 = (pasteEvent.clipboardData || pasteEvent.originalEvent?.clipboardData)?.items;
+    if (!items2) return [];
     const files = [];
-    for (const item of items) {
+    for (const item of items2) {
       if (item.type.startsWith("image/")) {
         const file = item.getAsFile();
         if (file) files.push(file);
@@ -3167,8 +3167,8 @@
   async function deleteImage(id) {
     await API.del("/api/attachments/" + encodeURIComponent(id));
   }
-  function thumbsHtml(items, { deletable = false } = {}) {
-    const list = Array.isArray(items) ? items : [];
+  function thumbsHtml(items2, { deletable = false } = {}) {
+    const list = Array.isArray(items2) ? items2 : [];
     if (!list.length) return "";
     return '<span class="att-thumbs">' + list.map((im) => {
       const isImage = im.mime && im.mime.startsWith("image/");
@@ -3355,13 +3355,13 @@
     renderPending();
   }
   async function pickSalesDocuments() {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
-    input.click();
+    const input2 = document.createElement("input");
+    input2.type = "file";
+    input2.multiple = true;
+    input2.accept = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
+    input2.click();
     const files = await new Promise((resolve) => {
-      input.addEventListener("change", () => resolve(Array.from(input.files || [])));
+      input2.addEventListener("change", () => resolve(Array.from(input2.files || [])));
     });
     if (!files.length) return;
     pendingFiles = pendingFiles.concat(files);
@@ -3803,13 +3803,13 @@
     line(box, "attr-log-empty", "\u52A0\u8F7D\u4E2D\u2026");
     openModal("attrLogModal");
     try {
-      const { items } = await API.get(path);
+      const { items: items2 } = await API.get(path);
       box.textContent = "";
-      if (!items.length) {
+      if (!items2.length) {
         line(box, "attr-log-empty", empty2);
         return;
       }
-      for (const c of items) {
+      for (const c of items2) {
         const item = document.createElement("div");
         item.className = "attr-log-item";
         line(item, "attr-log-head", describe(c));
@@ -4513,9 +4513,9 @@
     const revision = getRangeRevision("inquiry");
     loadKpiInqDonuts();
     try {
-      const { items, stats } = await fetchInquiries("inquiry");
+      const { items: items2, stats } = await fetchInquiries("inquiry");
       if (requestId !== inquiryRequestSequence || revision !== getRangeRevision("inquiry")) return;
-      window._inqCache = items || [];
+      window._inqCache = items2 || [];
       renderInqList();
       refreshInqStats(stats);
       loadAttrCoverage();
@@ -4582,8 +4582,8 @@
     const ts = e.target.closest(".tagselect");
     if (ts) {
       curSel = ts;
-      const kind = ts.dataset.kind;
-      const opts = OPT[kind] || [];
+      const kind2 = ts.dataset.kind;
+      const opts = OPT[kind2] || [];
       const r = ts.getBoundingClientRect();
       menu.innerHTML = opts.map((o) => `<div class="opt" data-v="${esc(o[0])}" data-c="${esc(o[1])}"><span class="badge ${esc(o[1])}">${esc(o[0])}</span></div>`).join("");
       menu.style.display = "flex";
@@ -4604,12 +4604,12 @@
     menu.style.display = "none";
   });
   async function persistTagChange(el5, value) {
-    const kind = el5.dataset.kind;
+    const kind2 = el5.dataset.kind;
     const tr2 = el5.closest("tr");
     const id = tr2 && tr2.dataset.id;
     if (!id) return;
     if (tr2.dataset.kwType) {
-      const attrKey = { comp: "comp", optstatus: "optstatus", match: "match", priority: "priority", intent: "searchIntent" }[kind];
+      const attrKey = { comp: "comp", optstatus: "optstatus", match: "match", priority: "priority", intent: "searchIntent" }[kind2];
       if (!attrKey) return;
       try {
         await API.patch("/api/keywords/" + id, { attrs: { [attrKey]: value } });
@@ -4641,7 +4641,7 @@
       product: "product",
       channel: "channel"
     };
-    const field3 = fieldMap[kind];
+    const field3 = fieldMap[kind2];
     if (!field3) return;
     try {
       await API.patch(ep + "/" + id, { [field3]: value });
@@ -4680,8 +4680,8 @@
     }
   } catch (e) {
   }
-  function clsOf(kind, val) {
-    const o = (OPT[kind] || []).find((x) => x[0] === val);
+  function clsOf(kind2, val) {
+    const o = (OPT[kind2] || []).find((x) => x[0] === val);
     return o ? o[1] : "b-gray";
   }
   function kwRow(type, r) {
@@ -4868,9 +4868,9 @@
   }
   async function loadKeywords() {
     try {
-      const { items } = await API.get("/api/keywords");
+      const { items: items2 } = await API.get("/api/keywords");
       const byType = { seo: [], sem: [], high: [], customer: [] };
-      (items || []).forEach((r) => {
+      (items2 || []).forEach((r) => {
         if (byType[r.type]) byType[r.type].push(r);
       });
       Object.keys(KW_TB).forEach((t) => {
@@ -5198,8 +5198,8 @@
   }
   async function loadSops() {
     try {
-      const { items } = await API.get("/api/sop");
-      window._sops = items || [];
+      const { items: items2 } = await API.get("/api/sop");
+      window._sops = items2 || [];
     } catch (e) {
       window._sops = [];
       if (e && e.message !== "unauthorized") toast2("SOP \u52A0\u8F7D\u5931\u8D25\uFF1A" + (e.message || ""));
@@ -5211,13 +5211,13 @@
         API.get("/api/sop/completions?" + q),
         API.get("/api/sop/completions?weekly=" + encodeURIComponent(previousWeek))
       ]);
-      const items = current2.items || [];
+      const items2 = current2.items || [];
       window._sopDone = { daily: /* @__PURE__ */ new Set(), weekly: /* @__PURE__ */ new Set(), monthly: /* @__PURE__ */ new Set() };
-      window._sopCompletions = new Map(items.map((c) => [c.sop_id, c]));
+      window._sopCompletions = new Map(items2.map((c) => [c.sop_id, c]));
       window._sopPrevCompletions = new Map((previous.items || []).map((c) => [c.sop_id, c]));
       _sopCompletionError = "";
       const keyToFreq = { [sopPeriodKey("daily")]: "daily", [sopPeriodKey("weekly")]: "weekly", [sopPeriodKey("monthly")]: "monthly" };
-      (items || []).forEach((c) => {
+      (items2 || []).forEach((c) => {
         const f = keyToFreq[c.period_key];
         if (f) window._sopDone[f].add(c.sop_id);
       });
@@ -5406,11 +5406,11 @@
     return wrap;
   }
   var FOCUS_TRACKS = { sem: ["SEM", "\u793E\u5A92"], seo: ["SEO", "GEO"] };
-  function weeklyNoteDef(track, kind) {
-    return (window._sops || []).find((s) => s.track === track && s.note_kind === kind && s.freq === "weekly") || null;
+  function weeklyNoteDef(track, kind2) {
+    return (window._sops || []).find((s) => s.track === track && s.note_kind === kind2 && s.freq === "weekly") || null;
   }
-  function focusRow(track, kind, periodKey, editable = false) {
-    const s = weeklyNoteDef(track, kind);
+  function focusRow(track, kind2, periodKey, editable = false) {
+    const s = weeklyNoteDef(track, kind2);
     const row = document.createElement("div");
     row.className = "weekly-focus-row";
     const label = document.createElement("b");
@@ -5423,23 +5423,23 @@
       row.appendChild(missing);
       return row;
     }
-    const previous = kind === "review";
+    const previous = kind2 === "review";
     const completion = completionFor(s, previous);
     if (editable) {
-      const input = document.createElement("textarea");
-      input.rows = 3;
-      input.maxLength = 500;
-      input.value = completion?.note || "";
-      input.setAttribute("aria-label", track + " \u672C\u5468\u76EE\u6807");
-      input.placeholder = "\u5199\u4E0B\u8FD9\u5468\u6700\u91CD\u8981\u3001\u53EF\u9A8C\u8BC1\u7684\u76EE\u6807\u2026";
-      input.dataset.weeklyNoteInput = String(s.id);
+      const input2 = document.createElement("textarea");
+      input2.rows = 3;
+      input2.maxLength = 500;
+      input2.value = completion?.note || "";
+      input2.setAttribute("aria-label", track + " \u672C\u5468\u76EE\u6807");
+      input2.placeholder = "\u5199\u4E0B\u8FD9\u5468\u6700\u91CD\u8981\u3001\u53EF\u9A8C\u8BC1\u7684\u76EE\u6807\u2026";
+      input2.dataset.weeklyNoteInput = String(s.id);
       const save2 = document.createElement("button");
       save2.type = "button";
       save2.className = "btn-primary btn-mini weekly-note-save";
       save2.dataset.sopId = String(s.id);
       save2.dataset.periodKey = periodKey;
       save2.innerHTML = '<i class="ti ti-device-floppy"></i> ' + (completion?.note ? "\u66F4\u65B0" : "\u4FDD\u5B58");
-      row.append(input, save2);
+      row.append(input2, save2);
     } else {
       const text2 = document.createElement("span");
       text2.className = "weekly-focus-text" + (completion?.note ? "" : " is-empty");
@@ -5455,9 +5455,9 @@
     }
     return row;
   }
-  function focusSection(title, subtitle, tracks, kind, periodKey, editable = false) {
+  function focusSection(title, subtitle, tracks, kind2, periodKey, editable = false) {
     const section = document.createElement("section");
-    section.className = "weekly-focus-section weekly-focus-" + kind;
+    section.className = "weekly-focus-section weekly-focus-" + kind2;
     const head = document.createElement("div");
     head.className = "weekly-focus-section-head";
     const h4 = document.createElement("strong");
@@ -5466,7 +5466,7 @@
     sub.textContent = subtitle;
     head.append(h4, sub);
     section.appendChild(head);
-    tracks.forEach((track) => section.appendChild(focusRow(track, kind, periodKey, editable)));
+    tracks.forEach((track) => section.appendChild(focusRow(track, kind2, periodKey, editable)));
     return section;
   }
   function renderWeeklyFocus() {
@@ -5528,11 +5528,11 @@
     document.getElementById("sopnote-standard").textContent = s.done_when || s.content || "";
     const standard = document.getElementById("sopnote-standard-box");
     standard.classList.toggle("is-hidden", !(s.done_when || s.content));
-    const input = document.getElementById("sopnote-text");
-    input.value = completion?.note || "";
-    input.placeholder = s.note_kind === "goal" ? "\u5199\u4E0B\u8FD9\u5468\u6700\u91CD\u8981\u3001\u53EF\u9A8C\u8BC1\u7684\u76EE\u6807\u2026" : "\u7528\u4E00\u53E5\u8BDD\u603B\u7ED3\u672C\u5468\u60C5\u51B5\u548C\u4E0B\u5468\u8C03\u6574\u2026";
+    const input2 = document.getElementById("sopnote-text");
+    input2.value = completion?.note || "";
+    input2.placeholder = s.note_kind === "goal" ? "\u5199\u4E0B\u8FD9\u5468\u6700\u91CD\u8981\u3001\u53EF\u9A8C\u8BC1\u7684\u76EE\u6807\u2026" : "\u7528\u4E00\u53E5\u8BDD\u603B\u7ED3\u672C\u5468\u60C5\u51B5\u548C\u4E0B\u5468\u8C03\u6574\u2026";
     openModal("sopNoteMask");
-    setTimeout(() => input.focus(), 50);
+    setTimeout(() => input2.focus(), 50);
   }
   async function saveWeeklyNote(s, periodKey, note, button) {
     const value = String(note || "").trim();
@@ -5760,8 +5760,8 @@
   window._urgentTasks = [];
   async function loadUrgent() {
     try {
-      const { items } = await API.get("/api/loop-items?urgent=1");
-      window._urgentTasks = (items || []).filter((it) => {
+      const { items: items2 } = await API.get("/api/loop-items?urgent=1");
+      window._urgentTasks = (items2 || []).filter((it) => {
         const st2 = it.state || "";
         const ss = it.status || "";
         return st2 !== "done" && ss !== "done";
@@ -5799,9 +5799,9 @@
     const focusSave = e.target.closest(".weekly-note-save");
     if (focusSave) {
       const s = (window._sops || []).find((x) => String(x.id) === focusSave.dataset.sopId);
-      const input = document.querySelector(`[data-weekly-note-input="${focusSave.dataset.sopId}"]`);
-      if (s && input) {
-        const saved = await saveWeeklyNote(s, focusSave.dataset.periodKey, input.value, focusSave);
+      const input2 = document.querySelector(`[data-weekly-note-input="${focusSave.dataset.sopId}"]`);
+      if (s && input2) {
+        const saved = await saveWeeklyNote(s, focusSave.dataset.periodKey, input2.value, focusSave);
         if (saved) focusSave.textContent = "\u5DF2\u4FDD\u5B58";
       }
       return;
@@ -5990,13 +5990,13 @@
     const on = document.querySelector("#panel-tasks .tboard .pblock.is-active");
     return on ? on.dataset.planTab : null;
   }
-  function setPlanTab(key, { remember = true } = {}) {
+  function setPlanTab(key, { remember: remember2 = true } = {}) {
     const ok = availableTabs();
     const next = ok.includes(key) ? key : ok[0] || null;
     if (!next) return;
     blocks().forEach((b) => b.classList.toggle("is-active", b.dataset.planTab === next));
     tabBtns().forEach((b) => b.classList.toggle("on", b.dataset.tab === next));
-    if (remember) {
+    if (remember2) {
       try {
         localStorage.setItem(KEY, next);
       } catch (e) {
@@ -6145,8 +6145,8 @@
   function openPrioPop(anchor, cur, onPick) {
     const v = normPrio(cur);
     const rows2 = PRIOS.map((p) => `<div class="tpop-opt${p.v === v ? " on" : ""}" data-pop="prio" data-v="${p.v}"><i class="ti ti-flag${p.v === 4 ? "" : "-filled"} ${p.cls}"></i><span>${p.label}</span>` + (p.v === v ? '<i class="ti ti-check tpop-tick"></i>' : "") + "</div>").join("");
-    openPop(anchor, `<div class="tpop-list">${rows2}</div>`, (kind, val) => {
-      if (kind !== "prio") return;
+    openPop(anchor, `<div class="tpop-list">${rows2}</div>`, (kind2, val) => {
+      if (kind2 !== "prio") return;
       closePop();
       onPick(Number(val));
     });
@@ -6220,37 +6220,37 @@
         if (target) times.scrollTop = Math.max(0, target.offsetTop - times.clientHeight / 2 + target.offsetHeight / 2);
       }
     };
-    openPop(anchor, render10(), (kind, val) => {
-      if (kind === "d") {
+    openPop(anchor, render10(), (kind2, val) => {
+      if (kind2 === "d") {
         date = val;
         onApply({ date, hour });
         closePop();
         return;
       }
-      if (kind === "clear") {
+      if (kind2 === "clear") {
         date = "";
         hour = "";
         onApply({ date, hour });
         closePop();
         return;
       }
-      if (kind === "time") {
+      if (kind2 === "time") {
         mode = "time";
         paint();
         return;
       }
-      if (kind === "back") {
+      if (kind2 === "back") {
         mode = "date";
         paint();
         return;
       }
-      if (kind === "hclear") {
+      if (kind2 === "hclear") {
         hour = "";
         onApply({ date, hour });
         closePop();
         return;
       }
-      if (kind === "h") {
+      if (kind2 === "h") {
         hour = val;
         onApply({ date, hour });
         closePop();
@@ -6308,15 +6308,15 @@
     const opts = linkOptions || {};
     box.textContent = "";
     if (type === "page" || type === "keyword") {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.id = "task-link-input";
-      input.placeholder = type === "page" ? "https://\u2026 \u5B8C\u6574\u7F51\u5740" : "\u5173\u952E\u8BCD\u539F\u6587";
-      input.setAttribute("list", "task-link-list");
+      const input2 = document.createElement("input");
+      input2.type = "text";
+      input2.id = "task-link-input";
+      input2.placeholder = type === "page" ? "https://\u2026 \u5B8C\u6574\u7F51\u5740" : "\u5173\u952E\u8BCD\u539F\u6587";
+      input2.setAttribute("list", "task-link-list");
       const list = document.createElement("datalist");
       list.id = "task-link-list";
       ((type === "page" ? opts.pages : opts.keywords) || []).forEach((v) => list.appendChild(option(v, v)));
-      box.append(input, list);
+      box.append(input2, list);
       return;
     }
     const sel = document.createElement("select");
@@ -6329,11 +6329,11 @@
     } else {
       sel.appendChild(option("", "\u9009\u62E9 KPI\u2026"));
       for (const group of Object.keys(KPI_GROUP_LABEL)) {
-        const items = (opts.kpis || []).filter((k) => k.group === group);
-        if (!items.length) continue;
+        const items2 = (opts.kpis || []).filter((k) => k.group === group);
+        if (!items2.length) continue;
         const og = document.createElement("optgroup");
         og.label = KPI_GROUP_LABEL[group];
-        items.forEach((k) => og.appendChild(option(k.key, k.label)));
+        items2.forEach((k) => og.appendChild(option(k.key, k.label)));
         sel.appendChild(og);
       }
     }
@@ -6358,29 +6358,29 @@
       const chip = document.createElement("span");
       chip.className = "tlink-chip";
       chip.title = l.ref;
-      const kind = document.createElement("b");
-      kind.textContent = LINK_LABEL[l.type] || l.type;
+      const kind2 = document.createElement("b");
+      kind2.textContent = LINK_LABEL[l.type] || l.type;
       const del = document.createElement("button");
       del.type = "button";
       del.className = "tlink-del";
       del.dataset.linkIdx = String(i);
       del.title = "\u79FB\u9664";
       del.textContent = "\xD7";
-      chip.append(kind, document.createTextNode(linkText(l)), del);
+      chip.append(kind2, document.createTextNode(linkText(l)), del);
       box.appendChild(chip);
     });
   }
   function pendingLink() {
     const typeEl = $4("task-link-type");
-    const input = $4("task-link-input");
-    if (!typeEl || !input) return null;
+    const input2 = $4("task-link-input");
+    if (!typeEl || !input2) return null;
     const type = typeEl.value;
-    let ref2 = String(input.value || "").trim();
+    let ref2 = String(input2.value || "").trim();
     if (!ref2) return null;
     let label = null;
     if (type === "page" && !isHttp2(ref2)) return "\u9875\u9762\u8981\u586B\u5B8C\u6574\u7F51\u5740\uFF08http/https \u5F00\u5934\uFF09";
     if (type === "keyword") ref2 = ref2.toLowerCase().replace(/\s+/g, " ");
-    if (type === "campaign" || type === "kpi") label = input.options[input.selectedIndex].textContent;
+    if (type === "campaign" || type === "kpi") label = input2.options[input2.selectedIndex].textContent;
     return { type, ref: ref2, label };
   }
   function addTaskLink() {
@@ -6394,8 +6394,8 @@
       return false;
     }
     if (!draftLinks.some((x) => x.type === l.type && x.ref === l.ref)) draftLinks.push(l);
-    const input = $4("task-link-input");
-    if (input) input.value = "";
+    const input2 = $4("task-link-input");
+    if (input2) input2.value = "";
     renderLinkChips();
     return true;
   }
@@ -6562,7 +6562,7 @@
       box.innerHTML = '<p class="text-muted">\u6682\u65E0\u6587\u6863</p>';
       return;
     }
-    const items = docs.map((doc) => {
+    const items2 = docs.map((doc) => {
       const name = esc(doc.filename || "\u6587\u6863");
       const size = doc.size_bytes ? esc(" \xB7 " + formatBytes(doc.size_bytes)) : "";
       const time = doc.created_at ? esc(" \xB7 " + formatLocalDate(doc.created_at, "date-only")) : "";
@@ -6573,7 +6573,7 @@
       </button>
     </div>`;
     }).join("");
-    box.innerHTML = items;
+    box.innerHTML = items2;
   }
   function formatBytes(bytes) {
     if (bytes < 1024) return bytes + " B";
@@ -6826,9 +6826,9 @@
     table2.appendChild(thead);
     const tbody = el("tbody");
     for (const item of data3.items) {
-      const kind = LINK_LABEL[item.type] || item.type;
+      const kind2 = LINK_LABEL[item.type] || item.type;
       const where = SOURCE_SUFFIX[item.source] || "";
-      effectRows(tbody, kind + where + (item.site ? " \xB7 " + item.site : ""), item.type === "page" ? linkText(item) : item.label || item.ref, item, data3.metrics);
+      effectRows(tbody, kind2 + where + (item.site ? " \xB7 " + item.site : ""), item.type === "page" ? linkText(item) : item.label || item.ref, item, data3.metrics);
     }
     const whose = data3.site ? "\uFF08" + data3.site + "\uFF09" : "";
     if (data3.baseline.gsc) effectRows(tbody, "\u53C2\u7167 \xB7 \u5168\u7AD9\u81EA\u7136\u641C\u7D22\u540C\u671F" + whose, "", data3.baseline.gsc, data3.metrics, "is-baseline");
@@ -6988,20 +6988,20 @@
   document.addEventListener("click", async (e) => {
     const action = e.target.closest("[data-loop-action]");
     if (action) {
-      const kind = action.dataset.loopAction;
-      if (kind === "check") chk(action);
-      else if (kind === "task-defer") taskDefer(action);
-      else if (kind === "task-drop") taskDrop(action);
-      else if (kind === "task-split") openSubtaskModal(action);
-      else if (kind === "task-delete") taskDel(action);
-      else if (kind === "task-edit") openTaskEdit(action);
-      else if (kind === "task-prio") taskPrioPop(action);
-      else if (kind === "task-date-pop") taskDatePop(action);
-      else if (kind === "task-push") taskPush(action);
-      else if (kind === "task-result") taskResult(action);
-      else if (kind === "deposit-delete") depDel(action);
-      else if (kind === "content-delete") contentDel(action);
-      else if (kind === "ai-action") aiAct(action, action.dataset.kind);
+      const kind2 = action.dataset.loopAction;
+      if (kind2 === "check") chk(action);
+      else if (kind2 === "task-defer") taskDefer(action);
+      else if (kind2 === "task-drop") taskDrop(action);
+      else if (kind2 === "task-split") openSubtaskModal(action);
+      else if (kind2 === "task-delete") taskDel(action);
+      else if (kind2 === "task-edit") openTaskEdit(action);
+      else if (kind2 === "task-prio") taskPrioPop(action);
+      else if (kind2 === "task-date-pop") taskDatePop(action);
+      else if (kind2 === "task-push") taskPush(action);
+      else if (kind2 === "task-result") taskResult(action);
+      else if (kind2 === "deposit-delete") depDel(action);
+      else if (kind2 === "content-delete") contentDel(action);
+      else if (kind2 === "ai-action") aiAct(action, action.dataset.kind);
       return;
     }
     const jump = e.target.closest(".row-plan-go");
@@ -7259,9 +7259,9 @@
   async function loadTaskCheckins(isCurrent = () => true) {
     const nextCheckins = /* @__PURE__ */ new Map();
     try {
-      const { items } = await API.get("/api/task-checkins/summary?day=" + encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date())));
+      const { items: items2 } = await API.get("/api/task-checkins/summary?day=" + encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date())));
       if (!isCurrent()) return null;
-      (items || []).forEach((r) => nextCheckins.set(Number(r.loop_item_id), { days: r.days || 0, last: r.last_day || "", today: !!r.today_done }));
+      (items2 || []).forEach((r) => nextCheckins.set(Number(r.loop_item_id), { days: r.days || 0, last: r.last_day || "", today: !!r.today_done }));
       taskCheckins = nextCheckins;
       return null;
     } catch (e) {
@@ -7750,8 +7750,8 @@
   function persistFix(s, text2) {
     return API.post("/api/fixes", { title: clip(text2, 24), dept: s.dept, detail: text2, owner: s.owner, due_date: futureDate(7), status: "\u8BA1\u5212\u4E0B\u5468", source: "AI\u8BCA\u65AD" });
   }
-  function persistLoop(kind, s, content, status) {
-    return API.post("/api/loop-items", { kind, dept: s.dept, content, owner: s.owner, status: status || "" });
+  function persistLoop(kind2, s, content, status) {
+    return API.post("/api/loop-items", { kind: kind2, dept: s.dept, content, owner: s.owner, status: status || "" });
   }
   async function createEvidenceFix(dept, title, detail, evidence, source = "\u8BCA\u65AD\u5F15\u64CE") {
     const s = sFromDept(dept);
@@ -7849,9 +7849,9 @@
     resetClosedLoopView();
     aiDone = { \u6C89\u6DC0: /* @__PURE__ */ new Set(), \u91C7\u7EB3: /* @__PURE__ */ new Set(), \u6D4B\u8BD5: /* @__PURE__ */ new Set() };
     try {
-      const { items } = await API.get("/api/fixes");
+      const { items: items2 } = await API.get("/api/fixes");
       if (loadVersion !== closedLoopLoadVersion) return;
-      (items || []).slice().reverse().forEach((f) => {
+      (items2 || []).slice().reverse().forEach((f) => {
         addFixFromObj(f);
         aiDone.\u91C7\u7EB3.add(aiFp(f.dept, f.detail || f.title));
       });
@@ -7870,9 +7870,9 @@
     const _pendingSubtasks = [];
     const _autoArchiveParents = [];
     try {
-      const { items } = await API.get("/api/loop-items");
+      const { items: items2 } = await API.get("/api/loop-items");
       if (loadVersion !== closedLoopLoadVersion) return;
-      (items || []).slice().reverse().forEach((it) => {
+      (items2 || []).slice().reverse().forEach((it) => {
         const s = sFromDept(it.dept);
         if (it.kind === "deposit") {
           const tr2 = document.createElement("tr");
@@ -7991,12 +7991,12 @@
   async function loadContent() {
     const loadVersion = ++contentLoadVersion;
     try {
-      const { items } = await API.get("/api/content-assets");
+      const { items: items2 } = await API.get("/api/content-assets");
       if (loadVersion !== contentLoadVersion) return;
       const tb = document.getElementById("tb-content");
       if (!tb) return;
       tb.innerHTML = "";
-      (items || []).forEach((r) => {
+      (items2 || []).forEach((r) => {
         const tr2 = document.createElement("tr");
         tr2.dataset.id = r.id;
         tr2.dataset.ep = "/api/content-assets";
@@ -8004,7 +8004,7 @@
         tb.appendChild(tr2);
       });
       const e = document.getElementById("content-empty");
-      if (e) e.style.display = items && items.length ? "none" : "block";
+      if (e) e.style.display = items2 && items2.length ? "none" : "block";
     } catch (e) {
       if (loadVersion !== contentLoadVersion) return;
       if (e && e.message !== "unauthorized") {
@@ -8049,10 +8049,10 @@
   function aiFp(dept, text2) {
     return (dept || "") + "|" + String(text2 || "").trim().slice(0, 200);
   }
-  function aiMarkDone(grp, kind) {
+  function aiMarkDone(grp, kind2) {
     grp.querySelectorAll(".aibtn").forEach((b) => b.classList.add("done"));
-    const btn = [...grp.querySelectorAll(".aibtn")].find((b) => b.dataset.kind === kind);
-    if (btn) btn.textContent = "\u2713 \u5DF2" + kind;
+    const btn = [...grp.querySelectorAll(".aibtn")].find((b) => b.dataset.kind === kind2);
+    if (btn) btn.textContent = "\u2713 \u5DF2" + kind2;
   }
   function applyAiDoneStates(root) {
     (root || document).querySelectorAll(".ai-actions").forEach((grp) => {
@@ -8066,28 +8066,28 @@
       });
     });
   }
-  async function aiAct(btn, kind) {
+  async function aiAct(btn, kind2) {
     const grp = btn.closest(".ai-actions");
     const text2 = grabText(btn);
     const s = scopeDept(btn, text2);
     btn.disabled = true;
     try {
-      if (kind === "\u6C89\u6DC0") {
+      if (kind2 === "\u6C89\u6DC0") {
         await persistLoop("deposit", s, text2, "\u6C89\u6DC0");
         addDeposit(s, text2, "\u6C89\u6DC0");
         toastGo("\u5DF2\u6C89\u6DC0\u5230\u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "deposit");
-      } else if (kind === "\u91C7\u7EB3") {
+      } else if (kind2 === "\u91C7\u7EB3") {
         const [fx] = await Promise.all([persistFix(s, text2), persistLoop("deposit", s, text2, "\u91C7\u7EB3")]);
         addFixFromObj(fx.item);
         addDeposit(s, text2, "\u91C7\u7EB3");
         toastGo("\u5DF2\u91C7\u7EB3 \u2192 \u6574\u6539\u6E05\u5355 + \u6C89\u6DC0\u8868 \xB7 \u5DF2\u5165\u5E93", "fix");
-      } else if (kind === "\u6D4B\u8BD5") {
+      } else if (kind2 === "\u6D4B\u8BD5") {
         const r = await persistLoop("test", s, text2, "\u89C2\u5BDF\u4E2D");
         addTest(s, r.item.content, r.item);
         toastGo("\u5DF2\u52A0\u5165\u6D4B\u8BD5\u767B\u8BB0\uFF08" + s.dept + "\uFF09\xB7 \u5DF2\u5165\u5E93", "test");
       }
-      aiDone[kind].add(aiFp(s.dept, text2));
-      aiMarkDone(grp, kind);
+      aiDone[kind2].add(aiFp(s.dept, text2));
+      aiMarkDone(grp, kind2);
     } catch (e) {
       btn.disabled = false;
       toast2(persistFailMsg(e));
@@ -8204,14 +8204,14 @@
     const body = document.getElementById(tableId);
     const empty2 = document.getElementById(emptyId);
     if (!body) return;
-    const items = Array.isArray(rows2) ? rows2 : [];
-    body.innerHTML = items.map((row) => `<tr>${renderCells(row).map((cell3) => {
+    const items2 = Array.isArray(rows2) ? rows2 : [];
+    body.innerHTML = items2.map((row) => `<tr>${renderCells(row).map((cell3) => {
       const value = cell3.html == null ? esc(cell3.value ?? "") : cell3.html;
       return `<td class="${esc(cell3.cls || "")}">${value}</td>`;
     }).join("")}</tr>`).join("");
     if (empty2) {
       empty2.textContent = emptyText || "\u6682\u65E0\u6570\u636E";
-      empty2.classList.toggle("is-hidden", items.length > 0);
+      empty2.classList.toggle("is-hidden", items2.length > 0);
     }
   }
   function clearTables(message = "\u6682\u65E0\u6570\u636E") {
@@ -8229,15 +8229,15 @@
     const wrap = document.getElementById("ga4-devices-chart");
     const empty2 = document.getElementById("ga4-devices-empty");
     const canvas = document.getElementById("ga4Devices");
-    const items = Array.isArray(rows2) ? rows2.filter((row) => Number(row.sessions || 0) > 0) : [];
+    const items2 = Array.isArray(rows2) ? rows2.filter((row) => Number(row.sessions || 0) > 0) : [];
     if (devicesChart) {
       devicesChart.destroy();
       devicesChart = null;
     }
-    if (!items.length || !canvas || typeof Chart === "undefined") {
+    if (!items2.length || !canvas || typeof Chart === "undefined") {
       if (wrap) wrap.classList.add("is-hidden");
       if (empty2) {
-        empty2.textContent = items.length ? "\u56FE\u8868\u7EC4\u4EF6\u672A\u52A0\u8F7D" : emptyText;
+        empty2.textContent = items2.length ? "\u56FE\u8868\u7EC4\u4EF6\u672A\u52A0\u8F7D" : emptyText;
         empty2.classList.remove("is-hidden");
       }
       return;
@@ -8247,9 +8247,9 @@
     devicesChart = new Chart(canvas, {
       type: "doughnut",
       data: {
-        labels: items.map((row) => row.device || "\u672A\u77E5\u8BBE\u5907"),
+        labels: items2.map((row) => row.device || "\u672A\u77E5\u8BBE\u5907"),
         datasets: [{
-          data: items.map((row) => Number(row.sessions || 0)),
+          data: items2.map((row) => Number(row.sessions || 0)),
           backgroundColor: ["#1677ff", "#00b42a", "#f59e0b", "#86909c", "#722ed1"],
           borderWidth: 0
         }]
@@ -8362,13 +8362,13 @@
   function mktEsc(s) {
     return esc(s);
   }
-  function renderMarket(items) {
+  function renderMarket(items2) {
     const tb = document.getElementById("tb-market");
     if (!tb) return;
     tb.innerHTML = "";
     window._marketById = {};
     let lastSec = null;
-    items.forEach((it) => {
+    items2.forEach((it) => {
       let ans = {};
       try {
         ans = JSON.parse(it.answers || "{}");
@@ -8388,12 +8388,12 @@
       tb.appendChild(tr2);
     });
     const empty2 = document.getElementById("market-empty");
-    if (empty2) empty2.style.display = items.length ? "none" : "block";
+    if (empty2) empty2.style.display = items2.length ? "none" : "block";
   }
   async function loadMarket() {
     try {
-      const { items } = await API.get("/api/market/research");
-      renderMarket(items || []);
+      const { items: items2 } = await API.get("/api/market/research");
+      renderMarket(items2 || []);
     } catch (e) {
     }
   }
@@ -8656,8 +8656,8 @@
     const excluded = Number(r.exclude_from_assessment) === 1 ? '<span class="kpi-ds-badge">\u5DF2\u6392\u9664</span>' : "";
     return '<tr><td class="exec-prob">' + esc(r.problem || "") + excluded + (r.analysis ? '<div class="exec-sub">\u5206\u6790\uFF1A' + esc(r.analysis) + "</div>" : "") + (r.action ? '<div class="exec-sub">\u52A8\u4F5C\uFF1A' + esc(r.action) + "</div>" : "") + "</td><td>" + esc(r.owner || "") + '</td><td><span class="exec-imp imp-' + esc(r.impact_level || "MEDIUM") + '">' + (IMP_LABEL[r.impact_level] || "\u4E2D") + '</span></td><td><span class="exec-st ' + tone + '">' + esc(st2) + '</span></td><td class="exec-verif">' + verifCell(r) + " " + res + '</td><td class="exec-act">' + advBtn + "</td></tr>";
   }
-  function panelHtml(channel, items) {
-    const sorted = items.slice().sort((a, b) => {
+  function panelHtml(channel, items2) {
+    const sorted = items2.slice().sort((a, b) => {
       const ir = (IMP_RANK[a.impact_level] ?? 1) - (IMP_RANK[b.impact_level] ?? 1);
       if (ir) return ir;
       return String(a.verification_due_at || "").localeCompare(String(b.verification_due_at || ""));
@@ -8691,8 +8691,8 @@
     const box = ensureContainer(channel);
     if (!box) return;
     try {
-      const { items } = await API.get(withRange2("/api/execution-loops?channel=" + channel + "&due=1"));
-      box.innerHTML = panelHtml(channel, items || []);
+      const { items: items2 } = await API.get(withRange2("/api/execution-loops?channel=" + channel + "&due=1"));
+      box.innerHTML = panelHtml(channel, items2 || []);
     } catch (e) {
       if (e && e.message !== "unauthorized") box.innerHTML = '<div class="kpi-empty">\u6267\u884C\u95ED\u73AF\u52A0\u8F7D\u5931\u8D25\uFF1A' + esc(e.message || "\u672A\u77E5\u9519\u8BEF") + "</div>";
     }
@@ -8769,9 +8769,9 @@
     const s = o._preview;
     return '<div class="kpip-cur"><span class="kpip-owner">' + esc(o.label) + '</span><span class="kpip-period">' + PERIOD_LABEL[o.type] + " " + key + '\uFF08\u8FDB\u884C\u4E2D\uFF09</span><span class="kpip-score">' + (s ? scopeText(s) : "\u2026") + '</span><button class="exec-btn exec-btn-primary" data-settle-owner="' + esc(o.owner) + '" data-settle-type="' + esc(o.type) + '" data-settle-key="' + esc(key) + '">\u7ED3\u7B97\u672C\u671F\u5E76\u51BB\u7ED3</button></div>';
   }
-  function historyHtml(items) {
-    if (!items.length) return '<div class="kpi-empty">\u6682\u65E0\u5DF2\u7ED3\u7B97\u8003\u6838\u671F</div>';
-    return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u8003\u6838\u671F</th><th>\u5BF9\u8C61</th><th>\u6210\u7EE9</th><th>\u8986\u76D6\u7387</th><th>\u72B6\u6001</th><th>\u7ED3\u7B97\u65F6\u95F4</th></tr></thead><tbody>' + items.map((r) => "<tr><td>" + esc(r.period_key) + "</td><td>" + esc(OWNER_LABEL[r.owner] || r.owner) + "</td><td>" + snapText(r) + "</td><td>" + pct(r.coverage) + "%</td><td>" + esc(r.status || "") + "</td><td>" + esc((r.settled_at || "").slice(0, 16)) + "</td></tr>").join("") + "</tbody></table></div>";
+  function historyHtml(items2) {
+    if (!items2.length) return '<div class="kpi-empty">\u6682\u65E0\u5DF2\u7ED3\u7B97\u8003\u6838\u671F</div>';
+    return '<div class="exec-tablewrap"><table class="exec-table"><thead><tr><th>\u8003\u6838\u671F</th><th>\u5BF9\u8C61</th><th>\u6210\u7EE9</th><th>\u8986\u76D6\u7387</th><th>\u72B6\u6001</th><th>\u7ED3\u7B97\u65F6\u95F4</th></tr></thead><tbody>' + items2.map((r) => "<tr><td>" + esc(r.period_key) + "</td><td>" + esc(OWNER_LABEL[r.owner] || r.owner) + "</td><td>" + snapText(r) + "</td><td>" + pct(r.coverage) + "%</td><td>" + esc(r.status || "") + "</td><td>" + esc((r.settled_at || "").slice(0, 16)) + "</td></tr>").join("") + "</tbody></table></div>";
   }
   function ensureMount() {
     const panel = document.getElementById("panel-kpi");
@@ -8799,9 +8799,9 @@
           o._preview = null;
         }
       }));
-      const { items } = await API.get("/api/kpi/periods");
+      const { items: items2 } = await API.get("/api/kpi/periods");
       if (id !== seq2) return;
-      box.innerHTML = '<div class="card-head"><span class="card-title">\u8003\u6838\u671F\u7ED3\u7B97\u4E0E\u5386\u53F2</span><span class="kpip-note">\u5206\u6790\u533A\u95F4(\u9876\u90E8)\u4EC5\u770B\u6570\u636E\uFF1B\u6B63\u5F0F\u7EE9\u6548\u6309\u8003\u6838\u5468\u671F\u7ED3\u7B97\u51BB\u7ED3\uFF0C\u6B64\u540E\u6539\u76EE\u6807\u4E0D\u52A8\u5386\u53F2</span></div><div class="kpip-cur-list">' + OWNERS.map(currentRowHtml).join("") + '</div><div class="kpi-sec-label kpi-sec-diag">\u5DF2\u7ED3\u7B97\uFF08\u51BB\u7ED3\uFF09</div>' + historyHtml(items || []);
+      box.innerHTML = '<div class="card-head"><span class="card-title">\u8003\u6838\u671F\u7ED3\u7B97\u4E0E\u5386\u53F2</span><span class="kpip-note">\u5206\u6790\u533A\u95F4(\u9876\u90E8)\u4EC5\u770B\u6570\u636E\uFF1B\u6B63\u5F0F\u7EE9\u6548\u6309\u8003\u6838\u5468\u671F\u7ED3\u7B97\u51BB\u7ED3\uFF0C\u6B64\u540E\u6539\u76EE\u6807\u4E0D\u52A8\u5386\u53F2</span></div><div class="kpip-cur-list">' + OWNERS.map(currentRowHtml).join("") + '</div><div class="kpi-sec-label kpi-sec-diag">\u5DF2\u7ED3\u7B97\uFF08\u51BB\u7ED3\uFF09</div>' + historyHtml(items2 || []);
     } catch (e) {
       if (e && e.message !== "unauthorized") box.innerHTML = '<div class="kpi-empty">\u8003\u6838\u671F\u52A0\u8F7D\u5931\u8D25\uFF1A' + esc(e.message || "") + "</div>";
     }
@@ -9150,7 +9150,7 @@
     const costA = s.metrics.find((m) => m.key === "cost_a");
     const costAb = s.metrics.find((m) => m.key === "cost_ab");
     const costText = (m) => m && m.status === "VALID" && m.actual != null ? money2(m.actual, m.currency) : m ? STATUS_TEXT[m.status] || "\u2014" : "\u2014";
-    const items = [
+    const items2 = [
       ["A+B \u6709\u6548\u8BE2\u4EF7", s.leads.effective, null],
       ["A \u7EA7\u8BE2\u4EF7", s.leads.a, null],
       ["B \u7EA7\u8BE2\u4EF7", s.leads.b, null],
@@ -9159,7 +9159,7 @@
       ["A \u7EA7\u83B7\u5BA2\u6210\u672C", costText(costA), costA && costA.note],
       ["A+B \u83B7\u5BA2\u6210\u672C", costText(costAb), costAb && costAb.note]
     ];
-    for (const [label, value, title] of items) {
+    for (const [label, value, title] of items2) {
       const chip = make2("div", "kpi-review-chip");
       chip.appendChild(make2("div", "kpi-review-chip-label", label));
       chip.appendChild(cell2("div", "kpi-review-chip-value", value == null ? "\u2014" : value, title || ""));
@@ -9848,16 +9848,16 @@
   async function loadArchive2() {
     const bucket = { sem: [], seo: [], company: [] };
     try {
-      const { items } = await API.get("/api/fixes?archived=1");
-      (items || []).forEach((f) => {
+      const { items: items2 } = await API.get("/api/fixes?archived=1");
+      (items2 || []).forEach((f) => {
         const k = f.archive_kind || deriveAk(f.dept);
         if (bucket[k]) bucket[k].push({ ...f, _from: "fix" });
       });
     } catch (e) {
     }
     try {
-      const { items } = await API.get("/api/loop-items?archived=1");
-      (items || []).forEach((it) => {
+      const { items: items2 } = await API.get("/api/loop-items?archived=1");
+      (items2 || []).forEach((it) => {
         const k = it.archive_kind || deriveAk(it.dept);
         if (bucket[k]) bucket[k].push({ ...it, _from: "loop" });
       });
@@ -9883,8 +9883,8 @@
       itb.innerHTML = "";
       let inqs = [];
       try {
-        const { items } = await API.get("/api/inquiries?archived=1");
-        inqs = items || [];
+        const { items: items2 } = await API.get("/api/inquiries?archived=1");
+        inqs = items2 || [];
       } catch (e2) {
       }
       inqs.forEach((it) => {
@@ -9987,9 +9987,9 @@
   }
   function renderMemory(row) {
     const tr2 = document.createElement("tr");
-    const kind = td("", "");
-    kind.appendChild(badge2(KIND_LABEL[row.kind] || row.kind || "\u8BB0\u5FC6", row.kind === "risk" ? "b-red" : row.kind === "decision" ? "b-amber" : "b-blue"));
-    tr2.appendChild(kind);
+    const kind2 = td("", "");
+    kind2.appendChild(badge2(KIND_LABEL[row.kind] || row.kind || "\u8BB0\u5FC6", row.kind === "risk" ? "b-red" : row.kind === "decision" ? "b-amber" : "b-blue"));
+    tr2.appendChild(kind2);
     const importance = td("", "ctr");
     importance.appendChild(badge2(String(row.importance || 3), Number(row.importance) >= 4 ? "b-green" : "b-gray"));
     tr2.appendChild(importance);
@@ -10043,10 +10043,10 @@
     setText2(count, "\u52A0\u8F7D\u4E2D...");
     try {
       const data3 = await window.API.get("/api/hermes/memories");
-      const items = data3.items || [];
-      items.forEach((item) => tbody.appendChild(renderMemory(item)));
-      if (empty2) empty2.style.display = items.length ? "none" : "block";
-      setText2(count, items.length ? items.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
+      const items2 = data3.items || [];
+      items2.forEach((item) => tbody.appendChild(renderMemory(item)));
+      if (empty2) empty2.style.display = items2.length ? "none" : "block";
+      setText2(count, items2.length ? items2.length + " \u6761\u6709\u6548\u8BB0\u5FC6" : "\u6682\u65E0\u6709\u6548\u8BB0\u5FC6");
       if (manual) toast2("AI \u8BB0\u5FC6\u5DF2\u5237\u65B0");
     } catch (e) {
       setText2(count, "\u52A0\u8F7D\u5931\u8D25");
@@ -10059,8 +10059,8 @@
       const el5 = byId(id);
       if (el5) el5.value = "";
     });
-    const kind = byId("hm-kind");
-    if (kind) kind.value = "market";
+    const kind2 = byId("hm-kind");
+    if (kind2) kind2.value = "market";
     const importance = byId("hm-importance");
     if (importance) importance.value = "3";
     const source = byId("hm-source");
@@ -10070,8 +10070,8 @@
   function editHermesMemory(row) {
     const id = byId("hm-id");
     if (id) id.value = row.id || "";
-    const kind = byId("hm-kind");
-    if (kind) kind.value = row.kind || "learning";
+    const kind2 = byId("hm-kind");
+    if (kind2) kind2.value = row.kind || "learning";
     const importance = byId("hm-importance");
     if (importance) importance.value = String(row.importance || 3);
     const title = byId("hm-title");
@@ -10270,8 +10270,8 @@
     const board = document.querySelector("#panel-tasks > .tboard");
     const hist = document.getElementById("plan-history");
     const hint = document.getElementById("planday-hint");
-    const input = document.getElementById("planday-input");
-    if (input) input.value = day || today2();
+    const input2 = document.getElementById("planday-input");
+    if (input2) input2.value = day || today2();
     if (board) board.style.display = isToday ? "" : "none";
     if (hist) hist.classList.toggle("is-hidden", isToday);
     if (typeof window.renderWeeklyFocus === "function") window.renderWeeklyFocus();
@@ -10321,8 +10321,8 @@
   function rateClass(p) {
     return p === null ? "sr-na" : p >= 90 ? "sr-good" : p >= 60 ? "sr-mid" : "sr-bad";
   }
-  function deptBlockHtml(dept, label, badge3, items) {
-    const counted = items.filter((i) => i.expected !== null);
+  function deptBlockHtml(dept, label, badge3, items2) {
+    const counted = items2.filter((i) => i.expected !== null);
     const done = counted.reduce((a, i) => a + i.done, 0);
     const expected = counted.reduce((a, i) => a + i.expected, 0);
     const p = pct4(done, expected);
@@ -10344,15 +10344,15 @@
     try {
       const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&today=${encodeURIComponent(formatLocalDate(/* @__PURE__ */ new Date()))}`;
       const data3 = await API.get("/api/sop/stats" + q);
-      const items = data3.items || [];
-      if (!items.length) {
+      const items2 = data3.items || [];
+      if (!items2.length) {
         el5.innerHTML = '<div class="sr-loading">\u8FD8\u6CA1\u6709\u914D\u7F6E SOP</div>';
         return;
       }
-      const hasMonthly = items.some((i) => i.expected === null);
+      const hasMonthly = items2.some((i) => i.expected === null);
       el5.innerHTML = `<div class="sr-title"><i class="ti ti-checklist"></i> SOP \u6267\u884C\u7387
         <span class="sr-note">\u7EDF\u8BA1\u5230 ${esc(data3.counted_to || to)} \xB7 \u6309\u6253\u5361\u53D1\u751F\u65F6\u95F4\u7B97 \xB7 \u5DF2\u505C\u7528\u7684\u4E0D\u8BA1${hasMonthly ? " \xB7 \u6708\u5EA6 SOP \u6309\u6708\u53E6\u7B97" : ""}</span></div>
-      <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items.filter((i) => i.dept === d))).join("")}</div>`;
+      <div class="sr-cols">${DEPTS2.map(([d, label, badge3]) => deptBlockHtml(d, label, badge3, items2.filter((i) => i.dept === d))).join("")}</div>`;
     } catch (e) {
       el5.dataset.loaded = "";
       el5.innerHTML = '<div class="sr-loading">\u6267\u884C\u7387\u8BFB\u53D6\u5931\u8D25\uFF1A' + esc(e && e.message || "\u8BF7\u6C42\u5931\u8D25") + "</div>";
@@ -10459,12 +10459,12 @@
     const name = dept === "SEM" ? "SEM \xB7 \u9648" : "SEO \xB7 \u674E";
     let h4 = `<div class="rv-col ${dept === "SEM" ? "sem" : "seo"}"><div class="rv-owner">${name}</div>`;
     sections.forEach(([field3, title, acts]) => {
-      const items = rec && rec[field3] || [];
+      const items2 = rec && rec[field3] || [];
       h4 += `<div class="rv-sec" data-field="${esc(field3)}" data-dept="${esc(dept)}" data-week="${esc(key)}"><h5>${esc(title)}</h5>`;
-      if (field3 === "summary" && !items.length && prevPlan && prevPlan.length) {
+      if (field3 === "summary" && !items2.length && prevPlan && prevPlan.length) {
         h4 += `<div class="rv-prev">\u4E0A\u671F\u8BA1\u5212\uFF1A${prevPlan.map((x) => esc(x)).join("\uFF1B")}</div>`;
       }
-      h4 += `<div class="rv-list">${items.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
+      h4 += `<div class="rv-list">${items2.map((t) => rvItemHtml(t, acts)).join("")}</div>`;
       h4 += `<span class="rv-add" data-review-action="add"><i class="ti ti-plus"></i> \u6DFB\u52A0</span></div>`;
     });
     return h4 + "</div>";
@@ -10487,14 +10487,14 @@
   }
   async function renderReview() {
     const cur = curWeekKey();
-    let items = [];
+    let items2 = [];
     try {
       const r = await API.get("/api/weekly-reports?current=" + encodeURIComponent(cur));
-      items = r.items || [];
+      items2 = r.items || [];
     } catch (e) {
     }
     const byWeek = {};
-    items.filter((it) => !parseMonthKey(it.week_key)).forEach((it) => {
+    items2.filter((it) => !parseMonthKey(it.week_key)).forEach((it) => {
       const key = canonicalWeekKey(it.week_key);
       (byWeek[key] = byWeek[key] || {})[it.dept] = { ...it, week_key: key };
     });
@@ -10545,8 +10545,8 @@
     const field3 = sec.dataset.field;
     const dept = sec.dataset.dept;
     const week = sec.dataset.week;
-    const items = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
-    API.put("/api/weekly-reports", { week_key: week, dept, field: field3, items }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
+    const items2 = [...sec.querySelectorAll(".rv-list .txt")].map((t) => t.innerText.trim()).filter(Boolean);
+    API.put("/api/weekly-reports", { week_key: week, dept, field: field3, items: items2 }).catch((err) => toast2(err.status === 403 ? "\u65E0\u6743\u4FEE\u6539" : "\u4FDD\u5B58\u5931\u8D25"));
   }
   function rvAdd(el5) {
     const sec = el5.closest(".rv-sec");
@@ -10564,7 +10564,7 @@
     el5.closest(".rv-item").remove();
     rvSectionSave(sec);
   }
-  async function rvAct(el5, kind) {
+  async function rvAct(el5, kind2) {
     const item = el5.closest(".rv-item");
     const text2 = item.querySelector(".txt").innerText.trim();
     if (!text2) {
@@ -10574,7 +10574,7 @@
     const sec = el5.closest(".rv-sec");
     const s = sFromDept(sec.dataset.dept);
     try {
-      if (kind === "\u6D4B\u8BD5") {
+      if (kind2 === "\u6D4B\u8BD5") {
         await persistLoop("test", s, text2, "\u89C2\u5BDF\u4E2D");
         addTest(s, text2);
         toastGo("\u5DF2\u52A0\u5165\u6D4B\u8BD5\u767B\u8BB0 \xB7 \u5DF2\u5165\u5E93", "test");
@@ -10608,8 +10608,8 @@
           return;
         }
         const parts = el5.dataset.kpi.split(":");
-        const values = { TOTAL, SEO, SEM }[parts[0]];
-        const item = values && values[Number(parts[1])];
+        const values2 = { TOTAL, SEO, SEM }[parts[0]];
+        const item = values2 && values2[Number(parts[1])];
         if (!item) return;
         const oldValue = el5.dataset.kpiOld != null ? el5.dataset.kpiOld : String(item.t);
         const result = validateEditableValue(el5.textContent, "number", { min: 0 });
@@ -10648,8 +10648,8 @@
   }
   function openPwd() {
     ["pwd-old", "pwd-new", "pwd-new2"].forEach((id) => {
-      const input = document.getElementById(id);
-      if (input) input.value = "";
+      const input2 = document.getElementById(id);
+      if (input2) input2.value = "";
     });
     openModal("pwdMask");
   }
@@ -10713,14 +10713,14 @@
   }
   async function snapshotRanks() {
     const rows2 = [...document.querySelectorAll("#mp-seo-opp tbody tr")];
-    const items = rows2.map((row) => ({
+    const items2 = rows2.map((row) => ({
       keyword: row.cells[0].textContent.trim(),
       rank: parseInt(row.cells[2].textContent, 10) || null
     }));
     try {
-      const { weeks, snapshots } = await API.post("/api/rank-snapshots", { items });
+      const { weeks, snapshots } = await API.post("/api/rank-snapshots", { items: items2 });
       renderRankTrend(snapshots);
-      toast2("\u5DF2\u8BB0\u5F55\u672C\u5468\u6392\u540D\u5FEB\u7167\uFF08" + items.length + " \u8BCD\uFF09\xB7 \u5171 " + weeks + " \u5468\uFF0C\u53EF\u770B\u8D8B\u52BF");
+      toast2("\u5DF2\u8BB0\u5F55\u672C\u5468\u6392\u540D\u5FEB\u7167\uFF08" + items2.length + " \u8BCD\uFF09\xB7 \u5171 " + weeks + " \u5468\uFF0C\u53EF\u770B\u8D8B\u52BF");
     } catch (error) {
       toast2(error && error.status === 403 ? "\u65E0\u6743\u64CD\u4F5C\uFF08\u4EC5\u674E/SEO \u53EF\u8BB0\u5F55\u5FEB\u7167\uFF09" : "\u4FDD\u5B58\u5931\u8D25\uFF1A" + (error && error.message || "\u672A\u77E5\u9519\u8BEF"));
     }
@@ -10848,16 +10848,16 @@
     if (!tbody || !state2 || !wrap) return;
     const severity = byId2("risk-filter-severity")?.value || "all";
     const status = byId2("risk-filter-status")?.value || "open";
-    const items = register.items.filter((item) => (severity === "all" || item.severity === severity) && (status === "all" || (status === "open" ? item.status !== "pass" : item.status === status)));
+    const items2 = register.items.filter((item) => (severity === "all" || item.severity === severity) && (status === "all" || (status === "open" ? item.status !== "pass" : item.status === status)));
     tbody.replaceChildren();
     state2.replaceChildren();
-    if (!items.length) {
+    if (!items2.length) {
       wrap.hidden = true;
       state2.appendChild(make3("div", "risk-state-message", "\u5F53\u524D\u7B5B\u9009\u6761\u4EF6\u4E0B\u6CA1\u6709\u98CE\u9669\u9879\u3002"));
       return;
     }
     wrap.hidden = false;
-    items.forEach((item) => {
+    items2.forEach((item) => {
       const row = document.createElement("tr");
       const severityCell = document.createElement("td");
       severityCell.appendChild(severityBadge(item));
@@ -10971,14 +10971,14 @@
     return el5;
   }
   function numInput(name, value, step) {
-    const input = document.createElement("input");
-    input.type = "number";
-    input.className = "kra-input";
-    input.step = step == null ? "1" : String(step);
-    input.min = "0";
-    input.setAttribute("data-kra-field", name);
-    input.value = value == null || value === "" ? "" : String(value);
-    return input;
+    const input2 = document.createElement("input");
+    input2.type = "number";
+    input2.className = "kra-input";
+    input2.step = step == null ? "1" : String(step);
+    input2.min = "0";
+    input2.setAttribute("data-kra-field", name);
+    input2.value = value == null || value === "" ? "" : String(value);
+    return input2;
   }
   function canEdit() {
     const role = window.ME && window.ME.role;
@@ -11052,12 +11052,12 @@
     const tr2 = make4("tr", "kra-band-row");
     const mk = (cls, value, type, step) => {
       const td2 = make4("td", "ctr");
-      const input = document.createElement("input");
-      input.type = type || "text";
-      input.className = "kra-input " + cls;
-      if (step) input.step = step;
-      input.value = value == null ? "" : String(value);
-      td2.appendChild(input);
+      const input2 = document.createElement("input");
+      input2.type = type || "text";
+      input2.className = "kra-input " + cls;
+      if (step) input2.step = step;
+      input2.value = value == null ? "" : String(value);
+      td2.appendChild(input2);
       return td2;
     };
     tr2.appendChild(mk("kra-band-min", b.min, "number", "0.1"));
@@ -11104,10 +11104,10 @@
     table2.appendChild(tbody);
     box.appendChild(table2);
     const addRow = make4("div", "kra-add-period");
-    const input = document.createElement("input");
-    input.type = "month";
-    input.className = "kra-input kra-new-period";
-    addRow.appendChild(input);
+    const input2 = document.createElement("input");
+    input2.type = "month";
+    input2.className = "kra-input kra-new-period";
+    addRow.appendChild(input2);
     const add = make4("button", "btn-ghost kra-add", "+ \u4E3A\u8FD9\u4E2A\u6708\u5355\u72EC\u8BBE\u76EE\u6807");
     add.type = "button";
     add.setAttribute("data-kra-add-period", "1");
@@ -11122,9 +11122,9 @@
     tr2.appendChild(make4("td", "", isDefault ? "\u901A\u7528\u515C\u5E95" : row.period_key));
     for (const [key] of TARGET_FIELDS) {
       const td2 = make4("td", "ctr");
-      const input = numInput(key, row[key], key === "a_ratio_target" ? "0.01" : "1");
-      input.classList.add("kra-target-input");
-      td2.appendChild(input);
+      const input2 = numInput(key, row[key], key === "a_ratio_target" ? "0.01" : "1");
+      input2.classList.add("kra-target-input");
+      td2.appendChild(input2);
       tr2.appendChild(td2);
     }
     const ops = make4("td", "ctr");
@@ -11146,8 +11146,8 @@
     if (!cellEl) return;
     let sum = 0;
     for (const [key] of WEIGHT_FIELDS) {
-      const input = host2.querySelector(`[data-kra-field="${key}"]`);
-      const n = Number(input && input.value);
+      const input2 = host2.querySelector(`[data-kra-field="${key}"]`);
+      const n = Number(input2 && input2.value);
       if (Number.isFinite(n)) sum += n;
     }
     cellEl.textContent = String(Math.round(sum * 100) / 100);
@@ -11204,8 +11204,8 @@
     }
     return false;
   }
-  function valueOrNull(input) {
-    const raw = String(input.value).trim();
+  function valueOrNull(input2) {
+    const raw = String(input2.value).trim();
     if (!raw) return null;
     const n = Number(raw);
     return Number.isFinite(n) ? n : null;
@@ -11213,12 +11213,12 @@
   async function save(host2) {
     const config = {};
     for (const [key] of WEIGHT_FIELDS.concat(SCALAR_FIELDS.map((f) => [f[0]]))) {
-      const input = host2.querySelector(`[data-kra-field="${key}"]`);
-      if (!input) continue;
-      const n = Number(input.value);
+      const input2 = host2.querySelector(`[data-kra-field="${key}"]`);
+      if (!input2) continue;
+      const n = Number(input2.value);
       if (!Number.isFinite(n) || n < 0) {
         toast2("\u300C" + key + "\u300D\u8981\u586B\u4E00\u4E2A\u975E\u8D1F\u6570\u5B57");
-        input.focus();
+        input2.focus();
         return;
       }
       config[key] = n;
@@ -11240,8 +11240,8 @@
     }
     const targets = [...host2.querySelectorAll(".kra-target-row")].map((tr2) => {
       const out = { period_key: tr2.dataset.kraPeriod };
-      tr2.querySelectorAll(".kra-target-input").forEach((input) => {
-        out[input.dataset.kraField] = valueOrNull(input);
+      tr2.querySelectorAll(".kra-target-input").forEach((input2) => {
+        out[input2.dataset.kraField] = valueOrNull(input2);
       });
       return out;
     });
@@ -11291,8 +11291,8 @@
     }
     const addPeriod = e.target.closest("[data-kra-add-period]");
     if (addPeriod) {
-      const input = host2.querySelector(".kra-new-period");
-      const key = input && String(input.value).trim();
+      const input2 = host2.querySelector(".kra-new-period");
+      const key = input2 && String(input2.value).trim();
       if (!PERIOD_KEY_RE.test(key || "")) {
         toast2("\u5148\u9009\u4E00\u4E2A\u6708\u4EFD\uFF08YYYY-MM\uFF09");
         return;
@@ -11303,7 +11303,7 @@
       }
       const body = host2.querySelector(".kra-targets");
       if (body) body.appendChild(targetRow({ period_key: key }));
-      input.value = "";
+      input2.value = "";
       return;
     }
     const delPeriod = e.target.closest("[data-kra-del-period]");
@@ -11327,6 +11327,192 @@
     if (tab) mountReviewAdmin();
   });
 
+  // public/src/link-records.js
+  var kind = "paid";
+  var items = [];
+  var directory = null;
+  var $5 = (s) => document.querySelector(s);
+  var values = (list, selected = "", first = "\u8BF7\u9009\u62E9") => `<option value="">${esc(first)}</option>` + list.map((v) => `<option value="${esc(v)}"${selected === v ? " selected" : ""}>${esc(v)}</option>`).join("");
+  var input = (field3, value = "", type = "text") => `<input class="lr-cell" data-field="${field3}" type="${type}" value="${esc(value || "")}" autocomplete="off">`;
+  var select = (field3, list, value) => `<select class="lr-cell" data-field="${field3}">${values(list, value)}</select>`;
+  function rowHtml2(item = {}) {
+    const paid = kind === "paid";
+    const row = `<tr data-id="${esc(item.id || "")}" data-new="${item.id ? "0" : "1"}"><td>${input("added_date", item.added_date || formatLocalDate(/* @__PURE__ */ new Date()), "date")}</td><td>${input("site_name", item.site_name)}</td><td>${select("category", directory.categories, item.category)}</td><td>${input("link_form", item.link_form)}</td><td>${input("link_url", item.link_url, "url")}</td><td>${input("anchor_text", item.anchor_text)}</td><td>${select("owner_site", directory.sites, item.owner_site)}</td><td>${select("registrant", directory.registrants, item.registrant)}</td><td>${paid ? input("fee_record", item.fee_record) : `<button type="button" class="btn-mini" data-credentials>${item.has_credentials ? "\u67E5\u770B/\u7F16\u8F91\u8D26\u5BC6" : "\u767B\u8BB0\u8D26\u5BC6"}</button>`}</td><td><button type="button" class="btn-mini" data-delete>\u5220\u9664</button></td></tr>`;
+    return row;
+  }
+  function rowPayload(tr2) {
+    const data3 = { kind };
+    tr2.querySelectorAll("[data-field]").forEach((el5) => {
+      data3[el5.dataset.field] = el5.value.trim();
+    });
+    if (kind === "paid") data3.fee_record = tr2.querySelector('[data-field="fee_record"]').value.trim();
+    return data3;
+  }
+  function required(data3) {
+    return data3.added_date && data3.site_name && data3.category && data3.link_url && data3.owner_site && data3.registrant;
+  }
+  function remember(tr2, snapshot) {
+    tr2.querySelectorAll("[data-field]").forEach((el5) => {
+      el5.dataset.savedValue = snapshot ? snapshot[el5.dataset.field] ?? "" : el5.value;
+    });
+  }
+  function changed3(tr2) {
+    return [...tr2.querySelectorAll("[data-field]")].some((el5) => el5.value !== el5.dataset.savedValue);
+  }
+  function syncFilters() {
+    if (!directory) return;
+    const defs = [["category", directory.categories, "\u5168\u90E8\u5206\u7C7B"], ["site", directory.sites, "\u5168\u90E8\u7AD9\u70B9"], ["registrant", directory.registrants, "\u5168\u90E8\u767B\u8BB0\u4EBA"]];
+    defs.forEach(([key, list, label]) => {
+      const el5 = document.querySelector(`#link-record-filters [data-filter="${key}"]`);
+      const selected = el5.value;
+      el5.innerHTML = values(list, selected, label);
+    });
+  }
+  async function saveRow(tr2) {
+    if (tr2.dataset.saving === "1") {
+      tr2.dataset.saveAgain = "1";
+      return;
+    }
+    if (!changed3(tr2)) return;
+    const data3 = rowPayload(tr2);
+    if (!required(data3)) {
+      tr2.classList.add("lr-incomplete");
+      return;
+    }
+    tr2.classList.remove("lr-incomplete");
+    tr2.dataset.saving = "1";
+    try {
+      if (tr2.dataset.new === "1") {
+        const { item } = await API.post("/api/link-records", data3);
+        tr2.dataset.id = item.id;
+        tr2.dataset.new = "0";
+        items.unshift(item);
+        toast2("\u5DF2\u65B0\u589E\u5916\u94FE\u8BB0\u5F55");
+      } else {
+        const { item } = await API.patch("/api/link-records/" + tr2.dataset.id, data3);
+        const i = items.findIndex((x) => x.id === item.id);
+        if (i >= 0) items[i] = item;
+      }
+      remember(tr2, data3);
+    } catch (e) {
+      toast2("\u4FDD\u5B58\u5931\u8D25\uFF1A" + (e.message || e));
+    } finally {
+      delete tr2.dataset.saving;
+      if (tr2.dataset.saveAgain === "1") {
+        delete tr2.dataset.saveAgain;
+        saveRow(tr2);
+      }
+    }
+  }
+  async function load2() {
+    try {
+      directory ||= await API.get("/api/link-records/options");
+      syncFilters();
+      const range2 = getCurrentRange("linkRecords"), query2 = new URLSearchParams({ kind });
+      if (range2?.start_date && range2?.end_date) {
+        query2.set("start_date", range2.start_date);
+        query2.set("end_date", range2.end_date);
+      }
+      items = (await API.get("/api/link-records?" + query2)).items;
+      draw();
+    } catch (e) {
+      $5("#tb-link-records").innerHTML = `<tr><td colspan="10">\u52A0\u8F7D\u5931\u8D25\uFF1A${esc(e.message || e)}</td></tr>`;
+    }
+  }
+  function draw() {
+    const filters = Object.fromEntries([...document.querySelectorAll("#link-record-filters [data-filter]")].map((el5) => [el5.dataset.filter, el5.value]));
+    const visible = items.filter((x) => (!filters.category || x.category === filters.category) && (!filters.site || x.owner_site === filters.site) && (!filters.registrant || x.registrant === filters.registrant));
+    const body = $5("#tb-link-records");
+    body.innerHTML = visible.length ? visible.map(rowHtml2).join("") : '<tr><td colspan="10" class="dim">\u6682\u65E0\u7B26\u5408\u6761\u4EF6\u7684\u8BB0\u5F55</td></tr>';
+    body.querySelectorAll("tr[data-id]").forEach(remember);
+  }
+  async function reveal(tr2) {
+    if (tr2.dataset.new === "1") {
+      toast2("\u5148\u586B\u5199\u5FC5\u586B\u9879\u5E76\u4FDD\u5B58\u8BB0\u5F55");
+      return;
+    }
+    try {
+      const { credential_record } = await API.get("/api/link-records/" + tr2.dataset.id + "/credentials");
+      tr2.cells[8].innerHTML = `<input class="lr-secret" type="password" autocomplete="new-password" maxlength="2000" value="${esc(credential_record || "")}"><button type="button" class="btn-mini" data-secret-save>\u4FDD\u5B58</button><button type="button" class="btn-mini" data-secret-toggle>\u663E\u793A</button>`;
+    } catch (e) {
+      toast2("\u8D26\u5BC6\u8BFB\u53D6\u5931\u8D25\uFF1A" + (e.message || e));
+    }
+  }
+  document.addEventListener("click", async (e) => {
+    const tab = e.target.closest("[data-link-kind]");
+    if (tab) {
+      kind = tab.dataset.linkKind;
+      document.querySelectorAll("[data-link-kind]").forEach((t) => t.classList.toggle("active", t === tab));
+      load2();
+      return;
+    }
+    if (e.target.closest("[data-link-add]")) {
+      if (!directory) await load2();
+      if (!directory) return;
+      const body = $5("#tb-link-records");
+      if (body.querySelector('tr[data-new="1"]')) {
+        body.querySelector('tr[data-new="1"] [data-field="site_name"]').focus();
+        return;
+      }
+      const empty2 = body.querySelector("tr:not([data-id])");
+      if (empty2) empty2.remove();
+      body.insertAdjacentHTML("afterbegin", rowHtml2());
+      const draft = body.querySelector('tr[data-new="1"]');
+      remember(draft);
+      draft.querySelector('[data-field="site_name"]').focus();
+      return;
+    }
+    const tr2 = e.target.closest("#tb-link-records tr[data-id]");
+    if (!tr2) return;
+    if (e.target.closest("[data-credentials]")) {
+      reveal(tr2);
+      return;
+    }
+    if (e.target.closest("[data-secret-toggle]")) {
+      const field3 = tr2.querySelector(".lr-secret");
+      field3.type = field3.type === "password" ? "text" : "password";
+      return;
+    }
+    if (e.target.closest("[data-secret-save]")) {
+      try {
+        await API.patch("/api/link-records/" + tr2.dataset.id, { kind, credential_record: tr2.querySelector(".lr-secret").value });
+        tr2.cells[8].innerHTML = '<button type="button" class="btn-mini" data-credentials>\u67E5\u770B/\u7F16\u8F91\u8D26\u5BC6</button>';
+        toast2("\u8D26\u5BC6\u5DF2\u52A0\u5BC6\u4FDD\u5B58");
+      } catch (err) {
+        toast2("\u4FDD\u5B58\u5931\u8D25\uFF1A" + (err.message || err));
+      }
+      return;
+    }
+    if (e.target.closest("[data-delete]")) {
+      if (!confirm("\u786E\u5B9A\u5220\u9664\u8FD9\u6761\u5916\u94FE\u8BB0\u5F55\uFF1F")) return;
+      if (tr2.dataset.new === "1") {
+        tr2.remove();
+        return;
+      }
+      try {
+        await API.del("/api/link-records/" + tr2.dataset.id);
+        items = items.filter((x) => x.id !== Number(tr2.dataset.id));
+        tr2.remove();
+        toast2("\u5DF2\u5220\u9664");
+      } catch (err) {
+        toast2("\u5220\u9664\u5931\u8D25\uFF1A" + (err.message || err));
+      }
+    }
+  });
+  document.addEventListener("change", (e) => {
+    if (e.target.matches("#link-record-filters select")) draw();
+    if (e.target.matches("#tb-link-records .lr-cell")) saveRow(e.target.closest("tr"));
+  });
+  document.addEventListener("focusout", (e) => {
+    if (e.target.matches("#tb-link-records .lr-cell")) saveRow(e.target.closest("tr"));
+  });
+  document.addEventListener("timerange", (e) => {
+    if (e.detail?.scope === "linkRecords") load2();
+  });
+  function loadLinkRecords2() {
+    load2();
+  }
+
   // public/src/app.js
   var app_exports = {};
   __export(app_exports, {
@@ -11337,7 +11523,7 @@
   });
 
   // public/src/audit.js
-  var $5 = (id) => document.getElementById(id);
+  var $6 = (id) => document.getElementById(id);
   var failText3 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   var isHttp3 = (u) => /^https?:\/\//i.test(String(u || ""));
   function el2(tag, cls, text2) {
@@ -11707,22 +11893,22 @@
     const c = card("\u4ED6\u4EEC\u81EA\u5DF1\u5199\u7684\u5468\u62A5");
     pkg.weekly_reports.forEach((w) => {
       c.appendChild(el2("div", "audit-sub", w.dept + " \xB7 " + w.week_key + " \u90A3\u4E00\u5468"));
-      [["\u672C\u5468\u5DE5\u4F5C\u603B\u7ED3", w.summary], ["\u9047\u5230\u7684\u95EE\u9898", w.problems], ["\u5206\u6790", w.analysis], ["\u4E0B\u5468\u8BA1\u5212", w.next_plan]].forEach(([label, items]) => {
-        c.appendChild(el2("div", "audit-line", label + "\uFF1A" + ((items || []).length ? items.join("\uFF1B") : "\uFF08\u6CA1\u5199\uFF09")));
+      [["\u672C\u5468\u5DE5\u4F5C\u603B\u7ED3", w.summary], ["\u9047\u5230\u7684\u95EE\u9898", w.problems], ["\u5206\u6790", w.analysis], ["\u4E0B\u5468\u8BA1\u5212", w.next_plan]].forEach(([label, items2]) => {
+        c.appendChild(el2("div", "audit-line", label + "\uFF1A" + ((items2 || []).length ? items2.join("\uFF1B") : "\uFF08\u6CA1\u5199\uFF09")));
       });
     });
     root.appendChild(c);
   }
   var ref = (o) => o && o.task_id != null ? "\u4EFB\u52A1 #" + o.task_id + "\uFF1A" : "";
-  function aiList(box, title, items, fmt2) {
-    if (!Array.isArray(items) || !items.length) return;
+  function aiList(box, title, items2, fmt2) {
+    if (!Array.isArray(items2) || !items2.length) return;
     box.appendChild(el2("div", "audit-ai-h", title));
     const ul = el2("ul", "audit-ai-list");
-    items.forEach((i) => ul.appendChild(el2("li", "", typeof i === "string" ? i : fmt2(i))));
+    items2.forEach((i) => ul.appendChild(el2("li", "", typeof i === "string" ? i : fmt2(i))));
     box.appendChild(ul);
   }
   function renderAi(item) {
-    const box = $5("audit-ai");
+    const box = $6("audit-ai");
     box.textContent = "";
     if (!item) return;
     const c = card("AI \u5BA1\u6838\u610F\u89C1", "\u751F\u6210\u4E8E " + String(item.updated_at || "").replace("T", " ").slice(0, 16) + " UTC" + (item.history ? " \xB7 \u4E4B\u524D\u8FD8\u8DD1\u8FC7 " + item.history + " \u6B21" : ""));
@@ -11771,7 +11957,7 @@
     box.appendChild(c);
   }
   function render6() {
-    const root = $5("audit-body");
+    const root = $6("audit-body");
     root.textContent = "";
     renderSummary2(root);
     renderTasks(root);
@@ -11785,14 +11971,14 @@
   async function loadAudit() {
     bind();
     if (!range) range = weekOf(formatLocalDate(/* @__PURE__ */ new Date()));
-    $5("audit-start").value = range.start_date;
-    $5("audit-end").value = range.end_date;
-    $5("audit-person").value = person;
+    $6("audit-start").value = range.start_date;
+    $6("audit-end").value = range.end_date;
+    $6("audit-person").value = person;
     const my = ++seq3;
-    const root = $5("audit-body");
+    const root = $6("audit-body");
     root.textContent = "";
     root.appendChild(empty("\u6B63\u5728\u53D6\u8FD9\u6BB5\u65F6\u95F4\u7684\u8BB0\u5F55\u2026"));
-    $5("audit-ai").textContent = "";
+    $6("audit-ai").textContent = "";
     try {
       const [data3, ai] = await Promise.all([API.get("/api/audit/weekly?" + query()), API.get("/api/audit/weekly/ai?" + query()).catch(() => ({ item: null }))]);
       if (my !== seq3) return;
@@ -11812,14 +11998,14 @@
   async function runAuditAi(btn) {
     if (!range) return;
     const body = { start_date: range.start_date, end_date: range.end_date, person, today: formatLocalDate(/* @__PURE__ */ new Date()) };
-    const labelEl = $5("audit-ai-label");
+    const labelEl = $6("audit-ai-label");
     const label = labelEl.textContent;
     if (btn) btn.disabled = true;
     labelEl.textContent = "AI \u5BA1\u6838\u4E2D\uFF0C\u7EA6\u9700\u4E00\u5206\u949F\u2026";
     try {
       const { item } = await API.post("/api/audit/weekly/ai", body);
       renderAi(item);
-      $5("audit-ai").scrollIntoView({ behavior: "smooth", block: "start" });
+      $6("audit-ai").scrollIntoView({ behavior: "smooth", block: "start" });
       toast2("AI \u5BA1\u6838\u610F\u89C1\u5DF2\u751F\u6210");
     } catch (e) {
       toast2("AI \u5BA1\u6838\u6CA1\u6709\u8DD1\u6210\uFF1A" + failText3(e));
@@ -11832,7 +12018,7 @@
     if (!range) return;
     let url = "/api/audit/weekly/export?" + query() + "&format=" + format;
     if (format === "csv") {
-      const section = $5("audit-csv-section").value;
+      const section = $6("audit-csv-section").value;
       if (!section) {
         toast2("\u5148\u9009\u8981\u5BFC\u51FA\u54EA\u4E00\u5F20\u8868");
         return;
@@ -11848,7 +12034,7 @@
   }
   function bind() {
     if (bound2) return;
-    const panel = $5("panel-audit");
+    const panel = $6("panel-audit");
     if (!panel) return;
     bound2 = true;
     panel.addEventListener("click", (e) => {
@@ -11860,8 +12046,8 @@
       }
     });
     const onDate = () => {
-      const s = $5("audit-start").value;
-      const en = $5("audit-end").value;
+      const s = $6("audit-start").value;
+      const en = $6("audit-end").value;
       if (!s || !en) return;
       if (s > en) {
         toast2("\u5F00\u59CB\u65E5\u671F\u4E0D\u80FD\u665A\u4E8E\u7ED3\u675F\u65E5\u671F");
@@ -11870,16 +12056,16 @@
       range = { start_date: s, end_date: en };
       loadAudit();
     };
-    $5("audit-start").addEventListener("change", onDate);
-    $5("audit-end").addEventListener("change", onDate);
-    $5("audit-person").addEventListener("change", (e) => {
+    $6("audit-start").addEventListener("change", onDate);
+    $6("audit-end").addEventListener("change", onDate);
+    $6("audit-person").addEventListener("change", (e) => {
       person = e.target.value;
       loadAudit();
     });
   }
 
   // public/src/geo.js
-  var $6 = (id) => document.getElementById(id);
+  var $7 = (id) => document.getElementById(id);
   var seq4 = 0;
   function el3(tag, cls, text2) {
     const n = document.createElement(tag);
@@ -11895,9 +12081,9 @@
     return "\u8F83\u4E0A\u671F " + (d > 0 ? "+" : "") + num3(d) + "\uFF08" + (d > 0 ? "+" : "") + Math.round(d / prev * 100) + "%\uFF09";
   }
   function render7(data3) {
-    const body = $6("geo-body");
+    const body = $7("geo-body");
     body.textContent = "";
-    const sub = $6("geo-range");
+    const sub = $7("geo-range");
     if (sub) sub.textContent = "GA4 \xB7 " + rangeText(data3.range);
     if (data3.status === "NOT_SYNCED") {
       body.appendChild(el3("div", "geo-empty", "\u8FD9\u6BB5\u65F6\u95F4 GA4 \u6CA1\u6709\u540C\u6B65\u6570\u636E\uFF0C\u770B\u4E0D\u5230 AI \u5F15\u64CE\u5E26\u6765\u7684\u6D41\u91CF\u3002\u8BF7\u5230\u300C\u6570\u636E\u770B\u677F \u2192 GA4 \u6D41\u91CF\u300D\u786E\u8BA4\u540C\u6B65\u72B6\u6001\u3002"));
@@ -11964,7 +12150,7 @@
     return box;
   }
   async function loadGeo() {
-    const body = $6("geo-body");
+    const body = $7("geo-body");
     if (!body) return;
     const range2 = getCurrentRange("dashboard");
     if (!range2 || !range2.start_date) return;
@@ -11989,7 +12175,7 @@
   }
 
   // public/src/geo-checks.js
-  var $7 = (id) => document.getElementById(id);
+  var $8 = (id) => document.getElementById(id);
   var failText4 = (e) => e && e.status === 403 ? "\u65E0\u6743\u64CD\u4F5C" : e && e.message || "\u8BF7\u6C42\u5931\u8D25";
   function el4(tag, cls, text2) {
     const n = document.createElement(tag);
@@ -12012,7 +12198,7 @@
     return s;
   }
   function renderSummary3() {
-    const box = $7("geochk-summary");
+    const box = $8("geochk-summary");
     box.textContent = "";
     const t = data.summary.totals;
     const head = el4("div", "geochk-total");
@@ -12045,8 +12231,8 @@
     return btn;
   }
   function renderMatrix() {
-    const head = $7("geochk-head");
-    const body = $7("geochk-body");
+    const head = $8("geochk-head");
+    const body = $8("geochk-body");
     head.textContent = "";
     body.textContent = "";
     const hr = el4("tr");
@@ -12054,7 +12240,7 @@
     data.engines.forEach((e) => hr.appendChild(el4("th", "ctr", e.label)));
     hr.appendChild(el4("th", "ctr", ""));
     head.appendChild(hr);
-    const showOff = $7("geochk-show-off").checked;
+    const showOff = $8("geochk-show-off").checked;
     const rows2 = questions.filter((q) => q.active || showOff || data.items.some((c) => c.question_id === q.id));
     if (!rows2.length) {
       const tr2 = el4("tr");
@@ -12087,14 +12273,14 @@
   async function loadGeoChecks() {
     bind2();
     if (!round) round = formatLocalDate(/* @__PURE__ */ new Date());
-    $7("geochk-date").value = round;
+    $8("geochk-date").value = round;
     const my = ++seq5;
     try {
       const [qs2, checks2] = await Promise.all([API.get("/api/geo/questions"), API.get("/api/geo/checks?round_date=" + round)]);
       if (my !== seq5) return;
       questions = qs2.items || [];
       data = checks2;
-      const sel = $7("geochk-rounds");
+      const sel = $8("geochk-rounds");
       sel.textContent = "";
       const first = el4("option", "", data.rounds.length ? "\u5386\u53F2\u8F6E\u6B21\u2026" : "\u8FD8\u6CA1\u6709\u5386\u53F2\u8F6E\u6B21");
       first.value = "";
@@ -12108,7 +12294,7 @@
       renderMatrix();
     } catch (e) {
       if (my !== seq5 || e && e.message === "unauthorized") return;
-      const box = $7("geochk-summary");
+      const box = $8("geochk-summary");
       box.textContent = "";
       box.appendChild(el4("div", "task-done-error", "GEO \u62BD\u67E5\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText4(e) + " "));
       const retry = el4("button", "btn-mini", "\u91CD\u8BD5");
@@ -12118,11 +12304,11 @@
     }
   }
   function renderShots() {
-    const box = $7("geochk-thumbs");
+    const box = $8("geochk-thumbs");
     const c = editing4 && editing4.check;
     box.innerHTML = c ? thumbsHtml(c.evidence_images, { deletable: true }) : "";
-    $7("geochk-shot-btn").disabled = !c;
-    $7("geochk-shot-tip").textContent = c ? "" : "\u5148\u4FDD\u5B58\u8FD9\u4E00\u683C\uFF0C\u518D\u4E0A\u4F20\u622A\u56FE";
+    $8("geochk-shot-btn").disabled = !c;
+    $8("geochk-shot-tip").textContent = c ? "" : "\u5148\u4FDD\u5B58\u8FD9\u4E00\u683C\uFF0C\u518D\u4E0A\u4F20\u622A\u56FE";
   }
   function openCell(qid, engineKey) {
     const question = questions.find((q) => q.id === qid);
@@ -12130,14 +12316,14 @@
     if (!question || !engine) return;
     const check = checkOf(qid, engineKey) || null;
     editing4 = { question, engine, check };
-    $7("geochk-title").textContent = engine.label + " \xB7 " + round;
-    $7("geochk-question").textContent = question.question;
-    $7("geochk-mentioned").checked = !!(check && check.mentioned);
-    $7("geochk-cited").checked = !!(check && check.cited);
-    $7("geochk-url").value = check && check.cited_url || "";
-    $7("geochk-note").value = check && check.note || "";
-    $7("geochk-error").textContent = "";
-    $7("geochk-del").classList.toggle("is-hidden", !check);
+    $8("geochk-title").textContent = engine.label + " \xB7 " + round;
+    $8("geochk-question").textContent = question.question;
+    $8("geochk-mentioned").checked = !!(check && check.mentioned);
+    $8("geochk-cited").checked = !!(check && check.cited);
+    $8("geochk-url").value = check && check.cited_url || "";
+    $8("geochk-note").value = check && check.note || "";
+    $8("geochk-error").textContent = "";
+    $8("geochk-del").classList.toggle("is-hidden", !check);
     renderShots();
     openModal("geoCheckMask");
   }
@@ -12148,22 +12334,22 @@
       question_id: e.question.id,
       engine: e.engine.key,
       round_date: round,
-      mentioned: $7("geochk-mentioned").checked,
-      cited: $7("geochk-cited").checked,
-      cited_url: $7("geochk-url").value.trim(),
-      note: $7("geochk-note").value
+      mentioned: $8("geochk-mentioned").checked,
+      cited: $8("geochk-cited").checked,
+      cited_url: $8("geochk-url").value.trim(),
+      note: $8("geochk-note").value
     };
     if (btn) btn.disabled = true;
     try {
       const { item } = await API.put("/api/geo/checks", body);
       e.check = item;
-      $7("geochk-error").textContent = "";
-      $7("geochk-del").classList.remove("is-hidden");
+      $8("geochk-error").textContent = "";
+      $8("geochk-del").classList.remove("is-hidden");
       renderShots();
       toast2("\u5DF2\u4FDD\u5B58 \xB7 \u5DF2\u5165\u5E93" + (item.evidence_images.length ? "" : "\uFF0C\u8BF7\u8865\u4E0A\u622A\u56FE"));
       loadGeoChecks();
     } catch (err) {
-      $7("geochk-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText4(err);
+      $8("geochk-error").textContent = "\u672A\u5165\u5E93\uFF1A" + failText4(err);
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -12179,7 +12365,7 @@
   }
   function bind2() {
     if (bound3) return;
-    const panel = $7("sub-data-geo");
+    const panel = $8("sub-data-geo");
     if (!panel) return;
     bound3 = true;
     panel.addEventListener("click", async (e) => {
@@ -12199,15 +12385,15 @@
         return;
       }
       if (e.target.closest("#geochk-add")) {
-        const input = $7("geochk-new");
-        const question = input.value.trim();
+        const input2 = $8("geochk-new");
+        const question = input2.value.trim();
         if (!question) {
           toast2("\u5148\u5199\u4E0B\u8981\u95EE AI \u7684\u95EE\u9898");
           return;
         }
         try {
           await API.post("/api/geo/questions", { question });
-          input.value = "";
+          input2.value = "";
           toast2("\u5DF2\u52A0\u5165\u9898\u5E93");
           loadGeoChecks();
         } catch (err) {
@@ -12220,28 +12406,28 @@
         loadGeoChecks();
       }
     });
-    $7("geochk-date").addEventListener("change", (e) => {
+    $8("geochk-date").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) {
         round = e.target.value;
         loadGeoChecks();
       }
     });
-    $7("geochk-show-off").addEventListener("change", () => {
+    $8("geochk-show-off").addEventListener("change", () => {
       if (data) renderMatrix();
     });
-    $7("geochk-rounds").addEventListener("change", (e) => {
+    $8("geochk-rounds").addEventListener("change", (e) => {
       if (e.target.value) {
         round = e.target.value;
         loadGeoChecks();
       }
     });
-    $7("geochk-new").addEventListener("keydown", (e) => {
+    $8("geochk-new").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        $7("geochk-add").click();
+        $8("geochk-add").click();
       }
     });
-    const mask = $7("geoCheckMask");
+    const mask = $8("geoCheckMask");
     mask.addEventListener("click", async (e) => {
       const delShot = e.target.closest("[data-att-del]");
       if (delShot && editing4 && editing4.check) {
@@ -12279,7 +12465,7 @@
   }
 
   // public/src/sites.js
-  var $8 = (id) => document.getElementById(id);
+  var $9 = (id) => document.getElementById(id);
   var PROVIDER_LABEL = { gsc: "GSC", ga4: "GA4" };
   var BACKFILL_DAYS = 90;
   function h(tag, cls, text2) {
@@ -12295,7 +12481,7 @@
   var editing5 = null;
   var bound4 = false;
   async function loadSites() {
-    const box = $8("sites-box");
+    const box = $9("sites-box");
     if (!box) return;
     if (!bound4) {
       box.addEventListener("click", onClick);
@@ -12369,7 +12555,7 @@
     return row;
   }
   function render8() {
-    const box = $8("sites-box");
+    const box = $9("sites-box");
     box.textContent = "";
     const sites2 = data2.sites || [];
     if (data2.env_site) {
@@ -12393,10 +12579,10 @@
       box.appendChild(h("div", "sites-tip dim", "\u6DFB\u52A0\u7AD9\u70B9\u9700\u8981\u7ECF\u7406\u6216\u8001\u677F\u8D26\u53F7\u3002"));
     }
   }
-  function field2(labelText, input, hint) {
+  function field2(labelText, input2, hint) {
     const wrap = h("label", "sites-field");
     wrap.appendChild(h("span", "sites-label", labelText));
-    wrap.appendChild(input);
+    wrap.appendChild(input2);
     if (hint) wrap.appendChild(h("span", "sites-hint", hint));
     return wrap;
   }
@@ -12410,10 +12596,10 @@
     if (listId) i.setAttribute("list", listId);
     return i;
   }
-  function datalist(id, items) {
+  function datalist(id, items2) {
     const dl = h("datalist");
     dl.id = id;
-    for (const it of items) {
+    for (const it of items2) {
       const o = h("option");
       o.value = it.value;
       o.label = it.label;
@@ -12474,10 +12660,10 @@
     } catch (e) {
       found = { gsc: { items: [], error: failText5(e) }, ga4: { items: [], error: failText5(e) } };
     }
-    const typed = readForm($8("sites-box").querySelector(".sites-form"));
+    const typed = readForm($9("sites-box").querySelector(".sites-form"));
     if (editing5 !== target) return;
     render8();
-    const form = $8("sites-box").querySelector(".sites-form");
+    const form = $9("sites-box").querySelector(".sites-form");
     if (form && typed) for (const [k, v] of Object.entries(typed)) form.elements[k].value = v;
   }
   function readForm(form) {
@@ -12561,7 +12747,7 @@
   }
 
   // public/src/site-returns.js
-  var $9 = (id) => document.getElementById(id);
+  var $10 = (id) => document.getElementById(id);
   function h2(tag, cls, text2) {
     const el5 = document.createElement(tag);
     if (cls) el5.className = cls;
@@ -12590,8 +12776,8 @@
     return row;
   }
   function render9(data3) {
-    const card2 = $9("siteReturnsCard");
-    const body = $9("siteReturnsBody");
+    const card2 = $10("siteReturnsCard");
+    const body = $10("siteReturnsBody");
     const anyMapped = data3.campaigns.some((c) => c.site_id != null);
     card2.classList.toggle("is-hidden", data3.sites.length < 2 && !anyMapped);
     body.textContent = "";
@@ -12676,10 +12862,10 @@
     body.appendChild(box);
   }
   async function loadSiteReturns() {
-    const card2 = $9("siteReturnsCard");
+    const card2 = $10("siteReturnsCard");
     if (!card2) return;
     if (!bound5) {
-      $9("siteReturnsBody").addEventListener("change", async (e) => {
+      $10("siteReturnsBody").addEventListener("change", async (e) => {
         const sel = e.target.closest(".sret-select");
         if (!sel) return;
         sel.disabled = true;
@@ -12701,7 +12887,7 @@
     } catch (e) {
       if (mine !== seq6) return;
       card2.classList.remove("is-hidden");
-      $9("siteReturnsBody").textContent = "\u6309\u7AD9\u70B9\u7684\u82B1\u8D39\u4E0E\u8BE2\u76D8\u8BFB\u53D6\u5931\u8D25\uFF1A" + failText6(e);
+      $10("siteReturnsBody").textContent = "\u6309\u7AD9\u70B9\u7684\u82B1\u8D39\u4E0E\u8BE2\u76D8\u8BFB\u53D6\u5931\u8D25\uFF1A" + failText6(e);
       return;
     }
     if (mine !== seq6 || revision !== getRangeRevision("data")) return;
@@ -12715,7 +12901,7 @@
   });
 
   // public/src/spend.js
-  var $10 = (id) => document.getElementById(id);
+  var $11 = (id) => document.getElementById(id);
   var isHttp4 = (u) => /^https?:\/\//i.test(String(u || ""));
   function h3(tag, cls, text2) {
     const el5 = document.createElement(tag);
@@ -12771,7 +12957,7 @@
     return "\u6CA1\u6709\u6570\u636E\uFF1AAds \u672C\u671F\u672A\u540C\u6B65\uFF0C\u4E5F\u6CA1\u6709\u4EBA\u5DE5\u5468\u62A5";
   }
   function renderSummary4(data3) {
-    const box = $10("spend-summary");
+    const box = $11("spend-summary");
     if (!box) return;
     box.textContent = "";
     const row = h3("div", "spend-groups");
@@ -12793,7 +12979,7 @@
     box.appendChild(line3);
   }
   function renderSummaryError(e) {
-    const box = $10("spend-summary");
+    const box = $11("spend-summary");
     if (!box) return;
     box.textContent = "";
     const line3 = h3("div", "spend-total is-error", "\u6C47\u603B\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText7(e) + " ");
@@ -12812,7 +12998,7 @@
     return parts.join(" \xB7 ");
   }
   function renderLinkStats(stats) {
-    const box = $10("spend-link-stats");
+    const box = $11("spend-link-stats");
     if (!box) return;
     box.textContent = "";
     if (!stats || !stats.total) return;
@@ -12825,15 +13011,15 @@
   }
   var STATUS_BADGE = { \u6709\u6548: "b-green", \u5931\u6548: "b-red", \u5F85\u4E0A\u7EBF: "b-amber" };
   var AUTO_LABEL = { found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u94FE\u63A5\u5728", not_found: "\u81EA\u52A8\u6838\u67E5\uFF1A\u6CA1\u627E\u5230", unreachable: "\u81EA\u52A8\u6838\u67E5\uFF1A\u9875\u9762\u6CA1\u53D6\u5230" };
-  function rowActions(kind, id) {
+  function rowActions(kind2, id) {
     const td2 = h3("td", "ctr spend-ops");
     const edit = h3("button", "btn-mini", "\u7F16\u8F91");
     edit.type = "button";
-    edit.dataset.spendEdit = kind;
+    edit.dataset.spendEdit = kind2;
     edit.dataset.id = id;
     const del = h3("button", "btn-mini", "\u5220\u9664");
     del.type = "button";
-    del.dataset.spendDel = kind;
+    del.dataset.spendDel = kind2;
     del.dataset.id = id;
     td2.append(edit, document.createTextNode(" "), del);
     return td2;
@@ -12858,11 +13044,11 @@
     tb.appendChild(tr2);
   }
   function renderBacklinks() {
-    const tb = $10("tb-backlinks");
+    const tb = $11("tb-backlinks");
     if (!tb) return;
     tb.textContent = "";
     if (!backlinkRows.length) {
-      emptyRow(tb, 11, $10("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
+      emptyRow(tb, 11, $11("spend-links-all").checked ? "\u8FD8\u6CA1\u6709\u767B\u8BB0\u8FC7\u5916\u94FE" : "\u672C\u6708\u6CA1\u6709\u767B\u8BB0\u5916\u94FE");
       return;
     }
     for (const b of backlinkRows) {
@@ -12916,7 +13102,7 @@
     }
   }
   function renderExpenses() {
-    const tb = $10("tb-expenses");
+    const tb = $11("tb-expenses");
     if (!tb) return;
     tb.textContent = "";
     if (!expenseRows.length) {
@@ -12947,11 +13133,11 @@
   async function loadSpend() {
     bind3();
     if (!month) month = formatLocalDate(/* @__PURE__ */ new Date()).slice(0, 7);
-    const input = $10("spend-month");
-    if (input) input.value = month;
+    const input2 = $11("spend-month");
+    if (input2) input2.value = month;
     const range2 = monthRange(month);
     const seq7 = ++loadSeq;
-    const allLinks = $10("spend-links-all") && $10("spend-links-all").checked;
+    const allLinks = $11("spend-links-all") && $11("spend-links-all").checked;
     const [sum, links, exps] = await Promise.allSettled([
       API.get("/api/spend/summary" + qs(range2)),
       API.get("/api/backlinks" + (allLinks ? "" : qs(range2))),
@@ -12967,14 +13153,14 @@
     } else {
       backlinkRows = [];
       renderLinkStats(null);
-      errorRow($10("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
+      errorRow($11("tb-backlinks"), 11, "\u5916\u94FE\u53F0\u8D26", links.reason);
     }
     if (exps.status === "fulfilled") {
       expenseRows = exps.value.items || [];
       renderExpenses();
     } else {
       expenseRows = [];
-      errorRow($10("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
+      errorRow($11("tb-expenses"), 9, "\u652F\u51FA\u53F0\u8D26", exps.reason);
     }
   }
   var BACKLINK_FIELDS = [
@@ -13012,8 +13198,8 @@
     backlink: { fields: BACKLINK_FIELDS, mask: "backlinkMask", verb: "bl-verb", api: "/api/backlinks", rows: () => backlinkRows, name: "\u5916\u94FE" },
     expense: { fields: EXPENSE_FIELDS, mask: "expenseMask", verb: "ex-verb", api: "/api/expenses", rows: () => expenseRows, name: "\u652F\u51FA" }
   };
-  function fillSelect2(id, values, placeholder, labelOf) {
-    const sel = $10(id);
+  function fillSelect2(id, values2, placeholder, labelOf) {
+    const sel = $11(id);
     if (!sel) return;
     const keep = sel.value;
     sel.textContent = "";
@@ -13022,7 +13208,7 @@
       o.value = "";
       sel.appendChild(o);
     }
-    for (const v of values) {
+    for (const v of values2) {
       const o = h3("option", "", labelOf ? labelOf(v) : v);
       o.value = labelOf ? v.id : v;
       sel.appendChild(o);
@@ -13042,61 +13228,61 @@
     fillSelect2("ex-task", options.tasks, "\u4E0D\u5173\u8054", taskLabel);
   }
   function ensureTaskOption(selectId, row) {
-    const sel = $10(selectId);
+    const sel = $11(selectId);
     if (!sel || !row || row.task_id == null) return;
     if ([...sel.options].some((o2) => o2.value === String(row.task_id))) return;
     const o = h3("option", "", "#" + row.task_id + " " + String(row.task_content || "\uFF08\u5DF2\u5F52\u6863\u7684\u4EFB\u52A1\uFF09").slice(0, 40));
     o.value = String(row.task_id);
     sel.appendChild(o);
   }
-  async function openForm2(kind, row) {
-    const form = FORMS[kind];
+  async function openForm2(kind2, row) {
+    const form = FORMS[kind2];
     try {
       await ensureOptions();
     } catch (e) {
       toast2("\u8868\u5355\u9009\u9879\u52A0\u8F7D\u5931\u8D25\uFF1A" + failText7(e));
       return;
     }
-    editing6[kind] = row || null;
-    $10(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
-    ensureTaskOption(kind === "backlink" ? "bl-task" : "ex-task", row);
+    editing6[kind2] = row || null;
+    $11(form.verb).textContent = row ? "\u7F16\u8F91" : "\u767B\u8BB0";
+    ensureTaskOption(kind2 === "backlink" ? "bl-task" : "ex-task", row);
     for (const [id, key] of form.fields) {
-      const el5 = $10(id);
+      const el5 = $11(id);
       if (!el5) continue;
       el5.value = row && row[key] != null ? row[key] : "";
     }
     if (!row) {
       const today3 = formatLocalDate(/* @__PURE__ */ new Date());
       const me = (window.ME || {}).name || "";
-      if (kind === "backlink") {
-        $10("bl-date").value = today3;
-        $10("bl-owner").value = me;
+      if (kind2 === "backlink") {
+        $11("bl-date").value = today3;
+        $11("bl-owner").value = me;
       } else {
-        $10("ex-date").value = today3;
-        $10("ex-currency").value = "CNY";
-        $10("ex-owner").value = me;
+        $11("ex-date").value = today3;
+        $11("ex-currency").value = "CNY";
+        $11("ex-owner").value = me;
       }
     }
-    $10(kind === "backlink" ? "bl-error" : "ex-error").textContent = "";
+    $11(kind2 === "backlink" ? "bl-error" : "ex-error").textContent = "";
     openModal(form.mask);
   }
   var openBacklink = () => openForm2("backlink", null);
   var openExpense = () => openForm2("expense", null);
-  async function submitForm(kind, btn) {
-    const form = FORMS[kind];
+  async function submitForm(kind2, btn) {
+    const form = FORMS[kind2];
     const body = {};
     for (const [id, key] of form.fields) {
-      const el5 = $10(id);
+      const el5 = $11(id);
       if (el5) body[key] = el5.value;
     }
-    const errEl = $10(kind === "backlink" ? "bl-error" : "ex-error");
-    const row = editing6[kind];
+    const errEl = $11(kind2 === "backlink" ? "bl-error" : "ex-error");
+    const row = editing6[kind2];
     if (btn) btn.disabled = true;
     try {
       if (row) await API.patch(form.api + "/" + row.id, body);
       else await API.post(form.api, body);
       closeModal(form.mask);
-      editing6[kind] = null;
+      editing6[kind2] = null;
       toast2((row ? "\u5DF2\u66F4\u65B0" : "\u5DF2\u767B\u8BB0") + form.name + " \xB7 \u5DF2\u5165\u5E93");
       loadSpend();
     } catch (e) {
@@ -13109,7 +13295,7 @@
   var submitExpense = (btn) => submitForm("expense", btn);
   function bind3() {
     if (bound6) return;
-    const panel = $10("panel-spend");
+    const panel = $11("panel-spend");
     if (!panel) return;
     bound6 = true;
     panel.addEventListener("click", async (e) => {
@@ -13141,9 +13327,9 @@
       }
       const edit = e.target.closest("[data-spend-edit]");
       if (edit) {
-        const kind = edit.dataset.spendEdit;
-        const row = FORMS[kind].rows().find((r) => String(r.id) === edit.dataset.id);
-        if (row) openForm2(kind, row);
+        const kind2 = edit.dataset.spendEdit;
+        const row = FORMS[kind2].rows().find((r) => String(r.id) === edit.dataset.id);
+        if (row) openForm2(kind2, row);
         return;
       }
       const del = e.target.closest("[data-spend-del]");
@@ -13159,13 +13345,13 @@
         }
       }
     });
-    $10("spend-month").addEventListener("change", (e) => {
+    $11("spend-month").addEventListener("change", (e) => {
       if (/^\d{4}-\d{2}$/.test(e.target.value)) {
         month = e.target.value;
         loadSpend();
       }
     });
-    $10("spend-links-all").addEventListener("change", loadSpend);
+    $11("spend-links-all").addEventListener("change", loadSpend);
   }
 
   // public/src/app.js
@@ -13402,6 +13588,12 @@
       } catch (e) {
       }
     }
+    if (tab === "backlink-records") {
+      try {
+        loadLinkRecords();
+      } catch (e) {
+      }
+    }
     if (tab === "archive") {
       try {
         loadArchive2();
@@ -13501,11 +13693,11 @@
   }));
   async function loadNegKeywords() {
     try {
-      const { items } = await API.get("/api/neg-keywords");
+      const { items: items2 } = await API.get("/api/neg-keywords");
       const tb = document.getElementById("tb-neg");
       if (!tb) return;
       tb.innerHTML = "";
-      const rows2 = items || [];
+      const rows2 = items2 || [];
       if (!rows2.length) {
         tableLoadState("tb-neg", 6, "empty", "\u6682\u65E0\u5426\u8BCD\u8BB0\u5F55\uFF0C\u70B9\u51FB\u201C\u52A0\u5426\u8BCD\u201D\u5F00\u59CB\u8BB0\u5F55\u3002");
         return;
@@ -13525,11 +13717,11 @@
   }
   async function loadAdCreatives() {
     try {
-      const { items } = await API.get("/api/ad-creatives");
+      const { items: items2 } = await API.get("/api/ad-creatives");
       const tb = document.getElementById("tb-ad");
       if (!tb) return;
       tb.innerHTML = "";
-      const rows2 = items || [];
+      const rows2 = items2 || [];
       if (!rows2.length) {
         tableLoadState("tb-ad", 5, "empty", "\u6682\u65E0\u5E7F\u544A\u521B\u610F\u8BB0\u5F55\uFF0C\u70B9\u51FB\u201C\u52A0\u521B\u610F\u201D\u5F00\u59CB\u8BB0\u5F55\u3002");
         return;
@@ -13726,5 +13918,5 @@
   var settingsCompatibility = { bindSettings, openPwd, submitPwd };
   var rankSnapshotCompatibility = { loadRankSnapshots, snapshotRanks };
   var riskCompatibility = { loadRisks };
-  Object.assign(window, ui_kit_exports, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility, app_exports);
+  Object.assign(window, ui_kit_exports, neg_ads_exports, ga4_view_exports, market_brain_exports, kpi_view_exports, tagselect_exports, google_projects_exports, archive_exports, timerange_exports, sop_exports, keywords_exports, hermes_memory_exports, inquiry_globe_exports, plan_history_exports, weekly_review_exports, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility, { loadLinkRecords: loadLinkRecords2 }, app_exports);
 })();

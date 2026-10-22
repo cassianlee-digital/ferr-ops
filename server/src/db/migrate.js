@@ -18,7 +18,7 @@ const ALL_TABLES = [
   'execution_loops', 'keywords', 'fixes', 'loop_items',
   'ai_analyses', 'integrations', 'market_brain', 'market_research', 'monthly_snapshots', 'weekly_reports',
   'content_assets', 'hermes_memories', 'hermes_conversations',
-  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'expenses', 'geo_questions', 'geo_checks', 'geo_rounds', 'ads_campaign_sites', 'hermes_action_runs',
+  'sop_definitions', 'sop_completions', 'task_checkins', 'task_links', 'backlinks', 'link_records', 'expenses', 'geo_questions', 'geo_checks', 'geo_rounds', 'ads_campaign_sites', 'hermes_action_runs',
   'google_oauth_tokens', 'google_oauth_states', 'google_sync_runs',
   'google_projects',
   'gsc_daily', 'gsc_query_daily', 'ga4_daily', 'ga4_dimension_daily', 'ga4_event_daily',
@@ -722,6 +722,28 @@ CREATE TABLE IF NOT EXISTS backlinks (
 );
 CREATE INDEX IF NOT EXISTS idx_backlinks_date ON backlinks(acquired_date);
 CREATE INDEX IF NOT EXISTS idx_backlinks_task ON backlinks(task_id);
+
+-- 外链记录：运营登记与投入台账分开；费用与账密按链接类型分别保存。
+CREATE TABLE IF NOT EXISTS link_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL CHECK(kind IN ('paid','free')),
+  added_date TEXT NOT NULL,
+  site_name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  link_form TEXT,
+  link_url TEXT NOT NULL,
+  anchor_text TEXT,
+  owner_site TEXT NOT NULL,
+  registrant TEXT NOT NULL,
+  fee_record TEXT,
+  credential_record TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at TEXT,
+  deleted_by INTEGER REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_link_records_date ON link_records(added_date, kind, deleted_at);
 
 -- 其它支出台账：广告费从 Ads 同步、外链费在 backlinks，除此之外的钱（工具订阅、内容外包、建站技术…）记这里。
 -- 三处合起来才答得上「这个月的钱都花在哪」。外链费不许记到这里 —— 否则同一笔钱会被数两遍。

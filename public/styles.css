@@ -8619,3 +8619,55 @@ body.dark .content.action-composite #panel-fix .ai-box {
 .inq-map-panel div { background: rgba(255,255,255,.94) !important; border-color: var(--border) !important; }
 .inq-map-panel b { color: var(--text1) !important; }
 .inq-map-panel span { color: var(--text3) !important; }
+
+/* 外链记录：像资产表格一样在单元格内编辑，默认保持轻量。 */
+#panel-backlink-records .lr-cell {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 96px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+#panel-backlink-records .lr-cell:hover,
+#panel-backlink-records .lr-cell:focus {
+  border-color: var(--border);
+  background: var(--surface, #fff);
+  outline: none;
+}
+#panel-backlink-records .lr-incomplete td { background: rgba(245, 158, 11, .06); }
+#panel-backlink-records .link-record-filter-row th {
+  height: 38px;
+  padding: 4px 8px;
+  background: #fafbfd;
+  border-bottom: 1px solid #e5e8ef;
+  vertical-align: middle;
+}
+#panel-backlink-records .link-record-filter-row select {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 24px 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background-color: #fff;
+  color: var(--text1);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+#panel-backlink-records .link-record-filter-row select:hover { border-color: #d7dee8; }
+#panel-backlink-records .link-record-filter-row select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(47, 114, 232, .12);
+  outline: none;
+}
+body.dark #panel-backlink-records .link-record-filter-row th { background: #0f172a; border-color: #273142; }
+body.dark #panel-backlink-records .link-record-filter-row select { background-color: #0b1220; color: #e5e7eb; }
+#panel-backlink-records .link-record-filter-row select:focus { border-color: var(--blue); }
+#panel-backlink-records .card { overflow-x: auto; }

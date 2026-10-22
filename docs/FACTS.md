@@ -4,7 +4,7 @@
 > 这份清单和代码对不上时，提交前的测试会失败并提示这条命令。
 > 每行的说明取自那个文件开头的第一句注释：想改说明，去改文件的第一行注释。
 
-## 后端路由（37）
+## 后端路由（38）
 
 `server/src/routes/`
 
@@ -32,6 +32,7 @@
 | `inquiryLeads.js` | 表单线索 API：独立站询盘表单 → 后台。 |
 | `keywords.js` | 关键词库 API（FR-9 / V7）。 |
 | `kpi.js` | KPI 目标/评分 API（FR-4）。 |
+| `linkRecords.js` | 外链记录 API：校验付费/免费登记字段、人员与归属站点目录。 |
 | `loopItems.js` | 闭环条目 API（FR-10）：月度计划/测试登记/沉淀表/任务看板 + 归档地基（state/archived/deleted）。 |
 | `market.js` | 市场分析 / AI 记忆体路由。 |
 | `negKeywords.js` | 否词库 API（FR-7）。 |
@@ -100,7 +101,7 @@
 | `taskEffectData.js` | 任务前后对比的数据组装：按任务的关联键去同步表里取两个窗口的数，交给 taskEffect.js 的规则算。 |
 | `verifiedAiAnswer.js` | 带证据核验的 AI 回答：结论引不出证据就降级为待验证，只做一次有界的纠偏重试。 |
 
-## 数据访问层（38）
+## 数据访问层（39）
 
 `server/src/db/repositories/`
 
@@ -130,6 +131,7 @@
 | `kpi.js` | KPI 目标/实际 数据访问层。 |
 | `kpiReviewTargets.js` | 月度绩效考核目标（老板《2026 运营部绩效考核表》「目标设置」页口径）数据访问层。 |
 | `kpiSnapshots.js` | KPI 考核期冻结快照（Phase 5C）。 |
+| `linkRecords.js` | 外链记录数据访问层：付费与免费登记按类型过滤。 |
 | `loopItemChanges.js` | 任务改动流水的数据访问层。 |
 | `loopItems.js` | 闭环条目数据访问层（plan/test/deposit/task）+ 归档地基（state/archived/deleted）。 |
 | `marketBrain.js` | 市场 AI 记忆体（单行 id=1）数据访问层。 |
@@ -159,7 +161,7 @@
 | `scheduler.js` | 谷歌数据定时自动同步（进程内调度）。 |
 | `syncSites.js` | 多站点同步的编排：每天把所有启用的站点都同步一遍； |
 
-## 前端 ES 模块（打包进 dist/bundle.js）（53）
+## 前端 ES 模块（打包进 dist/bundle.js）（54）
 
 `public/src/`
 
@@ -194,6 +196,7 @@
 | `kpi-view.js` | KPI 看板渲染（ES 模块 · esbuild 打包为 IIFE）。 |
 | `kpi.js` | KPI 引擎 + 周数据（ES 模块 · esbuild 打包为 IIFE）。 |
 | `ledger.js` | 运营总账（ES 模块 · esbuild 打包为 IIFE）。 |
+| `link-records.js` | 外链记录表格：复用后台时间范围，新增与编辑都在表格行内完成。 |
 | `main.js` | 前端 ES 模块入口（渐进迁移）。 |
 | `market-brain.js` | 市场分析（表格化）+ AI 记忆体联动（ES 模块 · esbuild 打包为 IIFE）。 |
 | `neg-ads.js` | 否词库 / 广告创意库 录入（ES 模块 · esbuild 打包为 IIFE）。 |
@@ -233,7 +236,7 @@
 
 `base.css` · `components.css` · `csp-utilities.css` · `login.css` · `page-archive.css` · `page-audit.css` · `page-content.css` · `page-dashboard.css` · `page-data.css` · `page-deposit.css` · `page-fixes.css` · `page-ga4.css` · `page-inquiry.css` · `page-keywords.css` · `page-kpi.css` · `page-market.css` · `page-review.css` · `page-risks.css` · `page-settings.css` · `page-spend.css` · `page-tasks.css` · `page-test.css` · `styles.css`
 
-## 数据表（54）
+## 数据表（55）
 
 `server/src/db/migrate.js`
 
@@ -277,6 +280,7 @@
 | `kpi_period_snapshots` | KPI 绩效重构：正式考核期的冻结快照。改目标/权重不影响已结算的历史期（§29）。 |
 | `kpi_review_targets` | 月度绩效考核目标（老板《2026 运营部绩效考核表》的「目标设置」页口径）。 |
 | `kpi_targets` | KPI 指标的权重、目标值与实际值（旧版考核表盘与运营总账用；月度绩效考核的目标在 kpi_review_targets）。 |
+| `link_records` | 外链记录：运营登记与投入台账分开；费用与账密按链接类型分别保存。 |
 | `loop_item_changes` | 任务改动流水（2026-10-11）。询盘改渠道 / 等级早就留痕，任务却没有：完成之后还能改标题、把截止日往后挪、 |
 | `loop_items` | 闭环条目：任务、月度计划、测试登记、沉淀四种共用一张表（kind 区分）。 |
 | `market_brain` | V7：市场 AI 记忆体（单行，id=1） |
@@ -294,7 +298,7 @@
 | `users` | 账号与角色（seo / sem / manager / boss）。 |
 | `weekly_reports` | V7：复盘周报（每周 × 每部门；四段内容为 JSON 列表） |
 
-## 测试（59）
+## 测试（60）
 
 `server/test/`
 
@@ -335,6 +339,7 @@
 | `kpiReview.test.js` | 月度绩效考核（老板《2026 运营部绩效考核表》口径）评分引擎单测。 |
 | `linkCheck.test.js` | 外链存活核查。 |
 | `linkCheckBatch.test.js` | 外链的定时批量核查：轮到谁、查完怎么记、「上次还在这次没了」怎么标。 |
+| `linkRecords.test.js` | 外链记录路由：覆盖权限、枚举校验、日期筛选与付费/免费字段隔离。 |
 | `middleware.test.js` | 权限矩阵回归测试。 |
 | `migrateUpgrade.test.js` | 升级不丢数据。 |
 | `productionReadiness.test.js` | 生产验收工具：静态检查不冒充实测、不泄露密钥； |

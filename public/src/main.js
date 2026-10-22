@@ -65,6 +65,7 @@ import './ledger.js';
 // kpi-review 由 kpi-view 显式 import（KPI 页渲染时挂载）；admin 只在设置页那个子标签被点开时才拉配置，
 // 两者都自己做事件委托、不挂 window，所以这里只需要把 admin 拉进打包图里。
 import './kpi-review-admin.js';
+import { loadLinkRecords } from './link-records.js';
 // 应用组装层（原经典脚本 public/app.js，2026-08-26 迁入）。**必须放在最后一个 import**：
 // 它的模块求值期会做 DOM 绑定并注册 window load 启动序列，顺序等价于原来「bundle.js 之后加载 app.js」。
 // 它 import 所有业务模块、没有模块 import 它，是依赖图顶点，故排在末尾不会造成前向引用。
@@ -81,4 +82,4 @@ const settingsCompatibility={bindSettings,openPwd,submitPwd};
 const rankSnapshotCompatibility={loadRankSnapshots,snapshotRanks};
 const riskCompatibility={loadRisks};
 
-Object.assign(window, uiKit, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility, app);
+Object.assign(window, uiKit, negAds, ga4View, marketBrain, kpiView, tagSelect, googleProjects, archive, timeRange, sop, keywords, hermesMemory, inquiryGlobe, planHistory, weeklyReview, inquiryCompatibility, kpiCompatibility, chartCompatibility, closedLoopCompatibility, aiCompatibility, settingsCompatibility, rankSnapshotCompatibility, riskCompatibility, { loadLinkRecords }, app);

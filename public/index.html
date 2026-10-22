@@ -50,6 +50,7 @@
     </div>
     <div class="nav-section"><div class="nav-label">资产库</div>
       <div class="nav-item" data-tab="keywords"><i class="ti ti-key"></i> 关键词库</div>
+      <div class="nav-item" data-tab="backlink-records"><i class="ti ti-link"></i> 外链记录</div>
       <div class="nav-item" data-tab="content"><i class="ti ti-file-stack"></i> 内容资产</div>
       <div class="nav-item" data-tab="market"><i class="ti ti-map-search"></i> 市场分析</div>
       <div class="nav-item" data-tab="ai-memory"><i class="ti ti-brain"></i> AI 记忆</div>
@@ -460,6 +461,13 @@
             <tr data-load-state="loading"><td colspan="5" class="dim csp-s-d48bfa87bb">正在加载真实广告创意…</td></tr>
           </tbody></table></div>
         </div>
+      </div>
+      <div class="panel" id="panel-backlink-records">
+        <div class="page-head"><div><div class="page-title">外链记录</div><div class="page-sub">记录付费与免费外链及其登记信息</div></div></div>
+        <div class="subtabs"><div class="subtab active" data-link-kind="paid">付费外链</div><div class="subtab" data-link-kind="free">免费外链</div></div>
+        <div class="timebar-inline" data-time data-scope="linkRecords"></div>
+        <div class="sheet-toolbar"><button class="btn-primary" data-link-add><i class="ti ti-plus"></i> 新增一行</button><span class="sheet-tip">在表格中直接填写，离开单元格后自动保存</span></div>
+        <div class="card"><table class="dt"><thead><tr><th>添加时间</th><th>站点名称</th><th>分类</th><th>链接形式</th><th>链接</th><th>锚链接</th><th>归属站点</th><th>登记人</th><th class="link-extra-head">费用记录</th><th></th></tr><tr id="link-record-filters" class="link-record-filter-row"><th></th><th></th><th><select data-filter="category"><option value="">全部分类</option></select></th><th></th><th></th><th></th><th><select data-filter="site"><option value="">全部站点</option></select></th><th><select data-filter="registrant"><option value="">全部登记人</option></select></th><th></th><th></th></tr></thead><tbody id="tb-link-records"></tbody></table><div class="table-empty" id="link-record-empty">暂无外链记录</div></div>
       </div>
 
       <!-- ============ 内容资产 ============ -->
