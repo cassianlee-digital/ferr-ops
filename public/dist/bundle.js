@@ -7065,11 +7065,12 @@
   function taskColFor(dept) {
     return document.getElementById(dept === "\u516C\u53F8" ? "newtask-company" : dept === "SEM" ? "newtask-sem" : "newtask-seo");
   }
-  var TASK_GROUPS = [["overdue", "\u903E\u671F"], ["today", "\u4ECA\u65E5"], ["doing", "\u8FDB\u884C\u4E2D"], ["later", "\u7A0D\u540E"]];
-  function taskGroupOf(it) {
+  var TASK_GROUPS = [["overdue", "\u903E\u671F"], ["today", "\u4ECA\u65E5"], ["doing", "\u8FDB\u884C\u4E2D"], ["later", "\u7A0D\u540E"], ["done", "\u5DF2\u5B8C\u6210"]];
+  function taskGroupOf(it, card2) {
     const t = formatLocalDate(/* @__PURE__ */ new Date());
     const due = it && it.task_date || "", st2 = it && it.start_date || "";
-    if (due && due < t) return "overdue";
+    const done = card2 ? card2.classList.contains("done") : !!(it && (it.state === "done" || it.status === "done"));
+    if (due && due < t) return done ? "done" : "overdue";
     if (st2 && st2 > t) return "later";
     if (due && due > t) return st2 ? "doing" : "later";
     return "today";
@@ -7113,7 +7114,7 @@
   function renderTaskMeta(card2) {
     const it = card2._item || {}, s = card2._scope || {}, box = card2.querySelector(".tmeta");
     if (!box) return;
-    const isCo = card2.classList.contains("cotask"), g = taskGroupOf(it);
+    const isCo = card2.classList.contains("cotask"), g = taskGroupOf(it, card2);
     const deptBadge = isCo ? `<span class="badge ${esc(s.c || "b-gray")}">${esc(s.dept || "")}</span>` : "";
     const srcBadge = it.fix_id ? `<span class="badge b-amber src-fix" title="\u6765\u81EA\u6574\u6539\u6E05\u5355 \xB7 \u70B9\u51FB\u67E5\u770B\u4F9D\u636E">\u6574\u6539</span>` : "";
     const note = it.note ? `<span class="tnote">${esc(it.note)}</span>` : "";
@@ -7145,7 +7146,11 @@
   }
   document.addEventListener("taskchanged", (e) => {
     const card2 = e.detail && e.detail.card;
-    if (card2 && card2._item && !card2.classList.contains("subtask")) renderTaskMeta(card2);
+    if (card2 && card2._item && !card2.classList.contains("subtask")) {
+      renderTaskMeta(card2);
+      placeTaskCard(card2);
+      refreshTaskCols();
+    }
   });
   function taskResult(btn) {
     const card2 = btn.closest(".tcard");
@@ -7274,7 +7279,7 @@
   function placeTaskCard(card2) {
     const s = card2._scope || {}, col = taskColFor(s.dept);
     if (!col) return;
-    const g = taskGroupOf(card2._item || {});
+    const g = taskGroupOf(card2._item || {}, card2);
     card2.classList.toggle("t-overdue", g === "overdue");
     if (s.dept === "\u516C\u53F8") {
       const anchor = col.querySelector(".donefold") || col.querySelector(".add-task");

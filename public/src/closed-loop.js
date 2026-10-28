@@ -117,11 +117,14 @@ function coScope(){return {dept:'公司',owner:'',c:'b-red'};}
 function taskColFor(dept){return document.getElementById(dept==='公司'?'newtask-company':(dept==='SEM'?'newtask-sem':'newtask-seo'));}
 /* 跨天任务分组：一条任务写一次、设开始日+截止日，这段时间里天天落在「进行中」，不用每天拆一条。
    逾期=截止日已过；今日=截止就是今天或没填日期；进行中=已开始但还没到截止；稍后=还没到开始日。 */
-const TASK_GROUPS=[['overdue','逾期'],['today','今日'],['doing','进行中'],['later','稍后']];
-function taskGroupOf(it){
+const TASK_GROUPS=[['overdue','逾期'],['today','今日'],['doing','进行中'],['later','稍后'],['done','已完成']];
+/* 已完成的任务不再「逾期」：截止日已过但勾了完成 → 进「已完成」组（默认被折叠条收起）。
+   完成状态以卡片的 .done 为准（刚勾的卡 _item 里的 state 不一定同步），没有卡时看数据。 */
+function taskGroupOf(it,card){
   const t=formatLocalDate(new Date());
   const due=(it&&it.task_date)||'', st=(it&&it.start_date)||'';
-  if(due&&due<t)return 'overdue';
+  const done=card?card.classList.contains('done'):!!(it&&(it.state==='done'||it.status==='done'));
+  if(due&&due<t)return done?'done':'overdue';
   if(st&&st>t)return 'later';
   if(due&&due>t)return st?'doing':'later'; // 只有截止没开始日 = 排在以后做，不算已经在做
   return 'today';
@@ -156,7 +159,7 @@ function addTaskCard(s,content,it){
 function renderTaskMeta(card){
   const it=card._item||{}, s=card._scope||{}, box=card.querySelector('.tmeta');
   if(!box)return;
-  const isCo=card.classList.contains('cotask'), g=taskGroupOf(it);
+  const isCo=card.classList.contains('cotask'), g=taskGroupOf(it,card);
   // 个人任务在各自列里，dept 徽章冗余 → 只公司大任务保留「公司」徽章
   const deptBadge=isCo?`<span class="badge ${esc(s.c||'b-gray')}">${esc(s.dept||'')}</span>`:'';
   // 出身标：这条是从整改清单排下来的，点它回去看依据数据（任务能追溯到证据，才不是拍脑袋）
@@ -200,7 +203,7 @@ function renderTaskMeta(card){
    子任务卡是另一套单行排版，没有 meta 行，不参与。 */
 document.addEventListener('taskchanged',e=>{
   const card=e.detail&&e.detail.card;
-  if(card&&card._item&&!card.classList.contains('subtask'))renderTaskMeta(card);
+  if(card&&card._item&&!card.classList.contains('subtask')){ renderTaskMeta(card); placeTaskCard(card); refreshTaskCols(); } // 完成/撤销会改变所属分组（逾期 ↔ 已完成）
 });
 /* 已完成任务的「补结果 / 改」：复用完成弹框的编辑模式（只改记录，不动完成状态）。 */
 function taskResult(btn){
@@ -325,7 +328,7 @@ async function loadTaskCheckins(isCurrent=()=>true){
    多一层标题只占地方；逾期靠卡上的 .t-overdue 标红，不依赖分组容器。 */
 function placeTaskCard(card){
   const s=card._scope||{}, col=taskColFor(s.dept); if(!col)return;
-  const g=taskGroupOf(card._item||{});
+  const g=taskGroupOf(card._item||{},card);
   card.classList.toggle('t-overdue',g==='overdue');
   if(s.dept==='公司'){
     const anchor=col.querySelector('.donefold')||col.querySelector('.add-task');
